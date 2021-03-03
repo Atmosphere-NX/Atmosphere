@@ -58,6 +58,7 @@ namespace ams::scs {
             enum Response {
                 Response_None    = 0,
                 Response_Success = 1,
+                Response_Error   = 2,
                 /* ... */
             };
         public:
@@ -66,6 +67,17 @@ namespace ams::scs {
             void Initialize();
         public:
             virtual bool ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket);
+        protected:
+            static void SendSuccess(s32 socket, const CommandHeader &header);
+            static void SendErrorResult(s32 socket, const CommandHeader &header, Result result);
+        private:
+            static void SendErrorResult(s32 socket, u64 id, Result result);
+
+            static void OnProcessStart(u64 id, s32 socket, os::ProcessId process_id);
+            static void OnProcessExit(u64 id, s32 socket, os::ProcessId process_id);
+            static void OnProcessJitDebug(u64 id, s32 socket, os::ProcessId process_id);
     };
+
+    os::SdkMutex &GetHtcsSendMutex();
 
 }

@@ -65,26 +65,30 @@ namespace ams::cs {
 
     namespace {
 
-        alignas(os::ThreadStackAlignment) u8 g_shell_stack[4_KB];
-        alignas(os::ThreadStackAlignment) u8 g_runner_stack[4_KB];
+        alignas(os::ThreadStackAlignment) constinit u8 g_shell_stack[4_KB];
+        alignas(os::ThreadStackAlignment) constinit u8 g_runner_stack[4_KB];
 
-        alignas(os::MemoryPageSize) u8 g_heap_memory[32_KB];
+        alignas(os::MemoryPageSize) constinit u8 g_heap_memory[32_KB];
 
-        alignas(0x40) u8 g_htcs_buffer[1_KB];
+        alignas(0x40) constinit u8 g_htcs_buffer[1_KB];
 
-        lmem::HeapHandle g_heap_handle;
+        constinit os::SdkMutex g_heap_mutex;
+        constinit lmem::HeapHandle g_heap_handle;
 
         void *Allocate(size_t size) {
+            std::scoped_lock lk(g_heap_mutex);
             void *mem = lmem::AllocateFromExpHeap(g_heap_handle, size);
             return mem;
         }
 
         void Deallocate(void *p, size_t size) {
+            std::scoped_lock lk(g_heap_mutex);
             lmem::FreeToExpHeap(g_heap_handle, p);
         }
 
         void InitializeHeap() {
-            g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_ThreadSafe);
+            std::scoped_lock lk(g_heap_mutex);
+            g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
         }
 
     }

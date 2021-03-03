@@ -14,23 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/os.hpp>
-#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::scs {
+namespace ams::htc::tenv {
 
-    using ProcessEventHandler = void(*)(u64 id, s32 socket, os::ProcessId process_id);
-
-    void InitializeShell();
-
-    void RegisterCommonProcessEventHandler(ProcessEventHandler on_start, ProcessEventHandler on_exit, ProcessEventHandler on_jit_debug);
-
-    bool RegisterSocket(s32 socket);
-    void UnregisterSocket(s32 socket);
-
-    Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags);
-
-    Result SubscribeProcessEvent(s32 socket, bool is_register, u64 id);
+    class Service {
+        private:
+            os::ProcessId m_process_id;
+        public:
+            constexpr Service(os::ProcessId pid) : m_process_id(pid) { /* ... */ }
+        public:
+            Result GetVariable(sf::Out<s64> out_size, const sf::OutBuffer &out_buffer, const htc::tenv::VariableName &name);
+            Result GetVariableLength(sf::Out<s64> out_size,const htc::tenv::VariableName &name);
+            Result WaitUntilVariableAvailable(s64 timeout_ms);
+    };
+    static_assert(htc::tenv::IsIService<Service>);
 
 }

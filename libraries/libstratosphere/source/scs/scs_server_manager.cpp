@@ -13,24 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <stratosphere/os.hpp>
-#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::scs {
 
-    using ProcessEventHandler = void(*)(u64 id, s32 socket, os::ProcessId process_id);
+    namespace {
 
-    void InitializeShell();
+        ServerManager g_server_manager;
 
-    void RegisterCommonProcessEventHandler(ProcessEventHandler on_start, ProcessEventHandler on_exit, ProcessEventHandler on_jit_debug);
+    }
 
-    bool RegisterSocket(s32 socket);
-    void UnregisterSocket(s32 socket);
+    ServerManager *GetServerManager() {
+        return std::addressof(g_server_manager);
+    }
 
-    Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags);
+    void StartServer() {
+        /* Start the server. */
+        g_server_manager.ResumeProcessing();
 
-    Result SubscribeProcessEvent(s32 socket, bool is_register, u64 id);
+        /* Loop processing the server. */
+        g_server_manager.LoopProcess();
+    }
 
 }
