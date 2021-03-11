@@ -557,8 +557,12 @@ namespace ams::kern {
 
             /* Verify that the thread's svc state is valid. */
             if (thread->IsCallingSvc()) {
-                R_UNLESS(thread->GetSvcId() != svc::SvcId_Break,               svc::ResultInvalidState());
-                R_UNLESS(thread->GetSvcId() != svc::SvcId_ReturnFromException, svc::ResultInvalidState());
+                const u8 svc_id         = thread->GetSvcId();
+
+                const bool is_valid_svc = svc_id == svc::SvcId_Break ||
+                                          svc_id == svc::SvcId_ReturnFromException;
+
+                R_UNLESS(is_valid_svc, svc::ResultInvalidState());
             }
 
             /* Set the thread context. */
