@@ -14,10 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/sm/sm_types.hpp>
+#include <stratosphere/htc/tenv/htc_tenv_i_service_manager.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::tenv {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("htc:tenv");
+
+    class ServiceManager {
+        public:
+            Result GetServiceInterface(sf::Out<sf::SharedPointer<htc::tenv::IService>> out, const sf::ClientProcessId &process_id);
+    };
+    static_assert(htc::tenv::IsIServiceManager<ServiceManager>);
+
+}

@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <stratosphere.hpp>
+#include "impl/htc_tenv_allocator.hpp"
+#include "htc_tenv_service.hpp"
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::tenv {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    Result ServiceManager::GetServiceInterface(sf::Out<sf::SharedPointer<htc::tenv::IService>> out, const sf::ClientProcessId &process_id) {
+        *out = impl::SfObjectFactory::CreateSharedEmplaced<htc::tenv::IService, Service>(process_id.GetValue());
+        return ResultSuccess();
+    }
+
+}

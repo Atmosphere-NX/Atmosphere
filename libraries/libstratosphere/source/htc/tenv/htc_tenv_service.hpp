@@ -14,10 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::tenv {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    class Service {
+        private:
+            os::ProcessId m_process_id;
+        public:
+            constexpr Service(os::ProcessId pid) : m_process_id(pid) { /* ... */ }
+        public:
+            Result GetVariable(sf::Out<s64> out_size, const sf::OutBuffer &out_buffer, const htc::tenv::VariableName &name);
+            Result GetVariableLength(sf::Out<s64> out_size,const htc::tenv::VariableName &name);
+            Result WaitUntilVariableAvailable(s64 timeout_ms);
+    };
+    static_assert(htc::tenv::IsIService<Service>);
+
+}

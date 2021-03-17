@@ -144,6 +144,19 @@ namespace ams::impl {
 
     AMS_DEFINE_SYSTEM_THREAD(10, tma, BridgePcieDriver);
 
+    /* cs/scs. */
+    AMS_DEFINE_SYSTEM_THREAD(20, cs, Main);
+    AMS_DEFINE_SYSTEM_THREAD(20, cs, HidctlService);
+    AMS_DEFINE_SYSTEM_THREAD(20, cs, HidctlLegacyServer);
+    AMS_DEFINE_SYSTEM_THREAD(20, cs, AudioServer);
+    AMS_DEFINE_SYSTEM_THREAD(10, cs, GrcVideoSender);
+    AMS_DEFINE_SYSTEM_THREAD(10, cs, GrcVideoReader);
+    AMS_DEFINE_SYSTEM_THREAD(10, cs, GrcAudioSender);
+    AMS_DEFINE_SYSTEM_THREAD(10, cs, GrcAudioReader);
+
+    AMS_DEFINE_SYSTEM_THREAD(21, scs, ShellServer);
+    AMS_DEFINE_SYSTEM_THREAD(21, scs, ShellEventHandler);
+
     /* DevServer/TioServer. */
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, TioServer, FileServerHtcsServer);

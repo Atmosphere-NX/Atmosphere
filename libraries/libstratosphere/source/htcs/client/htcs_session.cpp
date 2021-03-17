@@ -150,13 +150,13 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::Connect(sf::Out<s32> out_err, sf::Out<s32> out_res, const htcs::SockAddrHtcs &address) {
-            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::SockAddrHtcs));
-            return ::htcsSocketConnect(std::addressof(m_s), out_err.GetPointer(), out_res.GetPointer(), reinterpret_cast<const ::SockAddrHtcs *>(std::addressof(address)));
+            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::HtcsSockAddr));
+            return ::htcsSocketConnect(std::addressof(m_s), out_err.GetPointer(), out_res.GetPointer(), reinterpret_cast<const ::HtcsSockAddr *>(std::addressof(address)));
         }
 
         Result RemoteSocket::Bind(sf::Out<s32> out_err, sf::Out<s32> out_res, const htcs::SockAddrHtcs &address) {
-            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::SockAddrHtcs));
-            return ::htcsSocketBind(std::addressof(m_s), out_err.GetPointer(), out_res.GetPointer(), reinterpret_cast<const ::SockAddrHtcs *>(std::addressof(address)));
+            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::HtcsSockAddr));
+            return ::htcsSocketBind(std::addressof(m_s), out_err.GetPointer(), out_res.GetPointer(), reinterpret_cast<const ::HtcsSockAddr *>(std::addressof(address)));
         }
 
         Result RemoteSocket::Listen(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 backlog_count) {
@@ -176,9 +176,9 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::AcceptResults(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address, u32 task_id) {
-            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::SockAddrHtcs));
+            static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::HtcsSockAddr));
             ::HtcsSocket libnx_socket;
-            R_TRY(::htcsSocketAcceptResults(std::addressof(m_s), out_err.GetPointer(), std::addressof(libnx_socket), reinterpret_cast<::SockAddrHtcs *>(out_address.GetPointer()), task_id));
+            R_TRY(::htcsSocketAcceptResults(std::addressof(m_s), out_err.GetPointer(), std::addressof(libnx_socket), reinterpret_cast<::HtcsSockAddr *>(out_address.GetPointer()), task_id));
 
             R_SUCCEED_IF(*out_err != 0);
 

@@ -26,6 +26,7 @@
 #include <vapours/results/cal_results.hpp>
 #include <vapours/results/capsrv_results.hpp>
 #include <vapours/results/creport_results.hpp>
+#include <vapours/results/cs_results.hpp>
 #include <vapours/results/dd_results.hpp>
 #include <vapours/results/ddsf_results.hpp>
 #include <vapours/results/debug_results.hpp>
@@ -55,6 +56,7 @@
 #include <vapours/results/psc_results.hpp>
 #include <vapours/results/pwm_results.hpp>
 #include <vapours/results/ro_results.hpp>
+#include <vapours/results/scs_results.hpp>
 #include <vapours/results/sdmmc_results.hpp>
 #include <vapours/results/settings_results.hpp>
 #include <vapours/results/sf_results.hpp>

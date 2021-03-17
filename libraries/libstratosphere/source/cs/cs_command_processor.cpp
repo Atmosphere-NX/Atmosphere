@@ -13,11 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::cs {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    bool CommandProcessor::ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket) {
+        switch (header.command) {
+            /* TODO: Command support. */
+            default:
+                scs::CommandProcessor::ProcessCommand(header, body, socket);
+                break;
+        }
+
+        return true;
+    }
+
+}

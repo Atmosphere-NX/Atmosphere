@@ -13,11 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::scs {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    namespace {
+
+        ServerManager g_server_manager;
+
+    }
+
+    ServerManager *GetServerManager() {
+        return std::addressof(g_server_manager);
+    }
+
+    void StartServer() {
+        /* Start the server. */
+        g_server_manager.ResumeProcessing();
+
+        /* Loop processing the server. */
+        g_server_manager.LoopProcess();
+    }
+
+}
