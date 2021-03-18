@@ -14,19 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/scs/scs_command_processor.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::cs {
 
-    using CommandHeader  = scs::CommandHeader;
-    using ResponseHeader = scs::ResponseHeader;
-
-    class CommandProcessor : public scs::CommandProcessor {
-        public:
-            virtual bool ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket) override;
-        private:
-            static void SendFirmwareVersion(s32 socket, const CommandHeader &header);
-    };
+    Result DoGetFirmwareVersionCommand(settings::system::FirmwareVersion *out);
 
 }
