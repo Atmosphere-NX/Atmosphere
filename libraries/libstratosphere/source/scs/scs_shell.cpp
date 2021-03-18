@@ -39,7 +39,7 @@ namespace ams::scs {
 
         class SocketInfoManager {
             private:
-                SocketInfo m_infos[MaxProgramInfo];
+                SocketInfo m_infos[MaxSocketInfo];
                 int m_count;
             public:
                 constexpr SocketInfoManager() = default;
@@ -47,6 +47,42 @@ namespace ams::scs {
                 void Initialize() {
                     /* Clear our count. */
                     m_count = 0;
+                }
+
+                Result Register(s32 socket, u64 id) {
+                    /* Check that the socket isn't already registered. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        R_UNLESS(m_infos[i].socket != socket, scs::ResultNoSocket());
+                    }
+
+                    /* Check that we can allocate a new socket info. */
+                    if (m_count >= MaxSocketInfo) {
+                        /* NOTE: Nintendo aborts with this result here. */
+                        R_ABORT_UNLESS(scs::ResultOutOfResource());
+                    }
+
+                    /* Create the new socket info. */
+                    m_infos[m_count++] = {
+                        .id     = id,
+                        .socket = socket,
+                    };
+
+                    return ResultSuccess();
+                }
+
+                void Unregister(s32 socket) {
+                    /* Unregister the socket, if it's registered. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        if (m_infos[i].socket == socket) {
+                            /* Ensure that the valid socket infos remain in bounds. */
+                            std::memcpy(m_infos + i, m_infos + i + 1, (m_count - (i + 1)) * sizeof(*m_infos));
+
+                            /* Note that we now have one fewer socket info. */
+                            --m_count;
+
+                            break;
+                        }
+                    }
                 }
         };
 
@@ -76,6 +112,8 @@ namespace ams::scs {
 
         constinit SocketInfoManager g_socket_info_manager;
         constinit ProgramInfoManager g_program_info_manager;
+
+        constinit os::SdkMutex g_manager_mutex;
 
         void EventHandlerThread(void *) {
             /* TODO */
@@ -130,8 +168,21 @@ namespace ams::scs {
         g_common_jit_debug_handler = on_jit_debug;
     }
 
-    bool RegisterSocket(s32 socket);
-    void UnregisterSocket(s32 socket);
+    Result RegisterSocket(s32 socket, u64 id) {
+        /* Acquire exclusive access to the socket info manager. */
+        std::scoped_lock lk(g_manager_mutex);
+
+        /* Register the socket. */
+        return g_socket_info_manager.Register(socket, id);
+    }
+
+    void UnregisterSocket(s32 socket) {
+        /* Acquire exclusive access to the socket info manager. */
+        std::scoped_lock lk(g_manager_mutex);
+
+        /* Unregister the socket. */
+        return g_socket_info_manager.Unregister(socket);
+    }
 
     Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags) {
         /* Set up the arguments. */

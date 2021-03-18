@@ -26,7 +26,7 @@ namespace ams::scs {
 
     void RegisterCommonProcessEventHandler(ProcessEventHandler on_start, ProcessEventHandler on_exit, ProcessEventHandler on_jit_debug);
 
-    bool RegisterSocket(s32 socket);
+    Result RegisterSocket(s32 socket, u64 id);
     void UnregisterSocket(s32 socket);
 
     Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags);
