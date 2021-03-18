@@ -29,9 +29,9 @@ namespace ams::scs {
             u64 id;
             s32 socket;
             s32 info_id;
-            bool _18;
-            bool _19;
-            bool _1A;
+            bool started;
+            bool jit_debug;
+            bool launched_by_cs;
         };
 
         constexpr inline auto MaxSocketInfo  = 2;
@@ -84,6 +84,13 @@ namespace ams::scs {
                         }
                     }
                 }
+
+                void InvokeHandler(ProcessEventHandler handler, os::ProcessId process_id) {
+                    /* Invoke the handler on all our sockets. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        handler(m_infos[i].id, m_infos[i].socket, process_id);
+                    }
+                }
         };
 
         class ProgramInfoManager {
@@ -101,6 +108,74 @@ namespace ams::scs {
                     /* Clear our count. */
                     m_count = 0;
                 }
+
+                const ProgramInfo *Find(os::ProcessId process_id) const {
+                    /* Find a matching program. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        if (m_infos[i].process_id == process_id) {
+                            return std::addressof(m_infos[i]);
+                        }
+                    }
+                    return nullptr;
+                }
+
+                bool Register(os::ProcessId process_id) {
+                    /* Allocate an info id. */
+                    const auto info_id = m_next_info_id++;
+
+                    /* Check that we have space for the program. */
+                    if (m_count >= MaxProgramInfo) {
+                        return false;
+                    }
+
+                    /* Create the new program info. */
+                    m_infos[m_count++] = {
+                        .process_id     = process_id,
+                        .id             = 0,
+                        .socket         = 0,
+                        .info_id        = info_id,
+                        .started        = false,
+                        .jit_debug      = false,
+                        .launched_by_cs = false,
+                    };
+
+                    return true;
+                }
+
+                void Unregister(os::ProcessId process_id) {
+                    /* Unregister the program, if it's registered. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        if (m_infos[i].process_id == process_id) {
+                            /* Ensure that the valid program infos remain in bounds. */
+                            std::memcpy(m_infos + i, m_infos + i + 1, (m_count - (i + 1)) * sizeof(*m_infos));
+
+                            /* Note that we now have one fewer program info. */
+                            --m_count;
+
+                            break;
+                        }
+                    }
+                }
+
+                void SetStarted(os::ProcessId process_id) {
+                    /* Start the program. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        if (m_infos[i].process_id == process_id) {
+                            m_infos[i].started = true;
+                            break;
+                        }
+                    }
+                }
+
+                void SetJitDebug(os::ProcessId process_id) {
+                    /* Set the program as jit debug. */
+                    for (auto i = 0; i < m_count; ++i) {
+                        if (m_infos[i].process_id == process_id) {
+                            m_infos[i].jit_debug = true;
+                            break;
+                        }
+                    }
+                }
         };
 
         alignas(os::ThreadStackAlignment) constinit u8 g_thread_stack[os::MemoryPageSize];
@@ -115,9 +190,130 @@ namespace ams::scs {
 
         constinit os::SdkMutex g_manager_mutex;
 
+        void ProcessExitEvent(const pm::ProcessEventInfo &event_info) {
+            /* Unregister the target environment definition. */
+            htc::tenv::UnregisterDefinitionFilePath(event_info.process_id);
+
+            /* Unregister program info. */
+            ProgramInfo program_info;
+            bool found = false;
+            {
+                std::scoped_lock lk(g_manager_mutex);
+
+                if (const ProgramInfo *pi = g_program_info_manager.Find(event_info.process_id); pi != nullptr) {
+                    program_info = *pi;
+                    found = true;
+
+                    g_program_info_manager.Unregister(event_info.process_id);
+                }
+            }
+
+            /* If we found the program, handle callbacks. */
+            if (found) {
+                /* Invoke the common exit handler. */
+                if (program_info.launched_by_cs) {
+                    g_common_exit_handler(program_info.id, program_info.socket, program_info.process_id);
+                }
+
+                /* Notify the process event. */
+                if (program_info.started) {
+                    std::scoped_lock lk(g_manager_mutex);
+
+                    g_socket_info_manager.InvokeHandler(g_common_exit_handler, program_info.process_id);
+                }
+            }
+        }
+
+        void ProcessStartedEvent(const pm::ProcessEventInfo &event_info) {
+            /* Start the program (registering it, if needed). */
+            {
+                std::scoped_lock lk(g_manager_mutex);
+
+                if (g_program_info_manager.Find(event_info.process_id) == nullptr) {
+                    AMS_ABORT_UNLESS(g_program_info_manager.Register(event_info.process_id));
+                }
+
+                g_program_info_manager.SetStarted(event_info.process_id);
+            }
+
+            /* Handle callbacks. */
+            {
+                std::scoped_lock lk(g_manager_mutex);
+
+                g_socket_info_manager.InvokeHandler(g_common_start_handler, event_info.process_id);
+            }
+        }
+
+        void ProcessExceptionEvent(const pm::ProcessEventInfo &event_info) {
+            /* Find the program info. */
+            ProgramInfo program_info;
+            bool found = false;
+            {
+                std::scoped_lock lk(g_manager_mutex);
+
+                if (const ProgramInfo *pi = g_program_info_manager.Find(event_info.process_id); pi != nullptr) {
+                    program_info = *pi;
+                    found = true;
+                }
+
+                /* Set the program as jit debug. */
+                g_program_info_manager.SetJitDebug(event_info.process_id);
+            }
+
+            /* If we found the program, handle callbacks. */
+            if (found) {
+                /* Invoke the common exception handler. */
+                if (program_info.launched_by_cs) {
+                    g_common_jit_debug_handler(program_info.id, program_info.socket, program_info.process_id);
+                }
+
+                /* Notify the process event. */
+                if (program_info.started) {
+                    std::scoped_lock lk(g_manager_mutex);
+
+                    g_socket_info_manager.InvokeHandler(g_common_jit_debug_handler, program_info.process_id);
+                }
+            }
+        }
+
         void EventHandlerThread(void *) {
-            /* TODO */
-            AMS_ABORT("scs::EventHandlerThread");
+            /* Get event observer. */
+            pgl::EventObserver observer;
+            R_ABORT_UNLESS(pgl::GetEventObserver(std::addressof(observer)));
+
+            /* Get the observer's event. */
+            os::SystemEventType shell_event;
+            R_ABORT_UNLESS(observer.GetSystemEvent(std::addressof(shell_event)));
+
+            /* Loop handling events. */
+            while (true) {
+                /* Wait for an event to come in. */
+                os::WaitSystemEvent(std::addressof(shell_event));
+
+                /* Loop processing event infos. */
+                while (true) {
+                    /* Get the next event info. */
+                    pm::ProcessEventInfo event_info;
+                    if (R_FAILED(observer.GetProcessEventInfo(std::addressof(event_info)))) {
+                        break;
+                    }
+
+                    /* Process the event. */
+                    switch (event_info.GetProcessEvent()) {
+                        case pm::ProcessEvent::Exited:
+                            ProcessExitEvent(event_info);
+                            break;
+                        case pm::ProcessEvent::Started:
+                            ProcessStartedEvent(event_info);
+                            break;
+                        case pm::ProcessEvent::Exception:
+                            ProcessExceptionEvent(event_info);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
         }
 
         void StartEventHandlerThread() {

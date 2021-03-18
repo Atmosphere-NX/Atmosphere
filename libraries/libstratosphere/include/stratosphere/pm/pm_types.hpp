@@ -96,6 +96,27 @@ namespace ams::pm {
     struct ProcessEventInfo {
         u32 event;
         os::ProcessId process_id;
+
+        inline ProcessEvent GetProcessEvent() const {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
+                return static_cast<ProcessEvent>(this->event);
+            }
+            switch (static_cast<ProcessEventDeprecated>(event)) {
+                case ProcessEventDeprecated::None:
+                    return ProcessEvent::None;
+                case ProcessEventDeprecated::Exited:
+                    return ProcessEvent::Exited;
+                case ProcessEventDeprecated::Started:
+                    return ProcessEvent::Started;
+                case ProcessEventDeprecated::Exception:
+                    return ProcessEvent::Exception;
+                case ProcessEventDeprecated::DebugRunning:
+                    return ProcessEvent::DebugRunning;
+                case ProcessEventDeprecated::DebugBreak:
+                    return ProcessEvent::DebugBreak;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
     };
     static_assert(sizeof(ProcessEventInfo) == 0x10 && util::is_pod<ProcessEventInfo>::value, "ProcessEventInfo definition!");
 

@@ -14,18 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::htc::tenv {
+namespace ams::htc::tenv::impl {
 
-    struct VariableName {
-        char str[0x40];
-    };
-
-    constexpr inline auto PathLengthMax = 0x300;
-
-    struct alignas(4) Path {
-        char str[PathLengthMax];
-    };
+    void UnregisterDefinitionFilePath(u64 process_id);
 
 }

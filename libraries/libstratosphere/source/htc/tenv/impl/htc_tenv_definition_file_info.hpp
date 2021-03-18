@@ -14,18 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
+#include "htc_tenv_allocator.hpp"
 
-namespace ams::htc::tenv {
+namespace ams::htc::tenv::impl {
 
-    struct VariableName {
-        char str[0x40];
-    };
+    struct DefinitionFileInfo : public util::IntrusiveListBaseNode<DefinitionFileInfo> {
+        u64 process_id;
+        Path path;
 
-    constexpr inline auto PathLengthMax = 0x300;
+        DefinitionFileInfo(u64 pid, Path *p) : process_id(pid) {
+            AMS_ASSERT(p != nullptr);
+            util::Strlcpy(this->path.str, p->str, PathLengthMax);
+        }
 
-    struct alignas(4) Path {
-        char str[PathLengthMax];
+        static void *operator new(size_t size) {
+            return Allocate(size);
+        }
+
+        static void operator delete(void *p, size_t size) {
+            Deallocate(p, size);
+        }
     };
 
 }
