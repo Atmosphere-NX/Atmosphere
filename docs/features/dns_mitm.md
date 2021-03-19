@@ -10,6 +10,7 @@ DNS.mitm can be configured through the usage of a slightly-extended `hosts` file
 In particular, hosts files parsed by DNS.mitm have the following extensions to the usual format:
 + `*` is treated as a wildcard character, matching any collection of 0 or more characters wherever it occurs in a hostname.
 + `%` is treated as a stand-in for the value of `nsd!environment_identifier`. This is always `lp1`, on production devices.
++ `-` is used to begin a line and indicates that this line contains a single hostname that is to be excepted from being redirected. It can be used to override a wildcard or other entry.
 
 If multiple entries in a host file match a domain, the last-defined match is used.
 

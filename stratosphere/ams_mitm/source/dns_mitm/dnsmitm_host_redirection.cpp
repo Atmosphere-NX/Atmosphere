@@ -70,6 +70,7 @@ namespace ams::mitm::socket::resolver {
 
         constinit os::SdkMutex g_redirection_lock;
         std::vector<std::pair<std::string, ams::socket::InAddrT>> g_redirection_list;
+        std::vector<std::string> g_exception_list;
 
         void RemoveRedirection(const char *hostname) {
             for (auto it = g_redirection_list.begin(); it != g_redirection_list.end(); ++it) {
@@ -83,6 +84,12 @@ namespace ams::mitm::socket::resolver {
         void AddRedirection(const char *hostname, ams::socket::InAddrT addr) {
             RemoveRedirection(hostname);
             g_redirection_list.emplace(g_redirection_list.begin(), std::string(hostname), addr);
+        }
+        
+        void AddException(const char *hostname) {
+            if (!(std::find(g_exception_list.begin(), g_exception_list.end(), hostname) != g_exception_list.end())){
+                g_exception_list.emplace(g_exception_list.begin(), std::string(hostname));
+            }
         }
 
         constinit char g_specific_emummc_hosts_path[0x40] = {};
@@ -105,6 +112,7 @@ namespace ams::mitm::socket::resolver {
                 Ip4,
                 WhiteSpace,
                 HostName,
+                ExceptList,
             };
 
             ams::socket::InAddrT current_address;
@@ -127,6 +135,9 @@ namespace ams::mitm::socket::resolver {
                             state           = State::Ip1;
                         } else if (c == '\n') {
                             state = State::BeginLine;
+                        } else if (c == '-') {
+                            work = 0;
+                            state = State::ExceptList;
                         } else {
                             state = State::IgnoredLine;
                         }
@@ -215,6 +226,26 @@ namespace ams::mitm::socket::resolver {
                                 work = 1;
                             }
                             state = State::HostName;
+                        }
+                        break;
+                    case State::ExceptList:
+                        if (c == '\r' || c == '\n') {
+                            AMS_ABORT_UNLESS(work < sizeof(current_hostname));
+                            current_hostname[work] = '\x00';
+
+                            AddException(current_hostname);
+                            work = 0;
+
+                            if (c == '\n') {
+                                state = State::BeginLine;
+                            }
+                        } else if (c == '%') {
+                            AMS_ABORT_UNLESS(work < sizeof(current_hostname) - env_len);
+                            std::memcpy(current_hostname + work, env.value, env_len);
+                            work += env_len;
+                        } else {
+                            AMS_ABORT_UNLESS(work < sizeof(current_hostname) - 1);
+                            current_hostname[work++] = c;
                         }
                         break;
                     case State::HostName:
@@ -311,6 +342,9 @@ namespace ams::mitm::socket::resolver {
         /* Clear the redirections map. */
         g_redirection_list.clear();
 
+        /* Clear the exceptions. */
+        g_exception_list.clear();
+
         /* Open log file. */
         ::FsFile log_file;
         mitm::fs::DeleteAtmosphereSdFile("/logs/dns_mitm_startup.log");
@@ -381,13 +415,19 @@ namespace ams::mitm::socket::resolver {
         for (const auto &[host, address] : g_redirection_list) {
             Log(log_file, "    `%s` -> %u.%u.%u.%u\n", host.c_str(), (address >> 0) & 0xFF, (address >> 8) & 0xFF, (address >> 16) & 0xFF, (address >> 24) & 0xFF);
         }
+        /* Print the exceptions. */
+        Log(log_file, "Exceptions:\n");
+        for (const auto &host : g_exception_list) {
+            Log(log_file, "    `%s`\n", host.c_str());
+        }
     }
 
     bool GetRedirectedHostByName(ams::socket::InAddrT *out, const char *hostname) {
         std::scoped_lock lk(g_redirection_lock);
 
         for (const auto &[host, address] : g_redirection_list) {
-            if (wildcardcmp(host.c_str(), hostname)) {
+            if (wildcardcmp(host.c_str(), hostname) &&
+                !(std::find(g_exception_list.begin(), g_exception_list.end(), hostname) != g_exception_list.end())) {
                 *out = address;
                 return true;
             }
