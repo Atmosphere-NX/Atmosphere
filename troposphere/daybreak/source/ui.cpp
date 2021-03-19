@@ -477,7 +477,7 @@ namespace dbk {
                     }
 
                     if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &is_emummc))) {
-                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to chech emuMMC status.", rc));
+                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to check emuMMC status.", rc));
                         return;
                     }
 
@@ -941,10 +941,18 @@ namespace dbk {
                     break;
             }
 
+            std::shared_ptr<Menu> next_menu;
+
             if (g_exfat_supported) {
-                ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
+                next_menu = std::make_shared<ChooseExfatMenu>(g_current_menu);
             } else {
-                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
+                next_menu = std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?");
+            }
+
+            if (g_reset_to_factory) {
+                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: Factory reset selected", "Saves and installed games will be permanently deleted."));
+            } else {
+                ChangeMenu(next_menu);
             }
         }
 
