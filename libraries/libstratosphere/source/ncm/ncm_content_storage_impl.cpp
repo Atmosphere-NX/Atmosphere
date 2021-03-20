@@ -166,6 +166,134 @@ namespace ams::ncm {
 
     }
 
+    ContentStorageImpl::ContentIterator::~ContentIterator() {
+        for (size_t i = 0; i < this->depth; i++) {
+            fs::CloseDirectory(this->handles[i]);
+        }
+    }
+
+    Result ContentStorageImpl::ContentIterator::Initialize(const char *root_path, size_t max_depth) {
+        /* Initialize tracking variables. */
+        this->depth       = 0;
+        this->max_depth   = max_depth;
+        this->entry_count = 0;
+
+        /* Create the base content directory path. */
+        MakeBaseContentDirectoryPath(std::addressof(this->path), root_path);
+
+        /* Open the base directory. */
+        R_TRY(this->OpenCurrentDirectory());
+
+        return ResultSuccess();
+    }
+
+    Result ContentStorageImpl::ContentIterator::OpenCurrentDirectory() {
+        /* Determine valid directory mode (prior to 2.0.0, NotRequireFileSize was not valid). */
+        const auto open_mode = hos::GetVersion() >= hos::Version_2_0_0 ? (fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize) : (fs::OpenDirectoryMode_All);
+
+        /* Open the directory for our current path. */
+        R_TRY(fs::OpenDirectory(std::addressof(this->handles[this->depth]), this->path, open_mode));
+
+        /* Increase our depth. */
+        ++this->depth;
+
+        return ResultSuccess();
+    }
+
+    Result ContentStorageImpl::ContentIterator::OpenDirectory(const char *dir) {
+        /* Set our current path. */
+        this->path.Set(dir);
+
+        /* Open the directory. */
+        return this->OpenCurrentDirectory();
+    }
+
+    Result ContentStorageImpl::ContentIterator::GetNext(std::optional<fs::DirectoryEntry> *out) {
+        /* Iterate until we get the next entry. */
+        while (true) {
+            /* Ensure that we have entries loaded. */
+            R_TRY(this->LoadEntries());
+
+            /* If we failed to load any entries, there's nothing to get. */
+            if (this->entry_count <= 0) {
+                *out = std::nullopt;
+                return ResultSuccess();
+            }
+
+            /* Get the next entry. */
+            const auto &entry = this->entries[--this->entry_count];
+
+            /* Process the current entry. */
+            switch (entry.type) {
+                case fs::DirectoryEntryType_Directory:
+                    /* If the entry if a directory, we want to recurse into it if we can. */
+                    if (this->depth < this->max_depth) {
+                        /* Construct the full path for the subdirectory. */
+                        PathString entry_path;
+                        entry_path.SetFormat("%s/%s", this->path.Get(), entry.name);
+
+                        /* Open the subdirectory. */
+                        R_TRY(this->OpenDirectory(entry_path.Get()));
+
+                    }
+                    break;
+                case fs::DirectoryEntryType_File:
+                    /* Otherwise, if the entry is a file, return it. */
+                    *out = entry;
+                    return ResultSuccess();
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result ContentStorageImpl::ContentIterator::LoadEntries() {
+        /* If we already have entries loaded, we don't need to do anything. */
+        R_SUCCEED_IF(this->entry_count != 0);
+
+        /* If we have no directories open, there's nothing for us to load. */
+        if (this->depth == 0) {
+            this->entry_count = 0;
+            return ResultSuccess();
+        }
+
+        /* Determine the maximum entries that we can load. */
+        const s64 max_entries = this->depth == this->max_depth ? MaxDirectoryEntries : 1;
+
+        /* Read entries from the current directory. */
+        s64 num_entries;
+        R_TRY(fs::ReadDirectory(std::addressof(num_entries), this->entries, this->handles[this->depth - 1], max_entries));
+
+        /* If we successfully read entries, load them. */
+        if (num_entries > 0) {
+            /* Reverse the order of the loaded entries, for our future convenience. */
+            for (fs::DirectoryEntry *start_entry = this->entries, *end_entry = this->entries + num_entries - 1; start_entry < end_entry; ++start_entry, --end_entry) {
+                std::swap(*start_entry, *end_entry);
+            }
+
+            /* Set our entry count. */
+            this->entry_count = num_entries;
+
+            return ResultSuccess();
+        }
+
+        /* We didn't read any entries, so we need to advance to the next directory. */
+        fs::CloseDirectory(this->handles[--this->depth]);
+
+        /* Find the index of the parent directory's substring. */
+        size_t i = this->path.GetLength() - 1;
+        while (this->path.Get()[i--] != '/') {
+            AMS_ABORT_UNLESS(i > 0);
+        }
+
+        /* Set the path to the parent directory. */
+        this->path.Set(this->path.GetSubstring(0, i));
+
+        /* Try to load again from the parent directory. */
+        return this->LoadEntries();
+    }
+
     ContentStorageImpl::~ContentStorageImpl() {
         this->InvalidateFileCache();
     }
@@ -225,6 +353,7 @@ namespace ams::ncm {
             fs::CloseFile(this->cached_file_handle);
             this->cached_content_id = InvalidContentId;
         }
+        this->content_iterator = std::nullopt;
     }
 
     Result ContentStorageImpl::OpenContentIdFile(ContentId content_id) {
@@ -445,48 +574,59 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
+    Result ContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out, s32 offset) {
         R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
-        /* Obtain the content base directory path. */
-        PathString path;
-        MakeBaseContentDirectoryPath(std::addressof(path), this->root_path);
+        if (!this->content_iterator.has_value() || !this->last_content_offset.has_value() || this->last_content_offset != offset) {
+            /* Create and initialize the content cache. */
+            this->content_iterator.emplace();
+            R_TRY(this->content_iterator->Initialize(this->root_path, GetHierarchicalContentDirectoryDepth(this->make_content_path_func)));
 
-        const auto depth = GetHierarchicalContentDirectoryDepth(this->make_content_path_func);
-        size_t entry_count = 0;
+            /* Advance to the desired offset. */
+            for (auto current_offset = 0; current_offset < offset; /* ... */) {
+                /* Get the next directory entry. */
+                std::optional<fs::DirectoryEntry> dir_entry;
+                R_TRY(this->content_iterator->GetNext(std::addressof(dir_entry)));
 
-        /* Traverse the content base directory finding all valid content. */
-        R_TRY(TraverseDirectory(path, depth, [&](bool *should_continue,  bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) {
-            *should_retry_dir_read = false;
-            *should_continue = true;
+                /* If we run out of entries before reaching the desired offset, we're done. */
+                if (!dir_entry) {
+                    out_count.SetValue(0);
+                    return ResultSuccess();
+                }
 
-            /* We have nothing to do if not working with a file. */
-            if (entry.type != fs::DirectoryEntryType_File) {
-                return ResultSuccess();
+                /* If the current entry is a valid content id, advance. */
+                if (GetContentIdFromString(dir_entry->name, std::strlen(dir_entry->name))) {
+                    ++current_offset;
+                }
+            }
+        }
+
+        /* Iterate, reading as many entries as we can. */
+        s32 count = 0;
+        while (count < static_cast<s32>(out.GetSize())) {
+            /* Get the next directory entry. */
+            std::optional<fs::DirectoryEntry> dir_entry;
+            R_TRY(this->content_iterator->GetNext(std::addressof(dir_entry)));
+
+            /* Don't continue if the directory entry is absent. */
+            if (!dir_entry) {
+                break;
             }
 
-            /* Skip entries until we reach the start offset. */
-            if (offset > 0) {
-                --offset;
-                return ResultSuccess();
+            /* Process the entry, if it's a valid content id. */
+            if (auto content_id = GetContentIdFromString(dir_entry->name, std::strlen(dir_entry->name)); content_id.has_value()) {
+                /* Output the content id. */
+                out[count++] = *content_id;
+
+                /* Update our last content offset. */
+                this->last_content_offset = offset + count;
             }
+        }
 
-            /* We don't necessarily expect to be able to completely fill the output buffer. */
-            if (entry_count >= out_buf.GetSize()) {
-                *should_continue = false;
-                return ResultSuccess();
-            }
+        /* Set the output count. */
+        *out_count = count;
 
-            auto content_id = GetContentIdFromString(entry.name, std::strlen(entry.name));
-            if (content_id) {
-                out_buf[entry_count++] = *content_id;
-            }
-
-            return ResultSuccess();
-        }));
-
-        out_count.SetValue(static_cast<s32>(entry_count));
         return ResultSuccess();
     }
 
