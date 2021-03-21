@@ -38,6 +38,9 @@ namespace ams::ncm {
                 auto partition_file_system = std::make_unique<fssystem::PartitionFileSystem>();
                 R_UNLESS(partition_file_system != nullptr, ncm::ResultAllocationFailed());
 
+                /* Initialize the partition file system. */
+                R_TRY(partition_file_system->Initialize(std::addressof(this->storage)));
+
                 /* Create a mount name and register the file system. */
                 auto mount_name = impl::CreateUniqueMountName();
                 R_TRY(fs::fsa::Register(mount_name.str, std::move(partition_file_system)));
