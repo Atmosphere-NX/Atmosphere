@@ -123,7 +123,7 @@ namespace ams::fs {
 
                 /* Print a path to the program's package. */
                 fssrv::sf::Path sf_path;
-                R_TRY(FspPathPrintf(std::addressof(sf_path), "/contents/%016lX/exefs.nsp", program_id.value));
+                R_TRY(FspPathPrintf(std::addressof(sf_path), "/atmosphere/contents/%016lX/exefs.nsp", program_id.value));
 
                 /* Open the package within stratosphere.romfs. */
                 R_TRY(romfs_fs.OpenFile(std::addressof(package_file), sf_path.str, fs::OpenMode_Read));

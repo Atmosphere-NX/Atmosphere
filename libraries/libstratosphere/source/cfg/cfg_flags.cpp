@@ -52,6 +52,26 @@ namespace ams::cfg {
             return has_file;
         }
 
+        Result DeleteFlagFile(const char *flag_path) {
+            /* We need the SD card to be available to delete anything. */
+            AMS_ABORT_UNLESS(IsSdCardInitialized());
+
+            /* Mount the sd card. */
+            char mount_name[fs::MountNameLengthMax + 1];
+            GetFlagMountName(mount_name);
+            R_TRY(fs::MountSdCard(mount_name));
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
+
+            /* Get the flag path. */
+            char full_path[fs::EntryNameLengthMax + 1];
+            util::SNPrintf(full_path, sizeof(full_path), "%s:/%s", mount_name, flag_path[0] == '/' ? flag_path + 1 : flag_path);
+
+            /* Delete the file. */
+            R_TRY(fs::DeleteFile(full_path));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* Flag utilities. */
@@ -75,6 +95,12 @@ namespace ams::cfg {
         char hbl_flag[0x100];
         util::SNPrintf(hbl_flag, sizeof(hbl_flag) - 1, "hbl_%s", flag);
         return HasGlobalFlag(hbl_flag);
+    }
+
+    Result DeleteGlobalFlag(const char *flag) {
+        char global_flag[fs::EntryNameLengthMax + 1];
+        util::SNPrintf(global_flag, sizeof(global_flag) - 1, "/atmosphere/flags/%s.flag", flag);
+        return DeleteFlagFile(global_flag);
     }
 
 }
