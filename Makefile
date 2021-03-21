@@ -65,6 +65,8 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/flags
+	touch atmosphere-$(AMSVER)/atmosphere/flags/clean_stratosphere_for_0.19.0.flag
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
 	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
@@ -81,27 +83,27 @@ dist-no-debug: all
 	cp config_templates/exosphere.ini atmosphere-$(AMSVER)/atmosphere/config_templates/exosphere.ini
 	cp -r config_templates/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
 	cp -r config_templates/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000008
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000008
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000000D
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000002B
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000032
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000034
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000036
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000037
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000003C
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000042
-	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000008/exefs.nsp
-	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000000D/exefs.nsp
-	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000002B/exefs.nsp
-	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000032/exefs.nsp
-	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000034/exefs.nsp
-	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000036/exefs.nsp
-	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000037/exefs.nsp
-	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/010000000000003C/exefs.nsp
-	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs/contents/0100000000000042/exefs.nsp
-	@build_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere.romfs
-	rm -r atmosphere-$(AMSVER)/atmosphere/stratosphere_romfs
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000002B
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000032
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000034
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000036
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042
+	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008/exefs.nsp
+	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D/exefs.nsp
+	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000002B/exefs.nsp
+	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000032/exefs.nsp
+	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000034/exefs.nsp
+	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000036/exefs.nsp
+	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037/exefs.nsp
+	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C/exefs.nsp
+	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
+	@build_romfs atmosphere-$(AMSVER)/stratosphere_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere.romfs
+	rm -r atmosphere-$(AMSVER)/stratosphere_romfs
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
