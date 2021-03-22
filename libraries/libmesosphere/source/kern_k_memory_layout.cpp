@@ -37,7 +37,7 @@ namespace ams::kern {
 
                     /* Create the new region. */
                     KMemoryRegion *region = std::addressof(this->region_heap[this->num_regions++]);
-                    new (region) KMemoryRegion(std::forward<Args>(args)...);
+                    std::construct_at(region, std::forward<Args>(args)...);
 
                     return region;
                 }

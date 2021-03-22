@@ -24,11 +24,11 @@ namespace ams::os::impl {
 
     void SetupThreadObjectUnsafe(ThreadType *thread, ThreadImpl *thread_impl, ThreadFunction function, void *arg, void *stack, size_t stack_size, s32 priority) {
         /* Setup objects. */
-        new (GetPointer(thread->cs_thread)) impl::InternalCriticalSection;
-        new (GetPointer(thread->cv_thread)) impl::InternalConditionVariable;
+        util::ConstructAt(thread->cs_thread);
+        util::ConstructAt(thread->cv_thread);
 
-        new (GetPointer(thread->all_threads_node)) util::IntrusiveListNode;
-        new (GetPointer(thread->waitlist))         WaitableObjectList;
+        util::ConstructAt(thread->all_threads_node);
+        util::ConstructAt(thread->waitlist);
 
         /* Set member variables. */
         thread->thread_impl    = (thread_impl != nullptr) ? thread_impl : std::addressof(thread->thread_impl_storage);
@@ -131,7 +131,7 @@ namespace ams::os::impl {
 
             thread->state = ThreadType::State_NotInitialized;
 
-            GetReference(thread->waitlist).~WaitableObjectList();
+            util::DestroyAt(thread->waitlist);
 
             thread->name_buffer[0] = '\x00';
 

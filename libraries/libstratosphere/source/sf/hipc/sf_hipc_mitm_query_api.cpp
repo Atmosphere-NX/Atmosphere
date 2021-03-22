@@ -58,12 +58,12 @@ namespace ams::sf::hipc::impl {
         std::scoped_lock lk(g_query_server_lock);
 
         if (AMS_UNLIKELY(!g_constructed_server)) {
-            new (GetPointer(g_query_server_storage)) sf::hipc::ServerManager<MaxServers>();
+            util::ConstructAt(g_query_server_storage);
             g_constructed_server = true;
         }
 
         /* TODO: Better object factory? */
-        R_ABORT_UNLESS(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(sf::CreateSharedObjectEmplaced<IMitmQueryService, MitmQueryService>(query_func))));
+        R_ABORT_UNLESS(GetReference(g_query_server_storage).RegisterSession(query_handle, cmif::ServiceObjectHolder(sf::CreateSharedObjectEmplaced<IMitmQueryService, MitmQueryService>(query_func))));
 
         if (AMS_UNLIKELY(!g_registered_any)) {
             R_ABORT_UNLESS(os::CreateThread(std::addressof(g_query_server_process_thread), &QueryServerProcessThreadMain, GetPointer(g_query_server_storage), g_server_process_thread_stack, sizeof(g_server_process_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_sf, QueryServerProcessThread)));

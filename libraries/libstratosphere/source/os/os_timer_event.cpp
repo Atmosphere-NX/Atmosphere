@@ -56,11 +56,11 @@ namespace ams::os {
 
     void InitializeTimerEvent(TimerEventType *event, EventClearMode clear_mode) {
         /* Initialize internal variables. */
-        new (GetPointer(event->cs_timer_event))    impl::InternalCriticalSection;
-        new (GetPointer(event->cv_signaled)) impl::InternalConditionVariable;
+        util::ConstructAt(event->cs_timer_event);
+        util::ConstructAt(event->cv_signaled);
 
         /* Initialize the waitable object list. */
-        new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList();
+        util::ConstructAt(event->waitable_object_list_storage);
 
         /* Initialize member variables. */
         event->clear_mode             = static_cast<u8>(clear_mode);
@@ -83,9 +83,9 @@ namespace ams::os {
         event->state = TimerEventType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
-        GetReference(event->cv_signaled).~InternalConditionVariable();
-        GetReference(event->cs_timer_event).~InternalCriticalSection();
+        util::DestroyAt(event->waitable_object_list_storage);
+        util::DestroyAt(event->cv_signaled);
+        util::DestroyAt(event->cs_timer_event);
     }
 
     void StartOneShotTimerEvent(TimerEventType *event, TimeSpan first_time) {
@@ -255,7 +255,7 @@ namespace ams::os {
     void InitializeWaitableHolder(WaitableHolderType *waitable_holder, TimerEventType *event) {
         AMS_ASSERT(event->state == EventType::State_Initialized);
 
-        new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfTimerEvent(event);
+        util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_timer_event_storage, event);
 
         waitable_holder->user_data = 0;
     }

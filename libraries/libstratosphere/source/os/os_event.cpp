@@ -37,11 +37,11 @@ namespace ams::os {
 
     void InitializeEvent(EventType *event, bool signaled, EventClearMode clear_mode) {
         /* Initialize internal variables. */
-        new (GetPointer(event->cs_event))    impl::InternalCriticalSection;
-        new (GetPointer(event->cv_signaled)) impl::InternalConditionVariable;
+        util::ConstructAt(event->cs_event);
+        util::ConstructAt(event->cv_signaled);
 
         /* Initialize the waitable object list. */
-        new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList();
+        util::ConstructAt(event->waitable_object_list_storage);
 
         /* Initialize member variables. */
         event->signaled               = signaled;
@@ -61,9 +61,9 @@ namespace ams::os {
         event->state = EventType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
-        GetReference(event->cv_signaled).~InternalConditionVariable();
-        GetReference(event->cs_event).~InternalCriticalSection();
+        util::DestroyAt(event->waitable_object_list_storage);
+        util::DestroyAt(event->cv_signaled);
+        util::DestroyAt(event->cs_event);
     }
 
     void SignalEvent(EventType *event) {
@@ -163,7 +163,7 @@ namespace ams::os {
     void InitializeWaitableHolder(WaitableHolderType *waitable_holder, EventType *event) {
         AMS_ASSERT(event->state == EventType::State_Initialized);
 
-        new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(event);
+        util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_event_storage, event);
 
         waitable_holder->user_data = 0;
     }

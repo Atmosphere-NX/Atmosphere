@@ -48,7 +48,7 @@ namespace ams::os::impl {
         public:
             static ALWAYS_INLINE void InitializeResourceManagerInstance() {
                 /* Construct the resource manager instance. */
-                new (GetPointer(s_resource_manager_storage)) OsResourceManager;
+                util::ConstructAt(s_resource_manager_storage);
             }
 
             static ALWAYS_INLINE OsResourceManager &GetResourceManagerInstance() {

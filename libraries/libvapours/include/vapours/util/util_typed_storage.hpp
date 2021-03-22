@@ -45,4 +45,46 @@ namespace ams::util {
         return *GetPointer(ts);
     }
 
+    template<typename T, typename... Args>
+    static constexpr ALWAYS_INLINE T *ConstructAt(TypedStorage<T> &ts, Args &&... args) {
+        return std::construct_at(GetPointer(ts), std::forward<Args>(args)...);
+    }
+
+    template<typename T>
+    static constexpr ALWAYS_INLINE void DestroyAt(TypedStorage<T> &ts) {
+        return std::destroy_at(GetPointer(ts));
+    }
+
+    namespace impl {
+
+        template<typename T>
+        class TypedStorageGuard {
+            NON_COPYABLE(TypedStorageGuard);
+            private:
+                TypedStorage<T> &m_ts;
+                bool m_active;
+            public:
+                template<typename... Args>
+                constexpr ALWAYS_INLINE TypedStorageGuard(TypedStorage<T> &ts, Args &&... args) : m_ts(ts), m_active(true) {
+                    ConstructAt(m_ts, std::forward<Args>(args)...);
+                }
+
+                ALWAYS_INLINE ~TypedStorageGuard() { if (m_active) { DestroyAt(m_ts); } }
+
+                ALWAYS_INLINE void Cancel() { m_active = false; }
+
+                ALWAYS_INLINE TypedStorageGuard(TypedStorageGuard&& rhs) : m_ts(rhs.m_ts), m_active(rhs.m_active) {
+                    rhs.Cancel();
+                }
+
+                TypedStorageGuard &operator=(TypedStorageGuard&& rhs) = delete;
+        };
+
+    }
+
+    template<typename T, typename... Args>
+    static constexpr ALWAYS_INLINE impl::TypedStorageGuard<T> ConstructAtGuarded(TypedStorage<T> &ts, Args &&... args) {
+        return impl::TypedStorageGuard<T>(ts, std::forward<Args>(args)...);
+    }
+
 }

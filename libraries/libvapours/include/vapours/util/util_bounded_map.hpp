@@ -29,7 +29,7 @@ namespace ams::util {
         private:
             ALWAYS_INLINE void FreeEntry(size_t i) {
                 this->keys[i].reset();
-                GetReference(this->values[i]).~Value();
+                DestroyAt(this->values[i]);
             }
         public:
             constexpr BoundedMap() : keys(), values() { /* ... */ }
@@ -78,7 +78,7 @@ namespace ams::util {
                 for (size_t i = 0; i < N; i++) {
                     if (!this->keys[i]) {
                         this->keys[i] = key;
-                        new (GetPointer(this->values[i])) Value(std::move(value));
+                        ConstructAt(this->values[i], std::forward<Value>(value));
                         return true;
                     }
                 }
@@ -90,7 +90,7 @@ namespace ams::util {
                 /* Try to find and assign an existing value. */
                 for (size_t i = 0; i < N; i++) {
                     if (this->keys[i] && this->keys[i].value() == key) {
-                        GetReference(this->values[i]) = std::move(value);
+                        GetReference(this->values[i]) = std::forward<Value>(value);
                         return true;
                     }
                 }
@@ -99,7 +99,7 @@ namespace ams::util {
                 for (size_t i = 0; i < N; i++) {
                     if (!this->keys[i]) {
                         this->keys[i] = key;
-                        new (GetPointer(this->values[i])) Value(std::move(value));
+                        ConstructAt(this->values[i], std::move(value));
                         return true;
                     }
                 }
@@ -118,7 +118,7 @@ namespace ams::util {
                 for (size_t i = 0; i < N; i++) {
                     if (!this->keys[i]) {
                         this->keys[i] = key;
-                        new (GetPointer(this->values[i])) Value(std::forward<Args>(args)...);
+                        ConstructAt(this->values[i], std::forward<Args>(args)...);
                         return true;
                     }
                 }

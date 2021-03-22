@@ -42,9 +42,9 @@ namespace ams::mem::impl::heap {
             this->start  = aligned_start;
             this->end    = aligned_end;
             this->option = option;
-            this->tls_heap_central = new (this->start) TlsHeapCentral;
+            this->tls_heap_central = std::construct_at(reinterpret_cast<TlsHeapCentral *>(this->start));
             if (auto err = this->tls_heap_central->Initialize(this->start, this->end - this->start, false); err != 0) {
-                this->tls_heap_central->~TlsHeapCentral();
+                std::destroy_at(this->tls_heap_central);
                 this->tls_heap_central = nullptr;
                 AMS_ASSERT(err == 0);
                 return err;
@@ -70,9 +70,9 @@ namespace ams::mem::impl::heap {
             if (auto err = AllocatePhysicalMemory(central, sizeof(TlsHeapCentral)); err != 0) {
                 return err;
             }
-            this->tls_heap_central = new (central) TlsHeapCentral;
+            this->tls_heap_central = std::construct_at(static_cast<TlsHeapCentral *>(central));
             if (auto err = this->tls_heap_central->Initialize(central, size, true); err != 0) {
-                this->tls_heap_central->~TlsHeapCentral();
+                std::destroy_at(this->tls_heap_central);
                 this->tls_heap_central = nullptr;
                 AMS_ASSERT(err == 0);
                 return err;
@@ -85,7 +85,7 @@ namespace ams::mem::impl::heap {
 
     void CentralHeap::Finalize() {
         if (this->tls_heap_central) {
-            this->tls_heap_central->~TlsHeapCentral();
+            std::destroy_at(this->tls_heap_central);
         }
         if (this->use_virtual_memory) {
             mem::impl::physical_free(util::AlignUp(static_cast<void *>(this->start), PageSize), this->end - this->start);
@@ -249,7 +249,7 @@ namespace ams::mem::impl::heap {
             return false;
         }
 
-        new (tls_heap_cache) TlsHeapCache(this->tls_heap_central, this->option);
+        std::construct_at(static_cast<TlsHeapCache *>(tls_heap_cache), this->tls_heap_central, this->option);
         if (this->tls_heap_central->AddThreadCache(reinterpret_cast<TlsHeapCache *>(tls_heap_cache)) != 0) {
             this->tls_heap_central->UncacheSmallMemory(tls_heap_cache);
             return false;

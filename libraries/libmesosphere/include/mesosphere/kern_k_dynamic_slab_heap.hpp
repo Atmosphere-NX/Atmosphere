@@ -113,7 +113,7 @@ namespace ams::kern {
 
                 if (AMS_LIKELY(allocated != nullptr)) {
                     /* Construct the object. */
-                    new (allocated) T();
+                    std::construct_at(allocated);
 
                     /* Update our tracking. */
                     size_t used = m_used.fetch_add(1) + 1;

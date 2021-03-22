@@ -22,7 +22,7 @@ namespace ams::os {
 
     void InitializeConditionVariable(ConditionVariableType *cv) {
         /* Construct object. */
-        new (GetPointer(cv->_storage)) impl::InternalConditionVariable;
+        util::ConstructAt(cv->_storage);
 
         /* Mark initialized. */
         cv->state = ConditionVariableType::State_Initialized;
@@ -35,7 +35,7 @@ namespace ams::os {
         cv->state = ConditionVariableType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(cv->_storage).~InternalConditionVariable();
+        util::DestroyAt(cv->_storage);
     }
 
     void SignalConditionVariable(ConditionVariableType *cv) {

@@ -112,13 +112,13 @@ namespace ams::os {
         AMS_ASSERT(count >= 1);
 
         /* Setup objects. */
-        new (GetPointer(mq->cs_queue))     impl::InternalCriticalSection;
-        new (GetPointer(mq->cv_not_full))  impl::InternalConditionVariable;
-        new (GetPointer(mq->cv_not_empty)) impl::InternalConditionVariable;
+        util::ConstructAt(mq->cs_queue);
+        util::ConstructAt(mq->cv_not_full);
+        util::ConstructAt(mq->cv_not_empty);
 
         /* Setup wait lists. */
-        new (GetPointer(mq->waitlist_not_empty)) impl::WaitableObjectList;
-        new (GetPointer(mq->waitlist_not_full))  impl::WaitableObjectList;
+        util::ConstructAt(mq->waitlist_not_empty);
+        util::ConstructAt(mq->waitlist_not_full);
 
         /* Set member variables. */
         mq->buffer   = buffer;
@@ -140,13 +140,13 @@ namespace ams::os {
         mq->state = MessageQueueType::State_NotInitialized;
 
         /* Destroy wait lists. */
-        GetReference(mq->waitlist_not_empty).~WaitableObjectList();
-        GetReference(mq->waitlist_not_full).~WaitableObjectList();
+        util::DestroyAt(mq->waitlist_not_empty);
+        util::DestroyAt(mq->waitlist_not_full);
 
         /* Destroy objects. */
-        GetReference(mq->cv_not_empty).~InternalConditionVariable();
-        GetReference(mq->cv_not_full).~InternalConditionVariable();
-        GetReference(mq->cs_queue).~InternalCriticalSection();
+        util::DestroyAt(mq->cv_not_empty);
+        util::DestroyAt(mq->cv_not_full);
+        util::DestroyAt(mq->cs_queue);
     }
 
     /* Sending (FIFO functionality) */

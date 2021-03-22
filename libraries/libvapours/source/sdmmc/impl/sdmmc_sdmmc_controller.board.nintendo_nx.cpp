@@ -1085,7 +1085,7 @@ namespace ams::sdmmc::impl {
         /* This initializes a lot of globals in pcv, most of which we don't care about. */
         /* However, we do care about the Sdmmc1PowerController. */
         AMS_ABORT_UNLESS(this->power_controller == nullptr);
-        this->power_controller = new (GetPointer(this->power_controller_storage)) PowerController;
+        this->power_controller = util::ConstructAt(this->power_controller_storage);
 
         /* Perform base initialization. */
         SdmmcController::Initialize();
@@ -1099,8 +1099,8 @@ namespace ams::sdmmc::impl {
         /* As with initialize, we mostly don't care about the globals this touches. */
         /* However, we do want to finalize the Sdmmc1PowerController. */
         AMS_ABORT_UNLESS(this->power_controller != nullptr);
-        this->power_controller->~PowerController();
         this->power_controller = nullptr;
+        util::DestroyAt(this->power_controller_storage);
 
         /* pinmux::CloseSession(std::addressof(this->pinmux_session)); */
         /* This does nothing. */

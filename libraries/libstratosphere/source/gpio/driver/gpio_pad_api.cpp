@@ -23,8 +23,8 @@ namespace ams::gpio::driver {
 
         Result OpenSessionImpl(GpioPadSession *out, Pad *pad, ddsf::AccessMode access_mode) {
             /* Construct the session. */
-            auto *session = new (std::addressof(impl::GetPadSessionImpl(*out))) impl::PadSessionImpl;
-            auto session_guard = SCOPE_GUARD { session->~PadSessionImpl(); };
+            auto *session = std::construct_at(std::addressof(impl::GetPadSessionImpl(*out)));
+            auto session_guard = SCOPE_GUARD { std::destroy_at(session); };
 
             /* Open the session. */
             R_TRY(session->Open(pad, access_mode));
@@ -59,7 +59,7 @@ namespace ams::gpio::driver {
 
     void CloseSession(GpioPadSession *session) {
         AMS_ASSERT(session != nullptr);
-        impl::GetOpenPadSessionImpl(*session).~PadSessionImpl();
+        std::destroy_at(std::addressof(impl::GetOpenPadSessionImpl(*session)));
     }
 
     Result SetDirection(GpioPadSession *session, gpio::Direction direction) {

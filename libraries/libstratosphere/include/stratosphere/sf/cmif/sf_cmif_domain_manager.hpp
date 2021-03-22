@@ -127,7 +127,8 @@ namespace ams::sf::cmif {
                 if (storage == nullptr) {
                     return nullptr;
                 }
-                return new (storage) Domain(this);
+
+                return std::construct_at(static_cast<Domain *>(storage), this);
             }
         public:
             static void DestroyDomainServiceObject(DomainServiceObject *obj) {

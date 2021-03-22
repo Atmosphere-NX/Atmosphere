@@ -21,9 +21,9 @@ namespace ams::os {
 
     void InitalizeReadWriteLock(ReadWriteLockType *rw_lock) {
         /* Create objects. */
-        new (GetPointer(impl::GetLockCount(rw_lock).cs_storage)) impl::InternalCriticalSection;
-        new (GetPointer(rw_lock->cv_read_lock._storage))          impl::InternalConditionVariable;
-        new (GetPointer(rw_lock->cv_write_lock._storage))         impl::InternalConditionVariable;
+        util::ConstructAt(impl::GetLockCount(rw_lock).cs_storage);
+        util::ConstructAt(rw_lock->cv_read_lock._storage);
+        util::ConstructAt(rw_lock->cv_write_lock._storage);
 
         /* Set member variables. */
         impl::ClearReadLockCount(impl::GetLockCount(rw_lock));
@@ -48,9 +48,9 @@ namespace ams::os {
         rw_lock->state = ReadWriteLockType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(rw_lock->cv_write_lock._storage).~InternalConditionVariable();
-        GetReference(rw_lock->cv_read_lock._storage).~InternalConditionVariable();
-        GetReference(impl::GetLockCount(rw_lock).cs_storage).~InternalCriticalSection();
+        util::DestroyAt(rw_lock->cv_write_lock._storage);
+        util::DestroyAt(rw_lock->cv_read_lock._storage);
+        util::DestroyAt(impl::GetLockCount(rw_lock).cs_storage);
     }
 
     void AcquireReadLock(ReadWriteLockType *rw_lock) {

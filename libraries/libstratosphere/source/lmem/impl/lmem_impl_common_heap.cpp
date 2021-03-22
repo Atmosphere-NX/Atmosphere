@@ -30,8 +30,8 @@ namespace ams::lmem::impl {
 
     void InitializeHeapHead(HeapHead *out, u32 magic, void *start, void *end, u32 option) {
         /* Call member constructors. */
-        new (&out->list_node)  util::IntrusiveListNode;
-        new (&out->child_list) decltype(out->child_list);
+        std::construct_at(std::addressof(out->list_node));
+        std::construct_at(std::addressof(out->child_list));
 
         /* Set fields. */
         out->magic = magic;

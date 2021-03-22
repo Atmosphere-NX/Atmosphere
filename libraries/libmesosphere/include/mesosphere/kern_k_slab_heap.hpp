@@ -216,7 +216,7 @@ namespace ams::kern {
             T *Allocate() {
                 T *obj = reinterpret_cast<T *>(this->AllocateImpl());
                 if (AMS_LIKELY(obj != nullptr)) {
-                    new (obj) T();
+                    std::construct_at(obj);
                 }
                 return obj;
             }

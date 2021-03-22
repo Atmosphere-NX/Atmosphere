@@ -102,8 +102,8 @@ namespace ams::fssystem {
         InitializeExpHeap();
 
         /* Initialize buffer allocator. */
-        new (GetPointer(g_buffer_allocator)) mem::StandardAllocator(g_buffer_pool, BufferPoolSize);
-        new (GetPointer(g_allocator))        fssrv::MemoryResourceFromStandardAllocator(GetPointer(g_buffer_allocator));
+        util::ConstructAt(g_buffer_allocator, g_buffer_pool, BufferPoolSize);
+        util::ConstructAt(g_allocator, GetPointer(g_buffer_allocator));
 
         /* Set allocators. */
         fs::SetAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
@@ -111,7 +111,7 @@ namespace ams::fssystem {
 
         /* Initialize the buffer manager. */
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
-        new (GetPointer(g_buffer_manager)) fssystem::FileSystemBufferManager;
+        util::ConstructAt(g_buffer_manager);
         GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
 
         /* TODO FS-REIMPL: Memory Report Creators, fssrv::SetMemoryReportCreator */
@@ -119,9 +119,9 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: Create Pooled Threads, fssystem::RegisterThreadPool. */
 
         /* Initialize fs creators. */
-        new (GetPointer(g_rom_fs_creator))         fssrv::fscreator::RomFileSystemCreator(GetPointer(g_allocator));
-        new (GetPointer(g_partition_fs_creator))   fssrv::fscreator::PartitionFileSystemCreator;
-        new (GetPointer(g_storage_on_nca_creator)) fssrv::fscreator::StorageOnNcaCreator(GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), is_prod, GetPointer(g_buffer_manager));
+        util::ConstructAt(g_rom_fs_creator, GetPointer(g_allocator));
+        util::ConstructAt(g_partition_fs_creator);
+        util::ConstructAt(g_storage_on_nca_creator, GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), is_prod, GetPointer(g_buffer_manager));
 
         /* TODO FS-REIMPL: Initialize other creators. */
 

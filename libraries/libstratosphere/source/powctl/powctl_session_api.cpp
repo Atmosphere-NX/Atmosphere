@@ -38,7 +38,7 @@ namespace ams::powctl {
         }
 
         void DestroySession(Session &session) {
-            GetSessionImpl(session).~SessionImpl();
+            std::destroy_at(std::addressof(GetSessionImpl(session)));
             session.has_session = false;
         }
 
@@ -69,11 +69,11 @@ namespace ams::powctl {
         DestroySessionIfNecessary(*out);
 
         /* Construct the session. */
-        new (std::addressof(GetSessionImpl(*out))) impl::SessionImpl;
+        auto *session = std::construct_at(std::addressof(GetSessionImpl(*out)));
         auto guard = SCOPE_GUARD { DestroySessionIfNecessary(*out); };
 
         /* Try to open the session. */
-        R_TRY(ddsf::OpenSession(device, std::addressof(GetSessionImpl(*out)), access_mode));
+        R_TRY(ddsf::OpenSession(device, session, access_mode));
 
         /* We opened the session! */
         guard.Cancel();

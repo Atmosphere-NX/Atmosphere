@@ -70,7 +70,8 @@ namespace ams::sf::hipc {
 
     void ServerSessionManager::DestroySession(ServerSession *session) {
         /* Destroy object. */
-        session->~ServerSession();
+        std::destroy_at(session);
+
         /* Free object memory. */
         this->FreeSession(session);
     }
@@ -84,10 +85,12 @@ namespace ams::sf::hipc {
 
     Result ServerSessionManager::RegisterSessionImpl(ServerSession *session_memory, Handle session_handle, cmif::ServiceObjectHolder &&obj) {
         /* Create session object. */
-        new (session_memory) ServerSession(session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+        std::construct_at(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+
         /* Assign session resources. */
         session_memory->pointer_buffer = this->GetSessionPointerBuffer(session_memory);
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
+
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
         return ResultSuccess();
@@ -97,27 +100,28 @@ namespace ams::sf::hipc {
         /* Create session handle. */
         Handle session_handle;
         R_TRY(svcAcceptSession(&session_handle, port_handle));
-        bool succeeded = false;
-        ON_SCOPE_EXIT {
-            if (!succeeded) {
-                R_ABORT_UNLESS(svcCloseHandle(session_handle));
-            }
-        };
+
+        auto session_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(session_handle)); };
+
         /* Register session. */
         R_TRY(this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
-        succeeded = true;
+
+        session_guard.Cancel();
         return ResultSuccess();
     }
 
     Result ServerSessionManager::RegisterMitmSessionImpl(ServerSession *session_memory, Handle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* Create session object. */
-        new (session_memory) ServerSession(mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+        std::construct_at(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+
         /* Assign session resources. */
         session_memory->pointer_buffer = this->GetSessionPointerBuffer(session_memory);
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
+
         /* Validate session pointer buffer. */
         AMS_ABORT_UNLESS(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
         session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
+
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
         return ResultSuccess();
@@ -127,15 +131,13 @@ namespace ams::sf::hipc {
         /* Create session handle. */
         Handle mitm_session_handle;
         R_TRY(svcAcceptSession(&mitm_session_handle, mitm_port_handle));
-        bool succeeded = false;
-        ON_SCOPE_EXIT {
-            if (!succeeded) {
-                R_ABORT_UNLESS(svcCloseHandle(mitm_session_handle));
-            }
-        };
+
+        auto session_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(mitm_session_handle)); };
+
         /* Register session. */
         R_TRY(this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
-        succeeded = true;
+
+        session_guard.Cancel();
         return ResultSuccess();
     }
 

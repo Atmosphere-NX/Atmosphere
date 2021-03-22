@@ -36,6 +36,8 @@ namespace ams::util {
                 ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
                     rhs.Cancel();
                 }
+
+                ScopeGuard &operator=(ScopeGuard&& rhs) = delete;
         };
 
         template<class F>

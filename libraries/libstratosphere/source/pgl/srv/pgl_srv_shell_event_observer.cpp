@@ -22,13 +22,12 @@ namespace ams::pgl::srv {
     ShellEventObserver::ShellEventObserver() : message_queue(queue_buffer, QueueCapacity), event(os::EventClearMode_AutoClear, true) {
         this->heap_handle = lmem::CreateUnitHeap(this->event_info_data, sizeof(this->event_info_data), sizeof(this->event_info_data[0]), lmem::CreateOption_ThreadSafe, 8, GetPointer(this->heap_head));
 
-        new (GetPointer(this->holder)) ShellEventObserverHolder(this);
-        RegisterShellEventObserver(GetPointer(this->holder));
+        RegisterShellEventObserver(util::ConstructAt(this->holder, this));
     }
 
     ShellEventObserver::~ShellEventObserver() {
         UnregisterShellEventObserver(GetPointer(this->holder));
-        GetReference(this->holder).~ShellEventObserverHolder();
+        util::DestroyAt(this->holder);
     }
 
     Result ShellEventObserver::PopEventInfo(pm::ProcessEventInfo *out) {

@@ -732,12 +732,12 @@ namespace ams::sf::impl {
             template<size_t Index, typename Interface>
             SharedPointer<Interface> *GetOutObjectSharedPointer() {
                 static_assert(sizeof(SharedPointer<Interface>) == sizeof(SharedPointer<sf::IServiceObject>));
-                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(&out_shared_pointers[Index]));
+                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(GetPointer(out_shared_pointers[Index])));
             }
 
             template<size_t Index, typename Interface>
             Out<SharedPointer<Interface>> GetOutObject() {
-                auto sp = new (GetOutObjectSharedPointer<Index, Interface>()) SharedPointer<Interface>;
+                auto sp = std::construct_at(GetOutObjectSharedPointer<Index, Interface>());
                 return Out<SharedPointer<Interface>>(sp, &this->out_object_ids[Index]);
             }
 
