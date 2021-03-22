@@ -78,7 +78,7 @@ namespace ams::pm::impl {
             NON_MOVEABLE(ProcessInfoAllocator);
             static_assert(MaxProcessInfos >= 0x40, "MaxProcessInfos is too small.");
             private:
-                TYPED_STORAGE(ProcessInfo) process_info_storages[MaxProcessInfos];
+                util::TypedStorage<ProcessInfo> process_info_storages[MaxProcessInfos];
                 bool process_info_allocated[MaxProcessInfos];
                 os::Mutex lock;
             private:

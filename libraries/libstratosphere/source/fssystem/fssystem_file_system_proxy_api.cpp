@@ -68,19 +68,19 @@ namespace ams::fssystem {
         alignas(os::MemoryPageSize) u8 g_device_buffer[DeviceBufferSize];
 
         alignas(os::MemoryPageSize) u8 g_buffer_pool[BufferPoolSize];
-        TYPED_STORAGE(mem::StandardAllocator) g_buffer_allocator;
-        TYPED_STORAGE(fssrv::MemoryResourceFromStandardAllocator) g_allocator;
+        util::TypedStorage<mem::StandardAllocator> g_buffer_allocator;
+        util::TypedStorage<fssrv::MemoryResourceFromStandardAllocator> g_allocator;
 
         /* TODO: Nintendo uses os::SetMemoryHeapSize (svc::SetHeapSize) and os::AllocateMemoryBlock for the BufferManager heap. */
         /* It's unclear how we should handle this in ams.mitm (especially hoping to reuse some logic for fs reimpl). */
         /* Should we be doing the same(?) */
-        TYPED_STORAGE(fssystem::FileSystemBufferManager) g_buffer_manager;
+        util::TypedStorage<fssystem::FileSystemBufferManager> g_buffer_manager;
         alignas(os::MemoryPageSize) u8 g_buffer_manager_heap[BufferManagerHeapSize];
 
         /* FileSystem creators. */
-        TYPED_STORAGE(fssrv::fscreator::RomFileSystemCreator)       g_rom_fs_creator;
-        TYPED_STORAGE(fssrv::fscreator::PartitionFileSystemCreator) g_partition_fs_creator;
-        TYPED_STORAGE(fssrv::fscreator::StorageOnNcaCreator)        g_storage_on_nca_creator;
+        util::TypedStorage<fssrv::fscreator::RomFileSystemCreator>       g_rom_fs_creator;
+        util::TypedStorage<fssrv::fscreator::PartitionFileSystemCreator> g_partition_fs_creator;
+        util::TypedStorage<fssrv::fscreator::StorageOnNcaCreator>        g_storage_on_nca_creator;
 
         fssrv::fscreator::FileSystemCreatorInterfaces g_fs_creator_interfaces = {};
 

@@ -684,7 +684,7 @@ namespace ams::sf::impl {
         private:
             std::array<cmif::ServiceObjectHolder, NumInObjects> in_object_holders;
             std::array<cmif::ServiceObjectHolder, NumOutObjects> out_object_holders;
-            std::array<TYPED_STORAGE(SharedPointer<sf::IServiceObject>), NumOutObjects> out_shared_pointers;
+            std::array<util::TypedStorage<SharedPointer<sf::IServiceObject>>, NumOutObjects> out_shared_pointers;
             std::array<cmif::DomainObjectId, NumOutObjects> out_object_ids;
         public:
             constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() {

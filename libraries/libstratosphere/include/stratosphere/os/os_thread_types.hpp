@@ -44,7 +44,7 @@ namespace ams::os {
             State_Terminated             = 4,
         };
 
-        TYPED_STORAGE(util::IntrusiveListNode) all_threads_node;
+        util::TypedStorage<util::IntrusiveListNode> all_threads_node;
         util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
         uintptr_t reserved[4];
         u8 state;

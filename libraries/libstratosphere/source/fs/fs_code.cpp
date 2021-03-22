@@ -23,8 +23,8 @@ namespace ams::fs {
         constinit os::SdkMutex g_mount_stratosphere_romfs_lock;
         constinit bool g_mounted_stratosphere_romfs = false;
 
-        constinit TYPED_STORAGE(FileHandleStorage) g_stratosphere_romfs_storage = {};
-        constinit TYPED_STORAGE(RomFsFileSystem) g_stratosphere_romfs_fs = {};
+        constinit util::TypedStorage<FileHandleStorage> g_stratosphere_romfs_storage = {};
+        constinit util::TypedStorage<RomFsFileSystem> g_stratosphere_romfs_fs = {};
 
         Result EnsureStratosphereRomfsMounted() {
             std::scoped_lock lk(g_mount_stratosphere_romfs_lock);

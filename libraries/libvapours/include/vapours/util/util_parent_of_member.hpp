@@ -63,7 +63,7 @@ namespace ams::util {
                 union Union {
                     char c;
                     UnionHolder first_union;
-                    TYPED_STORAGE(ParentType) parent;
+                    TypedStorage<ParentType> parent;
 
                     /* This coerces the active member to be c. */
                     constexpr Union() : c() { /* ... */ }
@@ -110,7 +110,7 @@ namespace ams::util {
             template<typename ParentType, typename MemberType>
             struct OffsetOfCalculator {
                 static constexpr std::ptrdiff_t OffsetOf(MemberType ParentType::*member) {
-                    constexpr TYPED_STORAGE(ParentType) Holder = {};
+                    constexpr TypedStorage<ParentType> Holder = {};
                     const auto *parent = GetPointer(Holder);
                     const auto *target = std::addressof(parent->*member);
                     return static_cast<const uint8_t *>(static_cast<const void *>(target)) - static_cast<const uint8_t *>(static_cast<const void *>(parent));

@@ -42,7 +42,7 @@ namespace ams::os::impl {
 
     class ResourceManagerHolder {
         private:
-            static TYPED_STORAGE(OsResourceManager) s_resource_manager_storage;
+            static util::TypedStorage<OsResourceManager> s_resource_manager_storage;
         private:
             constexpr ResourceManagerHolder() { /* ... */ }
         public:

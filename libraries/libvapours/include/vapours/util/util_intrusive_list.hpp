@@ -569,7 +569,7 @@ namespace ams::util {
                 return util::GetParentReference<Member, Derived>(&node);
             }
         private:
-            static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
+            static constexpr TypedStorage<Derived> DerivedStorage = {};
             static_assert(std::addressof(GetParent(GetNode(GetReference(DerivedStorage)))) == GetPointer(DerivedStorage));
     };
 
@@ -582,7 +582,7 @@ namespace ams::util {
             using ListType = IntrusiveList<Derived, IntrusiveListMemberTraitsDeferredAssert>;
 
             static constexpr bool IsValid() {
-                TYPED_STORAGE(Derived) DerivedStorage = {};
+                TypedStorage<Derived> DerivedStorage = {};
                 return std::addressof(GetParent(GetNode(GetReference(DerivedStorage)))) == GetPointer(DerivedStorage);
             }
         private:

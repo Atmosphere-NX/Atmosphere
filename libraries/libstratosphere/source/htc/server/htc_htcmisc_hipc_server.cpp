@@ -28,7 +28,7 @@ namespace ams::htc::server {
         using ServerOptions = sf::hipc::DefaultServerManagerOptions;
         using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
 
-        constinit TYPED_STORAGE(ServerManager) g_server_manager_storage;
+        constinit util::TypedStorage<ServerManager> g_server_manager_storage;
         constinit ServerManager *g_server_manager = nullptr;
 
         constinit HtcmiscImpl *g_misc_impl = nullptr;

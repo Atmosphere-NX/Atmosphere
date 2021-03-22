@@ -41,10 +41,10 @@ namespace ams::pgl::srv {
             os::MessageQueue message_queue;
             uintptr_t queue_buffer[QueueCapacity];
             os::SystemEvent event;
-            TYPED_STORAGE(lmem::HeapCommonHead) heap_head;
+            util::TypedStorage<lmem::HeapCommonHead> heap_head;
             lmem::HeapHandle heap_handle;
             pm::ProcessEventInfo event_info_data[QueueCapacity];
-            TYPED_STORAGE(ShellEventObserverHolder) holder;
+            util::TypedStorage<ShellEventObserverHolder> holder;
         public:
             ShellEventObserver();
             ~ShellEventObserver();

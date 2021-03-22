@@ -50,7 +50,7 @@ namespace ams::sf::hipc::impl {
         constinit os::ThreadType g_query_server_process_thread;
 
         constexpr size_t MaxServers = 0;
-        TYPED_STORAGE(sf::hipc::ServerManager<MaxServers>) g_query_server_storage;
+        util::TypedStorage<sf::hipc::ServerManager<MaxServers>> g_query_server_storage;
 
     }
 

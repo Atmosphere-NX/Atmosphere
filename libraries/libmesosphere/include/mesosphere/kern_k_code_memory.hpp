@@ -23,7 +23,7 @@ namespace ams::kern {
     class KCodeMemory final : public KAutoObjectWithSlabHeapAndContainer<KCodeMemory, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KCodeMemory, KAutoObject);
         private:
-            TYPED_STORAGE(KPageGroup) m_page_group;
+            util::TypedStorage<KPageGroup> m_page_group;
             KProcess *m_owner;
             KProcessAddress m_address;
             KLightLock m_lock;

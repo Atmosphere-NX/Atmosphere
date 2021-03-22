@@ -1148,7 +1148,7 @@ namespace ams::dmnt::cheat::impl {
 
 
         /* Manager global. */
-        TYPED_STORAGE(CheatProcessManager) g_cheat_process_manager;
+        util::TypedStorage<CheatProcessManager> g_cheat_process_manager;
 
     }
 

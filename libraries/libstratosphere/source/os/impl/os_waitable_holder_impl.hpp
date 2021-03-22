@@ -27,15 +27,15 @@ namespace ams::os::impl {
 
     struct WaitableHolderImpl {
         union {
-            TYPED_STORAGE(WaitableHolderOfHandle)                   holder_of_handle_storage;
-            TYPED_STORAGE(WaitableHolderOfEvent)                    holder_of_event_storage;
-            TYPED_STORAGE(WaitableHolderOfInterProcessEvent)        holder_of_inter_process_event_storage;
-            TYPED_STORAGE(WaitableHolderOfInterruptEvent)           holder_of_interrupt_event_storage;
-            TYPED_STORAGE(WaitableHolderOfTimerEvent)               holder_of_timer_event_storage;
-            TYPED_STORAGE(WaitableHolderOfThread)                   holder_of_thread_storage;
-            TYPED_STORAGE(WaitableHolderOfSemaphore)                holder_of_semaphore_storage;
-            TYPED_STORAGE(WaitableHolderOfMessageQueueForNotFull)   holder_of_mq_for_not_full_storage;
-            TYPED_STORAGE(WaitableHolderOfMessageQueueForNotEmpty)  holder_of_mq_for_not_empty_storage;
+            util::TypedStorage<WaitableHolderOfHandle>                   holder_of_handle_storage;
+            util::TypedStorage<WaitableHolderOfEvent>                    holder_of_event_storage;
+            util::TypedStorage<WaitableHolderOfInterProcessEvent>        holder_of_inter_process_event_storage;
+            util::TypedStorage<WaitableHolderOfInterruptEvent>           holder_of_interrupt_event_storage;
+            util::TypedStorage<WaitableHolderOfTimerEvent>               holder_of_timer_event_storage;
+            util::TypedStorage<WaitableHolderOfThread>                   holder_of_thread_storage;
+            util::TypedStorage<WaitableHolderOfSemaphore>                holder_of_semaphore_storage;
+            util::TypedStorage<WaitableHolderOfMessageQueueForNotFull>   holder_of_mq_for_not_full_storage;
+            util::TypedStorage<WaitableHolderOfMessageQueueForNotEmpty>  holder_of_mq_for_not_empty_storage;
         };
     };
 

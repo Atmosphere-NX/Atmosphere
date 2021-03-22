@@ -25,7 +25,7 @@ namespace ams::util {
     class BoundedMap {
         private:
             std::array<std::optional<Key>, N> keys;
-            std::array<TYPED_STORAGE(Value), N> values;
+            std::array<TypedStorage<Value>, N> values;
         private:
             ALWAYS_INLINE void FreeEntry(size_t i) {
                 this->keys[i].reset();

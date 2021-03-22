@@ -49,7 +49,7 @@ namespace ams::ddsf {
         NON_MOVEABLE(DeviceCodeEntryHolder);
         private:
             util::IntrusiveListNode list_node;
-            TYPED_STORAGE(DeviceCodeEntry) entry_storage;
+            util::TypedStorage<DeviceCodeEntry> entry_storage;
             bool is_constructed;
         public:
             using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::list_node>;

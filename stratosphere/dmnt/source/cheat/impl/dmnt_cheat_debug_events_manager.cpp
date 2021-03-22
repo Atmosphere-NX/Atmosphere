@@ -143,7 +143,7 @@ namespace ams::dmnt::cheat::impl {
         };
 
         /* Manager global. */
-        TYPED_STORAGE(DebugEventsManager) g_events_manager;
+        util::TypedStorage<DebugEventsManager> g_events_manager;
 
     }
 

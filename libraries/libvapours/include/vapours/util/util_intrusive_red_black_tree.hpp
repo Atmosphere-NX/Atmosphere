@@ -498,7 +498,7 @@ namespace ams::util {
                 return util::GetParentPointer<Member, Derived>(node);
             }
         private:
-            static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
+            static constexpr TypedStorage<Derived> DerivedStorage = {};
             static_assert(GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage));
     };
 
@@ -513,7 +513,7 @@ namespace ams::util {
             using TreeTypeImpl = impl::IntrusiveRedBlackTreeImpl;
 
             static constexpr bool IsValid() {
-                TYPED_STORAGE(Derived) DerivedStorage = {};
+                TypedStorage<Derived> DerivedStorage = {};
                 return GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage);
             }
         private:

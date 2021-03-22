@@ -35,7 +35,7 @@ namespace ams::htclow::mux {
             os::Event *m_event;
             u8 m_map_buffer[MapRequiredMemorySize];
             MapType m_map;
-            TYPED_STORAGE(ChannelImpl) m_channel_storage[MaxChannelCount];
+            util::TypedStorage<ChannelImpl> m_channel_storage[MaxChannelCount];
             bool m_storage_valid[MaxChannelCount];
         public:
             ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);

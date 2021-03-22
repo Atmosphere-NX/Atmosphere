@@ -260,9 +260,9 @@ namespace ams::sf::hipc {
         private:
             /* Resource storage. */
             os::Mutex resource_mutex;
-            TYPED_STORAGE(Server) server_storages[MaxServers];
+            util::TypedStorage<Server> server_storages[MaxServers];
             bool server_allocated[MaxServers];
-            TYPED_STORAGE(ServerSession) session_storages[MaxSessions];
+            util::TypedStorage<ServerSession> session_storages[MaxSessions];
             bool session_allocated[MaxSessions];
             u8 pointer_buffer_storage[0x10 + (MaxSessions * ManagerOptions::PointerBufferSize)];
             u8 saved_message_storage[0x10 + (MaxSessions * hipc::TlsMessageBufferSize)];

@@ -77,8 +77,8 @@ namespace ams::sf::cmif {
                     virtual ServiceObjectHolder GetObject(DomainObjectId id) override final;
             };
         public:
-            using DomainEntryStorage  = TYPED_STORAGE(Entry);
-            using DomainStorage = TYPED_STORAGE(Domain);
+            using DomainEntryStorage  = util::TypedStorage<Entry>;
+            using DomainStorage       = util::TypedStorage<Domain>;
         private:
             class EntryManager {
                 private:

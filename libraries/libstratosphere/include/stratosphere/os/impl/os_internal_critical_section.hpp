@@ -57,6 +57,6 @@ namespace ams::os::impl {
             }
     };
 
-    using InternalCriticalSectionStorage = TYPED_STORAGE(InternalCriticalSection);
+    using InternalCriticalSectionStorage = util::TypedStorage<InternalCriticalSection>;
 
 }
