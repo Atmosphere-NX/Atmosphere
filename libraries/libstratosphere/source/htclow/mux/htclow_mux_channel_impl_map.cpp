@@ -56,7 +56,7 @@ namespace ams::htclow::mux {
         R_UNLESS(idx < MaxChannelCount, htclow::ResultOutOfChannel());
 
         /* Create the channel impl. */
-        std::construct_at(GetPointer(m_channel_storage[idx]), channel, m_packet_factory, m_state_machine, m_task_manager, m_event);
+        util::ConstructAt(m_channel_storage[idx], channel, m_packet_factory, m_state_machine, m_task_manager, m_event);
 
         /* Mark the storage valid. */
         m_storage_valid[idx] = true;

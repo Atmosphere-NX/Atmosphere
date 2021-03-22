@@ -40,12 +40,10 @@ namespace ams::fs {
 
                 /* Setup the storage. */
                 /* NOTE: This owns the file, and so on failure it will be closed appropriately. */
-                std::construct_at(GetPointer(g_stratosphere_romfs_storage), stratosphere_romfs_file, true);
-                auto storage_guard = SCOPE_GUARD { std::destroy_at(GetPointer(g_stratosphere_romfs_storage)); };
+                auto storage_guard = util::ConstructAtGuarded(g_stratosphere_romfs_storage, stratosphere_romfs_file, true);
 
                 /* Create the filesystem. */
-                std::construct_at(GetPointer(g_stratosphere_romfs_fs));
-                auto fs_guard = SCOPE_GUARD { std::destroy_at(GetPointer(g_stratosphere_romfs_fs)); };
+                auto fs_guard = util::ConstructAtGuarded(g_stratosphere_romfs_fs);
 
                 /* Initialize the filesystem. */
                 R_TRY(GetReference(g_stratosphere_romfs_fs).Initialize(GetPointer(g_stratosphere_romfs_storage), nullptr, 0, false));

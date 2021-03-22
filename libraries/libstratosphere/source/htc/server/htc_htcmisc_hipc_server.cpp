@@ -39,11 +39,8 @@ namespace ams::htc::server {
         /* Check that we haven't already initialized. */
         AMS_ASSERT(g_server_manager == nullptr);
 
-        /* Create the server manager. */
-        std::construct_at(GetPointer(g_server_manager_storage));
-
-        /* Set the server manager pointer. */
-        g_server_manager = GetPointer(g_server_manager_storage);
+        /* Create/Set the server manager pointer. */
+        g_server_manager = util::ConstructAt(g_server_manager_storage);
 
         /* Create and register the htc manager object. */
         HtcServiceObject *service_object;
