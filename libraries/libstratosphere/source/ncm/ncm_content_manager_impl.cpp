@@ -214,7 +214,7 @@ namespace ams::ncm {
 
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
-        util::SNPrintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
+        util::SNPrintf(out->path, sizeof(out->path), "%s:", out->mount_name);
 
         return ResultSuccess();
     }
