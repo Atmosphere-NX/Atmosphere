@@ -70,6 +70,7 @@ namespace ams::kern {
             constexpr bool Is64Bit()                const { return (m_flags & (1 << 3)); }
             constexpr bool Is64BitAddressSpace()    const { return (m_flags & (1 << 4)); }
             constexpr bool UsesSecureMemory()       const { return (m_flags & (1 << 5)); }
+            constexpr bool IsImmortal()             const { return (m_flags & (1 << 6)); }
 
             constexpr u32 GetRxAddress()            const { return m_rx_address; }
             constexpr u32 GetRxSize()               const { return m_rx_size; }
@@ -117,6 +118,7 @@ namespace ams::kern {
             constexpr bool Is64Bit()                const { return m_kip_header->Is64Bit(); }
             constexpr bool Is64BitAddressSpace()    const { return m_kip_header->Is64BitAddressSpace(); }
             constexpr bool UsesSecureMemory()       const { return m_kip_header->UsesSecureMemory(); }
+            constexpr bool IsImmortal()             const { return m_kip_header->IsImmortal(); }
 
             bool Attach(u8 *bin) {
                 if (KInitialProcessHeader *header = reinterpret_cast<KInitialProcessHeader *>(bin); header->IsValid()) {

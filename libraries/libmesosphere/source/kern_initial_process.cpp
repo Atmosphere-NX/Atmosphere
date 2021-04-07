@@ -118,7 +118,7 @@ namespace ams::kern {
                         MESOSPHERE_ABORT_UNLESS(new_process != nullptr);
 
                         /* Initialize the process. */
-                        MESOSPHERE_R_ABORT_UNLESS(new_process->Initialize(params, pg, reader.GetCapabilities(), reader.GetNumCapabilities(), std::addressof(Kernel::GetSystemResourceLimit()), pool));
+                        MESOSPHERE_R_ABORT_UNLESS(new_process->Initialize(params, pg, reader.GetCapabilities(), reader.GetNumCapabilities(), std::addressof(Kernel::GetSystemResourceLimit()), pool, reader.IsImmortal()));
                     }
                 }
 

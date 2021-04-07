@@ -98,6 +98,7 @@ namespace ams::kern {
             SharedMemoryInfoList        m_shared_memory_list{};
             BetaList                    m_beta_list{};
             bool                        m_is_suspended{};
+            bool                        m_is_immortal{};
             bool                        m_is_jit_debug{};
             ams::svc::DebugEvent        m_jit_debug_event_type{};
             ams::svc::DebugException    m_jit_debug_exception_type{};
@@ -143,7 +144,7 @@ namespace ams::kern {
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
 
-            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal);
             Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
             void Exit();
 
