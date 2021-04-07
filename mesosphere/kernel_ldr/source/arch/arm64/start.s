@@ -89,7 +89,8 @@ _main:
     bl _ZN3ams4kern4init3Elf18CallInitArrayFuncsEmm
 
     /* Setup system registers, for detection of errors during init later. */
-    msr tpidr_el1, xzr /* Clear TPIDR_EL1 */
+    msr tpidr_el1, xzr
+    msr cntv_cval_el0, xzr
     adr x0, __external_references
     adr x1, _start
     ldr x0, [x0,  #0x30]

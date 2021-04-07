@@ -125,9 +125,6 @@ namespace ams::kern::init {
         /* Ensure our first argument is page aligned (as we will map it if it is non-zero). */
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(misc_unk_debug_phys_addr, PageSize));
 
-        /* Clear TPIDR_EL1 to zero. */
-        cpu::ThreadIdRegisterAccessor(0).Store();
-
         /* Restore the page allocator state setup by kernel loader. */
         g_initial_page_allocator.InitializeFromState(initial_page_allocator_state);
 
@@ -476,6 +473,7 @@ namespace ams::kern::init {
 
     void InitializeExceptionVectors() {
         cpu::SetVbarEl1(reinterpret_cast<uintptr_t>(::ams::kern::ExceptionVectors));
+        cpu::SetTpidrEl1(0);
         cpu::SetExceptionThreadStackTop(0);
         cpu::EnsureInstructionConsistency();
     }
