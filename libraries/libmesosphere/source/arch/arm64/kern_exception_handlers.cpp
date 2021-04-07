@@ -521,6 +521,11 @@ namespace ams::kern::arch::arm64 {
                 {
                     KScopedInterruptEnable ei;
 
+                    /* Terminate the thread, if we should. */
+                    if (GetCurrentThread().IsTerminationRequested()) {
+                        GetCurrentThread().Exit();
+                    }
+
                     HandleUserException(context, esr, far, afsr0, afsr1, data);
                 }
             } else {

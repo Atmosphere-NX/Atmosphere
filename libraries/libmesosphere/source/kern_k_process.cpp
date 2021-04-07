@@ -34,6 +34,13 @@ namespace ams::kern {
                 KScopedLightLock proc_lk(process->GetListLock());
                 KScopedSchedulerLock sl;
 
+                if (thread_to_not_terminate != nullptr && process->GetPinnedThread(GetCurrentCoreId()) == thread_to_not_terminate) {
+                    /* NOTE: Here Nintendo unpins the current thread instead of the thread_to_not_terminate. */
+                    /* This is valid because the only caller which uses non-nullptr as argument uses GetCurrentThreadPointer(), */
+                    /* but it's still notable because it seems incorrect at first glance. */
+                    process->UnpinCurrentThread();
+                }
+
                 auto &thread_list = process->GetThreadList();
                 for (auto it = thread_list.begin(); it != thread_list.end(); ++it) {
                     if (KThread *thread = std::addressof(*it); thread != thread_to_not_terminate) {
@@ -1020,12 +1027,15 @@ namespace ams::kern {
         const s32 core_id   = GetCurrentCoreId();
         KThread *cur_thread = GetCurrentThreadPointer();
 
-        /* Pin it. */
-        this->PinThread(core_id, cur_thread);
-        cur_thread->Pin();
+        /* If the thread isn't terminated, pin it. */
+        if (!cur_thread->IsTerminationRequested()) {
+            /* Pin it. */
+            this->PinThread(core_id, cur_thread);
+            cur_thread->Pin();
 
-        /* An update is needed. */
-        KScheduler::SetSchedulerUpdateNeeded();
+            /* An update is needed. */
+            KScheduler::SetSchedulerUpdateNeeded();
+        }
     }
 
     void KProcess::UnpinCurrentThread() {
@@ -1038,6 +1048,20 @@ namespace ams::kern {
         /* Unpin it. */
         cur_thread->Unpin();
         this->UnpinThread(core_id, cur_thread);
+
+        /* An update is needed. */
+        KScheduler::SetSchedulerUpdateNeeded();
+    }
+
+    void KProcess::UnpinThread(KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Get the thread's core id. */
+        const auto core_id = thread->GetActiveCore();
+
+        /* Unpin it. */
+        this->UnpinThread(core_id, thread);
+        thread->Unpin();
 
         /* An update is needed. */
         KScheduler::SetSchedulerUpdateNeeded();

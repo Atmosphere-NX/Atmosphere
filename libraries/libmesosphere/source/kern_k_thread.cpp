@@ -483,19 +483,17 @@ namespace ams::kern {
         }
 
         /* Allow performing thread suspension (if termination hasn't been requested). */
-        {
+        if (!this->IsTerminationRequested()) {
             /* Update our allow flags. */
-            if (!this->IsTerminationRequested()) {
-                m_suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
-            }
+            m_suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
 
             /* Update our state. */
             this->UpdateState();
-        }
 
-        /* Update our SVC access permissions. */
-        MESOSPHERE_ASSERT(m_parent != nullptr);
-        m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+            /* Update our SVC access permissions. */
+            MESOSPHERE_ASSERT(m_parent != nullptr);
+            m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+        }
 
         /* Resume any threads that began waiting on us while we were pinned. */
         for (auto it = m_pinned_waiter_list.begin(); it != m_pinned_waiter_list.end(); ++it) {
@@ -1217,6 +1215,11 @@ namespace ams::kern {
 
             /* Register the terminating dpc. */
             this->RegisterDpc(DpcFlag_Terminating);
+
+            /* If the thread is pinned, unpin it. */
+            if (this->GetStackParameters().is_pinned) {
+                this->GetOwnerProcess()->UnpinThread(this);
+            }
 
             /* If the thread is suspended, continue it. */
             if (this->IsSuspended()) {

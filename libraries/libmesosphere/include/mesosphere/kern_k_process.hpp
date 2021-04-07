@@ -127,14 +127,14 @@ namespace ams::kern {
             Result StartTermination();
             void FinishTermination();
 
-            void PinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void PinThread(s32 core_id, KThread *thread) {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
                 MESOSPHERE_ASSERT(m_pinned_threads[core_id] == nullptr);
                 m_pinned_threads[core_id] = thread;
             }
 
-            void UnpinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void UnpinThread(s32 core_id, KThread *thread) {
                 MESOSPHERE_UNUSED(thread);
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
@@ -340,6 +340,7 @@ namespace ams::kern {
 
             void PinCurrentThread();
             void UnpinCurrentThread();
+            void UnpinThread(KThread *thread);
 
             Result SignalToAddress(KProcessAddress address) {
                 return m_cond_var.SignalToAddress(address);
