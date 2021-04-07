@@ -170,14 +170,8 @@ namespace ams::kern {
     size_t KMemoryLayout::GetResourceRegionSizeForInit() {
         /* Calculate resource region size based on whether we allow extra threads. */
         const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-        size_t resource_region_size = KernelResourceSize + (use_extra_resources ? KernelSlabHeapAdditionalSize : 0);
 
-        /* 10.0.0 reduced the slab heap gaps by 64K. */
-        if (kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0) {
-            resource_region_size += (KernelSlabHeapGapsSizeDeprecated - KernelSlabHeapGapsSize);
-        }
-
-        return resource_region_size;
+        return KernelResourceSize + (use_extra_resources ? KernelSlabHeapAdditionalSize : 0);
     }
 
 }
