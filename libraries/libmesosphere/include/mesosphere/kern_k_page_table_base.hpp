@@ -301,9 +301,22 @@ namespace ams::kern {
             void CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm);
 
             size_t GetSize(KMemoryState state) const;
+
+            ALWAYS_INLINE bool GetPhysicalAddressLocked(KPhysicalAddress *out, KProcessAddress virt_addr) const {
+                /* Validate pre-conditions. */
+                MESOSPHERE_AUDIT(this->IsLockedByCurrentThread());
+
+                return this->GetImpl().GetPhysicalAddress(out, virt_addr);
+            }
         public:
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const {
-                return this->GetImpl().GetPhysicalAddress(out, virt_addr);
+                /* Validate pre-conditions. */
+                MESOSPHERE_AUDIT(!this->IsLockedByCurrentThread());
+
+                /* Acquire exclusive access to the table while doing address translation. */
+                KScopedLightLock lk(m_general_lock);
+
+                return this->GetPhysicalAddressLocked(out, virt_addr);
             }
 
             KBlockInfoManager *GetBlockInfoManager() const { return m_block_info_manager; }
