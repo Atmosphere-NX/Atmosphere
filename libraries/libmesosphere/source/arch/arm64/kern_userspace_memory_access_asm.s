@@ -758,7 +758,6 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
     mov     x8, x30
 
 1:  /* Read the word from normal memory. */
-    mov     x30, x8
     ldtr    w9, [x5]
 
     /* Set our return address so that on read failure we continue. */
@@ -769,7 +768,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
     dsb     sy
 
 2:  /* Continue. */
-    nop
+    mov     x30, x8
 
     /* Advance. */
     add     x4, x4, #4
@@ -801,7 +800,6 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
     mov     x8, x30
 
 1:  /* Read the word from normal memory. */
-    mov     x30, x8
     ldtrh   w9, [x5]
 
     /* Set our return address so that on read failure we continue. */
@@ -812,7 +810,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
     dsb     sy
 
 2:  /* Continue. */
-    nop
+    mov     x30, x8
 
     /* Advance. */
     add     x4, x4, #2
@@ -844,7 +842,6 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm:
     mov     x8, x30
 
 1:  /* Read the word from normal memory. */
-    mov     x30, x8
     ldtrb   w9, [x5]
 
     /* Set our return address so that on read failure we continue. */
@@ -855,7 +852,7 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm:
     dsb     sy
 
 2:  /* Continue. */
-    nop
+    mov     x30, x8
 
     /* Advance. */
     add     x4, x4, #1
