@@ -283,6 +283,16 @@ namespace ams::kern::arch::arm64::cpu {
             }
         }
 
+        void StoreDataCacheBySetWay(int level) {
+            PerformCacheOperationBySetWayImpl<false>(level, StoreDataCacheLineBySetWayImpl);
+            cpu::DataSynchronizationBarrier();
+        }
+
+        void FlushDataCacheBySetWay(int level) {
+            PerformCacheOperationBySetWayImpl<false>(level, FlushDataCacheLineBySetWayImpl);
+            cpu::DataSynchronizationBarrier();
+        }
+
         void KCacheHelperInterruptHandler::ProcessOperation() {
             switch (m_operation) {
                 case Operation::Idle:
@@ -291,12 +301,10 @@ namespace ams::kern::arch::arm64::cpu {
                     InstructionMemoryBarrier();
                     break;
                 case Operation::StoreDataCache:
-                    PerformCacheOperationBySetWayLocal<false>(StoreDataCacheLineBySetWayImpl);
-                    DataSynchronizationBarrier();
+                    StoreDataCacheBySetWay(0);
                     break;
                 case Operation::FlushDataCache:
-                    PerformCacheOperationBySetWayLocal<false>(FlushDataCacheLineBySetWayImpl);
-                    DataSynchronizationBarrier();
+                    FlushDataCacheBySetWay(0);
                     break;
             }
 
@@ -374,7 +382,20 @@ namespace ams::kern::arch::arm64::cpu {
     }
 
     void FlushEntireDataCache() {
-        return PerformCacheOperationBySetWayShared<false>(FlushDataCacheLineBySetWayImpl);
+        KScopedCoreMigrationDisable dm;
+
+        CacheLineIdRegisterAccessor clidr_el1;
+        const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
+
+        /* Store cache from L2 up to the level of coherence (if there's an L3 cache or greater). */
+        for (int level = 2; level < levels_of_coherency; ++level) {
+            StoreDataCacheBySetWay(level - 1);
+        }
+
+        /* Flush cache from the level of coherence down to L2. */
+        for (int level = levels_of_coherency; level > 1; --level) {
+            FlushDataCacheBySetWay(level - 1);
+        }
     }
 
     Result InvalidateDataCache(void *addr, size_t size) {
