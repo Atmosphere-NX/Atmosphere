@@ -42,8 +42,8 @@ namespace ams::kern::board::nintendo::nx {
         /* Nintendo uses std::mt19937_t for randomness. */
         /* To save space (and because mt19337_t isn't secure anyway), */
         /* We will use TinyMT. */
-        bool         g_initialized_random_generator;
-        util::TinyMT g_random_generator;
+        constinit bool         g_initialized_random_generator;
+        constinit util::TinyMT g_random_generator;
         constinit KSpinLock    g_random_lock;
 
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
@@ -90,13 +90,10 @@ namespace ams::kern::board::nintendo::nx {
             return value;
         }
 
-        void EnsureRandomGeneratorInitialized() {
-            if (AMS_UNLIKELY(!g_initialized_random_generator)) {
-                u64 seed;
-                smc::GenerateRandomBytes(&seed, sizeof(seed));
-                g_random_generator.Initialize(reinterpret_cast<u32*>(&seed), sizeof(seed) / sizeof(u32));
-                g_initialized_random_generator = true;
-            }
+        ALWAYS_INLINE u64 GenerateRandomU64FromSmc() {
+            u64 value;
+            smc::GenerateRandomBytes(std::addressof(value), sizeof(value));
+            return value;
         }
 
         ALWAYS_INLINE u64 GenerateRandomU64FromGenerator() {
@@ -439,6 +436,14 @@ namespace ams::kern::board::nintendo::nx {
 
     /* System Initialization. */
     void KSystemControl::InitializePhase1() {
+        /* Initialize our random generator. */
+        {
+            u64 seed;
+            smc::GenerateRandomBytes(std::addressof(seed), sizeof(seed));
+            g_random_generator.Initialize(reinterpret_cast<u32*>(std::addressof(seed)), sizeof(seed) / sizeof(u32));
+            g_initialized_random_generator = true;
+        }
+
         /* Set IsDebugMode. */
         {
             KTargetSystem::SetIsDebugMode(GetConfigBool(smc::ConfigItem::IsDebugMode));
@@ -544,18 +549,23 @@ namespace ams::kern::board::nintendo::nx {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(g_random_lock);
 
-        EnsureRandomGeneratorInitialized();
 
-        return GenerateUniformRange(min, max, GenerateRandomU64FromGenerator);
+        if (AMS_LIKELY(g_initialized_random_generator)) {
+            return GenerateUniformRange(min, max, GenerateRandomU64FromGenerator);
+        } else {
+            return GenerateUniformRange(min, max, GenerateRandomU64FromSmc);
+        }
     }
 
     u64 KSystemControl::GenerateRandomU64() {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(g_random_lock);
 
-        EnsureRandomGeneratorInitialized();
-
-        return GenerateRandomU64FromGenerator();
+        if (AMS_LIKELY(g_initialized_random_generator)) {
+            return GenerateRandomU64FromGenerator();
+        } else {
+            return GenerateRandomU64FromSmc();
+        }
     }
 
     void KSystemControl::SleepSystem() {
