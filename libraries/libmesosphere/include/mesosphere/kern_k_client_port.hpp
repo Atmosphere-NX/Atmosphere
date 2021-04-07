@@ -47,6 +47,7 @@ namespace ams::kern {
             ALWAYS_INLINE s32 GetMaxSessions()  const { return m_max_sessions; }
 
             bool IsLight() const;
+            bool IsServerClosed() const;
 
             /* Overridden virtual functions. */
             virtual void Destroy() override;

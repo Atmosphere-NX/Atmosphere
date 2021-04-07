@@ -35,7 +35,7 @@ namespace ams::kern {
         m_client.Initialize(this);
 
         /* Set state and name. */
-        m_state = State::Normal;
+        this->SetState(State::Normal);
         m_name  = name;
 
         /* Set our owner process. */
@@ -62,8 +62,8 @@ namespace ams::kern {
     void KSession::OnServerClosed() {
         MESOSPHERE_ASSERT_THIS();
 
-        if (m_state == State::Normal) {
-            m_state = State::ServerClosed;
+        if (this->GetState() == State::Normal) {
+            this->SetState(State::ServerClosed);
             m_client.OnServerClosed();
         }
     }
@@ -71,8 +71,8 @@ namespace ams::kern {
     void KSession::OnClientClosed() {
         MESOSPHERE_ASSERT_THIS();
 
-        if (m_state == State::Normal) {
-            m_state = State::ClientClosed;
+        if (this->GetState() == State::Normal) {
+            this->SetState(State::ClientClosed);
             m_server.OnClientClosed();
         }
     }
