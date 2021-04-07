@@ -118,7 +118,7 @@ namespace ams::kern {
         return cur_thread->GetWaitResult(std::addressof(dummy));
     }
 
-    KThread *KConditionVariable::SignalImpl(KThread *thread) {
+    void KConditionVariable::SignalImpl(KThread *thread) {
         /* Check pre-conditions. */
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
@@ -137,7 +137,6 @@ namespace ams::kern {
             }
         }
 
-        KThread *thread_to_close = nullptr;
         if (AMS_LIKELY(can_access)) {
             if (prev_tag == ams::svc::InvalidHandle) {
                 /* If nobody held the lock previously, we're all good. */
@@ -150,7 +149,7 @@ namespace ams::kern {
                 if (AMS_LIKELY(owner_thread != nullptr)) {
                     /* Add the thread as a waiter on the owner. */
                     owner_thread->AddWaiter(thread);
-                    thread_to_close = owner_thread;
+                    owner_thread->Close();
                 } else {
                     /* The lock was tagged with a thread that doesn't exist. */
                     thread->SetSyncedObject(nullptr, svc::ResultInvalidState());
@@ -162,17 +161,9 @@ namespace ams::kern {
             thread->SetSyncedObject(nullptr, svc::ResultInvalidCurrentMemory());
             thread->Wakeup();
         }
-
-        return thread_to_close;
     }
 
     void KConditionVariable::Signal(uintptr_t cv_key, s32 count) {
-        /* Prepare for signaling. */
-        constexpr int MaxThreads = 16;
-        KLinkedList<KThread> thread_list;
-        KThread *thread_array[MaxThreads];
-        int num_to_close = 0;
-
         /* Perform signaling. */
         int num_waiters = 0;
         {
@@ -182,14 +173,7 @@ namespace ams::kern {
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 
-                if (KThread *thread = this->SignalImpl(target_thread); thread != nullptr) {
-                    if (num_to_close < MaxThreads) {
-                        thread_array[num_to_close++] = thread;
-                    } else {
-                        thread_list.push_back(*thread);
-                    }
-                }
-
+                this->SignalImpl(target_thread);
                 it = m_tree.erase(it);
                 target_thread->ClearConditionVariable();
                 ++num_waiters;
@@ -200,16 +184,6 @@ namespace ams::kern {
                 const u32 has_waiter_flag = 0;
                 WriteToUser(cv_key, std::addressof(has_waiter_flag));
             }
-        }
-
-        /* Close threads in the array. */
-        for (auto i = 0; i < num_to_close; ++i) {
-            thread_array[i]->Close();
-        }
-
-        /* Close threads in the list. */
-        for (auto it = thread_list.begin(); it != thread_list.end(); it = thread_list.erase(it)) {
-            (*it).Close();
         }
     }
 

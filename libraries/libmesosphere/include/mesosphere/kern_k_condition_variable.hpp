@@ -36,7 +36,7 @@ namespace ams::kern {
             void Signal(uintptr_t cv_key, s32 count);
             Result Wait(KProcessAddress addr, uintptr_t key, u32 value, s64 timeout);
         private:
-            KThread *SignalImpl(KThread *thread);
+            void SignalImpl(KThread *thread);
     };
 
     ALWAYS_INLINE void BeforeUpdatePriority(KConditionVariable::ThreadTree *tree, KThread *thread) {

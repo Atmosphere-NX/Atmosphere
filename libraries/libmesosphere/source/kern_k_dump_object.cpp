@@ -345,7 +345,6 @@ namespace ams::kern::KDumpObject {
                 DUMP_KSLABOBJ(KDebug);
                 DUMP_KSLABOBJ(KSession);
                 DUMP_KSLABOBJ(KLightSession);
-                DUMP_KSLABOBJ(KLinkedListNode);
                 DUMP_KSLABOBJ(KThreadLocalPage);
                 DUMP_KSLABOBJ(KObjectName);
                 DUMP_KSLABOBJ(KEventInfo);
