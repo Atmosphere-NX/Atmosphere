@@ -2198,7 +2198,9 @@ namespace ams::kern {
             /* Copy as much aligned data as we can. */
             if (cur_size >= sizeof(u32)) {
                 const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
-                R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(buffer, GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size), svc::ResultInvalidPointer());
+                const void * copy_src  = GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr));
+                cpu::FlushDataCache(copy_src, copy_size);
+                R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(buffer, copy_src, copy_size), svc::ResultInvalidPointer());
                 buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
                 cur_addr += copy_size;
                 cur_size -= copy_size;
@@ -2206,7 +2208,9 @@ namespace ams::kern {
 
             /* Copy remaining data. */
             if (cur_size > 0) {
-                R_UNLESS(UserspaceAccess::CopyMemoryToUser(buffer, GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size), svc::ResultInvalidPointer());
+                const void * copy_src  = GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr));
+                cpu::FlushDataCache(copy_src, cur_size);
+                R_UNLESS(UserspaceAccess::CopyMemoryToUser(buffer, copy_src, cur_size), svc::ResultInvalidPointer());
             }
 
             return ResultSuccess();
