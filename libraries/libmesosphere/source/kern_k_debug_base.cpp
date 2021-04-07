@@ -355,6 +355,15 @@ namespace ams::kern {
                 } else if (state == KProcess::State_DebugBreak) {
                     /* If the process is debug breaked, transition it accordingly. */
                     new_state = KProcess::State_Crashed;
+
+                    /* Suspend all the threads in the process. */
+                    {
+                        auto end = target->GetThreadList().end();
+                        for (auto it = target->GetThreadList().begin(); it != end; ++it) {
+                            /* Request that we suspend the thread. */
+                            it->RequestSuspend(KThread::SuspendType_Debug);
+                        }
+                    }
                 } else {
                     /* Otherwise, don't transition. */
                     new_state = state;
@@ -840,9 +849,6 @@ namespace ams::kern {
 
             /* If the process isn't null, detach. */
             if (process.IsNotNull()) {
-                /* When we're done detaching, clear the reference we opened when we attached. */
-                ON_SCOPE_EXIT { process->Close(); };
-
                 /* Detach. */
                 {
                     /* Lock both ourselves and the target process. */
@@ -877,6 +883,9 @@ namespace ams::kern {
                             /* Clear our process. */
                             m_process = nullptr;
                         }
+
+                        /* We're done detaching, so clear the reference we opened when we attached. */
+                        process->Close();
                     }
                 }
             }
