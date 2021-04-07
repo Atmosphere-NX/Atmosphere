@@ -172,7 +172,7 @@ namespace ams::kern::init::loader {
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      PageSize));
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, PageSize));
         const uintptr_t bss_offset            = layout->bss_offset;
-        const uintptr_t ini_load_offset       = layout->ini_load_offset;
+        const uintptr_t resource_offset       = layout->resource_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
@@ -181,8 +181,8 @@ namespace ams::kern::init::loader {
         const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
 
         /* Setup the INI1 header in memory for the kernel. */
-        const uintptr_t ini_end_address  = base_address + ini_load_offset + resource_region_size;
-        const uintptr_t ini_load_address = ini_end_address - InitialProcessBinarySizeMax;
+        const uintptr_t resource_end_address  = base_address + resource_offset + resource_region_size;
+        const uintptr_t ini_load_address = GetInteger(KSystemControl::Init::GetInitialProcessBinaryPhysicalAddress());
         if (ini_base_address != ini_load_address) {
             /* The INI is not at the correct address, so we need to relocate it. */
             const InitialProcessBinaryHeader *ini_header = reinterpret_cast<const InitialProcessBinaryHeader *>(ini_base_address);
@@ -195,14 +195,14 @@ namespace ams::kern::init::loader {
             }
         }
 
-        /* We want to start allocating page tables at ini_end_address. */
-        g_initial_page_allocator.Initialize(ini_end_address);
+        /* We want to start allocating page tables at the end of the resource region. */
+        g_initial_page_allocator.Initialize(resource_end_address);
 
         /* Make a new page table for TTBR1_EL1. */
         KInitialPageTable init_pt(KernelBaseRangeStart, KernelBaseRangeLast, g_initial_page_allocator);
 
         /* Setup initial identity mapping. TTBR1 table passed by reference. */
-        SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, ini_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
+        SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, resource_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
 
         /* Generate a random slide for the kernel's base address. */
         const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(init_pt, base_address, bss_end_offset);

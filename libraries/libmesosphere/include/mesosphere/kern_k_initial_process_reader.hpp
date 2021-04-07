@@ -91,46 +91,49 @@ namespace ams::kern {
 
     class KInitialProcessReader {
         private:
-            KInitialProcessHeader *m_kip_header;
+            KInitialProcessHeader m_kip_header;
         public:
             constexpr KInitialProcessReader() : m_kip_header() { /* ... */ }
 
-            constexpr const u32 *GetCapabilities()  const { return m_kip_header->GetCapabilities(); }
-            constexpr size_t GetNumCapabilities()   const { return m_kip_header->GetNumCapabilities(); }
+            constexpr const u32 *GetCapabilities()  const { return m_kip_header.GetCapabilities(); }
+            constexpr size_t GetNumCapabilities()   const { return m_kip_header.GetNumCapabilities(); }
 
             constexpr size_t GetBinarySize() const {
-                return sizeof(*m_kip_header) + m_kip_header->GetRxCompressedSize() + m_kip_header->GetRoCompressedSize() + m_kip_header->GetRwCompressedSize();
+                return m_kip_header.GetRxCompressedSize() + m_kip_header.GetRoCompressedSize() + m_kip_header.GetRwCompressedSize();
             }
 
             constexpr size_t GetSize() const {
-                if (const size_t bss_size = m_kip_header->GetBssSize(); bss_size != 0) {
-                    return m_kip_header->GetBssAddress() + m_kip_header->GetBssSize();
+                if (const size_t bss_size = m_kip_header.GetBssSize(); bss_size != 0) {
+                    return util::AlignUp(m_kip_header.GetBssAddress() + m_kip_header.GetBssSize(), PageSize);
                 } else {
-                    return m_kip_header->GetRwAddress() + m_kip_header->GetRwSize();
+                    return util::AlignUp(m_kip_header.GetRwAddress() + m_kip_header.GetRwSize(), PageSize);
                 }
             }
 
-            constexpr u8  GetPriority()             const { return m_kip_header->GetPriority(); }
-            constexpr u8  GetIdealCoreId()          const { return m_kip_header->GetIdealCoreId(); }
-            constexpr u32 GetAffinityMask()         const { return m_kip_header->GetAffinityMask(); }
-            constexpr u32 GetStackSize()            const { return m_kip_header->GetStackSize(); }
+            constexpr u8  GetPriority()             const { return m_kip_header.GetPriority(); }
+            constexpr u8  GetIdealCoreId()          const { return m_kip_header.GetIdealCoreId(); }
+            constexpr u32 GetAffinityMask()         const { return m_kip_header.GetAffinityMask(); }
+            constexpr u32 GetStackSize()            const { return m_kip_header.GetStackSize(); }
 
-            constexpr bool Is64Bit()                const { return m_kip_header->Is64Bit(); }
-            constexpr bool Is64BitAddressSpace()    const { return m_kip_header->Is64BitAddressSpace(); }
-            constexpr bool UsesSecureMemory()       const { return m_kip_header->UsesSecureMemory(); }
-            constexpr bool IsImmortal()             const { return m_kip_header->IsImmortal(); }
+            constexpr bool Is64Bit()                const { return m_kip_header.Is64Bit(); }
+            constexpr bool Is64BitAddressSpace()    const { return m_kip_header.Is64BitAddressSpace(); }
+            constexpr bool UsesSecureMemory()       const { return m_kip_header.UsesSecureMemory(); }
+            constexpr bool IsImmortal()             const { return m_kip_header.IsImmortal(); }
 
-            bool Attach(u8 *bin) {
-                if (KInitialProcessHeader *header = reinterpret_cast<KInitialProcessHeader *>(bin); header->IsValid()) {
-                    m_kip_header = header;
-                    return true;
+            KVirtualAddress Attach(KVirtualAddress bin) {
+                /* Copy the header. */
+                m_kip_header = *GetPointer<const KInitialProcessHeader>(bin);
+
+                /* Check that it's valid. */
+                if (m_kip_header.IsValid()) {
+                    return bin + sizeof(KInitialProcessHeader);
                 } else {
-                    return false;
+                    return Null<KVirtualAddress>;
                 }
             }
 
             Result MakeCreateProcessParameter(ams::svc::CreateProcessParameter *out, bool enable_aslr) const;
-            Result Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params) const;
+            Result Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params, KProcessAddress src) const;
             Result SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const;
     };
 

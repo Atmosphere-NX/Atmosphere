@@ -53,7 +53,7 @@ __metadata_kernel_layout:
     .word __bss_start__      - _start /* rw_end_offset */
     .word __bss_start__      - _start /* bss_offset */
     .word __bss_end__        - _start /* bss_end_offset */
-    .word __end__            - _start /* ini_load_offset */
+    .word __end__            - _start /* resource_offset */
     .word _DYNAMIC           - _start /* dynamic_offset */
     .word __init_array_start - _start /* init_array_offset */
     .word __init_array_end   - _start /* init_array_end_offset */

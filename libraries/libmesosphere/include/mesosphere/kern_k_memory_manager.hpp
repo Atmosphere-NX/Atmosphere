@@ -75,7 +75,7 @@ namespace ams::kern {
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return m_heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { m_heap.Free(addr, num_pages); }
 
-                    void UpdateUsedHeapSize() { m_heap.UpdateUsedSize(); }
+                    void SetInitialUsedHeapSize(size_t reserved_size) { m_heap.SetInitialUsedSize(reserved_size); }
 
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(m_management_region), 0, CalculateOptimizedProcessOverheadSize(m_heap.GetSize())); }
 
@@ -168,6 +168,10 @@ namespace ams::kern {
                 return m_managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
             }
 
+            const Impl &GetManager(KVirtualAddress address) const {
+                return m_managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
+            }
+
             constexpr Impl *GetFirstManager(Pool pool, Direction dir) {
                 return dir == Direction_FromBack ? m_pool_managers_tail[pool] : m_pool_managers_head[pool];
             }
@@ -196,6 +200,10 @@ namespace ams::kern {
             NOINLINE KVirtualAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
             NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
+
+            Pool GetPool(KVirtualAddress address) const {
+                return this->GetManager(address).GetPool();
+            }
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */

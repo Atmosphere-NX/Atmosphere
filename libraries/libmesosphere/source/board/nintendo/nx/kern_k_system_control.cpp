@@ -21,7 +21,8 @@ namespace ams::kern::board::nintendo::nx {
 
     namespace {
 
-        constexpr size_t SecureAlignment = 128_KB;
+        constexpr uintptr_t DramPhysicalAddress = 0x80000000;
+        constexpr size_t SecureAlignment        = 128_KB;
 
         /* Global variables for panic. */
         constinit bool g_call_smc_on_panic;
@@ -346,6 +347,10 @@ namespace ams::kern::board::nintendo::nx {
         } else {
             return base_address + ((real_dram_size - intended_dram_size) / 2);
         }
+    }
+
+    KPhysicalAddress KSystemControl::Init::GetInitialProcessBinaryPhysicalAddress() {
+        return GetKernelPhysicalBaseAddress(DramPhysicalAddress) + GetIntendedMemorySize() - KTraceBufferSize - InitialProcessBinarySizeMax;
     }
 
     bool KSystemControl::Init::ShouldIncreaseThreadResourceLimit() {
