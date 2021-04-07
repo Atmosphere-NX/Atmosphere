@@ -317,6 +317,38 @@ namespace ams::svc::codegen::impl {
                 return true;
             }
 
+            template<typename Conversion, size_t ParameterIndex = 0>
+            static constexpr void SanitizeInputBooleans(MetaCodeGenerator &mcg) {
+                /* Get the input layout. */
+                constexpr auto InputLayout = Conversion::LayoutForSvc.GetInputLayout();
+
+                /* Check if we're done. */
+                if constexpr (ParameterIndex < InputLayout.GetNumParameters()) {
+                    /* Get the relevant parameter. */
+                    constexpr auto Param = InputLayout.GetParameter(ParameterIndex);
+
+                    /* Handle the case where the parameter is a boolean. */
+                    if constexpr (Param.IsBoolean()) {
+                        /* Boolean parameters should have one location. */
+                        static_assert(Param.GetNumLocations() == 1);
+
+                        /* Get the location. */
+                        constexpr auto Loc = Param.GetLocation(0);
+
+                        /* TODO: Support boolean parameters passed-by-stack. */
+                        static_assert(Loc.GetStorage() == Storage::Register);
+
+                        /* Convert the input to boolean. */
+                        mcg.template ConvertToBoolean<Loc.GetIndex()>();
+                    }
+
+                    /* Handle the next parameter. */
+                    if constexpr (ParameterIndex + 1 < InputLayout.GetNumParameters()) {
+                        SanitizeInputBooleans<Conversion, ParameterIndex + 1>(mcg);
+                    }
+                }
+            }
+
             template<typename... T>
             struct TypeIndexFilter {
 
@@ -435,6 +467,9 @@ namespace ams::svc::codegen::impl {
                 if constexpr (UsedStackSpace > 0) {
                     mcg.template AllocateStackSpace<UsedStackSpace>();
                 }
+
+                /* Sanitize all input booleans. */
+                SanitizeInputBooleans<Conversion>(mcg);
 
                 /* Generate code for before operations. */
                 if constexpr (Conversion::NumBeforeOperations > 0) {

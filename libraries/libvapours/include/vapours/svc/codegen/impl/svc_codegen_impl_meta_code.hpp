@@ -29,6 +29,7 @@ namespace ams::svc::codegen::impl {
                 AllocateStackSpace,
                 FreeStackSpace,
                 MoveRegister,
+                ConvertToBoolean,
                 LoadFromStack,
                 LoadPairFromStack,
                 StoreToStack,
@@ -47,6 +48,7 @@ namespace ams::svc::codegen::impl {
                     META_CODE_OPERATION_KIND_ENUM_CASE(AllocateStackSpace);
                     META_CODE_OPERATION_KIND_ENUM_CASE(FreeStackSpace);
                     META_CODE_OPERATION_KIND_ENUM_CASE(MoveRegister);
+                    META_CODE_OPERATION_KIND_ENUM_CASE(ConvertToBoolean);
                     META_CODE_OPERATION_KIND_ENUM_CASE(LoadFromStack);
                     META_CODE_OPERATION_KIND_ENUM_CASE(LoadPairFromStack);
                     META_CODE_OPERATION_KIND_ENUM_CASE(StoreToStack);
@@ -117,6 +119,7 @@ namespace ams::svc::codegen::impl {
         META_CODE_OPERATION_KIND_GENERATE_CODE(AllocateStackSpace)
         META_CODE_OPERATION_KIND_GENERATE_CODE(FreeStackSpace)
         META_CODE_OPERATION_KIND_GENERATE_CODE(MoveRegister)
+        META_CODE_OPERATION_KIND_GENERATE_CODE(ConvertToBoolean)
         META_CODE_OPERATION_KIND_GENERATE_CODE(LoadFromStack)
         META_CODE_OPERATION_KIND_GENERATE_CODE(LoadPairFromStack)
         META_CODE_OPERATION_KIND_GENERATE_CODE(StoreToStack)
@@ -182,6 +185,12 @@ namespace ams::svc::codegen::impl {
             template<size_t Dst, size_t Src>
             constexpr void MoveRegister() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::MoveRegister, Dst, Src>();
+                this->meta_code.AddOperation(op);
+            }
+
+            template<size_t Reg>
+            constexpr void ConvertToBoolean() {
+                constexpr auto op = MetaCode::MakeOperation<OperationKind::ConvertToBoolean, Reg>();
                 this->meta_code.AddOperation(op);
             }
 

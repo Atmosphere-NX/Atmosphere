@@ -36,21 +36,21 @@ namespace ams::svc::codegen::impl {
                 : abi(a), num_parameters(0), parameters()
             { /* ... */ }
 
-            constexpr void AddSingle(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, Storage s, size_t idx) {
+            constexpr void AddSingle(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, bool b, Storage s, size_t idx) {
                 for (size_t i = 0; i < this->num_parameters; i++) {
                     if (this->parameters[i].Is(id)) {
                         this->parameters[i].AddLocation(Location(s, idx));
                         return;
                     }
                 }
-                this->parameters[this->num_parameters++] = Parameter(id, type, ts, ps, p, Location(s, idx));
+                this->parameters[this->num_parameters++] = Parameter(id, type, ts, ps, p, b, Location(s, idx));
             }
 
-            constexpr size_t Add(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, Storage s, size_t i) {
+            constexpr size_t Add(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, bool b, Storage s, size_t i) {
                 size_t required_registers = 0;
 
                 while (required_registers * this->abi.register_size < ps) {
-                    this->AddSingle(id, type, ts, ps, p, s, i++);
+                    this->AddSingle(id, type, ts, ps, p, b, s, i++);
                     required_registers++;
                 }
 
@@ -115,6 +115,7 @@ namespace ams::svc::codegen::impl {
 
                 constexpr size_t ArgumentTypeSize = AbiType::template Size<ArgType>;
                 constexpr bool   PassedByPointer  = IsPassedByPointer<AbiType, ArgType>;
+                constexpr bool   IsBoolean        = std::same_as<ArgType, bool>;
                 constexpr size_t ArgumentPassSize = PassedByPointer ? AbiType::PointerSize : ArgumentTypeSize;
 
                 /* TODO: Is there ever a case where this is not the correct alignment? */
@@ -135,19 +136,19 @@ namespace ams::svc::codegen::impl {
                 const size_t registers_available = AbiType::RegisterCount - NGRN;
                 if constexpr (!PassedByPointer && IsIntegralOrUserPointer<ArgType> && ArgumentTypeSize > AbiType::RegisterSize) {
                     if (registers_available >= 2) {
-                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, Storage::Register, NGRN);
+                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
                         NGRN += 2;
                     } else {
                         /* Argument went on stack, so stop allocating arguments in registers. */
                         NGRN = AbiType::RegisterCount;
 
                         NSAA += (NSAA & 1);
-                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, Storage::Stack, NSAA);
+                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
                         NSAA += 2;
                     }
                 } else {
                     if (ArgumentPassSize <= AbiType::RegisterSize * registers_available) {
-                        NGRN += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, Storage::Register, NGRN);
+                        NGRN += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
                     } else {
                         /* Argument went on stack, so stop allocating arguments in registers. */
                         NGRN = AbiType::RegisterCount;
@@ -155,7 +156,7 @@ namespace ams::svc::codegen::impl {
                         /* TODO: Stack pointer alignment is only ensured for aapcs64. */
                         /* What should we do here? */
 
-                        NSAA += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, Storage::Stack, NSAA);
+                        NSAA += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
                     }
                 }
             }
@@ -176,7 +177,7 @@ namespace ams::svc::codegen::impl {
                 /* TODO: It's unclear how to handle the non-integral and too-large case. */
                 if constexpr (!std::is_same<ReturnType, void>::value) {
                     constexpr size_t ReturnTypeSize = AbiType::template Size<ReturnType>;
-                    layout.output.Add(Parameter::Identifier("ReturnType"), ArgumentType::Invalid, ReturnTypeSize, ReturnTypeSize, false, Storage::Register, 0);
+                    layout.output.Add(Parameter::Identifier("ReturnType"), ArgumentType::Invalid, ReturnTypeSize, ReturnTypeSize, false, false /* TODO */, Storage::Register, 0);
                     static_assert(IsIntegral<ReturnType> || ReturnTypeSize <= AbiType::RegisterSize);
                 }
 
@@ -270,7 +271,7 @@ namespace ams::svc::codegen::impl {
                     const auto location = param.GetLocation(i);
                     if (location.GetStorage() == Storage::Register) {
                         reg_allocator.Allocate(location.GetIndex());
-                        dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), param.GetTypeSize(), param.GetPassedSize(), param.IsPassedByPointer(), Storage::Register, location.GetIndex());
+                        dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), param.GetTypeSize(), param.GetPassedSize(), param.IsPassedByPointer(), param.IsBoolean(), Storage::Register, location.GetIndex());
                     }
                 }
             }
@@ -281,7 +282,7 @@ namespace ams::svc::codegen::impl {
                     const auto location = param.GetLocation(i);
                     if (location.GetStorage() == Storage::Stack) {
                         const size_t free_reg = reg_allocator.AllocateFirstFree();
-                        dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), param.GetTypeSize(), param.GetPassedSize(), param.IsPassedByPointer(), Storage::Register, free_reg);
+                        dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), param.GetTypeSize(), param.GetPassedSize(), param.IsPassedByPointer(), param.IsBoolean(), Storage::Register, free_reg);
                     }
                 }
             }
@@ -291,7 +292,7 @@ namespace ams::svc::codegen::impl {
                 const size_t type_size = param.GetTypeSize();
                 for (size_t sz = 0; sz < type_size; sz += AbiType::RegisterSize) {
                     const size_t free_reg = reg_allocator.AllocateFirstFree();
-                    dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), type_size, type_size, false, Storage::Register, free_reg);
+                    dst_layout.AddSingle(param.GetIdentifier(), param.GetArgumentType(), type_size, type_size, false, param.IsBoolean(), Storage::Register, free_reg);
                 }
             }
         public:
