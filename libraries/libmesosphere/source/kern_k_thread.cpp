@@ -23,7 +23,7 @@ namespace ams::kern {
 
         constexpr bool IsKernelAddressKey(KProcessAddress key) {
             const uintptr_t key_uptr = GetInteger(key);
-            return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast;
+            return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast && (key_uptr & 1) == 0;
         }
 
         void InitializeKernelStack(uintptr_t stack_top) {
@@ -996,6 +996,7 @@ namespace ams::kern {
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
             MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters++) >= 0);
+            KScheduler::SetSchedulerUpdateNeeded();
         }
 
         /* Insert the waiter. */
@@ -1010,6 +1011,7 @@ namespace ams::kern {
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
             MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
+            KScheduler::SetSchedulerUpdateNeeded();
         }
 
         /* Remove the waiter. */
@@ -1088,6 +1090,7 @@ namespace ams::kern {
                 /* Keep track of how many kernel waiters we have. */
                 if (IsKernelAddressKey(thread->GetAddressKey())) {
                     MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
+                    KScheduler::SetSchedulerUpdateNeeded();
                 }
                 it = m_waiter_list.erase(it);
 
