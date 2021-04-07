@@ -281,8 +281,8 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
 .global     _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv
 .type       _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv, %function
 _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
-    /* Nintendo uses the "unused" virtual timer compare value as a scratch register. */
-    msr     cntv_cval_el0, x0
+    /* Nintendo uses tpidr_el1 as a scratch register. */
+    msr     tpidr_el1, x0
 
     /* Get and parse the exception syndrome register. */
     mrs     x0, esr_el1
@@ -297,18 +297,21 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     b.eq    5f
 
 1:  /* The exception is not a data abort or instruction abort caused by a TLB conflict. */
-    /* Load the exception stack top from tpidr_el1. */
-    mrs     x0, tpidr_el1
+    /* Load the exception stack top from otherwise "unused" virtual timer compare value. */
+    mrs     x0, cntv_cval_el0
 
     /* Setup the stack for a generic exception handle */
+    lsl     x0, x0, #8
+    asr     x0, x0, #8
     sub     x0, x0, #0x20
-    str     x1, [x0, #16]
+    str     x1, [x0, #8]
     mov     x1, sp
     str     x1, [x0]
     mov     sp, x0
-    ldr     x1, [x0, #16]
-    mrs     x0, cntv_cval_el0
+    ldr     x1, [x0, #8]
+    mrs     x0, tpidr_el1
     str     x0, [sp, #8]
+    str     x1, [sp, #16]
 
     /* Check again if this is a data abort from EL1. */
     mrs     x0, esr_el1
@@ -406,7 +409,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     isb
 
     /* Restore x0 from scratch. */
-    mrs     x0, cntv_cval_el0
+    mrs     x0, tpidr_el1
 
     /* Return from the exception. */
     eret
@@ -474,21 +477,22 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
 .global     _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv
 .type       _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv, %function
 _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv:
-    /* Nintendo uses the "unused" virtual timer compare value as a scratch register. */
-    msr     cntv_cval_el0, x0
+    /* Nintendo uses tpidr_el1 as a scratch register. */
+    msr     tpidr_el1, x0
 
-    /* Load the exception stack top from tpidr_el1. */
-    mrs     x0, tpidr_el1
+    /* Load the exception stack top from otherwise "unused" virtual timer compare value. */
+    mrs     x0, cntv_cval_el0
 
     /* Setup the stack for a generic exception handle */
+    lsl     x0, x0, #8
+    asr     x0, x0, #8
     sub     x0, x0, #0x20
-    str     x1, [x0, #16]
+    str     x1, [x0, #8]
     mov     x1, sp
     str     x1, [x0]
     mov     sp, x0
-    ldr     x1, [x0, #16]
-    mrs     x0, cntv_cval_el0
-    str     x0, [sp, #8]
+    ldr     x1, [x0, #8]
+    mrs     x0, tpidr_el1
 
     /* Create a KExceptionContext to pass to HandleException. */
     sub     sp, sp, #0x120

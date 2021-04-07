@@ -74,6 +74,7 @@ namespace ams::kern::arch::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntkCtlEl1,  cntkctl_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCtlEl0,  cntp_ctl_el0)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCvalEl0, cntp_cval_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntvCvalEl0, cntv_cval_el0)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Daif, daif)
 

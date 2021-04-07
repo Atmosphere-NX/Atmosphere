@@ -232,7 +232,7 @@ namespace ams::kern::arch::arm64::cpu {
     }
 
     ALWAYS_INLINE void SetExceptionThreadStackTop(uintptr_t top) {
-        SetTpidrEl1(top);
+        cpu::SetCntvCvalEl0(top);
     }
 
     ALWAYS_INLINE void SwitchThreadLocalRegion(uintptr_t tlr) {

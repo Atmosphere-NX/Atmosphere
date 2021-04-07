@@ -95,9 +95,10 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     mrs     x2, tpidr_el1
     stp     x1, x2, [x0], #0x10
 
-    /* Save the virtual resumption entrypoint. */
+    /* Save the virtual resumption entrypoint and cntv_cval_el0. */
     adr     x1, 77f
-    stp     x1, xzr, [x0], #0x10
+    mrs     x2, cntv_cval_el0
+    stp     x1, x2, [x0], #0x10
 
     /* Get the current core id. */
     mrs     x0, mpidr_el1
@@ -245,12 +246,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
     msr     tcr_el1, x1
     msr     mair_el1, x2
 
-    /* Get sctlr, tpidr, and the entrypoint. */
-    ldp     x1, x2,  [x0], #0x10
-    ldp     x3, xzr, [x0], #0x10
+    /* Get sctlr, tpidr, the entrypoint, and cntv_cval_el0. */
+    ldp     x1, x2, [x0], #0x10
+    ldp     x3, x4, [x0], #0x10
 
     /* Set the global context back into x18/tpidr. */
     msr     tpidr_el1, x2
+    msr     cntv_cval_el0, x4
     dsb     sy
     isb
 
