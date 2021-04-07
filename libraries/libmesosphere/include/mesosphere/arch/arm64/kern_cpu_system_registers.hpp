@@ -197,6 +197,11 @@ namespace ams::kern::arch::arm64::cpu {
         public:
             MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(TranslationControl, tcr_el1)
 
+            constexpr ALWAYS_INLINE size_t GetT0Size() const {
+                const size_t shift_value = this->GetBits(0, 6);
+                return size_t(1) << (size_t(64) - shift_value);
+            }
+
             constexpr ALWAYS_INLINE size_t GetT1Size() const {
                 const size_t shift_value = this->GetBits(16, 6);
                 return size_t(1) << (size_t(64) - shift_value);

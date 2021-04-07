@@ -50,7 +50,7 @@ namespace ams::kern::init {
             constexpr size_t StackSize  = PageSize;
             constexpr size_t StackAlign = PageSize;
             const KVirtualAddress  stack_start_virt = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(StackSize, StackAlign, KMemoryRegionType_KernelMisc, PageSize);
-            const KPhysicalAddress stack_start_phys = g_initial_page_allocator.Allocate();
+            const KPhysicalAddress stack_start_phys = g_initial_page_allocator.Allocate(PageSize);
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_start_virt), StackSize, type, core_id));
 
             page_table.Map(stack_start_virt, StackSize, stack_start_phys, KernelRwDataAttribute, g_initial_page_allocator);
@@ -135,7 +135,7 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS((cpu::TranslationControlRegisterAccessor().GetT1Size() / arch::arm64::L1BlockSize) == arch::arm64::MaxPageTableEntries);
 
         /* Create page table object for use during initialization. */
-        KInitialPageTable ttbr1_table(util::AlignDown(cpu::GetTtbr1El1(), PageSize), KInitialPageTable::NoClear{});
+        KInitialPageTable ttbr1_table;
 
         /* Initialize the slab allocator counts. */
         InitializeSlabResourceCounts();
@@ -382,7 +382,7 @@ namespace ams::kern::init {
         /* Finalize the page allocator, we're done allocating at this point. */
         KInitialPageAllocator::State final_init_page_table_state;
         g_initial_page_allocator.GetFinalState(std::addressof(final_init_page_table_state));
-        const KPhysicalAddress final_init_page_table_end_address = final_init_page_table_state.next_address;
+        const KPhysicalAddress final_init_page_table_end_address = final_init_page_table_state.end_address;
         const size_t init_page_table_region_size = GetInteger(final_init_page_table_end_address) - GetInteger(resource_end_phys_addr);
 
         /* Insert regions for the initial page table region. */
