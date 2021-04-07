@@ -288,6 +288,10 @@ namespace ams::kern {
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
 
+            Result MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
+            Result ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size);
+            Result WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size);
+
             Result SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state);
             Result SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send);
             void CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm);
@@ -341,7 +345,10 @@ namespace ams::kern {
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
 
             Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size);
+            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size);
+
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);
+            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size);
 
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
