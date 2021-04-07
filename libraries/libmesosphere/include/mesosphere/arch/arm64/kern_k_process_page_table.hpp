@@ -30,8 +30,8 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
-                return m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager);
+            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
+                return m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager, resource_limit);
             }
 
             void Finalize() { m_page_table.Finalize(); }
@@ -216,8 +216,8 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.SetupForIpc(out_dst_addr, size, src_addr, src_page_table.m_page_table, test_perm, dst_state, send);
             }
 
-            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
-                return m_page_table.CleanupForIpcServer(address, size, dst_state, server_process);
+            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state) {
+                return m_page_table.CleanupForIpcServer(address, size, dst_state);
             }
 
             Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {

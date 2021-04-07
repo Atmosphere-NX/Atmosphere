@@ -398,17 +398,17 @@ namespace ams::kern {
 
             /* Cleanup Send mappings. */
             for (size_t i = 0; i < request->GetSendCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i)));
             }
 
             /* Cleanup Receive mappings. */
             for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
             }
 
             /* Cleanup Exchange mappings. */
             for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
             return ResultSuccess();
@@ -470,7 +470,7 @@ namespace ams::kern {
 
                 /* Ensure that we clean up on failure. */
                 auto setup_guard = SCOPE_GUARD {
-                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state, request->GetServerProcess());
+                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state);
                     src_page_table.CleanupForIpcClient(src_address, size, dst_state);
                 };
 

@@ -254,7 +254,7 @@ namespace ams::kern {
             auto *mem_block_manager     = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
             auto *block_info_manager    = std::addressof(Kernel::GetBlockInfoManager());
             auto *pt_manager            = std::addressof(Kernel::GetPageTableManager());
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
+            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
         auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
 
@@ -359,7 +359,7 @@ namespace ams::kern {
             const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
             const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
+            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
         auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
 
