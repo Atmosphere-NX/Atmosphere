@@ -744,7 +744,7 @@ namespace ams::kern {
                     }
 
                     /* Otherwise, wait for us to not have an exception thread. */
-                    cur_thread->SetAddressKey(address_key);
+                    cur_thread->SetAddressKey(address_key | 1);
                     m_exception_thread->AddWaiter(cur_thread);
                     if (cur_thread->GetState() == KThread::ThreadState_Runnable) {
                         cur_thread->SetState(KThread::ThreadState_Waiting);
