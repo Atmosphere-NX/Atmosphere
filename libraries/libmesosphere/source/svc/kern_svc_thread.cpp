@@ -132,13 +132,16 @@ namespace ams::kern::svc {
             /* Get the current process. */
             KProcess &process = GetCurrentProcess();
 
-            /* Validate the priority. */
-            R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
-            R_UNLESS(process.CheckThreadPriority(priority),                                                     svc::ResultInvalidPriority());
-
             /* Get the thread from its handle. */
             KScopedAutoObject thread = process.GetHandleTable().GetObject<KThread>(thread_handle);
             R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate the thread is owned by the current process. */
+            R_UNLESS(thread->GetOwnerProcess() == GetCurrentProcessPointer(), svc::ResultInvalidHandle());
+
+            /* Validate the priority. */
+            R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
+            R_UNLESS(process.CheckThreadPriority(priority),                                                     svc::ResultInvalidPriority());
 
             /* Set the thread priority. */
             thread->SetBasePriority(priority);
@@ -157,6 +160,13 @@ namespace ams::kern::svc {
         }
 
         Result SetThreadCoreMask(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate the thread is owned by the current process. */
+            R_UNLESS(thread->GetOwnerProcess() == GetCurrentProcessPointer(), svc::ResultInvalidHandle());
+
             /* Determine the core id/affinity mask. */
             if (core_id == ams::svc::IdealCoreUseProcessValue) {
                 core_id       = GetCurrentProcess().GetIdealCoreId();
@@ -174,10 +184,6 @@ namespace ams::kern::svc {
                     R_UNLESS(core_id == ams::svc::IdealCoreNoUpdate || core_id == ams::svc::IdealCoreDontCare, svc::ResultInvalidCoreId());
                 }
             }
-
-            /* Get the thread from its handle. */
-            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
-            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Set the core mask. */
             R_TRY(thread->SetCoreMask(core_id, affinity_mask));
