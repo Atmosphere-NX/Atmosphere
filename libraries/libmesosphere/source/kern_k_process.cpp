@@ -231,7 +231,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
+    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(res_limit != nullptr);
         MESOSPHERE_ABORT_UNLESS((params.code_num_pages * PageSize) / PageSize == static_cast<size_t>(params.code_num_pages));
@@ -241,6 +241,7 @@ namespace ams::kern {
         m_resource_limit            = res_limit;
         m_system_resource_address   = Null<KVirtualAddress>;
         m_system_resource_num_pages = 0;
+        m_is_immortal               = immortal;
 
         /* Setup page table. */
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
@@ -289,6 +290,7 @@ namespace ams::kern {
         /* Set pool and resource limit. */
         m_memory_pool               = pool;
         m_resource_limit            = res_limit;
+        m_is_immortal               = false;
 
         /* Get the memory sizes. */
         const size_t code_num_pages            = params.code_num_pages;
@@ -406,9 +408,11 @@ namespace ams::kern {
     }
 
     Result KProcess::StartTermination() {
-        /* Finalize the handle table, when we're done. */
+        /* Finalize the handle table when we're done, if the process isn't immortal. */
         ON_SCOPE_EXIT {
-            m_handle_table.Finalize();
+            if (!m_is_immortal) {
+                m_handle_table.Finalize();
+            }
         };
 
         /* Terminate child threads other than the current one. */
@@ -416,20 +420,23 @@ namespace ams::kern {
     }
 
     void KProcess::FinishTermination() {
-        /* Release resource limit hint. */
-        if (m_resource_limit != nullptr) {
-            m_memory_release_hint = this->GetUsedUserPhysicalMemorySize();
-            m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, 0, m_memory_release_hint);
-        }
+        /* Only allow termination to occur if the process isn't immortal. */
+        if (!m_is_immortal) {
+            /* Release resource limit hint. */
+            if (m_resource_limit != nullptr) {
+                m_memory_release_hint = this->GetUsedUserPhysicalMemorySize();
+                m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, 0, m_memory_release_hint);
+            }
 
-        /* Change state. */
-        {
-            KScopedSchedulerLock sl;
-            this->ChangeState(State_Terminated);
-        }
+            /* Change state. */
+            {
+                KScopedSchedulerLock sl;
+                this->ChangeState(State_Terminated);
+            }
 
-        /* Close. */
-        this->Close();
+            /* Close. */
+            this->Close();
+        }
     }
 
     void KProcess::Exit() {
