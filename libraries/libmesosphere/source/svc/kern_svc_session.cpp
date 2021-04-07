@@ -43,8 +43,8 @@ namespace ams::kern::svc {
 
             /* Ensure that we clean up the session (and its only references are handle table) on function end. */
             ON_SCOPE_EXIT {
-                session->GetServerSession().Close();
                 session->GetClientSession().Close();
+                session->GetServerSession().Close();
             };
 
             /* Register the session. */

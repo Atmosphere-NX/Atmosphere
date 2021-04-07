@@ -38,28 +38,27 @@ namespace ams::kern::svc {
                 KPort *port = KPort::Create();
                 R_UNLESS(port != nullptr, svc::ResultOutOfResource());
 
-                /* Reserve a handle for the server port. */
-                R_TRY(handle_table.Reserve(out_server_handle));
-                auto reserve_guard = SCOPE_GUARD { handle_table.Unreserve(*out_server_handle); };
-
                 /* Initialize the new port. */
                 port->Initialize(max_sessions, false, 0);
 
                 /* Register the port. */
                 KPort::Register(port);
 
+                /* Ensure that our only reference to the port is in the handle table when we're done. */
+                ON_SCOPE_EXIT {
+                    port->GetClientPort().Close();
+                    port->GetServerPort().Close();
+                };
+
                 /* Register the handle in the table. */
-                handle_table.Register(*out_server_handle, std::addressof(port->GetServerPort()));
-                reserve_guard.Cancel();
-                auto register_guard = SCOPE_GUARD { handle_table.Remove(*out_server_handle); };
+                R_TRY(handle_table.Add(out_server_handle, std::addressof(port->GetServerPort())));
+                auto handle_guard = SCOPE_GUARD { handle_table.Remove(*out_server_handle); };
 
                 /* Create a new object name. */
                 R_TRY(KObjectName::NewFromName(std::addressof(port->GetClientPort()), name));
 
-                /* Perform resource cleanup. */
-                port->GetServerPort().Close();
-                port->GetClientPort().Close();
-                register_guard.Cancel();
+                /* We succeeded, so don't leak the handle. */
+                handle_guard.Cancel();
             } else /* if (max_sessions == 0) */ {
                 /* Ensure that this else case is correct. */
                 MESOSPHERE_AUDIT(max_sessions == 0);
@@ -157,20 +156,17 @@ namespace ams::kern::svc {
             R_TRY(handle_table.Reserve(out));
             auto handle_guard = SCOPE_GUARD { handle_table.Unreserve(*out); };
 
-            /* Create and register session. */
+            /* Create the session. */
+            KAutoObject *session;
             if (client_port->IsLight()) {
-                KLightClientSession *session;
-                R_TRY(client_port->CreateLightSession(std::addressof(session)));
-
-                handle_table.Register(*out, session);
-                session->Close();
+                R_TRY(client_port->CreateLightSession(reinterpret_cast<KLightClientSession **>(std::addressof(session))));
             } else {
-                KClientSession *session;
-                R_TRY(client_port->CreateSession(std::addressof(session)));
-
-                handle_table.Register(*out, session);
-                session->Close();
+                R_TRY(client_port->CreateSession(reinterpret_cast<KClientSession **>(std::addressof(session))));
             }
+
+            /* Register the session. */
+            handle_table.Register(*out, session);
+            session->Close();
 
             /* We succeeded. */
             handle_guard.Cancel();
