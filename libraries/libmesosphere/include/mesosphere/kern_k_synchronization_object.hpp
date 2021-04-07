@@ -45,7 +45,7 @@ namespace ams::kern {
             static Result Wait(s32 *out_index, KSynchronizationObject **objects, const s32 num_objects, s64 timeout);
         public:
             virtual void Finalize() override;
-            virtual bool IsSignaled() const = 0;
+            virtual bool IsSignaled() const { AMS_INFINITE_LOOP(); }
             virtual void DumpWaiters();
     };
 
