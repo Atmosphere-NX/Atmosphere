@@ -370,7 +370,7 @@ namespace ams::kern::board::nintendo::nx {
                 case smc::MemoryArrangement_6GBForAppletDev:
                     return 3285_MB;
                 case smc::MemoryArrangement_8GB:
-                    return 4916_MB;
+                    return 6964_MB;
             }
         }();
 
@@ -394,7 +394,7 @@ namespace ams::kern::board::nintendo::nx {
                 case smc::MemoryArrangement_6GBForAppletDev:
                     return 2193_MB;
                 case smc::MemoryArrangement_8GB:
-                    return 2193_MB;
+                    return 562_MB;
             }
         }();
 
