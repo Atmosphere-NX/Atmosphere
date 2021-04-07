@@ -77,8 +77,9 @@ namespace ams::kern {
             };
 
             enum DpcFlag : u32 {
-                DpcFlag_Terminating = (1 << 0),
-                DpcFlag_Terminated  = (1 << 1),
+                DpcFlag_Terminating        = (1 << 0),
+                DpcFlag_Terminated         = (1 << 1),
+                DpcFlag_PerformDestruction = (1 << 2),
             };
 
             struct StackParameters {
@@ -203,6 +204,7 @@ namespace ams::kern {
             WaiterList                      m_pinned_waiter_list{};
             KThread                        *m_lock_owner{};
             uintptr_t                       m_debug_params[3]{};
+            KAutoObject                    *m_closed_object{};
             u32                             m_address_key_value{};
             u32                             m_suspend_request_flags{};
             u32                             m_suspend_allowed_flags{};
@@ -324,15 +326,15 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags |= flag;
+                this->GetStackParameters().dpc_flags.fetch_or(flag);
             }
 
             ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags &= ~flag;
+                this->GetStackParameters().dpc_flags.fetch_and(~flag);;
             }
 
             ALWAYS_INLINE u8 GetDpc() const {
-                return this->GetStackParameters().dpc_flags;
+                return this->GetStackParameters().dpc_flags.load();
             }
 
             ALWAYS_INLINE bool HasDpc() const {
@@ -491,6 +493,39 @@ namespace ams::kern {
             void SetInterruptFlag()   const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 1; }
             void ClearInterruptFlag() const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 0; }
 
+            ALWAYS_INLINE KAutoObject *GetClosedObject() { return m_closed_object; }
+
+            ALWAYS_INLINE void SetClosedObject(KAutoObject *object) {
+                MESOSPHERE_ASSERT(object != nullptr);
+
+                /* Set the object to destroy. */
+                m_closed_object = object;
+
+                /* Schedule destruction DPC. */
+                if ((this->GetStackParameters().dpc_flags.load(std::memory_order_relaxed) & DpcFlag_PerformDestruction) == 0) {
+                    this->RegisterDpc(DpcFlag_PerformDestruction);
+                }
+            }
+
+            ALWAYS_INLINE void DestroyClosedObjects() {
+                /* Destroy all objects that have been closed. */
+                if (KAutoObject *cur = m_closed_object; cur != nullptr) {
+                    do {
+                        /* Set our closed object as the next to close. */
+                        m_closed_object = cur->GetNextClosedObject();
+
+                        /* Destroy the current object. */
+                        cur->Destroy();
+
+                        /* Advance. */
+                        cur = m_closed_object;
+                    } while (cur != nullptr);
+
+                    /* Clear the pending DPC. */
+                    this->ClearDpc(DpcFlag_PerformDestruction);
+                }
+            }
+
             constexpr void SetDebugAttached() { m_debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
 
@@ -601,6 +636,16 @@ namespace ams::kern {
 
     ALWAYS_INLINE s32 GetCurrentCoreId() {
         return GetCurrentThread().GetCurrentCore();
+    }
+
+    ALWAYS_INLINE void KAutoObject::ScheduleDestruction() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Set our object to destroy. */
+        m_next_closed_object = GetCurrentThread().GetClosedObject();
+
+        /* Set ourselves as the thread's next object to destroy. */
+        GetCurrentThread().SetClosedObject(this);
     }
 
 }
