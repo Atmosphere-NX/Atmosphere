@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* ams::kern::svc::CallReturnFromException64(Result result) */
 .section    .text._ZN3ams4kern3svc25CallReturnFromException64Ev, "ax", %progbits
@@ -62,7 +63,7 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
 0:  /* We should handle DPC. */
     /* Check the dpc flags. */
-    ldrb    w8, [sp, #(0x120 + 0x10)]
+    ldrb    w8, [sp, #(0x120 + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
     cbz     w8, 1f
 
     /* We have DPC to do! */
@@ -82,7 +83,7 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
 1:  /* We're done with DPC, and should return from the svc. */
     /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(0x120 + 0x12)]
+    strb    wzr, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
 
     /* Restore registers. */
     ldp     x30, x8,  [sp, #(8 * 30)]

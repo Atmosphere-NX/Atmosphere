@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere/kern_build_config.hpp>
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* ams::kern::arch::arm64::SvcHandler64() */
 .section    .text._ZN3ams4kern4arch5arm6412SvcHandler64Ev, "ax", %progbits
@@ -32,7 +33,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     mrs     x9, elr_el1
     mrs     x10, spsr_el1
     mrs     x11, tpidr_el0
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
 
     /* Save callee-saved registers. */
     stp     x19, x20, [sp, #(8 * 19)]
@@ -59,7 +60,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     /* Check the specific SVC permission bit for allowal. */
     mov     x9, sp
     add     x9, x9, x8, lsr#3
-    ldrb    w9, [x9, #0x120]
+    ldrb    w9, [x9, #(0x120 + THREAD_STACK_PARAMETERS_SVC_PERMISSION)]
     and     x10, x8, #0x7
     lsr     x10, x9, x10
     tst     x10, #1
@@ -71,7 +72,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     cbz     w10, 1f
 
     /* It might not, so check the stack params to see if we must not allow the SVC. */
-    ldrb    w10, [sp, #(0x120 + 0x14)]
+    ldrb    w10, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_PINNED)]
     cbz     w10, 3f
 
 1:  /* We can call the SVC. */
@@ -81,8 +82,8 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
     /* Note that we're calling the SVC. */
     mov     w10, #1
-    strb    w10, [sp, #(0x120 + 0x12)]
-    strb    w8,  [sp, #(0x120 + 0x11)]
+    strb    w10, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+    strb    w8,  [sp, #(0x120 + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -109,7 +110,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
 2:  /* We completed the SVC, and we should handle DPC. */
     /* Check the dpc flags. */
-    ldrb    w8, [sp, #(0x120 + 0x10)]
+    ldrb    w8, [sp, #(0x120 + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
     cbz     w8, 4f
 
     /* We have DPC to do! */
@@ -179,7 +180,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
 4:  /* Return from SVC. */
     /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(0x120 + 0x12)]
+    strb    wzr, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
 
     /* If we should, trace the svc exit. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -245,7 +246,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     mrs     x17, elr_el1
     mrs     x20, spsr_el1
     mrs     x19, tpidr_el0
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     stp     x17, x20, [sp, #(8 * 32)]
     str     x19,      [sp, #(8 * 34)]
 
@@ -268,7 +269,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     /* Check the specific SVC permission bit for allowal. */
     mov     x20, sp
     add     x20, x20, x16, lsr#3
-    ldrb    w20, [x20, #0x120]
+    ldrb    w20, [x20, #(0x120 + THREAD_STACK_PARAMETERS_SVC_PERMISSION)]
     and     x17, x16, #0x7
     lsr     x17, x20, x17
     tst     x17, #1
@@ -280,7 +281,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     cbz     w15, 1f
 
     /* It might not, so check the stack params to see if we must not allow the SVC. */
-    ldrb    w15, [sp, #(0x120 + 0x14)]
+    ldrb    w15, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_PINNED)]
     cbz     w15, 3f
 
 1:  /* We can call the SVC. */
@@ -290,8 +291,8 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
     /* Note that we're calling the SVC. */
     mov     w15, #1
-    strb    w15, [sp, #(0x120 + 0x12)]
-    strb    w16, [sp, #(0x120 + 0x11)]
+    strb    w15, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+    strb    w16, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -318,7 +319,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
 2:  /* We completed the SVC, and we should handle DPC. */
     /* Check the dpc flags. */
-    ldrb    w16, [sp, #(0x120 + 0x10)]
+    ldrb    w16, [sp, #(0x120 + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
     cbz     w16, 4f
 
     /* We have DPC to do! */
@@ -376,7 +377,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
 4:  /* Return from SVC. */
     /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(0x120 + 0x12)]
+    strb    wzr, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
 
     /* If we should, trace the svc exit. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)

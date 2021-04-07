@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* ams::kern::arch::arm64::UserModeThreadStarter() */
 .section    .text._ZN3ams4kern4arch5arm6421UserModeThreadStarterEv, "ax", %progbits
@@ -26,7 +27,7 @@ _ZN3ams4kern4arch5arm6421UserModeThreadStarterEv:
     /* | KExceptionContext (size 0x120) | KThread::StackParameters (size 0x30) | */
 
     /* Clear the disable count for this thread's stack parameters. */
-    str wzr, [sp, #(0x120 + 0x18)]
+    strh wzr, [sp, #(0x120 + THREAD_STACK_PARAMETERS_DISABLE_COUNT)]
 
     /* Call ams::kern::arch::arm64::OnThreadStart() */
     bl _ZN3ams4kern4arch5arm6413OnThreadStartEv
@@ -78,7 +79,7 @@ _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv:
     ldp x0, x1, [sp], #0x10
 
     /* Clear the disable count for this thread's stack parameters. */
-    str wzr, [sp, #(0x18)]
+    strh wzr, [sp, #(THREAD_STACK_PARAMETERS_DISABLE_COUNT)]
 
     /*  Mask I bit in DAIF */
     msr daifclr, #2

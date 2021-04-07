@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 #define SAVE_THREAD_CONTEXT(ctx, tmp0, tmp1, done_label)    \
     /* Save the callee save registers + SP and cpacr. */    \
@@ -148,11 +149,11 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     and    x2, x2, #~(0x1000-1)
 
     /* Check if the thread has terminated. We can do this by checking the DPC flags for DpcFlag_Terminated. */
-    ldurb  w3, [x2, #-0x20]
+    ldurb  w3, [x2, #-(THREAD_STACK_PARAMETERS_SIZE - THREAD_STACK_PARAMETERS_DPC_FLAGS)]
     tbnz   w3, #1, 3f
 
     /* The current thread hasn't terminated, so we want to save its context. */
-    ldur  x2, [x2, #-0x10]
+    ldur  x2, [x2, #-(THREAD_STACK_PARAMETERS_SIZE - THREAD_STACK_PARAMETERS_CONTEXT)]
     SAVE_THREAD_CONTEXT(x2, x4, x5, 2f)
 
 2:  /* We're done saving this thread's context, so we need to unlock it. */

@@ -14,21 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_build_config.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
-#include <mesosphere/kern_select_assembly_offsets.h>
 
-namespace ams::kern {
+#ifdef ATMOSPHERE_ARCH_ARM64
 
-    constexpr size_t PageSize = 4_KB;
+    #include <mesosphere/arch/arm64/kern_assembly_offsets.h>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    ams::TargetFirmware GetTargetFirmware();
 #else
-    consteval ALWAYS_INLINE ams::TargetFirmware GetTargetFirmware() {
-        return ams::TargetFirmware_Current;
-    }
-#endif
 
-}
+    #error "Unknown architecture for CPU"
+
+#endif
