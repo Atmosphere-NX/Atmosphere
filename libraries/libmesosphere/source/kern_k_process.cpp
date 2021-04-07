@@ -211,19 +211,20 @@ namespace ams::kern {
         KSystemControl::GenerateRandomBytes(m_entropy, sizeof(m_entropy));
 
         /* Clear remaining fields. */
-        m_num_running_threads   = 0;
-        m_num_process_switches  = 0;
-        m_num_thread_switches   = 0;
-        m_num_fpu_switches      = 0;
-        m_num_supervisor_calls  = 0;
-        m_num_ipc_messages      = 0;
+        m_num_running_threads         = 0;
+        m_num_process_switches        = 0;
+        m_num_thread_switches         = 0;
+        m_num_fpu_switches            = 0;
+        m_num_supervisor_calls        = 0;
+        m_num_ipc_messages            = 0;
 
-        m_is_signaled           = false;
-        m_attached_object       = nullptr;
-        m_exception_thread      = nullptr;
-        m_is_suspended          = false;
-        m_memory_release_hint   = 0;
-        m_schedule_count        = 0;
+        m_is_signaled                 = false;
+        m_attached_object             = nullptr;
+        m_exception_thread            = nullptr;
+        m_is_suspended                = false;
+        m_memory_release_hint         = 0;
+        m_schedule_count              = 0;
+        m_is_handle_table_initialized = false;
 
         /* We're initialized! */
         m_is_initialized = true;
@@ -400,6 +401,11 @@ namespace ams::kern {
         /* Terminate child threads. */
         TerminateChildren(this, nullptr);
 
+        /* Finalize the handle table, if we're not immortal. */
+        if (!m_is_immortal && m_is_handle_table_initialized) {
+            this->FinalizeHandleTable();
+        }
+
         /* Call the debug callback. */
         KDebug::OnExitProcess(this);
 
@@ -411,7 +417,7 @@ namespace ams::kern {
         /* Finalize the handle table when we're done, if the process isn't immortal. */
         ON_SCOPE_EXIT {
             if (!m_is_immortal) {
-                m_handle_table.Finalize();
+                this->FinalizeHandleTable();
             }
         };
 
@@ -905,8 +911,8 @@ namespace ams::kern {
         R_TRY(m_page_table.SetMaxHeapSize(m_max_process_memory - (m_main_thread_stack_size + m_code_size)));
 
         /* Initialize our handle table. */
-        R_TRY(m_handle_table.Initialize(m_capabilities.GetHandleTableSize()));
-        auto ht_guard = SCOPE_GUARD { m_handle_table.Finalize(); };
+        R_TRY(this->InitializeHandleTable(m_capabilities.GetHandleTableSize()));
+        auto ht_guard = SCOPE_GUARD { this->FinalizeHandleTable(); };
 
         /* Create a new thread for the process. */
         KThread *main_thread = KThread::Create();
