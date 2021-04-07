@@ -85,7 +85,6 @@ namespace ams::kern::arch::arm64 {
             NOINLINE Result BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
             NOINLINE Result UnbindHandler(s32 irq, s32 core);
 
-            NOINLINE Result ClearInterrupt(s32 irq);
             NOINLINE Result ClearInterrupt(s32 irq, s32 core_id);
 
             ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
