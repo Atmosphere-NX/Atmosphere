@@ -218,9 +218,7 @@ namespace ams::kern {
         KThread *task_thread = Kernel::GetInterruptTaskManager().GetThread();
         {
             KScopedSchedulerLock sl;
-            if (AMS_LIKELY(task_thread->GetState() == KThread::ThreadState_Waiting)) {
-                task_thread->SetState(KThread::ThreadState_Runnable);
-            }
+            task_thread->SetState(KThread::ThreadState_Runnable);
         }
     }
 

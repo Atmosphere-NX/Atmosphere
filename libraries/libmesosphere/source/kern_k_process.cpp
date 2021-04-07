@@ -740,25 +740,22 @@ namespace ams::kern {
                     /* If we have no exception thread, we succeeded. */
                     if (m_exception_thread == nullptr) {
                         m_exception_thread = cur_thread;
+                        KScheduler::SetSchedulerUpdateNeeded();
                         return true;
                     }
 
                     /* Otherwise, wait for us to not have an exception thread. */
                     cur_thread->SetAddressKey(address_key | 1);
                     m_exception_thread->AddWaiter(cur_thread);
-                    if (cur_thread->GetState() == KThread::ThreadState_Runnable) {
-                        cur_thread->SetState(KThread::ThreadState_Waiting);
-                    } else {
-                        KScheduler::SetSchedulerUpdateNeeded();
-                    }
+                    cur_thread->SetState(KThread::ThreadState_Waiting);
                 }
+
                 /* Remove the thread as a waiter from the lock owner. */
                 {
                     KScopedSchedulerLock sl;
-                    KThread *owner_thread = cur_thread->GetLockOwner();
-                    if (owner_thread != nullptr) {
+
+                    if (KThread *owner_thread = cur_thread->GetLockOwner(); owner_thread != nullptr) {
                         owner_thread->RemoveWaiter(cur_thread);
-                        KScheduler::SetSchedulerUpdateNeeded();
                     }
                 }
             }
@@ -779,14 +776,11 @@ namespace ams::kern {
 
             /* Remove waiter thread. */
             s32 num_waiters;
-            KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)));
-            if (next != nullptr) {
-                if (next->GetState() == KThread::ThreadState_Waiting) {
-                    next->SetState(KThread::ThreadState_Runnable);
-                } else {
-                    KScheduler::SetSchedulerUpdateNeeded();
-                }
+            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread))); next != nullptr) {
+                next->SetState(KThread::ThreadState_Runnable);
             }
+
+            KScheduler::SetSchedulerUpdateNeeded();
 
             return true;
         } else {
