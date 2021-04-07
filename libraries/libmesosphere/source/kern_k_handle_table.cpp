@@ -120,15 +120,16 @@ namespace ams::kern {
         const auto reserved    = handle_pack.Get<HandleReserved>();
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
-        MESOSPHERE_ASSERT(index < m_table_size);
         MESOSPHERE_UNUSED(linear_id, reserved);
 
-        /* Free the entry. */
-        /* NOTE: This code does not check the linear id. */
-        Entry *entry = std::addressof(m_table[index]);
-        MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
+        if (index < m_table_size) {
+            /* Free the entry. */
+            /* NOTE: This code does not check the linear id. */
+            Entry *entry = std::addressof(m_table[index]);
+            MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
 
-        this->FreeEntry(entry);
+            this->FreeEntry(entry);
+        }
     }
 
     void KHandleTable::Register(ams::svc::Handle handle, KAutoObject *obj, u16 type) {
@@ -143,15 +144,16 @@ namespace ams::kern {
         const auto reserved    = handle_pack.Get<HandleReserved>();
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
-        MESOSPHERE_ASSERT(index < m_table_size);
         MESOSPHERE_UNUSED(reserved);
 
-        /* Set the entry. */
-        Entry *entry = std::addressof(m_table[index]);
-        MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
+        if (index < m_table_size) {
+            /* Set the entry. */
+            Entry *entry = std::addressof(m_table[index]);
+            MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
 
-        entry->SetUsed(obj, linear_id, type);
-        obj->Open();
+            entry->SetUsed(obj, linear_id, type);
+            obj->Open();
+        }
     }
 
 }
