@@ -155,8 +155,9 @@ namespace ams::kern {
         m_lock_owner                    = nullptr;
         m_num_core_migration_disables   = 0;
 
-        /* We have no waiters, but we do have an entrypoint. */
+        /* We have no waiters, and no closed objects. */
         m_num_kernel_waiters            = 0;
+        m_closed_object                 = nullptr;
 
         /* Set our current core id. */
         m_current_core_id               = phys_core;
@@ -1156,6 +1157,9 @@ namespace ams::kern {
             m_resource_limit_release_hint = true;
             m_parent->DecrementRunningThreadCount();
         }
+
+        /* Destroy any dependent objects. */
+        this->DestroyClosedObjects();
 
         /* Perform termination. */
         {

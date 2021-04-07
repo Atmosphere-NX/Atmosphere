@@ -74,12 +74,17 @@ namespace ams::kern::svc {
 
                 /* Wait for a message. */
                 while (true) {
+                    /* Close any pending objects before we wait. */
+                    GetCurrentThread().DestroyClosedObjects();
+
+                    /* Wait for an object. */
                     s32 index;
                     Result result = KSynchronizationObject::Wait(std::addressof(index), objs, num_objects, timeout);
                     if (svc::ResultTimedOut::Includes(result)) {
                         return result;
                     }
 
+                    /* Receive the request. */
                     if (R_SUCCEEDED(result)) {
                         KServerSession *session = objs[index]->DynamicCast<KServerSession *>();
                         if (session != nullptr) {
