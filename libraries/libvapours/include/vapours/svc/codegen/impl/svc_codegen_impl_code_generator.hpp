@@ -189,6 +189,11 @@ namespace ams::svc::codegen::impl {
                 __asm__ __volatile__("mov     x%c[dst], x%c[src]" :: [dst]"i"(Dst), [src]"i"(Src) : "memory");
             }
 
+            template<size_t Reg>
+            static ALWAYS_INLINE void ConvertToBoolean() {
+                __asm__ __volatile__("and     x%c[reg], x%c[reg], #1" :: [reg]"i"(Reg) : "memory");
+            }
+
             template<size_t Reg, size_t Offset, size_t Size>
             static ALWAYS_INLINE void LoadFromStack() {
                 if constexpr (Size == 4) {

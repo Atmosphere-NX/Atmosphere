@@ -105,15 +105,16 @@ namespace ams::svc::codegen::impl {
             size_t type_size;
             size_t passed_size;
             bool passed_by_pointer;
+            bool is_boolean;
             size_t num_locations;
             Location locations[MaxLocations];
         public:
             constexpr explicit Parameter()
-                : identifier(), type(ArgumentType::Invalid), type_size(0), passed_size(0), passed_by_pointer(0), num_locations(0), locations()
+                : identifier(), type(ArgumentType::Invalid), type_size(0), passed_size(0), passed_by_pointer(0), is_boolean(0), num_locations(0), locations()
             { /* ... */ }
 
-            constexpr explicit Parameter(Identifier id, ArgumentType t, size_t ts, size_t ps, bool p, Location l)
-                : identifier(id), type(t), type_size(ts), passed_size(ps), passed_by_pointer(p), num_locations(1), locations()
+            constexpr explicit Parameter(Identifier id, ArgumentType t, size_t ts, size_t ps, bool p, bool b, Location l)
+                : identifier(id), type(t), type_size(ts), passed_size(ps), passed_by_pointer(p), is_boolean(b), num_locations(1), locations()
             {
                 this->locations[0] = l;
             }
@@ -140,6 +141,10 @@ namespace ams::svc::codegen::impl {
 
             constexpr bool IsPassedByPointer() const {
                 return this->passed_by_pointer;
+            }
+
+            constexpr bool IsBoolean() const {
+                return this->is_boolean;
             }
 
             constexpr size_t GetNumLocations() const {
@@ -169,6 +174,7 @@ namespace ams::svc::codegen::impl {
                        this->type_size == rhs.type_size &&
                        this->passed_size == rhs.passed_size &&
                        this->passed_by_pointer == rhs.passed_by_pointer &&
+                       this->is_boolean == rhs.is_boolean  &&
                        this->num_locations == rhs.num_locations))
                 {
                     return false;
