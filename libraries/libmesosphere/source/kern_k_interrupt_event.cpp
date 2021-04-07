@@ -27,14 +27,21 @@ namespace ams::kern {
     Result KInterruptEvent::Initialize(int32_t interrupt_name, ams::svc::InterruptType type) {
         MESOSPHERE_ASSERT_THIS();
 
+        /* Verify the interrupt is defined and global. */
+        R_UNLESS(Kernel::GetInterruptManager().IsInterruptDefined(interrupt_name), svc::ResultOutOfRange());
+        R_UNLESS(Kernel::GetInterruptManager().IsGlobal(interrupt_name),           svc::ResultOutOfRange());
+
         /* Set interrupt id. */
         m_interrupt_id = interrupt_name;
+
+        /* Set core id. */
+        m_core_id = GetCurrentCoreId();
 
         /* Initialize readable event base. */
         KReadableEvent::Initialize(nullptr);
 
         /* Try to register the task. */
-        R_TRY(KInterruptEventTask::Register(m_interrupt_id, type == ams::svc::InterruptType_Level, this));
+        R_TRY(KInterruptEventTask::Register(m_interrupt_id, m_core_id, type == ams::svc::InterruptType_Level, this));
 
         /* Mark initialized. */
         m_is_initialized = true;
@@ -44,7 +51,7 @@ namespace ams::kern {
     void KInterruptEvent::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
-        g_interrupt_event_task_table[m_interrupt_id]->Unregister(m_interrupt_id);
+        g_interrupt_event_task_table[m_interrupt_id]->Unregister(m_interrupt_id, m_core_id);
 
         /* Perform inherited finalization. */
         KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>::Finalize();
@@ -60,16 +67,12 @@ namespace ams::kern {
         R_TRY(KReadableEvent::Reset());
 
         /* Clear the interrupt. */
-        Kernel::GetInterruptManager().ClearInterrupt(m_interrupt_id);
+        Kernel::GetInterruptManager().ClearInterrupt(m_interrupt_id, m_core_id);
 
         return ResultSuccess();
     }
 
-    Result KInterruptEventTask::Register(s32 interrupt_id, bool level, KInterruptEvent *event) {
-        /* Verify the interrupt id is defined and global. */
-        R_UNLESS(Kernel::GetInterruptManager().IsInterruptDefined(interrupt_id), svc::ResultOutOfRange());
-        R_UNLESS(Kernel::GetInterruptManager().IsGlobal(interrupt_id),           svc::ResultOutOfRange());
-
+    Result KInterruptEventTask::Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event) {
         /* Lock the task table. */
         KScopedLightLock lk(g_interrupt_event_lock);
 
@@ -96,7 +99,7 @@ namespace ams::kern {
             KScopedLightLock tlk(task->m_lock);
 
             /* Bind the interrupt handler. */
-            R_TRY(Kernel::GetInterruptManager().BindHandler(task, interrupt_id, GetCurrentCoreId(), KInterruptController::PriorityLevel_High, true, level));
+            R_TRY(Kernel::GetInterruptManager().BindHandler(task, interrupt_id, core_id, KInterruptController::PriorityLevel_High, true, level));
 
             /* Set the event. */
             task->m_event = event;
@@ -112,7 +115,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    void KInterruptEventTask::Unregister(s32 interrupt_id) {
+    void KInterruptEventTask::Unregister(s32 interrupt_id, s32 core_id) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the task table. */
@@ -127,7 +130,7 @@ namespace ams::kern {
 
         /* Unbind the interrupt. */
         m_event = nullptr;
-        Kernel::GetInterruptManager().UnbindHandler(interrupt_id, GetCurrentCoreId());
+        Kernel::GetInterruptManager().UnbindHandler(interrupt_id, core_id);
     }
 
     KInterruptTask *KInterruptEventTask::OnInterrupt(s32 interrupt_id) {
