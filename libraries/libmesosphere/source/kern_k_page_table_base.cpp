@@ -43,9 +43,11 @@ namespace ams::kern {
         m_max_heap_size                     = 0;
         m_mapped_physical_memory_size       = 0;
         m_mapped_unsafe_physical_memory     = 0;
+        m_mapped_ipc_server_memory          = 0;
 
         m_memory_block_slab_manager         = std::addressof(Kernel::GetSystemMemoryBlockManager());
         m_block_info_manager                = std::addressof(Kernel::GetBlockInfoManager());
+        m_resource_limit                    = std::addressof(Kernel::GetSystemResourceLimit());
 
         m_allocate_option                   = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
         m_heap_fill_value                   = MemoryFillValue_Zero;
@@ -65,7 +67,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -131,6 +133,7 @@ namespace ams::kern {
         m_is_kernel                         = false;
         m_memory_block_slab_manager         = mem_block_slab_manager;
         m_block_info_manager                = block_info_manager;
+        m_resource_limit                    = resource_limit;
 
         /* Determine the region we can place our undetermineds in. */
         KProcessAddress alloc_start;
@@ -227,8 +230,9 @@ namespace ams::kern {
         /* Set heap and fill members. */
         m_current_heap_end              = m_heap_region_start;
         m_max_heap_size                 = 0;
-        m_mapped_physical_memory_size    = 0;
+        m_mapped_physical_memory_size   = 0;
         m_mapped_unsafe_physical_memory = 0;
+        m_mapped_ipc_server_memory      = 0;
 
         const bool fill_memory = KTargetSystem::IsDebugMemoryFillEnabled();
         m_heap_fill_value  = fill_memory ? MemoryFillValue_Heap  : MemoryFillValue_Zero;
@@ -281,6 +285,11 @@ namespace ams::kern {
         /* Free any unsafe mapped memory. */
         if (m_mapped_unsafe_physical_memory) {
             Kernel::GetUnsafeMemory().Release(m_mapped_unsafe_physical_memory);
+        }
+
+        /* Release any ipc server memory. */
+        if (m_mapped_ipc_server_memory) {
+            m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, m_mapped_ipc_server_memory);
         }
 
         /* Invalidate the entire instruction cache. */
@@ -1507,7 +1516,7 @@ namespace ams::kern {
                 R_TRY(this->Operate(updater.GetPageList(), m_heap_region_start + size, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
                 /* Release the memory from the resource limit. */
-                GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, num_pages * PageSize);
+                m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, num_pages * PageSize);
 
                 /* Apply the memory block update. */
                 m_memory_block_manager.Update(std::addressof(allocator), m_heap_region_start + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, size == 0 ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None);
@@ -1530,7 +1539,7 @@ namespace ams::kern {
         }
 
         /* Reserve memory for the heap extension. */
-        KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, allocation_size);
+        KScopedResourceReservation memory_reservation(m_resource_limit, ams::svc::LimitableResource_PhysicalMemoryMax, allocation_size);
         R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
         /* Allocate pages for the heap extension. */
@@ -3464,7 +3473,7 @@ namespace ams::kern {
 
         /* Reserve space for any partial pages we allocate. */
         const size_t unmapped_size    = aligned_src_size - mapping_src_size;
-        KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, unmapped_size);
+        KScopedResourceReservation memory_reservation(m_resource_limit, ams::svc::LimitableResource_PhysicalMemoryMax, unmapped_size);
         R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
         /* Ensure that we manage page references correctly. */
@@ -3688,7 +3697,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
+    Result KPageTableBase::CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state) {
         /* Validate the address. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
 
@@ -3721,12 +3730,10 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), aligned_start, aligned_num_pages, KMemoryState_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         /* Release from the resource limit as relevant. */
-        if (auto *resource_limit = server_process->GetResourceLimit(); resource_limit != nullptr) {
-            const KProcessAddress mapping_start = util::AlignUp(GetInteger(address), PageSize);
-            const KProcessAddress mapping_end   = util::AlignDown(GetInteger(address) + size, PageSize);
-            const size_t mapping_size           = (mapping_start < mapping_end) ? mapping_end - mapping_start : 0;
-            resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_size - mapping_size);
-        }
+        const KProcessAddress mapping_start = util::AlignUp(GetInteger(address), PageSize);
+        const KProcessAddress mapping_end   = util::AlignDown(GetInteger(address) + size, PageSize);
+        const size_t mapping_size           = (mapping_start < mapping_end) ? mapping_end - mapping_start : 0;
+        m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_size - mapping_size);
 
         return ResultSuccess();
     }
@@ -4031,7 +4038,7 @@ namespace ams::kern {
             /* Allocate and map the memory. */
             {
                 /* Reserve the memory from the process resource limit. */
-                KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, size - mapped_size);
+                KScopedResourceReservation memory_reservation(m_resource_limit, ams::svc::LimitableResource_PhysicalMemoryMax, size - mapped_size);
                 R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
                 /* Allocate pages for the new memory. */
@@ -4439,7 +4446,7 @@ namespace ams::kern {
 
         /* Release the memory resource. */
         m_mapped_physical_memory_size -= mapped_size;
-        GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, mapped_size);
+        m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, mapped_size);
 
         /* Update memory blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);

@@ -47,6 +47,8 @@ namespace ams::kern {
     static_assert(std::is_trivial<KPageProperties>::value);
     static_assert(sizeof(KPageProperties) == sizeof(u32));
 
+    class KResourceLimit;
+
     class KPageTableBase {
         NON_COPYABLE(KPageTableBase);
         NON_MOVEABLE(KPageTableBase);
@@ -150,6 +152,7 @@ namespace ams::kern {
             size_t m_max_heap_size{};
             size_t m_mapped_physical_memory_size{};
             size_t m_mapped_unsafe_physical_memory{};
+            size_t m_mapped_ipc_server_memory{};
             mutable KLightLock m_general_lock{};
             mutable KLightLock m_map_physical_memory_lock{};
             KPageTableImpl m_impl{};
@@ -161,6 +164,7 @@ namespace ams::kern {
             bool m_enable_device_address_space_merge{};
             KMemoryBlockSlabManager *m_memory_block_slab_manager{};
             KBlockInfoManager *m_block_info_manager{};
+            KResourceLimit *m_resource_limit{};
             const KMemoryRegion *m_cached_physical_linear_region{};
             const KMemoryRegion *m_cached_physical_heap_region{};
             const KMemoryRegion *m_cached_virtual_heap_region{};
@@ -171,7 +175,7 @@ namespace ams::kern {
             constexpr KPageTableBase() { /* ... */ }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit);
 
             void Finalize();
 
@@ -372,7 +376,7 @@ namespace ams::kern {
             Result CopyMemoryFromHeapToHeapWithoutCheckDestination(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
 
             Result SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send);
-            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process);
+            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state);
             Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state);
 
             Result MapPhysicalMemory(KProcessAddress address, size_t size);
