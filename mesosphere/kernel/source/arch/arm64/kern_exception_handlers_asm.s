@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* ams::kern::arch::arm64::EL1IrqExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv, "ax", %progbits
@@ -99,7 +100,7 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Invoke KInterruptManager::HandleInterrupt(bool user_mode). */
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0, #1
     bl      _ZN3ams4kern4arch5arm6417KInterruptManager15HandleInterruptEb
 
@@ -196,7 +197,7 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
@@ -440,7 +441,7 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
     stp     x20, x21, [sp, #(8 * 32)]
 
     /* Invoke the FPU context switch handler. */
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     bl      _ZN3ams4kern4arch5arm6423FpuContextSwitchHandlerEv
 
     /* Restore registers that we saved. */
@@ -554,7 +555,7 @@ _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Invoke ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *). */
-    ldr     x18, [sp, #(0x120 + 0x28)]
+    ldr     x18, [sp, #(0x120 + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0, sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 

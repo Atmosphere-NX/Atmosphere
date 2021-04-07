@@ -82,17 +82,28 @@ namespace ams::kern {
             };
 
             struct StackParameters {
-                alignas(0x10) u8 svc_permission[0x10];
+                alignas(0x10) u8 svc_permission[0x18];
+                KThreadContext *context;
+                KThread *cur_thread;
+                s16 disable_count;
                 std::atomic<u8> dpc_flags;
                 u8 current_svc_id;
                 bool is_calling_svc;
                 bool is_in_exception_handler;
                 bool is_pinned;
-                s32 disable_count;
-                KThreadContext *context;
-                KThread *cur_thread;
             };
             static_assert(alignof(StackParameters) == 0x10);
+            static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
+
+            static_assert(__builtin_offsetof(StackParameters, svc_permission)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
+            static_assert(__builtin_offsetof(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
+            static_assert(__builtin_offsetof(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
+            static_assert(__builtin_offsetof(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
+            static_assert(__builtin_offsetof(StackParameters, dpc_flags)               == THREAD_STACK_PARAMETERS_DPC_FLAGS);
+            static_assert(__builtin_offsetof(StackParameters, current_svc_id)          == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
+            static_assert(__builtin_offsetof(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
+            static_assert(__builtin_offsetof(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
+            static_assert(__builtin_offsetof(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
 
             struct QueueEntry {
                 private:
@@ -251,7 +262,7 @@ namespace ams::kern {
                 return *(reinterpret_cast<StackParameters *>(m_kernel_stack_top) - 1);
             }
         public:
-            ALWAYS_INLINE s32 GetDisableDispatchCount() const {
+            ALWAYS_INLINE s16 GetDisableDispatchCount() const {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetStackParameters().disable_count;
             }

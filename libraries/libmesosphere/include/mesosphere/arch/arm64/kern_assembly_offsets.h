@@ -14,21 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_build_config.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
-#include <mesosphere/kern_select_assembly_offsets.h>
 
-namespace ams::kern {
-
-    constexpr size_t PageSize = 4_KB;
-
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    ams::TargetFirmware GetTargetFirmware();
-#else
-    consteval ALWAYS_INLINE ams::TargetFirmware GetTargetFirmware() {
-        return ams::TargetFirmware_Current;
-    }
-#endif
-
-}
+#define THREAD_STACK_PARAMETERS_SIZE                    0x30
+#define THREAD_STACK_PARAMETERS_SVC_PERMISSION          0x00
+#define THREAD_STACK_PARAMETERS_CONTEXT                 0x18
+#define THREAD_STACK_PARAMETERS_CUR_THREAD              0x20
+#define THREAD_STACK_PARAMETERS_DISABLE_COUNT           0x28
+#define THREAD_STACK_PARAMETERS_DPC_FLAGS               0x2A
+#define THREAD_STACK_PARAMETERS_CURRENT_SVC_ID          0x2B
+#define THREAD_STACK_PARAMETERS_IS_CALLING_SVC          0x2C
+#define THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER 0x2D
+#define THREAD_STACK_PARAMETERS_IS_PINNED               0x2E
