@@ -21,7 +21,8 @@ namespace ams::kern {
     enum KMemoryRegionType : u32 {};
 
     enum KMemoryRegionAttr : typename std::underlying_type<KMemoryRegionType>::type {
-        KMemoryRegionAttr_CarveoutProtected = 0x04000000,
+        KMemoryRegionAttr_CarveoutProtected = 0x02000000,
+        KMemoryRegionAttr_Uncached          = 0x04000000,
         KMemoryRegionAttr_DidKernelMap      = 0x08000000,
         KMemoryRegionAttr_ShouldKernelMap   = 0x10000000,
         KMemoryRegionAttr_UserReadOnly      = 0x20000000,
@@ -216,6 +217,10 @@ namespace ams::kern {
     static_assert(KMemoryRegionType_VirtualDramKernelPtHeap     .GetValue() == 0x2A);
     static_assert(KMemoryRegionType_VirtualDramKernelTraceBuffer.GetValue() == 0x4A);
 
+                                                                                       /* UNUSED: .DeriveSparse(2, 2, 0); */
+    constexpr inline const auto KMemoryRegionType_VirtualDramUnknownDebug = KMemoryRegionType_Dram.DeriveSparse(2, 2, 1);
+    static_assert(KMemoryRegionType_VirtualDramUnknownDebug.GetValue() == (0x52));
+
     constexpr inline const auto KMemoryRegionType_VirtualDramKernelInitPt   = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 0);
     constexpr inline const auto KMemoryRegionType_VirtualDramPoolManagement = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 1);
     constexpr inline const auto KMemoryRegionType_VirtualDramUserPool       = KMemoryRegionType_VirtualDramHeapBase.Derive(3, 2);
@@ -292,6 +297,8 @@ namespace ams::kern {
             return KMemoryRegionType_VirtualDramKernelTraceBuffer;
         } else if (KMemoryRegionType_DramKernelPtHeap.IsAncestorOf(type_id)) {
             return KMemoryRegionType_VirtualDramKernelPtHeap;
+        } else if ((type_id | KMemoryRegionAttr_ShouldKernelMap) == type_id) {
+            return KMemoryRegionType_VirtualDramUnknownDebug;
         } else {
             return KMemoryRegionType_Dram;
         }
