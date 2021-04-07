@@ -286,12 +286,7 @@ namespace ams::kern::svc {
             process->SetIdealCoreId(core_id);
 
             /* Run the process. */
-            R_TRY(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
-
-            /* Open a reference to the process, since it's now running. */
-            process->Open();
-
-            return ResultSuccess();
+            return process->Run(priority, static_cast<size_t>(main_thread_stack_size));
         }
 
         Result TerminateProcess(ams::svc::Handle process_handle) {

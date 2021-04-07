@@ -75,11 +75,7 @@ namespace ams::kern::svc {
             R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Try to start the thread. */
-            R_TRY(thread->Run());
-
-            /* If we succeeded, persist a reference to the thread. */
-            thread->Open();
-            return ResultSuccess();
+            return thread->Run();
         }
 
         void ExitThread() {

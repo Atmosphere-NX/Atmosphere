@@ -340,7 +340,7 @@ namespace ams::kern {
                 return this->GetDpc() != 0;
             }
         private:
-            void Suspend();
+            void UpdateState();
             ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
             ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
             ALWAYS_INLINE static void RestorePriority(KThread *thread);
@@ -535,7 +535,7 @@ namespace ams::kern {
             Result Run();
             void Exit();
 
-            void Terminate();
+            Result Terminate();
             ThreadState RequestTerminate();
 
             Result Sleep(s64 timeout);
