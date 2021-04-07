@@ -426,8 +426,8 @@ namespace ams::kern {
         const size_t region_size           = this->GetRegionSize(state);
 
         const bool is_in_region = region_start <= addr && addr < end && last <= region_start + region_size - 1;
-        const bool is_in_heap   = !(end <= m_heap_region_start || m_heap_region_end <= addr);
-        const bool is_in_alias  = !(end <= m_alias_region_start || m_alias_region_end <= addr);
+        const bool is_in_heap   = !(end <= m_heap_region_start || m_heap_region_end <= addr || m_heap_region_start == m_heap_region_end);
+        const bool is_in_alias  = !(end <= m_alias_region_start || m_alias_region_end <= addr || m_alias_region_start == m_alias_region_end);
         switch (state) {
             case KMemoryState_Free:
             case KMemoryState_Kernel:
@@ -1543,9 +1543,9 @@ namespace ams::kern {
             KScopedLightLock lk(m_general_lock);
 
             /* Validate that setting heap size is possible at all. */
-            R_UNLESS(!m_is_kernel,                                                             svc::ResultOutOfMemory());
+            R_UNLESS(!m_is_kernel,                                                         svc::ResultOutOfMemory());
             R_UNLESS(size <= static_cast<size_t>(m_heap_region_end - m_heap_region_start), svc::ResultOutOfMemory());
-            R_UNLESS(size <= m_max_heap_size,                                                  svc::ResultOutOfMemory());
+            R_UNLESS(size <= m_max_heap_size,                                              svc::ResultOutOfMemory());
 
             if (size < static_cast<size_t>(m_current_heap_end - m_heap_region_start)) {
                 /* The size being requested is less than the current size, so we need to free the end of the heap. */
