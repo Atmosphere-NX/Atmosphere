@@ -57,14 +57,14 @@ namespace ams::kern::init {
         /* Constexpr counts. */
         constexpr size_t SlabCountKProcess              = 80;
         constexpr size_t SlabCountKThread               = 800;
-        constexpr size_t SlabCountKEvent                = 700;
+        constexpr size_t SlabCountKEvent                = 900;
         constexpr size_t SlabCountKInterruptEvent       = 100;
         constexpr size_t SlabCountKPort                 = 256 + 0x20 /* Extra 0x20 ports over Nintendo for homebrew. */;
         constexpr size_t SlabCountKSharedMemory         = 80;
         constexpr size_t SlabCountKTransferMemory       = 200;
         constexpr size_t SlabCountKCodeMemory           = 10;
         constexpr size_t SlabCountKDeviceAddressSpace   = 300;
-        constexpr size_t SlabCountKSession              = 933;
+        constexpr size_t SlabCountKSession              = 1133;
         constexpr size_t SlabCountKLightSession         = 100;
         constexpr size_t SlabCountKObjectName           = 7;
         constexpr size_t SlabCountKResourceLimit        = 5;
@@ -82,7 +82,7 @@ namespace ams::kern::init {
         }
 
         /* Global to hold our resource counts. */
-        KSlabResourceCounts g_slab_resource_counts = {
+        constinit KSlabResourceCounts g_slab_resource_counts = {
             .num_KProcess               = SlabCountKProcess,
             .num_KThread                = SlabCountKThread,
             .num_KEvent                 = SlabCountKEvent,
@@ -131,7 +131,9 @@ namespace ams::kern::init {
     }
 
     size_t CalculateSlabHeapGapSize() {
-        return (kern::GetTargetFirmware() >= TargetFirmware_10_0_0) ? KernelSlabHeapGapsSize : KernelSlabHeapGapsSizeDeprecated;
+        constexpr size_t KernelSlabHeapGapSize = 2_MB - 296_KB;
+        static_assert(KernelSlabHeapGapSize <= KernelSlabHeapGapsSizeMax);
+        return KernelSlabHeapGapSize;
     }
 
     size_t CalculateTotalSlabHeapSize() {
