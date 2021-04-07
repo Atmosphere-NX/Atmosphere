@@ -53,46 +53,29 @@ namespace ams::kern {
                 return pack.Get<HandleEncoded>();
             }
 
-            class Entry {
-                private:
-                    union {
-                        struct {
-                            u16 linear_id;
-                            u16 type;
-                        } info;
-                        Entry *next_free_entry;
-                    } m_meta;
-                    KAutoObject *m_object;
-                public:
-                    constexpr Entry() : m_meta(), m_object(nullptr) { /* ... */ }
+            union EntryInfo {
+                struct {
+                    u16 linear_id;
+                    u16 type;
+                } info;
+                s32 next_free_index;
 
-                    constexpr ALWAYS_INLINE void SetFree(Entry *next) {
-                        m_object = nullptr;
-                        m_meta.next_free_entry = next;
-                    }
-
-                    constexpr ALWAYS_INLINE void SetUsed(KAutoObject *obj, u16 linear_id, u16 type) {
-                        m_object = obj;
-                        m_meta.info = { linear_id, type };
-                    }
-
-                    constexpr ALWAYS_INLINE KAutoObject *GetObject() const { return m_object; }
-                    constexpr ALWAYS_INLINE Entry *GetNextFreeEntry() const { return m_meta.next_free_entry; }
-                    constexpr ALWAYS_INLINE u16 GetLinearId() const { return m_meta.info.linear_id; }
-                    constexpr ALWAYS_INLINE u16 GetType() const { return m_meta.info.type; }
+                constexpr ALWAYS_INLINE u16 GetLinearId() const { return info.linear_id; }
+                constexpr ALWAYS_INLINE u16 GetType() const { return info.type; }
+                constexpr ALWAYS_INLINE s32 GetNextFreeIndex() const { return next_free_index; }
             };
         private:
-            mutable KSpinLock m_lock;
-            Entry *m_table;
-            Entry *m_free_head;
-            Entry m_entries[MaxTableSize];
+            EntryInfo m_entry_infos[MaxTableSize];
+            KAutoObject *m_objects[MaxTableSize];
+            s32 m_free_head_index;
             u16 m_table_size;
             u16 m_max_count;
             u16 m_next_linear_id;
             u16 m_count;
+            mutable KSpinLock m_lock;
         public:
             constexpr KHandleTable() :
-                m_lock(), m_table(nullptr), m_free_head(nullptr), m_entries(), m_table_size(0), m_max_count(0), m_next_linear_id(MinLinearId), m_count(0)
+                m_entry_infos(), m_objects(), m_free_head_index(-1), m_table_size(0), m_max_count(0), m_next_linear_id(MinLinearId), m_count(0), m_lock()
             { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr NOINLINE Result Initialize(s32 size) {
@@ -101,19 +84,18 @@ namespace ams::kern {
                 R_UNLESS(size <= static_cast<s32>(MaxTableSize), svc::ResultOutOfMemory());
 
                 /* Initialize all fields. */
-                m_table = m_entries;
-                m_table_size = (size <= 0) ? MaxTableSize : size;
-                m_next_linear_id = MinLinearId;
-                m_count = 0;
-                m_max_count = 0;
+                m_max_count       = 0;
+                m_table_size      = (size <= 0) ? MaxTableSize : size;
+                m_next_linear_id  = MinLinearId;
+                m_count           = 0;
+                m_free_head_index = -1;
 
                 /* Free all entries. */
-                for (size_t i = 0; i < static_cast<size_t>(m_table_size - 1); i++) {
-                    m_entries[i].SetFree(std::addressof(m_entries[i + 1]));
+                for (s32 i = 0; i < static_cast<s32>(m_table_size); ++i) {
+                    m_objects[i]                     = nullptr;
+                    m_entry_infos[i].next_free_index = i - 1;
+                    m_free_head_index                = i;
                 }
-                m_entries[m_table_size - 1].SetFree(nullptr);
-
-                m_free_head = std::addressof(m_entries[0]);
 
                 return ResultSuccess();
             }
@@ -134,7 +116,7 @@ namespace ams::kern {
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     return this->GetObjectImpl(handle);
                 } else {
-                    if (auto *obj = this->GetObjectImpl(handle); obj != nullptr) {
+                    if (auto *obj = this->GetObjectImpl(handle); AMS_LIKELY(obj != nullptr)) {
                         return obj->DynamicCast<T*>();
                     } else {
                         return nullptr;
@@ -256,27 +238,29 @@ namespace ams::kern {
             NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type);
             NOINLINE void Register(ams::svc::Handle handle, KAutoObject *obj, u16 type);
 
-            constexpr ALWAYS_INLINE Entry *AllocateEntry() {
+            constexpr ALWAYS_INLINE s32 AllocateEntry() {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(m_count < m_table_size);
 
-                Entry *entry = m_free_head;
-                m_free_head = entry->GetNextFreeEntry();
+                const auto index  = m_free_head_index;
 
-                m_count++;
-                m_max_count = std::max(m_max_count, m_count);
+                m_free_head_index = m_entry_infos[index].GetNextFreeIndex();
 
-                return entry;
+                m_max_count = std::max(m_max_count, ++m_count);
+
+                return index;
             }
 
-            constexpr ALWAYS_INLINE void FreeEntry(Entry *entry) {
+            constexpr ALWAYS_INLINE void FreeEntry(s32 index) {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(m_count > 0);
 
-                entry->SetFree(m_free_head);
-                m_free_head = entry;
+                m_objects[index]                     = nullptr;
+                m_entry_infos[index].next_free_index = m_free_head_index;
 
-                m_count--;
+                m_free_head_index = index;
+
+                --m_count;
             }
 
             constexpr ALWAYS_INLINE u16 AllocateLinearId() {
@@ -287,13 +271,7 @@ namespace ams::kern {
                 return id;
             }
 
-            constexpr ALWAYS_INLINE size_t GetEntryIndex(Entry *entry) {
-                const size_t index = entry - m_table;
-                MESOSPHERE_ASSERT(index < m_table_size);
-                return index;
-            }
-
-            constexpr ALWAYS_INLINE Entry *FindEntry(ams::svc::Handle handle) const {
+            constexpr ALWAYS_INLINE bool IsValidHandle(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Unpack the handle. */
@@ -306,38 +284,38 @@ namespace ams::kern {
                 MESOSPHERE_UNUSED(reserved);
 
                 /* Validate our indexing information. */
-                if (raw_value == 0) {
-                    return nullptr;
+                if (AMS_UNLIKELY(raw_value == 0)) {
+                    return false;
                 }
-                if (linear_id == 0) {
-                    return nullptr;
+                if (AMS_UNLIKELY(linear_id == 0)) {
+                    return false;
                 }
-                if (index >= m_table_size) {
-                    return nullptr;
-                }
-
-                /* Get the entry, and ensure our serial id is correct. */
-                Entry *entry = std::addressof(m_table[index]);
-                if (entry->GetObject() == nullptr) {
-                    return nullptr;
-                }
-                if (entry->GetLinearId() != linear_id) {
-                    return nullptr;
+                if (AMS_UNLIKELY(index >= m_table_size)) {
+                    return false;
                 }
 
-                return entry;
+                /* Check that there's an object, and our serial id is correct. */
+                if (AMS_UNLIKELY(m_objects[index] == nullptr)) {
+                    return false;
+                }
+                if (AMS_UNLIKELY(m_entry_infos[index].GetLinearId() != linear_id)) {
+                    return false;
+                }
+
+                return true;
             }
 
             constexpr ALWAYS_INLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Handles must not have reserved bits set. */
-                if (GetHandleBitPack(handle).Get<HandleReserved>() != 0) {
+                const auto handle_pack = GetHandleBitPack(handle);
+                if (AMS_UNLIKELY(handle_pack.Get<HandleReserved>() != 0)) {
                     return nullptr;
                 }
 
-                if (Entry *entry = this->FindEntry(handle); entry != nullptr) {
-                    return entry->GetObject();
+                if (AMS_LIKELY(this->IsValidHandle(handle))) {
+                    return m_objects[handle_pack.Get<HandleIndex>()];
                 } else {
                     return nullptr;
                 }
@@ -347,18 +325,17 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Index must be in bounds. */
-                if (index >= m_table_size || m_table == nullptr) {
+                if (AMS_UNLIKELY(index >= m_table_size)) {
                     return nullptr;
                 }
 
                 /* Ensure entry has an object. */
-                Entry *entry = std::addressof(m_table[index]);
-                if (entry->GetObject() == nullptr) {
+                if (KAutoObject *obj = m_objects[index]; obj != nullptr) {
+                    *out_handle = EncodeHandle(index, m_entry_infos[index].GetLinearId());
+                    return obj;
+                } else {
                     return nullptr;
                 }
-
-                *out_handle = EncodeHandle(index, entry->GetLinearId());
-                return entry->GetObject();
             }
     };
 

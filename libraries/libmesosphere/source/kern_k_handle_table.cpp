@@ -21,23 +21,18 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Get the table and clear our record of it. */
-        Entry *saved_table = nullptr;
         u16 saved_table_size = 0;
         {
             KScopedDisableDispatch dd;
             KScopedSpinLock lk(m_lock);
 
-            std::swap(m_table, saved_table);
             std::swap(m_table_size, saved_table_size);
         }
 
         /* Close and free all entries. */
         for (size_t i = 0; i < saved_table_size; i++) {
-            Entry *entry = std::addressof(saved_table[i]);
-
-            if (KAutoObject *obj = entry->GetObject(); obj != nullptr) {
+            if (KAutoObject *obj = m_objects[i]; obj != nullptr) {
                 obj->Close();
-                this->FreeEntry(entry);
             }
         }
 
@@ -48,12 +43,13 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Don't allow removal of a pseudo-handle. */
-        if (ams::svc::IsPseudoHandle(handle)) {
+        if (AMS_UNLIKELY(ams::svc::IsPseudoHandle(handle))) {
             return false;
         }
 
         /* Handles must not have reserved bits set. */
-        if (GetHandleBitPack(handle).Get<HandleReserved>() != 0) {
+        const auto handle_pack = GetHandleBitPack(handle);
+        if (AMS_UNLIKELY(handle_pack.Get<HandleReserved>() != 0)) {
             return false;
         }
 
@@ -63,9 +59,11 @@ namespace ams::kern {
             KScopedDisableDispatch dd;
             KScopedSpinLock lk(m_lock);
 
-            if (Entry *entry = this->FindEntry(handle); entry != nullptr) {
-                obj = entry->GetObject();
-                this->FreeEntry(entry);
+            if (AMS_LIKELY(this->IsValidHandle(handle))) {
+                const auto index = handle_pack.Get<HandleIndex>();
+
+                obj = m_objects[index];
+                this->FreeEntry(index);
             } else {
                 return false;
             }
@@ -87,10 +85,14 @@ namespace ams::kern {
         /* Allocate entry, set output handle. */
         {
             const auto linear_id = this->AllocateLinearId();
-            Entry *entry = this->AllocateEntry();
-            entry->SetUsed(obj, linear_id, type);
+            const auto index     = this->AllocateEntry();
+
+            m_entry_infos[index].info = { .linear_id = linear_id, .type = type };
+            m_objects[index]          = obj;
+
             obj->Open();
-            *out_handle = EncodeHandle(this->GetEntryIndex(entry), linear_id);
+
+            *out_handle = EncodeHandle(index, linear_id);
         }
 
         return ResultSuccess();
@@ -104,7 +106,7 @@ namespace ams::kern {
         /* Never exceed our capacity. */
         R_UNLESS(m_count < m_table_size, svc::ResultOutOfHandles());
 
-        *out_handle = EncodeHandle(this->GetEntryIndex(this->AllocateEntry()), this->AllocateLinearId());
+        *out_handle = EncodeHandle(this->AllocateEntry(), this->AllocateLinearId());
         return ResultSuccess();
     }
 
@@ -122,13 +124,10 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(linear_id != 0);
         MESOSPHERE_UNUSED(linear_id, reserved);
 
-        if (index < m_table_size) {
-            /* Free the entry. */
+        if (AMS_LIKELY(index < m_table_size)) {
             /* NOTE: This code does not check the linear id. */
-            Entry *entry = std::addressof(m_table[index]);
-            MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
-
-            this->FreeEntry(entry);
+            MESOSPHERE_ASSERT(m_objects[index] == nullptr);
+            this->FreeEntry(index);
         }
     }
 
@@ -146,12 +145,13 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(linear_id != 0);
         MESOSPHERE_UNUSED(reserved);
 
-        if (index < m_table_size) {
+        if (AMS_LIKELY(index < m_table_size)) {
             /* Set the entry. */
-            Entry *entry = std::addressof(m_table[index]);
-            MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
+            MESOSPHERE_ASSERT(m_objects[index] == nullptr);
 
-            entry->SetUsed(obj, linear_id, type);
+            m_entry_infos[index].info = { .linear_id = linear_id, .type = type };
+            m_objects[index]          = obj;
+
             obj->Open();
         }
     }
