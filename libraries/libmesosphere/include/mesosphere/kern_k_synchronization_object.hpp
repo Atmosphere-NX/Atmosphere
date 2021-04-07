@@ -16,7 +16,6 @@
 #pragma once
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
-#include <mesosphere/kern_k_linked_list.hpp>
 
 namespace ams::kern {
 
