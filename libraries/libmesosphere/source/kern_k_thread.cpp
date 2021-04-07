@@ -19,6 +19,8 @@ namespace ams::kern {
 
     namespace {
 
+        constexpr inline s32 TerminatingThreadPriority = ams::svc::SystemThreadPriorityHighest - 1;
+
         constexpr bool IsKernelAddressKey(KProcessAddress key) {
             const uintptr_t key_uptr = GetInteger(key);
             return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast;
@@ -426,6 +428,14 @@ namespace ams::kern {
             if (active_core != current_core || m_physical_affinity_mask.GetAffinityMask() != m_original_physical_affinity_mask.GetAffinityMask()) {
                 KScheduler::OnThreadAffinityMaskChanged(this, m_original_physical_affinity_mask, active_core);
             }
+
+            /* Set base priority-on-unpin. */
+            const s32 old_base_priority = m_base_priority;
+            m_base_priority_on_unpin    = old_base_priority;
+
+            /* Set base priority to higher than any possible process priority. */
+            m_base_priority = std::min<s32>(old_base_priority, __builtin_ctzll(this->GetOwnerProcess()->GetPriorityMask()));
+            RestorePriority(this);
         }
 
         /* Disallow performing thread suspension. */
@@ -476,6 +486,9 @@ namespace ams::kern {
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
             }
+
+            m_base_priority = m_base_priority_on_unpin;
+            RestorePriority(this);
         }
 
         /* Allow performing thread suspension (if termination hasn't been requested). */
@@ -710,11 +723,36 @@ namespace ams::kern {
 
         KScopedSchedulerLock sl;
 
+        /* Determine the priority value to use. */
+        const s32 target_priority = m_termination_requested.load() && priority >= TerminatingThreadPriority ? TerminatingThreadPriority : priority;
+
         /* Change our base priority. */
-        m_base_priority = priority;
+        if (this->GetStackParameters().is_pinned) {
+            m_base_priority_on_unpin = target_priority;
+        } else {
+            m_base_priority = target_priority;
+        }
 
         /* Perform a priority restoration. */
         RestorePriority(this);
+    }
+
+    void KThread::IncreaseBasePriority(s32 priority) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority);
+
+        /* Set our unpin base priority, if we're pinned. */
+        if (this->GetStackParameters().is_pinned && m_base_priority_on_unpin > priority) {
+            m_base_priority_on_unpin = priority;
+        }
+
+        /* Set our base priority. */
+        if (m_base_priority > priority) {
+            m_base_priority = priority;
+
+            /* Perform a priority restoration. */
+            RestorePriority(this);
+        }
     }
 
     Result KThread::SetPriorityToIdle() {
@@ -1187,7 +1225,7 @@ namespace ams::kern {
 
             /* Change the thread's priority to be higher than any system thread's. */
             if (this->GetBasePriority() >= ams::svc::SystemThreadPriorityHighest) {
-                this->SetBasePriority(ams::svc::SystemThreadPriorityHighest - 1);
+                this->SetBasePriority(TerminatingThreadPriority);
             }
 
             /* If the thread is runnable, send a termination interrupt to other cores. */
