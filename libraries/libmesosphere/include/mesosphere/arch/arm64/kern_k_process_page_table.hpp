@@ -136,8 +136,16 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.ReadDebugMemory(buffer, address, size);
             }
 
+            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size) {
+                return m_page_table.ReadDebugIoMemory(buffer, address, size);
+            }
+
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
                 return m_page_table.WriteDebugMemory(address, buffer, size);
+            }
+
+            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size) {
+                return m_page_table.WriteDebugIoMemory(address, buffer, size);
             }
 
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
@@ -289,6 +297,10 @@ namespace ams::kern::arch::arm64 {
 
             KBlockInfoManager *GetBlockInfoManager() {
                 return m_page_table.GetBlockInfoManager();
+            }
+
+            KPageTableBase &GetBasePageTable() {
+                return m_page_table;
             }
     };
 

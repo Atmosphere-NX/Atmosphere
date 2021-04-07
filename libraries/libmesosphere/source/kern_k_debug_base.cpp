@@ -92,51 +92,7 @@ namespace ams::kern {
                 R_TRY(target_pt.ReadDebugMemory(GetVoidPointer(buffer), cur_address, cur_size));
             } else {
                 /* The memory is IO memory. */
-
-                /* Verify that the memory is readable. */
-                R_UNLESS((info.GetPermission() & KMemoryPermission_UserRead) == KMemoryPermission_UserRead, svc::ResultInvalidAddress());
-
-                /* Get the physical address of the memory.  */
-                /* NOTE: Nintendo does not verify the result of this call. */
-                KPhysicalAddress phys_addr;
-                target_pt.GetPhysicalAddress(std::addressof(phys_addr), cur_address);
-
-                /* Map the address as IO in the current process. */
-                R_TRY(debugger_pt.MapIo(util::AlignDown(GetInteger(phys_addr), PageSize), PageSize, KMemoryPermission_UserRead));
-
-                /* Get the address of the newly mapped IO. */
-                KProcessAddress io_address;
-                Result query_result = debugger_pt.QueryIoMapping(std::addressof(io_address), util::AlignDown(GetInteger(phys_addr), PageSize), PageSize);
-                MESOSPHERE_R_ASSERT(query_result);
-                R_TRY(query_result);
-
-                /* Ensure we clean up the new mapping on scope exit. */
-                ON_SCOPE_EXIT { MESOSPHERE_R_ABORT_UNLESS(debugger_pt.UnmapPages(util::AlignDown(GetInteger(io_address), PageSize), 1, KMemoryState_Io)); };
-
-                /* Adjust the io address for alignment. */
-                io_address += (GetInteger(cur_address) & (PageSize - 1));
-
-                /* Get the readable size. */
-                const size_t readable_size = std::min(cur_size, util::AlignDown(GetInteger(cur_address) + PageSize, PageSize) - GetInteger(cur_address));
-
-                /* Read the memory. */
-                switch ((GetInteger(cur_address) | readable_size) & 3) {
-                    case 0:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory32Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    case 2:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory16Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    default:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory8Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size),  svc::ResultInvalidPointer());
-                        }
-                        break;
-                }
+                R_TRY(target_pt.ReadDebugIoMemory(GetVoidPointer(buffer), cur_address, cur_size));
             }
 
             /* Advance. */
@@ -185,51 +141,7 @@ namespace ams::kern {
                 R_TRY(target_pt.WriteDebugMemory(cur_address, GetVoidPointer(buffer), cur_size));
             } else {
                 /* The memory is IO memory. */
-
-                /* Verify that the memory is writable. */
-                R_UNLESS((info.GetPermission() & KMemoryPermission_UserReadWrite) == KMemoryPermission_UserReadWrite, svc::ResultInvalidAddress());
-
-                /* Get the physical address of the memory.  */
-                /* NOTE: Nintendo does not verify the result of this call. */
-                KPhysicalAddress phys_addr;
-                target_pt.GetPhysicalAddress(std::addressof(phys_addr), cur_address);
-
-                /* Map the address as IO in the current process. */
-                R_TRY(debugger_pt.MapIo(util::AlignDown(GetInteger(phys_addr), PageSize), PageSize, KMemoryPermission_UserReadWrite));
-
-                /* Get the address of the newly mapped IO. */
-                KProcessAddress io_address;
-                Result query_result = debugger_pt.QueryIoMapping(std::addressof(io_address), util::AlignDown(GetInteger(phys_addr), PageSize), PageSize);
-                MESOSPHERE_R_ASSERT(query_result);
-                R_TRY(query_result);
-
-                /* Ensure we clean up the new mapping on scope exit. */
-                ON_SCOPE_EXIT { MESOSPHERE_R_ABORT_UNLESS(debugger_pt.UnmapPages(util::AlignDown(GetInteger(io_address), PageSize), 1, KMemoryState_Io)); };
-
-                /* Adjust the io address for alignment. */
-                io_address += (GetInteger(cur_address) & (PageSize - 1));
-
-                /* Get the readable size. */
-                const size_t readable_size = std::min(cur_size, util::AlignDown(GetInteger(cur_address) + PageSize, PageSize) - GetInteger(cur_address));
-
-                /* Read the memory. */
-                switch ((GetInteger(cur_address) | readable_size) & 3) {
-                    case 0:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory32Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    case 2:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory16Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    default:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory8Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size),  svc::ResultInvalidPointer());
-                        }
-                        break;
-                }
+                R_TRY(target_pt.WriteDebugIoMemory(cur_address, GetVoidPointer(buffer), cur_size));
             }
 
             /* Advance. */
