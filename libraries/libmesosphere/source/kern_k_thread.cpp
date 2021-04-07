@@ -599,14 +599,16 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(m_num_core_migration_disables >= 0);
 
-            /* If the core id is no-update magic, preserve the ideal core id. */
-            if (core_id == ams::svc::IdealCoreNoUpdate) {
+            /* If we're updating, set our ideal virtual core. */
+            if (core_id != ams::svc::IdealCoreNoUpdate) {
+                m_virtual_ideal_core_id = core_id;
+            } else {
+                /* Preserve our ideal core id. */
                 core_id = m_virtual_ideal_core_id;
                 R_UNLESS(((1ul << core_id) & v_affinity_mask) != 0, svc::ResultInvalidCombination());
             }
 
-            /* Set the virtual core/affinity mask. */
-            m_virtual_ideal_core_id = core_id;
+            /* Set our affinity mask. */
             m_virtual_affinity_mask = v_affinity_mask;
 
             /* Translate the virtual core to a physical core. */
