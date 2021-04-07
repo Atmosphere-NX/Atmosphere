@@ -100,6 +100,7 @@ namespace ams::kern {
             bool                        m_is_suspended{};
             bool                        m_is_immortal{};
             bool                        m_is_jit_debug{};
+            bool                        m_is_handle_table_initialized{};
             ams::svc::DebugEvent        m_jit_debug_event_type{};
             ams::svc::DebugException    m_jit_debug_exception_type{};
             uintptr_t                   m_jit_debug_params[4]{};
@@ -403,6 +404,23 @@ namespace ams::kern {
                     m_is_signaled = true;
                     this->NotifyAvailable();
                 }
+            }
+
+            ALWAYS_INLINE Result InitializeHandleTable(s32 size) {
+                /* Try to initialize the handle table. */
+                R_TRY(m_handle_table.Initialize(size));
+
+                /* We succeeded, so note that we did. */
+                m_is_handle_table_initialized = true;
+                return ResultSuccess();
+            }
+
+            ALWAYS_INLINE void FinalizeHandleTable() {
+                /* Finalize the table. */
+                m_handle_table.Finalize();
+
+                /* Note that the table is finalized. */
+                m_is_handle_table_initialized = false;
             }
     };
 
