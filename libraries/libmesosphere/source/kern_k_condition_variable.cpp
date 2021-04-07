@@ -102,14 +102,13 @@ namespace ams::kern {
                 }
             }
             MESOSPHERE_ASSERT(owner_thread.IsNotNull());
-        }
 
-        /* Remove the thread as a waiter from the lock owner. */
-        {
-            KScopedSchedulerLock sl;
-            KThread *owner_thread = cur_thread->GetLockOwner();
-            if (owner_thread != nullptr) {
-                owner_thread->RemoveWaiter(cur_thread);
+            /* Remove the thread as a waiter from the lock owner. */
+            {
+                KScopedSchedulerLock sl;
+                if (KThread *mutex_owner = cur_thread->GetLockOwner(); mutex_owner != nullptr) {
+                    mutex_owner->RemoveWaiter(cur_thread);
+                }
             }
         }
 
@@ -250,11 +249,6 @@ namespace ams::kern {
             }
         }
 
-        /* Cancel the timer wait. */
-        if (timer != nullptr) {
-            timer->CancelTask(cur_thread);
-        }
-
         /* Remove from the condition variable. */
         {
             KScopedSchedulerLock sl;
@@ -267,6 +261,11 @@ namespace ams::kern {
                 m_tree.erase(m_tree.iterator_to(*cur_thread));
                 cur_thread->ClearConditionVariable();
             }
+        }
+
+        /* Cancel the timer wait. */
+        if (timer != nullptr) {
+            timer->CancelTask(cur_thread);
         }
 
         /* Get the result. */
