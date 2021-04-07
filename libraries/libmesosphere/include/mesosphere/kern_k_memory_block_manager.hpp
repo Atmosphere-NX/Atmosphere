@@ -27,18 +27,8 @@ namespace ams::kern {
             KMemoryBlock *m_blocks[MaxBlocks];
             size_t m_index;
             KMemoryBlockSlabManager *m_slab_manager;
-        public:
-            constexpr explicit KMemoryBlockManagerUpdateAllocator(KMemoryBlockSlabManager *sm) : m_blocks(), m_index(MaxBlocks), m_slab_manager(sm) { /* ... */ }
-
-            ~KMemoryBlockManagerUpdateAllocator() {
-                for (const auto &block : m_blocks) {
-                    if (block != nullptr) {
-                        m_slab_manager->Free(block);
-                    }
-                }
-            }
-
-            Result Initialize(size_t num_blocks) {
+        private:
+            ALWAYS_INLINE Result Initialize(size_t num_blocks) {
                 /* Check num blocks. */
                 MESOSPHERE_ASSERT(num_blocks <= MaxBlocks);
 
@@ -52,6 +42,18 @@ namespace ams::kern {
                 }
 
                 return ResultSuccess();
+            }
+        public:
+            KMemoryBlockManagerUpdateAllocator(Result *out_result, KMemoryBlockSlabManager *sm, size_t num_blocks = MaxBlocks) : m_blocks(), m_index(MaxBlocks), m_slab_manager(sm) {
+                *out_result = this->Initialize(num_blocks);
+            }
+
+            ~KMemoryBlockManagerUpdateAllocator() {
+                for (const auto &block : m_blocks) {
+                    if (block != nullptr) {
+                        m_slab_manager->Free(block);
+                    }
+                }
             }
 
             KMemoryBlock *Allocate() {
