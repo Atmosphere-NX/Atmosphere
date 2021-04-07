@@ -1810,7 +1810,7 @@ namespace ams::kern {
 
         /* Select an address to map at. */
         KProcessAddress addr = Null<KProcessAddress>;
-        const size_t phys_alignment = std::min(std::min(GetInteger(phys_addr) & -GetInteger(phys_addr), size & -size), MaxPhysicalMapAlignment);
+        const size_t phys_alignment = std::min(std::min(util::GetAlignment(GetInteger(phys_addr)), util::GetAlignment(size)), MaxPhysicalMapAlignment);
         for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
             const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
             if (alignment > phys_alignment) {
@@ -1892,7 +1892,7 @@ namespace ams::kern {
 
         /* Select an address to map at. */
         KProcessAddress addr = Null<KProcessAddress>;
-        const size_t phys_alignment = std::min(std::min(GetInteger(phys_addr) & -GetInteger(phys_addr), size & -size), MaxPhysicalMapAlignment);
+        const size_t phys_alignment = std::min(std::min(util::GetAlignment(GetInteger(phys_addr)), util::GetAlignment(size)), MaxPhysicalMapAlignment);
         for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
             const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
             if (alignment > phys_alignment) {

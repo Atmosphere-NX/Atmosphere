@@ -556,13 +556,13 @@ namespace ams::kern::arch::arm64 {
         /* If we're not forcing an unmap, separate pages immediately. */
         if (!force) {
             const size_t size = num_pages * PageSize;
-            R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+            R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
             if (num_pages > 1) {
                 const auto end_page  = virt_addr + size;
                 const auto last_page = end_page - PageSize;
 
                 auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-                R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
+                R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
                 merge_guard.Cancel();
             }
         }
@@ -1194,13 +1194,13 @@ namespace ams::kern::arch::arm64 {
 
         /* Separate pages before we change permissions. */
         const size_t size = num_pages * PageSize;
-        R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+        R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
         if (num_pages > 1) {
             const auto end_page  = virt_addr + size;
             const auto last_page = end_page - PageSize;
 
             auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-            R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
+            R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
             merge_guard.Cancel();
         }
 
