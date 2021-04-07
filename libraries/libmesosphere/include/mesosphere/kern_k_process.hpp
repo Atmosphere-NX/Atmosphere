@@ -77,8 +77,7 @@ namespace ams::kern {
             bool                        m_is_initialized{};
             bool                        m_is_application{};
             char                        m_name[13]{};
-            std::atomic<u16>            m_num_threads{};
-            u16                         m_peak_num_threads{};
+            std::atomic<u16>            m_num_running_threads{};
             u32                         m_flags{};
             KMemoryManager::Pool        m_memory_pool{};
             s64                         m_schedule_count{};
@@ -108,7 +107,6 @@ namespace ams::kern {
             KThread                    *m_running_threads[cpu::NumCores]{};
             u64                         m_running_thread_idle_counts[cpu::NumCores]{};
             KThread                    *m_pinned_threads[cpu::NumCores]{};
-            std::atomic<s32>            m_num_created_threads{};
             std::atomic<s64>            m_cpu_time{};
             std::atomic<s64>            m_num_process_switches{};
             std::atomic<s64>            m_num_thread_switches{};
@@ -124,7 +122,7 @@ namespace ams::kern {
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
 
-            void StartTermination();
+            Result StartTermination();
             void FinishTermination();
 
             void PinThread(s32 core_id, KThread *thread) {
@@ -285,8 +283,8 @@ namespace ams::kern {
             constexpr s64 GetScheduledCount() const { return m_schedule_count; }
             void IncrementScheduledCount() { ++m_schedule_count; }
 
-            void IncrementThreadCount();
-            void DecrementThreadCount();
+            void IncrementRunningThreadCount();
+            void DecrementRunningThreadCount();
 
             size_t GetTotalSystemResourceSize() const { return m_system_resource_num_pages * PageSize; }
             size_t GetUsedSystemResourceSize() const {

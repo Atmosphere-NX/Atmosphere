@@ -28,7 +28,7 @@ namespace ams::kern {
         std::atomic<u64> g_initial_process_id = InitialProcessIdMin;
         std::atomic<u64> g_process_id         = ProcessIdMin;
 
-        void TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
+        Result TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
             /* Request that all children threads terminate. */
             {
                 KScopedLightLock proc_lk(process->GetListLock());
@@ -70,9 +70,14 @@ namespace ams::kern {
                 }
 
                 /* Terminate and close the thread. */
-                cur_child->Terminate();
-                cur_child->Close();
+                ON_SCOPE_EXIT { cur_child->Close(); };
+
+                if (Result terminate_result = cur_child->Terminate(); svc::ResultTerminationRequested::Includes(terminate_result)) {
+                    return terminate_result;
+                }
             }
+
+            return ResultSuccess();
         }
 
     }
@@ -206,9 +211,7 @@ namespace ams::kern {
         KSystemControl::GenerateRandomBytes(m_entropy, sizeof(m_entropy));
 
         /* Clear remaining fields. */
-        m_num_threads           = 0;
-        m_peak_num_threads      = 0;
-        m_num_created_threads   = 0;
+        m_num_running_threads   = 0;
         m_num_process_switches  = 0;
         m_num_thread_switches   = 0;
         m_num_fpu_switches      = 0;
@@ -402,12 +405,14 @@ namespace ams::kern {
         this->FinishTermination();
     }
 
-    void KProcess::StartTermination() {
-        /* Terminate child threads other than the current one. */
-        TerminateChildren(this, GetCurrentThreadPointer());
+    Result KProcess::StartTermination() {
+        /* Finalize the handle table, when we're done. */
+        ON_SCOPE_EXIT {
+            m_handle_table.Finalize();
+        };
 
-        /* Finalize the handle tahble. */
-        m_handle_table.Finalize();
+        /* Terminate child threads other than the current one. */
+        return TerminateChildren(this, GetCurrentThreadPointer());
     }
 
     void KProcess::FinishTermination() {
@@ -485,16 +490,22 @@ namespace ams::kern {
         /* If we need to terminate, do so. */
         if (needs_terminate) {
             /* Start termination. */
-            this->StartTermination();
+            if (R_SUCCEEDED(this->StartTermination())) {
+                /* Note for debug that we're terminating the process. */
+                MESOSPHERE_LOG("KProcess::Terminate() OK pid=%ld name=%-12s\n", m_process_id, m_name);
 
-            /* Note for debug that we're terminating the process. */
-            MESOSPHERE_LOG("KProcess::Terminate() pid=%ld name=%-12s\n", m_process_id, m_name);
+                /* Call the debug callback. */
+                KDebug::OnTerminateProcess(this);
 
-            /* Call the debug callback. */
-            KDebug::OnTerminateProcess(this);
+                /* Finish termination. */
+                this->FinishTermination();
+            } else {
+                /* Note for debug that we're terminating the process. */
+                MESOSPHERE_LOG("KProcess::Terminate() FAIL pid=%ld name=%-12s\n", m_process_id, m_name);
 
-            /* Finish termination. */
-            this->FinishTermination();
+                /* Register the process as a work task. */
+                KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+            }
         }
 
         return ResultSuccess();
@@ -703,19 +714,16 @@ namespace ams::kern {
         }
     }
 
-    void KProcess::IncrementThreadCount() {
-        MESOSPHERE_ASSERT(m_num_threads >= 0);
-        ++m_num_created_threads;
+    void KProcess::IncrementRunningThreadCount() {
+        MESOSPHERE_ASSERT(m_num_running_threads.load() >= 0);
 
-        if (const auto count = ++m_num_threads; count > m_peak_num_threads) {
-            m_peak_num_threads = count;
-        }
+        m_num_running_threads.fetch_add(1);
     }
 
-    void KProcess::DecrementThreadCount() {
-        MESOSPHERE_ASSERT(m_num_threads > 0);
+    void KProcess::DecrementRunningThreadCount() {
+        MESOSPHERE_ASSERT(m_num_running_threads.load() > 0);
 
-        if (const auto count = --m_num_threads; count == 0) {
+        if (m_num_running_threads.fetch_sub(1) == 1) {
             this->Terminate();
         }
     }
@@ -896,7 +904,7 @@ namespace ams::kern {
         /* Create a new thread for the process. */
         KThread *main_thread = KThread::Create();
         R_UNLESS(main_thread != nullptr, svc::ResultOutOfResource());
-        auto thread_guard = SCOPE_GUARD { main_thread->Close(); };
+        ON_SCOPE_EXIT { main_thread->Close(); };
 
         /* Initialize the thread. */
         R_TRY(KThread::InitializeUserThread(main_thread, reinterpret_cast<KThreadFunction>(GetVoidPointer(this->GetEntryPoint())), 0, stack_top, priority, m_ideal_core_id, this));
@@ -919,9 +927,11 @@ namespace ams::kern {
         /* Run our thread. */
         R_TRY(main_thread->Run());
 
+        /* Open a reference to represent that we're running. */
+        this->Open();
+
         /* We succeeded! Cancel our guards. */
         state_guard.Cancel();
-        thread_guard.Cancel();
         ht_guard.Cancel();
         stack_guard.Cancel();
         mem_reservation.Commit();

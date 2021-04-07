@@ -526,7 +526,7 @@ namespace ams::kern::board::nintendo::nx {
                     #if defined(MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT)
                     {
                         /* Clear the interrupt when we're done. */
-                        ON_SCOPE_EXIT { Kernel::GetInterruptManager().ClearInterrupt(KInterruptName_MemoryController); };
+                        ON_SCOPE_EXIT { Kernel::GetInterruptManager().ClearInterrupt(KInterruptName_MemoryController, GetCurrentCoreId()); };
 
                         /* Get and clear the interrupt status. */
                         u32 int_status, err_status, err_adr;

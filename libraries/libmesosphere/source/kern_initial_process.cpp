@@ -210,6 +210,7 @@ namespace ams::kern {
         /* Run the processes. */
         for (size_t i = 0; i < g_initial_process_binary_header.num_processes; i++) {
             MESOSPHERE_R_ABORT_UNLESS(infos[i].process->Run(infos[i].priority, infos[i].stack_size));
+            infos[i].process->Close();
         }
     }
 

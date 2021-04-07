@@ -184,7 +184,6 @@ namespace ams::kern {
         if (owner != nullptr) {
             m_parent = owner;
             m_parent->Open();
-            m_parent->IncrementThreadCount();
         }
 
         /* Initialize thread context. */
@@ -310,11 +309,6 @@ namespace ams::kern {
         /* Cleanup the kernel stack. */
         if (m_kernel_stack_top != nullptr) {
             CleanupKernelStack(reinterpret_cast<uintptr_t>(m_kernel_stack_top));
-        }
-
-        /* Decrement the parent process's thread count. */
-        if (m_parent != nullptr) {
-            m_parent->DecrementThreadCount();
         }
 
         /* Perform inherited finalization. */
@@ -444,11 +438,7 @@ namespace ams::kern {
             m_suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
 
             /* Update our state. */
-            const ThreadState old_state = m_thread_state;
-            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (m_thread_state != old_state) {
-                KScheduler::OnThreadStateChanged(this, old_state);
-            }
+            this->UpdateState();
         }
 
         /* Update our SVC access permissions. */
@@ -499,11 +489,7 @@ namespace ams::kern {
             }
 
             /* Update our state. */
-            const ThreadState old_state = m_thread_state;
-            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (m_thread_state != old_state) {
-                KScheduler::OnThreadStateChanged(this, old_state);
-            }
+            this->UpdateState();
         }
 
         /* Update our SVC access permissions. */
@@ -790,11 +776,7 @@ namespace ams::kern {
         m_suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
 
         /* Update our state. */
-        const ThreadState old_state = m_thread_state;
-        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-        if (m_thread_state != old_state) {
-            KScheduler::OnThreadStateChanged(this, old_state);
-        }
+        this->UpdateState();
     }
 
     void KThread::WaitCancel() {
@@ -830,20 +812,22 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(this->GetNumKernelWaiters() == 0);
 
         /* Perform the suspend. */
-        this->Suspend();
+        this->UpdateState();
     }
 
-    void KThread::Suspend() {
+    void KThread::UpdateState() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-        MESOSPHERE_ASSERT(this->IsSuspendRequested());
 
         /* Set our suspend flags in state. */
         const auto old_state = m_thread_state;
-        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        const auto new_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        m_thread_state = new_state;
 
         /* Note the state change in scheduler. */
-        KScheduler::OnThreadStateChanged(this, old_state);
+        if (new_state != old_state) {
+            KScheduler::OnThreadStateChanged(this, old_state);
+        }
     }
 
     void KThread::Continue() {
@@ -1137,14 +1121,20 @@ namespace ams::kern {
 
             /* If the current thread has been asked to suspend, suspend it and retry. */
             if (GetCurrentThread().IsSuspended()) {
-                GetCurrentThread().Suspend();
+                GetCurrentThread().UpdateState();
                 continue;
             }
 
             /* If we're not a kernel thread and we've been asked to suspend, suspend ourselves. */
-            if (this->IsUserThread() && this->IsSuspended()) {
-                this->Suspend();
+            if (KProcess *parent = this->GetOwnerProcess(); parent != nullptr) {
+                if (this->IsSuspended()) {
+                    this->UpdateState();
+                }
+                parent->IncrementRunningThreadCount();
             }
+
+            /* Open a reference, now that we're running. */
+            this->Open();
 
             /* Set our state and finish. */
             this->SetState(KThread::ThreadState_Runnable);
@@ -1160,10 +1150,11 @@ namespace ams::kern {
         /* Call the debug callback. */
         KDebug::OnExitThread(this);
 
-        /* Release the thread resource hint from parent. */
+        /* Release the thread resource hint, running thread count from parent. */
         if (m_parent != nullptr) {
             m_parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
             m_resource_limit_release_hint = true;
+            m_parent->DecrementRunningThreadCount();
         }
 
         /* Perform termination. */
@@ -1172,6 +1163,7 @@ namespace ams::kern {
 
             /* Disallow all suspension. */
             m_suspend_allowed_flags = 0;
+            this->UpdateState();
 
             /* Start termination. */
             this->StartTermination();
@@ -1183,7 +1175,7 @@ namespace ams::kern {
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }
 
-    void KThread::Terminate() {
+    Result KThread::Terminate() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this != GetCurrentThreadPointer());
 
@@ -1192,7 +1184,9 @@ namespace ams::kern {
             /* If the thread isn't terminated, wait for it to terminate. */
             s32 index;
             KSynchronizationObject *objects[] = { this };
-            KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+            return KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+        } else {
+            return ResultSuccess();
         }
     }
 
@@ -1223,7 +1217,7 @@ namespace ams::kern {
             /* If the thread is suspended, continue it. */
             if (this->IsSuspended()) {
                 m_suspend_allowed_flags = 0;
-                this->Continue();
+                this->UpdateState();
             }
 
             /* Change the thread's priority to be higher than any system thread's. */
