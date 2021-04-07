@@ -362,10 +362,9 @@ namespace ams::kern::init {
         /* NOTE: Nintendo does this only on 10.0.0+ */
         init_pt.PhysicallyRandomize(slab_region_start, slab_region_size, false);
 
-        /* Determine size available for kernel page table heaps, requiring > 8 MB. */
+        /* Determine size available for kernel page table heaps. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
         const size_t page_table_heap_size = GetInteger(resource_end_phys_addr) - GetInteger(slab_end_phys_addr);
-        MESOSPHERE_INIT_ABORT_UNLESS(page_table_heap_size / 4_MB > 2);
 
         /* Insert a physical region for the kernel page table heap region */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));

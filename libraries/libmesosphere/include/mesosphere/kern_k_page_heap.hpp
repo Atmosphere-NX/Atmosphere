@@ -125,7 +125,7 @@ namespace ams::kern {
         private:
             KVirtualAddress m_heap_address;
             size_t m_heap_size;
-            size_t m_used_size;
+            size_t m_initial_used_size;
             size_t m_num_blocks;
             Block m_blocks[NumMemoryBlockPageShifts];
         private:
@@ -134,7 +134,7 @@ namespace ams::kern {
 
             void FreeBlock(KVirtualAddress block, s32 index);
         public:
-            KPageHeap() : m_heap_address(), m_heap_size(), m_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
+            KPageHeap() : m_heap_address(), m_heap_size(), m_initial_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
 
             constexpr KVirtualAddress GetAddress() const { return m_heap_address; }
             constexpr size_t GetSize() const { return m_heap_size; }
@@ -149,8 +149,13 @@ namespace ams::kern {
             size_t GetFreeSize() const { return this->GetNumFreePages() * PageSize; }
             void DumpFreeList() const;
 
-            void UpdateUsedSize() {
-                m_used_size = m_heap_size - (this->GetNumFreePages() * PageSize);
+            void SetInitialUsedSize(size_t reserved_size) {
+                /* Check that the reserved size is valid. */
+                const size_t free_size = this->GetNumFreePages() * PageSize;
+                MESOSPHERE_ABORT_UNLESS(m_heap_size >= free_size + reserved_size);
+
+                /* Set the initial used size. */
+                m_initial_used_size = m_heap_size - free_size - reserved_size;
             }
 
             KVirtualAddress AllocateBlock(s32 index, bool random);

@@ -100,19 +100,48 @@ namespace ams::kern {
         }
 
         /* Free each region to its corresponding heap. */
+        size_t reserved_sizes[MaxManagerCount] = {};
+        const uintptr_t ini_start = GetInteger(GetInitialProcessBinaryAddress());
+        const uintptr_t ini_end   = ini_start + InitialProcessBinarySizeMax;
+        const uintptr_t ini_last  = ini_end - 1;
         for (const auto &it : KMemoryLayout::GetVirtualMemoryRegionTree()) {
             if (it.IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool)) {
-                /* Check the region. */
-                MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
+                /* Get the manager for the region. */
+                auto &manager = m_managers[it.GetAttributes()];
 
-                /* Free the memory to the heap. */
-                m_managers[it.GetAttributes()].Free(it.GetAddress(), it.GetSize() / PageSize);
+                if (it.GetAddress() <= ini_start && ini_last <= it.GetLastAddress()) {
+                    /* Free memory before the ini to the heap. */
+                    if (it.GetAddress() != ini_start) {
+                        manager.Free(it.GetAddress(), (ini_start - it.GetAddress()) / PageSize);
+                    }
+
+                    /* Open/reserve the ini memory. */
+                    manager.OpenFirst(ini_start, InitialProcessBinarySizeMax / PageSize);
+                    reserved_sizes[it.GetAttributes()] += InitialProcessBinarySizeMax;
+
+                    /* Free memory after the ini to the heap. */
+                    if (ini_last != it.GetLastAddress()) {
+                        MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
+                        manager.Free(ini_end, it.GetEndAddress() - ini_end);
+                    }
+                } else {
+                    /* Ensure there's no partial overlap with the ini image. */
+                    if (it.GetAddress() <= ini_last) {
+                        MESOSPHERE_ABORT_UNLESS(it.GetLastAddress() < ini_start);
+                    } else {
+                        /* Otherwise, check the region for general validity. */
+                        MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
+                    }
+
+                    /* Free the memory to the heap. */
+                    manager.Free(it.GetAddress(), it.GetSize() / PageSize);
+                }
             }
         }
 
         /* Update the used size for all managers. */
         for (size_t i = 0; i < m_num_managers; ++i) {
-            m_managers[i].UpdateUsedHeapSize();
+            m_managers[i].SetInitialUsedHeapSize(reserved_sizes[i]);
         }
     }
 
