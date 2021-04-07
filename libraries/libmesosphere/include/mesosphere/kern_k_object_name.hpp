@@ -47,6 +47,9 @@ namespace ams::kern {
                 Derived *derived = obj->DynamicCast<Derived *>();
                 R_UNLESS(derived != nullptr, svc::ResultNotFound());
 
+                /* Check that the object is closed. */
+                R_UNLESS(derived->IsServerClosed(), svc::ResultInvalidState());
+
                 return Delete(obj.GetPointerUnsafe(), name);
             }
 

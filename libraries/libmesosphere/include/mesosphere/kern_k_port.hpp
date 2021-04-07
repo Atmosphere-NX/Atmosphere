@@ -53,6 +53,11 @@ namespace ams::kern {
             uintptr_t GetName() const { return m_name; }
             bool IsLight() const { return m_is_light; }
 
+            bool IsServerClosed() const {
+                KScopedSchedulerLock sl;
+                return m_state == State::ServerClosed;
+            }
+
             Result EnqueueSession(KServerSession *session);
             Result EnqueueSession(KLightServerSession *session);
 
