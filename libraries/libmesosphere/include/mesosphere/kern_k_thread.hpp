@@ -209,6 +209,7 @@ namespace ams::kern {
             Result                          m_wait_result;
             Result                          m_debug_exception_result;
             s32                             m_base_priority{};
+            s32                             m_base_priority_on_unpin{};
             s32                             m_physical_ideal_core_id{};
             s32                             m_virtual_ideal_core_id{};
             s32                             m_num_kernel_waiters{};
@@ -346,6 +347,8 @@ namespace ams::kern {
 
             void StartTermination();
             void FinishTermination();
+
+            void IncreaseBasePriority(s32 priority);
         public:
             constexpr u64 GetThreadId() const { return m_thread_id; }
 
