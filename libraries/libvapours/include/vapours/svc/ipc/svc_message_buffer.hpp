@@ -410,20 +410,24 @@ namespace ams::svc::ipc {
 
             template<typename T>
             ALWAYS_INLINE const T &GetRaw(s32 index) const {
-                return *reinterpret_cast<const T *>(this->buffer + index);
+                if constexpr (!std::same_as<T, bool>) {
+                    return *reinterpret_cast<const T *>(this->buffer + index);
+                } else {
+                    return *reinterpret_cast<const u8 *>(this->buffer + index) & 1;
+                }
             }
 
             template<typename T>
-            ALWAYS_INLINE s32 SetRaw(s32 index, const T &val) {
+            ALWAYS_INLINE s32 SetRaw(s32 index, const T &val) const {
                 *reinterpret_cast<const T *>(this->buffer + index) = val;
                 return index + (util::AlignUp(sizeof(val), sizeof(*this->buffer)) / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE void GetRawArray(s32 index, void *dst, size_t len) {
+            ALWAYS_INLINE void GetRawArray(s32 index, void *dst, size_t len) const {
                 __builtin_memcpy(dst, this->buffer + index, len);
             }
 
-            ALWAYS_INLINE void SetRawArray(s32 index, const void *src, size_t len) {
+            ALWAYS_INLINE void SetRawArray(s32 index, const void *src, size_t len) const {
                 __builtin_memcpy(this->buffer + index, src, len);
             }
 
@@ -489,10 +493,18 @@ namespace ams::svc::ipc {
                 __builtin_memcpy(this->buffer + index, std::addressof(value), sizeof(value));
             }
 
+            ALWAYS_INLINE u32 Get32(s32 index) const {
+                return this->buffer[index];
+            }
+
+            ALWAYS_INLINE u64 Get64(s32 index) const {
+                u64 value;
+                __builtin_memcpy(std::addressof(value), this->buffer + index, sizeof(value));
+                return value;
+            }
+
             ALWAYS_INLINE u64 GetProcessId(s32 index) const {
-                u64 pid;
-                __builtin_memcpy(std::addressof(pid), this->buffer + index, sizeof(pid));
-                return pid;
+                return this->Get64(index);
             }
 
             ALWAYS_INLINE ams::svc::Handle GetHandle(s32 index) const {

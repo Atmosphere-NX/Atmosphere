@@ -84,6 +84,7 @@
 #include <stratosphere/socket.hpp>
 #include <stratosphere/spl.hpp>
 #include <stratosphere/time.hpp>
+#include <stratosphere/tipc.hpp>
 #include <stratosphere/tma.hpp>
 #include <stratosphere/updater.hpp>
 #include <stratosphere/usb.hpp>
