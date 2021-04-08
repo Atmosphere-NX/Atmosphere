@@ -30,32 +30,24 @@ namespace ams::kern::svc {
             /* Determine aligned extents. */
             const uintptr_t aligned_start = util::AlignDown(address, PageSize);
             const uintptr_t aligned_end   = util::AlignUp(address + size, PageSize);
-            const size_t num_pages        = (aligned_end - aligned_start) / PageSize;
 
-            /* Create a page group for the process's memory. */
-            KPageGroup pg(page_table.GetBlockInfoManager());
-
-            /* Make and open the page group. */
-            R_TRY(page_table.MakeAndOpenPageGroup(std::addressof(pg),
-                                                  aligned_start, num_pages,
-                                                  KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                  KMemoryPermission_UserRead, KMemoryPermission_UserRead,
-                                                  KMemoryAttribute_Uncached, KMemoryAttribute_None));
-
-            /* Ensure we don't leak references to the pages we're operating on. */
-            ON_SCOPE_EXIT { pg.Close(); };
-
-            /* Operate on all the blocks. */
+            /* Iterate over and operate on contiguous ranges. */
             uintptr_t cur_address = aligned_start;
             size_t remaining = size;
-            for (const auto &block : pg) {
-                /* Get the block extents. */
-                KVirtualAddress operate_address = block.GetAddress();
-                size_t operate_size             = block.GetSize();
+            while (remaining > 0) {
+                /* Get a contiguous range to operate on. */
+                KPageTableBase::MemoryRange contig_range = {};
+                R_TRY(page_table.OpenMemoryRangeForProcessCacheOperation(std::addressof(contig_range), cur_address, aligned_end - cur_address));
+
+                /* Close the range when we're done operating on it. */
+                ON_SCOPE_EXIT { contig_range.Close(); };
 
                 /* Adjust to remain within range. */
+                KVirtualAddress operate_address = contig_range.address;
+                size_t operate_size             = contig_range.size;
                 if (cur_address < address) {
                     operate_address += (address - cur_address);
+                    operate_size    -= (address - cur_address);
                 }
                 if (operate_size > remaining) {
                     operate_size = remaining;
@@ -65,7 +57,7 @@ namespace ams::kern::svc {
                 operation.Operate(GetVoidPointer(operate_address), operate_size);
 
                 /* Advance. */
-                cur_address += block.GetSize();
+                cur_address += contig_range.size;
                 remaining   -= operate_size;
             }
             MESOSPHERE_ASSERT(remaining == 0);
