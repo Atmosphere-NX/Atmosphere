@@ -73,7 +73,7 @@ namespace ams::tipc::impl {
         concept Is##CLASSNAME = CMD_MACRO(CLASSNAME, AMS_TIPC_IMPL_CHECK_CONCEPT_HELPER) true;
 
     #define AMS_TIPC_IMPL_PROCESS_METHOD_REQUEST(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX) \
-        if (constexpr u16 TipcCommandId = CMD_ID + 0x10; tag == TipcCommandId) {                                            \
+        else if (constexpr u16 TipcCommandId = CMD_ID + 0x10; tag == TipcCommandId) {                                       \
             return this->ProcessMethodById<TipcCommandId, ImplType>(impl, message_buffer, fw_ver);                          \
         }
 
