@@ -14,5 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
-#include <stratosphere/tipc/impl/tipc_impl_command_serialization.hpp>
+#include <vapours.hpp>
+#include <stratosphere/ams.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/sm/sm_types.hpp>
