@@ -152,6 +152,14 @@ namespace ams::svc::ipc {
                         this->header.Set<MoveHandleCount>(move);
                     }
 
+                    consteval explicit SpecialHeader(bool pid, s32 copy, s32 move, bool _has_header) : header{0}, has_header(_has_header) {
+                        this->header.Set<HasProcessId>(pid);
+                        this->header.Set<CopyHandleCount>(copy);
+                        this->header.Set<MoveHandleCount>(move);
+
+                        AMS_ASSUME(this->has_header == (this->GetHasProcessId() || this->GetCopyHandleCount() > 0 || this->GetMoveHandleCount() > 0));
+                    }
+
                     ALWAYS_INLINE explicit SpecialHeader(const MessageBuffer &buf, const MessageHeader &hdr) : header{0}, has_header(hdr.GetHasSpecialHeader()) {
                         if (this->has_header) {
                             buf.Get(MessageHeader::GetDataSize() / sizeof(util::BitPack32), std::addressof(this->header), sizeof(this->header) / sizeof(util::BitPack32));
@@ -410,11 +418,7 @@ namespace ams::svc::ipc {
 
             template<typename T>
             ALWAYS_INLINE const T &GetRaw(s32 index) const {
-                if constexpr (!std::same_as<T, bool>) {
-                    return *reinterpret_cast<const T *>(this->buffer + index);
-                } else {
-                    return *reinterpret_cast<const u8 *>(this->buffer + index) & 1;
-                }
+                return *reinterpret_cast<const T *>(this->buffer + index);
             }
 
             template<typename T>

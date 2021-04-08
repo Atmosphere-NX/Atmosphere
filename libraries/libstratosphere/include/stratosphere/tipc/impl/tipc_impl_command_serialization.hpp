@@ -15,6 +15,10 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/tipc/tipc_common.hpp>
+#include <stratosphere/tipc/tipc_out.hpp>
+#include <stratosphere/tipc/tipc_buffers.hpp>
+#include <stratosphere/tipc/tipc_handles.hpp>
 
 namespace ams::tipc {
 
@@ -72,13 +76,13 @@ namespace ams::tipc::impl {
     constexpr inline ArgumentType GetArgumentType = [] {
         if constexpr (tipc::IsBuffer<T>) {
             return ArgumentType::Buffer;
-        } else if constexpr (std::is_base_of<sf::impl::InHandleTag, T>::value) {
+        } else if constexpr (std::is_base_of<tipc::impl::InHandleTag, T>::value) {
             return ArgumentType::InHandle;
-        } else if constexpr (std::is_base_of<sf::impl::OutHandleTag, T>::value) {
+        } else if constexpr (std::is_base_of<tipc::impl::OutHandleTag, T>::value) {
             return ArgumentType::OutHandle;
-        } else if constexpr (std::is_base_of<sf::impl::OutBaseTag, T>::value) {
+        } else if constexpr (std::is_base_of<tipc::impl::OutBaseTag, T>::value) {
             return ArgumentType::OutData;
-        } else if constexpr (std::same_as<tipc::ClientProcessId>) {
+        } else if constexpr (std::same_as<T, tipc::ClientProcessId>) {
             return ArgumentType::ProcessId;
         } else if constexpr (std::is_trivial<T>::value && !std::is_pointer<T>::value) {
             return ArgumentType::InData;
@@ -111,21 +115,21 @@ namespace ams::tipc::impl {
     template<typename T>
     using OutHandleFilter = ArgumentTypeFilter<T, ArgumentType::OutHandle>;
 
+    template<typename T>
+    using ProcessIdFilter = ArgumentTypeFilter<T, ArgumentType::ProcessId>;
+
     /* Handle kind filters. */
     template<typename T>
-    using InMoveHandleFilter = TypeEqualityFilter<T, sf::MoveHandle>;
+    using InMoveHandleFilter = TypeEqualityFilter<T, tipc::MoveHandle>;
 
     template<typename T>
-    using InCopyHandleFilter = TypeEqualityFilter<T, sf::CopyHandle>;
+    using InCopyHandleFilter = TypeEqualityFilter<T, tipc::CopyHandle>;
 
     template<typename T>
-    using OutMoveHandleFilter = TypeEqualityFilter<T, sf::Out<sf::MoveHandle>>;
+    using OutMoveHandleFilter = TypeEqualityFilter<T, tipc::Out<tipc::MoveHandle>>;
 
     template<typename T>
-    using OutCopyHandleFilter = TypeEqualityFilter<T, sf::Out<sf::CopyHandle>>;
-
-    template<typename T>
-    struct ProcessIdFilter = ArgumentTypeFilter<T, ArgumentType::ProcessId>;
+    using OutCopyHandleFilter = TypeEqualityFilter<T, tipc::Out<tipc::CopyHandle>>;
 
     template<typename>
     struct BufferAttributeArrayGetter;
@@ -236,7 +240,8 @@ namespace ams::tipc::impl {
     template<u16 _CommandId, typename... Arguments>
     struct CommandMetaInfo {
         public:
-            using CommandId = _CommandId;
+            static constexpr u16 CommandId = _CommandId;
+
             using ArgsType  = std::tuple<typename std::decay<Arguments>::type...>;
 
             using InDatas    = TupleFilter<InDataFilter>::FilteredType<ArgsType>;
@@ -257,7 +262,7 @@ namespace ams::tipc::impl {
 
             static_assert(NumBuffers <= 8, "Methods must take in <= 8 Buffers");
             static_assert(NumInHandles <= 8, "Methods must take in <= 8 Handles");
-            static_assert(NumOutHandles + NumOutObjects <= 8, "Methods must output <= 8 Handles");
+            static_assert(NumOutHandles <= 8, "Methods must output <= 8 Handles");
 
             /* Buffer marshalling. */
             static constexpr std::array<u32, NumBuffers> BufferAttributes = BufferAttributeArrayGetter<Buffers>::value;
@@ -292,8 +297,8 @@ namespace ams::tipc::impl {
             /* tipc-specific accessors. */
             static constexpr bool HasInSpecialHeader = HasProcessId || NumInHandles > 0;
 
-            static constexpr svc::ipc::MessageBuffer::MessageHeader InMessageHeader(CommandId, HasInSpecialHeader, 0, NumInBuffers, NumOutBuffers, 0, InDataSize / sizeof(u32), 0);
-            static constexpr svc::ipc::MessageBuffer::SpecialHeader InSpecialHeader(HasProcessId, NumInMoveHandles, NumInCopyHandles);
+            static constexpr svc::ipc::MessageBuffer::MessageHeader InMessageHeader{CommandId, HasInSpecialHeader, 0, NumInBuffers, NumOutBuffers, 0, InDataSize / sizeof(u32), 0};
+            static constexpr svc::ipc::MessageBuffer::SpecialHeader InSpecialHeader{HasProcessId, NumInCopyHandles, NumInMoveHandles, HasInSpecialHeader};
 
             static constexpr auto InMessageProcessIdIndex = svc::ipc::MessageBuffer::GetSpecialDataIndex(InMessageHeader, InSpecialHeader);
             static constexpr auto InMessageHandleIndex    = svc::ipc::MessageBuffer::GetSpecialDataIndex(InMessageHeader, InSpecialHeader) + (HasProcessId ? sizeof(u64) / sizeof(u32) : 0);
@@ -302,8 +307,8 @@ namespace ams::tipc::impl {
 
             static constexpr bool HasOutSpecialHeader = NumOutHandles > 0;
 
-            static constexpr svc::ipc::MessageBuffer::MessageHeader OutMessageHeader(CommandId, HasOutSpecialHeader, 0, 0, 0, 0, (OutDataSize / sizeof(u32)) + 1, 0);
-            static constexpr svc::ipc::MessageBuffer::SpecialHeader OutSpecialHeader(false, NumOutMoveHandles, NumOutCopyHandles);
+            static constexpr svc::ipc::MessageBuffer::MessageHeader OutMessageHeader{CommandId, HasOutSpecialHeader, 0, 0, 0, 0, (OutDataSize / sizeof(u32)) + 1, 0};
+            static constexpr svc::ipc::MessageBuffer::SpecialHeader OutSpecialHeader{false, NumOutCopyHandles, NumOutMoveHandles, HasOutSpecialHeader};
 
             static constexpr auto OutMessageHandleIndex  = svc::ipc::MessageBuffer::GetSpecialDataIndex(OutMessageHeader, OutSpecialHeader);
             static constexpr auto OutMessageRawDataIndex = svc::ipc::MessageBuffer::GetRawDataIndex(OutMessageHeader, OutSpecialHeader);
@@ -322,10 +327,6 @@ namespace ams::tipc::impl {
                     /* Save a copy of the current state to return. */
                     ArgumentSerializationInfo returned_info = current_info;
 
-                    /* Clear previous iteration's fixed size. */
-                    returned_info.fixed_size = 0;
-                    current_info.fixed_size = 0;
-
                     constexpr auto arg_type = GetArgumentType<T>;
                     returned_info.arg_type = arg_type;
                     if constexpr (arg_type == ArgumentType::InData) {
@@ -336,18 +337,18 @@ namespace ams::tipc::impl {
                         current_info.out_raw_data_index++;
                     } else if constexpr (arg_type == ArgumentType::InHandle) {
                         /* New InHandle, increment the appropriate index. */
-                        if constexpr (std::is_same<T, sf::MoveHandle>::value) {
+                        if constexpr (std::is_same<T, tipc::MoveHandle>::value) {
                             current_info.in_move_handle_index++;
-                        } else if constexpr (std::is_same<T, sf::CopyHandle>::value) {
+                        } else if constexpr (std::is_same<T, tipc::CopyHandle>::value) {
                             current_info.in_copy_handle_index++;
                         } else {
                             static_assert(!std::is_same<T, T>::value, "Invalid InHandle kind");
                         }
                     } else if constexpr (arg_type == ArgumentType::OutHandle) {
                         /* New OutHandle, increment the appropriate index. */
-                        if constexpr (std::is_same<T, sf::Out<sf::MoveHandle>>::value) {
+                        if constexpr (std::is_same<T, tipc::Out<tipc::MoveHandle>>::value) {
                             current_info.out_move_handle_index++;
-                        } else if constexpr (std::is_same<T, sf::Out<sf::CopyHandle>>::value) {
+                        } else if constexpr (std::is_same<T, tipc::Out<tipc::CopyHandle>>::value) {
                             current_info.out_copy_handle_index++;
                         } else {
                             static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
@@ -477,12 +478,12 @@ namespace ams::tipc::impl {
             static consteval u32 GetSpecialHeaderForCheck(const svc::ipc::MessageBuffer::SpecialHeader &header) {
                 using Value = util::BitPack32::Field<0, BITSIZEOF(util::BitPack32)>;
 
-                return header->GetHeader()->Get<Value>();
+                return header.GetHeader()->Get<Value>();
             }
 
             /* Argument deserialization. */
             template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
-            static ALWAYS_INLINE typename std::tuple_element<Index, ArgsTypeForInvoke>::type DeserializeArgumentImpl(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder) {
+            static ALWAYS_INLINE typename std::tuple_element<Index, ArgsType>::type DeserializeArgumentImpl(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
@@ -490,17 +491,21 @@ namespace ams::tipc::impl {
                     constexpr size_t RawIndex = Offset / sizeof(u32);
                     static_assert(Offset == RawIndex * sizeof(u32)); /* TODO: Do unaligned data exist? */
 
-                    return message_buffer.GetRaw(InMessageRawDataIndex + RawIndex);
+                    if constexpr (!std::same_as<T, bool>) {
+                        return message_buffer.GetRaw<T>(CommandMeta::InMessageRawDataIndex + RawIndex);
+                    } else {
+                        return message_buffer.GetRaw<u8>(CommandMeta::InMessageRawDataIndex + RawIndex) & 1;
+                    }
                 } else if constexpr (Info.arg_type == ArgumentType::OutData) {
                     /* New out rawdata. */
                     constexpr size_t Offset = CommandMeta::OutDataOffsets[Info.out_raw_data_index];
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */
-                    if constexpr (std::is_same<T, sf::MoveHandle>::value) {
+                    if constexpr (std::is_same<T, tipc::MoveHandle>::value) {
                         constexpr auto HandleIndex = CommandMeta::InMessageHandleIndex + CommandMeta::NumInCopyHandles + Info.in_move_handle_index;
                         return T(message_buffer.GetHandle(HandleIndex));
-                    } else if constexpr (std::is_same<T, sf::CopyHandle>::value) {
+                    } else if constexpr (std::is_same<T, tipc::CopyHandle>::value) {
                         constexpr auto HandleIndex = CommandMeta::InMessageHandleIndex + Info.in_copy_handle_index;
                         return T(message_buffer.GetHandle(HandleIndex));
                     } else {
@@ -508,9 +513,9 @@ namespace ams::tipc::impl {
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::OutHandle) {
                     /* New OutHandle. */
-                    if constexpr (std::is_same<T, sf::Out<sf::MoveHandle>>::value) {
+                    if constexpr (std::is_same<T, tipc::Out<tipc::MoveHandle>>::value) {
                         return T(out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>());
-                    } else if constexpr (std::is_same<T, sf::Out<sf::CopyHandle>>::value) {
+                    } else if constexpr (std::is_same<T, tipc::Out<tipc::CopyHandle>>::value) {
                         return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>());
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
@@ -518,16 +523,17 @@ namespace ams::tipc::impl {
                 } else if constexpr (Info.arg_type == ArgumentType::Buffer) {
                     /* NOTE: There are currently no tipc commands which use buffers-with-attributes */
                     /*       If these are added (e.g., NonSecure buffers), implement checking here? */
+                    constexpr size_t MapAliasDescriptorSize = svc::ipc::MessageBuffer::MapAliasDescriptor::GetDataSize();
 
                     if constexpr (Info.is_send_buffer) {
                         /* Input send buffer. */
-                        constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + (Info.send_map_alias_index * MapAliasDescriptor::GetDataSize() / sizeof(util::BitPack32));
+                        constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + (Info.send_map_alias_index * MapAliasDescriptorSize / sizeof(util::BitPack32));
 
                         const svc::ipc::MessageBuffer::MapAliasDescriptor descriptor(message_buffer, BufferIndex);
                         return T(tipc::PointerAndSize(descriptor.GetAddress(), descriptor.GetSize()));
                     } else {
                         /* Input receive buffer. */
-                        constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + ((CommandMeta::NumInBuffers + Info.recv_map_alias_index) * MapAliasDescriptor::GetDataSize() / sizeof(util::BitPack32));
+                        constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + ((CommandMeta::NumInBuffers + Info.recv_map_alias_index) * MapAliasDescriptorSize / sizeof(util::BitPack32));
 
                         const svc::ipc::MessageBuffer::MapAliasDescriptor descriptor(message_buffer, BufferIndex);
                         return T(tipc::PointerAndSize(descriptor.GetAddress(), descriptor.GetSize()));
@@ -540,8 +546,8 @@ namespace ams::tipc::impl {
             }
 
             template<size_t... Is>
-            static ALWAYS_INLINE ArgsTypeForInvoke DeserializeArgumentsImpl(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder, std::index_sequence<Is...>) {
-                return ArgsTypeForInvoke { DeserializeArgumentImpl<Is>(message_buffer, out_raw_holder, out_handles_holder, in_out_objects_holder)..., };
+            static ALWAYS_INLINE ArgsType DeserializeArgumentsImpl(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder, std::index_sequence<Is...>) {
+                return ArgsType { DeserializeArgumentImpl<Is>(message_buffer, out_raw_holder, out_handles_holder)..., };
             }
         public:
             static ALWAYS_INLINE Result ValidateCommandFormat(const svc::ipc::MessageBuffer &message_buffer) {
@@ -555,16 +561,35 @@ namespace ams::tipc::impl {
                     constexpr auto SpecialHeaderIndex    = svc::ipc::MessageBuffer::MessageHeader::GetDataSize() / sizeof(util::BitPack32);
                     R_UNLESS(message_buffer.Get32(SpecialHeaderIndex) == ExpectedSpecialHeader, tipc::ResultInvalidMessageFormat());
                 }
+
+                return ResultSuccess();
             }
 
             static ALWAYS_INLINE ArgsType DeserializeArguments(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder) {
                 return DeserializeArgumentsImpl(message_buffer, out_raw_holder, out_handles_holder, std::make_index_sequence<std::tuple_size<ArgsType>::value>{});
             }
+
+            static ALWAYS_INLINE void SerializeResults(const svc::ipc::MessageBuffer &message_buffer, const Result &result, const OutRawHolderType &out_raw_holder, const OutHandleHolderType &out_handles_holder) {
+                /* Set output headers. */
+                message_buffer.Set(CommandMeta::OutMessageHeader);
+                if constexpr (CommandMeta::HasOutSpecialHeader) {
+                    message_buffer.Set(CommandMeta::OutSpecialHeader);
+                }
+
+                /* Set output handles. */
+                out_handles_holder.CopyTo(message_buffer);
+
+                /* Set output data. */
+                out_raw_holder.CopyTo(message_buffer);
+
+                /* Set output result. */
+                message_buffer.Set(CommandMeta::OutMessageResultIndex, result.GetValue());
+            }
     };
 
-    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
-    constexpr ALWAYS_INLINE Result InvokeServiceCommandImpl(ClassType *object) {
-        using CommandMeta = CommandMetaInfo<Arguments...>;
+    template<auto ServiceCommandImpl, u16 _CommmandId, typename Return, typename ClassType, typename... Arguments>
+    constexpr ALWAYS_INLINE Result InvokeServiceCommandImpl(ClassType *object, const svc::ipc::MessageBuffer &message_buffer) {
+        using CommandMeta = CommandMetaInfo<_CommmandId, Arguments...>;
         using Processor   = CommandProcessor<CommandMeta>;
         /* TODO: ValidateClassType is valid? */
 
@@ -572,16 +597,13 @@ namespace ams::tipc::impl {
         constexpr bool ReturnsVoid   = std::is_same<Return, void>::value;
         static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
 
-        /* Create accessor to the message buffer. */
-        svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());
-
         /* Validate that the command is valid. */
         R_TRY(Processor::ValidateCommandFormat(message_buffer));
 
         /* Deserialize arguments. */
-        Processor::OutRawHolderType out_raw_holder;
-        Processor::OutHandleHolderType out_handles_holder;
-        const Result command_result = [object]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+        typename Processor::OutRawHolderType out_raw_holder;
+        typename Processor::OutHandleHolderType out_handles_holder;
+        const Result command_result = [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
             auto args_tuple = Processor::DeserializeArguments(message_buffer, out_raw_holder, out_handles_holder);
 
             using TrueArgumentsTuple = std::tuple<Arguments...>;
@@ -595,22 +617,7 @@ namespace ams::tipc::impl {
         }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsType>::value>());
 
         /* Serialize output. */
-        {
-            /* Set output headers. */
-            message_buffer.Set(CommandMeta::OutMessageHeader);
-            if constexpr (CommandMeta::HasOutSpecialHeader) {
-                message_buffer.Set(CommandMeta::OutSpecialHeader);
-            }
-
-            /* Set output handles. */
-            out_handles_holder.CopyTo(message_buffer);
-
-            /* Set output data. */
-            out_raw_holder.CopyTo(message_buffer);
-
-            /* Set output result. */
-            message_buffer.Set(CommandMeta::OutMessageResultIndex, command_result.GetValue());
-        }
+        Processor::SerializeResults(message_buffer, command_result, out_raw_holder, out_handles_holder);
 
         return ResultSuccess();
     }
