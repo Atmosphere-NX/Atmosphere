@@ -24,7 +24,8 @@ namespace ams::tipc {
 
         template<typename Impl>
         class EmplacedImplHolderBaseGetter {
-            using Type = Impl;
+            public:
+                using Type = Impl;
         };
 
         template<typename Impl>
