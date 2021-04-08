@@ -284,6 +284,7 @@ namespace ams::dmnt::cheat::impl {
                         this->LogToDebugFile("O Reg Idx: %x\n", opcode->debug_log.ofs_reg_index);
                         break;
                 }
+                break;
             default:
                 this->LogToDebugFile("Unknown opcode: %x\n", opcode->opcode);
                 break;
@@ -381,7 +382,7 @@ namespace ams::dmnt::cheat::impl {
                     opcode.begin_cond.mem_type = (MemoryAccessType)((first_dword >> 20) & 0xF);
                     opcode.begin_cond.cond_type = (ConditionalComparisonType)((first_dword >> 16) & 0xF);
                     opcode.begin_cond.rel_address = ((u64)(first_dword & 0xFF) << 32ul) | ((u64)second_dword);
-                    opcode.begin_cond.value = GetNextVmInt(opcode.store_static.bit_width);
+                    opcode.begin_cond.value = GetNextVmInt(opcode.begin_cond.bit_width);
                 }
                 break;
             case CheatVmOpcodeType_EndConditionalBlock:
