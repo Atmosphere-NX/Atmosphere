@@ -43,7 +43,7 @@ namespace ams::sf {
             using Type = Impl;
         };
 
-        template<typename Impl> requires (std::is_abstract<Impl>::value )
+        template<typename Impl> requires (std::is_abstract<Impl>::value)
         struct UnmanagedEmplaceImplHolderBaseGetter<Impl> {
             class Impl2 : public Impl {
                 public:

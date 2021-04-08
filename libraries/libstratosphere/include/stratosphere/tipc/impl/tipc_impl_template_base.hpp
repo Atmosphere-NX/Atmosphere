@@ -14,8 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/tipc/tipc_service_object.hpp>
-#include <stratosphere/tipc/tipc_allocators.hpp>
+namespace ams::tipc::impl {
 
-#include <stratosphere/tipc/impl/tipc_impl_command_serialization.hpp>
+    template<typename Interface, typename Base, typename ImplHolder, typename ImplGetter, typename Root>
+    class ImplTemplateBaseT;
+
+    template<typename Interface, typename Base, typename ImplHolder, typename ImplGetter>
+    class ImplTemplateBase : public ImplTemplateBaseT<Interface, Base, ImplHolder, ImplGetter, Interface> {
+        private:
+            using BaseImpl = ImplTemplateBaseT<Interface, Base, ImplHolder, ImplGetter, Interface>;
+        public:
+            using BaseImpl::BaseImpl;
+    };
+
+}
