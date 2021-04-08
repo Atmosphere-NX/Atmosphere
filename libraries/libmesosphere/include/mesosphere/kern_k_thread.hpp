@@ -330,7 +330,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags.fetch_and(~flag);;
+                this->GetStackParameters().dpc_flags.fetch_and(~flag);
             }
 
             ALWAYS_INLINE u8 GetDpc() const {
