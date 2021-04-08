@@ -237,8 +237,11 @@ namespace ams::tipc::impl {
         size_t out_copy_handle_index;
     };
 
+    template<u16 _CommandId, typename ArgumentsTuple>
+    struct CommandMetaInfo;
+
     template<u16 _CommandId, typename... Arguments>
-    struct CommandMetaInfo {
+    struct CommandMetaInfo<_CommandId, std::tuple<Arguments...>> {
         public:
             static constexpr u16 CommandId = _CommandId;
 
@@ -587,10 +590,22 @@ namespace ams::tipc::impl {
             }
     };
 
-    template<auto ServiceCommandImpl, u16 _CommmandId, typename Return, typename ClassType, typename... Arguments>
+    struct FunctionTraits {
+        public:
+            template<typename R, typename C, typename... A>
+            static std::tuple<A...> GetArgumentsImpl(R(C::*)(A...));
+
+            template<typename R, typename C, typename... A>
+            static R GetReturnImpl(R(C::*)(A...));
+    };
+
+    template<u16 _CommmandId, auto ServiceCommandImpl, typename ClassType>
     constexpr ALWAYS_INLINE Result InvokeServiceCommandImpl(ClassType *object, const svc::ipc::MessageBuffer &message_buffer) {
-        using CommandMeta = CommandMetaInfo<_CommmandId, Arguments...>;
-        using Processor   = CommandProcessor<CommandMeta>;
+        using Return             = decltype(FunctionTraits::GetReturnImpl(ServiceCommandImpl));
+        using TrueArgumentsTuple = decltype(FunctionTraits::GetArgumentsImpl(ServiceCommandImpl));
+
+        using CommandMeta        = CommandMetaInfo<_CommmandId, TrueArgumentsTuple>;
+        using Processor          = CommandProcessor<CommandMeta>;
         /* TODO: ValidateClassType is valid? */
 
         constexpr bool ReturnsResult = std::is_same<Return, Result>::value;
@@ -605,8 +620,6 @@ namespace ams::tipc::impl {
         typename Processor::OutHandleHolderType out_handles_holder;
         const Result command_result = [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
             auto args_tuple = Processor::DeserializeArguments(message_buffer, out_raw_holder, out_handles_holder);
-
-            using TrueArgumentsTuple = std::tuple<Arguments...>;
 
             if constexpr (ReturnsResult) {
                 return (object->*ServiceCommandImpl)(std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
