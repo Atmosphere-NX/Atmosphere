@@ -55,6 +55,13 @@ namespace ams::kern {
         public:
             using TraversalEntry   = KPageTableImpl::TraversalEntry;
             using TraversalContext = KPageTableImpl::TraversalContext;
+
+            struct MemoryRange {
+                KVirtualAddress address;
+                size_t size;
+
+                void Close();
+            };
         protected:
             enum MemoryFillValue {
                 MemoryFillValue_Zero  = 0,
@@ -155,6 +162,7 @@ namespace ams::kern {
             size_t m_mapped_ipc_server_memory{};
             mutable KLightLock m_general_lock{};
             mutable KLightLock m_map_physical_memory_lock{};
+            KLightLock m_device_map_lock{};
             KPageTableImpl m_impl{};
             KMemoryBlockManager m_memory_block_manager{};
             u32 m_allocate_option{};
@@ -197,6 +205,10 @@ namespace ams::kern {
             bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const {
                 /* Even though Unsafe physical memory is KMemoryState_Normal, it must be mapped inside the alias code region. */
                 return this->CanContain(addr, size, KMemoryState_AliasCode);
+            }
+
+            ALWAYS_INLINE KScopedLightLock AcquireDeviceMapLock() {
+                return KScopedLightLock(m_device_map_lock);
             }
 
             KProcessAddress GetRegionAddress(KMemoryState state) const;
@@ -290,6 +302,8 @@ namespace ams::kern {
             Result MakePageGroup(KPageGroup &pg, KProcessAddress addr, size_t num_pages);
             bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages);
 
+            Result GetContiguousMemoryRangeWithState(MemoryRange *out, KProcessAddress address, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
+
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
 
             Result MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
@@ -367,11 +381,14 @@ namespace ams::kern {
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);
             Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size);
 
-            Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
-            Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
+            Result LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
+            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size);
 
-            Result MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size);
+            Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
             Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size);
+
+            Result OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
+            Result OpenMemoryRangeForUnmapDeviceAddressSpace(MemoryRange *out, KProcessAddress address, size_t size);
 
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size);
             Result UnlockForIpcUserBuffer(KProcessAddress address, size_t size);
@@ -380,6 +397,8 @@ namespace ams::kern {
             Result UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
             Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size);
             Result UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
+
+            Result OpenMemoryRangeForProcessCacheOperation(MemoryRange *out, KProcessAddress address, size_t size);
 
             Result CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
             Result CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
@@ -397,6 +416,8 @@ namespace ams::kern {
 
             Result MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
             Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
+
+            Result UnmapProcessMemory(KProcessAddress dst_address, size_t size, KPageTableBase &src_pt, KProcessAddress src_address);
 
             void DumpMemoryBlocksLocked() const {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());

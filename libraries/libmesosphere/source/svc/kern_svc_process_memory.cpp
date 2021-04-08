@@ -122,21 +122,8 @@ namespace ams::kern::svc {
             R_UNLESS(src_pt.Contains(src_address, size),                            svc::ResultInvalidCurrentMemory());
             R_UNLESS(dst_pt.CanContain(dst_address, size, KMemoryState_SharedCode), svc::ResultInvalidMemoryRegion());
 
-            /* Create a new page group. */
-            KPageGroup pg(dst_pt.GetBlockInfoManager());
-
-            /* Make the page group. */
-            R_TRY(src_pt.MakeAndOpenPageGroup(std::addressof(pg),
-                                              src_address, size / PageSize,
-                                              KMemoryState_FlagCanMapProcess, KMemoryState_FlagCanMapProcess,
-                                              KMemoryPermission_None, KMemoryPermission_None,
-                                              KMemoryAttribute_All, KMemoryAttribute_None));
-
-            /* Close the page group when we're done. */
-            ON_SCOPE_EXIT { pg.Close(); };
-
-            /* Unmap the group. */
-            R_TRY(dst_pt.UnmapPageGroup(dst_address, pg, KMemoryState_SharedCode));
+            /* Unmap the memory. */
+            R_TRY(dst_pt.UnmapProcessMemory(dst_address, size, src_pt, src_address));
 
             return ResultSuccess();
         }

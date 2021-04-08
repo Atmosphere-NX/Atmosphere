@@ -74,6 +74,10 @@ namespace ams::kern {
 
     }
 
+    void KPageTableBase::MemoryRange::Close() {
+        Kernel::GetMemoryManager().Close(address, size / PageSize);
+    }
+
     Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize our members. */
         m_address_space_width               = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
@@ -1391,6 +1395,49 @@ namespace ams::kern {
         return cur_block_address == GetHeapVirtualAddress(cur_addr) && cur_block_pages == (cur_size / PageSize);
     }
 
+    Result KPageTableBase::GetContiguousMemoryRangeWithState(MemoryRange *out, KProcessAddress address, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        auto &impl = this->GetImpl();
+
+        /* Begin a traversal. */
+        TraversalContext context;
+        TraversalEntry cur_entry = {};
+        R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address), svc::ResultInvalidCurrentMemory());
+
+        /* The region we're traversing has to be heap. */
+        const KPhysicalAddress phys_address = cur_entry.phys_addr;
+        R_UNLESS(this->IsHeapPhysicalAddress(phys_address), svc::ResultInvalidCurrentMemory());
+
+        /* Traverse until we have enough size or we aren't contiguous any more. */
+        size_t contig_size;
+        for (contig_size = cur_entry.block_size - (GetInteger(phys_address) & (cur_entry.block_size - 1)); contig_size < size; contig_size += cur_entry.block_size) {
+            if (!impl.ContinueTraversal(std::addressof(cur_entry), std::addressof(context))) {
+                break;
+            }
+            if (cur_entry.phys_addr != phys_address + contig_size) {
+                break;
+            }
+        }
+
+        /* Take the minimum size for our region. */
+        size = std::min(size, contig_size);
+
+        /* Check that the memory is contiguous. */
+        R_TRY(this->CheckMemoryStateContiguous(address, size,
+                                               state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted,
+                                               perm_mask, perm,
+                                               attr_mask, attr));
+
+        /* The memory is contiguous, so set the output range. */
+        *out = {
+            .address = GetLinearMappedVirtualAddress(phys_address),
+            .size    = size,
+        };
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
         const size_t num_pages = size / PageSize;
 
@@ -2578,7 +2625,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+    Result KPageTableBase::LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
@@ -2591,11 +2638,6 @@ namespace ams::kern {
         size_t num_allocator_blocks;
         R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
 
-        /* Make the page group, if we should. */
-        if (out != nullptr) {
-            R_TRY(this->MakePageGroup(*out, address, num_pages));
-        }
-
         /* Create an update allocator. */
         Result allocator_result;
         KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
@@ -2604,10 +2646,33 @@ namespace ams::kern {
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
 
-        /* Open the page group. */
-        if (out != nullptr) {
-            out->Open();
-        }
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
+        /* Lightly validate the range before doing anything else. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Check the memory state. */
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_allocator_blocks),
+                                               address, size,
+                                               KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap, KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap,
+                                               KMemoryPermission_None, KMemoryPermission_None,
+                                               KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+
+        /* Create an update allocator. */
+        Result allocator_result;
+        KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
+        R_TRY(allocator_result);
+
+        /* Update the memory blocks. */
+        const KMemoryBlockManager::MemoryBlockLockFunction lock_func = m_enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForShare : &KMemoryBlock::UpdateDeviceDisableMergeStateForShareRight;
+        m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, lock_func, KMemoryPermission_None);
 
         return ResultSuccess();
     }
@@ -2639,40 +2704,6 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size) {
-        /* Lightly validate the range before doing anything else. */
-        const size_t num_pages = size / PageSize;
-        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
-
-        /* Lock the table. */
-        KScopedLightLock lk(m_general_lock);
-
-        /* Check the memory state. */
-        size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_allocator_blocks),
-                                               address, size,
-                                               KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap, KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap,
-                                               KMemoryPermission_None, KMemoryPermission_None,
-                                               KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
-
-        /* Create an update allocator. */
-        Result allocator_result;
-        KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
-        R_TRY(allocator_result);
-
-        /* Make the page group. */
-        R_TRY(this->MakePageGroup(*out, address, num_pages));
-
-        /* Update the memory blocks. */
-        const KMemoryBlockManager::MemoryBlockLockFunction lock_func = m_enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForShare : &KMemoryBlock::UpdateDeviceDisableMergeStateForShareRight;
-        m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, lock_func, KMemoryPermission_None);
-
-        /* Open a reference to the pages in the page group. */
-        out->Open();
-
-        return ResultSuccess();
-    }
-
     Result KPageTableBase::UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
@@ -2689,23 +2720,23 @@ namespace ams::kern {
         size_t allocator_num_blocks = 0, unmapped_allocator_num_blocks = 0;
         if (unmapped_size) {
             if (m_enable_device_address_space_merge) {
-                R_TRY(this->CheckMemoryState(std::addressof(allocator_num_blocks),
-                                             address, size,
-                                             KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                             KMemoryPermission_None, KMemoryPermission_None,
-                                             KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+                R_TRY(this->CheckMemoryStateContiguous(std::addressof(allocator_num_blocks),
+                                                       address, size,
+                                                       KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                                       KMemoryPermission_None, KMemoryPermission_None,
+                                                       KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
             }
-            R_TRY(this->CheckMemoryState(std::addressof(unmapped_allocator_num_blocks),
-                                         mapped_end_address, unmapped_size,
-                                         KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                         KMemoryPermission_None, KMemoryPermission_None,
-                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+            R_TRY(this->CheckMemoryStateContiguous(std::addressof(unmapped_allocator_num_blocks),
+                                                   mapped_end_address, unmapped_size,
+                                                   KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                                   KMemoryPermission_None, KMemoryPermission_None,
+                                                   KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
         } else {
-            R_TRY(this->CheckMemoryState(std::addressof(allocator_num_blocks),
-                                         address, size,
-                                         KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                         KMemoryPermission_None, KMemoryPermission_None,
-                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+            R_TRY(this->CheckMemoryStateContiguous(std::addressof(allocator_num_blocks),
+                                                   address, size,
+                                                   KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                                   KMemoryPermission_None, KMemoryPermission_None,
+                                                   KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
         }
 
         /* Create an update allocator for the region. */
@@ -2746,6 +2777,41 @@ namespace ams::kern {
 
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(lock_allocator, lock_address, lock_num_pages, lock_func, KMemoryPermission_None);
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Get the range. */
+        const u32 test_state = KMemoryState_FlagReferenceCounted | (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
+        R_TRY(this->GetContiguousMemoryRangeWithState(out,
+                                                      address, size,
+                                                      test_state, test_state,
+                                                      perm, perm,
+                                                      KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None));
+
+        /* We got the range, so open it. */
+        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::OpenMemoryRangeForUnmapDeviceAddressSpace(MemoryRange *out, KProcessAddress address, size_t size) {
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Get the range. */
+        R_TRY(this->GetContiguousMemoryRangeWithState(out,
+                                                      address, size,
+                                                      KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                                      KMemoryPermission_None, KMemoryPermission_None,
+                                                      KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+
+        /* We got the range, so open it. */
+        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
 
         return ResultSuccess();
     }
@@ -2802,6 +2868,23 @@ namespace ams::kern {
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
                                   KMemoryAttribute_Locked, std::addressof(pg));
+    }
+
+    Result KPageTableBase::OpenMemoryRangeForProcessCacheOperation(MemoryRange *out, KProcessAddress address, size_t size) {
+        /* Lock the table. */
+        KScopedLightLock lk(m_general_lock);
+
+        /* Get the range. */
+        R_TRY(this->GetContiguousMemoryRangeWithState(out,
+                                                      address, size,
+                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                      KMemoryPermission_UserRead, KMemoryPermission_UserRead,
+                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None));
+
+        /* We got the range, so open it. */
+        Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -4549,6 +4632,110 @@ namespace ams::kern {
 
         /* Update our mapped unsafe size. */
         m_mapped_unsafe_physical_memory -= size;
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnmapProcessMemory(KProcessAddress dst_address, size_t size, KPageTableBase &src_page_table, KProcessAddress src_address) {
+        /* We need to lock both this table, and the current process's table, so set up an alias. */
+        KPageTableBase &dst_page_table = *this;
+
+        /* Acquire the table locks. */
+        KScopedLightLockPair lk(src_page_table.m_general_lock, dst_page_table.m_general_lock);
+
+        /* Check that the memory is mapped in the destination process. */
+        size_t num_allocator_blocks;
+        R_TRY(dst_page_table.CheckMemoryState(std::addressof(num_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_SharedCode, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Check that the memory is mapped in the source process. */
+        R_TRY(src_page_table.CheckMemoryState(src_address, size, KMemoryState_FlagCanMapProcess, KMemoryState_FlagCanMapProcess, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Validate that the memory ranges are compatible. */
+        {
+            /* Define a helper type. */
+            struct ContiguousRangeInfo {
+                public:
+                    KPageTableBase &m_pt;
+                    TraversalContext m_context;
+                    TraversalEntry m_entry;
+                    KPhysicalAddress m_phys_addr;
+                    size_t m_cur_size;
+                    size_t m_remaining_size;
+                public:
+                    ContiguousRangeInfo(KPageTableBase &pt, KProcessAddress address, size_t size) : m_pt(pt), m_remaining_size(size) {
+                        /* Begin a traversal. */
+                        MESOSPHERE_ABORT_UNLESS(m_pt.GetImpl().BeginTraversal(std::addressof(m_entry), std::addressof(m_context), address));
+
+                        /* Setup tracking fields. */
+                        m_phys_addr  = m_entry.phys_addr;
+                        m_cur_size   = std::min<size_t>(m_remaining_size, m_entry.block_size - (GetInteger(m_phys_addr) & (m_entry.block_size - 1)));
+
+                        /* Consume the whole contiguous block. */
+                        this->DetermineContiguousBlockExtents();
+                    }
+
+                    void ContinueTraversal() {
+                        /* Update our remaining size. */
+                        m_remaining_size = m_remaining_size - m_cur_size;
+
+                        /* Update our tracking fields. */
+                        if (m_remaining_size > 0) {
+                            m_phys_addr  = m_entry.phys_addr;
+                            m_cur_size   = std::min<size_t>(m_remaining_size, m_entry.block_size);
+
+                            /* Consume the whole contiguous block. */
+                            this->DetermineContiguousBlockExtents();
+                        }
+                    }
+                private:
+                    void DetermineContiguousBlockExtents() {
+                        /* Continue traversing until we're not contiguous, or we have enough. */
+                        while (m_cur_size < m_remaining_size) {
+                            MESOSPHERE_ABORT_UNLESS(m_pt.GetImpl().ContinueTraversal(std::addressof(m_entry), std::addressof(m_context)));
+
+                            /* If we're not contiguous, we're done. */
+                            if (m_entry.phys_addr != m_phys_addr + m_cur_size) {
+                                break;
+                            }
+
+                            /* Update our current size. */
+                            m_cur_size = std::min(m_remaining_size, m_cur_size + m_entry.block_size);
+                        }
+                    }
+            };
+
+            /* Create ranges for both tables. */
+            ContiguousRangeInfo src_range(src_page_table, src_address, size);
+            ContiguousRangeInfo dst_range(dst_page_table, dst_address, size);
+
+            /* Validate the ranges. */
+            while (src_range.m_remaining_size > 0 && dst_range.m_remaining_size > 0) {
+                R_UNLESS(src_range.m_phys_addr == dst_range.m_phys_addr, svc::ResultInvalidMemoryRegion());
+                R_UNLESS(src_range.m_cur_size  == dst_range.m_cur_size,  svc::ResultInvalidMemoryRegion());
+
+                src_range.ContinueTraversal();
+                dst_range.ContinueTraversal();
+            }
+        }
+
+        /* We no longer need to hold our lock on the source page table. */
+        lk.TryUnlockHalf(src_page_table.m_general_lock);
+
+        /* Create an update allocator. */
+        Result allocator_result;
+        KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, num_allocator_blocks);
+        R_TRY(allocator_result);
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Unmap the memory. */
+        const size_t num_pages = size / PageSize;
+        const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
+        R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+        /* Apply the memory block update. */
+        m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         return ResultSuccess();
     }
