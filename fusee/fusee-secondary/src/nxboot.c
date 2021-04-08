@@ -285,7 +285,9 @@ static bool is_nca_present(const char *nca_name) {
 static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_12_0_0) {
+        CHECK_NCA("bd4185843550fbba125b20787005d1d2", 12_0_0);
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
         CHECK_NCA("56211c7a5ed20a5332f5cdda67121e37", 11_0_1);
         CHECK_NCA("594c90bcdbcccad6b062eadba0cd0e7e", 11_0_0);
     } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
@@ -388,6 +390,8 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 return ATMOSPHERE_TARGET_FIRMWARE_10_0_0;
             } else if (memcmp(package1loader_header->build_timestamp, "20201030", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_11_0_0;
+            } else if (memcmp(package1loader_header->build_timestamp, "20210129", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_12_0_0;
             } else {
                 fatal_error("[NXBOOT] Unable to identify package1!\n");
             }
@@ -595,6 +599,10 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0 && !(fuse_get_reserved_odm(7) & ~0x00001FFF)) {
             kip_patches_set_enable_nogc();
         }
+
+        /* NOTE: 12.0.0 added a new lotus firmware, but did not burn a fuse. */
+        /* This is literally undetectable using normal fuses.... */
+        /* C'est la vie. */
     }
 }
 
