@@ -52,14 +52,29 @@ namespace ams::_test {
 
     using UserInterfaceObject = ::ams::tipc::ServiceObject<impl::IUserInterface, UserInterfaceFacade>;
 
+    using ManagerInterfaceObject = ::ams::tipc::ServiceObject<impl::IManagerInterface, ManagerInterfaceFacade>;
+
     Result TestAutomaticDispatch(UserInterfaceObject *object) {
         return object->ProcessRequest();
     }
 
-    using ManagerInterfaceObject = ::ams::tipc::ServiceObject<impl::IManagerInterface, ManagerInterfaceFacade>;
-
     Result TestManagerDispatch(ManagerInterfaceObject *object) {
         return object->ProcessRequest();
+    }
+
+    using UserPortMeta    = tipc::PortMeta<69, impl::IUserInterface, UserInterfaceFacade, tipc::SlabAllocator>;
+    using ManagerPortMeta = tipc::PortMeta< 1, impl::IManagerInterface, ManagerInterfaceFacade, tipc::SingletonAllocator>;
+
+    using TestServerManager = tipc::ServerManager<ManagerPortMeta, UserPortMeta>;
+
+    namespace {
+
+        TestServerManager g_test_server_manager;
+
+    }
+
+    void TestLoop() {
+        g_test_server_manager.LoopAuto();
     }
 
 
