@@ -19,3 +19,7 @@
 #include <stratosphere/tipc/tipc_allocators.hpp>
 
 #include <stratosphere/tipc/impl/tipc_impl_command_serialization.hpp>
+#include <stratosphere/tipc/impl/tipc_autogen_interface_macros.hpp>
+
+#include <stratosphere/tipc/tipc_object_manager.hpp>
+#include <stratosphere/tipc/tipc_server_manager.hpp>

@@ -127,7 +127,7 @@ namespace ams::tipc::impl {
                         static_assert(::NAMESPACE::Is##INTERFACE<ImplType>);                                                                           \
                                                                                                                                                        \
                         /* Get accessor to the message buffer. */                                                                                      \
-                        svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());                                                          \
+                        const svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());                                                    \
                                                                                                                                                        \
                         /* Get decision variables. */                                                                                                  \
                         const auto tag    = svc::ipc::MessageBuffer::MessageHeader(message_buffer).GetTag();                                           \

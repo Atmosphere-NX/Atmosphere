@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include <stratosphere/tipc/impl/tipc_autogen_interface_macros.hpp>
 
 #define AMS_TEST_I_USER_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                           \
     AMS_TIPC_METHOD_INFO(C, H,     0, Result, RegisterClient,                   (const tipc::ClientProcessId &client_process_id),                                      (client_process_id))                      \
