@@ -25,8 +25,9 @@ namespace ams::tipc {
         { t.Allocate() } -> std::convertible_to<ServiceObjectBase *>;
     };
 
-    template<typename T> requires IsServiceObject<T>
+    template<typename T, size_t N> requires IsServiceObject<T>
     class SingletonAllocator final {
+        static_assert(N >= 1);
         private:
             T m_singleton;
         public:
