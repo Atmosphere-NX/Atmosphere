@@ -282,6 +282,9 @@ namespace ams::tipc {
                         /* Acquire exclusive server manager access. */
                         std::scoped_lock lk(m_server_manager->GetMutex());
 
+                        /* Increment our session count. */
+                        ++m_num_sessions;
+
                         /* Send information about the session as a message. */
                         os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(MessageType_AddSession) | (static_cast<u64>(session_handle) << BITSIZEOF(u32)));
                         os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(port_index));
@@ -335,7 +338,7 @@ namespace ams::tipc {
 
             using PortManagerTuple = decltype([]<size_t... Ix>(std::index_sequence<Ix...>) {
                 return std::tuple<PortManager<Ix>...>{};
-            }(std::make_index_sequence(NumPorts)));
+            }(std::make_index_sequence<NumPorts>()));
 
             using PortAllocatorTuple = std::tuple<typename PortInfos::Allocator...>;
         private:
@@ -369,7 +372,7 @@ namespace ams::tipc {
             template<size_t Ix>
             void InitializePortThread(s32 priority) {
                 /* Create the thread. */
-                R_ABORT_UNLESS(os::CreateThread(m_port_threads + Ix, LoopAutoForPortThreadFunction, this, m_port_stacks + Ix, ThreadStackSize, priority));
+                R_ABORT_UNLESS(os::CreateThread(m_port_threads + Ix, &LoopAutoForPortThreadFunction<Ix>, this, m_port_stacks + Ix, ThreadStackSize, priority));
 
                 /* Start the thread. */
                 os::StartThread(m_port_threads + Ix);
@@ -390,7 +393,7 @@ namespace ams::tipc {
                 /* Initialize our port managers. */
                 [this]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                     (this->GetPortManager<Ix>().Initialize(static_cast<s32>(Ix), this), ...);
-                }(std::make_index_sequence(NumPorts));
+                }(std::make_index_sequence<NumPorts>());
             }
 
             template<size_t Ix>
@@ -406,7 +409,7 @@ namespace ams::tipc {
                     [thread_priority, this]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                         /* Create all threads. */
                         (this->InitializePortThread<Ix>(thread_priority), ...);
-                    }(std::make_index_sequence(NumPorts - 1));
+                    }(std::make_index_sequence<NumPorts - 1>());
                 }
 
                 /* Process for the last port. */
@@ -419,7 +422,7 @@ namespace ams::tipc {
 
                 /* Try to allocate from each port, in turn. */
                 tipc::ServiceObjectBase *allocated = nullptr;
-                return [this, port_index, &allocated]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                [this, port_index, &allocated]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                     (this->TryAllocateObject<Ix>(port_index, allocated), ...);
                 }(std::make_index_sequence<NumPorts>());
 
@@ -466,7 +469,7 @@ namespace ams::tipc {
                     R_TRY_CATCH(port_manager.ReplyAndReceive(std::addressof(signaled_holder), std::addressof(signaled_object), reply_target)) {
                         R_CATCH(os::ResultSessionClosedForReceive, os::ResultReceiveListBroken) {
                             /* Close the object and continue. */
-                            port_manager.CloseObject(signaled_object);
+                            port_manager.CloseSession(signaled_object);
 
                             /* We have nothing to reply to. */
                             reply_target = svc::InvalidHandle;
@@ -523,7 +526,7 @@ namespace ams::tipc {
                         }
                     } else {
                         /* Our message queue was signaled. */
-                        port_manager.ProcessMessages(this);
+                        port_manager.ProcessMessages();
 
                         /* We have nothing to reply to. */
                         reply_target = svc::InvalidHandle;
@@ -538,7 +541,7 @@ namespace ams::tipc {
                 /* Select the best port manager. */
                 PortManagerBase *best_manager = nullptr;
                 s32 best_sessions             = -1;
-                const auto session_counts = [this, &best_manager, &best_sessions]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                [this, &best_manager, &best_sessions]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                     (this->TrySelectBetterPort<Ix>(best_manager, best_sessions), ...);
                 }(std::make_index_sequence<NumPorts>());
 
@@ -548,22 +551,20 @@ namespace ams::tipc {
 
             template<size_t Ix> requires (Ix < NumPorts)
             void TrySelectBetterPort(PortManagerBase *&best_manager, s32 &best_sessions) {
+                auto &cur_manager       = this->GetPortManager<Ix>();
+                const auto cur_sessions = cur_manager.GetSessionCount();
+
+                /* NOTE: It's unknown how nintendo handles the case where the last manager has more sessions (to cover the remainder). */
+                /* Our algorithm diverges from theirs (it does not do std::min bounds capping), to accommodate remainder ports.  */
+                /* If we learn how they handle this edge case, we can change our ways to match theirs. */
+
                 if constexpr (Ix == 0) {
-                    best_manager  = std::addressof(this->GetPortManager<Ix>());
-                    best_sessions = std::min(best_manager->GetSessionCount(), static_cast<s32>(SessionsPerPortManager<Ix>));
-                } else if constexpr (Ix < NumPorts - 1) {
-                    auto &cur_manager       = this->GetPortManager<Ix>();
-                    const auto cur_sessions = std::min(cur_manager.GetSessionCount(), static_cast<s32>(SessionsPerPortManager<Ix>));
-
-                    if (cur_sessions < best_sessions) {
-                        best_manager  = std::addressof(cur_manager);
-                        best_sessions = cur_sessions;
-                    }
+                    best_manager  = std::addressof(cur_manager);
+                    best_sessions = cur_sessions;
                 } else {
-                    auto &cur_manager       = this->GetPortManager<Ix>();
-                    const auto cur_sessions = cur_manager.GetSessionCount();
-
-                    if (cur_sessions < best_sessions) {
+                    static_assert(SessionsPerPortManager<Ix - 1> == SessionsPerPortManager<0>);
+                    static_assert(SessionsPerPortManager<Ix - 1> <= SessionsPerPortManager<Ix>);
+                    if (cur_sessions < best_sessions || best_sessions >= static_cast<s32>(SessionsPerPortManager<Ix - 1>)) {
                         best_manager  = std::addressof(cur_manager);
                         best_sessions = cur_sessions;
                     }
