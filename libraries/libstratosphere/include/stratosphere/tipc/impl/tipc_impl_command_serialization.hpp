@@ -358,14 +358,13 @@ namespace ams::tipc::impl {
                         }
                     } else if constexpr (arg_type == ArgumentType::Buffer) {
                         /* New Buffer, increment the appropriate index. */
-                        const auto attributes = BufferAttributes[current_info.buffer_index];
-                        current_info.buffer_index++;
+                        const auto attributes = BufferAttributes[current_info.buffer_index++];
 
                         if (attributes & SfBufferAttr_In) {
-                            current_info.is_send_buffer = true;
+                            returned_info.is_send_buffer = true;
                             current_info.send_map_alias_index++;
                         } else if (attributes & SfBufferAttr_Out) {
-                            current_info.is_send_buffer = false;
+                            returned_info.is_send_buffer = false;
                             current_info.recv_map_alias_index++;
                         }
                     } else if constexpr (arg_type == ArgumentType::ProcessId) {
@@ -460,6 +459,9 @@ namespace ams::tipc::impl {
             }
     };
 
+    template<size_t... Ix>
+    struct PrintIndex;
+
     template<typename CommandMeta>
     class CommandProcessor {
         public:
@@ -533,24 +535,19 @@ namespace ams::tipc::impl {
                         constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + (Info.send_map_alias_index * MapAliasDescriptorSize / sizeof(util::BitPack32));
 
                         const svc::ipc::MessageBuffer::MapAliasDescriptor descriptor(message_buffer, BufferIndex);
-                        return T(tipc::PointerAndSize(descriptor.GetAddress(), descriptor.GetSize()));
+                        return T(descriptor.GetAddress(), descriptor.GetSize());
                     } else {
                         /* Input receive buffer. */
                         constexpr auto BufferIndex = CommandMeta::InMessageBufferIndex + ((CommandMeta::NumInBuffers + Info.recv_map_alias_index) * MapAliasDescriptorSize / sizeof(util::BitPack32));
 
                         const svc::ipc::MessageBuffer::MapAliasDescriptor descriptor(message_buffer, BufferIndex);
-                        return T(tipc::PointerAndSize(descriptor.GetAddress(), descriptor.GetSize()));
+                        return T(descriptor.GetAddress(), descriptor.GetSize());
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::ProcessId) {
                     return T{ os::ProcessId{ message_buffer.GetProcessId(CommandMeta::InMessageProcessIdIndex) } };
                 } else {
                     static_assert(!std::is_same<T, T>::value, "Invalid ArgumentType<T>");
                 }
-            }
-
-            template<size_t... Is>
-            static ALWAYS_INLINE ArgsType DeserializeArgumentsImpl(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder, std::index_sequence<Is...>) {
-                return ArgsType { DeserializeArgumentImpl<Is>(message_buffer, out_raw_holder, out_handles_holder)..., };
             }
         public:
             static ALWAYS_INLINE Result ValidateCommandFormat(const svc::ipc::MessageBuffer &message_buffer) {
@@ -568,8 +565,9 @@ namespace ams::tipc::impl {
                 return ResultSuccess();
             }
 
-            static ALWAYS_INLINE ArgsType DeserializeArguments(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder) {
-                return DeserializeArgumentsImpl(message_buffer, out_raw_holder, out_handles_holder, std::make_index_sequence<std::tuple_size<ArgsType>::value>{});
+            template<size_t Ix>
+            static ALWAYS_INLINE auto DeserializeArgument(const svc::ipc::MessageBuffer &message_buffer, const OutRawHolderType &out_raw_holder, OutHandleHolderType &out_handles_holder) {
+                return DeserializeArgumentImpl<Ix>(message_buffer, out_raw_holder, out_handles_holder);
             }
 
             static ALWAYS_INLINE void SerializeResults(const svc::ipc::MessageBuffer &message_buffer, const Result &result, const OutRawHolderType &out_raw_holder, const OutHandleHolderType &out_handles_holder) {
@@ -619,12 +617,10 @@ namespace ams::tipc::impl {
         typename Processor::OutRawHolderType out_raw_holder;
         typename Processor::OutHandleHolderType out_handles_holder;
         const Result command_result = [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-            auto args_tuple = Processor::DeserializeArguments(message_buffer, out_raw_holder, out_handles_holder);
-
             if constexpr (ReturnsResult) {
-                return (object->*ServiceCommandImpl)(std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+                return (object->*ServiceCommandImpl)(Processor::template DeserializeArgument<Ix>(message_buffer, out_raw_holder, out_handles_holder)...);
             } else {
-                (object->*ServiceCommandImpl)(std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+                (object->*ServiceCommandImpl)(Processor::template DeserializeArgument<Ix>(message_buffer, out_raw_holder, out_handles_holder)...);
                 return ResultSuccess();
             }
         }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsType>::value>());
