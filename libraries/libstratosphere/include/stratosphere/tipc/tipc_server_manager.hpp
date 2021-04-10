@@ -301,12 +301,11 @@ namespace ams::tipc {
                             const svc::ipc::MessageBuffer::MessageHeader message_header(message_buffer);
                             const svc::ipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
 
-                            /* Determine raw data index and extents. */
+                            /* Determine raw data index. */
                             const auto raw_data_offset = message_buffer.GetRawDataIndex(message_header, special_header);
-                            const auto raw_data_count  = message_header.GetRawCount();
 
-                            /* Result is the last raw data word. */
-                            const Result method_result = message_buffer.GetRaw<u32>(raw_data_offset + raw_data_count - 1);
+                            /* Result is the first raw data word. */
+                            const Result method_result = message_buffer.GetRaw<u32>(raw_data_offset);
 
                             /* Check that the result is the special deferral result. */
                             return tipc::ResultRequestDeferred::Includes(method_result);
