@@ -19,7 +19,8 @@
 namespace ams::settings::impl {
 
     Result GetProductModel(s32 *out) {
-        return ::setsysGetProductModel(out);
+        static_assert(sizeof(*out) == sizeof(::SetSysProductModel));
+        return ::setsysGetProductModel(reinterpret_cast<::SetSysProductModel *>(out));
     }
 
 }

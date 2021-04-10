@@ -21,11 +21,11 @@ namespace ams::sm {
     /* Service definition. */
     class ManagerService {
         public:
-            Result RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
+            Result RegisterProcess(os::ProcessId process_id, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac);
             Result UnregisterProcess(os::ProcessId process_id);
             void AtmosphereEndInitDefers();
-            void AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
-            Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
+            void AtmosphereHasMitm(tipc::Out<bool> out, ServiceName service);
+            Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac);
     };
     static_assert(sm::impl::IsIManagerInterface<ManagerService>);
 

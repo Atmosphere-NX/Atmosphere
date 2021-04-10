@@ -19,7 +19,7 @@
 
 namespace ams::sm {
 
-    Result ManagerService::RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
+    Result ManagerService::RegisterProcess(os::ProcessId process_id, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac) {
         return impl::RegisterProcess(process_id, ncm::InvalidProgramId, cfg::OverrideStatus{}, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
@@ -31,11 +31,11 @@ namespace ams::sm {
         R_ABORT_UNLESS(impl::EndInitialDefers());
     }
 
-    void ManagerService::AtmosphereHasMitm(sf::Out<bool> out, ServiceName service) {
+    void ManagerService::AtmosphereHasMitm(tipc::Out<bool> out, ServiceName service) {
         R_ABORT_UNLESS(impl::HasMitm(out.GetPointer(), service));
     }
 
-    Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
+    Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac) {
         /* This takes in a program id and override status, unlike RegisterProcess. */
         return impl::RegisterProcess(process_id, program_id, override_status, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }

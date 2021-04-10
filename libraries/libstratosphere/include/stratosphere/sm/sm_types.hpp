@@ -55,18 +55,6 @@ namespace ams::sm {
         return !(lhs == rhs);
     }
 
-    /* For Debug Monitor extensions. */
-    struct ServiceRecord {
-        ServiceName service;
-        os::ProcessId owner_process_id;
-        u64 max_sessions;
-        os::ProcessId mitm_process_id;
-        os::ProcessId mitm_waiting_ack_process_id;
-        bool is_light;
-        bool mitm_waiting_ack;
-    };
-    static_assert(sizeof(ServiceRecord) == 0x30, "ServiceRecord definition!");
-
     /* For Mitm extensions. */
     struct MitmProcessInfo {
         os::ProcessId process_id;

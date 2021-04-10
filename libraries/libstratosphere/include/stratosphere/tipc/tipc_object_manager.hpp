@@ -57,7 +57,7 @@ namespace ams::tipc {
         public:
             constexpr ObjectManagerBase() = default;
 
-            void Initialize(os::WaitableManagerType *manager, Entry *entries, size_t max_objects) {
+            void InitializeImpl(os::WaitableManagerType *manager, Entry *entries, size_t max_objects) {
                 /* Set our waitable manager. */
                 m_waitable_manager = manager;
 
@@ -179,7 +179,7 @@ namespace ams::tipc {
             constexpr ObjectManager() = default;
 
             void Initialize(os::WaitableManagerType *manager) {
-                this->Initialize(manager, m_entries_storage, MaxObjects);
+                this->InitializeImpl(manager, m_entries_storage, MaxObjects);
             }
     };
 

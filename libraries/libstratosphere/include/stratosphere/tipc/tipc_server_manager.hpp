@@ -237,13 +237,15 @@ namespace ams::tipc {
                         --m_num_sessions;
                     }
 
-                    void StartRegisterRetry(ResumeKey key) {
+                    Result StartRegisterRetry(ResumeKey key) {
                         if constexpr (IsDeferralSupported) {
                             /* Acquire exclusive server manager access. */
                             std::scoped_lock lk(m_server_manager->GetMutex());
 
                             /* Begin the retry. */
-                            m_deferral_manager.StartRegisterRetry(key);
+                            return m_deferral_manager.StartRegisterRetry(key);
+                        } else {
+                            return ResultSuccess();
                         }
                     }
 
@@ -329,7 +331,7 @@ namespace ams::tipc {
                         this->InitializeBase(id, sm, std::addressof(m_object_manager_impl));
 
                         /* Initialize our object manager. */
-                        m_object_manager_impl->Initialize(std::addressof(this->m_waitable_manager));
+                        m_object_manager_impl.Initialize(std::addressof(this->m_waitable_manager));
                     }
             };
 
@@ -429,6 +431,16 @@ namespace ams::tipc {
                 /* Return the allocated object. */
                 AMS_ABORT_UNLESS(allocated != nullptr);
                 return allocated;
+            }
+
+            void TriggerResume(ResumeKey resume_key) {
+                /* Acquire exclusive access to ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Check/trigger resume on each of our ports. */
+                [this, resume_key]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    (this->TriggerResumeImpl<Ix>(resume_key), ...);
+                }(std::make_index_sequence<NumPorts>());
             }
         private:
             template<size_t Ix> requires (Ix < NumPorts)
@@ -568,6 +580,17 @@ namespace ams::tipc {
                         best_manager  = std::addressof(cur_manager);
                         best_sessions = cur_sessions;
                     }
+                }
+            }
+
+            template<size_t Ix>
+            void TriggerResumeImpl(ResumeKey resume_key) {
+                /* Get the port manager. */
+                auto &port_manager = this->GetPortManager<Ix>();
+
+                /* If we should, trigger a resume. */
+                if (port_manager.TestResume(resume_key)) {
+                    port_manager.TriggerResume(resume_key);
                 }
             }
     };
