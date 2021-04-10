@@ -25,4 +25,3 @@
 
 #include <stratosphere/sm/impl/sm_user_interface.hpp>
 #include <stratosphere/sm/impl/sm_manager_interface.hpp>
-#include <stratosphere/sm/impl/sm_debug_monitor_interface.hpp>

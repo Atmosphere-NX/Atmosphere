@@ -132,6 +132,8 @@ namespace ams::tipc {
             public:
                 constexpr ALWAYS_INLINE InArrayImpl() : BaseType() { /* ... */ }
                 constexpr ALWAYS_INLINE InArrayImpl(const tipc::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr ALWAYS_INLINE InArrayImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
+
                 constexpr ALWAYS_INLINE InArrayImpl(const T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr ALWAYS_INLINE const T *GetPointer() const {
@@ -163,6 +165,8 @@ namespace ams::tipc {
             public:
                 constexpr ALWAYS_INLINE OutArrayImpl() : BaseType() { /* ... */ }
                 constexpr ALWAYS_INLINE OutArrayImpl(const tipc::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr ALWAYS_INLINE OutArrayImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
+
                 constexpr ALWAYS_INLINE OutArrayImpl(T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr ALWAYS_INLINE T *GetPointer() const {

@@ -280,7 +280,7 @@ namespace ams::tipc::impl {
             static constexpr size_t OutDataSize = util::AlignUp(OutDataOffsets[NumOutDatas], alignof(u32));
 
             /* Useful because reasons. */
-            static constexpr size_t OutDataAlign = [] {
+            static constexpr size_t OutDataAlign = []() -> size_t {
                 if constexpr (std::tuple_size<OutDatas>::value) {
                     return alignof(typename std::tuple_element<0, OutDatas>::type);
                 }
