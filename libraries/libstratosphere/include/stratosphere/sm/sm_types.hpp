@@ -44,7 +44,9 @@ namespace ams::sm {
             return Encode(name, std::strlen(name));
         }
     };
-    static constexpr ServiceName InvalidServiceName = ServiceName::Encode("");
+
+    static constexpr inline ServiceName InvalidServiceName = ServiceName::Encode("");
+
     static_assert(alignof(ServiceName) == 1, "ServiceName definition!");
 
     inline bool operator==(const ServiceName &lhs, const ServiceName &rhs) {
