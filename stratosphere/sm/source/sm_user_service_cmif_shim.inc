@@ -182,7 +182,7 @@ namespace ams::sm {
             u32 max_sessions;
             std::memcpy(std::addressof(max_sessions), raw_message_buffer + 0x2C, sizeof(max_sessions));
 
-            if (command_id == 4) {
+            if (command_id == 2) {
                 /* Invoke the handler for RegisterService. */
                 tipc::MoveHandle out_handle;
                 const Result result = this->RegisterService(std::addressof(out_handle), service_name, max_sessions, is_light);

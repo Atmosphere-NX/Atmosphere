@@ -131,11 +131,9 @@ namespace ams::tipc {
                 R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(dummy), nullptr, 0, reply_target, 0)) {
                     R_CATCH(svc::ResultTimedOut) {
                         /* Timing out is acceptable. */
-                        return R_CURRENT_RESULT;
                     }
                     R_CATCH(svc::ResultSessionClosed) {
                         /* It's okay if we couldn't reply to a closed session. */
-                        return R_CURRENT_RESULT;
                     }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 

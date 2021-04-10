@@ -314,8 +314,8 @@ namespace ams::tipc::impl {
             static constexpr svc::ipc::MessageBuffer::SpecialHeader OutSpecialHeader{false, NumOutCopyHandles, NumOutMoveHandles, HasOutSpecialHeader};
 
             static constexpr auto OutMessageHandleIndex  = svc::ipc::MessageBuffer::GetSpecialDataIndex(OutMessageHeader, OutSpecialHeader);
-            static constexpr auto OutMessageRawDataIndex = svc::ipc::MessageBuffer::GetRawDataIndex(OutMessageHeader, OutSpecialHeader);
-            static constexpr auto OutMessageResultIndex  = OutMessageRawDataIndex + OutDataSize / sizeof(u32);
+            static constexpr auto OutMessageResultIndex  = svc::ipc::MessageBuffer::GetRawDataIndex(OutMessageHeader, OutSpecialHeader);
+            static constexpr auto OutMessageRawDataIndex = OutMessageResultIndex + 1;
 
         /* Construction of argument serialization structs. */
         private:
@@ -580,11 +580,11 @@ namespace ams::tipc::impl {
                 /* Set output handles. */
                 out_handles_holder.CopyTo(message_buffer);
 
-                /* Set output data. */
-                out_raw_holder.CopyTo(message_buffer);
-
                 /* Set output result. */
                 message_buffer.Set(CommandMeta::OutMessageResultIndex, result.GetValue());
+
+                /* Set output data. */
+                out_raw_holder.CopyTo(message_buffer);
             }
     };
 
