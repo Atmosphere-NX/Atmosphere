@@ -221,6 +221,9 @@ CATEGORIES = {
     127 : 'ResourceLimitLimitInfo',
     128 : 'ResourceLimitPeakInfo',
     129 : 'TouchScreenInfo',
+    130 : 'AcpUserAccountSettingsInfo',
+    131 : 'AudioDeviceInfo',
+    132 : 'AbnormalWakeInfo',
 }
 
 FIELD_TYPES = {

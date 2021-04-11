@@ -168,6 +168,9 @@
     HANDLER(ResourceLimitLimitInfo,              127) \
     HANDLER(ResourceLimitPeakInfo,               128) \
     HANDLER(TouchScreenInfo,                     129) \
+    HANDLER(AcpUserAccountSettingsInfo,          130) \
+    HANDLER(AudioDeviceInfo,                     131) \
+    HANDLER(AbnormalWakeInfo,                    132) \
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,   Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -658,7 +661,7 @@
     HANDLER(LcsApplicationRequestFlag,                                485, ErrorInfo,                           FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(LcsHasExFatDriverFlag,                                    486, ErrorInfo,                           FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(LcsIpAddress,                                             487, ErrorInfo,                           FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(AcpStartupUserAccount,                                    488, AcpGeneralSettingsInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AcpStartupUserAccount,                                    488, AcpUserAccountSettingsInfo,          FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(AcpAocRegistrationType,                                   489, AcpAocSettingsInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(AcpAttributeFlag,                                         490, AcpGeneralSettingsInfo,              FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(AcpSupportedLanguageFlag,                                 491, AcpGeneralSettingsInfo,              FieldType_NumericU32, FieldFlag_None   ) \
@@ -712,7 +715,7 @@
     HANDLER(EncryptedDyingMessage,                                    539, ErrorInfo,                           FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(DramId,                                                   540, PowerClockInfo,                      FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(NifmConnectionTestRedirectUrl,                            541, NifmConnectionTestInfo,              FieldType_String,     FieldFlag_None   ) \
-    HANDLER(AcpRequiredNetworkServiceLicenseOnLaunchFlag,             542, AcpGeneralSettingsInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AcpRequiredNetworkServiceLicenseOnLaunchFlag,             542, AcpUserAccountSettingsInfo,          FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(PciePort0Flags,                                           543, PcieLoggedStateInfo,                 FieldType_NumericU32, FieldFlag_None   ) \
     HANDLER(PciePort0Speed,                                           544, PcieLoggedStateInfo,                 FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(PciePort0ResetTimeInUs,                                   545, PcieLoggedStateInfo,                 FieldType_NumericU32, FieldFlag_None   ) \
@@ -743,12 +746,12 @@
     HANDLER(ApplicationInFocusTime,                                   570, ErrorInfoAuto,                       FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(ApplicationOutOfFocusTime,                                571, ErrorInfoAuto,                       FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(ApplicationBackgroundFocusTime,                           572, ErrorInfoAuto,                       FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(AcpUserAccountSwitchLock,                                 573, AcpGeneralSettingsInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AcpUserAccountSwitchLock,                                 573, AcpUserAccountSettingsInfo,          FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(USB3HostAvailableFlag,                                    574, USB3AvailableInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(USB3DeviceAvailableFlag,                                  575, USB3AvailableInfo,                   FieldType_Bool,       FieldFlag_None   ) \
     HANDLER(AcpNeighborDetectionClientConfigurationSendDataId,        576, AcpNeighborDetectionInfo,            FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(AcpNeighborDetectionClientConfigurationReceivableDataIds, 577, AcpNeighborDetectionInfo,            FieldType_U64Array,   FieldFlag_None   ) \
-    HANDLER(AcpStartupUserAccountOptionFlag,                          578, AcpGeneralSettingsInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AcpStartupUserAccountOptionFlag,                          578, AcpUserAccountSettingsInfo,          FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ServerErrorCode,                                          579, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
     HANDLER(AppletManagerMetaLogTrace,                                580, ErrorInfo,                           FieldType_U64Array,   FieldFlag_None   ) \
     HANDLER(ServerCertificateSerialNumber,                            581, NetworkSecurityCertificateInfo,      FieldType_String,     FieldFlag_None   ) \
@@ -800,4 +803,13 @@
     HANDLER(SystemSessionCountPeak,                                   627, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(GpuCrashHash,                                             628, GpuCrashInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(TouchScreenPanelGpioValue,                                629, TouchScreenInfo,                     FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(BrowserCertificateHostName,                               630, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
+    HANDLER(BrowserCertificateCommonName,                             631, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
+    HANDLER(BrowserCertificateOrganizationalUnitName,                 632, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
+    HANDLER(FsPooledBufferFailedIdealAllocationCountOnAsyncAccess,    633, FsMemoryInfo,                        FieldType_NumericU64, FieldFlag_None   ) \
+    HANDLER(AudioOutputTarget,                                        634, AudioDeviceInfo,                     FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AudioOutputChannelCount,                                  635, AudioDeviceInfo,                     FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(AppletTotalActiveTime,                                    636, ErrorInfoAuto,                       FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(WakeCount,                                                637, AbnormalWakeInfo,                    FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(PredominantWakeReason,                                    638, AbnormalWakeInfo,                    FieldType_NumericU32, FieldFlag_None   ) \
 
