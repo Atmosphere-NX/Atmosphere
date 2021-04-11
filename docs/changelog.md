@@ -1,4 +1,44 @@
 # Changelog
+## 0.19.0
++ Support was added for 12.0.0.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `sm`, `boot2`, `pgl` were updated to reflect the latest official behaviors.
+    + **Please Note**: 12.0.0 added a new protocol for IPC ("tipc"), which has been freshly reimplemented in its entirety.
+      + It is possible there may be as of yet unfound issues; if there are, please send the appropriate crash reports to SciresM (SciresM#0524 on discord).
+  + `erpt` was partially updated to reflect the latest official behaviors.
+    + New features were added to erpt to track the activity of running applets, and to detect when a forced shutdown occurs.
+    + These behaviors have been temporarily stubbed, as they are not necessary for 12.0.0 to run (and their outputs won't be saved anywhere).
+    + A future atmosphère update will implement these behaviors, in the interest of reflecting official logic as faithfully as we can.
++ Atmosphère no longer uses the /contents/ folder for its own programs.
+  + Atmosphère's system modules are now bundled together in the single file "stratosphere.romfs".
+    + For those working on developing for atmosphère, executables inside the /contents/ directory will be preferred to those in "stratosphere.romfs".
+  + **Please Note**: In order to facilitate this change (and the desired behavior), the first time you boot after extracting a release zip, atmosphère system modules inside /contents/ will be deleted.
+    + This will have no impact on user programs (it only removes programs with specific program ids).
++ Improvements were made to mesosphere, including:
+  + An extension InfoType was added for getting the current process handle, without having to spawn a thread and do IPC with oneself.
+  + An issue was fixed in SvcSetDebugThreadContext.
+  + An issue was fixed when doing IPC with user buffers.
++ Support was fixed for toggling the custom setting `usb!usb30_force_enabled` on 9.0.0+.
+  + This was broken by Nintendo's introducing a dependency that made USB a requirement to launch before custom settings are parsed.
+  + Since the fix, you can now toggle the setting (as you could prior to atmosphère 0.9.4), and it will work as expected.
+  + **Please Note**: Enabling USB 3.0 often severely impacts wireless communications.
+    + Because of this, the setting will default to off. If you experience issues with it enabled, consider disabling it.
++ A warning was added to daybreak when resetting the console to factory settings.
++ Substantial work was completed towards atmosphere's upcoming implementation of the host target connection protocol.
+  + Once completed, users will be able to interact with a Switch running atmosphère via a PC application ("Starlink") currently under development.
+    + Planned eventual features for connected consoles include a gdbstub, interacting with memory (for cheat development), streaming gameplay audio and video, and accessing the Switch's SD card filesystem.
+    + Switch homebrew will also have access to a (configurable and sandboxed) filesystem on the host PC, while connected.
+  + Towards this end, the following was accomplished:
+    + The "htc" system module was reimplemented completely.
+    + The system module which provides remote access to the SD card was reimplemented completely.
+  + This is currently the active focus of atmosphère's development.
+  + **Please Note**: Support is not yet completed, and users are disadvised from interacting with the related settings for the time being, unless they particularly know what they're doing.
++ A number of minor issues were fixed, including:
+  + A bug was fixed in `dmnt` that could cause a fatal when launching certain games with cheats active.
+  + An issue was fixed that could cause an abort in `sm` when using a large number of custom system modules.
+  + An issue was fixed that prevented launching gamecards on 1.0.0.
+  + Minor issues were fixed in the cheat virtual machine's behavior.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.18.1
 + A number of minor issues were fixed, including:
   + The new `dns.mitm` module added in 0.18.0 no longer fatal errors when receiving port=nullptr.
