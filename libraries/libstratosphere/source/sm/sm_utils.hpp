@@ -52,7 +52,7 @@ namespace ams::sm::impl {
 
     template<typename F>
     Result DoWithPerThreadSession(F f) {
-        Service srv;
+        TipcService srv;
         {
             std::scoped_lock lk(GetPerThreadSessionMutex());
             R_ABORT_UNLESS(smAtmosphereOpenSession(&srv));

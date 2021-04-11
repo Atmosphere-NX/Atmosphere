@@ -16,7 +16,7 @@
 #include "smm_ams.h"
 
 Result smManagerAtmosphereEndInitialDefers(void) {
-    return serviceDispatch(smManagerGetServiceSession(), 65000);
+    return tipcDispatch(smManagerTipcGetServiceSession(), 65000);
 }
 
 Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const CfgOverrideStatus *status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
@@ -25,7 +25,7 @@ Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const CfgOverrideSta
         u64 tid;
         CfgOverrideStatus status;
     } in = { pid, tid, *status };
-    return serviceDispatchIn(smManagerGetServiceSession(), 65002, in,
+    return tipcDispatchIn(smManagerTipcGetServiceSession(), 65002, in,
         .buffer_attrs = {
             SfBufferAttr_In | SfBufferAttr_HipcMapAlias,
             SfBufferAttr_In | SfBufferAttr_HipcMapAlias,
@@ -39,7 +39,7 @@ Result smManagerAtmosphereRegisterProcess(u64 pid, u64 tid, const CfgOverrideSta
 
 static Result _smManagerAtmosphereCmdHas(bool *out, SmServiceName name, u32 cmd_id) {
     u8 tmp;
-    Result rc = serviceDispatchInOut(smManagerGetServiceSession(), cmd_id, name, tmp);
+    Result rc = tipcDispatchInOut(smManagerTipcGetServiceSession(), cmd_id, name, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }

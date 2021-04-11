@@ -18,12 +18,12 @@ Result smAtmosphereWaitMitm(SmServiceName name);
 
 Result smAtmosphereMitmInitialize(void);
 void smAtmosphereMitmExit(void);
-Service *smAtmosphereMitmGetServiceSession();
+TipcService *smAtmosphereMitmGetServiceSession();
 
-Result smAtmosphereOpenSession(Service *out);
-void smAtmosphereCloseSession(Service *srv);
+Result smAtmosphereOpenSession(TipcService *out);
+void smAtmosphereCloseSession(TipcService *srv);
 
-Result smAtmosphereMitmInstall(Service *fwd_srv, Handle *handle_out, Handle *query_out, SmServiceName name);
+Result smAtmosphereMitmInstall(TipcService *fwd_srv, Handle *handle_out, Handle *query_out, SmServiceName name);
 Result smAtmosphereMitmUninstall(SmServiceName name);
 Result smAtmosphereMitmDeclareFuture(SmServiceName name);
 Result smAtmosphereMitmClearFuture(SmServiceName name);

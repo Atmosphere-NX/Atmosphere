@@ -5,6 +5,8 @@
     "main_thread_priority": 43,
     "default_cpu_id": 3,
     "process_category": 1,
+    "use_secure_memory": true,
+    "immortal": true,
     "kernel_capabilities": [
         {
             "type": "handle_table_size",
