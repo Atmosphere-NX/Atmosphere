@@ -328,13 +328,13 @@ uint64_t sdmmc_wrapper_controller_open(int mmc_id)
     if (_this != NULL)
     {
         // Lock eMMC xfer while SD card is being initialized by FS.
-        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+        if (mmc_id == FS_SDMMC_SD)
             mutex_lock_handler(FS_SDMMC_EMMC); // Recursive Mutex, handler will lock SD as well if custom_driver
 
         result = _this->vtab->sdmmc_accessor_controller_open(_this);
 
         // Unlock eMMC.
-        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+        if (mmc_id == FS_SDMMC_SD)
             mutex_unlock_handler(FS_SDMMC_EMMC);
 
         return result;
