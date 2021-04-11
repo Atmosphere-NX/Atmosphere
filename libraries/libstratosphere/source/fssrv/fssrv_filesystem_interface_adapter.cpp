@@ -89,6 +89,12 @@ namespace ams::fssrv::impl {
         return ResultSuccess();
     }
 
+    Result FileInterfaceAdapter::OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size) {
+        /* TODO: Nintendo supports calling info OperateRange using the provided buffers, when op_id is 4/5/6 or a class member is set. */
+        /* We should (in the future), determine what uses this, and mimic Nintendo's behavior to the extent that we can. */
+        return fs::ResultPermissionDenied();
+    }
+
     DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
         : parent_filesystem(parent, true), base_dir(std::move(dir)), open_count_semaphore(std::move(sema))
     {
