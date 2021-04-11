@@ -56,6 +56,7 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
+            Result OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size);
     };
     static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
