@@ -5,6 +5,8 @@
   + `sm`, `boot2`, `pgl` were updated to reflect the latest official behaviors.
     + **Please Note**: 12.0.0 added a new protocol for IPC ("tipc"), which has been freshly reimplemented in its entirety.
       + It is possible there may be as of yet unfound issues; if there are, please send the appropriate crash reports to SciresM (SciresM#0524 on discord).
+      + Homebrew which uses atmosphere extensions (including the mitm API) will need to be re-compiled in order to function on 0.19.0.
+        + I apologize for this, but it's unavoidable for technical reasons. If you're affected by this and mad about it, please contact SciresM to complain.
   + `erpt` was partially updated to reflect the latest official behaviors.
     + New features were added to erpt to track the activity of running applets, and to detect when a forced shutdown occurs.
     + These behaviors have been temporarily stubbed, as they are not necessary for 12.0.0 to run (and their outputs won't be saved anywhere).
