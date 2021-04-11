@@ -30,8 +30,15 @@ constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_11_0_0[] = {
     { 0x866C, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
 };
 
+/* Patch getter functions to return 1. */
+constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_12_0_0[] = {
+    { 0x840C, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { 0x849C, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+};
+
 constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("C0D3F4E87E8B0FE9BBE9F1968A20767F3DC08E03"), util::size(Usb30ForceEnablePatches_9_0_0),  Usb30ForceEnablePatches_9_0_0 },
     { ParseModuleId("B9C700CA8335F8BAA0D2041D8D09F772890BA988"), util::size(Usb30ForceEnablePatches_10_0_0), Usb30ForceEnablePatches_10_0_0 },
     { ParseModuleId("95BAF06A69650C215A5DD50CF8BD2A603E7AD3C2"), util::size(Usb30ForceEnablePatches_11_0_0), Usb30ForceEnablePatches_11_0_0 },
+    { ParseModuleId("F3F88D90EF6B3B6358EDEBAF87D56FA88D3A081C"), util::size(Usb30ForceEnablePatches_12_0_0), Usb30ForceEnablePatches_12_0_0 },
 };
