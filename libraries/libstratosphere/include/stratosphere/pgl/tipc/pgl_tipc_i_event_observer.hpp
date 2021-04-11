@@ -18,11 +18,12 @@
 #include <vapours.hpp>
 #include <stratosphere/os.hpp>
 #include <stratosphere/pm.hpp>
+#include <stratosphere/tipc.hpp>
 #include <stratosphere/pgl/pgl_types.hpp>
 
-#define AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                        \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::sf::OutCopyHandle out),             (out)) \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::sf::Out<pm::ProcessEventInfo> out), (out))
+#define AMS_PGL_TIPC_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                          \
+    AMS_TIPC_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::tipc::OutCopyHandle out),             (out)) \
+    AMS_TIPC_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::tipc::Out<pm::ProcessEventInfo> out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IEventObserver, AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO);
+AMS_TIPC_DEFINE_INTERFACE(ams::pgl::tipc, IEventObserver, AMS_PGL_TIPC_I_EVENT_OBSERVER_INTERFACE_INFO);
 
