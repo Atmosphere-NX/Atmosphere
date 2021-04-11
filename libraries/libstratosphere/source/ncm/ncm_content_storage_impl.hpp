@@ -60,7 +60,7 @@ namespace ams::ncm {
             static Result CleanupBase(const char *root_path);
             static Result VerifyBase(const char *root_path);
         public:
-            ContentStorageImpl() : rights_id_cache(nullptr), content_iterator(std::nullopt), last_content_offset(std::nullopt) { /* ... */ }
+            ContentStorageImpl() : placeholder_accessor(), cached_content_id(InvalidContentId), cached_file_handle(), rights_id_cache(nullptr), content_iterator(std::nullopt), last_content_offset(std::nullopt) { /* ... */ }
             ~ContentStorageImpl();
 
             Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);
