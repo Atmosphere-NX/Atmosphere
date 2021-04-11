@@ -160,4 +160,24 @@ namespace ams::erpt::srv {
         return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess());
     }
 
+    Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
+        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
+        return ResultSuccess();
+    }
+
+    Result ContextImpl::UnregisterRunningApplet(ncm::ProgramId program_id) {
+        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
+        return ResultSuccess();
+    }
+
+    Result ContextImpl::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration) {
+        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
+        return ResultSuccess();
+    }
+
+    Result ContextImpl::InvalidateForcedShutdownDetection() {
+        /* TODO: For greater accuracy, we should support the forced shutdown detection feature added in 12.0.0. */
+        return ResultSuccess();
+    }
+
 }

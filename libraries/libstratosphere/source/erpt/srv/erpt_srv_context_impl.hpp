@@ -33,6 +33,10 @@ namespace ams::erpt::srv {
             Result CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
             Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result);
             Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result);
+            Result RegisterRunningApplet(ncm::ProgramId program_id);
+            Result UnregisterRunningApplet(ncm::ProgramId program_id);
+            Result UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration);
+            Result InvalidateForcedShutdownDetection();
     };
     static_assert(erpt::sf::IsIContext<ContextImpl>);
 
