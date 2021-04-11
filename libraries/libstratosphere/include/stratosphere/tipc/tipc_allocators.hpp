@@ -59,7 +59,7 @@ namespace ams::tipc {
                     }
                 }
 
-                AMS_ABORT("Failed to allocate entry in SlabAllocator<T, N>");
+                return nullptr;
             }
 
             void Deallocate(ServiceObjectBase *object) {

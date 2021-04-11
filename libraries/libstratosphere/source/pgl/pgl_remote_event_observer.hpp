@@ -40,7 +40,20 @@ namespace ams::pgl {
                 static_assert(sizeof(*out.GetPointer()) == sizeof(::PmProcessEventInfo));
                 return  ::pglEventObserverGetProcessEventInfo(std::addressof(this->observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
             }
+
+            Result GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
+                ::Event ev;
+                R_TRY(::pglEventObserverGetProcessEvent(std::addressof(this->observer), std::addressof(ev)));
+                out.SetValue(ev.revent);
+                return ResultSuccess();
+            }
+
+            Result GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
+                static_assert(sizeof(*out.GetPointer()) == sizeof(::PmProcessEventInfo));
+                return  ::pglEventObserverGetProcessEventInfo(std::addressof(this->observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
+            }
     };
     static_assert(pgl::sf::IsIEventObserver<RemoteEventObserver>);
+    static_assert(pgl::tipc::IsIEventObserver<RemoteEventObserver>);
 
 }

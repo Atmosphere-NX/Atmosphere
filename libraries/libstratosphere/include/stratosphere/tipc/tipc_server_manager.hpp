@@ -165,6 +165,17 @@ namespace ams::tipc {
                         return m_object_manager->ReplyAndReceive(out_holder, out_object, reply_target, std::addressof(m_waitable_manager));
                     }
 
+                    void AddSession(svc::Handle session_handle, tipc::ServiceObjectBase *service_object) {
+                        /* Create a waitable object for the session. */
+                        tipc::WaitableObject object;
+
+                        /* Setup the object. */
+                        object.InitializeAsSession(session_handle, true, service_object);
+
+                        /* Register the object. */
+                        m_object_manager->AddObject(object);
+                    }
+
                     void ProcessMessages() {
                         /* While we have messages in our queue, receive and handle them. */
                         uintptr_t message_type, message_data;
@@ -182,14 +193,8 @@ namespace ams::tipc {
                                         /* Allocate a service object for the port. */
                                         auto *service_object = m_server_manager->AllocateObject(static_cast<size_t>(message_data));
 
-                                        /* Create a waitable object for the session. */
-                                        tipc::WaitableObject object;
-
-                                        /* Setup the object. */
-                                        object.InitializeAsSession(session_handle, true, service_object);
-
-                                        /* Register the object. */
-                                        m_object_manager->AddObject(object);
+                                        /* Add the newly-created service object. */
+                                        this->AddSession(session_handle, service_object);
                                     }
                                     break;
                                 case MessageType_TriggerResume:
@@ -402,6 +407,16 @@ namespace ams::tipc {
                 this->GetPortManager<Ix>().RegisterPort(static_cast<s32>(Ix), port_handle);
             }
 
+            template<size_t Ix>
+            void RegisterPort(sm::ServiceName service_name, size_t max_sessions) {
+                /* Register service. */
+                svc::Handle port_handle = svc::InvalidHandle;
+                R_ABORT_UNLESS(sm::RegisterService(std::addressof(port_handle), service_name, max_sessions, false));
+
+                /* Register the port handle. */
+                this->RegisterPort<Ix>(port_handle);
+            }
+
             void LoopAuto() {
                 /* If we have additional threads, create and start them. */
                 if constexpr (NumPorts > 1) {
@@ -440,6 +455,27 @@ namespace ams::tipc {
                 [this, resume_key]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                     (this->TriggerResumeImpl<Ix>(resume_key), ...);
                 }(std::make_index_sequence<NumPorts>());
+            }
+
+            Result AddSession(svc::Handle *out, tipc::ServiceObjectBase *object) {
+                /* Acquire exclusive access to ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Create a handle for the session. */
+                svc::Handle session_handle;
+                R_TRY(svc::CreateSession(std::addressof(session_handle), out, false, 0));
+
+                /* Select the best port manager. */
+                PortManagerBase *best_manager = nullptr;
+                s32 best_sessions             = -1;
+                [this, &best_manager, &best_sessions]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    (this->TrySelectBetterPort<Ix>(best_manager, best_sessions), ...);
+                }(std::make_index_sequence<NumPorts>());
+
+                /* Add the session to the least burdened manager. */
+                best_manager->AddSession(session_handle, object);
+
+                return ResultSuccess();
             }
         private:
             template<size_t Ix> requires (Ix < NumPorts)

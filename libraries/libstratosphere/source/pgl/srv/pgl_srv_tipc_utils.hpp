@@ -13,16 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/os.hpp>
-#include <stratosphere/pm.hpp>
-#include <stratosphere/pgl/pgl_types.hpp>
+#include <stratosphere.hpp>
 
-#define AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                        \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::sf::OutCopyHandle out),             (out)) \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::sf::Out<pm::ProcessEventInfo> out), (out))
+namespace ams::pgl::srv {
 
-AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IEventObserver, AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO);
+    Result AllocateShellEventObserverForTipc(svc::Handle *out);
 
+}

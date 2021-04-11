@@ -19,18 +19,18 @@
 
 namespace ams::pgl::srv {
 
-    ShellEventObserver::ShellEventObserver() : message_queue(queue_buffer, QueueCapacity), event(os::EventClearMode_AutoClear, true) {
+    ShellEventObserverImpl::ShellEventObserverImpl() : message_queue(queue_buffer, QueueCapacity), event(os::EventClearMode_AutoClear, true) {
         this->heap_handle = lmem::CreateUnitHeap(this->event_info_data, sizeof(this->event_info_data), sizeof(this->event_info_data[0]), lmem::CreateOption_ThreadSafe, 8, GetPointer(this->heap_head));
 
         RegisterShellEventObserver(util::ConstructAt(this->holder, this));
     }
 
-    ShellEventObserver::~ShellEventObserver() {
+    ShellEventObserverImpl::~ShellEventObserverImpl() {
         UnregisterShellEventObserver(GetPointer(this->holder));
         util::DestroyAt(this->holder);
     }
 
-    Result ShellEventObserver::PopEventInfo(pm::ProcessEventInfo *out) {
+    Result ShellEventObserverImpl::PopEventInfo(pm::ProcessEventInfo *out) {
         /* Receive an info from the queue. */
         uintptr_t info_address;
         R_UNLESS(this->message_queue.TryReceive(std::addressof(info_address)), pgl::ResultNotAvailable());
@@ -45,7 +45,7 @@ namespace ams::pgl::srv {
         return ResultSuccess();
     }
 
-    void ShellEventObserver::Notify(const pm::ProcessEventInfo &info) {
+    void ShellEventObserverImpl::Notify(const pm::ProcessEventInfo &info) {
         /* Allocate a new info. */
         auto allocated = reinterpret_cast<pm::ProcessEventInfo *>(lmem::AllocateFromUnitHeap(this->heap_handle));
         if (!allocated) {
@@ -65,12 +65,21 @@ namespace ams::pgl::srv {
         this->event.Signal();
     }
 
-    Result ShellEventObserver::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
+    Result ShellEventObserverCmif::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
         out.SetValue(this->GetEvent().GetReadableHandle());
         return ResultSuccess();
     }
 
-    Result ShellEventObserver::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
+    Result ShellEventObserverCmif::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
+        return this->PopEventInfo(out.GetPointer());
+    }
+
+    Result ShellEventObserverTipc::GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
+        out.SetValue(this->GetEvent().GetReadableHandle());
+        return ResultSuccess();
+    }
+
+    Result ShellEventObserverTipc::GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
         return this->PopEventInfo(out.GetPointer());
     }
 

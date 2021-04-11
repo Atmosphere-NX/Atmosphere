@@ -34,7 +34,7 @@ namespace ams::pgl::srv {
             }
     };
 
-    class ShellEventObserver : public IShellEventObserver {
+    class ShellEventObserverImpl : public IShellEventObserver {
         private:
             static constexpr size_t QueueCapacity = 0x20;
         private:
@@ -46,8 +46,8 @@ namespace ams::pgl::srv {
             pm::ProcessEventInfo event_info_data[QueueCapacity];
             util::TypedStorage<ShellEventObserverHolder> holder;
         public:
-            ShellEventObserver();
-            ~ShellEventObserver();
+            ShellEventObserverImpl();
+            ~ShellEventObserverImpl();
 
             os::SystemEvent &GetEvent() {
                 return this->event;
@@ -56,10 +56,20 @@ namespace ams::pgl::srv {
             Result PopEventInfo(pm::ProcessEventInfo *out);
 
             virtual void Notify(const pm::ProcessEventInfo &info) override final;
+    };
 
+    class ShellEventObserverCmif : public ShellEventObserverImpl {
+        public:
             Result GetProcessEventHandle(ams::sf::OutCopyHandle out);
             Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out);
     };
-    static_assert(pgl::sf::IsIEventObserver<ShellEventObserver>);
+    static_assert(pgl::sf::IsIEventObserver<ShellEventObserverCmif>);
+
+    class ShellEventObserverTipc : public ShellEventObserverImpl {
+        public:
+            Result GetProcessEventHandle(ams::tipc::OutCopyHandle out);
+            Result GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out);
+    };
+    static_assert(pgl::tipc::IsIEventObserver<ShellEventObserverTipc>);
 
 }
