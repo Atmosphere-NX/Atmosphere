@@ -71,7 +71,6 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
@@ -111,7 +110,6 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
@@ -484,9 +482,10 @@ namespace ams::boot2 {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
         }
 
-        /* Prior to 12.0.0, boot2 was responsible for launching grc. */
+        /* Prior to 12.0.0, boot2 was responsible for launching grc and migration. */
         if (hos::GetVersion() < hos::Version_12_0_0) {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Grc, ncm::StorageId::BuiltInSystem), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Migration, ncm::StorageId::BuiltInSystem), 0);
         }
 
         /* Launch user programs off of the SD. */
