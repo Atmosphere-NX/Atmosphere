@@ -1,4 +1,8 @@
 # Changelog
+## 0.19.1
++ An issue was fixed that caused a fatal error when using official `migration` services to transfer data between consoles.
++ An issue was fixed in `ncm` that caused an error when the OS tried to enumerate installed SD card content.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.19.0
 + Support was added for 12.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.
