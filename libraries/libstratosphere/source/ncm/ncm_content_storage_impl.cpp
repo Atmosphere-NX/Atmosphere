@@ -288,7 +288,7 @@ namespace ams::ncm {
         }
 
         /* Set the path to the parent directory. */
-        this->path.Set(this->path.GetSubstring(0, i));
+        this->path.Set(this->path.GetSubstring(0, i + 1));
 
         /* Try to load again from the parent directory. */
         return this->LoadEntries();
