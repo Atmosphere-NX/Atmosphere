@@ -145,12 +145,12 @@ void __appInit(void) {
     fs::SetAllocator(ldr::Allocate, ldr::Deallocate);
 
     /* Initialize services we need. */
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        lr::Initialize();
-        R_ABORT_UNLESS(fsldrInitialize());
-        spl::Initialize();
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    lr::Initialize();
+    R_ABORT_UNLESS(fsldrInitialize());
+    spl::Initialize();
 
     ams::CheckApiVersion();
 }

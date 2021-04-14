@@ -19,7 +19,6 @@
 #include <stratosphere/sm/sm_types.hpp>
 #include <stratosphere/sm/sm_api.hpp>
 #include <stratosphere/sm/sm_mitm_api.hpp>
-#include <stratosphere/sm/sm_scoped_holder.hpp>
 
 #include <stratosphere/sm/sm_manager_api.hpp>
 

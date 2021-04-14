@@ -26,21 +26,15 @@ namespace ams::sm::mitm {
     }
 
     Result UninstallMitm(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereMitmUninstall(impl::ConvertName(name));
-        });
+        return smAtmosphereMitmUninstall(impl::ConvertName(name));
     }
 
     Result DeclareFutureMitm(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereMitmDeclareFuture(impl::ConvertName(name));
-        });
+        return smAtmosphereMitmDeclareFuture(impl::ConvertName(name));
     }
 
     Result ClearFutureMitm(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereMitmClearFuture(impl::ConvertName(name));
-        });
+        return smAtmosphereMitmClearFuture(impl::ConvertName(name));
     }
 
     Result AcknowledgeSession(Service *out_service, MitmProcessInfo *out_info, ServiceName name) {
@@ -50,15 +44,11 @@ namespace ams::sm::mitm {
     }
 
     Result HasMitm(bool *out, ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereHasMitm(out, impl::ConvertName(name));
-        });
+        return smAtmosphereHasMitm(out, impl::ConvertName(name));
     }
 
     Result WaitMitm(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereWaitMitm(impl::ConvertName(name));
-        });
+        return smAtmosphereWaitMitm(impl::ConvertName(name));
     }
 
 }

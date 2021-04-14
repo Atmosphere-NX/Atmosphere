@@ -104,12 +104,12 @@ void __appInit(void) {
 
     fs::SetAllocator(htc::Allocate, htc::Deallocate);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(setcalInitialize());
-        R_ABORT_UNLESS(pscmInitialize());
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(setcalInitialize());
+    R_ABORT_UNLESS(pscmInitialize());
+    R_ABORT_UNLESS(fsInitialize());
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 

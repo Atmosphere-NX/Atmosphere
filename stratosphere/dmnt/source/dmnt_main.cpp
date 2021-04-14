@@ -83,18 +83,18 @@ void __appInit(void) {
     InitializeFsHeap();
     fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(pmdmntInitialize());
-        R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(ldrDmntInitialize());
-        R_ABORT_UNLESS(roDmntInitialize());
-        R_ABORT_UNLESS(nsdevInitialize());
-        lr::Initialize();
-        R_ABORT_UNLESS(setInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(hidInitialize());
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(pmdmntInitialize());
+    R_ABORT_UNLESS(pminfoInitialize());
+    R_ABORT_UNLESS(ldrDmntInitialize());
+    R_ABORT_UNLESS(roDmntInitialize());
+    R_ABORT_UNLESS(nsdevInitialize());
+    lr::Initialize();
+    R_ABORT_UNLESS(setInitialize());
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(hidInitialize());
+    R_ABORT_UNLESS(fsInitialize());
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 

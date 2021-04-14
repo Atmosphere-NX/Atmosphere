@@ -77,6 +77,7 @@ void __appInit(void) {
     hos::InitializeForStratosphere();
 
     /* SPL doesn't really access any services... */
+    R_ABORT_UNLESS(sm::Initialize());
 
     ams::CheckApiVersion();
 }

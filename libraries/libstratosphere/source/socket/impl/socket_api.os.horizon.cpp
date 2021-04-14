@@ -197,9 +197,8 @@ namespace ams::socket::impl {
 
                 const auto service_type = config.IsSystemClient() ? (1 << 1) : (1 << 0);
 
-                sm::DoWithSession([&] {
-                    R_ABORT_UNLESS(::bsdInitialize(std::addressof(libnx_config), static_cast<u32>(config.GetConcurrencyCountMax()), service_type));
-                });
+                R_ABORT_UNLESS(sm::Initialize());
+                R_ABORT_UNLESS(::bsdInitialize(std::addressof(libnx_config), static_cast<u32>(config.GetConcurrencyCountMax()), service_type));
             }
 
             /* Set the heap generation. */

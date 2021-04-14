@@ -70,14 +70,14 @@ void __appInit(void) {
 
     fs::SetAllocator(pgl::srv::Allocate, pgl::srv::Deallocate);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(setInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(pmshellInitialize());
-        R_ABORT_UNLESS(ldrShellInitialize());
-        R_ABORT_UNLESS(lrInitialize());
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(setInitialize());
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(pmshellInitialize());
+    R_ABORT_UNLESS(ldrShellInitialize());
+    R_ABORT_UNLESS(lrInitialize());
+    R_ABORT_UNLESS(fsInitialize());
 
     ams::CheckApiVersion();
 }

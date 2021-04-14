@@ -387,8 +387,8 @@ namespace ams::boot2 {
             /* NOTE: Here we work around a race condition in the boot process by ensuring that settings initializes its db. */
             {
                 /* Connect to set:sys. */
-                sm::ScopedServiceHolder<::setsysInitialize, ::setsysExit> setsys_holder;
-                AMS_ABORT_UNLESS(setsys_holder);
+                R_ABORT_UNLESS(::setsysInitialize());
+                ON_SCOPE_EXIT { ::setsysExit(); };
 
                 /* Retrieve setting from the database. */
                 u8 force_maintenance = 0;
@@ -424,9 +424,7 @@ namespace ams::boot2 {
             InitializeFsHeapForCleanup();
 
             /* Temporarily initialize fs. */
-            sm::DoWithSession([&] {
-                R_ABORT_UNLESS(fsInitialize());
-            });
+            R_ABORT_UNLESS(fsInitialize());
             ON_SCOPE_EXIT { fsExit(); };
 
             /* Wait for the sd card to be available. */

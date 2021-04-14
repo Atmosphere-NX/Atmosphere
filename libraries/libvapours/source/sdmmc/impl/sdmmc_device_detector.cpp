@@ -58,7 +58,9 @@ namespace ams::sdmmc::impl {
 
     void DeviceDetector::DetectorThread() {
         /* Initialize the gpio session. */
-        sm::DoWithSession([] { gpio::Initialize(); });
+        gpio::Initialize();
+
+        /* Open and configure the pad session. */
         gpio::OpenSession(std::addressof(this->gpio_pad_session), this->gpio_device_code);
         gpio::SetDirection(std::addressof(this->gpio_pad_session), gpio::Direction_Input);
         gpio::SetDebounceTime(std::addressof(this->gpio_pad_session), this->gpio_debounce_ms);

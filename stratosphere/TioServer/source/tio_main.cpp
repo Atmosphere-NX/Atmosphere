@@ -110,9 +110,9 @@ void __appInit(void) {
     /* Disable FS auto-abort. */
     fs::SetEnabledAutoAbort(false);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
 
     ams::CheckApiVersion();
 }

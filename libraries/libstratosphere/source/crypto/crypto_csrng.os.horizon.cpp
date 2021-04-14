@@ -19,29 +19,28 @@ namespace ams::crypto {
 
     namespace {
 
-        bool g_initialized;
-        os::Mutex g_lock(false);
+        constinit bool g_initialized = false;
+        constinit os::SdkMutex g_lock;
 
         void InitializeCsrng() {
             AMS_ASSERT(!g_initialized);
-            sm::DoWithSession([&]() {
-                R_ABORT_UNLESS(::csrngInitialize());
-            });
+            R_ABORT_UNLESS(sm::Initialize());
+            R_ABORT_UNLESS(::csrngInitialize());
         }
 
     }
 
     void GenerateCryptographicallyRandomBytes(void *dst, size_t dst_size) {
-        {
+        if (AMS_UNLIKELY(!g_initialized)) {
             std::scoped_lock lk(g_lock);
 
-            if (AMS_UNLIKELY(!g_initialized)) {
+            if (AMS_LIKELY(!g_initialized)) {
                 InitializeCsrng();
                 g_initialized = true;
             }
         }
 
-        R_ABORT_UNLESS(csrngGetRandomBytes(dst, dst_size));
+        R_ABORT_UNLESS(::csrngGetRandomBytes(dst, dst_size));
     }
 
 }

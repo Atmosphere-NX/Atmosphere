@@ -172,10 +172,8 @@ namespace ams::mitm {
             }
 
             /* Connect to set:sys. */
-            sm::DoWithSession([]() {
-                R_ABORT_UNLESS(setInitialize());
-                R_ABORT_UNLESS(setsysInitialize());
-            });
+            R_ABORT_UNLESS(setInitialize());
+            R_ABORT_UNLESS(setsysInitialize());
 
             /* Load settings off the SD card. */
             settings::fwdbg::InitializeSdCardKeyValueStore();

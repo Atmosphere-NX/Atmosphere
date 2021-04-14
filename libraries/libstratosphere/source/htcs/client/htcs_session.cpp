@@ -229,10 +229,11 @@ namespace ams::htcs::client {
     }
 
     void InitializeSessionManager(tma::IHtcsManager **out_manager, tma::IHtcsManager **out_monitor, u32 num_sessions) {
+        /* Ensure we can contact the libnx wrapper. */
+        R_ABORT_UNLESS(sm::Initialize());
+
         /* Initialize the libnx wrapper. */
-        sm::DoWithSession([&] {
-            R_ABORT_UNLESS(::htcsInitialize(num_sessions));
-        });
+        R_ABORT_UNLESS(::htcsInitialize(num_sessions));
 
         /* Create the output objects. */
         *out_manager = ObjectFactory::CreateSharedEmplaced<tma::IHtcsManager, RemoteManager>().Detach();

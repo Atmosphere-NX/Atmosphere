@@ -50,7 +50,7 @@ namespace ams::mitm::sysupdater {
         mitm::WaitInitialized();
 
         /* Connect to nim. */
-        sm::DoWithSession([]() { nim::InitializeForNetworkInstallManager(); });
+        nim::InitializeForNetworkInstallManager();
         ON_SCOPE_EXIT { nim::FinalizeForNetworkInstallManager(); };
 
         /* Register ams:su. */

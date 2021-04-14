@@ -41,8 +41,12 @@ namespace ams::creport {
 
             /* Try to get the current time. */
             {
-                sm::ScopedServiceHolder<timeInitialize, timeExit> time_holder;
-                return time_holder && R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
+                if (R_FAILED(::timeInitialize())) {
+                    return false;
+                }
+                ON_SCOPE_EXIT { ::timeExit(); };
+
+                return R_SUCCEEDED(::timeGetCurrentTime(TimeType_LocalSystemClock, out));
             }
         }
 
@@ -337,8 +341,9 @@ namespace ams::creport {
             /* Since we save reports only locally and do not send them via telemetry, we will skip this. */
             AMS_UNUSED(enable_screenshot);
             if (hos::GetVersion() >= hos::Version_9_0_0 && this->IsApplication()) {
-                sm::ScopedServiceHolder<capsrv::InitializeScreenShotControl, capsrv::FinalizeScreenShotControl> capssc_holder;
-                if (capssc_holder) {
+                if (R_SUCCEEDED(capsrv::InitializeScreenShotControl())) {
+                    ON_SCOPE_EXIT { capsrv::FinalizeScreenShotControl(); };
+
                     u64 jpeg_size;
                     if (R_SUCCEEDED(capsrv::CaptureJpegScreenshot(std::addressof(jpeg_size), this->heap_storage, sizeof(this->heap_storage), vi::LayerStack_ApplicationForDebug, TimeSpan::FromSeconds(10)))) {
                         util::SNPrintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.jpg", timestamp, this->process_info.program_id);

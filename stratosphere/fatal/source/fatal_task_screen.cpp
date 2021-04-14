@@ -484,9 +484,7 @@ namespace ams::fatal::srv {
             PreRenderFrameBuffer();
 
             /* Prepare screen for drawing. */
-            sm::DoWithSession([&]() {
-                R_ABORT_UNLESS(PrepareScreenForDrawing());
-            });
+            R_ABORT_UNLESS(PrepareScreenForDrawing());
 
             /* Display the pre-rendered frame. */
             this->DisplayPreRenderedFrame();

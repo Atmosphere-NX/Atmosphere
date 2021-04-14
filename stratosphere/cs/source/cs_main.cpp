@@ -114,13 +114,13 @@ void __appInit(void) {
 
     fs::SetAllocator(cs::Allocate, cs::Deallocate);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        lr::Initialize();
-        R_ABORT_UNLESS(ldr::InitializeForShell());
-        R_ABORT_UNLESS(pgl::Initialize());
-        /* TODO: Other services? */
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    lr::Initialize();
+    R_ABORT_UNLESS(ldr::InitializeForShell());
+    R_ABORT_UNLESS(pgl::Initialize());
+    /* TODO: Other services? */
 
     ams::CheckApiVersion();
 }
