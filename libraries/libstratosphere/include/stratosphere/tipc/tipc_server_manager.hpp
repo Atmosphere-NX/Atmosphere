@@ -42,7 +42,14 @@ namespace ams::tipc {
     template<typename DeferralManagerType, size_t ThreadStackSize, typename... PortInfos>
     class ServerManagerImpl {
         private:
+            static constexpr inline size_t NumPorts    = sizeof...(PortInfos);
+            static constexpr inline size_t MaxSessions = (PortInfos::MaxSessions + ...);
+
+            /* Verify that it's possible to service this many sessions, with our port manager count. */
+            static_assert(MaxSessions <= NumPorts * svc::ArgumentHandleCountMax);
+
             static_assert(util::IsAligned(ThreadStackSize, os::ThreadStackAlignment));
+            alignas(os::ThreadStackAlignment) static constinit inline u8 s_port_stacks[ThreadStackSize * (NumPorts - 1)];
 
             static constexpr inline bool IsDeferralSupported = !std::same_as<DeferralManagerType, DummyDeferralManager>;
             using ResumeKey = typename DeferralManagerType::Key;
@@ -66,12 +73,6 @@ namespace ams::tipc {
                 std::memcpy(std::addressof(converted), std::addressof(message), sizeof(converted));
                 return converted;
             }
-
-            static constexpr inline size_t NumPorts    = sizeof...(PortInfos);
-            static constexpr inline size_t MaxSessions = (PortInfos::MaxSessions + ...);
-
-            /* Verify that it's possible to service this many sessions, with our port manager count. */
-            static_assert(MaxSessions <= NumPorts * svc::ArgumentHandleCountMax);
 
             template<size_t Ix> requires (Ix < NumPorts)
             static constexpr inline size_t SessionsPerPortManager = (Ix == NumPorts - 1) ? ((MaxSessions / NumPorts) + MaxSessions % NumPorts)
@@ -353,7 +354,6 @@ namespace ams::tipc {
             PortManagerTuple m_port_managers;
             PortAllocatorTuple m_port_allocators;
             os::ThreadType m_port_threads[NumPorts - 1];
-            alignas(os::ThreadStackAlignment) u8 m_port_stacks[ThreadStackSize * (NumPorts - 1)];
         private:
             template<size_t Ix>
             ALWAYS_INLINE auto &GetPortManager() {
@@ -378,7 +378,7 @@ namespace ams::tipc {
             template<size_t Ix>
             void InitializePortThread(s32 priority) {
                 /* Create the thread. */
-                R_ABORT_UNLESS(os::CreateThread(m_port_threads + Ix, &LoopAutoForPortThreadFunction<Ix>, this, m_port_stacks + Ix, ThreadStackSize, priority));
+                R_ABORT_UNLESS(os::CreateThread(m_port_threads + Ix, &LoopAutoForPortThreadFunction<Ix>, this, s_port_stacks + Ix, ThreadStackSize, priority));
 
                 /* Start the thread. */
                 os::StartThread(m_port_threads + Ix);
