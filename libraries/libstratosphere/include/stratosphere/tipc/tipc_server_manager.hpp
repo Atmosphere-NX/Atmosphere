@@ -325,7 +325,7 @@ namespace ams::tipc {
             template<typename PortInfo, size_t PortSessions>
             class PortManagerImpl final : public PortManagerBase {
                 private:
-                    tipc::ObjectManager<PortSessions> m_object_manager_impl;
+                    tipc::ObjectManager<1 + PortSessions> m_object_manager_impl;
                 public:
                     PortManagerImpl() : PortManagerBase(), m_object_manager_impl() {
                         /* ...  */
