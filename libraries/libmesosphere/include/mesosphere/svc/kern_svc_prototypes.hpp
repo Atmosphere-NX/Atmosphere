@@ -20,7 +20,7 @@
 
 namespace ams::kern::svc {
 
-    static constexpr size_t NumSupervisorCalls = 0xC0;
+    static constexpr size_t NumSupervisorCalls = AMS_KERN_NUM_SUPERVISOR_CALLS;
 
     #define AMS_KERN_SVC_DECLARE_ENUM_ID(ID, RETURN_TYPE, NAME, ...) \
         SvcId_##NAME = ID,

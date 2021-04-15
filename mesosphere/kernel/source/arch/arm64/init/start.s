@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
@@ -157,13 +158,13 @@ othercore_el1:
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
     /* Setup system registers using values from our KInitArguments. */
-    ldr x1, [x20, #0x00]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TTBR0)]
     msr ttbr0_el1, x1
-    ldr x1, [x20, #0x08]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TTBR1)]
     msr ttbr1_el1, x1
-    ldr x1, [x20, #0x10]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TCR)]
     msr tcr_el1, x1
-    ldr x1, [x20, #0x18]
+    ldr x1, [x20, #(INIT_ARGUMENTS_MAIR)]
     msr mair_el1, x1
 
     /* Perform cpu-specific setup. */
@@ -179,9 +180,9 @@ othercore_el1:
     b othercore_cpu_specific_setup_end
 othercore_cpu_specific_setup_cortex_a57:
 othercore_cpu_specific_setup_cortex_a53:
-    ldr x1, [x20, #0x20]
+    ldr x1, [x20, #(INIT_ARGUMENTS_CPUACTLR)]
     msr cpuactlr_el1, x1
-    ldr x1, [x20, #0x28]
+    ldr x1, [x20, #(INIT_ARGUMENTS_CPUECTLR)]
     msr cpuectlr_el1, x1
 
 othercore_cpu_specific_setup_end:
@@ -190,14 +191,14 @@ othercore_cpu_specific_setup_end:
     isb
 
     /* Set sctlr_el1 and ensure instruction consistency. */
-    ldr x1, [x20, #0x30]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SCTLR)]
     msr sctlr_el1, x1
 
     dsb sy
     isb
 
     /* Jump to the virtual address equivalent to ams::kern::init::InvokeEntrypoint */
-    ldr x1, [x20, #0x50]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SETUP_FUNCTION)]
     adr x2, _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE
     sub x1, x1, x2
     adr x2, _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
@@ -218,7 +219,7 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     isb
 
     /* Setup the stack pointer. */
-    ldr x1, [x20, #0x38]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SP)]
     mov sp, x1
 
     /* Ensure that system debug registers are setup. */
@@ -228,12 +229,12 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     bl _ZN3ams4kern4init26InitializeExceptionVectorsEv
 
     /* Setup the exception stack in cntv_cval_el0. */
-    ldr x1, [x20, #0x58]
+    ldr x1, [x20, #(INIT_ARGUMENTS_EXCEPTION_STACK)]
     msr cntv_cval_el0, x1
 
     /* Jump to the entrypoint. */
-    ldr x1, [x20, #0x40]
-    ldr x0, [x20, #0x48]
+    ldr x1, [x20, #(INIT_ARGUMENTS_ENTRYPOINT)]
+    ldr x0, [x20, #(INIT_ARGUMENTS_ARGUMENT)]
     br x1
 
 

@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 namespace ams::kern::init {
 
@@ -31,5 +32,19 @@ namespace ams::kern::init {
         u64 setup_function;
         u64 exception_stack;
     };
+    static_assert(sizeof(KInitArguments) == INIT_ARGUMENTS_SIZE);
+
+    static_assert(__builtin_offsetof(KInitArguments, ttbr0)           == INIT_ARGUMENTS_TTBR0);
+    static_assert(__builtin_offsetof(KInitArguments, ttbr1)           == INIT_ARGUMENTS_TTBR1);
+    static_assert(__builtin_offsetof(KInitArguments, tcr)             == INIT_ARGUMENTS_TCR);
+    static_assert(__builtin_offsetof(KInitArguments, mair)            == INIT_ARGUMENTS_MAIR);
+    static_assert(__builtin_offsetof(KInitArguments, cpuactlr)        == INIT_ARGUMENTS_CPUACTLR);
+    static_assert(__builtin_offsetof(KInitArguments, cpuectlr)        == INIT_ARGUMENTS_CPUECTLR);
+    static_assert(__builtin_offsetof(KInitArguments, sctlr)           == INIT_ARGUMENTS_SCTLR);
+    static_assert(__builtin_offsetof(KInitArguments, sp)              == INIT_ARGUMENTS_SP);
+    static_assert(__builtin_offsetof(KInitArguments, entrypoint)      == INIT_ARGUMENTS_ENTRYPOINT);
+    static_assert(__builtin_offsetof(KInitArguments, argument)        == INIT_ARGUMENTS_ARGUMENT);
+    static_assert(__builtin_offsetof(KInitArguments, setup_function)  == INIT_ARGUMENTS_SETUP_FUNCTION);
+    static_assert(__builtin_offsetof(KInitArguments, exception_stack) == INIT_ARGUMENTS_EXCEPTION_STACK);
 
 }

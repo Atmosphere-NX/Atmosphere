@@ -15,88 +15,88 @@
  */
 #include <mesosphere/kern_select_assembly_offsets.h>
 
-#define SAVE_THREAD_CONTEXT(ctx, tmp0, tmp1, done_label)    \
-    /* Save the callee save registers + SP and cpacr. */    \
-    mov tmp0, sp;                                           \
-    mrs tmp1, cpacr_el1;                                    \
-    stp  x19,  x20, [ctx, #(8 *  0)];                       \
-    stp  x21,  x22, [ctx, #(8 *  2)];                       \
-    stp  x23,  x24, [ctx, #(8 *  4)];                       \
-    stp  x25,  x26, [ctx, #(8 *  6)];                       \
-    stp  x27,  x28, [ctx, #(8 *  8)];                       \
-    stp  x29,  x30, [ctx, #(8 * 10)];                       \
-                                                            \
-    stp tmp0, tmp1, [ctx, #0x60];                           \
-                                                            \
-    /* Check whether the FPU is enabled. */                 \
-    /* If it isn't, skip saving FPU state. */               \
-    and tmp1, tmp1, #0x300000;                              \
-    cbz tmp1, done_label;                                   \
-                                                            \
-    /* Save fpcr and fpsr. */                               \
-    mrs tmp0, fpcr;                                         \
-    mrs tmp1, fpsr;                                         \
-    stp tmp0, tmp1, [ctx, #0x70];                           \
-                                                            \
-    /* Save the FPU registers. */                           \
-    stp q0,  q1,  [ctx, #(16 *  0 + 0x80)];                 \
-    stp q2,  q3,  [ctx, #(16 *  2 + 0x80)];                 \
-    stp q4,  q5,  [ctx, #(16 *  4 + 0x80)];                 \
-    stp q6,  q7,  [ctx, #(16 *  6 + 0x80)];                 \
-    stp q8,  q9,  [ctx, #(16 *  8 + 0x80)];                 \
-    stp q10, q11, [ctx, #(16 * 10 + 0x80)];                 \
-    stp q12, q13, [ctx, #(16 * 12 + 0x80)];                 \
-    stp q14, q15, [ctx, #(16 * 14 + 0x80)];                 \
-    stp q16, q17, [ctx, #(16 * 16 + 0x80)];                 \
-    stp q18, q19, [ctx, #(16 * 18 + 0x80)];                 \
-    stp q20, q21, [ctx, #(16 * 20 + 0x80)];                 \
-    stp q22, q23, [ctx, #(16 * 22 + 0x80)];                 \
-    stp q24, q25, [ctx, #(16 * 24 + 0x80)];                 \
-    stp q26, q27, [ctx, #(16 * 26 + 0x80)];                 \
-    stp q28, q29, [ctx, #(16 * 28 + 0x80)];                 \
-    stp q30, q31, [ctx, #(16 * 30 + 0x80)];
+#define SAVE_THREAD_CONTEXT(ctx, tmp0, tmp1, done_label)            \
+    /* Save the callee save registers + SP and cpacr. */            \
+    mov tmp0, sp;                                                   \
+    mrs tmp1, cpacr_el1;                                            \
+    stp  x19,  x20, [ctx, #(THREAD_CONTEXT_X19_X20)];               \
+    stp  x21,  x22, [ctx, #(THREAD_CONTEXT_X21_X22)];               \
+    stp  x23,  x24, [ctx, #(THREAD_CONTEXT_X23_X24)];               \
+    stp  x25,  x26, [ctx, #(THREAD_CONTEXT_X25_X26)];               \
+    stp  x27,  x28, [ctx, #(THREAD_CONTEXT_X27_X28)];               \
+    stp  x29,  x30, [ctx, #(THREAD_CONTEXT_X29_X30)];               \
+                                                                    \
+    stp tmp0, tmp1, [ctx, #(THREAD_CONTEXT_SP_CPACR)];              \
+                                                                    \
+    /* Check whether the FPU is enabled. */                         \
+    /* If it isn't, skip saving FPU state. */                       \
+    and tmp1, tmp1, #0x300000;                                      \
+    cbz tmp1, done_label;                                           \
+                                                                    \
+    /* Save fpcr and fpsr. */                                       \
+    mrs tmp0, fpcr;                                                 \
+    mrs tmp1, fpsr;                                                 \
+    stp tmp0, tmp1, [ctx, #(THREAD_CONTEXT_FPCR_FPSR)];             \
+                                                                    \
+    /* Save the FPU registers. */                                   \
+    stp q0,  q1,  [ctx, #(16 *  0 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q2,  q3,  [ctx, #(16 *  2 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q4,  q5,  [ctx, #(16 *  4 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q6,  q7,  [ctx, #(16 *  6 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q8,  q9,  [ctx, #(16 *  8 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q10, q11, [ctx, #(16 * 10 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q12, q13, [ctx, #(16 * 12 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q14, q15, [ctx, #(16 * 14 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q16, q17, [ctx, #(16 * 16 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q18, q19, [ctx, #(16 * 18 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q20, q21, [ctx, #(16 * 20 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q22, q23, [ctx, #(16 * 22 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q24, q25, [ctx, #(16 * 24 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q26, q27, [ctx, #(16 * 26 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q28, q29, [ctx, #(16 * 28 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    stp q30, q31, [ctx, #(16 * 30 + THREAD_CONTEXT_FPU_REGISTERS)];
 
-#define RESTORE_THREAD_CONTEXT(ctx, tmp0, tmp1, done_label) \
-    /* Restore the callee save registers + SP and cpacr. */ \
-    ldp tmp0, tmp1, [ctx, #0x60];                           \
-    mov sp, tmp0;                                           \
-    ldp  x19,  x20, [ctx, #(8 *  0)];                       \
-    ldp  x21,  x22, [ctx, #(8 *  2)];                       \
-    ldp  x23,  x24, [ctx, #(8 *  4)];                       \
-    ldp  x25,  x26, [ctx, #(8 *  6)];                       \
-    ldp  x27,  x28, [ctx, #(8 *  8)];                       \
-    ldp  x29,  x30, [ctx, #(8 * 10)];                       \
-                                                            \
-    msr cpacr_el1, tmp1;                                    \
-    isb;                                                    \
-                                                            \
-    /* Check whether the FPU is enabled. */                 \
-    /* If it isn't, skip saving FPU state. */               \
-    and tmp1, tmp1, #0x300000;                              \
-    cbz tmp1, done_label;                                   \
-                                                            \
-    /* Save fpcr and fpsr. */                               \
-    ldp tmp0, tmp1, [ctx, #0x70];                           \
-    msr fpcr, tmp0;                                         \
-    msr fpsr, tmp1;                                         \
-                                                            \
-    /* Save the FPU registers. */                           \
-    ldp q0,  q1,  [ctx, #(16 *  0 + 0x80)];                 \
-    ldp q2,  q3,  [ctx, #(16 *  2 + 0x80)];                 \
-    ldp q4,  q5,  [ctx, #(16 *  4 + 0x80)];                 \
-    ldp q6,  q7,  [ctx, #(16 *  6 + 0x80)];                 \
-    ldp q8,  q9,  [ctx, #(16 *  8 + 0x80)];                 \
-    ldp q10, q11, [ctx, #(16 * 10 + 0x80)];                 \
-    ldp q12, q13, [ctx, #(16 * 12 + 0x80)];                 \
-    ldp q14, q15, [ctx, #(16 * 14 + 0x80)];                 \
-    ldp q16, q17, [ctx, #(16 * 16 + 0x80)];                 \
-    ldp q18, q19, [ctx, #(16 * 18 + 0x80)];                 \
-    ldp q20, q21, [ctx, #(16 * 20 + 0x80)];                 \
-    ldp q22, q23, [ctx, #(16 * 22 + 0x80)];                 \
-    ldp q24, q25, [ctx, #(16 * 24 + 0x80)];                 \
-    ldp q26, q27, [ctx, #(16 * 26 + 0x80)];                 \
-    ldp q28, q29, [ctx, #(16 * 28 + 0x80)];                 \
-    ldp q30, q31, [ctx, #(16 * 30 + 0x80)];
+#define RESTORE_THREAD_CONTEXT(ctx, tmp0, tmp1, done_label)         \
+    /* Restore the callee save registers + SP and cpacr. */         \
+    ldp tmp0, tmp1, [ctx, #(THREAD_CONTEXT_SP_CPACR)];              \
+    mov sp, tmp0;                                                   \
+    ldp  x19,  x20, [ctx, #(THREAD_CONTEXT_X19_X20)];               \
+    ldp  x21,  x22, [ctx, #(THREAD_CONTEXT_X21_X22)];               \
+    ldp  x23,  x24, [ctx, #(THREAD_CONTEXT_X23_X24)];               \
+    ldp  x25,  x26, [ctx, #(THREAD_CONTEXT_X25_X26)];               \
+    ldp  x27,  x28, [ctx, #(THREAD_CONTEXT_X27_X28)];               \
+    ldp  x29,  x30, [ctx, #(THREAD_CONTEXT_X29_X30)];               \
+                                                                    \
+    msr cpacr_el1, tmp1;                                            \
+    isb;                                                            \
+                                                                    \
+    /* Check whether the FPU is enabled. */                         \
+    /* If it isn't, skip saving FPU state. */                       \
+    and tmp1, tmp1, #0x300000;                                      \
+    cbz tmp1, done_label;                                           \
+                                                                    \
+    /* Save fpcr and fpsr. */                                       \
+    ldp tmp0, tmp1, [ctx, #(THREAD_CONTEXT_FPCR_FPSR)];             \
+    msr fpcr, tmp0;                                                 \
+    msr fpsr, tmp1;                                                 \
+                                                                    \
+    /* Save the FPU registers. */                                   \
+    ldp q0,  q1,  [ctx, #(16 *  0 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q2,  q3,  [ctx, #(16 *  2 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q4,  q5,  [ctx, #(16 *  4 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q6,  q7,  [ctx, #(16 *  6 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q8,  q9,  [ctx, #(16 *  8 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q10, q11, [ctx, #(16 * 10 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q12, q13, [ctx, #(16 * 12 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q14, q15, [ctx, #(16 * 14 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q16, q17, [ctx, #(16 * 16 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q18, q19, [ctx, #(16 * 18 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q20, q21, [ctx, #(16 * 20 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q22, q23, [ctx, #(16 * 22 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q24, q25, [ctx, #(16 * 24 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q26, q27, [ctx, #(16 * 26 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q28, q29, [ctx, #(16 * 28 + THREAD_CONTEXT_FPU_REGISTERS)]; \
+    ldp q30, q31, [ctx, #(16 * 30 + THREAD_CONTEXT_FPU_REGISTERS)];
 
 
 /* ams::kern::KScheduler::ScheduleImpl() */
@@ -109,11 +109,11 @@
 
 _ZN3ams4kern10KScheduler12ScheduleImplEv:
     /* Right now, x0 contains (this). We want x1 to point to the scheduling state, */
-    /* Current KScheduler layout has state at +0x0. */
+    /* KScheduler layout has state at +0x0, this is guaranteed statically by assembly offsets. */
     mov    x1, x0
 
     /* First thing we want to do is check whether the interrupt task thread is runnable. */
-    ldrb   w3, [x1, #1]
+    ldrb   w3, [x1, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
     cbz    w3, 0f
 
     /* If it is, we want to call KScheduler::InterruptTaskThreadToRunnable() to change its state to runnable. */
@@ -124,7 +124,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     ldp     x0,  x1, [sp], 16
 
     /* Clear the interrupt task thread as runnable. */
-    strb   wzr, [x1, #1]
+    strb   wzr, [x1, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
 
 0:  /* Interrupt task thread runnable checked. */
     /* Now we want to check if there's any scheduling to do. */
@@ -135,7 +135,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     dmb    ish
 
     /* Check if the highest priority thread is the same as the current thread. */
-    ldr    x7, [x1, 16]
+    ldr    x7, [x1, #(KSCHEDULER_HIGHEST_PRIORITY_THREAD)]
     ldr    x2, [x18]
     cmp    x7, x2
     b.ne   1f
@@ -158,7 +158,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
 2:  /* We're done saving this thread's context, so we need to unlock it. */
     /* We can just do an atomic write to the relevant KThreadContext member. */
-    add    x2, x2, #0x280
+    add    x2, x2, #(THREAD_CONTEXT_LOCKED)
     stlrb  wzr, [x2]
 
 3:  /* The current thread's context has been entirely taken care of. */
@@ -169,7 +169,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     mov    x21, x7 /* highest priority thread */
 
     /* Set our stack to the idle thread stack. */
-    ldr    x3, [x20, #0x18]
+    ldr    x3, [x20, #(KSCHEDULER_IDLE_THREAD_STACK)]
     mov    sp, x3
     b      5f
 
@@ -183,7 +183,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     dmb    ish
 
     /* Refresh the highest priority thread. */
-    ldr    x21, [x20, 16]
+    ldr    x21, [x20, #(KSCHEDULER_HIGHEST_PRIORITY_THREAD)]
 
 5:  /* We're starting to try to do the context switch. */
     /* Check if the highest priority thread if null. */
@@ -197,7 +197,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     mov    x22, x0
 
     /* Prepare to try to acquire the context lock. */
-    add    x1, x22, #0x280
+    add    x1, x22, #(THREAD_CONTEXT_LOCKED)
     mov    w2, #1
 
 6:  /* We want to try to lock the highest priority thread's context. */
@@ -214,7 +214,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
 7:  /* The highest priority thread's context is already locked. */
     /* Check if we need scheduling. If we don't, we can retry directly. */
-    ldarb  w3, [x20]
+    ldarb  w3, [x20] // ldarb w3, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
     cbz    w3, 6b
 
     /* If we do, another core is interfering, and we must start from the top. */
@@ -229,7 +229,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     bl     _ZN3ams4kern10KScheduler12SwitchThreadEPNS0_7KThreadE
 
     /* Check if we need scheduling. If we don't, then we can't complete the switch and should retry. */
-    ldarb  w1, [x20]
+    ldarb  w1, [x20] // ldarb w1, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
     cbnz   w1, 10f
 
     /* Restore the thread context. */
@@ -241,7 +241,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
 10: /* Our switch failed. */
     /* We should unlock the thread context, and then retry. */
-    add    x1, x22, #0x280
+    add    x1, x22, #(THREAD_CONTEXT_LOCKED)
     stlrb  wzr, [x1]
     b      4b
 
@@ -255,7 +255,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
 12: /* We've switched to the idle thread, so we want to loop until we schedule a non-idle thread. */
     /* Check if we need scheduling. */
-    ldarb  w3, [x20]
+    ldarb  w3, [x20] // ldarb w3, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
     cbnz   w3, 13f
 
     /* If we don't, wait for an interrupt and check again. */
@@ -268,14 +268,14 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
 13: /* We need scheduling again! */
     /* Check whether the interrupt task thread needs to be set runnable. */
-    ldrb   w3, [x20, #1]
+    ldrb   w3, [x20, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
     cbz    w3, 4b
 
     /* It does, so do so. We're using the idle thread stack so no register state preserve needed. */
     bl     _ZN3ams4kern10KScheduler29InterruptTaskThreadToRunnableEv
 
     /* Clear the interrupt task thread as runnable. */
-    strb   wzr, [x20, #1]
+    strb   wzr, [x20, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
 
     /* Retry the scheduling loop. */
     b      4b

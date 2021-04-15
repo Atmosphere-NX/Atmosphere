@@ -21,15 +21,15 @@
 .type       _ZN3ams4kern3svc25CallReturnFromException64Ev, %function
 _ZN3ams4kern3svc25CallReturnFromException64Ev:
     /* Save registers the SVC entry handler didn't. */
-    stp     x12, x13, [sp, #(8 * 12)]
-    stp     x14, x15, [sp, #(8 * 14)]
-    stp     x16, x17, [sp, #(8 * 16)]
-    str     x19,      [sp, #(8 * 19)]
-    stp     x20, x21, [sp, #(8 * 20)]
-    stp     x22, x23, [sp, #(8 * 22)]
-    stp     x24, x25, [sp, #(8 * 24)]
-    stp     x26, x26, [sp, #(8 * 26)]
-    stp     x28, x29, [sp, #(8 * 28)]
+    stp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
+    stp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
+    stp     x16, x17, [sp, #(EXCEPTION_CONTEXT_X16_X17)]
+    str     x19,      [sp, #(EXCEPTION_CONTEXT_X19)]
+    stp     x20, x21, [sp, #(EXCEPTION_CONTEXT_X20_X21)]
+    stp     x22, x23, [sp, #(EXCEPTION_CONTEXT_X22_X23)]
+    stp     x24, x25, [sp, #(EXCEPTION_CONTEXT_X24_X25)]
+    stp     x26, x26, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
+    stp     x28, x29, [sp, #(EXCEPTION_CONTEXT_X28_X29)]
 
     /* Call ams::kern::arch::arm64::ReturnFromException(result). */
     bl      _ZN3ams4kern4arch5arm6419ReturnFromExceptionENS_6ResultE
@@ -63,7 +63,7 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
 0:  /* We should handle DPC. */
     /* Check the dpc flags. */
-    ldrb    w8, [sp, #(0x120 + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
+    ldrb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
     cbz     w8, 1f
 
     /* We have DPC to do! */
@@ -83,32 +83,32 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
 1:  /* We're done with DPC, and should return from the svc. */
     /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(0x120 + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+    strb    wzr, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
 
     /* Restore registers. */
-    ldp     x30, x8,  [sp, #(8 * 30)]
-    ldp     x9,  x10, [sp, #(8 * 32)]
-    ldr     x11,      [sp, #(8 * 34)]
+    ldp     x30, x8,  [sp, #(EXCEPTION_CONTEXT_X30_SP)]
+    ldp     x9,  x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
+    ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
     msr     sp_el0, x8
     msr     elr_el1, x9
     msr     spsr_el1, x10
     msr     tpidr_el0, x11
-    ldp     x0,  x1,  [sp, #(8 *  0)]
-    ldp     x2,  x3,  [sp, #(8 *  2)]
-    ldp     x4,  x5,  [sp, #(8 *  4)]
-    ldp     x6,  x7,  [sp, #(8 *  6)]
-    ldp     x8,  x9,  [sp, #(8 *  8)]
-    ldp     x10, x11, [sp, #(8 * 10)]
-    ldp     x12, x13, [sp, #(8 * 12)]
-    ldp     x14, x15, [sp, #(8 * 14)]
-    ldp     x16, x17, [sp, #(8 * 16)]
-    ldp     x18, x19, [sp, #(8 * 18)]
-    ldp     x20, x21, [sp, #(8 * 20)]
-    ldp     x22, x23, [sp, #(8 * 22)]
-    ldp     x24, x25, [sp, #(8 * 24)]
-    ldp     x26, x27, [sp, #(8 * 26)]
-    ldp     x28, x29, [sp, #(8 * 28)]
+    ldp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
+    ldp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
+    ldp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
+    ldp     x6,  x7,  [sp, #(EXCEPTION_CONTEXT_X6_X7)]
+    ldp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
+    ldp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
+    ldp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
+    ldp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
+    ldp     x16, x17, [sp, #(EXCEPTION_CONTEXT_X16_X17)]
+    ldp     x18, x19, [sp, #(EXCEPTION_CONTEXT_X18_X19)]
+    ldp     x20, x21, [sp, #(EXCEPTION_CONTEXT_X20_X21)]
+    ldp     x22, x23, [sp, #(EXCEPTION_CONTEXT_X22_X23)]
+    ldp     x24, x25, [sp, #(EXCEPTION_CONTEXT_X24_X25)]
+    ldp     x26, x27, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
+    ldp     x28, x29, [sp, #(EXCEPTION_CONTEXT_X28_X29)]
 
     /* Return. */
-    add     sp, sp, #0x120
+    add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
     eret

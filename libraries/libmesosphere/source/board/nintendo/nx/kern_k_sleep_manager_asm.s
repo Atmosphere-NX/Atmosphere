@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
