@@ -18,6 +18,7 @@
 /* TODO: Different header for this? */
 #define AMS_KERN_NUM_SUPERVISOR_CALLS 0xC0
 
+/* ams::kern::KThread::StackParameters, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_thread.hpp */
 #define THREAD_STACK_PARAMETERS_SIZE                    0x30
 #define THREAD_STACK_PARAMETERS_SVC_PERMISSION          0x00
 #define THREAD_STACK_PARAMETERS_CONTEXT                 0x18
@@ -29,6 +30,7 @@
 #define THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER 0x2D
 #define THREAD_STACK_PARAMETERS_IS_PINNED               0x2E
 
+/* ams::kern::arch::arm64::KThreadContext, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/kern_k_thread_context.hpp */
 #define THREAD_CONTEXT_SIZE          0x290
 #define THREAD_CONTEXT_CPU_REGISTERS 0x000
 #define THREAD_CONTEXT_X19           0x000
@@ -60,6 +62,7 @@
 #define THREAD_CONTEXT_SP_CPACR  THREAD_CONTEXT_SP
 #define THREAD_CONTEXT_FPCR_FPSR THREAD_CONTEXT_FPCR
 
+/* ams::kern::arch::arm64::KExceptionContext, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/kern_k_exception_context.hpp */
 #define EXCEPTION_CONTEXT_SIZE  0x120
 #define EXCEPTION_CONTEXT_X0    0x000
 #define EXCEPTION_CONTEXT_X1    0x008
@@ -125,11 +128,13 @@
 #define EXCEPTION_CONTEXT_SP_PC     EXCEPTION_CONTEXT_SP
 #define EXCEPTION_CONTEXT_PSR_TPIDR EXCEPTION_CONTEXT_PSR
 
+/* ams::svc::arch::arm64::ThreadLocalRegion, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libvapours/include/vapours/svc/arch/arm64/svc_thread_local_region.hpp */
 #define THREAD_LOCAL_REGION_MESSAGE_BUFFER 0x000
 #define THREAD_LOCAL_REGION_DISABLE_COUNT  0x100
 #define THREAD_LOCAL_REGION_INTERRUPT_FLAG 0x102
 #define THREAD_LOCAL_REGION_SIZE           0x200
 
+/* ams::kern::init::KInitArguments, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/init/kern_k_init_arguments.hpp */
 #define INIT_ARGUMENTS_SIZE            0x60
 #define INIT_ARGUMENTS_TTBR0           0x00
 #define INIT_ARGUMENTS_TTBR1           0x08
@@ -144,6 +149,8 @@
 #define INIT_ARGUMENTS_SETUP_FUNCTION  0x50
 #define INIT_ARGUMENTS_EXCEPTION_STACK 0x58
 
+/* ams::kern::KScheduler (::SchedulingState), https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_scheduler.hpp */
+/* NOTE: Due to constraints on ldarb relative offsets, KSCHEDULER_NEEDS_SCHEDULING cannot trivially be changed, and will require assembly edits. */
 #define KSCHEDULER_NEEDS_SCHEDULING               0x00
 #define KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE 0x01
 #define KSCHEDULER_HIGHEST_PRIORITY_THREAD        0x10
