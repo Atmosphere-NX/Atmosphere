@@ -89,6 +89,11 @@ namespace ams::erpt::srv {
 
         Journal::Restore();
 
+        if (hos::GetVersion() >= hos::Version_12_0_0) {
+            Reporter::UpdatePowerOnTime();
+            Reporter::UpdateAwakeTime();
+        }
+
         return ResultSuccess();
     }
 

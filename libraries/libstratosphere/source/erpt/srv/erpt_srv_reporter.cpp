@@ -36,6 +36,61 @@ namespace ams::erpt::srv {
         constinit os::SdkMutex g_limit_mutex;
         constinit bool g_submitted_limit = false;
 
+        class AppletActiveTimeInfoList {
+            private:
+                struct AppletActiveTimeInfo {
+                    ncm::ProgramId program_id;
+                    os::Tick register_tick;
+                    TimeSpan suspended_duration;
+                };
+                static constexpr AppletActiveTimeInfo InvalidAppletActiveTimeInfo = { ncm::InvalidProgramId, os::Tick{}, TimeSpan::FromNanoSeconds(0) };
+            private:
+                std::array<AppletActiveTimeInfo, 8> m_list;
+            public:
+                constexpr AppletActiveTimeInfoList() : m_list{InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo, InvalidAppletActiveTimeInfo} {
+                    m_list.fill(InvalidAppletActiveTimeInfo);
+                }
+            public:
+                void Register(ncm::ProgramId program_id) {
+                    /* Find an unused entry. */
+                    auto entry = util::range::find_if(m_list, [](const AppletActiveTimeInfo &info) { return info.program_id == ncm::InvalidProgramId; });
+                    AMS_ASSERT(entry != m_list.end());
+
+                    /* Create the entry. */
+                    *entry = { program_id, os::GetSystemTick(), TimeSpan::FromNanoSeconds(0) };
+                }
+
+                void Unregister(ncm::ProgramId program_id) {
+                    /* Find a matching entry. */
+                    auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == program_id; });
+                    AMS_ASSERT(entry != m_list.end());
+
+                    /* Clear the entry. */
+                    *entry = InvalidAppletActiveTimeInfo;
+                }
+
+                void UpdateSuspendedDuration(ncm::ProgramId program_id, TimeSpan suspended_duration) {
+                    /* Find a matching entry. */
+                    auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == program_id; });
+                    AMS_ASSERT(entry != m_list.end());
+
+                    /* Set the suspended duration. */
+                    entry->suspended_duration = suspended_duration;
+                }
+
+                std::optional<TimeSpan> GetActiveDuration(ncm::ProgramId program_id) const {
+                    /* Try to find a matching entry. */
+                    const auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == program_id; });
+                    if (entry != m_list.end()) {
+                        return (os::GetSystemTick() - entry->register_tick).ToTimeSpan() - entry->suspended_duration;
+                    } else {
+                        return std::nullopt;
+                    }
+                }
+        };
+
+        constinit AppletActiveTimeInfoList g_applet_active_time_info_list;
+
         Result PullErrorContext(size_t *out_total_size, size_t *out_size, void *dst, size_t dst_size, const err::ContextDescriptor &descriptor, Result result) {
             s32 unk0;
             u32 total_size, size;
@@ -258,9 +313,9 @@ namespace ams::erpt::srv {
             SubmitErrorContext(record.get(), this->ctx_result);
         }
 
-        record->Add(FieldId_OsVersion,                        s_os_version,                                 strnlen(s_os_version, sizeof(s_os_version)));
-        record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         strnlen(s_private_os_version, sizeof(s_private_os_version)));
-        record->Add(FieldId_SerialNumber,                     s_serial_number,                              strnlen(s_serial_number, sizeof(s_serial_number)));
+        record->Add(FieldId_OsVersion,                        s_os_version,                                 util::Strnlen(s_os_version, sizeof(s_os_version)));
+        record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         util::Strnlen(s_private_os_version, sizeof(s_private_os_version)));
+        record->Add(FieldId_SerialNumber,                     s_serial_number,                              util::Strnlen(s_serial_number, sizeof(s_serial_number)));
         record->Add(FieldId_ReportIdentifier,                 this->identifier_str,                         sizeof(this->identifier_str));
         record->Add(FieldId_OccurrenceTimestamp,              this->timestamp_user.value);
         record->Add(FieldId_OccurrenceTimestampNet,           this->timestamp_network.value);
@@ -281,12 +336,14 @@ namespace ams::erpt::srv {
         }
 
         if (s_awake_time) {
-            record->Add(FieldId_ElapsedTimeSincePowerOn, (this->occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds());
+            record->Add(FieldId_ElapsedTimeSinceLastAwake, (this->occurrence_tick - *s_awake_time).ToTimeSpan().GetSeconds());
         }
 
         if (s_application_launch_time) {
             record->Add(FieldId_ApplicationAliveTime, (this->occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds());
         }
+
+        /* TODO: Add FieldId_AppletTotalActiveTime. */
 
         R_TRY(Context::SubmitContextRecord(std::move(record)));
 
