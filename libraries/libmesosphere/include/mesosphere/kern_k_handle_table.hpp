@@ -312,7 +312,7 @@ namespace ams::kern {
                 return true;
             }
 
-            constexpr ALWAYS_INLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
+            constexpr NOINLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Handles must not have reserved bits set. */

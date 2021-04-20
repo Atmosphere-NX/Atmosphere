@@ -66,11 +66,41 @@ namespace ams::kern {
                 consteval operator KMemoryRegionType() const { return static_cast<KMemoryRegionType>(m_value); }
                 consteval ValueType GetValue() const { return m_value; }
 
-                consteval const KMemoryRegionTypeValue &Finalize()      { m_finalized = true;   return *this; }
-                consteval const KMemoryRegionTypeValue &SetSparseOnly() { m_sparse_only = true; return *this; }
-                consteval const KMemoryRegionTypeValue &SetDenseOnly()  { m_dense_only = true; return *this; }
+                consteval const KMemoryRegionTypeValue Finalize() {
+                    AMS_ASSUME(!m_finalized);
 
-                consteval KMemoryRegionTypeValue &SetAttribute(KMemoryRegionAttr attr) { AMS_ASSUME(!m_finalized); m_value |= attr; return *this; }
+                    KMemoryRegionTypeValue new_type = *this;
+                    new_type.m_finalized = true;
+                    return new_type;
+                }
+
+                consteval const KMemoryRegionTypeValue SetSparseOnly() {
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(!m_sparse_only);
+                    AMS_ASSUME(!m_dense_only);
+
+                    KMemoryRegionTypeValue new_type = *this;
+                    new_type.m_sparse_only = true;
+                    return new_type;
+                }
+
+                consteval const KMemoryRegionTypeValue SetDenseOnly() {
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(!m_sparse_only);
+                    AMS_ASSUME(!m_dense_only);
+
+                    KMemoryRegionTypeValue new_type = *this;
+                    new_type.m_dense_only = true;
+                    return new_type;
+                }
+
+                consteval KMemoryRegionTypeValue SetAttribute(KMemoryRegionAttr attr) {
+                    AMS_ASSUME(!m_finalized);
+
+                    KMemoryRegionTypeValue new_type = *this;
+                    new_type.m_value |= attr;
+                    return new_type;
+                }
 
                 consteval KMemoryRegionTypeValue DeriveInitial(size_t i, size_t next = BITSIZEOF(ValueType)) const {
                     AMS_ASSUME(!m_finalized);
