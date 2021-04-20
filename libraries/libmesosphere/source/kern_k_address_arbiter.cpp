@@ -51,7 +51,7 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -78,7 +78,7 @@ namespace ams::kern {
             R_UNLESS(UpdateIfEqual(std::addressof(user_value), addr, value, value + 1), svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value,                                               svc::ResultInvalidState());
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -100,7 +100,7 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             /* Determine the updated value. */
             s32 new_value;
             if (GetTargetFirmware() >= TargetFirmware_7_0_0) {

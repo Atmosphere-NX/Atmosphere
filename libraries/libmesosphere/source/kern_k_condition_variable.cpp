@@ -168,7 +168,7 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ cv_key, -1 });
+            auto it = m_tree.nfind_key({ cv_key, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 

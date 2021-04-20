@@ -136,7 +136,7 @@ namespace ams::kern {
             static_assert(sizeof(SyncObjectBuffer::m_sync_objects) == sizeof(SyncObjectBuffer::m_handles));
 
             struct ConditionVariableComparator {
-                struct LightCompareType {
+                struct RedBlackKeyType {
                     uintptr_t m_cv_key;
                     s32 m_priority;
 
@@ -149,7 +149,7 @@ namespace ams::kern {
                     }
                 };
 
-                template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, LightCompareType>)
+                template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, RedBlackKeyType>)
                 static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThread &rhs) {
                     const uintptr_t l_key = lhs.GetConditionVariableKey();
                     const uintptr_t r_key = rhs.GetConditionVariableKey();
@@ -165,8 +165,8 @@ namespace ams::kern {
                     }
                 }
             };
-            static_assert(ams::util::HasLightCompareType<ConditionVariableComparator>);
-            static_assert(std::same_as<ams::util::LightCompareType<ConditionVariableComparator, void>, ConditionVariableComparator::LightCompareType>);
+            static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
+            static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
             static inline std::atomic<u64> s_next_thread_id = 0;
         private:
