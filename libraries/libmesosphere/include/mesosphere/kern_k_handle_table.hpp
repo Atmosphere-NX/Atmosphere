@@ -131,11 +131,15 @@ namespace ams::kern {
                 /* Handle pseudo-handles. */
                 if constexpr (std::derived_from<KProcess, T>) {
                     if (handle == ams::svc::PseudoHandle::CurrentProcess) {
-                        return GetCurrentProcessPointer();
+                        auto * const cur_process = GetCurrentProcessPointer();
+                        AMS_ASSUME(cur_process != nullptr);
+                        return cur_process;
                     }
                 } else if constexpr (std::derived_from<KThread, T>) {
                     if (handle == ams::svc::PseudoHandle::CurrentThread) {
-                        return GetCurrentThreadPointer();
+                        auto * const cur_thread = GetCurrentThreadPointer();
+                        AMS_ASSUME(cur_thread != nullptr);
+                        return cur_thread;
                     }
                 }
 
@@ -159,8 +163,11 @@ namespace ams::kern {
 
             ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpc(ams::svc::Handle handle, KThread *cur_thread) const {
                 /* Handle pseudo-handles. */
+                AMS_ASSUME(cur_thread != nullptr);
                 if (handle == ams::svc::PseudoHandle::CurrentProcess) {
-                    return static_cast<KAutoObject *>(static_cast<void *>(cur_thread->GetOwnerProcess()));
+                    auto * const cur_process = static_cast<KAutoObject *>(static_cast<void *>(cur_thread->GetOwnerProcess()));
+                    AMS_ASSUME(cur_process != nullptr);
+                    return cur_process;
                 }
                 if (handle == ams::svc::PseudoHandle::CurrentThread) {
                     return static_cast<KAutoObject *>(cur_thread);
