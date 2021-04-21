@@ -64,23 +64,23 @@ namespace ams::freebsd {
             [[nodiscard]] constexpr ALWAYS_INLINE       T *Left()       { return this->rbe_left; }
             [[nodiscard]] constexpr ALWAYS_INLINE const T *Left() const { return this->rbe_left; }
 
-            ALWAYS_INLINE void SetLeft(T *e) { this->rbe_left = e; }
+            constexpr ALWAYS_INLINE void SetLeft(T *e) { this->rbe_left = e; }
 
             [[nodiscard]] constexpr ALWAYS_INLINE       T *Right()       { return this->rbe_right; }
             [[nodiscard]] constexpr ALWAYS_INLINE const T *Right() const { return this->rbe_right; }
 
-            ALWAYS_INLINE void SetRight(T *e) { this->rbe_right = e; }
+            constexpr ALWAYS_INLINE void SetRight(T *e) { this->rbe_right = e; }
 
             [[nodiscard]] constexpr ALWAYS_INLINE       T *Parent()       { return this->rbe_parent; }
             [[nodiscard]] constexpr ALWAYS_INLINE const T *Parent() const { return this->rbe_parent; }
 
-            ALWAYS_INLINE void SetParent(T *e) { this->rbe_parent = e; }
+            constexpr ALWAYS_INLINE void SetParent(T *e) { this->rbe_parent = e; }
 
             [[nodiscard]] constexpr ALWAYS_INLINE bool IsBlack()   const { return this->rbe_color == RBColor::RB_BLACK; }
             [[nodiscard]] constexpr ALWAYS_INLINE bool IsRed()     const { return this->rbe_color == RBColor::RB_RED; }
             [[nodiscard]] constexpr ALWAYS_INLINE RBColor Color() const { return this->rbe_color; }
 
-            ALWAYS_INLINE void SetColor(RBColor c) { this->rbe_color = c; }
+            constexpr ALWAYS_INLINE void SetColor(RBColor c) { this->rbe_color = c; }
     };
 
     template<typename T> struct CheckRBEntry             { static constexpr bool value = false; };
@@ -102,7 +102,7 @@ namespace ams::freebsd {
         public:
             [[nodiscard]] constexpr ALWAYS_INLINE       T *Root()       { return this->rbh_root; }
             [[nodiscard]] constexpr ALWAYS_INLINE const T *Root() const { return this->rbh_root; }
-            ALWAYS_INLINE void SetRoot(T *root) { this->rbh_root = root; }
+            constexpr ALWAYS_INLINE void SetRoot(T *root) { this->rbh_root = root; }
 
             [[nodiscard]] constexpr ALWAYS_INLINE bool IsEmpty() const { return this->Root() == nullptr; }
     };
@@ -185,53 +185,6 @@ namespace ams::freebsd {
 
         RB_SET_RIGHT(tmp, elm);
         RB_SET_PARENT(elm, tmp);
-    }
-
-    template<typename T> requires HasRBEntry<T>
-    constexpr void RB_INSERT_COLOR(RBHead<T> &head, T *elm) {
-        T *parent = nullptr, *tmp = nullptr;
-        while ((parent = RB_PARENT(elm)) != nullptr && RB_IS_RED(parent)) {
-            T *gparent = RB_PARENT(parent);
-            if (parent == RB_LEFT(gparent)) {
-                tmp = RB_RIGHT(gparent);
-                if (tmp && RB_IS_RED(tmp)) {
-                    RB_SET_COLOR(tmp, RBColor::RB_BLACK);
-                    RB_SET_BLACKRED(parent, gparent);
-                    elm = gparent;
-                    continue;
-                }
-
-                if (RB_RIGHT(parent) == elm) {
-                    RB_ROTATE_LEFT(head, parent, tmp);
-                    tmp = parent;
-                    parent = elm;
-                    elm = tmp;
-                }
-
-                RB_SET_BLACKRED(parent, gparent);
-                RB_ROTATE_RIGHT(head, gparent, tmp);
-            } else {
-                tmp = RB_LEFT(gparent);
-                if (tmp && RB_IS_RED(tmp)) {
-                    RB_SET_COLOR(tmp, RBColor::RB_BLACK);
-                    RB_SET_BLACKRED(parent, gparent);
-                    elm = gparent;
-                    continue;
-                }
-
-                if (RB_LEFT(parent) == elm) {
-                    RB_ROTATE_RIGHT(head, parent, tmp);
-                    tmp = parent;
-                    parent = elm;
-                    elm = tmp;
-                }
-
-                RB_SET_BLACKRED(parent, gparent);
-                RB_ROTATE_LEFT(head, gparent, tmp);
-            }
-        }
-
-        RB_SET_COLOR(head.Root(), RBColor::RB_BLACK);
     }
 
     template <typename T> requires HasRBEntry<T>
@@ -407,6 +360,53 @@ namespace ams::freebsd {
         }
 
         return old;
+    }
+
+    template<typename T> requires HasRBEntry<T>
+    constexpr void RB_INSERT_COLOR(RBHead<T> &head, T *elm) {
+        T *parent = nullptr, *tmp = nullptr;
+        while ((parent = RB_PARENT(elm)) != nullptr && RB_IS_RED(parent)) {
+            T *gparent = RB_PARENT(parent);
+            if (parent == RB_LEFT(gparent)) {
+                tmp = RB_RIGHT(gparent);
+                if (tmp && RB_IS_RED(tmp)) {
+                    RB_SET_COLOR(tmp, RBColor::RB_BLACK);
+                    RB_SET_BLACKRED(parent, gparent);
+                    elm = gparent;
+                    continue;
+                }
+
+                if (RB_RIGHT(parent) == elm) {
+                    RB_ROTATE_LEFT(head, parent, tmp);
+                    tmp = parent;
+                    parent = elm;
+                    elm = tmp;
+                }
+
+                RB_SET_BLACKRED(parent, gparent);
+                RB_ROTATE_RIGHT(head, gparent, tmp);
+            } else {
+                tmp = RB_LEFT(gparent);
+                if (tmp && RB_IS_RED(tmp)) {
+                    RB_SET_COLOR(tmp, RBColor::RB_BLACK);
+                    RB_SET_BLACKRED(parent, gparent);
+                    elm = gparent;
+                    continue;
+                }
+
+                if (RB_LEFT(parent) == elm) {
+                    RB_ROTATE_RIGHT(head, parent, tmp);
+                    tmp = parent;
+                    parent = elm;
+                    elm = tmp;
+                }
+
+                RB_SET_BLACKRED(parent, gparent);
+                RB_ROTATE_LEFT(head, gparent, tmp);
+            }
+        }
+
+        RB_SET_COLOR(head.Root(), RBColor::RB_BLACK);
     }
 
     template <typename T, typename Compare> requires HasRBEntry<T>

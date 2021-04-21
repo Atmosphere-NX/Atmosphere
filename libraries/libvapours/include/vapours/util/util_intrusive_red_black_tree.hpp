@@ -550,7 +550,7 @@ namespace ams::util {
             constexpr ALWAYS_INLINE const Derived *GetNext() const { return static_cast<const Derived *>(impl::IntrusiveRedBlackTreeImpl::GetNext(this)); }
     };
 
-    template<class Derived>
+    template<class Derived> requires std::derived_from<Derived, IntrusiveRedBlackTreeNode>
     class IntrusiveRedBlackTreeBaseTraits {
         public:
             template<class Comparator>
