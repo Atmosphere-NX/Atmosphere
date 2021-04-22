@@ -31,10 +31,12 @@ namespace ams::kern {
         constinit u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
         constinit u64 g_initial_process_id_max = std::numeric_limits<u64>::min();
 
-        void LoadInitialProcessBinaryHeader() {
+        void LoadInitialProcessBinaryHeader(KVirtualAddress virt_addr = Null<KVirtualAddress>) {
             if (g_initial_process_binary_header.magic != InitialProcessBinaryMagic) {
-                /* Get the virtual address for the image. */
-                const KVirtualAddress virt_addr = GetInitialProcessBinaryAddress();
+                /* Get the virtual address, if it's not overridden. */
+                if (virt_addr == Null<KVirtualAddress>) {
+                    virt_addr = GetInitialProcessBinaryAddress();
+                }
 
                 /* Copy and validate the header. */
                 g_initial_process_binary_header = *GetPointer<InitialProcessBinaryHeader>(virt_addr);
@@ -54,12 +56,16 @@ namespace ams::kern {
 
                     /* Attach to the current KIP. */
                     KInitialProcessReader reader;
-                    MESOSPHERE_ABORT_UNLESS(reader.Attach(current) != Null<KVirtualAddress>);
+                    KVirtualAddress data = reader.Attach(current);
+                    MESOSPHERE_ABORT_UNLESS(data != Null<KVirtualAddress>);
 
                     /* If the process uses secure memory, account for that. */
                     if (reader.UsesSecureMemory()) {
                         g_initial_process_secure_memory_size += reader.GetSize() + util::AlignUp(reader.GetStackSize(), PageSize);
                     }
+
+                    /* Advance to the next KIP. */
+                    current = data + reader.GetBinarySize();
                 }
             }
         }
@@ -267,6 +273,10 @@ namespace ams::kern {
             }
         }
 
+        ALWAYS_INLINE KVirtualAddress GetInitialProcessBinaryAddress(KVirtualAddress pool_end) {
+            return pool_end - InitialProcessBinarySizeMax;
+        }
+
     }
 
     u64 GetInitialProcessIdMin() {
@@ -283,7 +293,7 @@ namespace ams::kern {
         MESOSPHERE_INIT_ABORT_UNLESS(pool_region != nullptr);
         MESOSPHERE_INIT_ABORT_UNLESS(pool_region->GetEndAddress() != 0);
         MESOSPHERE_ABORT_UNLESS(pool_region->GetSize() >= InitialProcessBinarySizeMax);
-        return pool_region->GetEndAddress() - InitialProcessBinarySizeMax;
+        return GetInitialProcessBinaryAddress(pool_region->GetEndAddress());
     }
 
     size_t GetInitialProcessesSecureMemorySize() {
@@ -309,6 +319,10 @@ namespace ams::kern {
         } else {
             return 0;
         }
+    }
+
+    void LoadInitialProcessBinaryHeaderDeprecated(KPhysicalAddress pool_end) {
+        LoadInitialProcessBinaryHeader(GetInitialProcessBinaryAddress(KMemoryLayout::GetLinearVirtualAddress(pool_end)));
     }
 
     void CreateAndRunInitialProcesses() {

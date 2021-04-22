@@ -148,11 +148,7 @@ namespace ams::kern {
         }
     }
 
-    void KMemoryLayout::InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
-        /* Set static differences. */
-        s_linear_phys_to_virt_diff = GetInteger(linear_virtual_start) - GetInteger(aligned_linear_phys_start);
-        s_linear_virt_to_phys_diff = GetInteger(aligned_linear_phys_start) - GetInteger(linear_virtual_start);
-
+    void KMemoryLayout::InitializeLinearMemoryRegionTrees() {
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {
             if (region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {

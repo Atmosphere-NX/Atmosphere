@@ -37,4 +37,6 @@ namespace ams::kern {
     KVirtualAddress GetInitialProcessBinaryAddress();
     size_t GetInitialProcessesSecureMemorySize();
 
+    void LoadInitialProcessBinaryHeaderDeprecated(KPhysicalAddress pool_end);
+
 }
