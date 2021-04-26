@@ -462,7 +462,8 @@ namespace ams::kern::init {
 
         /* All linear-mapped DRAM regions that we haven't tagged by this point will be allocated to some pool partition. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            if (region.GetType() == (KMemoryRegionType_Dram | KMemoryRegionAttr_LinearMapped)) {
+            constexpr auto UntaggedLinearDram = util::FromUnderlying<KMemoryRegionType>(util::ToUnderlying<KMemoryRegionType>(KMemoryRegionType_Dram) | util::ToUnderlying(KMemoryRegionAttr_LinearMapped));
+            if (region.GetType() == UntaggedLinearDram) {
                 region.SetType(KMemoryRegionType_DramPoolPartition);
             }
         }

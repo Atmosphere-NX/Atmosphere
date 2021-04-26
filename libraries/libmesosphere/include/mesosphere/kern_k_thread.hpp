@@ -487,7 +487,7 @@ namespace ams::kern {
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return m_tls_heap_address; }
 
             constexpr KSynchronizationObject **GetSynchronizationObjectBuffer() { return std::addressof(m_sync_object_buffer.m_sync_objects[0]); }
-            constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(m_sync_object_buffer.m_handles[sizeof(m_sync_object_buffer.m_sync_objects) / sizeof(ams::svc::Handle) - ams::svc::ArgumentHandleCountMax]); }
+            constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(m_sync_object_buffer.m_handles[sizeof(m_sync_object_buffer.m_sync_objects) / (sizeof(ams::svc::Handle)) - ams::svc::ArgumentHandleCountMax]); }
 
             u16 GetUserDisableCount() const { return static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->disable_count; }
             void SetInterruptFlag()   const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 1; }
@@ -546,7 +546,7 @@ namespace ams::kern {
 
             constexpr u32 GetSuspendFlags() const { return m_suspend_allowed_flags & m_suspend_request_flags; }
             constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
-            constexpr bool IsSuspendRequested(SuspendType type) const { return (m_suspend_request_flags & (1u << (ThreadState_SuspendShift + type))) != 0; }
+            constexpr bool IsSuspendRequested(SuspendType type) const { return (m_suspend_request_flags & (1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)))) != 0; }
             constexpr bool IsSuspendRequested() const { return m_suspend_request_flags != 0; }
             void RequestSuspend(SuspendType type);
             void Resume(SuspendType type);

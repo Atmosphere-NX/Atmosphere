@@ -139,7 +139,7 @@ namespace ams::util {
             using DeducedParentType = GetParentType<MemberPtr>;
             using MemberType        = GetMemberType<MemberPtr>;
             static_assert(std::is_base_of<DeducedParentType, RealParentType>::value || std::is_same<RealParentType, DeducedParentType>::value);
-            static_assert(std::is_literal_type<MemberType>::value);
+            /* DEPRECATED: static_assert(std::is_literal_type<MemberType>::value); */
 
             return OffsetOfCalculator<RealParentType, MemberType>::OffsetOf(MemberPtr);
         }();

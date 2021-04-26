@@ -436,7 +436,7 @@ namespace ams::kern {
         /* Disallow performing thread suspension. */
         {
             /* Update our allow flags. */
-            m_suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
+            m_suspend_allowed_flags &= ~(1 << (util::ToUnderlying(SuspendType_Thread) + util::ToUnderlying(ThreadState_SuspendShift)));
 
             /* Update our state. */
             this->UpdateState();
@@ -485,7 +485,7 @@ namespace ams::kern {
         /* Allow performing thread suspension (if termination hasn't been requested). */
         if (!this->IsTerminationRequested()) {
             /* Update our allow flags. */
-            m_suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
+            m_suspend_allowed_flags |= (1 << (util::ToUnderlying(SuspendType_Thread) + util::ToUnderlying(ThreadState_SuspendShift)));
 
             /* Update our state. */
             this->UpdateState();
@@ -760,7 +760,7 @@ namespace ams::kern {
         KScopedSchedulerLock lk;
 
         /* Note the request in our flags. */
-        m_suspend_request_flags |= (1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags |= (1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)));
 
         /* Try to perform the suspend. */
         this->TrySuspend();
@@ -772,7 +772,7 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Clear the request in our flags. */
-        m_suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags &= ~(1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)));
 
         /* Update our state. */
         this->UpdateState();
