@@ -21,7 +21,8 @@
 namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     class I2cBusAccessorManager : public IAllocator<I2cBusAccessor::BusAccessorList> {
-        /* ... */
+        public:
+            using IAllocator<I2cBusAccessor::BusAccessorList>::IAllocator;
     };
 
 }

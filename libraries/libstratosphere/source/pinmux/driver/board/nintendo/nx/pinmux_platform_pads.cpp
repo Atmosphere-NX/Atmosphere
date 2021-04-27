@@ -477,7 +477,6 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                 u32 reg_address;
                 u32 reg_mask;
                 u32 reg_value;
-                u8  safe_func;
                 const char *pad_name;
             private:
                 bool IsValidRegisterAddress() const {

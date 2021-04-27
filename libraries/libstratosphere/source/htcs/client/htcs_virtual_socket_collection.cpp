@@ -219,10 +219,11 @@ namespace ams::htcs::client {
         sf::SharedPointer<tma::ISocket> socket = nullptr;
 
         /* Find the socket. */
+        s32 index;
         {
             std::scoped_lock lk(m_mutex);
 
-            if (auto index = this->Find(id, std::addressof(error_code)); index >= 0) {
+            if (index = this->Find(id, std::addressof(error_code)); index >= 0) {
                 /* Get the socket's object. */
                 VirtualSocket *virt_socket = m_socket_list + index;
                 socket = virt_socket->m_socket;

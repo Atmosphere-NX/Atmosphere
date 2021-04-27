@@ -20,6 +20,8 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     template<typename ListType>
     class IAllocator {
+        NON_COPYABLE(IAllocator);
+        NON_MOVEABLE(IAllocator);
         private:
             using T = typename ListType::value_type;
         private:

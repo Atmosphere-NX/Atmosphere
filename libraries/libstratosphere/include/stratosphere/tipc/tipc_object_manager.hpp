@@ -26,7 +26,7 @@ namespace ams::tipc {
     constexpr inline u16 MethodId_CloseSession = 0xF;
 
     class ObjectManagerBase {
-        private:
+        protected:
             struct Entry {
                 util::TypedStorage<WaitableObject> object;
                 os::WaitableHolderType waitable_holder;

@@ -117,7 +117,7 @@ namespace ams {
                 StackFrame cur_frame;
                 svc::lp64::MemoryInfo mem_info;
                 svc::PageInfo page_info;
-                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur_fp)) && (mem_info.perm & Perm_R) == Perm_R) {
+                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur_fp)) && (mem_info.perm & svc::MemoryPermission_Read) == svc::MemoryPermission_Read) {
                     std::memcpy(&cur_frame, reinterpret_cast<void *>(cur_fp), sizeof(cur_frame));
                 } else {
                     break;
@@ -136,7 +136,7 @@ namespace ams {
             {
                 svc::lp64::MemoryInfo mem_info;
                 svc::PageInfo page_info;
-                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), ams_ctx.sp)) && (mem_info.perm & Perm_R) == Perm_R) {
+                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), ams_ctx.sp)) && (mem_info.perm & svc::MemoryPermission_Read) == svc::MemoryPermission_Read) {
                     size_t copy_size = std::min(FatalErrorContext::MaxStackDumpSize, static_cast<size_t>(mem_info.addr + mem_info.size - ams_ctx.sp));
                     ams_ctx.stack_dump_size = copy_size;
                     std::memcpy(ams_ctx.stack_dump, reinterpret_cast<void *>(ams_ctx.sp), copy_size);

@@ -20,9 +20,9 @@ namespace ams::mem::impl {
 
     namespace {
 
-        os::Mutex g_virt_mem_enabled_lock(false);
-        bool g_virt_mem_enabled_detected;
-        bool g_virt_mem_enabled;
+        constinit os::SdkMutex g_virt_mem_enabled_lock;
+        constinit bool g_virt_mem_enabled_detected = false;
+        constinit bool g_virt_mem_enabled = false;
 
         void EnsureVirtualAddressMemoryDetected() {
             std::scoped_lock lk(g_virt_mem_enabled_lock);
@@ -48,7 +48,8 @@ namespace ams::mem::impl {
         ALWAYS_INLINE os::MemoryPermission ConvertToOsPermission(Prot prot) {
             static_assert(static_cast<int>(Prot_read) == static_cast<int>(os::MemoryPermission_ReadOnly));
             static_assert(static_cast<int>(Prot_write) == static_cast<int>(os::MemoryPermission_WriteOnly));
-            return static_cast<os::MemoryPermission>(prot & os::MemoryPermission_ReadWrite);
+            static_assert((util::ToUnderlying(Prot_read) | util::ToUnderlying(Prot_write)) == util::ToUnderlying(os::MemoryPermission_ReadWrite));
+            return static_cast<os::MemoryPermission>(prot & (Prot_read | Prot_write));
         }
 
     }

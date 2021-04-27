@@ -58,7 +58,7 @@ namespace ams::kvdb {
 
             /* Getters. */
             size_t GetLength() const {
-                return strnlen(this->buffer, N);
+                return util::Strnlen(this->buffer, N);
             }
 
             const char *Get() const {
@@ -72,7 +72,7 @@ namespace ams::kvdb {
             /* Setters. */
             void Set(const char *s) {
                 /* Ensure string can fit in our buffer. */
-                CheckLength(strnlen(s, N));
+                CheckLength(util::Strnlen(s, N));
                 std::strncpy(this->buffer, s, N);
                 this->buffer[N - 1] = 0;
             }
@@ -88,7 +88,7 @@ namespace ams::kvdb {
             /* Append to existing. */
             void Append(const char *s) {
                 const size_t length = GetLength();
-                CheckLength(length + strnlen(s, N));
+                CheckLength(length + util::Strnlen(s, N));
                 std::strncat(this->buffer, s, N - length - 1);
             }
 
@@ -137,7 +137,7 @@ namespace ams::kvdb {
             }
 
             bool EndsWith(const char *s) const {
-                const size_t suffix_length = strnlen(s, N);
+                const size_t suffix_length = util::Strnlen(s, N);
                 const size_t length = GetLength();
                 return suffix_length <= length && EndsWith(s, length - suffix_length);
             }

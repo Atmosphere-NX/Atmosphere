@@ -28,7 +28,7 @@ namespace ams::dmnt::cheat::impl {
 
         class FrozenAddressMapEntry : public util::IntrusiveRedBlackTreeBaseNode<FrozenAddressMapEntry> {
             public:
-                using LightCompareType = u64;
+                using RedBlackKeyType = u64;
             private:
                 u64 m_address;
                 FrozenAddressValue m_value;
@@ -40,7 +40,7 @@ namespace ams::dmnt::cheat::impl {
                 constexpr const FrozenAddressValue &GetValue() const { return m_value; }
                 constexpr FrozenAddressValue &GetValue() { return m_value; }
 
-                static constexpr ALWAYS_INLINE int Compare(const LightCompareType &lval, const FrozenAddressMapEntry &rhs) {
+                static constexpr ALWAYS_INLINE int Compare(const RedBlackKeyType &lval, const FrozenAddressMapEntry &rhs) {
                     const auto rval = rhs.GetAddress();
 
                     if (lval < rval) {
@@ -603,7 +603,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     frz_addr->address = it->GetAddress();
@@ -616,7 +616,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it == this->frozen_addresses_map.end(), ResultFrozenAddressAlreadyExists());
 
                     FrozenAddressValue value = {};
@@ -636,7 +636,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     FrozenAddressMapEntry *entry = std::addressof(*it);
