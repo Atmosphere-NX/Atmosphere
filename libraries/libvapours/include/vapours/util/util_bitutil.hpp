@@ -133,7 +133,6 @@ namespace ams::util {
 
     template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE int PopCount(T x) {
-        /* TODO: C++20 std::bit_cast */
         using U = typename std::make_unsigned<T>::type;
         U u = static_cast<U>(x);
 
@@ -174,7 +173,6 @@ namespace ams::util {
             }
             return PopCount(static_cast<T>(~x));
         } else {
-            /* TODO: C++20 std::bit_cast */
             using U = typename std::make_unsigned<T>::type;
             const U u = static_cast<U>(x);
             if constexpr (std::is_same<U, unsigned long long>::value) {

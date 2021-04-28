@@ -54,24 +54,30 @@ namespace ams::tipc {
             static constexpr inline bool IsDeferralSupported = !std::same_as<DeferralManagerType, DummyDeferralManager>;
             using ResumeKey = typename DeferralManagerType::Key;
 
-            static ALWAYS_INLINE uintptr_t ConvertKeyToMessage(ResumeKey key) {
+            static constexpr ALWAYS_INLINE uintptr_t ConvertKeyToMessage(ResumeKey key) {
                 static_assert(sizeof(key) <= sizeof(uintptr_t));
                 static_assert(std::is_trivial<ResumeKey>::value);
 
-                /* TODO: std::bit_cast */
-                uintptr_t converted = 0;
-                std::memcpy(std::addressof(converted), std::addressof(key), sizeof(key));
-                return converted;
+                if constexpr (sizeof(key) == sizeof(uintptr_t)) {
+                    return std::bit_cast<uintptr_t>(key);
+                } else {
+                    uintptr_t converted = 0;
+                    std::memcpy(std::addressof(converted), std::addressof(key), sizeof(key));
+                    return converted;
+                }
             }
 
-            static ALWAYS_INLINE ResumeKey ConvertMessageToKey(uintptr_t message) {
+            static constexpr ALWAYS_INLINE ResumeKey ConvertMessageToKey(uintptr_t message) {
                 static_assert(sizeof(ResumeKey) <= sizeof(uintptr_t));
                 static_assert(std::is_trivial<ResumeKey>::value);
 
-                /* TODO: std::bit_cast */
-                ResumeKey converted = {};
-                std::memcpy(std::addressof(converted), std::addressof(message), sizeof(converted));
-                return converted;
+                if constexpr (sizeof(ResumeKey) == sizeof(uintptr_t)) {
+                    return std::bit_cast<ResumeKey>(message);
+                } else {
+                    ResumeKey converted = {};
+                    std::memcpy(std::addressof(converted), std::addressof(message), sizeof(converted));
+                    return converted;
+                }
             }
 
             template<size_t Ix> requires (Ix < NumPorts)
