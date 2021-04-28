@@ -308,7 +308,7 @@ namespace ams::ncm {
             out_orphaned[i] = true;
         }
 
-        auto IsOrphanedContent = [](const sf::InArray<ContentId> &list, const ncm::ContentId &id) ALWAYS_INLINE_LAMBDA {
+        auto IsOrphanedContent = [] ALWAYS_INLINE_LAMBDA (const sf::InArray<ContentId> &list, const ncm::ContentId &id) -> std::optional<size_t> {
             /* Check if any input content ids match our found content id. */
             for (size_t i = 0; i < list.GetSize(); i++) {
                 if (list[i] == id) {
@@ -316,9 +316,7 @@ namespace ams::ncm {
                 }
             }
 
-            /* TODO: C++20 (gcc 10) fixes ALWAYS_INLINE_LAMBDA in conjunction with trailing return types. */
-            /* This should be changed to std::nullopt once possible. */
-            return std::optional<size_t>(std::nullopt);
+            return std::nullopt;
         };
 
         /* Iterate over all entries. */

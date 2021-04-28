@@ -20,14 +20,7 @@ namespace ams::dd {
 
     using ProcessHandle = ::Handle;
 
-    /* TODO gcc-11: using MemoryPermission = os::MemoryPermission; using enum os::MemoryPermission; */
-
-    enum MemoryPermission {
-        MemoryPermission_None      = 0,
-        MemoryPermission_ReadOnly  = (1u << 0),
-        MemoryPermission_WriteOnly = (1u << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+    using MemoryPermission = os::MemoryPermission;
+    using enum os::MemoryPermission;
 
 }
