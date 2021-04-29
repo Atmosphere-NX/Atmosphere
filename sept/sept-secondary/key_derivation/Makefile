@@ -37,6 +37,9 @@ CFLAGS	:= \
 		-std=gnu11 \
 		-Werror \
 		-Wall \
+		-Wno-array-bounds \
+		-Wno-stringop-overflow \
+		-Wno-stringop-overread \
 		$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE)
