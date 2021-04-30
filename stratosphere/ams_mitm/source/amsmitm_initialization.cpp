@@ -65,6 +65,7 @@ namespace ams::mitm {
         FsFile g_emummc_file;
 
         /* Maintain exclusive access to the fusee-secondary archive. */
+        FsFile g_stratosphere_file;
         FsFile g_secondary_file;
         FsFile g_sept_payload_file;
 
@@ -140,6 +141,7 @@ namespace ams::mitm {
             /* zip, and encourages good updating hygiene -- atmosphere should not be updated on SD while HOS is alive. */
             {
                 R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_secondary_file),    "/atmosphere/fusee-secondary.bin", ams::fs::OpenMode_Read));
+                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_stratosphere_file), "/atmosphere/stratosphere.romfs",  ams::fs::OpenMode_Read));
                 R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_sept_payload_file), "/sept/payload.bin",               ams::fs::OpenMode_Read));
             }
         }
