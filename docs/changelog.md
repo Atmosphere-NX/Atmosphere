@@ -1,4 +1,16 @@
 # Changelog
+## 0.19.2
++ Atmosphère's components were further updated to reflect latest official behaviors as of 12.0.0.
+  + Notably, `erpt` was updated to implement the new forced shutdown detection feature.
+    + When a forced-shutdown occurs, an erpt_report will be generated and saved to the SD card on the next boot.
++ Atmosphere-libs was updated to use GCC 11 (latest devkitA64/devkitARM releases).
+  + Initial inspections show mild-to-moderate optimizer improvements in several important places (kernel is 0x3000 smaller).
+  + General system stability improvements to enhance the user's experience.
++ A number of minor issues were fixed, including:
+  + A bug was fixed that caused a black screen when attempting to boot firmware versions 2.0.0-4.1.0.
+  + A bug was fixed that caused sm to abort when at the session limit, rather than returning error codes.
+  + A bug was fixed that allowed for resource exhaustion on 12.0.0, under certain circumstances.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.19.1
 + An issue was fixed that caused a fatal error when using official `migration` services to transfer data between consoles.
 + An issue was fixed in `ncm` that caused an error when the OS tried to enumerate installed SD card content.
