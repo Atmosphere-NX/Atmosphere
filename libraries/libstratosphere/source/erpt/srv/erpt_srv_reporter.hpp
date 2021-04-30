@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "erpt_srv_context_record.hpp"
 
 namespace ams::erpt::srv {
 
@@ -28,22 +29,6 @@ namespace ams::erpt::srv {
             static std::optional<os::Tick> s_awake_time;
             static std::optional<os::Tick> s_power_on_time;
             static std::optional<time::SteadyClockTimePoint> s_initial_launch_settings_completion_time;
-        private:
-            const ReportType type;
-            const ContextEntry * const ctx;
-            const u8 * const data;
-            const u32 data_size;
-            const ReportMetaData * const meta;
-            const AttachmentId * const attachments;
-            const u32 num_attachments;
-            char identifier_str[0x40];
-            time::PosixTime timestamp_user;
-            time::PosixTime timestamp_network;
-            os::Tick occurrence_tick;
-            s64 steady_clock_internal_offset_seconds;
-            ReportId report_id;
-            Result ctx_result;
-            time::SteadyClockTimePoint steady_clock_current_timepoint;
         public:
             static void ClearApplicationLaunchTime() { s_application_launch_time = std::nullopt; }
             static void ClearInitialLaunchSettingsCompletionTime() { s_initial_launch_settings_completion_time = std::nullopt; }
@@ -65,20 +50,16 @@ namespace ams::erpt::srv {
                 return ResultSuccess();
             }
 
+            static Result RegisterRunningApplet(ncm::ProgramId program_id);
+            static Result UnregisterRunningApplet(ncm::ProgramId program_id);
+            static Result UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpan duration);
+
             static void SetRedirectNewReportsToSdCard(bool en) { s_redirect_new_reports = en; }
         private:
-            Result ValidateReportContext();
-            Result CollectUniqueReportFields();
-            Result SubmitReportDefaults();
-            Result SubmitReportContexts();
-            Result LinkAttachments();
-            Result CreateReportFile();
-            void   SaveSyslogReportIfRequired();
-            void   SaveSyslogReport();
+            static Result SubmitReportContexts(const ReportId &report_id, ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const time::PosixTime &user_timestamp, const time::PosixTime &network_timestamp);
         public:
-            Reporter(ReportType type, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, Result ctx_result);
-
-            Result CreateReport();
+            static Result CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments);
+            static Result CreateReport(ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments);
     };
 
 }

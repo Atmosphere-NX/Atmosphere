@@ -47,8 +47,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, result);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0));
 
         ManagerImpl::NotifyAll();
 
@@ -70,12 +69,12 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::UpdatePowerOnTime() {
-        Reporter::UpdatePowerOnTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
     Result ContextImpl::UpdateAwakeTime() {
-        Reporter::UpdateAwakeTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
@@ -148,8 +147,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, nullptr, attachments, num_attachments, result);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments));
 
         ManagerImpl::NotifyAll();
 
@@ -161,18 +159,15 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
-        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
-        return ResultSuccess();
+        return Reporter::RegisterRunningApplet(program_id);
     }
 
     Result ContextImpl::UnregisterRunningApplet(ncm::ProgramId program_id) {
-        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
-        return ResultSuccess();
+        return Reporter::UnregisterRunningApplet(program_id);
     }
 
     Result ContextImpl::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration) {
-        /* TODO: For greater accuracy, we should support the active applet time list feature added in 12.0.0. */
-        return ResultSuccess();
+        return Reporter::UpdateAppletSuspendedDuration(program_id, duration);
     }
 
     Result ContextImpl::InvalidateForcedShutdownDetection() {
