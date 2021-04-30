@@ -175,19 +175,58 @@ namespace ams::util {
         } else {
             using U = typename std::make_unsigned<T>::type;
             const U u = static_cast<U>(x);
-            if constexpr (std::is_same<U, unsigned long long>::value) {
-                return __builtin_clzll(u);
-            } else if constexpr (std::is_same<U, unsigned long>::value) {
-                return __builtin_clzl(u);
-            }  else if constexpr(std::is_same<U, unsigned int>::value) {
-                return __builtin_clz(u);
+
+            if (u != 0) {
+                if constexpr (std::is_same<U, unsigned long long>::value) {
+                    return __builtin_clzll(u);
+                } else if constexpr (std::is_same<U, unsigned long>::value) {
+                    return __builtin_clzl(u);
+                }  else if constexpr(std::is_same<U, unsigned int>::value) {
+                    return __builtin_clz(u);
+                } else {
+                    static_assert(sizeof(U) < sizeof(unsigned int));
+                    constexpr size_t BitDiff = BITSIZEOF(unsigned int) - BITSIZEOF(U);
+                    return __builtin_clz(static_cast<unsigned int>(u)) - BitDiff;
+                }
             } else {
-                static_assert(sizeof(U) < sizeof(unsigned int));
-                constexpr size_t BitDiff = BITSIZEOF(unsigned int) - BITSIZEOF(U);
-                return __builtin_clz(static_cast<unsigned int>(u)) - BitDiff;
+                return BITSIZEOF(U);
             }
         }
     }
+
+    static_assert(CountLeadingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountLeadingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
+
+    template<typename T> requires std::integral<T>
+    constexpr ALWAYS_INLINE int CountTrailingZeros(T x) {
+        if (std::is_constant_evaluated()) {
+            auto count = 0;
+            for (size_t i = 0; i < BITSIZEOF(T) && (x & 1) == 0; ++i) {
+                ++count;
+            }
+            return count;
+        } else {
+            using U = typename std::make_unsigned<T>::type;
+            const U u = static_cast<U>(x);
+            if (u != 0) {
+                if constexpr (std::is_same<U, unsigned long long>::value) {
+                    return __builtin_ctzll(u);
+                } else if constexpr (std::is_same<U, unsigned long>::value) {
+                    return __builtin_ctzl(u);
+                }  else if constexpr(std::is_same<U, unsigned int>::value) {
+                    return __builtin_ctz(u);
+                } else {
+                    static_assert(sizeof(U) < sizeof(unsigned int));
+                    return __builtin_ctz(static_cast<unsigned int>(u));
+                }
+            } else {
+                return BITSIZEOF(U);
+            }
+        }
+    }
+
+    static_assert(CountTrailingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountTrailingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
     template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE bool IsPowerOfTwo(T x) {

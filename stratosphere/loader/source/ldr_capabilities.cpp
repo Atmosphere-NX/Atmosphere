@@ -44,7 +44,7 @@ namespace ams::ldr::caps {
             constexpr ALWAYS_INLINE typename name::Type Get##name() const { return this->Get<name>(); }
 
         constexpr ALWAYS_INLINE CapabilityId GetCapabilityId(util::BitPack32 cap) {
-            return static_cast<CapabilityId>(__builtin_ctz(~cap.value));
+            return static_cast<CapabilityId>(util::CountTrailingZeros<u32>(~cap.value));
         }
 
         constexpr inline util::BitPack32 EmptyCapability = {~u32{}};
