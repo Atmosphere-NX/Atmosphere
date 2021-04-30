@@ -18,11 +18,16 @@
 
 namespace ams::fs {
 
-    enum class OperationId : u64 {
-        Clear           = ::FsOperationId_Clear,
-        ClearSignature  = ::FsOperationId_ClearSignature,
-        InvalidateCache = ::FsOperationId_InvalidateCache,
-        QueryRange      = ::FsOperationId_QueryRange,
+    enum class OperationId : s64 {
+        FillZero                         = 0,
+        DestroySignature                 = 1,
+        Invalidate                       = 2,
+        QueryRange                       = 3,
+        QueryUnpreparedRange             = 4,
+        QueryLazyLoadCompletionRate      = 5,
+        SetLazyLoadPriority              = 6,
+
+        ReadLazyLoadFileForciblyForDebug = 10001,
     };
 
 }

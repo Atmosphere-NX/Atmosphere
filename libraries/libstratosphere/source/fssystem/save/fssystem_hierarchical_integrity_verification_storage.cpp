@@ -316,14 +316,14 @@ namespace ams::fssystem::save {
 
     Result HierarchicalIntegrityVerificationStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         switch (op_id) {
-            case fs::OperationId::Clear:
-            case fs::OperationId::ClearSignature:
+            case fs::OperationId::FillZero:
+            case fs::OperationId::DestroySignature:
                 {
                     R_TRY(this->buffer_storages[this->max_layers - 2].OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                     this->is_written_for_rollback = true;
                     return ResultSuccess();
                 }
-            case fs::OperationId::InvalidateCache:
+            case fs::OperationId::Invalidate:
             case fs::OperationId::QueryRange:
                 {
                     R_TRY(this->buffer_storages[this->max_layers - 2].OperateRange(dst, dst_size, op_id, offset, size, src, src_size));

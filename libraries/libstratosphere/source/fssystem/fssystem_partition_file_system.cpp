@@ -87,7 +87,7 @@ namespace ams::fssystem {
             virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                 /* Validate preconditions for operation. */
                 switch (op_id) {
-                    case fs::OperationId::InvalidateCache:
+                    case fs::OperationId::Invalidate:
                         R_UNLESS((this->mode & fs::OpenMode_Read)  != 0, fs::ResultReadNotPermitted());
                         R_UNLESS((this->mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperationInPartitionFileB());
                         break;

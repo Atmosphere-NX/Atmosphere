@@ -269,7 +269,7 @@ namespace ams::fssystem {
 
                 virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     switch (op_id) {
-                        case fs::OperationId::InvalidateCache:
+                        case fs::OperationId::Invalidate:
                             {
                                 R_TRY(this->true_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                                 R_TRY(this->false_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));

@@ -236,7 +236,7 @@ namespace ams::fssystem {
         {
             s64 storage_size;
             R_TRY(this->node_storage.GetSize(std::addressof(storage_size)));
-            R_TRY(this->node_storage.OperateRange(fs::OperationId::InvalidateCache, 0, storage_size));
+            R_TRY(this->node_storage.OperateRange(fs::OperationId::Invalidate, 0, storage_size));
         }
 
         /* Refresh start/end offsets. */
@@ -270,7 +270,7 @@ namespace ams::fssystem {
         {
             s64 storage_size;
             R_TRY(this->entry_storage.GetSize(std::addressof(storage_size)));
-            R_TRY(this->entry_storage.OperateRange(fs::OperationId::InvalidateCache, 0, storage_size));
+            R_TRY(this->entry_storage.OperateRange(fs::OperationId::Invalidate, 0, storage_size));
         }
 
         return ResultSuccess();

@@ -32,7 +32,7 @@ namespace ams::fssrv::impl {
     void FileInterfaceAdapter::InvalidateCache() {
         AMS_ABORT_UNLESS(this->parent_filesystem->IsDeepRetryEnabled());
         std::scoped_lock<os::ReadWriteLock> scoped_write_lock(this->parent_filesystem->GetReadWriteLockForCacheInvalidation());
-        this->base_file->OperateRange(nullptr, 0, fs::OperationId::InvalidateCache, 0, std::numeric_limits<s64>::max(), nullptr, 0);
+        this->base_file->OperateRange(nullptr, 0, fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max(), nullptr, 0);
     }
 
     Result FileInterfaceAdapter::Read(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size, fs::ReadOption option) {
@@ -90,9 +90,24 @@ namespace ams::fssrv::impl {
     }
 
     Result FileInterfaceAdapter::OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size) {
-        /* TODO: Nintendo supports calling info OperateRange using the provided buffers, when op_id is 4/5/6 or a class member is set. */
-        /* We should (in the future), determine what uses this, and mimic Nintendo's behavior to the extent that we can. */
-        return fs::ResultPermissionDenied();
+        /* Check that we have permission to perform the operation. */
+        switch (static_cast<fs::OperationId>(op_id)) {
+            using enum fs::OperationId;
+            case QueryUnpreparedRange:
+            case QueryLazyLoadCompletionRate:
+            case SetLazyLoadPriority:
+                /* Lazy load/unprepared operations are always allowed to be performed with buffer. */
+                break;
+            default:
+                /* TODO: Nintendo requires that a class member here be true here, but this class member seems to always be false. */
+                /* If this changes (or reverse engineering is wrong), this should be updated. */
+                return fs::ResultPermissionDenied();
+        }
+
+        /* Perform the operation. */
+        R_TRY(this->base_file->OperateRange(out_buf.GetPointer(), out_buf.GetSize(), static_cast<fs::OperationId>(op_id), offset, size, in_buf.GetPointer(), in_buf.GetSize()));
+
+        return ResultSuccess();
     }
 
     DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
