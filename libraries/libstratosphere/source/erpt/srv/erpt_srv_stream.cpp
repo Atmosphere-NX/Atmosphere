@@ -85,7 +85,7 @@ namespace ams::erpt::srv {
         } else {
             R_UNLESS(mode == StreamMode_Read, erpt::ResultInvalidArgument());
 
-            fs::OpenFile(std::addressof(this->file_handle), path, fs::OpenMode_Read);
+            R_TRY(fs::OpenFile(std::addressof(this->file_handle), path, fs::OpenMode_Read));
         }
         auto file_guard = SCOPE_GUARD { fs::CloseFile(this->file_handle); };
 
