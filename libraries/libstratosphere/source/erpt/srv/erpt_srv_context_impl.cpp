@@ -19,6 +19,7 @@
 #include "erpt_srv_context.hpp"
 #include "erpt_srv_reporter.hpp"
 #include "erpt_srv_journal.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
@@ -31,6 +32,8 @@ namespace ams::erpt::srv {
 
         R_UNLESS(ctx_size == sizeof(ContextEntry), erpt::ResultInvalidArgument());
         R_UNLESS(data_size <= ArrayBufferSizeMax,  erpt::ResultInvalidArgument());
+
+        SubmitContextForForcedShutdownDetection(ctx, data, data_size);
 
         return Context::SubmitContext(ctx, data, data_size);
     }
@@ -171,7 +174,8 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::InvalidateForcedShutdownDetection() {
-        /* TODO: For greater accuracy, we should support the forced shutdown detection feature added in 12.0.0. */
+        /* NOTE: Nintendo does not check the result here. */
+        erpt::srv::InvalidateForcedShutdownDetection();
         return ResultSuccess();
     }
 

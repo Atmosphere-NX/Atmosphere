@@ -20,6 +20,7 @@
 #include "erpt_srv_reporter.hpp"
 #include "erpt_srv_journal.hpp"
 #include "erpt_srv_service.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
@@ -96,6 +97,10 @@ namespace ams::erpt::srv {
     }
 
     Result InitializeAndStartService() {
+        /* Initialize forced shutdown detection. */
+        /* NOTE: Nintendo does not check error code here. */
+        InitializeForcedShutdownDetection();
+
         return InitializeService();
     }
 
@@ -131,7 +136,15 @@ namespace ams::erpt::srv {
     }
 
     void Wait() {
-        return WaitService();
+        /* Get the update event. */
+        os::Event *event = GetForcedShutdownUpdateEvent();
+
+        /* Forever wait, saving any updates. */
+        while (true) {
+            event->Wait();
+            event->Clear();
+            SaveForcedShutdownContext();
+        }
     }
 
 

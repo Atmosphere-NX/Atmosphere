@@ -13,17 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <vapours.hpp>
 
 namespace ams::err {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(162);
+    using ErrorCodeCategory = u32;
+    using ErrorCodeNumber   = u32;
 
-    R_DEFINE_ERROR_RESULT(ApplicationAbort,       1);
-    R_DEFINE_ERROR_RESULT(SystemProgramAbort,     2);
+    struct ErrorCode {
+        static constexpr auto StringLengthMax = 15;
 
-    R_DEFINE_ERROR_RESULT(ForcedShutdownDetected, 4);
+        ErrorCodeCategory category;
+        ErrorCodeNumber number;
+
+        constexpr ALWAYS_INLINE bool IsValid() const { return this->category > 0; }
+    };
+
+    constexpr inline ErrorCode InvalidErrorCode = {
+        .category = 0,
+        .number   = 0,
+    };
 
 }

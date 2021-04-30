@@ -13,17 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "err_string_util.hpp"
 
-#pragma once
-#include <vapours/results/results_common.hpp>
+namespace ams::err::impl {
 
-namespace ams::err {
-
-    R_DEFINE_NAMESPACE_RESULT_MODULE(162);
-
-    R_DEFINE_ERROR_RESULT(ApplicationAbort,       1);
-    R_DEFINE_ERROR_RESULT(SystemProgramAbort,     2);
-
-    R_DEFINE_ERROR_RESULT(ForcedShutdownDetected, 4);
+    void MakeErrorCodeString(char *dst, size_t dst_size, ErrorCode error_code) {
+        const auto len = util::TSNPrintf(dst, dst_size, "%04d-%04d", error_code.category, error_code.number);
+        AMS_ASSERT(static_cast<size_t>(len) < dst_size);
+    }
 
 }

@@ -13,17 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::err {
+namespace ams::erpt::srv {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(162);
+    os::Event *GetForcedShutdownUpdateEvent();
 
-    R_DEFINE_ERROR_RESULT(ApplicationAbort,       1);
-    R_DEFINE_ERROR_RESULT(SystemProgramAbort,     2);
+    void InitializeForcedShutdownDetection();
+    void FinalizeForcedShutdownDetection();
 
-    R_DEFINE_ERROR_RESULT(ForcedShutdownDetected, 4);
+    void SaveForcedShutdownContext();
+
+    void SubmitContextForForcedShutdownDetection(const ContextEntry *entry, const u8 *data, u32 data_size);
+
+    Result InvalidateForcedShutdownDetection();
 
 }
