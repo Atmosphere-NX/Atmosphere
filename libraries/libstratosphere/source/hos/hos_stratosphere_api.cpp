@@ -15,10 +15,20 @@
  */
 #include <stratosphere.hpp>
 #include "hos_version_api_private.hpp"
+#include "../os/impl/os_rng_manager.hpp"
 
 namespace ams::os {
 
     void InitializeForStratosphereInternal();
+
+}
+
+extern "C" {
+
+    /* Provide libnx address space allocation shim. */
+    uintptr_t __libnx_virtmem_rng(void) {
+        return static_cast<uintptr_t>(::ams::os::impl::GetRngManager().GenerateRandomU64());
+    }
 
 }
 

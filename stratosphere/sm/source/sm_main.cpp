@@ -19,6 +19,9 @@
 extern "C" {
     extern u32 __start__;
 
+    extern int __system_argc;
+    extern char** __system_argv;
+
     u32 __nx_applet_type = AppletType_None;
 
     #define INNER_HEAP_SIZE 0x0
@@ -26,6 +29,7 @@ extern "C" {
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
     void __libnx_initheap(void);
+    void argvSetup(void);
     void __appInit(void);
     void __appExit(void);
 
@@ -39,9 +43,19 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
+namespace {
+
+    constinit char *g_empty_argv = nullptr;
+
+}
+
 namespace ams {
 
     ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Sm;
+
+    void NORETURN Exit(int rc) {
+        AMS_ABORT("Exit called by immortal process");
+    }
 
 }
 
@@ -62,6 +76,12 @@ void __libnx_initheap(void) {
 
     fake_heap_start = (char*)addr;
     fake_heap_end   = (char*)addr + size;
+}
+
+void argvSetup(void) {
+    /* We don't need argc/argv, so set them to empty defaults. */
+    __system_argc = 0;
+    __system_argv = std::addressof(g_empty_argv);
 }
 
 void __appInit(void) {

@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 
+extern "C" void NORETURN __real_exit(int rc);
+
 namespace ams {
 
     WEAK_SYMBOL void *Malloc(size_t size) {
@@ -37,6 +39,11 @@ namespace ams {
         return std::free(ptr);
     }
 
+    WEAK_SYMBOL void NORETURN Exit(int rc) {
+        __real_exit(rc);
+        __builtin_unreachable();
+    }
+
 }
 
 extern "C" {
@@ -45,5 +52,7 @@ extern "C" {
     #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { abort(); __builtin_unreachable(); }
     WRAP_ABORT_FUNC(__cxa_pure_virtual)
     #undef WRAP_ABORT_FUNC
+
+    void NORETURN __wrap_exit(int rc) { ::ams::Exit(rc); __builtin_unreachable(); }
 
 }
