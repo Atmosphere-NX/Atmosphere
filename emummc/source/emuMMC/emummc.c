@@ -314,7 +314,7 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
                             return 0;
                     }
 
-                    buf = (void *)((uintptr_t)buf + (cur_sectors << 9));
+                    buf = (char *)buf + (cur_sectors << 9);
                     remaining -= cur_sectors;
                     sector = 0;
                     ++fp;
