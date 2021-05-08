@@ -153,29 +153,14 @@ namespace ams {
         ::ams::ExceptionHandler(&ams_ctx);
     }
 
-    inline NORETURN void AbortImpl() {
-        /* Just perform a data abort. */
-        register u64 addr __asm__("x27") = FatalErrorContext::StdAbortMagicAddress;
-        register u64 val __asm__("x28")  = FatalErrorContext::StdAbortMagicValue;
-        while (true) {
-            __asm__ __volatile__ (
-                "str %[val], [%[addr]]"
-                :
-                : [val]"r"(val), [addr]"r"(addr)
-            );
-        }
-        __builtin_unreachable();
-    }
+    NORETURN void AbortImpl();
 
 }
 
 extern "C" {
 
-    /* Redefine abort to trigger these handlers. */
-    void abort();
-
     /* Redefine C++ exception handlers. Requires wrap linker flag. */
-    #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { abort(); __builtin_unreachable(); }
+    #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { ::ams::AbortImpl(); __builtin_unreachable(); }
     WRAP_ABORT_FUNC(__cxa_throw)
     WRAP_ABORT_FUNC(__cxa_rethrow)
     WRAP_ABORT_FUNC(__cxa_allocate_exception)
@@ -194,10 +179,4 @@ extern "C" {
     WRAP_ABORT_FUNC(_Unwind_Resume)
     #undef WRAP_ABORT_FUNC
 
-}
-
-/* Custom abort handler, so that std::abort will trigger these. */
-void abort() {
-    ams::AbortImpl();
-    __builtin_unreachable();
 }
