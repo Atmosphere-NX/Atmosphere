@@ -39,6 +39,10 @@ X.X.X</br>
 [ You can find your firmware version in the Settings -> System, under "System Update". ]</br>
 [ If it says "Update Pending", you can clear the pending update by rebooting to Maintenance Mode. ]</br>
 
+### EmuMMC or SysNAND:
+
+[ If using an EmuMMC, include whether it's partition-based or file-based. ]
+
 ### Environment?
 
 - What bootloader (fusèe, hekate, etc) was Atmosphère launched by:
@@ -49,6 +53,7 @@ X.X.X</br>
      - [ Ex: Kosmos' distribution of Atmosphère ]
 - Do you have additional kips or sysmodules you're loading:
 - Homebrew software installed: [ * ]
+
 
 ### Additional context?
 
