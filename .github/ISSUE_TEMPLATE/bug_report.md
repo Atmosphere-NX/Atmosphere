@@ -54,7 +54,6 @@ X.X.X</br>
 - Do you have additional kips or sysmodules you're loading:
 - Homebrew software installed: [ * ]
 
-
 ### Additional context?
 
 - Additional info about your environment:
