@@ -3,6 +3,7 @@
 + Support was added for 12.0.2.
 + A number of minor issues were fixed, including:
   + An issue was fixed in dns.mitm that caused a crash when games attempted to resolve the IP address of nullptr.
+  + An issue was fixed in erpt that would cause an abort when booting without having ever booted stock previously.
   + An issue was fixed in (file-based) emummc that caused an error on system format/downloading certain games.
 + General system stability improvements to enhance the user's experience.
 ## 0.19.2
