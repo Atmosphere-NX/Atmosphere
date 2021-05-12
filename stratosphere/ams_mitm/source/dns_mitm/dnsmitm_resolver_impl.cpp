@@ -89,7 +89,7 @@ namespace ams::mitm::socket::resolver {
 
         LogDebug("[%016lx]: GetHostByNameRequest(%s)\n", this->client_info.program_id.value, hostname);
 
-        R_UNLESS(hostname != nullptr, sm::ResultShouldForwardToSession());
+        R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
@@ -109,7 +109,7 @@ namespace ams::mitm::socket::resolver {
 
         LogDebug("[%016lx]: GetAddrInfoRequest(%s, %s)\n", this->client_info.program_id.value, reinterpret_cast<const char *>(node.GetPointer()), reinterpret_cast<const char *>(srv.GetPointer()));
 
-        R_UNLESS(hostname != nullptr, sm::ResultShouldForwardToSession());
+        R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
@@ -146,7 +146,7 @@ namespace ams::mitm::socket::resolver {
 
         LogDebug("[%016lx]: GetHostByNameRequestWithOptions(%s)\n", this->client_info.program_id.value, hostname);
 
-        R_UNLESS(hostname != nullptr, sm::ResultShouldForwardToSession());
+        R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
@@ -166,7 +166,7 @@ namespace ams::mitm::socket::resolver {
 
         LogDebug("[%016lx]: GetAddrInfoRequestWithOptions(%s, %s)\n", this->client_info.program_id.value, hostname, reinterpret_cast<const char *>(srv.GetPointer()));
 
-        R_UNLESS(hostname != nullptr, sm::ResultShouldForwardToSession());
+        R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());

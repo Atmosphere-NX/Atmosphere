@@ -348,6 +348,7 @@ uint32_t fuse_get_regulator(void) {
 
 
 static const uint32_t fuse_version_increment_firmwares[] = {
+    ATMOSPHERE_TARGET_FIRMWARE_12_0_2,
     ATMOSPHERE_TARGET_FIRMWARE_11_0_0,
     ATMOSPHERE_TARGET_FIRMWARE_10_0_0,
     ATMOSPHERE_TARGET_FIRMWARE_9_1_0,
