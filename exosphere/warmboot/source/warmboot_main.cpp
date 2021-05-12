@@ -36,7 +36,6 @@ namespace ams::warmboot {
     void Main(const Metadata *metadata) {
         /* Ensure that we're running under vaguely sane conditions. */
         AMS_ABORT_UNLESS(metadata->magic == Metadata::Magic);
-        AMS_ABORT_UNLESS(metadata->target_firmware <= ams::TargetFirmware_Max);
 
         /* Restrict the bpmp's access to dram. */
         if (metadata->target_firmware >= TargetFirmware_4_0_0) {
