@@ -54,7 +54,10 @@ namespace ams::sf::cmif {
         Result (*handler)(CmifOutHeader **out_header_ptr, ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data);
 
         constexpr inline bool Matches(u32 cmd_id, hos::Version hosver) const {
-            return this->cmd_id == cmd_id && this->hosver_low <= hosver && hosver <= this->hosver_high;
+            const bool min_valid = this->hosver_low == hos::Version_Min;
+            const bool max_valid = this->hosver_high == hos::Version_Max;
+
+            return this->cmd_id == cmd_id && (min_valid || this->hosver_low <= hosver) && (max_valid || hosver <= this->hosver_high);
         }
 
         constexpr inline decltype(handler) GetHandler() const {

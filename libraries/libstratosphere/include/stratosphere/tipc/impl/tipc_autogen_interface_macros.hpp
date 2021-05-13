@@ -79,8 +79,9 @@ namespace ams::tipc::impl {
 
     #define AMS_TIPC_IMPL_PROCESS_METHOD_REQUEST_BY_ID(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX)   \
         if constexpr (constexpr u16 TipcCommandId = CMD_ID + 0x10; CommandId == TipcCommandId) {                                    \
-            constexpr bool AlwaysValid = VERSION_MIN == hos::Version_Min && VERSION_MAX == hos::Version_Max;                        \
-            if (AlwaysValid || (VERSION_MIN <= fw_ver && fw_ver <= VERSION_MAX)) {                                                  \
+            constexpr bool MinValid = VERSION_MIN == hos::Version_Min;                                                              \
+            constexpr bool MaxValid = VERSION_MAX == hos::Version_Max;                                                              \
+            if ((MinValid || VERSION_MIN <= fw_ver) && (MaxValid || fw_ver <= VERSION_MAX)) {                                       \
                 return ::ams::tipc::impl::InvokeServiceCommandImpl<TipcCommandId, &ImplType::NAME, ImplType>(impl, message_buffer); \
             }                                                                                                                       \
         }
