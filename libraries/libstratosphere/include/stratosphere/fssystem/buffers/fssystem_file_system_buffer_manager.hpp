@@ -106,11 +106,9 @@ namespace ams::fssystem {
 
                             using Newable::operator new;
                             using Newable::operator delete;
-                            static void *operator new(size_t, void *p) {
-                                return p;
-                            }
 
-                            static void operator delete(void *, size_t, void*) { /* ... */ }
+                            static ALWAYS_INLINE void *operator new(size_t, void *p) noexcept { return p; }
+                            static ALWAYS_INLINE void operator delete(void *, size_t, void*) noexcept { /* ... */ }
                     };
 
                     using AttrListTraits = util::IntrusiveListBaseTraits<AttrInfo>;
