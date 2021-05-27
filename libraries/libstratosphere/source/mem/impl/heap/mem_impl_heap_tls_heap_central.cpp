@@ -976,13 +976,14 @@ namespace ams::mem::impl::heap {
                 return span;
             }
         } else {
+            const size_t prev_pages = span->num_pages;
+
             Span *new_span = this->AllocateSpanStruct();
             if (new_span == nullptr) {
                 return nullptr;
             }
             auto new_span_guard = SCOPE_GUARD { this->FreeSpanToSpanPage(new_span); };
 
-            const size_t prev_pages = span->num_pages;
             span = GetSpanFromPointer(std::addressof(this->span_table), span->start.p);
             const size_t found_pages = span->num_pages;
 
