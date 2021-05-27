@@ -976,27 +976,35 @@ namespace ams::mem::impl::heap {
                 return span;
             }
         } else {
+            /* Save the extents of the free span we found. */
+            auto * const prev_ptr   = span->start.p;
             const size_t prev_pages = span->num_pages;
 
+            /* Allocate a new span struct. */
             Span *new_span = this->AllocateSpanStruct();
             if (new_span == nullptr) {
                 return nullptr;
             }
             auto new_span_guard = SCOPE_GUARD { this->FreeSpanToSpanPage(new_span); };
 
-            span = GetSpanFromPointer(std::addressof(this->span_table), span->start.p);
-            const size_t found_pages = span->num_pages;
+            /* Allocating the new span potentially invalidates the span we were looking at, so find the span for it in the table. */
+            span = GetSpanFromPointer(std::addressof(this->span_table), prev_ptr);
+            const size_t cur_pages = span->num_pages;
 
-
-            if (found_pages != prev_pages) {
+            /* If the span was partially allocated, we need to find a new one that's big enough. */
+            if (cur_pages != prev_pages) {
                 span = this->SearchFreeSpan(num_pages);
                 if (span == nullptr) {
                     return nullptr;
                 }
             }
 
-            if (found_pages == prev_pages || num_pages != span->num_pages) {
-                /* We're going to use the new span. */
+            /* If the span is big enough to split (span->num_pages > num_pages), we want to split it. */
+            /* span->num_pages > num_pages is true if the span wasn't partially allocated (cur_pages == prev_pages) */
+            /* OR if the new free span we found has num_pages > num_pages. Note that we know span->num_pages >= num_pages */
+            /* so this > condition can be expressed as span->num_pages != num_pages. */
+            if (cur_pages == prev_pages || num_pages != span->num_pages) {
+                /* We're going to use the new span for our split. */
                 new_span_guard.Cancel();
 
                 return this->SplitSpan(span, num_pages, new_span);
