@@ -136,8 +136,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
     /* Check if the highest priority thread is the same as the current thread. */
     ldr    x7, [x1, #(KSCHEDULER_HIGHEST_PRIORITY_THREAD)]
-    ldr    x2, [x18]
-    cmp    x7, x2
+    cmp    x7, x18
     b.ne   1f
 
     /* If they're the same, then we can just return as there's nothing to do. */

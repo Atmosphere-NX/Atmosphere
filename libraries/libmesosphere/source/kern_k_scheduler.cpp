@@ -231,6 +231,10 @@ namespace ams::kern {
             next_thread = m_idle_thread;
         }
 
+        if (next_thread->GetCurrentCore() != m_core_id) {
+            next_thread->SetCurrentCore(m_core_id);
+        }
+
         /* If we're not actually switching thread, there's nothing to do. */
         if (next_thread == cur_thread) {
             return;
@@ -262,10 +266,6 @@ namespace ams::kern {
         }
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
-
-        if (next_thread->GetCurrentCore() != m_core_id) {
-            next_thread->SetCurrentCore(m_core_id);
-        }
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
