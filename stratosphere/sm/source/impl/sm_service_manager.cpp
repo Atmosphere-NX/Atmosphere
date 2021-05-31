@@ -367,7 +367,7 @@ namespace ams::sm::impl {
             {
                 /* TODO: Convert mitm internal messaging to use tipc? */
                 ::Service srv { .session = service_info->mitm_query_h };
-                R_TRY(::serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm));
+                R_ABORT_UNLESS(::serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm));
             }
 
             /* If we shouldn't mitm, give normal session. */
@@ -383,8 +383,9 @@ namespace ams::sm::impl {
                 auto fwd_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(fwd_hnd)); };
 
                 /* Get the mitm handle. */
+                /* This should be guaranteed to succeed, since we got a forward handle. */
                 svc::Handle hnd;
-                R_TRY(svc::ConnectToPort(std::addressof(hnd), service_info->mitm_port_h));
+                R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), service_info->mitm_port_h));
 
                 /* We got both handles, so we no longer need to clean up the forward handle. */
                 fwd_guard.Cancel();
@@ -410,9 +411,8 @@ namespace ams::sm::impl {
                 MitmProcessInfo client_info;
                 GetMitmProcessInfo(std::addressof(client_info), process_id);
                 if (!IsMitmDisallowed(client_info.program_id)) {
-                    /* We're mitm'd. Assert, because mitm service host dead is an error state. */
-                    R_ABORT_UNLESS(GetMitmServiceHandleImpl(out, service_info, client_info));
-                    return ResultSuccess();
+                    /* Get a mitm service handle. */
+                    return GetMitmServiceHandleImpl(out, service_info, client_info);
                 }
             }
 
