@@ -308,8 +308,11 @@ namespace ams::kern {
         }
 
         /* Send an exception event to represent our breaking the process. */
-        static_assert(util::size(thread_ids) >= 4);
-        this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[0], thread_ids[1], thread_ids[2], thread_ids[3]);
+        /* TODO: How should this be handled in the case of more than 4 physical cores? */
+        static_assert(util::size(thread_ids) <= 4);
+        [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+            this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[Ix]...);
+        }(std::make_index_sequence<util::size(thread_ids)>());
 
         /* Signal. */
         this->NotifyAvailable();
