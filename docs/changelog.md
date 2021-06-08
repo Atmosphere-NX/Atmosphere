@@ -1,4 +1,11 @@
 # Changelog
+## 0.19.4
++ Support was added for 12.0.3.
++ A number of minor issues were fixed, including:
+  + An issue was fixed that could cause heap memory corruption when allocation was highly contended.
+  + An issue was fixed that could cause sleep to fail under certain conditions.
+  + An issue was fixed that could cause a scheduler slow path to be taken more often than necessary.
++ General system stability improvements to enhance the user's experience.
 ## 0.19.3
 + Support was added for 12.0.2.
 + A number of minor issues were fixed, including:
