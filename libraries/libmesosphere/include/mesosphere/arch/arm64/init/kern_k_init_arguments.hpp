@@ -18,7 +18,7 @@
 
 namespace ams::kern::init {
 
-    struct KInitArguments {
+    struct alignas(util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE)) KInitArguments {
         u64 ttbr0;
         u64 ttbr1;
         u64 tcr;
@@ -32,7 +32,8 @@ namespace ams::kern::init {
         u64 setup_function;
         u64 exception_stack;
     };
-    static_assert(sizeof(KInitArguments) == INIT_ARGUMENTS_SIZE);
+    static_assert(alignof(KInitArguments) == util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE));
+    static_assert(sizeof(KInitArguments) == std::max(INIT_ARGUMENTS_SIZE, util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE)));
 
     static_assert(__builtin_offsetof(KInitArguments, ttbr0)           == INIT_ARGUMENTS_TTBR0);
     static_assert(__builtin_offsetof(KInitArguments, ttbr1)           == INIT_ARGUMENTS_TTBR1);
