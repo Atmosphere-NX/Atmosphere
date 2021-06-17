@@ -25,18 +25,20 @@ namespace ams::kern {
         class PageTablePage {
             private:
                 u8 m_buffer[PageSize];
+            public:
+                ALWAYS_INLINE PageTablePage() { /* Do not initialize anything. */ }
         };
         static_assert(sizeof(PageTablePage) == PageSize);
 
     }
 
-    class KPageTableManager : public KDynamicSlabHeap<impl::PageTablePage> {
+    class KPageTableManager : public KDynamicSlabHeap<impl::PageTablePage, true> {
         public:
             using RefCount = u16;
             static constexpr size_t PageTableSize = sizeof(impl::PageTablePage);
             static_assert(PageTableSize == PageSize);
         private:
-            using BaseHeap = KDynamicSlabHeap<impl::PageTablePage>;
+            using BaseHeap = KDynamicSlabHeap<impl::PageTablePage, true>;
         private:
             RefCount *m_ref_counts;
         public:
@@ -72,9 +74,6 @@ namespace ams::kern {
             }
 
             void Free(KVirtualAddress addr) {
-                /* Ensure all pages in the heap are zero. */
-                cpu::ClearPageToZero(GetVoidPointer(addr));
-
                 /* Free the page. */
                 BaseHeap::Free(GetPointer<impl::PageTablePage>(addr));
             }

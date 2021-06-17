@@ -64,8 +64,11 @@ namespace ams::kern {
                 m_page_bitmap.Initialize(management_ptr, m_count);
 
                 /* Free the pages to the bitmap. */
-                std::memset(GetPointer<PageBuffer>(m_address), 0, m_count * sizeof(PageBuffer));
                 for (size_t i = 0; i < m_count; i++) {
+                    /* Ensure the freed page is all-zero. */
+                    cpu::ClearPageToZero(GetPointer<PageBuffer>(m_address) + i);
+
+                    /* Set the bit for the free page. */
                     m_page_bitmap.SetBit(i);
                 }
 
@@ -99,6 +102,9 @@ namespace ams::kern {
             }
 
             void Free(PageBuffer *pb) {
+                /* Ensure all pages in the heap are zero. */
+                cpu::ClearPageToZero(pb);
+
                 /* Take the lock. */
                 KScopedInterruptDisable di;
                 KScopedSpinLock lk(m_lock);

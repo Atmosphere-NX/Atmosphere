@@ -107,8 +107,11 @@ namespace ams::kern {
                     Node *Peek() const { return m_root; }
 
                     Node *Pop() {
-                        Node *r = m_root;
-                        m_root  = m_root->m_next;
+                        Node * const r = m_root;
+
+                        m_root    = r->m_next;
+                        r->m_next = nullptr;
+
                         return r;
                     }
             };

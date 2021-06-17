@@ -279,9 +279,10 @@ namespace ams::kern::arch::arm64 {
                 if (l1_entry->IsTable()) {
                     L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
                     if (l2_entry->IsTable()) {
-                        KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
+                        const KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
                         if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
                             while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
+                            ClearPageTable(l3_table);
                             this->GetPageTableManager().Free(l3_table);
                         }
                     }
@@ -292,16 +293,21 @@ namespace ams::kern::arch::arm64 {
             for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
                 L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
                 if (l1_entry->IsTable()) {
-                    KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
+                    const KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
                     if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
                         while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
+                        ClearPageTable(l2_table);
                         this->GetPageTableManager().Free(l2_table);
                     }
                 }
             }
 
             /* Free the L1 table. */
-            this->GetPageTableManager().Free(reinterpret_cast<uintptr_t>(impl.Finalize()));
+            {
+                const KVirtualAddress l1_table = reinterpret_cast<uintptr_t>(impl.Finalize());
+                ClearPageTable(l1_table);
+                this->GetPageTableManager().Free(l1_table);
+            }
 
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
