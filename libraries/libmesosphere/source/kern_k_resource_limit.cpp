@@ -108,6 +108,7 @@ namespace ams::kern {
         R_UNLESS(m_current_values[which] <= value, svc::ResultInvalidState());
 
         m_limit_values[which] = value;
+        m_peak_values[which]  = m_current_values[which];
 
         return ResultSuccess();
     }
