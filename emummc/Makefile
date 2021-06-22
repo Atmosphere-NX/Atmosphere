@@ -32,7 +32,7 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(EMUMMCDIR)/emummc.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
