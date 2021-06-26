@@ -43,6 +43,7 @@ libraries:
 
 clean:
 	$(MAKE) -C fusee clean
+	$(MAKE) -C emummc clean
 	rm -rf out
 
 dist-no-debug: all
