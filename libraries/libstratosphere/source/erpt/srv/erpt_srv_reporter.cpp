@@ -409,7 +409,7 @@ namespace ams::erpt::srv {
 
     Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments) {
         /* Create a context record for the report. */
-        auto record = std::make_unique<ContextRecord>(CategoryId_ErrorInfoAuto);
+        auto record = std::make_unique<ContextRecord>();
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
         /* Initialize the record. */
