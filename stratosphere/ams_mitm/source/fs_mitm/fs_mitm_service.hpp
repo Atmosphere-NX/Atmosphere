@@ -43,7 +43,7 @@ namespace ams::mitm::fs {
                     return true;
                 }
 
-                /* We want to mitm ns, to intercept SD card requests. */
+                /* We want to mitm ns, to intercept SD card requests and program index map info registration. */
                 if (program_id == ncm::SystemProgramId::Ns) {
                     return true;
                 }
@@ -55,11 +55,6 @@ namespace ams::mitm::fs {
 
                 /* We want to mitm sdb, to support sd-romfs redirection of common system archives (like system font, etc). */
                 if (program_id == ncm::SystemProgramId::Sdb) {
-                    return true;
-                }
-
-                /* We want to mitm am, to intercept program info map registration. */
-                if (program_id == ncm::SystemProgramId::Am) {
                     return true;
                 }
 
