@@ -86,7 +86,7 @@ namespace ams::kern {
             auto mapped_size_guard = SCOPE_GUARD { *out_mapped_size = 0; };
 
             /* Perform the mapping. */
-            R_TRY(m_table.Map(out_mapped_size, page_table, process_address, size, device_address, device_perm, refresh_mappings));
+            R_TRY(m_table.Map(out_mapped_size, page_table, process_address, size, device_address, device_perm, is_aligned, refresh_mappings));
 
             /* Ensure that we unmap the pages if we fail to update the protections. */
             /* NOTE: Nintendo does not check the result of this unmap call. */

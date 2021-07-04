@@ -1437,13 +1437,13 @@ namespace ams::kern::board::nintendo::nx {
         return true;
     }
 
-    Result KDevicePageTable::Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+    Result KDevicePageTable::Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings) {
         /* Clear the output size. */
         *out_mapped_size = 0;
 
         /* Map the pages. */
         s32 num_pt = 0;
-        return this->MapImpl(out_mapped_size, num_pt, refresh_mappings ? 1 : std::numeric_limits<s32>::max(), page_table, process_address, size, device_address, device_perm, refresh_mappings);
+        return this->MapImpl(out_mapped_size, num_pt, refresh_mappings ? 1 : std::numeric_limits<s32>::max(), page_table, process_address, size, device_address, device_perm, is_aligned);
     }
 
     Result KDevicePageTable::Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address) {
