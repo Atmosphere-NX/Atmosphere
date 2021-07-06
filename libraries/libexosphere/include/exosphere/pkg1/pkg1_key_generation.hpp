@@ -20,17 +20,18 @@ namespace ams::pkg1 {
 
     enum KeyGeneration : int {
 
-        KeyGeneration_1_0_0 = 0x00,
-        KeyGeneration_3_0_0 = 0x01,
-        KeyGeneration_3_0_1 = 0x02,
-        KeyGeneration_4_0_0 = 0x03,
-        KeyGeneration_5_0_0 = 0x04,
-        KeyGeneration_6_0_0 = 0x05,
-        KeyGeneration_6_2_0 = 0x06,
-        KeyGeneration_7_0_0 = 0x07,
-        KeyGeneration_8_1_0 = 0x08,
-        KeyGeneration_9_0_0 = 0x09,
-        KeyGeneration_9_1_0 = 0x0A,
+        KeyGeneration_1_0_0  = 0x00,
+        KeyGeneration_3_0_0  = 0x01,
+        KeyGeneration_3_0_1  = 0x02,
+        KeyGeneration_4_0_0  = 0x03,
+        KeyGeneration_5_0_0  = 0x04,
+        KeyGeneration_6_0_0  = 0x05,
+        KeyGeneration_6_2_0  = 0x06,
+        KeyGeneration_7_0_0  = 0x07,
+        KeyGeneration_8_1_0  = 0x08,
+        KeyGeneration_9_0_0  = 0x09,
+        KeyGeneration_9_1_0  = 0x0A,
+        KeyGeneration_12_1_0 = 0x0B,
 
         KeyGeneration_Count,
 

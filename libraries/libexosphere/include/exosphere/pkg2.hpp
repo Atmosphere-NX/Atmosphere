@@ -23,7 +23,7 @@ namespace ams::pkg2 {
 
     constexpr inline int PayloadCount = 3;
 
-    constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x11 in Nintendo's code. */
+    constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x13 in Nintendo's code. */
     constexpr inline int CurrentBootloaderVersion = 0xF;
 
     struct Package2Meta {
