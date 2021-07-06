@@ -62,7 +62,7 @@ static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_800 - MAST
 };
 
 static const uint8_t AL16 master_kek_seed_mariko[0x10] = { /* TODO: Update on next change of keys. */
-    0x0E, 0x44, 0x0C, 0xED, 0xB4, 0x36, 0xC0, 0x3F, 0xAA, 0x1D, 0xAE, 0xBF, 0x62, 0xB1, 0x09, 0x82, /* Mariko MasterKek seed 0A. */
+    0xE5, 0x41, 0xAC, 0xEC, 0xD1, 0xA7, 0xD1, 0xAB, 0xED, 0x03, 0x77, 0xF1, 0x27, 0xCA, 0xF8, 0xF1, /* Mariko MasterKek seed 0B. */
 };
 
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
@@ -153,7 +153,7 @@ int derive_nx_keydata_erista(uint32_t target_firmware, const nx_keyblob_t *keybl
 
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
             /* NOTE: We load in the current key for all >= 8.1.0 firmwares to reduce sept binaries. */
-            desired_keyblob = MASTERKEY_REVISION_910_CURRENT;
+            desired_keyblob = MASTERKEY_REVISION_C10_CURRENT;
         } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
             desired_keyblob = MASTERKEY_REVISION_700_800;
         } else {
