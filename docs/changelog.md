@@ -1,4 +1,16 @@
 # Changelog
+## 0.19.5
++ Support was added for 12.1.0.
++ LayeredFS support was added for OpenDataStorageWithProgramIndex commands.
+  + Certain games using newer (7.0.0+ APIs) which include multiple programs under a single title previously could not be modified.
+  + These are now supported as normal, and LayeredFS should have 100% compatibility again.
++ A number of minor issues were fixed, including:
+  + The Reboot to Payload NRO was updated to allow the OS to save state prior to rebooting (thanks @AuroraWright)!
+  + An issue was fixed that could cause dns.mitm to fail when games requested resolution of an empty string.
+  + An issue was fixed that caused a memory leak in the erpt system module.
+    + This would eventually cause a system crash after ~540 reports were generated without rebooting.
++ A number of minor improvements were made to improve mesosphere's accuracy.
++ General system stability improvements to enhance the user's experience.
 ## 0.19.4
 + Support was added for 12.0.3.
 + A number of minor issues were fixed, including:
