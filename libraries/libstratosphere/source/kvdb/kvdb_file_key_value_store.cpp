@@ -55,9 +55,9 @@ namespace ams::kvdb {
         AMS_ABORT_UNLESS(this->entries != nullptr);
     }
 
-    std::optional<size_t> FileKeyValueStore::Cache::TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size) {
+    util::optional<size_t> FileKeyValueStore::Cache::TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size) {
         if (!this->HasEntries()) {
-            return std::nullopt;
+            return util::nullopt;
         }
 
         /* Try to find the entry. */
@@ -66,7 +66,7 @@ namespace ams::kvdb {
             if (entry.key_size == key_size && std::memcmp(entry.key, key, key_size) == 0) {
                 /* If we don't have enough space, fail to read from cache. */
                 if (max_out_size < entry.value_size) {
-                    return std::nullopt;
+                    return util::nullopt;
                 }
 
                 std::memcpy(out_value, entry.value, entry.value_size);
@@ -74,12 +74,12 @@ namespace ams::kvdb {
             }
         }
 
-        return std::nullopt;
+        return util::nullopt;
     }
 
-    std::optional<size_t> FileKeyValueStore::Cache::TryGetSize(const void *key, size_t key_size) {
+    util::optional<size_t> FileKeyValueStore::Cache::TryGetSize(const void *key, size_t key_size) {
         if (!this->HasEntries()) {
-            return std::nullopt;
+            return util::nullopt;
         }
 
         /* Try to find the entry. */
@@ -90,7 +90,7 @@ namespace ams::kvdb {
             }
         }
 
-        return std::nullopt;
+        return util::nullopt;
     }
 
     void FileKeyValueStore::Cache::Set(const void *key, size_t key_size, const void *value, size_t value_size) {

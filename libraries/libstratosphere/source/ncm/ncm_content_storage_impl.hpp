@@ -42,7 +42,7 @@ namespace ams::ncm {
                     ~ContentIterator();
 
                     Result Initialize(const char *root_path, size_t max_depth);
-                    Result GetNext(std::optional<fs::DirectoryEntry> *out);
+                    Result GetNext(util::optional<fs::DirectoryEntry> *out);
                 private:
                     Result OpenCurrentDirectory();
                     Result OpenDirectory(const char *dir);
@@ -53,14 +53,14 @@ namespace ams::ncm {
             ContentId cached_content_id;
             fs::FileHandle cached_file_handle;
             RightsIdCache *rights_id_cache;
-            std::optional<ContentIterator> content_iterator;
-            std::optional<s32> last_content_offset;
+            util::optional<ContentIterator> content_iterator;
+            util::optional<s32> last_content_offset;
         public:
             static Result InitializeBase(const char *root_path);
             static Result CleanupBase(const char *root_path);
             static Result VerifyBase(const char *root_path);
         public:
-            ContentStorageImpl() : placeholder_accessor(), cached_content_id(InvalidContentId), cached_file_handle(), rights_id_cache(nullptr), content_iterator(std::nullopt), last_content_offset(std::nullopt) { /* ... */ }
+            ContentStorageImpl() : placeholder_accessor(), cached_content_id(InvalidContentId), cached_file_handle(), rights_id_cache(nullptr), content_iterator(util::nullopt), last_content_offset(util::nullopt) { /* ... */ }
             ~ContentStorageImpl();
 
             Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);

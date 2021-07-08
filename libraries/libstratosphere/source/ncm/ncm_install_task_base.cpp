@@ -87,8 +87,8 @@ namespace ams::ncm {
         R_TRY(this->CountInstallContentMetaData(std::addressof(count)));
 
         /* Iterate over content meta. */
-        std::optional<PlaceHolderId> placeholder_id;
-        std::optional<StorageId> storage_id;
+        util::optional<PlaceHolderId> placeholder_id;
+        util::optional<StorageId> storage_id;
         for (s32 i = 0; i < count; i++) {
             /* Obtain the content meta. */
             InstallContentMeta content_meta;
@@ -716,7 +716,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result InstallTaskBase::WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary) {
+    Result InstallTaskBase::WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, util::optional<bool> is_temporary) {
         /* Generate a placeholder id. */
         auto placeholder_id = storage->GeneratePlaceHolderId();
 
@@ -736,14 +736,14 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result InstallTaskBase::PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> expected_key, std::optional<u32> source_version) {
+    Result InstallTaskBase::PrepareContentMeta(const InstallContentMetaInfo &meta_info, util::optional<ContentMetaKey> expected_key, util::optional<u32> source_version) {
         /* Open the BuiltInSystem content storage. */
         ContentStorage content_storage;
         R_TRY(OpenContentStorage(&content_storage, StorageId::BuiltInSystem));
 
         /* Write content meta to a placeholder. */
         InstallContentInfo content_info;
-        R_TRY(this->WriteContentMetaToPlaceHolder(std::addressof(content_info), std::addressof(content_storage), meta_info, std::nullopt));
+        R_TRY(this->WriteContentMetaToPlaceHolder(std::addressof(content_info), std::addressof(content_storage), meta_info, util::nullopt));
 
         /* Get the path of the placeholder. */
         Path path;
@@ -929,7 +929,7 @@ namespace ams::ncm {
             /* Get and prepare install content meta info. */
             InstallContentMetaInfo install_content_meta_info;
             R_TRY(this->GetInstallContentMetaInfo(std::addressof(install_content_meta_info), key));
-            R_TRY(this->PrepareContentMeta(install_content_meta_info, key, std::nullopt));
+            R_TRY(this->PrepareContentMeta(install_content_meta_info, key, util::nullopt));
         }
 
         return ResultSuccess();
@@ -997,7 +997,7 @@ namespace ams::ncm {
         return this->data->Delete(keys, num_keys);
     }
 
-    Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version) {
+    Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version) {
         AutoBuffer meta;
         {
             fs::ScopedAutoAbortDisabler aad;
@@ -1027,7 +1027,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    InstallContentInfo InstallTaskBase::MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_tmp) {
+    InstallContentInfo InstallTaskBase::MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, util::optional<bool> is_tmp) {
         return {
             .digest         = info.digest,
             .info           = ContentInfo::Make(info.content_id, info.content_size, ContentType::Meta, 0),

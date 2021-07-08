@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, std::optional<u8> id_offset) const {
+    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, util::optional<u8> id_offset) const {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */
@@ -78,7 +78,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
-        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, std::nullopt);
+        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::nullopt);
     }
 
     Result ContentMetaDatabaseImpl::ListContentInfo(sf::Out<s32> out_count, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) {
@@ -149,7 +149,7 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
         R_TRY(this->EnsureEnabled());
 
-        std::optional<ContentMetaKey> found_key = std::nullopt;
+        util::optional<ContentMetaKey> found_key = util::nullopt;
 
         /* Find the last key with the desired program id. */
         for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
@@ -308,15 +308,15 @@ namespace ams::ncm {
             out_orphaned[i] = true;
         }
 
-        auto IsOrphanedContent = [] ALWAYS_INLINE_LAMBDA (const sf::InArray<ContentId> &list, const ncm::ContentId &id) -> std::optional<size_t> {
+        auto IsOrphanedContent = [] ALWAYS_INLINE_LAMBDA (const sf::InArray<ContentId> &list, const ncm::ContentId &id) -> util::optional<size_t> {
             /* Check if any input content ids match our found content id. */
             for (size_t i = 0; i < list.GetSize(); i++) {
                 if (list[i] == id) {
-                    return std::make_optional(i);
+                    return util::make_optional(i);
                 }
             }
 
-            return std::nullopt;
+            return util::nullopt;
         };
 
         /* Iterate over all entries. */
@@ -435,7 +435,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
-        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, std::make_optional(id_offset));
+        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, util::make_optional(id_offset));
     }
 
     Result ContentMetaDatabaseImpl::GetCount(sf::Out<u32> out_count) {

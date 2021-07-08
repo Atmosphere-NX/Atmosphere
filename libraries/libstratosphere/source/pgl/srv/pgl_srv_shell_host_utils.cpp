@@ -131,7 +131,7 @@ namespace ams::pgl::srv {
                     return ResultSuccess();
                 }
 
-                Result GetContentPath(lr::Path *out, ncm::ContentType type, std::optional<u8> index) const {
+                Result GetContentPath(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
                     switch (this->extension_type) {
                         case ExtensionType::Nsp:  return this->GetContentPathInNsp(out, type, index);
                         case ExtensionType::Nspd: return this->GetContentPathInNspd(out, type, index);
@@ -155,7 +155,7 @@ namespace ams::pgl::srv {
                     return this->program_index;
                 }
             private:
-                Result GetContentPathInNsp(lr::Path *out, ncm::ContentType type, std::optional<u8> index) const {
+                Result GetContentPathInNsp(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
                     /* Create a reader. */
                     auto reader = ncm::PackagedContentMetaReader(this->content_meta_buffer.Get(), this->content_meta_buffer.GetSize());
 
@@ -185,7 +185,7 @@ namespace ams::pgl::srv {
                     return ResultSuccess();
                 }
 
-                Result GetContentPathInNspd(lr::Path *out, ncm::ContentType type, std::optional<u8> index) const {
+                Result GetContentPathInNspd(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
                     /* Get the content name. */
                     const char *content_name = nullptr;
                     switch (type) {

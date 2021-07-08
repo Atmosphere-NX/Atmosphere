@@ -225,7 +225,7 @@ namespace ams::ncm {
         out->max_content_metas     = max_content_metas;
         out->memory_resource       = memory_resource;
         out->content_meta_database = nullptr;
-        out->kvs                   = std::nullopt;
+        out->kvs                   = util::nullopt;
 
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
@@ -240,7 +240,7 @@ namespace ams::ncm {
         out->max_content_metas     = max_content_metas;
         out->memory_resource       = memory_resource;
         out->content_meta_database = nullptr;
-        out->kvs                   = std::nullopt;
+        out->kvs                   = util::nullopt;
 
         return ResultSuccess();
     }
@@ -649,7 +649,7 @@ namespace ams::ncm {
             /* N doesn't bother checking the result of this */
             root->content_meta_database->DisableForcibly();
             root->content_meta_database = nullptr;
-            root->kvs = std::nullopt;
+            root->kvs = util::nullopt;
 
             /* Also unmount, except in the case of game cards. */
             if (storage_id != StorageId::GameCard) {

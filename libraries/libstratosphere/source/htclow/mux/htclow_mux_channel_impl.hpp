@@ -47,7 +47,7 @@ namespace ams::htclow::mux {
             u64 m_total_send_size;
             u64 m_cur_max_data;
             u64 m_prev_max_data;
-            std::optional<u64> m_share;
+            util::optional<u64> m_share;
             os::Event m_state_change_event;
             ChannelState m_state;
         public:

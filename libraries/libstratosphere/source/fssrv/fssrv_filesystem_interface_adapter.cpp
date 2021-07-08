@@ -154,8 +154,8 @@ namespace ams::fssrv::impl {
         AMS_ABORT_UNLESS(false);
     }
 
-    std::optional<std::shared_lock<os::ReadWriteLock>> FileSystemInterfaceAdapter::AcquireCacheInvalidationReadLock() {
-        std::optional<std::shared_lock<os::ReadWriteLock>> lock;
+    util::optional<std::shared_lock<os::ReadWriteLock>> FileSystemInterfaceAdapter::AcquireCacheInvalidationReadLock() {
+        util::optional<std::shared_lock<os::ReadWriteLock>> lock;
         if (this->deep_retry_enabled) {
             lock.emplace(this->invalidation_lock);
         }

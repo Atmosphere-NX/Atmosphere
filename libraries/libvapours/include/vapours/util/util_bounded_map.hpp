@@ -24,7 +24,7 @@ namespace ams::util {
     template<class Key, class Value, size_t N>
     class BoundedMap {
         private:
-            std::array<std::optional<Key>, N> keys;
+            std::array<util::optional<Key>, N> keys;
             std::array<TypedStorage<Value>, N> values;
         private:
             ALWAYS_INLINE void FreeEntry(size_t i) {

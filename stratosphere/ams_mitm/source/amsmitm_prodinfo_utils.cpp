@@ -431,7 +431,7 @@ namespace ams::mitm {
 
         alignas(os::MemoryPageSize) CalibrationInfo g_temp_calibration_info = {};
 
-        void SaveProdInfoBackup(std::optional<ams::fs::FileStorage> *dst, const CalibrationInfo &info) {
+        void SaveProdInfoBackup(util::optional<ams::fs::FileStorage> *dst, const CalibrationInfo &info) {
             char backup_fn[0x100];
             GetBackupFileName(backup_fn, sizeof(backup_fn), info);
 
@@ -505,9 +505,9 @@ namespace ams::mitm {
         alignas(os::MemoryPageSize) CalibrationInfo g_blank_calibration_info = {};
         alignas(os::MemoryPageSize) SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
 
-        std::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
-        std::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
-        std::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
+        util::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
+        util::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
+        util::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
 
         bool g_allow_writes     = false;
         bool g_has_secure_backup = false;

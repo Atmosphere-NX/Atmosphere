@@ -31,7 +31,7 @@ namespace ams::ncm {
 
             void Inactivate();
             Result Initialize(const char *package_root, const char *context_path, void *buffer, size_t buffer_size, bool requires_exfat_driver, FirmwareVariationId firmware_variation_id);
-            std::optional<ContentMetaKey> GetSystemUpdateMetaKey();
+            util::optional<ContentMetaKey> GetSystemUpdateMetaKey();
         protected:
             virtual Result PrepareInstallContentMetaData() override;
             virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;

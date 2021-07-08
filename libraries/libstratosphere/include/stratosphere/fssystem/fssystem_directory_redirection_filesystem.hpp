@@ -34,9 +34,9 @@ namespace ams::fssystem {
 
             virtual ~DirectoryRedirectionFileSystem();
         protected:
-            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+            inline util::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
                 /* No accessor lock is needed. */
-                return std::nullopt;
+                return util::nullopt;
             }
         private:
             Result GetNormalizedDirectoryPath(char **out, size_t *out_size, const char *dir);

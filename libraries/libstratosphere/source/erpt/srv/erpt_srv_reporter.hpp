@@ -25,13 +25,13 @@ namespace ams::erpt::srv {
             static char s_serial_number[24];
             static char s_os_version[24];
             static char s_private_os_version[96];
-            static std::optional<os::Tick> s_application_launch_time;
-            static std::optional<os::Tick> s_awake_time;
-            static std::optional<os::Tick> s_power_on_time;
-            static std::optional<time::SteadyClockTimePoint> s_initial_launch_settings_completion_time;
+            static util::optional<os::Tick> s_application_launch_time;
+            static util::optional<os::Tick> s_awake_time;
+            static util::optional<os::Tick> s_power_on_time;
+            static util::optional<time::SteadyClockTimePoint> s_initial_launch_settings_completion_time;
         public:
-            static void ClearApplicationLaunchTime() { s_application_launch_time = std::nullopt; }
-            static void ClearInitialLaunchSettingsCompletionTime() { s_initial_launch_settings_completion_time = std::nullopt; }
+            static void ClearApplicationLaunchTime() { s_application_launch_time = util::nullopt; }
+            static void ClearInitialLaunchSettingsCompletionTime() { s_initial_launch_settings_completion_time = util::nullopt; }
 
             static void SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time) { s_initial_launch_settings_completion_time = time; }
 

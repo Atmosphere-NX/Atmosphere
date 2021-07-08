@@ -29,7 +29,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             bool watchdog_timer_enabled;
             TimeSpan watchdog_timer_timeout;
             bool use_event_handler;
-            std::optional<ChargerInterruptEventHandler> event_handler;
+            util::optional<ChargerInterruptEventHandler> event_handler;
             os::SystemEventType system_event;
         public:
             ChargerDevice(bool ev);

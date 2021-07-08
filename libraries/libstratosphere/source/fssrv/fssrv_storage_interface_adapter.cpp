@@ -34,8 +34,8 @@ namespace ams::fssrv::impl {
         /* ... */
     }
 
-    std::optional<std::shared_lock<os::ReadWriteLock>> StorageInterfaceAdapter::AcquireCacheInvalidationReadLock() {
-        std::optional<std::shared_lock<os::ReadWriteLock>> lock;
+    util::optional<std::shared_lock<os::ReadWriteLock>> StorageInterfaceAdapter::AcquireCacheInvalidationReadLock() {
+        util::optional<std::shared_lock<os::ReadWriteLock>> lock;
         if (this->deep_retry_enabled) {
             lock.emplace(this->invalidation_lock);
         }

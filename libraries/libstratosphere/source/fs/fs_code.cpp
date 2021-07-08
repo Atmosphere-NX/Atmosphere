@@ -238,7 +238,7 @@ namespace ams::fs {
 
         class SdCardRedirectionCodeFileSystem : public OpenFileOnlyFileSystem {
             private:
-                std::optional<ReadOnlyFileSystem> sd_content_fs;
+                util::optional<ReadOnlyFileSystem> sd_content_fs;
                 ReadOnlyFileSystem code_fs;
                 bool is_redirect;
             public:
@@ -303,8 +303,8 @@ namespace ams::fs {
 
         class AtmosphereCodeFileSystem : public OpenFileOnlyFileSystem {
             private:
-                std::optional<SdCardRedirectionCodeFileSystem> code_fs;
-                std::optional<ReadOnlyFileSystem> hbl_fs;
+                util::optional<SdCardRedirectionCodeFileSystem> code_fs;
+                util::optional<ReadOnlyFileSystem> hbl_fs;
                 ncm::ProgramId program_id;
                 bool initialized;
             public:

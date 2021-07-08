@@ -26,10 +26,10 @@ namespace ams::erpt::srv {
     constinit char Reporter::s_serial_number[24]       = "Unknown";
     constinit char Reporter::s_os_version[24]          = "Unknown";
     constinit char Reporter::s_private_os_version[96]  = "Unknown";
-    constinit std::optional<os::Tick> Reporter::s_application_launch_time;
-    constinit std::optional<os::Tick> Reporter::s_awake_time;
-    constinit std::optional<os::Tick> Reporter::s_power_on_time;
-    constinit std::optional<time::SteadyClockTimePoint> Reporter::s_initial_launch_settings_completion_time;
+    constinit util::optional<os::Tick> Reporter::s_application_launch_time;
+    constinit util::optional<os::Tick> Reporter::s_awake_time;
+    constinit util::optional<os::Tick> Reporter::s_power_on_time;
+    constinit util::optional<time::SteadyClockTimePoint> Reporter::s_initial_launch_settings_completion_time;
 
     namespace {
 
@@ -78,13 +78,13 @@ namespace ams::erpt::srv {
                     entry->suspended_duration = suspended_duration;
                 }
 
-                std::optional<TimeSpan> GetActiveDuration(ncm::ProgramId program_id) const {
+                util::optional<TimeSpan> GetActiveDuration(ncm::ProgramId program_id) const {
                     /* Try to find a matching entry. */
                     const auto entry = util::range::find_if(m_list, [&](const AppletActiveTimeInfo &info) { return info.program_id == program_id; });
                     if (entry != m_list.end()) {
                         return (os::GetSystemTick() - entry->register_tick).ToTimeSpan() - entry->suspended_duration;
                     } else {
-                        return std::nullopt;
+                        return util::nullopt;
                     }
                 }
         };

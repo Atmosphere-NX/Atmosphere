@@ -92,7 +92,7 @@ namespace ams::fssrv::impl {
         public:
             bool IsDeepRetryEnabled() const;
             bool IsAccessFailureDetectionObserved() const;
-            std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
+            util::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
             os::ReadWriteLock &GetReadWriteLockForCacheInvalidation();
         public:
             /* Command API. */

@@ -59,7 +59,7 @@ namespace ams::htclow::driver {
         std::scoped_lock lk(m_mutex);
 
         /* Clear our driver type. */
-        m_driver_type = std::nullopt;
+        m_driver_type = util::nullopt;
 
         /* Close our driver. */
         if (m_open_driver != nullptr) {

@@ -26,7 +26,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::BatteryDevice, ::ams::powctl::impl::IDevice);
         private:
             bool use_event_handler;
-            std::optional<BatteryInterruptEventHandler> event_handler;
+            util::optional<BatteryInterruptEventHandler> event_handler;
             os::SystemEventType system_event;
         public:
             BatteryDevice(bool ev);

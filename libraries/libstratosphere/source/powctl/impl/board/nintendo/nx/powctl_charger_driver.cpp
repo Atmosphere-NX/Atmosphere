@@ -23,7 +23,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace {
 
-        constinit std::optional<ChargerDevice> g_charger_device;
+        constinit util::optional<ChargerDevice> g_charger_device;
 
         Bq24193Driver &GetBq24193Driver() {
             static Bq24193Driver s_bq24193_driver;
@@ -80,7 +80,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         gpio::CloseSession(g_charger_device->GetPadSession());
 
         /* Destroy the charger device. */
-        g_charger_device = std::nullopt;
+        g_charger_device = util::nullopt;
 
         /* Finalize gpio library. */
         gpio::Finalize();

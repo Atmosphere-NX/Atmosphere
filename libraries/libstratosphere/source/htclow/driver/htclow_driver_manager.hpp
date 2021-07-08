@@ -23,7 +23,7 @@ namespace ams::htclow::driver {
 
     class DriverManager {
         private:
-            std::optional<htclow::impl::DriverType> m_driver_type{};
+            util::optional<htclow::impl::DriverType> m_driver_type{};
             IDriver *m_debug_driver{};
             SocketDriver m_socket_driver;
             UsbDriver m_usb_driver{};

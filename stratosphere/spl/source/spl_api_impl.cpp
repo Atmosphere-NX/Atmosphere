@@ -42,7 +42,7 @@ namespace ams::spl::impl {
 
         /* KeySlot management. */
         KeySlotCache g_keyslot_cache;
-        std::optional<KeySlotCacheEntry> g_keyslot_cache_entry[MaxPhysicalAesKeySlots];
+        util::optional<KeySlotCacheEntry> g_keyslot_cache_entry[MaxPhysicalAesKeySlots];
 
         inline s32 GetMaxPhysicalKeySlots() {
             return (hos::GetVersion() >= hos::Version_6_0_0) ? MaxPhysicalAesKeySlots : MaxPhysicalAesKeySlotsDeprecated;

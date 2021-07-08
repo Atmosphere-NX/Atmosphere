@@ -33,9 +33,9 @@ namespace ams::fssystem {
 
             virtual ~DirectorySaveDataFileSystem();
         protected:
-            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() {
+            inline util::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() {
                 /* We have a real accessor lock that we want to use. */
-                return std::make_optional<std::scoped_lock<os::Mutex>>(this->accessor_mutex);
+                return util::make_optional<std::scoped_lock<os::Mutex>>(this->accessor_mutex);
             }
         private:
             Result AllocateWorkBuffer(std::unique_ptr<u8[]> *out, size_t *out_size, size_t ideal_size);

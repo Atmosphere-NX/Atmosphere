@@ -78,13 +78,13 @@ namespace ams::ncm {
         util::SNPrintf(dst, dst_size, "%s.cert", str.data);
     }
 
-    std::optional<ContentId> GetContentIdFromString(const char *str, size_t len) {
+    util::optional<ContentId> GetContentIdFromString(const char *str, size_t len) {
         if (len < ContentIdStringLength) {
-            return std::nullopt;
+            return util::nullopt;
         }
 
         ContentId content_id;
-        return GetBytesFromString(std::addressof(content_id), sizeof(content_id), str, ContentIdStringLength) ? std::optional<ContentId>(content_id) : std::nullopt;
+        return GetBytesFromString(std::addressof(content_id), sizeof(content_id), str, ContentIdStringLength) ? util::optional<ContentId>(content_id) : util::nullopt;
     }
 
 }

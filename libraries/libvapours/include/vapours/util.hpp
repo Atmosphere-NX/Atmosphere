@@ -28,6 +28,7 @@
 #include <vapours/util/util_exchange.hpp>
 #include <vapours/util/util_scope_guard.hpp>
 #include <vapours/util/util_specialization_of.hpp>
+#include <vapours/util/util_optional.hpp>
 #include <vapours/util/util_bitpack.hpp>
 #include <vapours/util/util_bitset.hpp>
 #include <vapours/util/util_bitflagset.hpp>

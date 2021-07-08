@@ -208,7 +208,7 @@ namespace ams::ncm {
         return this->OpenCurrentDirectory();
     }
 
-    Result ContentStorageImpl::ContentIterator::GetNext(std::optional<fs::DirectoryEntry> *out) {
+    Result ContentStorageImpl::ContentIterator::GetNext(util::optional<fs::DirectoryEntry> *out) {
         /* Iterate until we get the next entry. */
         while (true) {
             /* Ensure that we have entries loaded. */
@@ -216,7 +216,7 @@ namespace ams::ncm {
 
             /* If we failed to load any entries, there's nothing to get. */
             if (this->entry_count <= 0) {
-                *out = std::nullopt;
+                *out = util::nullopt;
                 return ResultSuccess();
             }
 
@@ -353,7 +353,7 @@ namespace ams::ncm {
             fs::CloseFile(this->cached_file_handle);
             this->cached_content_id = InvalidContentId;
         }
-        this->content_iterator = std::nullopt;
+        this->content_iterator = util::nullopt;
     }
 
     Result ContentStorageImpl::OpenContentIdFile(ContentId content_id) {
@@ -586,7 +586,7 @@ namespace ams::ncm {
             /* Advance to the desired offset. */
             for (auto current_offset = 0; current_offset < offset; /* ... */) {
                 /* Get the next directory entry. */
-                std::optional<fs::DirectoryEntry> dir_entry;
+                util::optional<fs::DirectoryEntry> dir_entry;
                 R_TRY(this->content_iterator->GetNext(std::addressof(dir_entry)));
 
                 /* If we run out of entries before reaching the desired offset, we're done. */
@@ -606,7 +606,7 @@ namespace ams::ncm {
         s32 count = 0;
         while (count < static_cast<s32>(out.GetSize())) {
             /* Get the next directory entry. */
-            std::optional<fs::DirectoryEntry> dir_entry;
+            util::optional<fs::DirectoryEntry> dir_entry;
             R_TRY(this->content_iterator->GetNext(std::addressof(dir_entry)));
 
             /* Don't continue if the directory entry is absent. */

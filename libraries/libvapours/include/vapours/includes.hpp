@@ -36,7 +36,6 @@
 #include <random>
 #include <atomic>
 #include <utility>
-#include <optional>
 #include <functional>
 #include <tuple>
 #include <array>

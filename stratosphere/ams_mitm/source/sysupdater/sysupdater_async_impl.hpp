@@ -95,7 +95,7 @@ namespace ams::mitm::sysupdater {
         private:
             Result result;
             os::SystemEvent event;
-            std::optional<ThreadInfo> thread_info;
+            util::optional<ThreadInfo> thread_info;
             ncm::InstallTaskBase *task;
         public:
             AsyncPrepareSdCardUpdateImpl(ncm::InstallTaskBase *task) : result(ResultSuccess()), event(os::EventClearMode_ManualClear, true), thread_info(), task(task) { /* ... */ }

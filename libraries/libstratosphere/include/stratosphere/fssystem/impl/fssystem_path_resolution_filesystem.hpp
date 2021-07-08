@@ -50,7 +50,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->CreateFile(full_path, size, option);
             }
 
@@ -58,7 +58,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->DeleteFile(full_path);
             }
 
@@ -66,7 +66,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->CreateDirectory(full_path);
             }
 
@@ -74,7 +74,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->DeleteDirectory(full_path);
             }
 
@@ -82,7 +82,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->DeleteDirectoryRecursively(full_path);
             }
 
@@ -92,7 +92,7 @@ namespace ams::fssystem::impl {
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(old_full_path, sizeof(old_full_path), old_path));
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(new_full_path, sizeof(new_full_path), new_path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->RenameFile(old_full_path, new_full_path);
             }
 
@@ -102,7 +102,7 @@ namespace ams::fssystem::impl {
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(old_full_path, sizeof(old_full_path), old_path));
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(new_full_path, sizeof(new_full_path), new_path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->RenameDirectory(old_full_path, new_full_path);
             }
 
@@ -110,7 +110,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->GetEntryType(out, full_path);
             }
 
@@ -118,7 +118,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->OpenFile(out_file, full_path, mode);
             }
 
@@ -126,12 +126,12 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->OpenDirectory(out_dir, full_path, mode);
             }
 
             virtual Result DoCommit() override {
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Commit();
             }
 
@@ -139,7 +139,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->GetFreeSpaceSize(out, full_path);
             }
 
@@ -147,7 +147,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->GetTotalSpaceSize(out, full_path);
             }
 
@@ -155,7 +155,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->CleanDirectoryRecursively(full_path);
             }
 
@@ -163,7 +163,7 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->GetFileTimeStampRaw(out, full_path);
             }
 
@@ -171,23 +171,23 @@ namespace ams::fssystem::impl {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->QueryEntry(dst, dst_size, src, src_size, query, full_path);
             }
 
             /* These aren't accessible as commands. */
             virtual Result DoCommitProvisionally(s64 counter) override {
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->CommitProvisionally(counter);
             }
 
             virtual Result DoRollback() override {
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Rollback();
             }
 
             virtual Result DoFlush() override {
-                std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
+                util::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Flush();
             }
     };

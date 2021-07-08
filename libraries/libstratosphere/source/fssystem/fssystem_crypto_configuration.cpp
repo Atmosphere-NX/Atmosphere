@@ -113,7 +113,7 @@ namespace ams::fssystem {
 
         constexpr inline s32 KeySlotCacheEntryCount = 3;
         KeySlotCache g_key_slot_cache;
-        std::optional<KeySlotCacheEntry> g_key_slot_cache_entry[KeySlotCacheEntryCount];
+        util::optional<KeySlotCacheEntry> g_key_slot_cache_entry[KeySlotCacheEntryCount];
 
         spl::AccessKey &GetNcaKekAccessKey(s32 key_type) {
             static spl::AccessKey s_nca_kek_access_key_array[KeyAreaEncryptionKeyCount] = {};

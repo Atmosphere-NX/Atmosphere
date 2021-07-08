@@ -37,6 +37,6 @@ namespace ams::ncm {
     void GetTicketFileStringFromRightsId(char *dst, size_t dst_size, fs::RightsId id);
     void GetCertificateFileStringFromRightsId(char *dst, size_t dst_size, fs::RightsId id);
 
-    std::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
+    util::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
 
 }

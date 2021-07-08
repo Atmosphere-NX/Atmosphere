@@ -32,9 +32,9 @@ namespace ams::fssystem {
 
             virtual ~SubDirectoryFileSystem();
         protected:
-            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+            inline util::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
                 /* No accessor lock is needed. */
-                return std::nullopt;
+                return util::nullopt;
             }
         private:
             Result Initialize(const char *bp);

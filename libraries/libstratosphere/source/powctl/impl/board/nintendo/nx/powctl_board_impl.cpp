@@ -23,8 +23,8 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace {
 
-        constinit std::optional<ChargerDriver> g_charger_driver;
-        constinit std::optional<BatteryDriver> g_battery_driver;
+        constinit util::optional<ChargerDriver> g_charger_driver;
+        constinit util::optional<BatteryDriver> g_battery_driver;
 
         void InitializeChargerDriver(bool use_event_handlers) {
             /* Create the charger driver. */
@@ -47,7 +47,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             powctl::impl::UnregisterDriver(std::addressof(*g_charger_driver));
 
             /* Destroy the battery driver. */
-            g_charger_driver = std::nullopt;
+            g_charger_driver = util::nullopt;
         }
 
         void FinalizeBatteryDriver() {
@@ -55,7 +55,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             powctl::impl::UnregisterDriver(std::addressof(*g_battery_driver));
 
             /* Destroy the battery driver. */
-            g_battery_driver = std::nullopt;
+            g_battery_driver = util::nullopt;
         }
 
     }

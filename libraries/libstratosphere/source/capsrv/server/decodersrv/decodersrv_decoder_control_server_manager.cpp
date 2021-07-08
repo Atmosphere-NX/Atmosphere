@@ -38,8 +38,8 @@ namespace ams::capsrv::server {
 
         /* Destroy the server. */
         os::FinalizeEvent(std::addressof(this->idle_event));
-        this->server_manager_holder = std::nullopt;
-        this->service_holder        = std::nullopt;
+        this->server_manager_holder = util::nullopt;
+        this->service_holder        = util::nullopt;
     }
 
     void DecoderControlServerManager::StartServer() {

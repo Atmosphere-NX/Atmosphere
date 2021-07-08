@@ -54,7 +54,7 @@ namespace ams::fssrv::impl {
                 return m_list.size();
             }
 
-            std::optional<fs::ProgramIndexMapInfo> Get(const ncm::ProgramId &program_id) const {
+            util::optional<fs::ProgramIndexMapInfo> Get(const ncm::ProgramId &program_id) const {
                 /* Acquire exclusive access to the map. */
                 std::scoped_lock lk(m_mutex);
 
@@ -134,9 +134,9 @@ namespace ams::fssrv::impl {
             }
 
             template<typename F>
-            std::optional<fs::ProgramIndexMapInfo> GetImpl(F f) const {
+            util::optional<fs::ProgramIndexMapInfo> GetImpl(F f) const {
                 /* Try to find an entry matching the predicate. */
-                std::optional<fs::ProgramIndexMapInfo> match = std::nullopt;
+                util::optional<fs::ProgramIndexMapInfo> match = util::nullopt;
 
                 for (const auto &entry : m_list) {
                     /* If the predicate matches, we want to return the relevant info. */
