@@ -77,7 +77,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 			-I.
 
-.PHONY: clean all
+.PHONY: clean all lib/$(TARGET).a
 
 #---------------------------------------------------------------------------------
 all: lib/$(TARGET).a
