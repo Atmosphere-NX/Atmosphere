@@ -120,7 +120,7 @@ namespace ams::kern {
 
         /* If we fail to unmap, we want to do a partial unlock. */
         {
-            auto unlock_guard = SCOPE_GUARD { page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, size); };
+            auto unlock_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, size)); };
 
             /* Unmap. */
             R_TRY(m_table.Unmap(page_table, process_address, size, device_address));
