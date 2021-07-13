@@ -59,26 +59,6 @@ namespace ams::kern::init::loader {
             }
         }
 
-        void EnsureEntireDataCacheFlushed() {
-            /* Flush shared cache. */
-            cpu::FlushEntireDataCacheSharedForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Flush local cache. */
-            cpu::FlushEntireDataCacheLocalForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Flush shared cache. */
-            cpu::FlushEntireDataCacheSharedForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Invalidate entire instruction cache. */
-            cpu::InvalidateEntireInstructionCacheForInit();
-
-            /* Invalidate entire TLB. */
-            cpu::InvalidateEntireTlb();
-        }
-
         void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::IPageAllocator &allocator) {
             /* Map in an RWX identity mapping for the kernel. */
             constexpr PageTableEntry KernelRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
@@ -109,7 +89,7 @@ namespace ams::kern::init::loader {
             PerformBoardSpecificSetup();
 
             /* Ensure that the entire cache is flushed. */
-            EnsureEntireDataCacheFlushed();
+            cpu::FlushEntireCacheForInit();
 
             /* Setup SCTLR_EL1. */
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/

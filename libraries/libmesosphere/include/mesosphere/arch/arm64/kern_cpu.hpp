@@ -172,10 +172,8 @@ namespace ams::kern::arch::arm64::cpu {
 
     /* Cache management helpers. */
     void ClearPageToZeroImpl(void *);
-    void FlushEntireDataCacheSharedForInit();
-    void FlushEntireDataCacheLocalForInit();
-    void InvalidateEntireInstructionCacheForInit();
     void StoreEntireCacheForInit();
+    void FlushEntireCacheForInit();
 
     void FlushEntireDataCache();
 

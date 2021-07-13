@@ -383,20 +383,20 @@ _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv:
     /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
     ubfx x10, x10, #0x15, 3
 
-    /* int level = levels_of_unification - 1 */
-    sub w9, w10, #1
+    /* int level = 0 */
+    mov x9, xzr
 
-    /* while (level >= 0) { */
+    /* while (level <= levels_of_unification) { */
 begin_flush_cache_local_loop:
-    cmn w9, #1
+    cmp x9, x10
     b.eq done_flush_cache_local_loop
 
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
-    /*     level--; */
-    sub w9, w9, #1
+    /*     level++; */
+    add w9, w9, #1
 
     /* } */
     b begin_flush_cache_local_loop
@@ -416,23 +416,23 @@ _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
     /* CacheLineIdAccessor clidr_el1; */
     mrs x10, clidr_el1
     /* const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency(); */
-    ubfx x9, x10,  #0x18, 3
+    ubfx x9, x10,  #0x15, 3
     /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
-    ubfx x10, x10, #0x15, 3
+    ubfx x10, x10, #0x18, 3
 
-    /* int level = levels_of_coherency */
+    /* int level = levels_of_unification */
 
-    /* while (level >= levels_of_unification) { */
+    /* while (level <= levels_of_coherency) { */
 begin_flush_cache_shared_loop:
-    cmp w10, w9
-    b.gt done_flush_cache_shared_loop
+    cmp w9, w10
+    b.hi done_flush_cache_shared_loop
 
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
-    /*     level--; */
-    sub w9, w9, #1
+    /*     level++; */
+    add w9, w9, #1
 
     /* } */
     b begin_flush_cache_shared_loop
