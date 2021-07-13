@@ -804,7 +804,7 @@ namespace ams::kern {
 
             /* Remove waiter thread. */
             s32 num_waiters;
-            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread))); next != nullptr) {
+            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
                 next->SetState(KThread::ThreadState_Runnable);
             }
 
