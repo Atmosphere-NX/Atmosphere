@@ -74,26 +74,32 @@ namespace ams::kern::arch::arm64 {
         /* Get the exception context. */
         const KExceptionContext *e_ctx = GetExceptionContext(thread);
 
+        /* Get whether we're 64-bit. */
+        const bool is_64_bit = this->Is64Bit();
+
         /* If general registers are requested, get them. */
         if ((context_flags & ams::svc::ThreadContextFlag_General) != 0) {
+            /* We can always get X0-X7/R0-R7. */
+            auto register_count = 8;
             if (!thread->IsCallingSvc() || thread->GetSvcId() == svc::SvcId_ReturnFromException) {
-                if (this->Is64Bit()) {
-                    /* Get X0-X28. */
-                    for (auto i = 0; i <= 28; ++i) {
-                        out->r[i] = e_ctx->x[i];
-                    }
+                if (is_64_bit) {
+                    /* We're not in an SVC, so we can get X0-X29. */
+                    register_count = 29;
                 } else {
-                    /* Get R0-R12. */
-                    for (auto i = 0; i <= 12; ++i) {
-                        out->r[i] = static_cast<u32>(e_ctx->x[i]);
-                    }
+                    /* We're 32-bit, so we should get R0-R12. */
+                    register_count = 13;
                 }
+            }
+
+            /* Get the registers. */
+            for (auto i = 0; i < register_count; ++i) {
+                out->r[i] = is_64_bit ? e_ctx->x[i] : static_cast<u32>(e_ctx->x[i]);
             }
         }
 
         /* If control flags are requested, get them. */
         if ((context_flags & ams::svc::ThreadContextFlag_Control) != 0) {
-            if (this->Is64Bit()) {
+            if (is_64_bit) {
                 out->fp     = e_ctx->x[29];
                 out->lr     = e_ctx->x[30];
                 out->sp     = e_ctx->sp;
