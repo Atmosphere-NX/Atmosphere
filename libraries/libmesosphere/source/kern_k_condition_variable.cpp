@@ -132,7 +132,7 @@ namespace ams::kern {
 
             can_access = cpu::CanAccessAtomic(address);
             if (AMS_LIKELY(can_access)) {
-                UpdateLockAtomic(std::addressof(prev_tag), address, own_tag, ams::svc::HandleWaitMask);
+                can_access = UpdateLockAtomic(std::addressof(prev_tag), address, own_tag, ams::svc::HandleWaitMask);
             }
         }
 
