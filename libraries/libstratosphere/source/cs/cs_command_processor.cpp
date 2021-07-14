@@ -14,11 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "cs_command_impl.hpp"
 
 namespace ams::cs {
 
+    namespace {
+
+        struct ResponseFirmwareVersion {
+            ResponseHeader header;
+            settings::system::FirmwareVersion firmware_version;
+        };
+
+    }
+
     bool CommandProcessor::ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket) {
         switch (header.command) {
+            case Command_GetFirmwareVersion:
+                SendFirmwareVersion(socket, header);
+                break;
             /* TODO: Command support. */
             default:
                 scs::CommandProcessor::ProcessCommand(header, body, socket);
@@ -26,6 +39,28 @@ namespace ams::cs {
         }
 
         return true;
+    }
+
+    void CommandProcessor::SendFirmwareVersion(s32 socket, const CommandHeader &header) {
+        /* Build the response. */
+        ResponseFirmwareVersion response = {
+            .header = {
+                .id        = header.id,
+                .response  = Response_FirmwareVersion,
+                .body_size = sizeof(response) - sizeof(response.header),
+            },
+            .firmware_version = {},
+        };
+
+        /* Get the firmware version. */
+        const Result result = DoGetFirmwareVersionCommand(std::addressof(response.firmware_version));
+        if (R_SUCCEEDED(result)) {
+            /* Send the response. */
+            auto lk = MakeSendGuardBlock();
+            Send(socket, std::addressof(response), sizeof(response));
+        } else {
+            SendErrorResult(socket, header, result);
+        }
     }
 
 }

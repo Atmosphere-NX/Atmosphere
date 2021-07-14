@@ -85,8 +85,8 @@ dist-no-debug: all
 	cp -r config_templates/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
 	cp -r config_templates/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008
-	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000017
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000002B
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000032
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000034
@@ -94,8 +94,11 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000B240
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D623
 	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008/exefs.nsp
 	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D/exefs.nsp
+	cp stratosphere/cs/cs.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000017/exefs.nsp
 	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000002B/exefs.nsp
 	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000032/exefs.nsp
 	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000034/exefs.nsp
@@ -103,6 +106,8 @@ dist-no-debug: all
 	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037/exefs.nsp
 	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C/exefs.nsp
 	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
+	cp stratosphere/htc/htc.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000B240/exefs.nsp
+	cp stratosphere/TioServer/TioServer.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D623/exefs.nsp
 	@build_romfs atmosphere-$(AMSVER)/stratosphere_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere.romfs
 	rm -r atmosphere-$(AMSVER)/stratosphere_romfs
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro

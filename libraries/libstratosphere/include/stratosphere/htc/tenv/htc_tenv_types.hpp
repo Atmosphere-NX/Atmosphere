@@ -22,4 +22,10 @@ namespace ams::htc::tenv {
         char str[0x40];
     };
 
+    constexpr inline auto PathLengthMax = 0x300;
+
+    struct alignas(4) Path {
+        char str[PathLengthMax];
+    };
+
 }

@@ -14,23 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/os.hpp>
-#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere.hpp>
+#include "htc_tenv_allocator.hpp"
 
-namespace ams::scs {
+namespace ams::htc::tenv::impl {
 
-    using ProcessEventHandler = void(*)(u64 id, s32 socket, os::ProcessId process_id);
+    struct DefinitionFileInfo : public util::IntrusiveListBaseNode<DefinitionFileInfo> {
+        u64 process_id;
+        Path path;
 
-    void InitializeShell();
+        DefinitionFileInfo(u64 pid, Path *p) : process_id(pid) {
+            AMS_ASSERT(p != nullptr);
+            util::Strlcpy(this->path.str, p->str, PathLengthMax);
+        }
 
-    void RegisterCommonProcessEventHandler(ProcessEventHandler on_start, ProcessEventHandler on_exit, ProcessEventHandler on_jit_debug);
+        static void *operator new(size_t size) {
+            return Allocate(size);
+        }
 
-    Result RegisterSocket(s32 socket, u64 id);
-    void UnregisterSocket(s32 socket);
-
-    Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags);
-
-    Result SubscribeProcessEvent(s32 socket, bool is_register, u64 id);
+        static void operator delete(void *p, size_t size) {
+            Deallocate(p, size);
+        }
+    };
 
 }
