@@ -125,10 +125,9 @@ Code type 5 allows loading a value from memory into a register, either using a f
 + A: Immediate offset to use from memory region base.
 
 #### Load from Register Address Encoding
-`5TMR10AA AAAAAAAA`
+`5T0R10AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap).
 + R: Register to load value into.
 + A: Immediate offset to use from register R.
 
