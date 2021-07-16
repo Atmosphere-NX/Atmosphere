@@ -101,6 +101,7 @@ namespace ams::ncm {
 
         static const SystemProgramId Manu;
         static const SystemProgramId Htc;
+        static const SystemProgramId DmntGen2;
         static const SystemProgramId DevServer;
     };
 
@@ -205,6 +206,7 @@ namespace ams::ncm {
 
     inline constexpr const SystemProgramId SystemProgramId::Manu        = { 0x010000000000B14Aul };
     inline constexpr const SystemProgramId SystemProgramId::Htc         = { 0x010000000000B240ul };
+    inline constexpr const SystemProgramId SystemProgramId::DmntGen2    = { 0x010000000000D60Cul };
     inline constexpr const SystemProgramId SystemProgramId::DevServer   = { 0x010000000000D623ul };
 
     inline constexpr bool IsSystemProgramId(const ProgramId &program_id) {

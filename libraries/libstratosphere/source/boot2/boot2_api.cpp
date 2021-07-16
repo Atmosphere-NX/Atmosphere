@@ -395,18 +395,17 @@ namespace ams::boot2 {
             pm::bm::SetMaintenanceBoot();
         }
 
-        /* Launch Atmosphere dmnt, using NcmStorageId_None to force SD card boot. */
-        LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Dmnt, ncm::StorageId::None), 0);
-
         /* Check for and forward declare non-atmosphere mitm modules. */
         DetectAndDeclareFutureMitms();
 
         /* Decide whether to launch tma or htc. */
         if (IsHtcEnabled()) {
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc, ncm::StorageId::None), 0);
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Cs,  ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc,      ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Cs,       ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::DmntGen2, ncm::StorageId::None), 0);
         } else {
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma, ncm::StorageId::BuiltInSystem), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Dmnt, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma,  ncm::StorageId::BuiltInSystem), 0);
         }
 
         /* Decide whether to launch atmosphere or nintendo's log manager. */
