@@ -15,18 +15,23 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "dmnt2_htcs_session.hpp"
 
 namespace ams::dmnt {
 
-    void InitializeDebugLog();
+    static constexpr size_t GdbPacketBufferSize = 16_KB;
 
-    void DebugLog(const char *prefix, const char *fmt, ...) __attribute((format(printf, 2, 3)));
+    class GdbPacketIo {
+        private:
+            os::SdkMutex m_mutex;
+            bool m_no_ack;
+        public:
+            GdbPacketIo() : m_mutex(), m_no_ack(false) { /* ... */ }
 
-    #define AMS_DMNT2_DEBUG_LOG(fmt, ...) ::ams::dmnt::DebugLog("[dmnt2] ", fmt, ## __VA_ARGS__)
+            void SetNoAck() { m_no_ack = true; }
 
-    #define AMS_DMNT2_GDB_LOG_INFO(fmt, ...)  ::ams::dmnt::DebugLog("[gdb-i] ", fmt, ## __VA_ARGS__)
-    #define AMS_DMNT2_GDB_LOG_WARN(fmt, ...)  ::ams::dmnt::DebugLog("[gdb-w] ", fmt, ## __VA_ARGS__)
-    #define AMS_DMNT2_GDB_LOG_ERROR(fmt, ...) ::ams::dmnt::DebugLog("[gdb-e] ", fmt, ## __VA_ARGS__)
-    #define AMS_DMNT2_GDB_LOG_DEBUG(fmt, ...) ::ams::dmnt::DebugLog("[gdb-d] ", fmt, ## __VA_ARGS__)
+            void SendPacket(bool *out_break, const char *src, HtcsSession *session);
+            char *ReceivePacket(bool *out_break, char *dst, size_t size, HtcsSession *session);
+    };
 
 }

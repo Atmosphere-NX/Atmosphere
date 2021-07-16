@@ -24,11 +24,10 @@ namespace ams::dmnt {
 
     namespace {
 
-        constexpr size_t NumLogBuffers = 16;
+        constexpr size_t NumLogBuffers = 0x200;
         constexpr size_t LogBufferSize = 0x100;
 
-        /* TODO: This shouldn't be so high priority. Come up with a better number? */
-        constexpr inline auto LogThreadPriority = 10;
+        constexpr inline auto LogThreadPriority = os::HighestThreadPriority - 2;
 
         constinit os::MessageQueueType g_buf_mq;
         constinit os::MessageQueueType g_req_mq;
