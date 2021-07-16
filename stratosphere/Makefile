@@ -1,4 +1,4 @@
-MODULES := loader ncm pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt pgl jpegdec LogManager cs htc TioServer
+MODULES := loader ncm pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt pgl jpegdec LogManager cs htc TioServer dmnt.gen2
 
 SUBFOLDERS := $(MODULES)
 
