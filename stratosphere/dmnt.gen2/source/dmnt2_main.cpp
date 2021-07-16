@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "dmnt2_debug_log.hpp"
+#include "dmnt2_gdb_server.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -143,13 +144,12 @@ int main(int argc, char **argv)
     /* Initialize debug log thread. */
     dmnt::InitializeDebugLog();
 
-    /* TODO: Start GdbServer. */
+    /* Start GdbServer. */
+    dmnt::InitializeGdbServer();
 
     /* TODO */
-    u64 i = 0;
     while (true) {
-        AMS_DMNT2_DEBUG_LOG("Log #%llu\n", i++);
-        os::SleepThread(TimeSpan::FromSeconds(1));
+        os::SleepThread(TimeSpan::FromDays(1));
     }
 
     return 0;
