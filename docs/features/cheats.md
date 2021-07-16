@@ -128,7 +128,7 @@ Code type 5 allows loading a value from memory into a register, either using a f
 `5T0R10AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ R: Register to load value into.
++ R: Register to load value into. (This register is also used as the base memory address).
 + A: Immediate offset to use from register R.
 
 ---
