@@ -14,10 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "dmnt2_gdb_packet_io.hpp"
-#include "dmnt2_gdb_packet_parser.hpp"
-#include "dmnt2_gdb_server.hpp"
 #include "dmnt2_debug_log.hpp"
+#include "dmnt2_gdb_server.hpp"
+#include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
 
@@ -25,43 +24,13 @@ namespace ams::dmnt {
 
         constexpr size_t ServerThreadStackSize = util::AlignUp(4 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment);
 
-        alignas(os::ThreadStackAlignment) constinit u8 g_server_thread32_stack[ServerThreadStackSize];
-        alignas(os::ThreadStackAlignment) constinit u8 g_server_thread64_stack[ServerThreadStackSize];
+        alignas(os::ThreadStackAlignment) constinit u8 g_server_thread_stack[ServerThreadStackSize];
 
-        constinit os::ThreadType g_server_thread32;
-        constinit os::ThreadType g_server_thread64;
+        constinit os::ThreadType g_server_thread;
 
-        constinit util::TypedStorage<HtcsSession> g_session32;
-        constinit util::TypedStorage<HtcsSession> g_session64;
+        constinit util::TypedStorage<GdbServerImpl> g_gdb_server;
 
-
-        void ProcessForHtcsSession(HtcsSession *session, bool is_64_bit) {
-            /* Create packet io handler. */
-            GdbPacketIo packet_io;
-
-            /* Process packets. */
-            while (session->IsValid()) {
-                /* Receive a packet. */
-                bool do_break = false;
-                char recv_buf[GdbPacketBufferSize];
-                char *packet = packet_io.ReceivePacket(std::addressof(do_break), recv_buf, sizeof(recv_buf), session);
-
-                if (!do_break && packet != nullptr) {
-                    /* Create a packet parser. */
-                    char reply_buffer[GdbPacketBufferSize];
-                    GdbPacketParser parser(packet, reply_buffer, is_64_bit);
-
-                    /* Process the packet. */
-                    parser.Process();
-
-                    /* Send packet. */
-                    packet_io.SendPacket(std::addressof(do_break), reply_buffer, session);
-                }
-            }
-        }
-
-        template<bool Is64Bit>
-        void GdbServerThreadFunction() {
+        void GdbServerThreadFunction(void *) {
             /* Loop forever, servicing our gdb server. */
             while (true) {
                 /* Get a socket. */
@@ -80,7 +49,7 @@ namespace ams::dmnt {
                 htcs::SockAddrHtcs addr;
                 addr.family    = htcs::HTCS_AF_HTCS;
                 addr.peer_name = htcs::GetPeerNameAny();
-                std::strcpy(addr.port_name.name, Is64Bit ? "iywys@$gdb-aarch64" : "iywys@$gdb-aarch32");
+                std::strcpy(addr.port_name.name, "iywys@$gdb");
 
                 /* Bind. */
                 if (htcs::Bind(fd, std::addressof(addr)) == -1) {
@@ -97,13 +66,14 @@ namespace ams::dmnt {
                             break;
                         }
 
-                        /* Create htcs session for the socket. */
-                        auto &session_storage = Is64Bit ? g_session64 : g_session32;
-                        util::ConstructAt(session_storage, client_fd);
-                        ON_SCOPE_EXIT { util::DestroyAt(session_storage); };
+                        {
+                            /* Create gdb server for the socket. */
+                            util::ConstructAt(g_gdb_server, client_fd);
+                            ON_SCOPE_EXIT { util::DestroyAt(g_gdb_server); };
 
-                        /* Process for the session. */
-                        ProcessForHtcsSession(util::GetPointer(session_storage), Is64Bit);
+                            /* Process for the server. */
+                            util::GetReference(g_gdb_server).LoopProcess();
+                        }
 
                         /* Close the client socket. */
                         htcs::Close(client_fd);
@@ -112,22 +82,12 @@ namespace ams::dmnt {
             }
         }
 
-        void GdbServerThreadFunction64(void *) {
-            GdbServerThreadFunction<true>();
-        }
-
-        void GdbServerThreadFunction32(void *) {
-            GdbServerThreadFunction<false>();
-        }
-
     }
 
     void InitializeGdbServer() {
         /* Create and start gdb server threads. */
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_server_thread64), GdbServerThreadFunction64, nullptr, g_server_thread64_stack, sizeof(g_server_thread64_stack), os::HighestThreadPriority - 1));
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_server_thread32), GdbServerThreadFunction32, nullptr, g_server_thread32_stack, sizeof(g_server_thread32_stack), os::HighestThreadPriority - 1));
-        os::StartThread(std::addressof(g_server_thread64));
-        os::StartThread(std::addressof(g_server_thread32));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_server_thread), GdbServerThreadFunction, nullptr, g_server_thread_stack, sizeof(g_server_thread_stack), os::HighestThreadPriority - 1));
+        os::StartThread(std::addressof(g_server_thread));
     }
 
 }

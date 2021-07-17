@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "dmnt2_debug_log.hpp"
-#include "dmnt2_gdb_packet_parser.hpp"
+#include "dmnt2_gdb_server_impl.hpp"
 
 namespace ams::dmnt {
 
@@ -323,9 +323,38 @@ namespace ams::dmnt {
             AMS_DMNT2_GDB_LOG_DEBUG("Offset/Length %x/%x\n", offset, length);
         }
 
+        constinit char g_process_list_buffer[0x2000];
+
     }
 
-    void GdbPacketParser::Process() {
+    GdbServerImpl::GdbServerImpl(int socket) : m_socket(socket), m_session(socket), m_packet_io() { /* ... */ }
+
+    GdbServerImpl::~GdbServerImpl() { /* ... */ }
+
+    void GdbServerImpl::LoopProcess() {
+        /* Process packets. */
+        while (m_session.IsValid()) {
+            /* Receive a packet. */
+            bool do_break = false;
+            char recv_buf[GdbPacketBufferSize];
+            char *packet = this->ReceivePacket(std::addressof(do_break), recv_buf, sizeof(recv_buf));
+
+            if (!do_break && packet != nullptr) {
+                /* Process the packet. */
+                char reply_buffer[GdbPacketBufferSize];
+                this->ProcessPacket(packet, reply_buffer);
+
+                /* Send packet. */
+                this->SendPacket(std::addressof(do_break), reply_buffer);
+            }
+        }
+    }
+
+    void GdbServerImpl::ProcessPacket(char *receive, char *reply) {
+        /* Set our fields. */
+        m_receive_packet = receive;
+        m_reply_packet   = reply;
+
         /* Log the packet we're processing. */
         AMS_DMNT2_GDB_LOG_DEBUG("Receive: %s\n", m_receive_packet);
 
@@ -334,11 +363,17 @@ namespace ams::dmnt {
 
         /* Handle the received packet. */
         switch (m_receive_packet[0]) {
+            case 'H':
+                this->H();
+                break;
             case 'q':
                 this->q();
                 break;
             case '!':
                 SetReplyOk(m_reply_packet);
+                break;
+            case '?':
+                this->QuestionMark();
                 break;
             default:
                 AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented: %s\n", m_receive_packet);
@@ -346,17 +381,48 @@ namespace ams::dmnt {
         }
     }
 
-    void GdbPacketParser::q() {
-        if (ParsePrefix(m_receive_packet, "qSupported:")) {
+    void GdbServerImpl::H() {
+        if (this->HasDebugProcess()) {
+            /* TODO */
+            SetReplyError(m_reply_packet, "E01");
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::q() {
+        if (ParsePrefix(m_receive_packet, "qAttached:")) {
+            this->qAttached();
+        } else if (ParsePrefix(m_receive_packet, "qC")) {
+            this->qC();
+        } else if (ParsePrefix(m_receive_packet, "qSupported:")) {
             this->qSupported();
-        } else if (ParsePrefix(m_receive_packet, "qXfer:features:read:")) {
-            this->qXferFeaturesRead();
+        } else if (ParsePrefix(m_receive_packet, "qXfer:")) {
+            this->qXfer();
         } else {
             AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented q: %s\n", m_receive_packet);
         }
     }
 
-    void GdbPacketParser::qSupported() {
+    void GdbServerImpl::qAttached() {
+        if (this->HasDebugProcess()) {
+            /* TODO: Parse/Save the requested process id */
+            SetReply(m_reply_packet, "1");
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::qC() {
+        if (this->HasDebugProcess()) {
+            /* TODO */
+            SetReplyError(m_reply_packet, "E01");
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::qSupported() {
         /* Current string from devkita64-none-elf-gdb: */
         /* qSupported:multiprocess+;swbreak+;hwbreak+;qRelocInsn+;fork-events+;vfork-events+;exec-events+;vContSupported+;QThreadEvents+;no-resumed+ */
 
@@ -370,7 +436,29 @@ namespace ams::dmnt {
         AppendReply(m_reply_packet, ";hwbreak+");
     }
 
-    void GdbPacketParser::qXferFeaturesRead() {
+    void GdbServerImpl::qXfer() {
+        /* Check for osdata. */
+        if (ParsePrefix(m_receive_packet, "osdata:read:")) {
+            this->qXferOsdataRead();
+        } else {
+            /* All other qXfer require debug process. */
+            if (!this->HasDebugProcess()) {
+                SetReplyError(m_reply_packet, "E01");
+                return;
+            }
+
+            /* Process. */
+            if (ParsePrefix(m_receive_packet, "features:read:")) {
+                this->qXferFeaturesRead();
+            } else {
+                AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer: %s\n", m_receive_packet);
+                SetReplyError(m_reply_packet, "E01");
+            }
+        }
+    }
+
+    void GdbServerImpl::qXferFeaturesRead() {
+        /* Handle the qXfer. */
         u32 offset, length;
 
         if (ParsePrefix(m_receive_packet, "target.xml:")) {
@@ -378,6 +466,7 @@ namespace ams::dmnt {
             ParseOffsetLength(m_receive_packet, offset, length);
 
             /* Send the desired xml. */
+            /* TODO: Detection of debug-process as 64 bit or not. */
             std::strncpy(m_reply_packet, (this->Is64Bit() ? TargetXmlAarch64 : TargetXmlAarch32) + offset, length);
             m_reply_packet[length] = 0;
             m_reply_packet += std::strlen(m_reply_packet);
@@ -415,7 +504,83 @@ namespace ams::dmnt {
             m_reply_packet += std::strlen(m_reply_packet);
         } else {
             AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer:features:read: %s\n", m_receive_packet);
+            SetReplyError(m_reply_packet, "E01");
         }
+    }
+
+    void GdbServerImpl::qXferOsdataRead() {
+        /* Handle the qXfer. */
+        u32 offset, length;
+
+        if (ParsePrefix(m_receive_packet, "processes:")) {
+            /* Parse offset/length. */
+            ParseOffsetLength(m_receive_packet, offset, length);
+
+            /* If doing a fresh read, generate the process list. */
+            if (offset == 0) {
+                /* Clear the process list buffer. */
+                g_process_list_buffer[0] = 0;
+
+                /* Set header. */
+                SetReply(g_process_list_buffer, "<?xml version=\"1.0\"?>\n<!DOCTYPE target SYSTEM \"osdata.dtd\">\n<osdata type=\"processes\">\n");
+
+                /* Get all processes. */
+                {
+                    /* Get all process ids. */
+                    u64 process_ids[0x50];
+                    s32 num_process_ids;
+                    R_ABORT_UNLESS(svc::GetProcessList(std::addressof(num_process_ids), process_ids, util::size(process_ids)));
+
+                    /* Send all processes. */
+                    for (s32 i = 0; i < num_process_ids; ++i) {
+                        svc::Handle handle;
+                        if (R_SUCCEEDED(svc::DebugActiveProcess(std::addressof(handle), process_ids[i]))) {
+                            ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(handle)); };
+
+                            /* Get the create process event. */
+                            svc::DebugEventInfo d;
+                            while (true) {
+                                R_ABORT_UNLESS(svc::GetDebugEvent(std::addressof(d), handle));
+                                if (d.type == svc::DebugEvent_CreateProcess) {
+                                    AppendReply(g_process_list_buffer, "<item>\n<column name=\"pid\">%lu</column>\n<column name=\"command\">%s</column>\n</item>\n", d.info.create_process.process_id, d.info.create_process.name);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                /* Set footer. */
+                AppendReply(g_process_list_buffer, "</osdata>");
+            }
+
+            /* Copy out the process list. */
+            const u32 annex_len = std::strlen(g_process_list_buffer);
+            if (offset <= annex_len) {
+                if (offset + length < annex_len) {
+                    m_reply_packet[0] = 'm';
+                    std::memcpy(m_reply_packet + 1, g_process_list_buffer + offset, length);
+                    m_reply_packet[1 + length] = 0;
+                } else {
+                    const auto size = annex_len - offset;
+
+                    m_reply_packet[0] = 'l';
+                    std::memcpy(m_reply_packet + 1, g_process_list_buffer + offset, size);
+                    m_reply_packet[1 + size] = 0;
+                }
+            } else {
+                SetReply(m_reply_packet, "l");
+            }
+        } else {
+            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer:osdata:read: %s\n", m_receive_packet);
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::QuestionMark() {
+        /* TODO */
+        AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented QuestionMark\n");
+        SetReply(m_reply_packet, "W00");
     }
 
 }
