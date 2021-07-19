@@ -25,6 +25,7 @@ namespace ams::dmnt {
         constexpr size_t ServerThreadStackSize = util::AlignUp(4 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment);
 
         alignas(os::ThreadStackAlignment) constinit u8 g_server_thread_stack[ServerThreadStackSize];
+        alignas(os::ThreadStackAlignment) constinit u8 g_events_thread_stack[16_KB];
 
         constinit os::ThreadType g_server_thread;
 
@@ -68,7 +69,7 @@ namespace ams::dmnt {
 
                         {
                             /* Create gdb server for the socket. */
-                            util::ConstructAt(g_gdb_server, client_fd);
+                            util::ConstructAt(g_gdb_server, client_fd, g_events_thread_stack, sizeof(g_events_thread_stack));
                             ON_SCOPE_EXIT { util::DestroyAt(g_gdb_server); };
 
                             /* Process for the server. */

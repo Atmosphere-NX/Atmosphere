@@ -20,13 +20,11 @@
 namespace ams::dmnt {
 
     namespace {
-
         constexpr const char TargetXmlAarch64[] =
             "l<?xml version=\"1.0\"?>"
             "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">"
             "<target>"
             "<architecture>aarch64</architecture>"
-            "<osabi>GNU/Linux</osabi>"
             "<xi:include href=\"aarch64-core.xml\"/>"
             "<xi:include href=\"aarch64-fpu.xml\"/>"
             "</target>";
@@ -299,6 +297,34 @@ namespace ams::dmnt {
             }
         }
 
+        constexpr u64 DecodeHex(const char *s) {
+            u64 value = 0;
+
+            while (true) {
+                const char c = *(s++);
+
+                if (int v = DecodeHex(c); v >= 0) {
+                    value <<= 4;
+                    value |= v & 0xF;
+                } else {
+                    break;
+                }
+            }
+
+            return value;
+        }
+
+        void MemoryToHex(char *dst, const void *mem, size_t size) {
+            const u8 *mem_u8 = static_cast<const u8 *>(mem);
+
+            while (size-- > 0) {
+                const u8 v = *(mem_u8++);
+                *(dst++) = "0123456789abcdef"[v >> 4];
+                *(dst++) = "0123456789abcdef"[v & 0xF];
+            }
+            *dst = 0;
+        }
+
         void ParseOffsetLength(const char *packet, u32 &offset, u32 &length) {
             /* Default to zero. */
             offset = 0;
@@ -325,11 +351,194 @@ namespace ams::dmnt {
 
         constinit char g_process_list_buffer[0x2000];
 
+        constinit os::SdkMutex g_event_request_lock;
+        constinit os::SdkMutex g_event_lock;
+        constinit os::SdkConditionVariable g_event_request_cv;
+        constinit os::SdkConditionVariable g_event_done_cv;
+
     }
 
-    GdbServerImpl::GdbServerImpl(int socket) : m_socket(socket), m_session(socket), m_packet_io() { /* ... */ }
+    GdbServerImpl::GdbServerImpl(int socket, void *stack, size_t stack_size) : m_socket(socket), m_session(socket), m_packet_io(), m_state(State::Initial), m_event(os::EventClearMode_AutoClear) {
+        /* Create and start the events thread. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(m_events_thread), DebugEventsThreadEntry, this, stack, stack_size, os::HighestThreadPriority - 1));
+        os::StartThread(std::addressof(m_events_thread));
 
-    GdbServerImpl::~GdbServerImpl() { /* ... */ }
+        /* Set our state. */
+        m_state = State::Running;
+    }
+
+    GdbServerImpl::~GdbServerImpl() {
+        /* Set ourselves as killed. */
+        m_killed = true;
+
+        /* Signal to our events thread. */
+        {
+            std::scoped_lock lk(g_event_request_lock);
+            g_event_request_cv.Signal();
+        }
+
+        /* Signal our event. */
+        m_event.Signal();
+
+        /* Wait for our thread to finish. */
+        os::WaitThread(std::addressof(m_events_thread));
+        os::DestroyThread(std::addressof(m_events_thread));
+
+        /* Clear our state. */
+        m_state = State::Destroyed;
+
+        /* Detach. */
+        if (m_attached) {
+            R_ABORT_UNLESS(svc::CloseHandle(m_debug_handle));
+        }
+    }
+
+    void GdbServerImpl::DebugEventsThread() {
+        /* Process events. */
+        {
+            std::scoped_lock lk(g_event_lock);
+
+            /* Loop while we're not killed. */
+            while (!m_killed) {
+                /* Wait for a request to come in. */
+                g_event_request_cv.Wait(g_event_lock);
+
+                /* Check that we're not killed now. */
+                if (m_killed) {
+                    break;
+                }
+
+                /* Set ourselves as unattached. */
+                m_attached = false;
+
+                /* If we have a process id, attach. */
+                if (R_FAILED(svc::DebugActiveProcess(std::addressof(m_debug_handle), m_process_id.value))) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("Failed to attach to %016lx\n", m_process_id.value);
+                    m_debug_handle = svc::InvalidHandle;
+                    g_event_done_cv.Signal();
+                    continue;
+                }
+
+                /* Get the process id. */
+                if (R_FAILED(svc::GetProcessId(std::addressof(m_process_id.value), m_debug_handle))) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("Failed to get process id for debug handle\n");
+                    R_ABORT_UNLESS(svc::CloseHandle(m_debug_handle));
+                    m_debug_handle = svc::InvalidHandle;
+                    g_event_done_cv.Signal();
+                    continue;
+                }
+
+                /* Set ourselves as attached. */
+                m_attached = true;
+
+                /* Get the create process event. */
+                {
+                    svc::DebugEventInfo d;
+                    R_ABORT_UNLESS(svc::GetDebugEvent(std::addressof(d), m_debug_handle));
+                    AMS_ABORT_UNLESS(d.type == svc::DebugEvent_CreateProcess);
+
+                    m_create_process_info = d.info.create_process;
+                }
+
+                /* Signal that we're done attaching. */
+                g_event_done_cv.Signal();
+
+                /* Process debug events without the lock held. */
+                {
+                    g_event_lock.Unlock();
+                    this->ProcessDebugEvents();
+                    g_event_lock.Lock();
+                }
+
+                /* Clear our process ids. */
+                m_process_id        = os::InvalidProcessId;
+                m_target_process_id = os::InvalidProcessId;
+            }
+        }
+
+        /* Set our state. */
+        m_state = State::Exited;
+    }
+
+    void GdbServerImpl::ProcessDebugEvents() {
+        AMS_DMNT2_GDB_LOG_DEBUG("Processing debug events for %016lx\n", m_process_id.value);
+
+        while (true) {
+            /* Wait for an event to come in. */
+            const Result wait_result = [&] ALWAYS_INLINE_LAMBDA {
+                std::scoped_lock lk(g_event_lock);
+
+                s32 dummy = -1;
+                return svc::WaitSynchronization(std::addressof(dummy), std::addressof(m_debug_handle), 1, TimeSpan::FromMilliSeconds(20).GetNanoSeconds());
+            }();
+
+            /* Check if we're killed. */
+            if (m_killed) {
+                break;
+            }
+
+            /* If we didn't get an event, try again. */
+            if (svc::ResultTimedOut::Includes(wait_result)) {
+                continue;
+            }
+
+            /* Try to get the event. */
+            svc::DebugEventInfo d;
+            if (R_FAILED(svc::GetDebugEvent(std::addressof(d), m_debug_handle))) {
+                continue;
+            }
+
+            /* Process the event. */
+            switch (d.type) {
+                default:
+                    AMS_DMNT2_GDB_LOG_DEBUG("Unhandled ProcessEvent %u\n", static_cast<u32>(d.type));
+                    break;
+            }
+        }
+    }
+
+    void GdbServerImpl::SetStopReplyPacket(GdbSignal signal) {
+        /* Set the signal. */
+        SetReply(m_reply_packet, "T%02X", static_cast<u32>(signal));
+
+        /* Get the thread context. */
+        svc::ThreadContext thread_context = {};
+        svc::GetDebugThreadContext(std::addressof(thread_context), m_debug_handle, m_thread_id, svc::ThreadContextFlag_General | svc::ThreadContextFlag_Control);
+
+        /* Add important registers. */
+        /* TODO: aarch32 */
+        {
+            if (thread_context.fp != 0) {
+                AppendReply(m_reply_packet, "1d:%016lx", util::ConvertToBigEndian(thread_context.fp));
+            } else {
+                AppendReply(m_reply_packet, "1d:0*,");
+            }
+
+            if (thread_context.sp != 0) {
+                AppendReply(m_reply_packet, ";1f:%016lx", util::ConvertToBigEndian(thread_context.sp));
+            } else {
+                AppendReply(m_reply_packet, ";1f:0*,");
+            }
+
+            if (thread_context.pc != 0) {
+                AppendReply(m_reply_packet, ";20:%016lx", util::ConvertToBigEndian(thread_context.pc));
+            } else {
+                AppendReply(m_reply_packet, ";20:0*,");
+            }
+        }
+
+        /* Add the thread id. */
+        AppendReply(m_reply_packet, ";thread:p%lx.%lx", m_target_process_id.value, m_thread_id);
+
+        /* Add the thread core. */
+        {
+            u64 dummy;
+            u32 core = 0;
+            svc::GetDebugThreadParam(std::addressof(dummy), std::addressof(core), m_debug_handle, m_thread_id, svc::DebugThreadParam_CurrentCore);
+
+            AppendReply(m_reply_packet, ";core:%u;", core);
+        }
+    }
 
     void GdbServerImpl::LoopProcess() {
         /* Process packets. */
@@ -366,6 +575,17 @@ namespace ams::dmnt {
             case 'H':
                 this->H();
                 break;
+            case 'g':
+                if (!this->g()) {
+                    m_killed = true;
+                }
+                break;
+            case 'm':
+                this->m();
+                break;
+            case 'v':
+                this->v();
+                break;
             case 'q':
                 this->q();
                 break;
@@ -383,8 +603,164 @@ namespace ams::dmnt {
 
     void GdbServerImpl::H() {
         if (this->HasDebugProcess()) {
-            /* TODO */
+            if (ParsePrefix(m_receive_packet, "Hg") || ParsePrefix(m_receive_packet, "HG")) {
+                this->Hg();
+            } else {
+                SetReplyError(m_reply_packet, "E01");
+            }
+        } else {
             SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::Hg() {
+        if (const char *dot = std::strchr(m_receive_packet, '.'); dot != nullptr) {
+            m_thread_id = DecodeHex(dot + 1);
+            AMS_DMNT2_GDB_LOG_DEBUG("Set thread id = %lx\n", m_thread_id);
+
+            /* TODO: Validate thread exists for the process? */
+        }
+
+        SetReplyOk(m_reply_packet);
+    }
+
+    bool GdbServerImpl::g() {
+        /* TODO: aarch32 */
+
+        /* Get thread context. */
+        svc::ThreadContext thread_context;
+        if (R_FAILED(svc::GetDebugThreadContext(std::addressof(thread_context), m_debug_handle, m_thread_id, svc::ThreadContextFlag_All))) {
+            return false;
+        }
+
+        /* Copy general purpose registers. */
+        for (size_t i = 0; i < util::size(thread_context.r); ++i) {
+            if (thread_context.r[i] != 0) {
+                AppendReply(m_reply_packet, "%016lx", util::ConvertToBigEndian(thread_context.r[i]));
+            } else {
+                AppendReply(m_reply_packet, "0*,");
+            }
+        }
+
+        /* Copy special registers. */
+        if (thread_context.fp != 0) {
+            AppendReply(m_reply_packet, "%016lx", util::ConvertToBigEndian(thread_context.fp));
+        } else {
+            AppendReply(m_reply_packet, "0*,");
+        }
+
+        if (thread_context.lr != 0) {
+            AppendReply(m_reply_packet, "%016lx", util::ConvertToBigEndian(thread_context.lr));
+        } else {
+            AppendReply(m_reply_packet, "0*,");
+        }
+
+        if (thread_context.sp != 0) {
+            AppendReply(m_reply_packet, "%016lx", util::ConvertToBigEndian(thread_context.sp));
+        } else {
+            AppendReply(m_reply_packet, "0*,");
+        }
+
+        if (thread_context.pc != 0) {
+            AppendReply(m_reply_packet, "%016lx", util::ConvertToBigEndian(thread_context.pc));
+        } else {
+            AppendReply(m_reply_packet, "0*,");
+        }
+
+        if (thread_context.pstate != 0) {
+            AppendReply(m_reply_packet, "%08x", util::ConvertToBigEndian(thread_context.pstate));
+        } else {
+            AppendReply(m_reply_packet, "0*\"0");
+        }
+
+        /* Copy FPU registers. */
+        for (size_t i = 0; i < util::size(thread_context.v); ++i) {
+            if (thread_context.v[i] != 0) {
+                AppendReply(m_reply_packet, "%016lx%016lx", util::ConvertToBigEndian(static_cast<u64>(thread_context.v[i] >> 0)), util::ConvertToBigEndian(static_cast<u64>(thread_context.v[i] >> BITSIZEOF(u64))));
+            } else {
+                AppendReply(m_reply_packet, "0*<");
+            }
+        }
+
+        return true;
+    }
+
+    void GdbServerImpl::m() {
+        ++m_receive_packet;
+
+        /* Validate format. */
+        const char *comma = std::strchr(m_receive_packet, ',');
+        if (comma == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Parse address/length. */
+        const u64 address = DecodeHex(m_receive_packet);
+        const u64 length  = DecodeHex(comma + 1);
+        if (length >= sizeof(m_buffer)) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Read the memory. */
+        /* TODO: Detect partial readability? */
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(m_buffer), m_debug_handle, address, length))) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Encode the memory. */
+        MemoryToHex(m_reply_packet, m_buffer, length);
+    }
+
+    void GdbServerImpl::v() {
+        if (ParsePrefix(m_receive_packet, "vAttach;")) {
+            this->vAttach();
+        } else {
+            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented v: %s\n", m_receive_packet);
+        }
+    }
+
+    void GdbServerImpl::vAttach() {
+        if (!this->HasDebugProcess()) {
+            /* Get the process id. */
+            if (const u64 process_id = DecodeHex(m_receive_packet); process_id != 0) {
+                /* Set our process id. */
+                m_process_id        = { process_id };
+                m_target_process_id = { process_id };
+
+                /* Wait for us to be attached. */
+                bool attached;
+                {
+                    std::scoped_lock lk(g_event_request_lock);
+                    g_event_request_cv.Signal();
+                    if (!g_event_done_cv.TimedWait(g_event_request_lock, TimeSpan::FromSeconds(2))) {
+                        m_event.Signal();
+                    }
+
+                    attached = m_attached;
+                }
+
+                /* If we're attached, send a stop reply packet. */
+                if (attached) {
+                    /* Set our initial thread id. */
+                    {
+                        s32 dummy;
+                        u64 thread_id = 0;
+                        R_ABORT_UNLESS(svc::GetThreadList(std::addressof(dummy), std::addressof(thread_id), 1, m_debug_handle));
+
+                        m_thread_id = thread_id;
+                    }
+
+                    /* Set the stop reply packet. */
+                    this->SetStopReplyPacket(GdbSignal_Signal0);
+                } else {
+                    SetReplyError(m_reply_packet, "E01");
+                }
+            } else {
+                SetReplyError(m_reply_packet, "E01");
+            }
         } else {
             SetReplyError(m_reply_packet, "E01");
         }
@@ -406,7 +782,11 @@ namespace ams::dmnt {
 
     void GdbServerImpl::qAttached() {
         if (this->HasDebugProcess()) {
-            /* TODO: Parse/Save the requested process id */
+            /* Parse/Save the requested process id */
+            if (const char *colon = std::strchr(m_receive_packet, ':'); colon != nullptr) {
+                m_target_process_id.value = DecodeHex(colon + 1);
+                AMS_DMNT2_GDB_LOG_DEBUG("Queried for attached to %016lx\n", m_target_process_id.value);
+            }
             SetReply(m_reply_packet, "1");
         } else {
             SetReplyError(m_reply_packet, "E01");
@@ -415,8 +795,20 @@ namespace ams::dmnt {
 
     void GdbServerImpl::qC() {
         if (this->HasDebugProcess()) {
-            /* TODO */
-            SetReplyError(m_reply_packet, "E01");
+            /* Potentially get our thread id. */
+            if (m_thread_id == 0) {
+                s32 dummy;
+                u64 thread_id = 0;
+                if (R_FAILED(svc::GetThreadList(std::addressof(dummy), std::addressof(thread_id), 1, m_debug_handle))) {
+                    SetReplyError(m_reply_packet, "E01");
+                    return;
+                }
+
+                m_thread_id = thread_id;
+            }
+
+            /* Send the thread id. */
+            SetReply(m_reply_packet, "QCp%lx.%lx", m_target_process_id.value, m_thread_id);
         } else {
             SetReplyError(m_reply_packet, "E01");
         }
@@ -430,10 +822,12 @@ namespace ams::dmnt {
         AppendReply(m_reply_packet, ";multiprocess+");
         AppendReply(m_reply_packet, ";qXfer:osdata:read+");
         AppendReply(m_reply_packet, ";qXfer:features:read+");
-        AppendReply(m_reply_packet, ";qXfer:libraries:read+");
+        AppendReply(m_reply_packet, ";qXfer:libraries-svr4:read+");
+        AppendReply(m_reply_packet, ";augmented-libraries-svr4-read+");
         AppendReply(m_reply_packet, ";qXfer:threads:read+");
         AppendReply(m_reply_packet, ";swbreak+");
         AppendReply(m_reply_packet, ";hwbreak+");
+        AppendReply(m_reply_packet, ";vContSupported+");
     }
 
     void GdbServerImpl::qXfer() {
@@ -450,6 +844,11 @@ namespace ams::dmnt {
             /* Process. */
             if (ParsePrefix(m_receive_packet, "features:read:")) {
                 this->qXferFeaturesRead();
+            } else if (ParsePrefix(m_receive_packet, "threads:read:")) {
+                if (!this->qXferThreadsRead()) {
+                    m_killed = true;
+                    SetReplyError(m_reply_packet, "E01");
+                }
             } else {
                 AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer: %s\n", m_receive_packet);
                 SetReplyError(m_reply_packet, "E01");
@@ -539,13 +938,10 @@ namespace ams::dmnt {
 
                             /* Get the create process event. */
                             svc::DebugEventInfo d;
-                            while (true) {
-                                R_ABORT_UNLESS(svc::GetDebugEvent(std::addressof(d), handle));
-                                if (d.type == svc::DebugEvent_CreateProcess) {
-                                    AppendReply(g_process_list_buffer, "<item>\n<column name=\"pid\">%lu</column>\n<column name=\"command\">%s</column>\n</item>\n", d.info.create_process.process_id, d.info.create_process.name);
-                                    break;
-                                }
-                            }
+                            R_ABORT_UNLESS(svc::GetDebugEvent(std::addressof(d), handle));
+                            AMS_ABORT_UNLESS(d.type == svc::DebugEvent_CreateProcess);
+
+                            AppendReply(g_process_list_buffer, "<item>\n<column name=\"pid\">%lu</column>\n<column name=\"command\">%s</column>\n</item>\n", d.info.create_process.process_id, d.info.create_process.name);
                         }
                     }
                 }
@@ -575,6 +971,51 @@ namespace ams::dmnt {
             AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented qxfer:osdata:read: %s\n", m_receive_packet);
             SetReplyError(m_reply_packet, "E01");
         }
+    }
+
+    bool GdbServerImpl::qXferThreadsRead() {
+        /* Set header. */
+        SetReply(m_reply_packet, "l<threads>");
+
+        /* Get thread list. */
+        s32 num_threads;
+        u64 thread_ids[0x80];
+        if (R_FAILED(svc::GetThreadList(std::addressof(num_threads), thread_ids, util::size(thread_ids), m_debug_handle))) {
+            return false;
+        }
+
+        /* Cap thread limit at 128. */
+        if (num_threads > 0x80) {
+            num_threads = 0x80;
+        }
+
+        /* Add all threads. */
+        for (s32 i = 0; i < num_threads; ++i) {
+            const auto thread_id = thread_ids[num_threads - 1 - i];
+
+            /* Check that we can get the thread context. */
+            svc::ThreadContext thread_context;
+            if (R_FAILED(svc::GetDebugThreadContext(std::addressof(thread_context), m_debug_handle, thread_id, svc::ThreadContextFlag_All))) {
+                continue;
+            }
+
+            /* Get the thread core. */
+            u32 core = 0;
+            {
+                u64 dummy;
+                u32 val32;
+                if (R_SUCCEEDED(svc::GetDebugThreadParam(std::addressof(dummy), std::addressof(val32), m_debug_handle, m_thread_id, svc::DebugThreadParam_CurrentCore))) {
+                    core = val32;
+                }
+            }
+
+            /* TODO: `name=\"%s\"`? */
+            AppendReply(m_reply_packet, "<thread id=\"p%lx.%lx\" core=\"%u\"/>", m_target_process_id.value, thread_id, core);
+        }
+
+        AppendReply(m_reply_packet, "</threads>");
+
+        return true;
     }
 
     void GdbServerImpl::QuestionMark() {
