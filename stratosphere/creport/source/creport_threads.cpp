@@ -152,13 +152,22 @@ namespace ams::creport {
                 std::memcpy(this->tls, thread_tls, sizeof(this->tls));
                 /* Try to detect libnx threads, and skip name parsing then. */
                 if (*(reinterpret_cast<u32 *>(&thread_tls[0x1E0])) != LibnxThreadVarMagic) {
-                    u8 thread_type[0x1D0];
+                    u8 thread_type[0x1C0];
                     const u64 thread_type_addr = *(reinterpret_cast<u64 *>(&thread_tls[0x1F8]));
                     if (R_SUCCEEDED(svcReadDebugProcessMemory(thread_type, debug_handle, thread_type_addr, sizeof(thread_type)))) {
-                        /* Check thread name is actually at thread name. */
-                        static_assert(0x1A8 - 0x188 == NameLengthMax, "NameLengthMax definition!");
-                        if (*(reinterpret_cast<u64 *>(&thread_type[0x1A8])) == thread_type_addr + 0x188) {
-                            std::memcpy(this->name, thread_type + 0x188, NameLengthMax);
+                        /* Get the thread version. */
+                        const u16 thread_version = *reinterpret_cast<u16 *>(&thread_type[0x46]);
+                        if (thread_version == 0 || thread_version == 0xFFFF) {
+                            /* Check thread name is actually at thread name. */
+                            static_assert(0x1A8 - 0x188 == NameLengthMax, "NameLengthMax definition!");
+                            if (*(reinterpret_cast<u64 *>(&thread_type[0x1A8])) == thread_type_addr + 0x188) {
+                                std::memcpy(this->name, thread_type + 0x188, NameLengthMax);
+                            }
+                        } else if (thread_version == 1) {
+                            static_assert(0x1A0 - 0x180 == NameLengthMax, "NameLengthMax definition!");
+                            if (*(reinterpret_cast<u64 *>(&thread_type[0x1A0])) == thread_type_addr + 0x180) {
+                                std::memcpy(this->name, thread_type + 0x180, NameLengthMax);
+                            }
                         }
                     }
                 }

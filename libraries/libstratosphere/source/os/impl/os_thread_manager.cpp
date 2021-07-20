@@ -31,6 +31,8 @@ namespace ams::os::impl {
         util::ConstructAt(thread->waitlist);
 
         /* Set member variables. */
+        thread->magic          = os::ThreadType::Magic;
+        thread->version        = 0;
         thread->thread_impl    = (thread_impl != nullptr) ? thread_impl : std::addressof(thread->thread_impl_storage);
         thread->function       = function;
         thread->argument       = arg;
@@ -134,6 +136,7 @@ namespace ams::os::impl {
             util::DestroyAt(thread->waitlist);
 
             thread->name_buffer[0] = '\x00';
+            thread->magic = 0xCCCC;
 
             {
                 std::scoped_lock tlk(this->cs);

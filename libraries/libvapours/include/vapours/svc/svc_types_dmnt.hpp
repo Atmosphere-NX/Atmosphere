@@ -121,7 +121,7 @@ namespace ams::svc {
         struct DebugInfoCreateThread {
             u64 thread_id;
             u32 tls_address;
-            u32 entrypoint;
+            /* Removed in 11.0.0 u32 entrypoint; */
         };
 
         struct DebugInfoExitProcess {
