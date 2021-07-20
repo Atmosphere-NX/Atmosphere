@@ -25,7 +25,7 @@ namespace ams::dmnt {
         constexpr size_t ServerThreadStackSize = util::AlignUp(4 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment);
 
         alignas(os::ThreadStackAlignment) constinit u8 g_server_thread_stack[ServerThreadStackSize];
-        alignas(os::ThreadStackAlignment) constinit u8 g_events_thread_stack[16_KB];
+        alignas(os::ThreadStackAlignment) constinit u8 g_events_thread_stack[util::AlignUp(2 * GdbPacketBufferSize + os::MemoryPageSize, os::ThreadStackAlignment)];
 
         constinit os::ThreadType g_server_thread;
 
