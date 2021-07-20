@@ -36,6 +36,8 @@ namespace ams::os {
     using ThreadImpl = ::Thread;
 
     struct ThreadType {
+        static constexpr u16 Magic = 0xF5A5;
+
         enum State {
             State_NotInitialized         = 0,
             State_Initialized            = 1,
@@ -49,7 +51,9 @@ namespace ams::os {
         uintptr_t reserved[4];
         u8 state;
         u8 suspend_count;
-        s32 base_priority;
+        u16 magic;
+        s16 base_priority;
+        u16 version;
         char name_buffer[ThreadNameLengthMax];
         const char *name_pointer;
         ThreadId thread_id;
