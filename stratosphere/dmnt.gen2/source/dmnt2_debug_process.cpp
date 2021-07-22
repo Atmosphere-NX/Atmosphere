@@ -19,6 +19,14 @@
 
 namespace ams::dmnt {
 
+    namespace {
+
+        s32 SignExtend(u32 value, u32 bits) {
+            return static_cast<s32>(value << (32 - bits)) >> (32 - bits);
+        }
+
+    }
+
     Result DebugProcess::Attach(os::ProcessId process_id) {
         /* Attach to the process. */
         R_TRY(svc::DebugActiveProcess(std::addressof(m_debug_handle), process_id.value));
@@ -39,6 +47,10 @@ namespace ams::dmnt {
 
     void DebugProcess::Detach() {
         if (m_is_valid) {
+            m_software_breakpoints.ClearAll();
+            m_hardware_breakpoints.ClearAll();
+            m_hardware_watchpoints.ClearAll();
+
             R_ABORT_UNLESS(svc::CloseHandle(m_debug_handle));
             m_debug_handle = svc::InvalidHandle;
         }
@@ -211,6 +223,189 @@ namespace ams::dmnt {
 
     Result DebugProcess::WriteMemory(const void *src, uintptr_t address, size_t size) {
         return svc::WriteDebugProcessMemory(m_debug_handle, reinterpret_cast<uintptr_t>(src), address, size);
+    }
+
+    Result DebugProcess::Continue() {
+        AMS_DMNT2_GDB_LOG_DEBUG("DebugProcess::Continue() all\n");
+
+        u64 thread_ids[] = { 0 };
+        R_TRY(svc::ContinueDebugEvent(m_debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_EnableExceptionEvent | svc::ContinueFlag_ContinueAll, thread_ids, util::size(thread_ids)));
+
+        m_continue_thread_id = 0;
+        m_status             = ProcessStatus_Running;
+
+        this->SetLastThreadId(0);
+        this->SetLastSignal(GdbSignal_Signal0);
+
+        return ResultSuccess();
+    }
+
+    Result DebugProcess::Continue(u64 thread_id) {
+        AMS_DMNT2_GDB_LOG_DEBUG("DebugProcess::Continue() thread_id=%lx\n", thread_id);
+
+        u64 thread_ids[] = { thread_id };
+        R_TRY(svc::ContinueDebugEvent(m_debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_EnableExceptionEvent, thread_ids, util::size(thread_ids)));
+
+        m_continue_thread_id = thread_id;
+        m_status             = ProcessStatus_Running;
+
+        this->SetLastThreadId(0);
+        this->SetLastSignal(GdbSignal_Signal0);
+
+        return ResultSuccess();
+    }
+
+    Result DebugProcess::Step() {
+        AMS_DMNT2_GDB_LOG_DEBUG("DebugProcess::Step() all\n");
+        return this->Step(this->GetLastThreadId());
+    }
+
+    Result DebugProcess::Step(u64 thread_id) {
+        AMS_DMNT2_GDB_LOG_DEBUG("DebugProcess::Step() thread_id=%lx\n", thread_id);
+
+        /* Get the thread context. */
+        svc::ThreadContext ctx;
+        R_TRY(this->GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control));
+
+        /* Note that we're stepping. */
+        m_stepping = true;
+
+        /* Determine where we're stepping to. */
+        u64 current_pc  = ctx.pc;
+        u64 step_target = 0;
+        this->GetBranchTarget(ctx, thread_id, current_pc, step_target);
+
+        /* Ensure we end with valid breakpoints. */
+        auto bp_guard = SCOPE_GUARD { this->ClearStep(); };
+
+        /* Set step breakpoint on current pc. */
+        /* TODO: aarch32 breakpoints. */
+        if (current_pc) {
+            R_TRY(m_step_breakpoints.SetBreakPoint(current_pc, sizeof(u32), true));
+        }
+
+        if (step_target) {
+            R_TRY(m_step_breakpoints.SetBreakPoint(step_target, sizeof(u32), true));
+        }
+
+        bp_guard.Cancel();
+        return ResultSuccess();
+    }
+
+    void DebugProcess::ClearStep() {
+        /* If we should, clear our step breakpoints. */
+        if (m_stepping) {
+            m_step_breakpoints.ClearStep();
+            m_stepping = false;
+        }
+    }
+
+    Result DebugProcess::Break() {
+        if (this->GetStatus() == ProcessStatus_Running) {
+            AMS_DMNT2_GDB_LOG_DEBUG("DebugProcess::Break\n");
+            return svc::BreakDebugProcess(m_debug_handle);
+        } else {
+            AMS_DMNT2_GDB_LOG_ERROR("DebugProcess::Break called on non-running process!\n");
+            return ResultSuccess();
+        }
+    }
+
+    void DebugProcess::GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target) {
+        /* Save pc, in case we modify it. */
+        const u64 pc = current_pc;
+
+        /* Clear the target. */
+        target = 0;
+
+        /* By default, we advance by four. */
+        current_pc += 4;
+
+        /* Get the instruction where we were. */
+        u32 insn = 0;
+        this->ReadMemory(std::addressof(insn), pc, sizeof(insn));
+
+        /* Handle by architecture. */
+        bool is_call = false;
+        if (this->Is64Bit()) {
+            if ((insn & 0x7C000000) == 0x14000000) {
+                /* Unconditional branch (b/bl) */
+                if (insn != 0x14000001) {
+                    is_call    = (insn & 0x80000000) == 0x80000000;
+                    current_pc = 0;
+                    target     = SignExtend(((insn & 0x03FFFFFF) << 2), 28) + pc;
+                }
+            } else if ((insn & 0x7E000000) == 0x34000000) {
+                /* Compare/Branch (cbz/cbnz) */
+                target = SignExtend(((insn & 0x00FFFFE0) >> 3), 21) + pc;
+            } else if ((insn & 0x7E000000) == 0x36000000) {
+                /* Test and branch (tbz/tbnz) */
+                target = SignExtend(((insn & 0x0007FFE0) >> 3), 16) + pc;
+            } else if ((insn & 0xFF000010) == 0x54000000) {
+                /* Conditional branch (b.*) */
+                if ((insn & 0xF) == 0xE) {
+                    /* Unconditional. */
+                    current_pc = 0;
+                }
+                target = SignExtend(((insn & 0x00FFFFE0) >> 3), 21) + pc;
+            } else if ((insn & 0xFF8FFC1F) == 0xD60F0000) {
+                /* Unconditional branch */
+                is_call = (insn & 0x00F00000) == 0x00300000;
+                if (!is_call) {
+                    current_pc = 0;
+                }
+
+                /* Get the register. */
+                svc::ThreadContext new_ctx;
+                if (R_SUCCEEDED(this->GetThreadContext(std::addressof(new_ctx), thread_id, svc::ThreadContextFlag_Control | svc::ThreadContextFlag_General))) {
+                    const int reg = (insn & 0x03E0) >> 5;
+                    if (reg < 29) {
+                        target = new_ctx.r[reg];
+                    } else if (reg == 29) {
+                        target = new_ctx.fp;
+                    } else if (reg == 30) {
+                        target = new_ctx.lr;
+                    } else if (reg == 31) {
+                        target = new_ctx.sp;
+                    }
+                }
+            }
+        } else {
+            /* TODO aarch32 branch decoding */
+        }
+    }
+
+    Result DebugProcess::SetBreakPoint(uintptr_t address, size_t size, bool is_step) {
+        return m_software_breakpoints.SetBreakPoint(address, size, is_step);
+    }
+
+    Result DebugProcess::ClearBreakPoint(uintptr_t address, size_t size) {
+        m_software_breakpoints.ClearBreakPoint(address, size);
+        return ResultSuccess();
+    }
+
+    Result DebugProcess::SetHardwareBreakPoint(uintptr_t address, size_t size, bool is_step) {
+        return m_hardware_breakpoints.SetBreakPoint(address, size, is_step);
+    }
+
+    Result DebugProcess::ClearHardwareBreakPoint(uintptr_t address, size_t size) {
+        m_hardware_breakpoints.ClearBreakPoint(address, size);
+        return ResultSuccess();
+    }
+
+    Result DebugProcess::SetWatchPoint(u64 address, u64 size, bool read, bool write) {
+        return m_hardware_watchpoints.SetWatchPoint(address, size, read, write);
+    }
+
+    Result DebugProcess::ClearWatchPoint(u64 address, u64 size) {
+        return m_hardware_watchpoints.ClearBreakPoint(address, size);
+    }
+
+    Result DebugProcess::GetWatchPointInfo(u64 address, bool &read, bool &write) {
+        return m_hardware_watchpoints.GetWatchPointInfo(address, read, write);
+    }
+
+    bool DebugProcess::IsValidWatchPoint(u64 address, u64 size) {
+        return HardwareWatchPointManager::IsValidWatchPoint(address, size);
     }
 
     Result DebugProcess::GetThreadCurrentCore(u32 *out, u64 thread_id) {
