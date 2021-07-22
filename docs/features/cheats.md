@@ -59,7 +59,7 @@ Code type 0x0 allows writing a static value to a memory address.
 ### Code Type 0x1: Begin Conditional Block
 Code type 0x1 performs a comparison of the contents of memory to a static value.
 
-If the condition is not met, all instructions until the appropriate conditional block terminator are skipped.
+If the condition is not met, all instructions until the appropriate End or Else conditional block terminator are skipped.
 
 #### Encoding
 `1TMC00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
@@ -83,8 +83,12 @@ If the condition is not met, all instructions until the appropriate conditional 
 ### Code Type 0x2: End Conditional Block
 Code type 0x2 marks the end of a conditional block (started by Code Type 0x1 or Code Type 0x8).
 
+When an Else is executed, all instructions until the appropriate End conditional block terminator are skipped.
+
 #### Encoding
-`20000000`
+`2X000000`
+
++ X: End type (0 = End, 1 = Else).
 
 ---
 
