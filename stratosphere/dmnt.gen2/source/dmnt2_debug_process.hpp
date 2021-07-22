@@ -137,13 +137,13 @@ namespace ams::dmnt {
             Result GetProcessDebugEvent(svc::DebugEventInfo *out);
 
             void GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target);
+
+            Result CollectModules();
         private:
             Result Start();
 
             s32 ThreadCreate(u64 thread_id);
             void ThreadExit(u64 thread_id);
-
-            Result CollectModules();
     };
 
 }

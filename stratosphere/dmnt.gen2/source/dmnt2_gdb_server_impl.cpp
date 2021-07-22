@@ -638,6 +638,42 @@ namespace ams::dmnt {
                                     reply = true;
                                 }
                                 break;
+                            case svc::DebugException_UserBreak:
+                                {
+                                    const uintptr_t address = d.info.exception.address;
+                                    const auto &info = d.info.exception.specific.user_break;
+                                    AMS_DMNT2_GDB_LOG_DEBUG("UserBreak %lx, addr=%lx, reason=%x, data=0x%lx, size=0x%lx\n", thread_id, address, info.break_reason, info.address, info.size);
+
+                                    /* Check reason. */
+                                    /* TODO: libnx/Nintendo provide addresses in different ways, but we could optimize to avoid iterating all memory repeatedly. */
+                                    if ((info.break_reason & svc::BreakReason_NotificationOnlyFlag) != 0) {
+                                        const auto reason = info.break_reason & ~svc::BreakReason_NotificationOnlyFlag;
+                                        if (reason == svc::BreakReason_PostLoadDll || reason == svc::BreakReason_PostUnloadDll) {
+                                            /* Re-collect the process's modules. */
+                                            m_debug_process.CollectModules();
+                                        }
+                                    }
+
+                                    /* Check if we should automatically continue. */
+                                    svc::ThreadContext ctx;
+                                    if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
+                                        u32 insn = 0;
+                                        if (R_SUCCEEDED(m_debug_process.ReadMemory(std::addressof(insn), ctx.pc, sizeof(insn)))) {
+                                            constexpr u32 Aarch64SvcBreakValue = 0xD4000001 | (svc::SvcId_Break << 5);
+                                            constexpr u32 Aarch32SvcBreakValue = 0xEF000000 | (svc::SvcId_Break);
+                                            bool is_svc_break = m_debug_process.Is64Bit() ? (insn == Aarch64SvcBreakValue) : (insn == Aarch32SvcBreakValue);
+
+                                            if (!is_svc_break) {
+                                                AMS_DMNT2_GDB_LOG_ERROR("UserBreak from non-SvcBreak (%08x)\n", insn);
+                                                m_debug_process.Continue();
+                                                continue;
+                                            }
+                                        }
+                                    }
+
+                                    signal = GdbSignal_BreakpointTrap;
+                                }
+                                break;
                             case svc::DebugException_DebuggerBreak:
                                 {
                                     AMS_DMNT2_GDB_LOG_DEBUG("DebuggerBreak %lx, last=%lx\n", thread_id, m_debug_process.GetLastThreadId());

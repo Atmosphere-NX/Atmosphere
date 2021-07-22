@@ -155,6 +155,9 @@ namespace ams::dmnt {
     }
 
     Result DebugProcess::CollectModules() {
+        /* Reset our module count. */
+        m_module_count = 0;
+
         /* Traverse the address space, looking for modules. */
         uintptr_t address = 0;
 
