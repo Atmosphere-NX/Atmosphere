@@ -388,7 +388,7 @@ namespace ams::dmnt::cheat::impl {
             case CheatVmOpcodeType_EndConditionalBlock:
                 {
                     /* 2X000000 */
-                    opcode.end_cond.is_else = ((first_dword >> 28) & 0xF) == 1;
+                    opcode.end_cond.is_else = ((first_dword >> 24) & 0xF) == 1;
                 }
                 break;
             case CheatVmOpcodeType_ControlLoop:
@@ -397,7 +397,7 @@ namespace ams::dmnt::cheat::impl {
                     /* 310R0000 */
                     /* Parse register, whether loop start or loop end. */
                     opcode.ctrl_loop.start_loop = ((first_dword >> 24) & 0xF) == 0;
-                    opcode.ctrl_loop.reg_index = ((first_dword >> 20) & 0xF);
+                    opcode.ctrl_loop.reg_index = ((first_dword >> 16) & 0xF);
 
                     /* Read number of iters if loop start. */
                     if (opcode.ctrl_loop.start_loop) {
