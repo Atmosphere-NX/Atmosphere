@@ -297,7 +297,7 @@ namespace ams::kern::arch::arm64 {
                 /* If the breakpoint matches context id, we need to get the context id. */
                 if ((flags & (1ul << 21)) != 0) {
                     /* Ensure that the breakpoint is context-aware. */
-                    R_UNLESS((name - ams::svc::HardwareBreakPointRegisterName_I0) <= (num_bp - num_ctx), svc::ResultNotSupported());
+                    R_UNLESS((name - ams::svc::HardwareBreakPointRegisterName_I0) >= (num_bp - num_ctx), svc::ResultNotSupported());
 
                     /* Check that the breakpoint does not have the mismatch bit. */
                     R_UNLESS((flags & (1ul << 22)) == 0, svc::ResultInvalidCombination());
