@@ -56,7 +56,9 @@ namespace ams::dmnt::cheat::impl {
 
     enum MemoryAccessType : u32 {
         MemoryAccessType_MainNso = 0,
-        MemoryAccessType_Heap = 1,
+        MemoryAccessType_Heap    = 1,
+        MemoryAccessType_Alias   = 2,
+        MemoryAccessType_Aslr    = 3,
     };
 
     enum ConditionalComparisonType : u32 {

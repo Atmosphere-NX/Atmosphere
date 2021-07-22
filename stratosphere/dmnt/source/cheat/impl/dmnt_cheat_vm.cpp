@@ -721,6 +721,10 @@ namespace ams::dmnt::cheat::impl {
                 return metadata->main_nso_extents.base + rel_address;
             case MemoryAccessType_Heap:
                 return metadata->heap_extents.base + rel_address;
+            case MemoryAccessType_Alias:
+                return metadata->alias_extents.base + rel_address;
+            case MemoryAccessType_Aslr:
+                return metadata->aslr_extents.base + rel_address;
         }
     }
 

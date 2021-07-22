@@ -301,6 +301,11 @@ namespace ams::dmnt::cheat::impl {
                     return this->AttachToApplicationProcess(false);
                 }
 
+                Result ForceCloseCheatProcess() {
+                    this->CloseActiveCheatProcess();
+                    return ResultSuccess();
+                }
+
                 Result ReadCheatProcessMemoryUnsafe(u64 proc_addr, void *out_data, size_t size) {
                     return svcReadDebugProcessMemory(out_data, this->GetCheatProcessHandle(), proc_addr, size);
                 }
@@ -520,6 +525,9 @@ namespace ams::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
+                    /* Set output id. */
+                    *out_id = new_entry->cheat_id;
+
                     return ResultSuccess();
                 }
 
@@ -530,6 +538,25 @@ namespace ams::dmnt::cheat::impl {
                     R_UNLESS(cheat_id < MaxCheatCount, ResultCheatUnknownId());
 
                     this->ResetCheatEntry(cheat_id);
+
+                    /* Trigger a VM reload. */
+                    this->SetNeedsReloadVm(true);
+
+                    return ResultSuccess();
+                }
+
+                Result SetMasterCheat(const CheatDefinition &def) {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+
+                    R_UNLESS(def.num_opcodes != 0,                       ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), ResultCheatInvalid());
+
+                    CheatEntry *master_entry = this->cheat_entries + 0;
+
+                    master_entry->enabled    = true;
+                    master_entry->definition = def;
 
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
@@ -1187,6 +1214,10 @@ namespace ams::dmnt::cheat::impl {
         return GetReference(g_cheat_process_manager).ResumeCheatProcess();
     }
 
+    Result ForceCloseCheatProcess() {
+        return GetReference(g_cheat_process_manager).ForceCloseCheatProcess();
+    }
+
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size) {
         return GetReference(g_cheat_process_manager).ReadCheatProcessMemoryUnsafe(process_addr, out_data, size);
     }
@@ -1245,6 +1276,10 @@ namespace ams::dmnt::cheat::impl {
 
     Result RemoveCheat(u32 cheat_id) {
         return GetReference(g_cheat_process_manager).RemoveCheat(cheat_id);
+    }
+
+    Result SetMasterCheat(const CheatDefinition &def) {
+        return GetReference(g_cheat_process_manager).SetMasterCheat(def);
     }
 
     Result ReadStaticRegister(u64 *out, size_t which) {

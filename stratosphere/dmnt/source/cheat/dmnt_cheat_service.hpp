@@ -24,6 +24,7 @@
     AMS_SF_METHOD_INFO(C, H, 65003, Result, ForceOpenCheatProcess,       (),                                                                                                   ())                             \
     AMS_SF_METHOD_INFO(C, H, 65004, Result, PauseCheatProcess,           (),                                                                                                   ())                             \
     AMS_SF_METHOD_INFO(C, H, 65005, Result, ResumeCheatProcess,          (),                                                                                                   ())                             \
+    AMS_SF_METHOD_INFO(C, H, 65006, Result, ForceCloseCheatProcess,      (),                                                                                                   ())                             \
     AMS_SF_METHOD_INFO(C, H, 65100, Result, GetCheatProcessMappingCount, (sf::Out<u64> out_count),                                                                             (out_count))                    \
     AMS_SF_METHOD_INFO(C, H, 65101, Result, GetCheatProcessMappings,     (const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset),                       (mappings, out_count, offset))  \
     AMS_SF_METHOD_INFO(C, H, 65102, Result, ReadCheatProcessMemory,      (const sf::OutBuffer &buffer, u64 address, u64 out_size),                                             (buffer, address, out_size))    \
@@ -38,6 +39,7 @@
     AMS_SF_METHOD_INFO(C, H, 65206, Result, ReadStaticRegister,          (sf::Out<u64> out, u8 which),                                                                         (out, which))                   \
     AMS_SF_METHOD_INFO(C, H, 65207, Result, WriteStaticRegister,         (u8 which, u64 value),                                                                                (which, value))                 \
     AMS_SF_METHOD_INFO(C, H, 65208, Result, ResetStaticRegisters,        (),                                                                                                   ())                             \
+    AMS_SF_METHOD_INFO(C, H, 65209, Result, SetMasterCheat,              (const dmnt::cheat::CheatDefinition &cheat),                                                          (cheat))                        \
     AMS_SF_METHOD_INFO(C, H, 65300, Result, GetFrozenAddressCount,       (sf::Out<u64> out_count),                                                                             (out_count))                    \
     AMS_SF_METHOD_INFO(C, H, 65301, Result, GetFrozenAddresses,          (const sf::OutArray<dmnt::cheat::FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset), (addresses, out_count, offset)) \
     AMS_SF_METHOD_INFO(C, H, 65302, Result, GetFrozenAddress,            (sf::Out<dmnt::cheat::FrozenAddressEntry> entry, u64 address),                                        (entry, address))               \
@@ -56,6 +58,7 @@ namespace ams::dmnt::cheat {
             Result ForceOpenCheatProcess();
             Result PauseCheatProcess();
             Result ResumeCheatProcess();
+            Result ForceCloseCheatProcess();
 
             Result GetCheatProcessMappingCount(sf::Out<u64> out_count);
             Result GetCheatProcessMappings(const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset);
@@ -72,6 +75,7 @@ namespace ams::dmnt::cheat {
             Result ReadStaticRegister(sf::Out<u64> out, u8 which);
             Result WriteStaticRegister(u8 which, u64 value);
             Result ResetStaticRegisters();
+            Result SetMasterCheat(const CheatDefinition &cheat);
 
             Result GetFrozenAddressCount(sf::Out<u64> out_count);
             Result GetFrozenAddresses(const sf::OutArray<FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset);

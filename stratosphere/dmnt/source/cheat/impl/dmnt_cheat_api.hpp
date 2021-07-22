@@ -26,6 +26,7 @@ namespace ams::dmnt::cheat::impl {
     Result ForceOpenCheatProcess();
     Result PauseCheatProcess();
     Result ResumeCheatProcess();
+    Result ForceCloseCheatProcess();
 
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemoryUnsafe(u64 process_addr, void *data, size_t size);
@@ -45,6 +46,7 @@ namespace ams::dmnt::cheat::impl {
     Result ToggleCheat(u32 cheat_id);
     Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled);
     Result RemoveCheat(u32 cheat_id);
+    Result SetMasterCheat(const CheatDefinition &def);
     Result ReadStaticRegister(u64 *out, size_t which);
     Result WriteStaticRegister(size_t which, u64 value);
     Result ResetStaticRegisters();
