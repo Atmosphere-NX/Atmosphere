@@ -61,7 +61,7 @@ CFLAGS	:=	-g -gdwarf-4 -Wall -O2 -ffunction-sections \
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -std=gnu++17 -fno-exceptions -fno-rtti
+CXXFLAGS	:= $(CFLAGS) -std=gnu++20 -fno-exceptions -fno-rtti
 
 ASFLAGS	:=	-g -gdwarf-4 $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g -gdwarf-4 $(ARCH) -Wl,-Map,$(notdir $*.map)

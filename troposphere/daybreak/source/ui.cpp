@@ -17,6 +17,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <dirent.h>
 #include "ui.hpp"
 #include "ui_util.hpp"
@@ -29,6 +30,7 @@ namespace dbk {
         static constexpr u32 ExosphereApiVersionConfigItem = 65000;
         static constexpr u32 ExosphereHasRcmBugPatch       = 65004;
         static constexpr u32 ExosphereEmummcType           = 65007;
+        static constexpr u32 ExosphereSupportedHosVersion  = 65011;
 
         /* Insets of content within windows. */
         static constexpr float HorizontalInset       = 20.0f;
@@ -45,6 +47,8 @@ namespace dbk {
 
         u32 g_screen_width;
         u32 g_screen_height;
+
+        constinit u32 g_supported_version = std::numeric_limits<u32>::max();
 
         std::shared_ptr<Menu> g_current_menu;
         bool g_initialized = false;
@@ -135,6 +139,10 @@ namespace dbk {
             *out = entry_count == 0;
             fsDirClose(&dir);
             return rc;
+        }
+
+        u32 EncodeVersion(u32 major, u32 minor, u32 micro, u32 relstep = 0) {
+            return ((major & 0xFF) << 24) | ((minor & 0xFF) << 16) | ((micro & 0xFF) << 8) | ((relstep & 0xFF) << 8);
         }
 
     }
@@ -884,13 +892,22 @@ namespace dbk {
                         g_use_exfat = false;
                     }
 
+                    /* Create the next menu. */
+                    std::shared_ptr<Menu> next_menu = std::make_shared<ChooseResetMenu>(g_current_menu);
+
                     /* Warn the user if they're updating with exFAT supposed to be supported but not present/corrupted. */
                     if (m_update_info.exfat_supported && R_FAILED(m_validation_info.exfat_result)) {
-                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<ChooseResetMenu>(g_current_menu), "Warning: exFAT firmware is missing or corrupt", "Are you sure you want to proceed?"));
-                    } else {
-                        ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
+                        next_menu = std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: exFAT firmware is missing or corrupt", "Are you sure you want to proceed?");
                     }
 
+                    /* Warn the user if they're updating to a version higher than supported. */
+                    const u32 version = m_validation_info.invalid_key.version;
+                    if (EncodeVersion((version >> 26) & 0x1f, (version >> 20) & 0x1f, (version >> 16) & 0xf) > g_supported_version) {
+                        next_menu = std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: firmware is too new and not known to be supported", "Are you sure you want to proceed?");
+                    }
+
+                    /* Change to the next menu. */
+                    ChangeMenu(next_menu);
                     return;
             }
         }
@@ -1228,10 +1245,15 @@ namespace dbk {
         const u32 version_major = (version >> 56) & 0xff;
 
         /* Validate the exosphere version. */
-        const bool ams_supports_sysupdate_api = version_major >= 0 && version_minor >= 14 && version_micro >= 0;
+        const bool ams_supports_sysupdate_api = EncodeVersion(version_major, version_minor, version_micro) >= EncodeVersion(0, 14, 0);
         if (!ams_supports_sysupdate_api) {
             ChangeMenu(std::make_shared<ErrorMenu>("Outdated Atmosphere version", "Daybreak requires Atmosphere 0.14.0 or later.", rc));
             return;
+        }
+
+        /* Attempt to get the supported version. */
+        if (R_SUCCEEDED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereSupportedHosVersion), &version))) {
+            g_supported_version = static_cast<u32>(version);
         }
 
         /* Initialize ams:su. */
