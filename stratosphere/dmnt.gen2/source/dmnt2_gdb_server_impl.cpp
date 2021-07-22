@@ -20,6 +20,25 @@
 namespace ams::dmnt {
 
     namespace {
+
+        constexpr const u32 SdkBreakPoint     = 0xE7FFFFFF;
+        constexpr const u32 SdkBreakPointMask = 0xFFFFFFFF;
+
+        constexpr const u32 ArmBreakPoint     = 0xE7FFDEFE;
+        constexpr const u32 ArmBreakPointMask = 0xFFFFFFFF;
+
+        constexpr const u32 A64BreakPoint     = 0xD4200000;
+        constexpr const u32 A64BreakPointMask = 0xFFE0001F;
+
+        constexpr const u32 A64Halt           = 0xD4400000;
+        constexpr const u32 A64HaltMask       = 0xFFE0001F;
+
+        constexpr const u32 A32BreakPoint     = 0xE1200070;
+        constexpr const u32 A32BreakPointMask = 0xFFF000F0;
+
+        constexpr const u32 T16BreakPoint     = 0x0000BE00;
+        constexpr const u32 T16BreakPointMask = 0x0000FF00;
+
         constexpr const char TargetXmlAarch64[] =
             "l<?xml version=\"1.0\"?>"
             "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">"
@@ -349,6 +368,15 @@ namespace ams::dmnt {
             AMS_DMNT2_GDB_LOG_DEBUG("Offset/Length %x/%x\n", offset, length);
         }
 
+        s32 FindThreadIdIndex(u64 *thread_ids, s32 num_threads, u64 thread_id) {
+            for (auto i = 0; i < num_threads; ++i) {
+                if (thread_ids[i] == thread_id) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
         void SetGdbRegister32(char *dst, u32 value) {
             if (value != 0) {
                 AppendReply(dst, "%08x", util::ConvertToBigEndian(value));
@@ -570,10 +598,189 @@ namespace ams::dmnt {
             }
 
             /* Process the event. */
+            bool reply = false;
+            GdbSignal signal;
+            char send_buffer[GdbPacketBufferSize];
+            u64 thread_id = d.thread_id;
+            m_debug_process.ClearStep();
+
+            send_buffer[0] = 0;
             switch (d.type) {
-                default:
-                    AMS_DMNT2_GDB_LOG_DEBUG("Unhandled ProcessEvent %u\n", static_cast<u32>(d.type));
+                case svc::DebugEvent_Exception:
+                    {
+                        switch (d.info.exception.type) {
+                            case svc::DebugException_BreakPoint:
+                                {
+                                    signal = GdbSignal_BreakpointTrap;
+
+                                    const uintptr_t address = d.info.exception.address;
+                                    const bool is_instr     = d.info.exception.specific.break_point.type == svc::BreakPointType_HardwareInstruction;
+                                    AMS_DMNT2_GDB_LOG_DEBUG("BreakPoint %lx, addr=%lx, type=%s\n", thread_id, address, is_instr ? "Instr" : "Data");
+
+                                    if (is_instr) {
+                                        SetReply(send_buffer, "T%02Xthread:p%lx.%lx;hwbreak:;", static_cast<u32>(signal), m_process_id.value, thread_id);
+                                    } else {
+                                        bool read = false, write = false;
+                                        const char *type = "watch";
+                                        if (R_SUCCEEDED(m_debug_process.GetWatchPointInfo(address, read, write))) {
+                                            if (read && write) {
+                                                type = "awatch";
+                                            } else if (read) {
+                                                type = "rwatch";
+                                            }
+                                        } else {
+                                            AMS_DMNT2_GDB_LOG_DEBUG("GetWatchPointInfo FAIL %lx, addr=%lx, type=%s\n", thread_id, address, is_instr ? "Instr" : "Data");
+                                        }
+
+                                        SetReply(send_buffer, "T%02Xthread:p%lx.%lx;%s:%lx;", static_cast<u32>(signal), m_process_id.value, thread_id, type, address);
+                                    }
+
+                                    reply = true;
+                                }
+                                break;
+                            case svc::DebugException_DebuggerBreak:
+                                {
+                                    AMS_DMNT2_GDB_LOG_DEBUG("DebuggerBreak %lx, last=%lx\n", thread_id, m_debug_process.GetLastThreadId());
+                                    signal = GdbSignal_Interrupt;
+                                    thread_id = m_debug_process.GetLastThreadId();
+                                    m_debug_process.SetLastThreadId(thread_id);
+                                }
+                                break;
+                            case svc::DebugException_UndefinedInstruction:
+                                {
+                                    signal            = GdbSignal_IllegalInstruction;
+
+                                    uintptr_t address = d.info.exception.address;
+                                    const u32 insn    = d.info.exception.specific.undefined_instruction.insn;
+                                    u32 new_insn      = 0;
+
+                                    svc::ThreadContext ctx;
+                                    if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
+                                        bool insn_changed = false;
+                                        if (ctx.pstate & 0x20) {
+                                            /* Thumb mode. */
+                                            address &= ~1;
+
+                                            if (R_SUCCEEDED(m_debug_process.ReadMemory(std::addressof(new_insn), address, 2))) {
+                                                switch ((new_insn >> 11) & 0x1F) {
+                                                    case 0x1D:
+                                                    case 0x1E:
+                                                    case 0x1F:
+                                                        {
+                                                            if (R_SUCCEEDED(m_debug_process.ReadMemory(reinterpret_cast<u8 *>(std::addressof(new_insn)) + 2, address + 2, 2))) {
+                                                                insn_changed = (new_insn != insn);
+                                                            }
+                                                        }
+                                                        break;
+                                                    default:
+                                                        insn_changed = (new_insn != insn);
+                                                        break;
+                                                }
+
+                                                if ((insn & T16BreakPointMask) == T16BreakPoint) {
+                                                    signal = GdbSignal_BreakpointTrap;
+                                                }
+                                            }
+                                        } else {
+                                            /* Non-thumb. */
+                                            if (R_SUCCEEDED(m_debug_process.ReadMemory(std::addressof(new_insn), address, sizeof(new_insn)))) {
+                                                insn_changed = (new_insn != insn);
+                                            }
+
+                                            if (((insn & SdkBreakPointMask) == SdkBreakPoint) ||
+                                                ((insn & ArmBreakPointMask) == ArmBreakPoint) ||
+                                                ((insn & A64BreakPointMask) == A64BreakPoint) ||
+                                                ((insn & A32BreakPointMask) == A32BreakPoint) ||
+                                                ((insn & A64HaltMask)       == A64Halt))
+                                            {
+                                                signal = GdbSignal_BreakpointTrap;
+                                            }
+                                        }
+
+                                        if (insn_changed) {
+                                            AMS_DMNT2_GDB_LOG_DEBUG("Instruction Changed %lx, address=%p, insn=%08x, new_insn=%08x\n", thread_id, reinterpret_cast<void *>(address), insn, new_insn);
+                                        }
+                                    }
+
+                                    if (signal == GdbSignal_IllegalInstruction) {
+                                        AMS_DMNT2_GDB_LOG_DEBUG("Undefined Instruction %lx, address=%p, insn=%08x\n", thread_id, reinterpret_cast<void *>(address), insn);
+                                    } else if (signal == GdbSignal_BreakpointTrap && ((insn & SdkBreakPointMask) != SdkBreakPoint)) {
+                                        AMS_DMNT2_GDB_LOG_DEBUG("Non-SDK BreakPoint %lx, address=%p, insn=%08x\n", thread_id, reinterpret_cast<void *>(address), insn);
+                                    }
+
+                                    if (signal == GdbSignal_BreakpointTrap) {
+                                        SetReply(send_buffer, "T%02Xthread:p%lx.%lx;swbreak:;", static_cast<u32>(signal), m_process_id.value, thread_id);
+                                        reply = true;
+                                    }
+
+                                    m_debug_process.ClearStep();
+                                }
+                                break;
+                            default:
+                                AMS_DMNT2_GDB_LOG_DEBUG("Unhandled Exception %u %lx\n", static_cast<u32>(d.info.exception.type), thread_id);
+                                signal = GdbSignal_SegmentationFault;
+                                break;
+                        }
+
+                        if (!reply) {
+                            SetReply(send_buffer, "T%02Xthread:p%lx.%lx;", static_cast<u32>(signal), m_process_id.value, thread_id);
+                            reply = true;
+                        }
+
+                        m_debug_process.SetLastThreadId(thread_id);
+                        m_debug_process.SetLastSignal(signal);
+                    }
                     break;
+                case svc::DebugEvent_CreateThread:
+                    {
+                        AMS_DMNT2_GDB_LOG_DEBUG("CreateThread %lx\n", thread_id);
+
+                        if (m_debug_process.IsValid()) {
+                            m_debug_process.Continue();
+                        } else {
+                            SetReply(send_buffer, "W00");
+                            reply = true;
+                        }
+                    }
+                case svc::DebugEvent_ExitThread:
+                    {
+                        AMS_DMNT2_GDB_LOG_DEBUG("ExitThread %lx\n", thread_id);
+
+                        if (m_debug_process.IsValid()) {
+                            m_debug_process.Continue();
+                        } else {
+                            SetReply(send_buffer, "W00");
+                            reply = true;
+                        }
+                    }
+                    break;
+                case svc::DebugEvent_ExitProcess:
+                    {
+                        m_killed = true;
+                        AMS_DMNT2_GDB_LOG_DEBUG("ExitProcess\n");
+
+                        if (d.info.exit_process.reason == svc::ProcessExitReason_ExitProcess) {
+                            SetReply(send_buffer, "W00");
+                        } else {
+                            SetReply(send_buffer, "X%02X", GdbSignal_Killed);
+                        }
+
+                        m_debug_process.Detach();
+                        reply = true;
+                    }
+                    break;
+                default:
+                    AMS_DMNT2_GDB_LOG_DEBUG("Unhandled ProcessEvent %u %lx\n", static_cast<u32>(d.type), thread_id);
+                    m_debug_process.Continue();
+                    break;
+            }
+
+            if (reply) {
+                bool do_break;
+                this->SendPacket(std::addressof(do_break), send_buffer);
+                if (do_break) {
+                    m_debug_process.Break();
+                }
             }
         }
     }
@@ -658,6 +865,12 @@ namespace ams::dmnt {
             case 'H':
                 this->H();
                 break;
+            case 'T':
+                this->T();
+                break;
+            case 'Z':
+                this->Z();
+                break;
             case 'g':
                 if (!this->g()) {
                     m_killed = true;
@@ -671,6 +884,9 @@ namespace ams::dmnt {
                 break;
             case 'q':
                 this->q();
+                break;
+            case 'z':
+                this->z();
                 break;
             case '!':
                 SetReplyOk(m_reply_packet);
@@ -730,6 +946,106 @@ namespace ams::dmnt {
         }
     }
 
+    void GdbServerImpl::T() {
+        if (const char *dot = std::strchr(m_receive_packet, '.'); dot != nullptr) {
+            const u64 thread_id = DecodeHex(dot + 1);
+
+            svc::ThreadContext ctx;
+            if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
+                SetReplyOk(m_reply_packet);
+            } else {
+                SetReply(m_reply_packet, "E01");
+            }
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::Z() {
+        /* Increment past the 'Z'. */
+        ++m_receive_packet;
+
+        /* Decode the type. */
+        if (!('0' <= m_receive_packet[0] && m_receive_packet[0] <= '4') || m_receive_packet[1] != ',') {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        const auto type = m_receive_packet[0] - '0';
+        m_receive_packet += 2;
+
+        /* Decode the address/length. */
+        const char *comma = std::strchr(m_receive_packet, ',');
+        if (comma == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Parse address/length. */
+        const u64 address = DecodeHex(m_receive_packet);
+        const u64 length  = DecodeHex(comma + 1);
+
+        switch (type) {
+            case 0: /* SW */
+                {
+                    if (length == 2 || length == 4) {
+                        if (R_SUCCEEDED(m_debug_process.SetBreakPoint(address, length, false))) {
+                            SetReplyOk(m_reply_packet);
+                        } else {
+                            SetReplyError(m_reply_packet, "E01");
+                        }
+                    }
+                }
+                break;
+            case 1: /* HW */
+                {
+                    if (length == 2 || length == 4) {
+                        if (R_SUCCEEDED(m_debug_process.SetHardwareBreakPoint(address, length, false))) {
+                            SetReplyOk(m_reply_packet);
+                        } else {
+                            SetReplyError(m_reply_packet, "E01");
+                        }
+                    }
+                }
+                break;
+            case 2: /* Watch-W */
+                {
+                    if (m_debug_process.IsValidWatchPoint(address, length)) {
+                        if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, false, true))) {
+                            SetReplyOk(m_reply_packet);
+                        } else {
+                            SetReplyError(m_reply_packet, "E01");
+                        }
+                    }
+                }
+                break;
+            case 3: /* Watch-R */
+                {
+                    if (m_debug_process.IsValidWatchPoint(address, length)) {
+                        if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, true, false))) {
+                            SetReplyOk(m_reply_packet);
+                        } else {
+                            SetReplyError(m_reply_packet, "E01");
+                        }
+                    }
+                }
+                break;
+            case 4: /* Watch-A */
+                {
+                    if (m_debug_process.IsValidWatchPoint(address, length)) {
+                        if (R_SUCCEEDED(m_debug_process.SetWatchPoint(address, length, true, true))) {
+                            SetReplyOk(m_reply_packet);
+                        } else {
+                            SetReplyError(m_reply_packet, "E01");
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
     bool GdbServerImpl::g() {
         /* Get thread id. */
         u64 thread_id = m_debug_process.GetThreadIdOverride();
@@ -781,6 +1097,8 @@ namespace ams::dmnt {
     void GdbServerImpl::v() {
         if (ParsePrefix(m_receive_packet, "vAttach;")) {
             this->vAttach();
+        } else if (ParsePrefix(m_receive_packet, "vCont")) {
+            this->vCont();
         } else {
             AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented v: %s\n", m_receive_packet);
         }
@@ -815,6 +1133,140 @@ namespace ams::dmnt {
         } else {
             SetReplyError(m_reply_packet, "E01");
         }
+    }
+
+    void GdbServerImpl::vCont() {
+        /* Check if this is a query about what we support. */
+        if (ParsePrefix(m_receive_packet, "?")) {
+            SetReply(m_reply_packet, "vCont;c;C;s;S;");
+            return;
+        }
+
+        /* We want to parse semicolon separated fields repeatedly. */
+        char *saved;
+        char *token = strtok_r(m_receive_packet, ";", std::addressof(saved));
+
+        /* Validate the initial token. */
+        if (token == nullptr) {
+            return;
+        }
+
+        /* Prepare to parse threads. */
+        u64 thread_ids[DebugProcess::ThreadCountMax] = {};
+        u8 continue_modes[DebugProcess::ThreadCountMax] = {};
+
+        s32 num_threads;
+        if (R_FAILED(m_debug_process.GetThreadList(std::addressof(num_threads), thread_ids, util::size(thread_ids)))) {
+            AMS_DMNT2_GDB_LOG_ERROR("vCont: Failed to get thread list\n");
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Handle each token. */
+        Result result = ResultSuccess();
+        DebugProcess::ContinueMode default_continue_mode = DebugProcess::ContinueMode_Stopped;
+        while (token != nullptr && R_SUCCEEDED(result)) {
+            result = this->ParseVCont(token, thread_ids, continue_modes, num_threads, default_continue_mode);
+            token = strtok_r(nullptr, ";", std::addressof(saved));
+        }
+
+        AMS_DMNT2_GDB_LOG_DEBUG("vCont: NumThreads=%d, Default Continue Mode=%d\n", num_threads, static_cast<int>(default_continue_mode));
+
+        /* Act on all threads. */
+        s64 thread_id = -1;
+        for (auto i = 0; i < num_threads; ++i) {
+            if (continue_modes[i] == DebugProcess::ContinueMode_Step || (continue_modes[i] == DebugProcess::ContinueMode_Stopped && default_continue_mode == DebugProcess::ContinueMode_Step)) {
+                thread_id = thread_ids[i];
+                result = m_debug_process.Step(thread_ids[i]);
+            }
+        }
+
+        /* Continue the last thread. */
+        if (static_cast<u64>(thread_id) == m_debug_process.GetLastThreadId() && default_continue_mode != DebugProcess::ContinueMode_Continue) {
+            result = m_debug_process.Continue(thread_id);
+        } else {
+            result = m_debug_process.Continue();
+        }
+
+        /* Set reply. */
+        if (R_SUCCEEDED(result)) {
+            SetReplyOk(m_reply_packet);
+        } else {
+            AMS_DMNT2_GDB_LOG_ERROR("vCont: Failed %08x\n", result.GetValue());
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    Result GdbServerImpl::ParseVCont(char * const token, u64 *thread_ids, u8 *continue_modes, s32 num_threads, DebugProcess::ContinueMode &default_continue_mode) {
+        /* Parse the thread id. */
+        s64 thread_id = -1;
+        s32 signal = -1;
+        s32 thread_ix = -1;
+
+        if (token[0] && token[1]) {
+            if (char *colon = std::strchr(token, ':'); colon != nullptr) {
+                *colon = 0;
+                if (char *dot = std::strchr(colon + 1, '.'); dot != nullptr) {
+                    *dot = 0;
+                    thread_id = std::strcmp(dot + 1, "-1") == 0 ? -1 : static_cast<s64>(DecodeHex(dot + 1));
+                    thread_ix = FindThreadIdIndex(thread_ids, num_threads, static_cast<u64>(thread_id));
+                }
+            }
+        }
+
+        /* Check that we don't already have a default mode. */
+        if (thread_id == -1 && default_continue_mode != DebugProcess::ContinueMode_Stopped) {
+            AMS_DMNT2_GDB_LOG_ERROR("vCont: Too many defaults specified\n");
+        }
+
+        /* Handle the action. */
+        switch (token[0]) {
+            case 'c':
+                if (thread_id > 0) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("vCont: Continue %lx\n", static_cast<u64>(thread_id));
+                    continue_modes[thread_ix] = DebugProcess::ContinueMode_Continue;
+                } else {
+                    default_continue_mode = DebugProcess::ContinueMode_Continue;
+                }
+                break;
+            case 'C':
+                if (token[1]) {
+                    signal = std::strcmp(token + 1, "-1") == 0 ? -1 : static_cast<s32>(DecodeHex(token + 1));
+                }
+                AMS_DMNT2_GDB_LOG_WARN("vCont: Ignoring C, signal=%d\n", signal);
+                if (thread_id > 0) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("vCont: Continue %lx, signal=%d\n", static_cast<u64>(thread_id), signal);
+                    continue_modes[thread_ix] = DebugProcess::ContinueMode_Continue;
+                } else {
+                    default_continue_mode = DebugProcess::ContinueMode_Continue;
+                }
+                break;
+            case 's':
+                if (thread_id > 0) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("vCont: Step %lx\n", static_cast<u64>(thread_id));
+                    continue_modes[thread_ix] = DebugProcess::ContinueMode_Step;
+                } else {
+                    default_continue_mode = DebugProcess::ContinueMode_Step;
+                }
+                break;
+            case 'S':
+                if (token[1]) {
+                    signal = std::strcmp(token + 1, "-1") == 0 ? -1 : static_cast<s32>(DecodeHex(token + 1));
+                }
+                AMS_DMNT2_GDB_LOG_WARN("vCont: Ignoring S, signal=%d\n", signal);
+                if (thread_id > 0) {
+                    AMS_DMNT2_GDB_LOG_DEBUG("vCont: Step %lx, signal=%d\n", static_cast<u64>(thread_id), signal);
+                    continue_modes[thread_ix] = DebugProcess::ContinueMode_Step;
+                } else {
+                    default_continue_mode = DebugProcess::ContinueMode_Step;
+                }
+                break;
+            default:
+                AMS_DMNT2_GDB_LOG_WARN("vCont: Ignoring %c\n", token[0]);
+                break;
+        }
+
+        return ResultSuccess();
     }
 
     void GdbServerImpl::q() {
@@ -1079,6 +1531,65 @@ namespace ams::dmnt {
         GetAnnexBufferContents(m_reply_packet, offset, length);
 
         return true;
+    }
+
+    void GdbServerImpl::z() {
+        /* Increment past the 'z'. */
+        ++m_receive_packet;
+
+        /* Decode the type. */
+        if (!('0' <= m_receive_packet[0] && m_receive_packet[0] <= '4') || m_receive_packet[1] != ',') {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        const auto type = m_receive_packet[0] - '0';
+        m_receive_packet += 2;
+
+        /* Decode the address/length. */
+        const char *comma = std::strchr(m_receive_packet, ',');
+        if (comma == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Parse address/length. */
+        const u64 address = DecodeHex(m_receive_packet);
+        const u64 length  = DecodeHex(comma + 1);
+
+        switch (type) {
+            case 0: /* SW */
+                {
+                    if (R_SUCCEEDED(m_debug_process.ClearBreakPoint(address, length))) {
+                        SetReplyOk(m_reply_packet);
+                    } else {
+                        SetReplyError(m_reply_packet, "E01");
+                    }
+                }
+                break;
+            case 1: /* HW */
+                {
+                    if (R_SUCCEEDED(m_debug_process.ClearHardwareBreakPoint(address, length))) {
+                        SetReplyOk(m_reply_packet);
+                    } else {
+                        SetReplyError(m_reply_packet, "E01");
+                    }
+                }
+                break;
+            case 2: /* Watch-W */
+            case 3: /* Watch-R */
+            case 4: /* Watch-A */
+                {
+                    if (R_SUCCEEDED(m_debug_process.ClearWatchPoint(address, length))) {
+                        SetReplyOk(m_reply_packet);
+                    } else {
+                        SetReplyError(m_reply_packet, "E01");
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     void GdbServerImpl::QuestionMark() {

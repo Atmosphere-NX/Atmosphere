@@ -65,6 +65,10 @@ namespace ams::dmnt {
             void H();
             void Hg();
 
+            void T();
+
+            void Z();
+
             bool g();
 
             void m();
@@ -72,6 +76,7 @@ namespace ams::dmnt {
             void v();
 
             void vAttach();
+            void vCont();
 
             void q();
 
@@ -84,7 +89,11 @@ namespace ams::dmnt {
             void qXferOsdataRead();
             bool qXferThreadsRead();
 
+            void z();
+
             void QuestionMark();
+        private:
+            Result ParseVCont(char * const token, u64 *thread_ids, u8 *continue_modes, s32 num_threads, DebugProcess::ContinueMode &default_continue_mode);
     };
 
 }

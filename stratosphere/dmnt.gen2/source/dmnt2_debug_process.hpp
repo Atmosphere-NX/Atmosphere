@@ -17,6 +17,9 @@
 #include <stratosphere.hpp>
 #include "dmnt2_gdb_signal.hpp"
 #include "dmnt2_module_definition.hpp"
+#include "dmnt2_software_breakpoint.hpp"
+#include "dmnt2_hardware_breakpoint.hpp"
+#include "dmnt2_hardware_watchpoint.hpp"
 
 namespace ams::dmnt {
 
@@ -45,17 +48,24 @@ namespace ams::dmnt {
             ProcessStatus m_status{ProcessStatus_DebugBreak};
             os::ProcessId m_process_id{os::InvalidProcessId};
             u64 m_last_thread_id{};
-            u64 m_thread_id_override;
+            u64 m_thread_id_override{};
+            u64 m_continue_thread_id{};
             GdbSignal m_last_signal{};
+            bool m_stepping{false};
             bool m_thread_valid[ThreadCountMax]{};
             u64 m_thread_ids[ThreadCountMax]{};
             osdbg::ThreadInfo m_thread_infos[ThreadCountMax]{};
             svc::DebugInfoCreateProcess m_create_process_info{};
+            SoftwareBreakPointManager m_software_breakpoints;
+            HardwareBreakPointManager m_hardware_breakpoints;
+            HardwareWatchPointManager m_hardware_watchpoints;
+            BreakPointManager &m_step_breakpoints;
             ModuleDefinition m_module_definitions[ModuleCountMax]{};
             size_t m_module_count{};
             size_t m_main_module{};
         public:
-            constexpr DebugProcess() = default;
+            /* TODO: ifdef for hardware breakpoints. */
+            DebugProcess() : m_software_breakpoints(this), m_hardware_breakpoints(this), m_hardware_watchpoints(this), m_step_breakpoints(m_software_breakpoints) { /* ... */ }
             ~DebugProcess() { this->Detach(); }
 
             svc::Handle GetHandle() const { return m_debug_handle; }
@@ -102,9 +112,31 @@ namespace ams::dmnt {
             Result ReadMemory(void *dst, uintptr_t address, size_t size);
             Result WriteMemory(const void *src, uintptr_t address, size_t size);
 
+            Result Continue();
+            Result Continue(u64 thread_id);
+            Result Step();
+            Result Step(u64 thread_id);
+            void ClearStep();
+
+            Result Break();
+
+            Result SetBreakPoint(uintptr_t address, size_t size, bool is_step);
+            Result ClearBreakPoint(uintptr_t address, size_t size);
+
+            Result SetHardwareBreakPoint(uintptr_t address, size_t size, bool is_step);
+            Result ClearHardwareBreakPoint(uintptr_t address, size_t size);
+
+            Result SetWatchPoint(u64 address, u64 size, bool read, bool write);
+            Result ClearWatchPoint(u64 address, u64 size);
+            Result GetWatchPointInfo(u64 address, bool &read, bool &write);
+
+            static bool IsValidWatchPoint(u64 address, u64 size);
+
             Result GetThreadCurrentCore(u32 *out, u64 thread_id);
 
             Result GetProcessDebugEvent(svc::DebugEventInfo *out);
+
+            void GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target);
         private:
             Result Start();
 
