@@ -120,6 +120,8 @@ namespace ams::dmnt {
 
             Result Break();
 
+            Result Terminate();
+
             Result SetBreakPoint(uintptr_t address, size_t size, bool is_step);
             Result ClearBreakPoint(uintptr_t address, size_t size);
 

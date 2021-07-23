@@ -344,6 +344,17 @@ namespace ams::dmnt {
             *dst = 0;
         }
 
+        void HexToMemory(void *dst, const char *src, size_t size) {
+            u8 *dst_u8 = static_cast<u8 *>(dst);
+
+            for (size_t i = 0; i < size; ++i) {
+                u8 v = DecodeHex(*(src++)) << 4;
+                v   |= DecodeHex(*(src++)) & 0xF;
+
+                *(dst_u8++) = v;
+            }
+        }
+
         void ParseOffsetLength(const char *packet, u32 &offset, u32 &length) {
             /* Default to zero. */
             offset = 0;
@@ -437,13 +448,320 @@ namespace ams::dmnt {
                 SetGdbRegister32(dst, thread_context.pstate);
 
                 /* Copy FPU registers. */
-                for (size_t i = 0; i < util::size(thread_context.v); ++i) {
+                for (size_t i = 0; i < util::size(thread_context.v) / 2; ++i) {
                     SetGdbRegister128(dst, thread_context.v[i]);
                 }
 
                 const u32 fpscr = (thread_context.fpsr & 0xF80000FF) | (thread_context.fpcr & 0x07FFFF00);
                 SetGdbRegister32(dst, fpscr);
             }
+        }
+
+        void SetGdbRegisterPacket(char *dst, const svc::ThreadContext &thread_context, u64 reg_num, bool is_64_bit) {
+            /* Clear packet. */
+            dst[0] = 0;
+
+            union {
+                u32 v32;
+                u64 v64;
+                u128 v128;
+            } v;
+            size_t reg_size = 0;
+
+            if (is_64_bit) {
+                if (reg_num < 29) {
+                    v.v64    = thread_context.r[reg_num];
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 29) {
+                    v.v64    = thread_context.fp;
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 30) {
+                    v.v64    = thread_context.lr;
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 31) {
+                    v.v64    = thread_context.sp;
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 32) {
+                    v.v64    = thread_context.pc;
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 33) {
+                    v.v32    = thread_context.pstate;
+                    reg_size = sizeof(u32);
+                } else if (reg_num < 66) {
+                    v.v128   = thread_context.v[reg_num - 34];
+                    reg_size = sizeof(u128);
+                } else if (reg_num == 66) {
+                    v.v32    = thread_context.fpsr;
+                    reg_size = sizeof(u32);
+                } else if (reg_num == 67) {
+                    v.v32    = thread_context.fpcr;
+                    reg_size = sizeof(u32);
+                }
+            } else {
+                if (reg_num < 15) {
+                    v.v32    = thread_context.r[reg_num];
+                    reg_size = sizeof(u32);
+                } else if (reg_num == 15) {
+                    v.v32    = thread_context.pc;
+                    reg_size = sizeof(u32);
+                } else if (reg_num == 25) {
+                    v.v32    = thread_context.pstate;
+                    reg_size = sizeof(u32);
+                } else if (26 <= reg_num && reg_num < 58) {
+                    const union {
+                        u64 v64[2];
+                        u128 v128;
+                    } fpu_reg = { .v128 = thread_context.v[(reg_num - 26) / 2] };
+
+                    v.v64    = fpu_reg.v64[(reg_num - 26) % 2];
+                    reg_size = sizeof(u64);
+                } else if (reg_num == 58) {
+                    const u32 fpscr = (thread_context.fpsr & 0xF80000FF) | (thread_context.fpcr & 0x07FFFF00);
+
+                    v.v32    = fpscr;
+                    reg_size = sizeof(u32);
+                }
+            }
+
+            switch (reg_size) {
+                case sizeof(u32):  SetGdbRegister32 (dst, v.v32 ); break;
+                case sizeof(u64):  SetGdbRegister64 (dst, v.v64 ); break;
+                case sizeof(u128): SetGdbRegister128(dst, v.v128); break;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        u64 Aarch32RegisterToAarch64Register(u64 reg_num) {
+            if (reg_num < 15) {
+                return reg_num;
+            } else if (reg_num == 15) {
+                return 32;
+            } else if (reg_num == 25) {
+                return 33;
+            } else if (26 <= reg_num && reg_num <= 57) {
+                return 34 + (reg_num - 26);
+            } else if (reg_num == 58) {
+                return 66;
+            } else {
+                AMS_ABORT("Unknown register number %lu\n", reg_num);
+            }
+        }
+
+        template<typename IntType> requires std::unsigned_integral<IntType>
+        util::optional<IntType> ParseGdbRegister(const char *&src) {
+            union {
+                IntType v;
+                u8 bytes[sizeof(v)];
+            } reg;
+            for (size_t i = 0; i < util::size(reg.bytes); ++i) {
+                const auto high = DecodeHex(*(src++));
+                const auto low = DecodeHex(*(src++));
+                if (high < 0 || low < 0) {
+                    return util::nullopt;
+                }
+                reg.bytes[i] = (high << 4) | low;
+            }
+
+            return reg.v;
+        }
+
+        ALWAYS_INLINE util::optional<u32> ParseGdbRegister32(const char *&src)   { return ParseGdbRegister<u32>(src); }
+        ALWAYS_INLINE util::optional<u64> ParseGdbRegister64(const char *&src)   { return ParseGdbRegister<u64>(src); }
+        ALWAYS_INLINE util::optional<u128> ParseGdbRegister128(const char *&src) { return ParseGdbRegister<u128>(src); }
+
+        void ParseGdbRegisterPacket(svc::ThreadContext &thread_context, const char *src, bool is_64_bit) {
+            if (is_64_bit) {
+                /* Copy general purpose registers. */
+                for (size_t i = 0; i < util::size(thread_context.r); ++i) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.r[i] = *v;
+                    } else {
+                        return;
+                    }
+                }
+
+                /* Copy special registers. */
+                if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                    thread_context.fp = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                    thread_context.lr = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                    thread_context.sp = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                    thread_context.pc = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.pstate = *v;
+                } else {
+                    return;
+                }
+
+                /* Copy FPU registers. */
+                for (size_t i = 0; i < util::size(thread_context.v); ++i) {
+                    if (const auto v = ParseGdbRegister128(src); v.has_value()) {
+                        thread_context.v[i] = *v;
+                    } else {
+                        return;
+                    }
+                }
+
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.fpsr = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.fpcr = *v;
+                } else {
+                    return;
+                }
+            } else {
+                /* Copy general purpose registers. */
+                for (size_t i = 0; i < 15; ++i) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.r[i] = *v;
+                    } else {
+                        return;
+                    }
+                }
+
+                /* Copy special registers. */
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.pc = *v;
+                } else {
+                    return;
+                }
+
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.pstate = *v;
+                } else {
+                    return;
+                }
+
+                /* Copy FPU registers. */
+                for (size_t i = 0; i < util::size(thread_context.v) / 2; ++i) {
+                    if (const auto v = ParseGdbRegister128(src); v.has_value()) {
+                        thread_context.v[i] = *v;
+                    } else {
+                        return;
+                    }
+                }
+
+                if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                    thread_context.fpsr = *v & 0xF80000FF;
+                    thread_context.fpcr = *v & 0x07FFFF00;
+                } else {
+                    return;
+                }
+            }
+        }
+
+        void ParseGdbRegisterPacket(svc::ThreadContext &thread_context, const char *src, u64 reg_num, bool is_64_bit) {
+            if (is_64_bit) {
+                if (reg_num < 29) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.r[reg_num] = *v;
+                    }
+                } else if (reg_num == 29) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.fp = *v;
+                    }
+                } else if (reg_num == 30) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.lr = *v;
+                    }
+                } else if (reg_num == 31) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.sp = *v;
+                    }
+                } else if (reg_num == 32) {
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        thread_context.pc = *v;
+                    }
+                } else if (reg_num == 33) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.pstate = *v;
+                    }
+                } else if (reg_num < 66) {
+                    if (const auto v = ParseGdbRegister128(src); v.has_value()) {
+                        thread_context.v[reg_num - 34] = *v;
+                    }
+                } else if (reg_num == 66) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.fpsr = *v;
+                    }
+                } else if (reg_num == 67) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.fpcr = *v;
+                    }
+                }
+            } else {
+                if (reg_num < 15) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.r[reg_num] = *v;
+                    }
+                } else if (reg_num == 15) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.pc = *v;
+                    }
+                } else if (reg_num == 25) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.pstate = *v;
+                    }
+                } else if (26 <= reg_num && reg_num < 58) {
+                    union {
+                        u64 v64[2];
+                        u128 v128;
+                    } fpu_reg = { .v128 = thread_context.v[(reg_num - 26) / 2] };
+
+                    if (const auto v = ParseGdbRegister64(src); v.has_value()) {
+                        fpu_reg.v64[(reg_num - 26) % 2]      = *v;
+                        thread_context.v[(reg_num - 26) / 2] = fpu_reg.v128;
+                    }
+                } else if (reg_num == 58) {
+                    if (const auto v = ParseGdbRegister32(src); v.has_value()) {
+                        thread_context.fpsr = *v & 0xF80000FF;
+                        thread_context.fpcr = *v & 0x07FFFF00;
+                    }
+                }
+            }
+        }
+
+        u32 RegisterToContextFlags(u64 reg_num, bool is_64_bit) {
+            /* Convert register number. */
+            if (!is_64_bit) {
+                reg_num = Aarch32RegisterToAarch64Register(reg_num);
+            }
+
+            /* Get flags. */
+            u32 flags = 0;
+            if (reg_num < 29) {
+                flags = svc::ThreadContextFlag_General;
+            } else if (reg_num < 34) {
+                flags = svc::ThreadContextFlag_Control;
+            } else if (reg_num < 66) {
+                flags = svc::ThreadContextFlag_Fpu;
+            } else if (reg_num == 66) {
+                flags = svc::ThreadContextFlag_FpuControl;
+            }
+
+            return flags;
         }
 
         constinit os::SdkMutex g_annex_buffer_lock;
@@ -898,14 +1216,35 @@ namespace ams::dmnt {
 
         /* Handle the received packet. */
         switch (m_receive_packet[0]) {
+            case 'D':
+                this->D();
+                break;
+            case 'G':
+                this->G();
+                break;
             case 'H':
                 this->H();
+                break;
+            case 'M':
+                this->M();
+                break;
+            case 'P':
+                this->P();
+                break;
+            case 'Q':
+                this->Q();
                 break;
             case 'T':
                 this->T();
                 break;
             case 'Z':
                 this->Z();
+                break;
+            case 'c':
+                this->c();
+                break;
+            case 'k':
+                this->k();
                 break;
             case 'g':
                 if (!this->g()) {
@@ -914,6 +1253,9 @@ namespace ams::dmnt {
                 break;
             case 'm':
                 this->m();
+                break;
+            case 'p':
+                this->p();
                 break;
             case 'v':
                 this->v();
@@ -933,6 +1275,36 @@ namespace ams::dmnt {
             default:
                 AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented: %s\n", m_receive_packet);
                 break;
+        }
+    }
+
+    void GdbServerImpl::D() {
+        m_debug_process.Detach();
+        SetReplyOk(m_reply_packet);
+    }
+
+    void GdbServerImpl::G() {
+        /* Get thread id. */
+        u32 thread_id = m_debug_process.GetThreadIdOverride();
+        if (thread_id == 0 || thread_id == static_cast<u32>(-1)) {
+            thread_id = m_debug_process.GetLastThreadId();
+        }
+
+        /* Get thread context. */
+        svc::ThreadContext ctx;
+        if (R_FAILED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_All))) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Update the thread context. */
+        ParseGdbRegisterPacket(ctx, m_receive_packet, m_debug_process.Is64Bit());
+
+        /* Set the thread context. */
+        if (R_SUCCEEDED(m_debug_process.SetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_All))) {
+            SetReplyOk(m_reply_packet);
+        } else {
+            SetReplyError(m_reply_packet, "E01");
         }
     }
 
@@ -979,6 +1351,89 @@ namespace ams::dmnt {
             SetReplyOk(m_reply_packet);
         } else {
             SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::M() {
+        ++m_receive_packet;
+
+        /* Validate format. */
+        char *comma = std::strchr(m_receive_packet, ',');
+        if (comma == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+        *comma = 0;
+
+        char *colon = std::strchr(comma + 1, ':');
+        if (colon == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+        *colon = 0;
+
+        /* Parse address/length. */
+        const u64 address = DecodeHex(m_receive_packet);
+        const u64 length  = DecodeHex(comma + 1);
+        if (length >= sizeof(m_buffer)) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+
+        /* Decode the memory. */
+        HexToMemory(m_buffer, colon + 1, length);
+
+        /* Write the memory. */
+        if (R_SUCCEEDED(m_debug_process.WriteMemory(m_buffer, address, length))) {
+            SetReplyOk(m_reply_packet);
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::P() {
+        ++m_receive_packet;
+
+        /* Validate format. */
+        char *equal = std::strchr(m_receive_packet, '=');
+        if (equal == nullptr) {
+            SetReplyError(m_reply_packet, "E01");
+            return;
+        }
+        *equal = 0;
+
+        /* Decode the register. */
+        const u64 reg_num = DecodeHex(m_receive_packet);
+
+        /* Get the flags. */
+        const u32 flags = RegisterToContextFlags(reg_num, m_debug_process.Is64Bit());
+
+        /* Determine thread id. */
+        u32 thread_id = m_debug_process.GetThreadIdOverride();
+        if (thread_id == 0 || thread_id == static_cast<u32>(-1)) {
+            thread_id = m_debug_process.GetLastThreadId();
+        }
+
+        /* Update the register. */
+        svc::ThreadContext ctx;
+        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, flags))) {
+            ParseGdbRegisterPacket(ctx, equal + 1, reg_num, m_debug_process.Is64Bit());
+
+            if (R_SUCCEEDED(m_debug_process.SetThreadContext(std::addressof(ctx), thread_id, flags))) {
+                SetReplyOk(m_reply_packet);
+            } else {
+                SetReplyError(m_reply_packet, "E01");
+            }
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::Q() {
+        if (false) {
+            /* TODO: QStartNoAckMode? */
+        } else {
+            AMS_DMNT2_GDB_LOG_DEBUG("Not Implemented Q: %s\n", m_receive_packet);
         }
     }
 
@@ -1082,6 +1537,28 @@ namespace ams::dmnt {
         }
     }
 
+    void GdbServerImpl::c() {
+        /* Get thread id. */
+        u64 thread_id = m_debug_process.GetThreadIdOverride();
+        if (thread_id == 0 || thread_id == static_cast<u64>(-1)) {
+            thread_id = m_debug_process.GetLastThreadId();
+        }
+
+        /* Continue the thread. */
+        Result result;
+        if (thread_id == m_debug_process.GetLastThreadId()) {
+            result = m_debug_process.Continue(thread_id);
+        } else {
+            result = m_debug_process.Continue();
+        }
+
+        if (R_SUCCEEDED(result)) {
+            SetReplyOk(m_reply_packet);
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
     bool GdbServerImpl::g() {
         /* Get thread id. */
         u64 thread_id = m_debug_process.GetThreadIdOverride();
@@ -1128,6 +1605,35 @@ namespace ams::dmnt {
 
         /* Encode the memory. */
         MemoryToHex(m_reply_packet, m_buffer, length);
+    }
+
+    void GdbServerImpl::k() {
+        m_debug_process.Terminate();
+        m_killed = true;
+    }
+
+    void GdbServerImpl::p() {
+        ++m_receive_packet;
+
+        /* Decode the register. */
+        const u64 reg_num = DecodeHex(m_receive_packet);
+
+        /* Get the flags. */
+        const u32 flags = RegisterToContextFlags(reg_num, m_debug_process.Is64Bit());
+
+        /* Determine thread id. */
+        u32 thread_id = m_debug_process.GetThreadIdOverride();
+        if (thread_id == 0 || thread_id == static_cast<u32>(-1)) {
+            thread_id = m_debug_process.GetLastThreadId();
+        }
+
+        /* Get the register. */
+        svc::ThreadContext ctx;
+        if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, flags))) {
+            SetGdbRegisterPacket(m_reply_packet, ctx, reg_num, m_debug_process.Is64Bit());
+        } else {
+            SetReplyError(m_reply_packet, "E01");
+        }
     }
 
     void GdbServerImpl::v() {
@@ -1453,7 +1959,13 @@ namespace ams::dmnt {
             for (size_t i = 0; i < m_debug_process.GetModuleCount(); ++i) {
                 AMS_DMNT2_GDB_LOG_DEBUG("Module[%zu]: %p, %s\n", i, reinterpret_cast<void *>(m_debug_process.GetBaseAddress(i)), m_debug_process.GetModuleName(i));
 
-                AppendReply(g_annex_buffer, "<library name=\"%s\"><segment address=\"0x%lx\" /></library>", m_debug_process.GetModuleName(i), m_debug_process.GetBaseAddress(i));
+                const char *module_name = m_debug_process.GetModuleName(i);
+                const auto name_len = std::strlen(module_name);
+                if (name_len > 4 && std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0) {
+                    AppendReply(g_annex_buffer, "<library name=\"%s.elf\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
+                } else {
+                    AppendReply(g_annex_buffer, "<library name=\"%s\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
+                }
             }
 
             AppendReply(g_annex_buffer, "</library-list>");

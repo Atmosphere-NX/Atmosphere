@@ -62,16 +62,32 @@ namespace ams::dmnt {
             void ProcessDebugEvents();
             void SetStopReplyPacket(GdbSignal signal);
         private:
+            void D();
+
+            void G();
+
             void H();
             void Hg();
+
+            void M();
+
+            void P();
+
+            void Q();
 
             void T();
 
             void Z();
 
+            void c();
+
             bool g();
 
+            void k();
+
             void m();
+
+            void p();
 
             void v();
 

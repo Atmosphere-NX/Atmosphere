@@ -313,6 +313,15 @@ namespace ams::dmnt {
         }
     }
 
+    Result DebugProcess::Terminate() {
+        if (this->IsValid()) {
+            R_ABORT_UNLESS(svc::TerminateDebugProcess(m_debug_handle));
+            this->Detach();
+        }
+
+        return ResultSuccess();
+    }
+
     void DebugProcess::GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target) {
         /* Save pc, in case we modify it. */
         const u64 pc = current_pc;
