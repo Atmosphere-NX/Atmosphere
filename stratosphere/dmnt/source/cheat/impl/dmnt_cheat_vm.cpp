@@ -768,6 +768,7 @@ namespace ams::dmnt::cheat::impl {
         return true;
     }
 
+    static u64 keyold = 0;
     void CheatVirtualMachine::Execute(const CheatProcessMetadata *metadata) {
         CheatVmOpcode cur_opcode;
         u64 kHeld = 0;
@@ -978,7 +979,14 @@ namespace ams::dmnt::cheat::impl {
                     break;
                 case CheatVmOpcodeType_BeginKeypressConditionalBlock:
                     /* Check for keypress. */
-                    if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
+                    if (cur_opcode.begin_keypress_cond.key_mask > 0x8000000) {
+                        const u64 kDown = ~keyold & kHeld;
+                        
+                        if ((cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF & kDown) != (cur_opcode.begin_keypress_cond.key_mask & 0x7FFFFFF)) {
+                            /* Keys not pressed. Skip conditional block. */
+                            this->SkipConditionalBlock();
+                        }
+                    } else if ((cur_opcode.begin_keypress_cond.key_mask & kHeld) != cur_opcode.begin_keypress_cond.key_mask) {
                         /* Keys not pressed. Skip conditional block. */
                         this->SkipConditionalBlock(true);
                     }
@@ -1305,6 +1313,7 @@ namespace ams::dmnt::cheat::impl {
                     break;
             }
         }
+        keyold = kHeld;
     }
 
 }
