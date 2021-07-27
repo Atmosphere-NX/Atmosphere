@@ -265,6 +265,10 @@ namespace ams::kern::arch::arm64::cpu {
                 return this->GetBits(12, 1) != 0;
             }
 
+            constexpr ALWAYS_INLINE bool GetSoftwareStep() const {
+                return this->GetBits(0, 1) != 0;
+            }
+
             constexpr ALWAYS_INLINE decltype(auto) SetMde(bool set) {
                 this->SetBit(15, set);
                 return *this;
@@ -272,6 +276,11 @@ namespace ams::kern::arch::arm64::cpu {
 
             constexpr ALWAYS_INLINE decltype(auto) SetTdcc(bool set) {
                 this->SetBit(12, set);
+                return *this;
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetSoftwareStep(bool set) {
+                this->SetBit(0, set);
                 return *this;
             }
     };

@@ -16,39 +16,6 @@
 #include <mesosphere/kern_build_config.hpp>
 #include <mesosphere/kern_select_assembly_offsets.h>
 
-#if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-    .macro disable_single_step, scratch
-    /* Clear MDSCR_EL1.SS. */
-    mrs \scratch, mdscr_el1
-    bic \scratch, \scratch, #1
-    msr mdscr_el1, \scratch
-    .endm
-
-    .macro check_enable_single_step, scratch1, scratch2, spsr_value
-    /* Check if single-step is requested. */
-    ldrb    \scratch1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_SINGLE_STEP)]
-    tbz     \scratch1, #0, .skip_single_step\@
-
-    /* If single-step is requested, enable the single-step machine by setting MDSCR_EL1.SS. */
-    mrs     \scratch2, mdscr_el1
-    orr     \scratch2, \scratch2, #1
-    msr     mdscr_el1, \scratch2
-
-    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so we break instantly on the instruction after the SVC. */
-    bic \spsr_value, \spsr_value, #(1 << 21)
-
-    isb
-
-.skip_single_step\@:
-    .endm
-#else
-    .macro disable_single_step, scratch
-    .endm
-
-    .macro check_enable_single_step, scratch1, scratch2, spsr_value
-    .endm
-#endif
-
 /* ams::kern::arch::arm64::SvcHandler64() */
 .section    .text._ZN3ams4kern4arch5arm6412SvcHandler64Ev, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6412SvcHandler64Ev
@@ -83,9 +50,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     stp     x29, x30, [sp, #(EXCEPTION_CONTEXT_X29_X30)]
     stp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_SP_PC)]
     stp     x10, x11, [sp, #(EXCEPTION_CONTEXT_PSR_TPIDR)]
-
-    /* Disable single-step. */
-    disable_single_step x8
 
     /* Check if the SVC index is out of range. */
     mrs     x8, esr_el1
@@ -191,7 +155,10 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     ldp     x9,  x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    check_enable_single_step w0, x0, x10
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
+    bic     x10, x10, #(1 << 21)
+    #endif
 
     msr     sp_el0, x8
     msr     elr_el1, x9
@@ -243,7 +210,10 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
     ldr     x18,      [sp, #(EXCEPTION_CONTEXT_X18)]
 
-    check_enable_single_step w12, x12, x10
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
+    bic     x10, x10, #(1 << 21)
+    #endif
 
     msr     sp_el0, x8
     msr     elr_el1, x9
@@ -301,9 +271,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     stp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
     stp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
     stp     x14, xzr, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
-
-    /* Disable single-step. */
-    disable_single_step x8
 
     /* Check if the SVC index is out of range. */
     mrs     x16, esr_el1
@@ -405,7 +372,10 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     ldp     x17, x20, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x19,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    check_enable_single_step w0, x0, x20
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
+    bic     x20, x20, #(1 << 21)
+    #endif
 
     msr     elr_el1, x17
     msr     spsr_el1, x20
@@ -451,7 +421,10 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     ldp     x17, x20, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x19,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    check_enable_single_step w21, x21, x20
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
+    bic     x20, x20, #(1 << 21)
+    #endif
 
     msr     elr_el1, x17
     msr     spsr_el1, x20

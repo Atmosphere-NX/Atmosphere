@@ -372,6 +372,7 @@ namespace ams::kern {
                     new_state = state;
                 }
 
+                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
                 /* Clear single step on all threads. */
                 {
                     auto end = target->GetThreadList().end();
@@ -379,6 +380,7 @@ namespace ams::kern {
                         it->ClearSingleStep();
                     }
                 }
+                #endif
 
                 /* Detach from the process. */
                 target->ClearDebugObject(new_state);
@@ -900,8 +902,10 @@ namespace ams::kern {
                             {
                                 auto end = process->GetThreadList().end();
                                 for (auto it = process->GetThreadList().begin(); it != end; ++it) {
+                                    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
                                     /* Clear the thread's single-step state. */
                                     it->ClearSingleStep();
+                                    #endif
 
                                     if (resume) {
                                         /* If the process isn't crashed, resume threads. */
@@ -993,7 +997,6 @@ namespace ams::kern {
             /* If the event is an exception, set the result and clear single step. */
             if (event == ams::svc::DebugEvent_Exception) {
                 GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
-                GetCurrentThread().ClearSingleStep();
             }
 
             /* Exit our retry loop. */

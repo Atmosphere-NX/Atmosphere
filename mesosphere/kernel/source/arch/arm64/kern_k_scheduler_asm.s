@@ -235,7 +235,26 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     mov    x0, x22
     RESTORE_THREAD_CONTEXT(x0, x1, x2, 9f)
 
-9:  /* We're done restoring the thread context, and can return safely. */
+9:  /* Configure single-step, if we should. */
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+
+    /* Get a reference to the new thread's stack parameters. */
+    add    x2, sp, #0x1000
+    and    x2, x2, #~(0x1000-1)
+
+    /* Read the single-step flag. */
+    ldurb  w2, [x2, #-(THREAD_STACK_PARAMETERS_SIZE - THREAD_STACK_PARAMETERS_IS_SINGLE_STEP)]
+
+    /* Update the single-step bit in mdscr_el1. */
+    mrs    x1, mdscr_el1
+    bic    x1, x1, #1
+    orr    x1, x1, x2
+    msr    mdscr_el1, x1
+
+    isb
+    #endif
+
+    /* We're done restoring the thread context, and can return safely. */
     ret
 
 10: /* Our switch failed. */
