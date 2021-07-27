@@ -109,13 +109,9 @@ namespace ams::kern::arch::arm64 {
                     break;
             }
 
-            /* If we should, clear the thread's state as single-step. */
+            /* In the event that we return from this exception, we want SPSR.SS set so that we advance an instruction if single-stepping. */
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-            if (AMS_UNLIKELY(GetCurrentThread().IsSingleStep())) {
-                GetCurrentThread().ClearSingleStep();
-                cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(false).Store();
-                cpu::EnsureInstructionConsistency();
-            }
+            context->psr |= (1ul << 21);
             #endif
 
             /* If we should process the user exception (and it's not a breakpoint), try to enter. */
@@ -223,6 +219,15 @@ namespace ams::kern::arch::arm64 {
                     return;
                 }
             }
+
+            /* If we should, clear the thread's state as single-step. */
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            if (AMS_UNLIKELY(GetCurrentThread().IsSingleStep())) {
+                GetCurrentThread().ClearSingleStep();
+                cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(false).Store();
+                cpu::EnsureInstructionConsistency();
+            }
+            #endif
 
             {
                 /* Collect additional information based on the ec. */
