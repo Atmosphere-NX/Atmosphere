@@ -15,39 +15,6 @@
  */
 #include <mesosphere/kern_select_assembly_offsets.h>
 
-#if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-    .macro disable_single_step, scratch
-    /* Clear MDSCR_EL1.SS. */
-    mrs \scratch, mdscr_el1
-    bic \scratch, \scratch, #1
-    msr mdscr_el1, \scratch
-    .endm
-
-    .macro check_enable_single_step, scratch1, scratch2, spsr_value
-    /* Check if single-step is requested. */
-    ldrb    \scratch1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_SINGLE_STEP)]
-    tbz     \scratch1, #0, .skip_single_step\@
-
-    /* If single-step is requested, enable the single-step machine by setting MDSCR_EL1.SS. */
-    mrs     \scratch2, mdscr_el1
-    orr     \scratch2, \scratch2, #1
-    msr     mdscr_el1, \scratch2
-
-    /* Since we're returning from an exception, set SPSR.SS so we actually advance an instruction. */
-    orr \spsr_value, \spsr_value, #(1 << 21)
-
-    isb
-
-.skip_single_step\@:
-    .endm
-#else
-    .macro disable_single_step, scratch
-    .endm
-
-    .macro check_enable_single_step, scratch1, scratch2, spsr_value
-    .endm
-#endif
-
 /* ams::kern::arch::arm64::EL1IrqExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv
@@ -133,8 +100,6 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     stp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     str     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    disable_single_step x0
-
     /* Invoke KInterruptManager::HandleInterrupt(bool user_mode). */
     ldr     x18, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0, #1
@@ -145,7 +110,10 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    check_enable_single_step w0, x0, x22
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an exception, set SPSR.SS so that we advance an instruction if single-stepping. */
+    orr x22, x22, #(1 << 21)
+    #endif
 
     msr     sp_el0, x20
     msr     elr_el1, x21
@@ -239,8 +207,6 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     stp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     str     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    disable_single_step x16
-
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
     ldr     x18, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0,  sp
@@ -251,7 +217,10 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    check_enable_single_step w0, x0, x22
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an exception, set SPSR.SS so that we advance an instruction if single-stepping. */
+    orr x22, x22, #(1 << 21)
+    #endif
 
     msr     sp_el0, x20
     msr     elr_el1, x21
