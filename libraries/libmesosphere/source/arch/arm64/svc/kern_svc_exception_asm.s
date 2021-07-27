@@ -92,7 +92,7 @@ _ZN3ams4kern3svc14RestoreContextEm:
 
     #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
     /* Since we're returning from an exception, set SPSR.SS so that we advance an instruction if single-stepping. */
-    orr x22, x22, #(1 << 21)
+    orr x10, x10, #(1 << 21)
     #endif
 
     msr     sp_el0, x8
