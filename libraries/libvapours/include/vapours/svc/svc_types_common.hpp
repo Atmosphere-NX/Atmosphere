@@ -174,8 +174,9 @@ namespace ams::svc {
     };
 
     enum MesosphereMetaInfo : u64 {
-        MesosphereMetaInfo_KernelVersion   = 0,
-        MesosphereMetaInfo_IsKTraceEnabled = 1,
+        MesosphereMetaInfo_KernelVersion       = 0,
+        MesosphereMetaInfo_IsKTraceEnabled     = 1,
+        MesosphereMetaInfo_IsSingleStepEnabled = 2,
     };
 
     enum SystemInfoType : u32 {
@@ -299,6 +300,9 @@ namespace ams::svc {
         ThreadContextFlag_FpuControl = (1 << 3),
 
         ThreadContextFlag_All = (ThreadContextFlag_General | ThreadContextFlag_Control | ThreadContextFlag_Fpu | ThreadContextFlag_FpuControl),
+
+        ThreadContextFlag_SetSingleStep   = (1u << 30),
+        ThreadContextFlag_ClearSingleStep = (1u << 31),
     };
 
     enum ContinueFlag : u32 {
