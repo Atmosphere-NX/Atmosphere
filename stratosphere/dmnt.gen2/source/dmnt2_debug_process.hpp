@@ -52,6 +52,7 @@ namespace ams::dmnt {
             u64 m_continue_thread_id{};
             GdbSignal m_last_signal{};
             bool m_stepping{false};
+            bool m_use_hardware_single_step{false};
             bool m_thread_valid[ThreadCountMax]{};
             u64 m_thread_ids[ThreadCountMax]{};
             osdbg::ThreadInfo m_thread_infos[ThreadCountMax]{};
@@ -64,8 +65,12 @@ namespace ams::dmnt {
             size_t m_module_count{};
             size_t m_main_module{};
         public:
-            /* TODO: ifdef for hardware breakpoints. */
-            DebugProcess() : m_software_breakpoints(this), m_hardware_breakpoints(this), m_hardware_watchpoints(this), m_step_breakpoints(m_software_breakpoints) { /* ... */ }
+            DebugProcess() : m_software_breakpoints(this), m_hardware_breakpoints(this), m_hardware_watchpoints(this), m_step_breakpoints(m_software_breakpoints) {
+                if (svc::IsKernelMesosphere()) {
+                    uint64_t value = 0;
+                    m_use_hardware_single_step = R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(value), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_IsSingleStepEnabled)) && value != 0;
+                }
+            }
             ~DebugProcess() { this->Detach(); }
 
             svc::Handle GetHandle() const { return m_debug_handle; }
