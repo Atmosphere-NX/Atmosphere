@@ -217,11 +217,6 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
-    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-    /* Since we're returning from an exception, set SPSR.SS so that we advance an instruction if single-stepping. */
-    orr x22, x22, #(1 << 21)
-    #endif
-
     msr     sp_el0, x20
     msr     elr_el1, x21
     msr     spsr_el1, x22
