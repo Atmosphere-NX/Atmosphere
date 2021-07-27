@@ -372,6 +372,14 @@ namespace ams::kern {
                     new_state = state;
                 }
 
+                /* Clear single step on all threads. */
+                {
+                    auto end = target->GetThreadList().end();
+                    for (auto it = target->GetThreadList().begin(); it != end; ++it) {
+                        it->ClearSingleStep();
+                    }
+                }
+
                 /* Detach from the process. */
                 target->ClearDebugObject(new_state);
                 m_process = nullptr;
@@ -478,6 +486,25 @@ namespace ams::kern {
                     continue;
                 }
             }
+
+            /* Update thread single-step state. */
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            {
+                if ((context_flags & ams::svc::ThreadContextFlag_SetSingleStep) != 0) {
+                    /* Set single step. */
+                    thread->SetSingleStep();
+
+                    /* If no other thread flags are present, we're done. */
+                    R_SUCCEED_IF((context_flags & ~ams::svc::ThreadContextFlag_SetSingleStep) == 0);
+                } else if ((context_flags & ams::svc::ThreadContextFlag_ClearSingleStep) != 0) {
+                    /* Clear single step. */
+                    thread->ClearSingleStep();
+
+                    /* If no other thread flags are present, we're done. */
+                    R_SUCCEED_IF((context_flags & ~ams::svc::ThreadContextFlag_ClearSingleStep) == 0);
+                }
+            }
+            #endif
 
             /* Verify that the thread's svc state is valid. */
             if (thread->IsCallingSvc()) {
@@ -873,6 +900,9 @@ namespace ams::kern {
                             {
                                 auto end = process->GetThreadList().end();
                                 for (auto it = process->GetThreadList().begin(); it != end; ++it) {
+                                    /* Clear the thread's single-step state. */
+                                    it->ClearSingleStep();
+
                                     if (resume) {
                                         /* If the process isn't crashed, resume threads. */
                                         it->Resume(KThread::SuspendType_Debug);
@@ -960,9 +990,10 @@ namespace ams::kern {
             /* Set the process as breaked. */
             process->SetDebugBreak();
 
-            /* If the event is an exception, set the result. */
+            /* If the event is an exception, set the result and clear single step. */
             if (event == ams::svc::DebugEvent_Exception) {
                 GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
+                GetCurrentThread().ClearSingleStep();
             }
 
             /* Exit our retry loop. */

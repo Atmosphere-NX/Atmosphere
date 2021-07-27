@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_build_config.hpp>
 
 /* TODO: Different header for this? */
 #define AMS_KERN_NUM_SUPERVISOR_CALLS 0xC0
@@ -29,6 +30,10 @@
 #define THREAD_STACK_PARAMETERS_IS_CALLING_SVC          0x2C
 #define THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER 0x2D
 #define THREAD_STACK_PARAMETERS_IS_PINNED               0x2E
+
+#if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+#define THREAD_STACK_PARAMETERS_IS_SINGLE_STEP          0x2F
+#endif
 
 /* ams::kern::arch::arm64::KThreadContext, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/arch/arm64/kern_k_thread_context.hpp */
 #define THREAD_CONTEXT_SIZE          0x290

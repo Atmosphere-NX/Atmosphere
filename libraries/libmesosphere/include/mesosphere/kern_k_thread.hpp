@@ -92,6 +92,9 @@ namespace ams::kern {
                 bool is_calling_svc;
                 bool is_in_exception_handler;
                 bool is_pinned;
+                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+                bool is_single_step;
+                #endif
             };
             static_assert(alignof(StackParameters) == 0x10);
             static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
@@ -105,6 +108,10 @@ namespace ams::kern {
             static_assert(__builtin_offsetof(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
             static_assert(__builtin_offsetof(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
             static_assert(__builtin_offsetof(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
+
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            static_assert(__builtin_offsetof(StackParameters, is_single_step)          == THREAD_STACK_PARAMETERS_IS_SINGLE_STEP);
+            #endif
 
             struct QueueEntry {
                 private:
@@ -324,6 +331,25 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetStackParameters().current_svc_id;
             }
+
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+
+            ALWAYS_INLINE void SetSingleStep() {
+                MESOSPHERE_ASSERT_THIS();
+                this->GetStackParameters().is_single_step = true;
+            }
+
+            ALWAYS_INLINE void ClearSingleStep() {
+                MESOSPHERE_ASSERT_THIS();
+                this->GetStackParameters().is_single_step = false;
+            }
+
+            ALWAYS_INLINE bool IsSingleStep() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->GetStackParameters().is_single_step;
+            }
+
+            #endif
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
                 this->GetStackParameters().dpc_flags.fetch_or(flag);
