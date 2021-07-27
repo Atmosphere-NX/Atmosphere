@@ -273,25 +273,31 @@ namespace ams::dmnt {
         /* Note that we're stepping. */
         m_stepping = true;
 
-        /* Determine where we're stepping to. */
-        u64 current_pc  = ctx.pc;
-        u64 step_target = 0;
-        this->GetBranchTarget(ctx, thread_id, current_pc, step_target);
+        if (m_use_hardware_single_step) {
+            /* Set thread single step. */
+            R_TRY(this->SetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_SetSingleStep));
+        } else {
+            /* Determine where we're stepping to. */
+            u64 current_pc  = ctx.pc;
+            u64 step_target = 0;
+            this->GetBranchTarget(ctx, thread_id, current_pc, step_target);
 
-        /* Ensure we end with valid breakpoints. */
-        auto bp_guard = SCOPE_GUARD { this->ClearStep(); };
+            /* Ensure we end with valid breakpoints. */
+            auto bp_guard = SCOPE_GUARD { this->ClearStep(); };
 
-        /* Set step breakpoint on current pc. */
-        /* TODO: aarch32 breakpoints. */
-        if (current_pc) {
-            R_TRY(m_step_breakpoints.SetBreakPoint(current_pc, sizeof(u32), true));
+            /* Set step breakpoint on current pc. */
+            /* TODO: aarch32 breakpoints. */
+            if (current_pc) {
+                R_TRY(m_step_breakpoints.SetBreakPoint(current_pc, sizeof(u32), true));
+            }
+
+            if (step_target) {
+                R_TRY(m_step_breakpoints.SetBreakPoint(step_target, sizeof(u32), true));
+            }
+
+            bp_guard.Cancel();
         }
 
-        if (step_target) {
-            R_TRY(m_step_breakpoints.SetBreakPoint(step_target, sizeof(u32), true));
-        }
-
-        bp_guard.Cancel();
         return ResultSuccess();
     }
 
