@@ -84,11 +84,17 @@ namespace ams::pgl {
     class EventObserver {
         NON_COPYABLE(EventObserver);
         private:
-            std::unique_ptr<impl::EventObserverInterface> m_impl;
+            struct Deleter {
+                void operator()(impl::EventObserverInterface *);
+            };
+        public:
+            using UniquePtr = std::unique_ptr<impl::EventObserverInterface, Deleter>;
+        private:
+            UniquePtr m_impl;
         public:
             EventObserver() { /* ... */ }
 
-            explicit EventObserver(std::unique_ptr<impl::EventObserverInterface> impl) : m_impl(std::move(impl)) { /* ... */ }
+            explicit EventObserver(UniquePtr impl) : m_impl(std::move(impl)) { /* ... */ }
 
             EventObserver(EventObserver &&rhs) {
                 m_impl = std::move(rhs.m_impl);

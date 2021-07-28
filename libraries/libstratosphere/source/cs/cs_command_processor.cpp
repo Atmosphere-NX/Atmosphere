@@ -33,6 +33,7 @@ namespace ams::cs {
                 SendFirmwareVersion(socket, header);
                 break;
             /* TODO: Command support. */
+            /* TODO: Command support. */
             default:
                 scs::CommandProcessor::ProcessCommand(header, body, socket);
                 break;
