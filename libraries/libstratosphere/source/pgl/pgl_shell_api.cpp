@@ -18,6 +18,44 @@
 
 namespace ams::pgl {
 
+    namespace {
+
+        struct PglEventObserverAllocator;
+        using RemoteAllocator     = ams::sf::ExpHeapStaticAllocator<1_KB, PglEventObserverAllocator>;
+        using RemoteObjectFactory = ams::sf::ObjectFactory<typename RemoteAllocator::Policy>;
+
+        class StaticAllocatorInitializer {
+            public:
+                StaticAllocatorInitializer() {
+                    RemoteAllocator::Initialize(lmem::CreateOption_None);
+                }
+        } g_static_allocator_initializer;
+
+        template<typename T, typename... Args>
+        T *AllocateFromStaticExpHeap(Args &&... args) {
+            T * const object = static_cast<T *>(RemoteAllocator::Allocate(sizeof(T)));
+            if (AMS_LIKELY(object != nullptr)) {
+                std::construct_at(object, std::forward<Args>(args)...);
+            }
+            return object;
+        }
+
+        template<typename T>
+        void FreeToStaticExpHeap(T *object) {
+            return RemoteAllocator::Deallocate(object, sizeof(T));
+        }
+
+        template<typename T, typename... Args> requires std::derived_from<T, impl::EventObserverInterface>
+        EventObserver::UniquePtr MakeUniqueFromStaticExpHeap(Args &&... args) {
+            return EventObserver::UniquePtr{AllocateFromStaticExpHeap<T>(std::forward<Args>(args)...)};
+        }
+
+    }
+
+    void EventObserver::Deleter::operator()(impl::EventObserverInterface *obj) {
+        FreeToStaticExpHeap(obj);
+    }
+
     Result Initialize() {
         return ::pglInitialize();
     }
@@ -79,17 +117,16 @@ namespace ams::pgl {
         ::PglEventObserver obs;
         R_TRY(::pglGetEventObserver(std::addressof(obs)));
 
-        /* TODO: Real allocator */
         if (hos::GetVersion() >= hos::Version_12_0_0) {
-            auto observer_holder = std::make_unique<impl::EventObserverByTipc<RemoteEventObserver>>(obs);
+            auto observer_holder = MakeUniqueFromStaticExpHeap<impl::EventObserverByTipc<RemoteEventObserver>>(obs);
             R_UNLESS(observer_holder != nullptr, pgl::ResultOutOfMemory());
 
             *out = pgl::EventObserver(std::move(observer_holder));
         } else {
-            auto remote_observer = ams::sf::CreateSharedObjectEmplaced<pgl::sf::IEventObserver, RemoteEventObserver>(obs);
+            auto remote_observer = RemoteObjectFactory::CreateSharedEmplaced<pgl::sf::IEventObserver, RemoteEventObserver>(obs);
             R_UNLESS(remote_observer != nullptr, pgl::ResultOutOfMemory());
 
-            auto observer_holder = std::make_unique<impl::EventObserverByCmif>(std::move(remote_observer));
+            auto observer_holder = MakeUniqueFromStaticExpHeap<impl::EventObserverByCmif>(std::move(remote_observer));
             R_UNLESS(observer_holder != nullptr, pgl::ResultOutOfMemory());
 
             *out = pgl::EventObserver(std::move(observer_holder));
