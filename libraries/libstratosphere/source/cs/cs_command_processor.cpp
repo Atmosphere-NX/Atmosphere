@@ -109,11 +109,17 @@ namespace ams::cs {
             .buffer_size = sizeof(g_data),
         };
 
-        /* Acquire the send lock. */
-        auto lk = MakeSendGuardBlock();
-
         /* Take the screenshot. */
-        const Result result = DoTakeScreenShotCommand(params);
+        Result result;
+        {
+            /* Acquire the send lock. */
+            auto lk = MakeSendGuardBlock();
+
+            /* Perform the command. */
+            result = DoTakeScreenShotCommand(params);
+        }
+
+        /* Handle the error case. */
         if (R_FAILED(result)) {
             SendErrorResult(socket, header, result);
         }

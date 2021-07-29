@@ -18,17 +18,21 @@
 
 namespace ams::scs {
 
-    struct CommandHeader {
-        u64 id;
+    struct alignas(alignof(u32)) CommandHeader {
+        u64 id __attribute__((packed));
         u32 command;
         u32 body_size;
     };
+    static_assert(sizeof(CommandHeader) == 0x10);
+    static_assert(alignof(CommandHeader) == alignof(u32));
 
-    struct ResponseHeader {
-        u64 id;
+    struct alignas(alignof(u32)) ResponseHeader {
+        u64 id __attribute__((packed));
         u32 response;
         u32 body_size;
     };
+    static_assert(sizeof(ResponseHeader) == 0x10);
+    static_assert(alignof(ResponseHeader) == alignof(u32));
 
     class CommandProcessor {
         protected:
