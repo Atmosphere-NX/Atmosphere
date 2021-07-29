@@ -380,15 +380,14 @@ namespace ams::scs {
         return g_socket_info_manager.Unregister(socket);
     }
 
-    Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags) {
+    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, const void *args, size_t args_size, u32 process_flags) {
         /* Set up the arguments. */
-        PrepareToLaunchProgram(program_id, args, args_size);
+        PrepareToLaunchProgram(loc.program_id, args, args_size);
 
         /* Ensure arguments are managed correctly. */
-        ON_SCOPE_EXIT { FlushProgramArgument(program_id); };
+        ON_SCOPE_EXIT { FlushProgramArgument(loc.program_id); };
 
         /* Launch the program. */
-        const ncm::ProgramLocation loc = ncm::ProgramLocation::Make(program_id, ncm::StorageId::BuiltInSystem);
         R_TRY(pgl::LaunchProgram(out, loc, process_flags | pm::LaunchFlags_SignalOnExit, 0));
 
         return ResultSuccess();
