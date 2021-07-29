@@ -29,7 +29,11 @@ namespace ams::scs {
     Result RegisterSocket(s32 socket, u64 id);
     void UnregisterSocket(s32 socket);
 
-    Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags);
+    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, const void *args, size_t args_size, u32 process_flags);
+
+    inline Result LaunchProgram(os::ProcessId *out, ncm::ProgramId program_id, const void *args, size_t args_size, u32 process_flags) {
+        return LaunchProgram(out, ncm::ProgramLocation::Make(program_id, ncm::StorageId::BuiltInSystem), args, args_size, process_flags);
+    }
 
     Result SubscribeProcessEvent(s32 socket, bool is_register, u64 id);
 
