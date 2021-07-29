@@ -25,6 +25,10 @@ namespace ams::capsrv {
     Result InitializeScreenShotControl();
     void   FinalizeScreenShotControl();
 
+    Result OpenRawScreenShotReadStreamForDevelop(size_t *out_data_size, s32 *out_width, s32 *out_height, vi::LayerStack layer_stack, TimeSpan timeout);
+    Result ReadRawScreenShotReadStreamForDevelop(size_t *out_read_size, void *dst, size_t dst_size, std::ptrdiff_t offset);
+    void CloseRawScreenShotReadStreamForDevelop();
+
     Result CaptureJpegScreenshot(u64 *out_size, void *dst, size_t dst_size, vi::LayerStack layer_stack, TimeSpan timeout);
 
 }
