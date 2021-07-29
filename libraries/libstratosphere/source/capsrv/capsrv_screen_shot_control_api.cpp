@@ -29,4 +29,27 @@ namespace ams::capsrv {
         return ::capsscCaptureJpegScreenShot(out_size, dst, dst_size, static_cast<::ViLayerStack>(layer_stack), timeout.GetNanoSeconds());
     }
 
+    Result OpenRawScreenShotReadStreamForDevelop(size_t *out_data_size, s32 *out_width, s32 *out_height, vi::LayerStack layer_stack, TimeSpan timeout) {
+        u64 data_size, width, height;
+        R_TRY(::capsscOpenRawScreenShotReadStream(std::addressof(data_size), std::addressof(width), std::addressof(height), static_cast<::ViLayerStack>(layer_stack), timeout.GetNanoSeconds()));
+
+        *out_data_size = static_cast<size_t>(data_size);
+        *out_width     = static_cast<s32>(width);
+        *out_height    = static_cast<s32>(height);
+
+        return ResultSuccess();
+    }
+
+    Result ReadRawScreenShotReadStreamForDevelop(size_t *out_read_size, void *dst, size_t dst_size, std::ptrdiff_t offset) {
+        u64 read_size;
+        R_TRY(::capsscReadRawScreenShotReadStream(std::addressof(read_size), dst, dst_size, static_cast<u64>(offset)));
+
+        *out_read_size = static_cast<size_t>(read_size);
+        return ResultSuccess();
+    }
+
+    void CloseRawScreenShotReadStreamForDevelop() {
+        ::capsscCloseRawScreenShotReadStream();
+    }
+
 }
