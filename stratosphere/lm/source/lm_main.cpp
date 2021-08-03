@@ -148,7 +148,6 @@ void __appExit(void) {
     setsysExit();
 }
 
-/*
 namespace ams {
 
     void *Malloc(size_t size) {
@@ -180,7 +179,6 @@ void *__libnx_aligned_alloc(size_t alignment, size_t size) {
 void __libnx_free(void *mem) {
     AMS_ABORT("__libnx_free was called");
 }
-*/
 
 extern std::atomic_bool g_disabled_flush;
 

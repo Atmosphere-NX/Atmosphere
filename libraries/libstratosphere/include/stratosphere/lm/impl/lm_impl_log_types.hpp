@@ -25,7 +25,7 @@ namespace ams::lm::impl {
     };
 
     struct BinaryLogHeader {
-        static constexpr u32 Magic = util::FourCC<'p','h','p','h'>::Code;
+        static constexpr u32 Magic = util::FourCC<'h','p','h','p'>::Code;
 
         u32 magic;
         u8 version;
