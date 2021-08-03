@@ -42,6 +42,8 @@ namespace ams::mitm::fs {
         constinit bool g_detected_boot0_kind = false;
         constinit bool g_is_boot0_custom_public_key = false;
 
+        constinit fssrv::impl::ProgramIndexMapInfoManager g_program_index_map_info_manager;
+
         bool IsBoot0CustomPublicKey(::FsStorage &storage) {
             if (AMS_UNLIKELY(!g_detected_boot0_kind)) {
                 std::scoped_lock lk(g_boot0_detect_lock);
@@ -380,7 +382,7 @@ namespace ams::mitm::fs {
 
         /* Try to get a storage from the cache. */
         {
-            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
+            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(data_id);
             if (cached_storage != nullptr) {
                 out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
                 return ResultSuccess();
@@ -403,9 +405,70 @@ namespace ams::mitm::fs {
                 new_storage = std::move(layered_storage);
             }
 
-            SetStorageCacheEntry(this->client_info.program_id, &new_storage);
+            SetStorageCacheEntry(data_id, &new_storage);
             out.SetValue(MakeSharedStorage(new_storage), target_object_id);
         }
+
+        return ResultSuccess();
+    }
+
+    Result FsMitmService::OpenDataStorageWithProgramIndex(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index) {
+        /* Only mitm if we should override contents for the current process. */
+        R_UNLESS(this->client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
+
+        /* Get the relevant program id. */
+        const ncm::ProgramId program_id = g_program_index_map_info_manager.GetProgramId(this->client_info.program_id, program_index);
+
+        /* If we don't know about the program or don't have content, forward. */
+        R_UNLESS(program_id != ncm::InvalidProgramId,     sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(mitm::fs::HasSdRomfsContent(program_id), sm::mitm::ResultShouldForwardToSession());
+
+        /* Try to open the process romfs. */
+        FsStorage data_storage;
+        R_TRY(fsOpenDataStorageWithProgramIndexFwd(this->forward_service.get(), &data_storage, program_index));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&data_storage.s)};
+
+        /* Get a scoped lock. */
+        std::scoped_lock lk(g_data_storage_lock);
+
+        /* Try to get a storage from the cache. */
+        {
+            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(program_id);
+            if (cached_storage != nullptr) {
+                out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
+                return ResultSuccess();
+            }
+        }
+
+        /* Make a new layered romfs, and cache to storage. */
+        {
+            std::shared_ptr<fs::IStorage> new_storage = nullptr;
+
+            /* Create the layered storage. */
+            FsFile data_file;
+            if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, program_id, "romfs.bin", OpenMode_Read))) {
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), program_id);
+                layered_storage->BeginInitialize();
+                new_storage = std::move(layered_storage);
+            } else {
+                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, program_id);
+                layered_storage->BeginInitialize();
+                new_storage = std::move(layered_storage);
+            }
+
+            SetStorageCacheEntry(program_id, &new_storage);
+            out.SetValue(MakeSharedStorage(new_storage), target_object_id);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result FsMitmService::RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count) {
+        /* Try to register with FS. */
+        R_TRY(fsRegisterProgramIndexMapInfoFwd(this->forward_service.get(), info_buffer.GetPointer(), info_buffer.GetSize(), info_count));
+
+        /* Register with ourselves. */
+        R_ABORT_UNLESS(g_program_index_map_info_manager.Reset(reinterpret_cast<const fs::ProgramIndexMapInfo *>(info_buffer.GetPointer()), info_count));
 
         return ResultSuccess();
     }

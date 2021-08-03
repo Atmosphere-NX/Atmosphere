@@ -113,7 +113,7 @@ namespace ams::sf {
 
                         void DisposeImpl() {
                             Allocator *a = this->GetAllocator();
-                            this->~Object();
+                            std::destroy_at(this);
                             operator delete(this, a);
                         }
                     public:

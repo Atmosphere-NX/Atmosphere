@@ -27,20 +27,20 @@ namespace ams::lm {
         LogDestination_All           = 0xFFFF,
     };
 
-    namespace impl {
+}
 
-        #define AMS_LM_I_LOGGER_INFO(C, H)                                                              \
-        AMS_SF_METHOD_INFO(C, H,  0, void, Log,            (const sf::InAutoSelectBuffer &log_buffer))  \
-        AMS_SF_METHOD_INFO(C, H,  1, void, SetDestination, (LogDestination log_destination))
+#define AMS_LM_I_LOGGER_INFO(C, H)                                                              \
+    AMS_SF_METHOD_INFO(C, H,  0, void, Log,            (const sf::InAutoSelectBuffer &log_buffer), (log_buffer))  \
+    AMS_SF_METHOD_INFO(C, H,  1, void, SetDestination, (lm::LogDestination log_destination),       (log_destination))
 
-        AMS_SF_DEFINE_INTERFACE(ILogger, AMS_LM_I_LOGGER_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lm::impl, ILogger, AMS_LM_I_LOGGER_INFO)
 
-        #define AMS_LM_I_LOG_SERVICE_INFO(C, H)                                                                                                       \
-        AMS_SF_METHOD_INFO(C, H,  0, void, OpenLogger,     (const sf::ClientProcessId &client_pid, sf::Out<std::shared_ptr<ILogger>> out_logger))
+#define AMS_LM_I_LOG_SERVICE_INFO(C, H)                                                                                                       \
+    AMS_SF_METHOD_INFO(C, H,  0, void, OpenLogger,     (const sf::ClientProcessId &client_pid, sf::Out<ams::sf::SharedPointer<ams::lm::impl::ILogger>> out_logger), (client_pid, out_logger))
 
-        AMS_SF_DEFINE_INTERFACE(ILogService, AMS_LM_I_LOG_SERVICE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lm::impl, ILogService, AMS_LM_I_LOG_SERVICE_INFO)
 
-    }
+namespace ams::lm {
 
     class Logger {
         private:
@@ -49,8 +49,10 @@ namespace ams::lm {
             Logger(os::ProcessId process_id);
             ~Logger();
 
+            /*
             void *operator new(size_t size);
             void operator delete(void *p);
+            */
 
             void Log(const sf::InAutoSelectBuffer &log_buffer);
             void SetDestination(LogDestination log_destination);
@@ -59,7 +61,7 @@ namespace ams::lm {
 
     class LogService {
         public:
-            void OpenLogger(const sf::ClientProcessId &client_pid, sf::Out<std::shared_ptr<impl::ILogger>> out_logger);
+            void OpenLogger(const sf::ClientProcessId &client_pid, sf::Out<sf::SharedPointer<impl::ILogger>> out_logger);
     };
     static_assert(impl::IsILogService<LogService>);
 

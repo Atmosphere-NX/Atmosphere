@@ -24,4 +24,6 @@ namespace ams::settings::factory {
     static_assert(sizeof(SerialNumber) == 0x18);
     static_assert(util::is_pod<SerialNumber>::value);
 
+    Result GetSerialNumber(SerialNumber *out);
+
 }

@@ -1,7 +1,4 @@
 %rename link old_link
 
 *link:
-%(old_link) -T %:getenv(TOPDIR /sc7fw.ld) --gc-sections --nmagic -nostdlib -nostartfiles
-
-*startfile:
-crti%O%s crtbegin%O%s
+%(old_link) -T %:getenv(TOPDIR /sc7fw.ld) --gc-sections --nmagic

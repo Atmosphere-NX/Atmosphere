@@ -83,6 +83,9 @@ namespace ams::kern {
 
             /* Do the task. */
             task->DoTask();
+
+            /* Destroy any objects we may need to close. */
+            m_thread->DestroyClosedObjects();
         }
     }
 

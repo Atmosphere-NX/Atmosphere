@@ -38,6 +38,12 @@ namespace ams::boot {
             }
 
             Result Initialize(bool set_input_current_limit) {
+                /* Configure PINMUX_AUX_CAM_FLASH_EN as tristate + passthrough. */
+                {
+                    const uintptr_t apb_regs = dd::QueryIoMapping(0x70000000ul, os::MemoryPageSize);
+                    reg::ClearBits(apb_regs + PINMUX_AUX_CAM_FLASH_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+                }
+
                 /* Set input current limit to 500 ma. */
                 if (set_input_current_limit) {
                     R_TRY(powctl::SetChargerInputCurrentLimit(this->charger_session, 500));

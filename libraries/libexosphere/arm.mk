@@ -16,7 +16,10 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
 #---------------------------------------------------------------------------------
 
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_EXOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -Os -Wextra -Werror -flto -fno-non-call-exceptions
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -Os -Wextra -Werror -flto -fno-non-call-exceptions \
+               -Wno-array-bounds \
+               -Wno-stringop-overflow \
+               -Wno-stringop-overread
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
@@ -93,6 +96,8 @@ clean-$(strip $1):
 	@rm -fr $$(foreach hdr,$$(GCH_DIRS),$$(hdr)/$$(ATMOSPHERE_BOARD_NAME)_$$(ATMOSPHERE_ARCH_NAME)_$(strip $1))
 	@for i in $$(GCH_DIRS) $$(ATMOSPHERE_BUILD_DIR) $$(ATMOSPHERE_LIBRARY_DIR); do [ -d $$$$i ] && rmdir --ignore-fail-on-non-empty $$$$i || true; done
 
+.PHONY: $(strip $1) clean-$(strip $1) $$(ATMOSPHERE_LIBRARY_DIR)/$(strip $2)
+
 endef
 
 $(eval $(call ATMOSPHERE_ADD_TARGET, release, $(TARGET).a, \
@@ -114,7 +119,7 @@ $(eval $(call ATMOSPHERE_ADD_TARGET, audit, $(TARGET)_audit.a, \
 ALL_GCH_IDENTIFIERS := $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)_$(config))
 ALL_GCH_FILES       := $(foreach hdr,$(PRECOMPILED_HEADERS:.hpp=.hpp.gch),$(foreach id,$(ALL_GCH_IDENTIFIERS),$(hdr)/$(id)))
 
-.PHONY: clean all $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),$(config) clean-$(config))
+.PHONY: clean all
 
 $(ATMOSPHERE_LIBRARY_DIR) $(GCH_DIRS):
 	@[ -d $@ ] || mkdir -p $@

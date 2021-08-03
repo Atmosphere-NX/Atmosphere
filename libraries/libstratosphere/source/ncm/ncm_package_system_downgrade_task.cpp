@@ -70,7 +70,7 @@ namespace ams::ncm {
         /* Get and prepare install content meta info. We aren't concerned if our key is older. */
         InstallContentMetaInfo install_content_meta_info;
         R_TRY(this->GetInstallContentMetaInfo(std::addressof(install_content_meta_info), key));
-        return this->PrepareContentMeta(install_content_meta_info, key, std::nullopt);
+        return this->PrepareContentMeta(install_content_meta_info, key, util::nullopt);
     }
 
 }

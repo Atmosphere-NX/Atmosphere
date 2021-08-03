@@ -21,9 +21,9 @@ namespace ams::ncm {
     class SubmissionPackageInstallTask::Impl {
         private:
             fs::FileHandleStorage storage;
-            std::optional<impl::MountName> mount_name;
+            util::optional<impl::MountName> mount_name;
         public:
-            explicit Impl(fs::FileHandle file) : storage(file), mount_name(std::nullopt) { /* ... */ }
+            explicit Impl(fs::FileHandle file) : storage(file), mount_name(util::nullopt) { /* ... */ }
 
             ~Impl() {
                 if (this->mount_name) {
@@ -37,6 +37,9 @@ namespace ams::ncm {
                 /* Allocate a partition file system. */
                 auto partition_file_system = std::make_unique<fssystem::PartitionFileSystem>();
                 R_UNLESS(partition_file_system != nullptr, ncm::ResultAllocationFailed());
+
+                /* Initialize the partition file system. */
+                R_TRY(partition_file_system->Initialize(std::addressof(this->storage)));
 
                 /* Create a mount name and register the file system. */
                 auto mount_name = impl::CreateUniqueMountName();

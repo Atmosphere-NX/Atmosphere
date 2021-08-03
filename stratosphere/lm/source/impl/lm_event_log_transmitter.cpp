@@ -5,7 +5,7 @@ namespace ams::lm::impl {
 
     namespace {
 
-        bool EventLogTransmitter_FlushFunction(const void *log_data, size_t log_size) {
+        bool EventLogTransmitter_FlushFunction(const u8 *log_data, size_t log_size) {
             /* Simply log with flush through LogBuffer. */
             return GetLogBuffer()->Log(log_data, log_size, true);
         }

@@ -36,7 +36,7 @@ namespace ams::ddsf {
         R_UNLESS(holder_storage != nullptr, ddsf::ResultOutOfResource());
 
         /* Initialize the new holder. */
-        auto *holder = new (static_cast<DeviceCodeEntryHolder *>(holder_storage)) DeviceCodeEntryHolder;
+        auto *holder = std::construct_at(static_cast<DeviceCodeEntryHolder *>(holder_storage));
         holder->Construct(device_code, device);
 
         /* Link the new holder. */
@@ -60,7 +60,7 @@ namespace ams::ddsf {
             if (cur->Get().GetDeviceCode() == device_code) {
                 /* Destroy and deallocate the holder. */
                 cur->Destroy();
-                cur->~DeviceCodeEntryHolder();
+                std::destroy_at(cur);
                 this->memory_resource->Deallocate(cur, sizeof(*cur));
 
                 erased = true;

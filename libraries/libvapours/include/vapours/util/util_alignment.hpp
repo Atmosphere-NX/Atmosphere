@@ -43,6 +43,11 @@ namespace ams::util {
         return (value & invmask) == 0;
     }
 
+    template<typename T> requires std::unsigned_integral<T>
+    constexpr ALWAYS_INLINE T GetAlignment(T value) {
+        return value & -value;
+    }
+
     template<>
     constexpr ALWAYS_INLINE void *AlignUp<void *>(void *value, size_t alignment) {
         return reinterpret_cast<void *>(AlignUp(reinterpret_cast<uintptr_t>(value), alignment));

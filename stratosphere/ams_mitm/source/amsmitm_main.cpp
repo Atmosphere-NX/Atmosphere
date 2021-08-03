@@ -76,13 +76,13 @@ void __libnx_initheap(void) {
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(pmdmntInitialize());
-        R_ABORT_UNLESS(pminfoInitialize());
-        ncm::Initialize();
-        spl::InitializeForFs();
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    R_ABORT_UNLESS(pmdmntInitialize());
+    R_ABORT_UNLESS(pminfoInitialize());
+    ncm::Initialize();
+    spl::InitializeForFs();
 
     /* Disable auto-abort in fs operations. */
     fs::SetEnabledAutoAbort(false);

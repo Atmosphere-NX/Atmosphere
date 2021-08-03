@@ -74,6 +74,7 @@ namespace ams::kern::arch::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntkCtlEl1,  cntkctl_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCtlEl0,  cntp_ctl_el0)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCvalEl0, cntp_cval_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntvCvalEl0, cntv_cval_el0)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Daif, daif)
 
@@ -196,6 +197,11 @@ namespace ams::kern::arch::arm64::cpu {
     MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(TranslationControl) {
         public:
             MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(TranslationControl, tcr_el1)
+
+            constexpr ALWAYS_INLINE size_t GetT0Size() const {
+                const size_t shift_value = this->GetBits(0, 6);
+                return size_t(1) << (size_t(64) - shift_value);
+            }
 
             constexpr ALWAYS_INLINE size_t GetT1Size() const {
                 const size_t shift_value = this->GetBits(16, 6);

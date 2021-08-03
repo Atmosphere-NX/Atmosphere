@@ -16,4 +16,6 @@
 
 #pragma once
 
+#include <stratosphere/err/err_types.hpp>
 #include <stratosphere/err/err_error_context.hpp>
+#include <stratosphere/err/err_system_api.hpp>

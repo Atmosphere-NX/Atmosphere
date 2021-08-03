@@ -29,7 +29,7 @@ namespace ams::os {
     }
 
     struct TimerEventType {
-        using TimeSpanStorage = TYPED_STORAGE(TimeSpan);
+        using TimeSpanStorage = util::TypedStorage<TimeSpan>;
 
         enum State {
             State_NotInitialized = 0,

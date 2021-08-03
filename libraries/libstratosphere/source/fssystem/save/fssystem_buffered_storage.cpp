@@ -718,7 +718,7 @@ namespace ams::fssystem::save {
         AMS_ASSERT(this->IsInitialized());
 
         /* Invalidate caches, if we should. */
-        if (op_id == fs::OperationId::InvalidateCache) {
+        if (op_id == fs::OperationId::Invalidate) {
             SharedCache cache(this);
             while (cache.AcquireNextOverlappedCache(offset, size)) {
                 cache.Invalidate();

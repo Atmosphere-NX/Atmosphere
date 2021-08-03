@@ -53,6 +53,6 @@ namespace ams::os::impl {
             }
     };
 
-    using InternalConditionVariableStorage = TYPED_STORAGE(InternalConditionVariable);
+    using InternalConditionVariableStorage = util::TypedStorage<InternalConditionVariable>;
 
 }

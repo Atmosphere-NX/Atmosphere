@@ -30,11 +30,15 @@ namespace ams::kern::arch::arm64 {
                 m_page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
-                return m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager);
+            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
+                return m_page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager, resource_limit);
             }
 
             void Finalize() { m_page_table.Finalize(); }
+
+            ALWAYS_INLINE KScopedLightLock AcquireDeviceMapLock() {
+                return m_page_table.AcquireDeviceMapLock();
+            }
 
             Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm) {
                 return m_page_table.SetMemoryPermission(addr, size, perm);
@@ -136,24 +140,40 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.ReadDebugMemory(buffer, address, size);
             }
 
+            Result ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size) {
+                return m_page_table.ReadDebugIoMemory(buffer, address, size);
+            }
+
             Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
                 return m_page_table.WriteDebugMemory(address, buffer, size);
             }
 
-            Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
-                return m_page_table.LockForDeviceAddressSpace(out, address, size, perm, is_aligned);
+            Result WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size) {
+                return m_page_table.WriteDebugIoMemory(address, buffer, size);
+            }
+
+            Result LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+                return m_page_table.LockForMapDeviceAddressSpace(address, size, perm, is_aligned);
+            }
+
+            Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
+                return m_page_table.LockForUnmapDeviceAddressSpace(address, size);
             }
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {
                 return m_page_table.UnlockForDeviceAddressSpace(address, size);
             }
 
-            Result MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size) {
-                return m_page_table.MakePageGroupForUnmapDeviceAddressSpace(out, address, size);
-            }
-
             Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
                 return m_page_table.UnlockForDeviceAddressSpacePartialMap(address, size, mapped_size);
+            }
+
+            Result OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+                return m_page_table.OpenMemoryRangeForMapDeviceAddressSpace(out, address, size, perm, is_aligned);
+            }
+
+            Result OpenMemoryRangeForUnmapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size) {
+                return m_page_table.OpenMemoryRangeForUnmapDeviceAddressSpace(out, address, size);
             }
 
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
@@ -178,6 +198,10 @@ namespace ams::kern::arch::arm64 {
 
             Result UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
                 return m_page_table.UnlockForCodeMemory(address, size, pg);
+            }
+
+            Result OpenMemoryRangeForProcessCacheOperation(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size) {
+                return m_page_table.OpenMemoryRangeForProcessCacheOperation(out, address, size);
             }
 
             Result CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -208,8 +232,8 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.SetupForIpc(out_dst_addr, size, src_addr, src_page_table.m_page_table, test_perm, dst_state, send);
             }
 
-            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
-                return m_page_table.CleanupForIpcServer(address, size, dst_state, server_process);
+            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state) {
+                return m_page_table.CleanupForIpcServer(address, size, dst_state);
             }
 
             Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {
@@ -230,6 +254,10 @@ namespace ams::kern::arch::arm64 {
 
             Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
                 return m_page_table.UnmapPhysicalMemoryUnsafe(address, size);
+            }
+
+            Result UnmapProcessMemory(KProcessAddress dst_address, size_t size, KProcessPageTable &src_page_table, KProcessAddress src_address) {
+                return m_page_table.UnmapProcessMemory(dst_address, size, src_page_table.m_page_table, src_address);
             }
 
             void DumpMemoryBlocks() const {
@@ -289,6 +317,10 @@ namespace ams::kern::arch::arm64 {
 
             KBlockInfoManager *GetBlockInfoManager() {
                 return m_page_table.GetBlockInfoManager();
+            }
+
+            KPageTableBase &GetBasePageTable() {
+                return m_page_table;
             }
     };
 

@@ -35,11 +35,7 @@ namespace ams::kern {
             owner_thread->AddWaiter(cur_thread);
 
             /* Set thread states. */
-            if (AMS_LIKELY(cur_thread->GetState() == KThread::ThreadState_Runnable)) {
-                cur_thread->SetState(KThread::ThreadState_Waiting);
-            } else {
-                KScheduler::SetSchedulerUpdateNeeded();
-            }
+            cur_thread->SetState(KThread::ThreadState_Waiting);
 
             if (owner_thread->IsSuspended()) {
                 owner_thread->ContinueIfHasKernelWaiters();
@@ -49,10 +45,9 @@ namespace ams::kern {
         /* We're no longer waiting on the lock owner. */
         {
             KScopedSchedulerLock sl;
-            KThread *owner_thread = cur_thread->GetLockOwner();
-            if (AMS_UNLIKELY(owner_thread)) {
+
+            if (KThread *owner_thread = cur_thread->GetLockOwner(); AMS_UNLIKELY(owner_thread != nullptr)) {
                 owner_thread->RemoveWaiter(cur_thread);
-                KScheduler::SetSchedulerUpdateNeeded();
             }
         }
     }
@@ -70,17 +65,13 @@ namespace ams::kern {
 
             /* Pass the lock to the next owner. */
             uintptr_t next_tag = 0;
-            if (next_owner) {
+            if (next_owner != nullptr) {
                 next_tag = reinterpret_cast<uintptr_t>(next_owner);
                 if (num_waiters > 1) {
                     next_tag |= 0x1;
                 }
 
-                if (AMS_LIKELY(next_owner->GetState() == KThread::ThreadState_Waiting)) {
-                    next_owner->SetState(KThread::ThreadState_Runnable);
-                } else {
-                    KScheduler::SetSchedulerUpdateNeeded();
-                }
+                next_owner->SetState(KThread::ThreadState_Runnable);
 
                 if (next_owner->IsSuspended()) {
                     next_owner->ContinueIfHasKernelWaiters();

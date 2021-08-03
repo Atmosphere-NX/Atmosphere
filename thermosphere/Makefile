@@ -37,6 +37,7 @@ DEFINES :=  -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AM
 
 CFLAGS	:= \
 		-g \
+		-gdwarf-4 \
 		-O2 \
 		-ffunction-sections \
 		-fdata-sections \
@@ -52,8 +53,8 @@ CFLAGS	+=	$(INCLUDE) -D__CCPLEX__
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ASFLAGS	:=	-g -gdwarf-4 $(ARCH)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g -gdwarf-4 $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 

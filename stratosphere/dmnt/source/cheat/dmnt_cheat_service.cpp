@@ -48,6 +48,10 @@ namespace ams::dmnt::cheat {
         return dmnt::cheat::impl::ResumeCheatProcess();
     }
 
+    Result CheatService::ForceCloseCheatProcess() {
+        return dmnt::cheat::impl::ForceCloseCheatProcess();
+    }
+
     /* ========================================================================================= */
     /* ===================================  Memory Commands  =================================== */
     /* ========================================================================================= */
@@ -114,6 +118,10 @@ namespace ams::dmnt::cheat {
 
     Result CheatService::ResetStaticRegisters() {
         return dmnt::cheat::impl::ResetStaticRegisters();
+    }
+
+    Result CheatService::SetMasterCheat(const CheatDefinition &cheat) {
+        return dmnt::cheat::impl::SetMasterCheat(cheat);
     }
 
     /* ========================================================================================= */

@@ -6,6 +6,7 @@
     "default_cpu_id": 3,
     "process_category": 1,
     "use_secure_memory": false,
+    "immortal": false,
     "kernel_capabilities": [
         {
             "type": "handle_table_size",

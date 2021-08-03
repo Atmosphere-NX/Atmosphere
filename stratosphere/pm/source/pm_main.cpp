@@ -129,20 +129,20 @@ namespace {
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsprInitialize());
-        R_ABORT_UNLESS(smManagerInitialize());
+    R_ABORT_UNLESS(sm::Initialize());
 
-        /* This works around a bug with process permissions on < 4.0.0. */
-        /* It also informs SM of privileged process information. */
-        RegisterPrivilegedProcesses();
+    R_ABORT_UNLESS(fsprInitialize());
+    R_ABORT_UNLESS(smManagerInitialize());
 
-        /* Use AMS manager extension to tell SM that FS has been worked around. */
-        R_ABORT_UNLESS(sm::manager::EndInitialDefers());
+    /* This works around a bug with process permissions on < 4.0.0. */
+    /* It also informs SM of privileged process information. */
+    RegisterPrivilegedProcesses();
 
-        R_ABORT_UNLESS(ldrPmInitialize());
-        spl::Initialize();
-    });
+    /* Use AMS manager extension to tell SM that FS has been worked around. */
+    R_ABORT_UNLESS(sm::manager::EndInitialDefers());
+
+    R_ABORT_UNLESS(ldrPmInitialize());
+    spl::Initialize();
 
     ams::CheckApiVersion();
 }

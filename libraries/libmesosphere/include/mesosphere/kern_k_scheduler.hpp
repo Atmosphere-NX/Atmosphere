@@ -194,7 +194,19 @@ namespace ams::kern {
             static bool s_scheduler_update_needed;
             static KSchedulerPriorityQueue s_priority_queue;
             static LockType s_scheduler_lock;
+        public:
+            static consteval bool ValidateAssemblyOffsets();
     };
+
+    consteval bool KScheduler::ValidateAssemblyOffsets() {
+        static_assert(__builtin_offsetof(KScheduler, m_state.needs_scheduling)               == KSCHEDULER_NEEDS_SCHEDULING);
+        static_assert(__builtin_offsetof(KScheduler, m_state.interrupt_task_thread_runnable) == KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE);
+        static_assert(__builtin_offsetof(KScheduler, m_state.highest_priority_thread)        == KSCHEDULER_HIGHEST_PRIORITY_THREAD);
+        static_assert(__builtin_offsetof(KScheduler, m_state.idle_thread_stack)              == KSCHEDULER_IDLE_THREAD_STACK);
+
+        return true;
+    }
+    static_assert(KScheduler::ValidateAssemblyOffsets());
 
     class KScopedSchedulerLock : KScopedLock<KScheduler::LockType> {
         public:

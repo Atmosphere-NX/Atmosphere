@@ -20,6 +20,8 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     template<typename ListType>
     class IAllocator {
+        NON_COPYABLE(IAllocator);
+        NON_MOVEABLE(IAllocator);
         private:
             using T = typename ListType::value_type;
         private:
@@ -38,7 +40,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                     T *obj = std::addressof(*it);
                     it = this->list.erase(it);
 
-                    obj->~T();
+                    std::destroy_at(obj);
                     this->memory_resource->Deallocate(obj, sizeof(T));
                 }
             }
@@ -52,7 +54,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 AMS_ABORT_UNLESS(storage != nullptr);
 
                 /* Construct the object. */
-                T *t = new (static_cast<T *>(storage)) T(std::forward<Args>(args)...);
+                T *t = std::construct_at(static_cast<T *>(storage), std::forward<Args>(args)...);
 
                 /* Link the object into our list. */
                 this->list.push_back(*t);

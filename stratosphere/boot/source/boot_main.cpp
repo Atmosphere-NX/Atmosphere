@@ -126,12 +126,12 @@ void __appInit(void) {
 
     fs::SetAllocator(Allocate, Deallocate);
 
-    /* Initialize services we need (TODO: NCM) */
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        spl::Initialize();
-        R_ABORT_UNLESS(pmshellInitialize());
-    });
+    /* Initialize services we need. */
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    spl::Initialize();
+    R_ABORT_UNLESS(pmshellInitialize());
 
     ams::CheckApiVersion();
 }

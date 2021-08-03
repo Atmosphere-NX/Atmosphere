@@ -549,8 +549,8 @@ namespace ams::updater {
         }
 
         /* Get a session to ncm. */
-        sm::ScopedServiceHolder<ncm::Initialize, ncm::Finalize> ncm_holder;
-        R_ABORT_UNLESS(ncm_holder.GetResult());
+        ncm::Initialize();
+        ON_SCOPE_EXIT { ncm::Finalize(); };
 
         /* Verify normal, verify safe as needed. */
         if (verification_state.needs_verify_normal) {

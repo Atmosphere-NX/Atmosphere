@@ -228,7 +228,7 @@ namespace ams::fs {
 
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     switch (op_id) {
-                        case OperationId::InvalidateCache:
+                        case OperationId::Invalidate:
                         case OperationId::QueryRange:
                             {
                                 R_UNLESS(offset >= 0,          fs::ResultOutOfRange());

@@ -276,6 +276,25 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::InfoType_MesosphereCurrentProcess:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* Get the handle table. */
+                        KHandleTable &handle_table = GetCurrentProcess().GetHandleTable();
+
+                        /* Get a new handle for the current process. */
+                        ams::svc::Handle tmp;
+                        R_TRY(handle_table.Add(std::addressof(tmp), GetCurrentProcessPointer()));
+
+                        /* Set the output. */
+                        *out = tmp;
+                    }
+                    break;
                 default:
                     {
                         /* For debug, log the invalid info call. */

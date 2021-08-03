@@ -20,9 +20,9 @@ namespace ams::os {
 
     namespace {
 
-        util::TinyMT g_random;
-        os::Mutex g_random_mutex(false);
-        bool g_initialized_random;
+        constinit util::TinyMT g_random;
+        constinit os::SdkMutex g_random_mutex;
+        constinit bool g_initialized_random;
 
         template<typename T>
         inline T GenerateRandomTImpl(T max) {

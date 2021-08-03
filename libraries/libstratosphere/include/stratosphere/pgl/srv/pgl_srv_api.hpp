@@ -20,6 +20,10 @@
 
 namespace ams::pgl::srv {
 
-    void Initialize();
+    void InitializeHeap();
+    void *Allocate(size_t size);
+    void Deallocate(void *p, size_t size);
+
+    void StartServer();
 
 }

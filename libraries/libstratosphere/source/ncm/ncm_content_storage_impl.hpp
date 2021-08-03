@@ -22,16 +22,45 @@
 namespace ams::ncm {
 
     class ContentStorageImpl : public ContentStorageImplBase {
+        private:
+            class ContentIterator {
+                NON_COPYABLE(ContentIterator);
+                NON_MOVEABLE(ContentIterator);
+
+                static constexpr size_t MaxDirectoryHandles = 0x8;
+                static constexpr size_t MaxDirectoryEntries = 0x10;
+
+                public:
+                    fs::DirectoryHandle handles[MaxDirectoryHandles]{};
+                    size_t depth{};
+                    size_t max_depth{};
+                    PathString path{};
+                    fs::DirectoryEntry entries[MaxDirectoryEntries]{};
+                    s64 entry_count{};
+                public:
+                   constexpr ContentIterator() = default;
+                    ~ContentIterator();
+
+                    Result Initialize(const char *root_path, size_t max_depth);
+                    Result GetNext(util::optional<fs::DirectoryEntry> *out);
+                private:
+                    Result OpenCurrentDirectory();
+                    Result OpenDirectory(const char *dir);
+                    Result LoadEntries();
+            };
         protected:
             PlaceHolderAccessor placeholder_accessor;
             ContentId cached_content_id;
             fs::FileHandle cached_file_handle;
             RightsIdCache *rights_id_cache;
+            util::optional<ContentIterator> content_iterator;
+            util::optional<s32> last_content_offset;
         public:
             static Result InitializeBase(const char *root_path);
             static Result CleanupBase(const char *root_path);
             static Result VerifyBase(const char *root_path);
         public:
+            ContentStorageImpl() : placeholder_accessor(), cached_content_id(InvalidContentId), cached_file_handle(), rights_id_cache(nullptr), content_iterator(util::nullopt), last_content_offset(util::nullopt) { /* ... */ }
             ~ContentStorageImpl();
 
             Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);

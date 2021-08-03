@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_event_notifier_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -41,22 +42,6 @@ namespace ams::fs {
                 }
         };
 
-    }
-
-    SdCardDetectionEventNotifier::~SdCardDetectionEventNotifier() {
-        if (this->notifier != nullptr) {
-            fsEventNotifierClose(static_cast<FsEventNotifier *>(this->notifier));
-        }
-    }
-
-    Result SdCardDetectionEventNotifier::GetEventHandle(os::SystemEvent *out_event, os::EventClearMode clear_mode) {
-        AMS_ABORT_UNLESS(this->notifier != nullptr);
-
-        ::Event event;
-        R_TRY(fsEventNotifierGetEventHandle(static_cast<FsEventNotifier *>(this->notifier), std::addressof(event), clear_mode == os::EventClearMode_AutoClear));
-
-        out_event->Attach(event.revent, true, svc::InvalidHandle, false, clear_mode);
-        return ResultSuccess();
     }
 
     Result MountSdCard(const char *name) {
@@ -103,28 +88,30 @@ namespace ams::fs {
         return fsa::Register(name, std::move(subdir_fs));
     }
 
-    bool IsSdCardInserted() {
-        /* TODO: fs::DeviceOperator */
-        /* Open a DeviceOperator. */
-        ::FsDeviceOperator d;
-        AMS_FS_R_ABORT_UNLESS(fsOpenDeviceOperator(std::addressof(d)));
-        ON_SCOPE_EXIT { fsDeviceOperatorClose(std::addressof(d)); };
+    Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out) {
+        /* Try to open an event notifier. */
+        FsEventNotifier notifier;
+        AMS_FS_R_TRY(fsOpenSdCardDetectionEventNotifier(std::addressof(notifier)));
 
-        bool sd_card_inserted;
-        AMS_FS_R_ABORT_UNLESS(fsDeviceOperatorIsSdCardInserted(std::addressof(d), std::addressof(sd_card_inserted)));
-        return sd_card_inserted;
+        /* Create an event notifier adapter. */
+        auto adapter = std::make_unique<impl::RemoteEventNotifierObjectAdapter>(notifier);
+        R_UNLESS(adapter != nullptr, fs::ResultAllocationFailureInSdCardB());
+
+        *out = std::move(adapter);
+        return ResultSuccess();
     }
 
-    Result OpenSdCardDetectionEventNotifier(SdCardDetectionEventNotifier *out) {
-        auto internal_notifier = new (std::nothrow) FsEventNotifier;
-        AMS_ABORT_UNLESS(internal_notifier != nullptr);
-        auto session_guard = SCOPE_GUARD { delete internal_notifier; };
+    bool IsSdCardInserted() {
+        /* Open device operator. */
+        FsDeviceOperator device_operator;
+        AMS_FS_R_ABORT_UNLESS(::fsOpenDeviceOperator(std::addressof(device_operator)));
+        ON_SCOPE_EXIT { ::fsDeviceOperatorClose(std::addressof(device_operator)); };
 
-        R_TRY(fsOpenSdCardDetectionEventNotifier(internal_notifier));
-        out->Open(static_cast<void*>(internal_notifier));
+        /* Get SD card inserted. */
+        bool inserted;
+        AMS_FS_R_ABORT_UNLESS(::fsDeviceOperatorIsSdCardInserted(std::addressof(device_operator), std::addressof(inserted)));
 
-        session_guard.Cancel();
-        return ResultSuccess();
+        return inserted;
     }
 
 }

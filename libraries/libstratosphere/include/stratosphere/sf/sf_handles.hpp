@@ -133,8 +133,11 @@ namespace ams::sf {
         private:
             using T = CopyHandle;
             using Base = impl::OutHandleImpl<T>;
+        private:
+            bool *m_managed;
         public:
-            constexpr Out<T>(T *p) : Base(p) { /* ... */ }
+            constexpr Out<T>(T *p) : Base(p), m_managed(nullptr) { /* ... */ }
+            constexpr Out<T>(T *p, bool *m) : Base(p), m_managed(m) { /* ... */ }
 
             constexpr void SetValue(const Handle &value) {
                 Base::SetValue(value);
@@ -142,6 +145,11 @@ namespace ams::sf {
 
             constexpr void SetValue(const T &value) {
                 Base::SetValue(value);
+            }
+
+            constexpr void SetManaged(bool m) {
+                AMS_ASSERT(m_managed != nullptr);
+                *m_managed = m;
             }
 
             constexpr const T &GetValue() const {

@@ -93,10 +93,10 @@ void __appInit(void) {
 
     fs::SetAllocator(Allocate, Deallocate);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        spl::Initialize();
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    spl::Initialize();
 
     ams::CheckApiVersion();
 }

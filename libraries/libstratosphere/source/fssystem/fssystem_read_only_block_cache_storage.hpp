@@ -92,7 +92,7 @@ namespace ams::fssystem {
                 AMS_ASSERT(util::IsAligned(size,   this->block_size));
 
                 /* If invalidating cache, invalidate our blocks. */
-                if (op_id == fs::OperationId::InvalidateCache) {
+                if (op_id == fs::OperationId::Invalidate) {
                     R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
 
                     std::scoped_lock lk(this->mutex);

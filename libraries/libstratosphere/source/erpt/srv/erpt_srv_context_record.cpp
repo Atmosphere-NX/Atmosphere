@@ -94,6 +94,9 @@ namespace ams::erpt::srv {
         }
 
         if (data_size > 0) {
+            /* If array buffer isn't nullptr, we'll leak memory here, so verify that it is. */
+            AMS_ABORT_UNLESS(this->ctx.array_buffer == nullptr);
+
             this->ctx.array_buffer = static_cast<u8 *>(AllocateWithAlign(data_size, alignof(u64)));
             R_UNLESS(this->ctx.array_buffer != nullptr, erpt::ResultOutOfMemory());
 

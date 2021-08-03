@@ -256,6 +256,24 @@ static int stratosphere_ini_handler(void *user, const char *section, const char 
     return 1;
 }
 
+static int system_settings_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    uint32_t *flags = (uint32_t *)user;
+    if (strcmp(section, "usb") == 0) {
+        if (strcmp(name, "usb30_force_enabled") == 0) {
+            if (strcmp(value, "u8!0x1") == 0) {
+                *flags |= EXOSPHERE_FLAG_FORCE_ENABLE_USB_30;
+            } else if (strcmp(value, "u8!0x0") == 0) {
+                *flags &= ~(EXOSPHERE_FLAG_FORCE_ENABLE_USB_30);
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
 static bool is_nca_present(const char *nca_name) {
     char path[0x100];
     snprintf(path, sizeof(path), "system:/contents/registered/%s.nca", nca_name);
@@ -267,7 +285,15 @@ static bool is_nca_present(const char *nca_name) {
 static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_12_1_0) {
+        CHECK_NCA("9d9d83d68d9517f245f3e8cd7f93c416", 12_1_0);
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_12_0_2) {
+        CHECK_NCA("a1863a5c0e1cedd442f5e60b0422dc15", 12_0_3);
+        CHECK_NCA("63d928b5a3016fe8cc0e76d2f06f4e98", 12_0_2);
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_12_0_0) {
+        CHECK_NCA("e65114b456f9d0b566a80e53bade2d89", 12_0_1);
+        CHECK_NCA("bd4185843550fbba125b20787005d1d2", 12_0_0);
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
         CHECK_NCA("56211c7a5ed20a5332f5cdda67121e37", 11_0_1);
         CHECK_NCA("594c90bcdbcccad6b062eadba0cd0e7e", 11_0_0);
     } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
@@ -370,6 +396,12 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 return ATMOSPHERE_TARGET_FIRMWARE_10_0_0;
             } else if (memcmp(package1loader_header->build_timestamp, "20201030", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_11_0_0;
+            } else if (memcmp(package1loader_header->build_timestamp, "20210129", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_12_0_0;
+            } else if (memcmp(package1loader_header->build_timestamp, "20210422", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_12_0_2;
+            } else if (memcmp(package1loader_header->build_timestamp, "20210607", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_12_1_0;
             } else {
                 fatal_error("[NXBOOT] Unable to identify package1!\n");
             }
@@ -537,6 +569,15 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     /* Apply lcd vendor. */
     exo_cfg.lcd_vendor = display_get_lcd_vendor();
 
+    /* Read and parse system settings.ini to determine usb 3.0 enable. */
+    char *settings_ini = calloc(1, 0x20000);
+    if (read_from_file(settings_ini, 0x1FFFF, "atmosphere/config/system_settings.ini")) {
+        if (ini_parse_string(settings_ini, system_settings_ini_handler, &exo_cfg.flags[0]) < 0) {
+            fatal_error("[NXBOOT] Failed to parse system_settings.ini!\n");
+        }
+    }
+    free(settings_ini);
+
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");
     }
@@ -566,6 +607,15 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         }
         /* Check if the fuses are < 11.0.0, but firmware is >= 11.0.0 */
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0 && !(fuse_get_reserved_odm(7) & ~0x00001FFF)) {
+            kip_patches_set_enable_nogc();
+        }
+
+        /* NOTE: 12.0.0 added a new lotus firmware, but did not burn a fuse. */
+        /* This is literally undetectable using normal fuses.... */
+        /* C'est la vie. */
+
+        /* Check if the fuses are < 12.0.0, but firmware is >= 12.0.0 */
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_12_0_2 && !(fuse_get_reserved_odm(7) & ~0x00003FFF)) {
             kip_patches_set_enable_nogc();
         }
     }

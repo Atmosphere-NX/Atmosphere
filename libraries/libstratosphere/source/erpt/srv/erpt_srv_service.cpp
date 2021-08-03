@@ -18,6 +18,7 @@
 #include "erpt_srv_context_impl.hpp"
 #include "erpt_srv_session_impl.hpp"
 #include "erpt_srv_stream.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
@@ -117,8 +118,10 @@ namespace ams::erpt::srv {
                             case psc::PmState_ReadyAwaken:
                                 Stream::EnableFsAccess(true);
                                 break;
-                            case psc::PmState_ReadySleep:
                             case psc::PmState_ReadyShutdown:
+                                FinalizeForcedShutdownDetection();
+                                [[fallthrough]];
+                            case psc::PmState_ReadySleep:
                                 Stream::EnableFsAccess(false);
                                 break;
                             default:

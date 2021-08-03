@@ -36,6 +36,8 @@ namespace ams::pm::resource {
         constexpr size_t ExtraSystemSessionCount600  = 100;
         constexpr size_t ReservedMemorySize600       = 5_MB;
         constexpr size_t ExtraSystemSessionCount920  = 33;
+        constexpr size_t ExtraSystemEventCount1200   = 200;
+        constexpr size_t ExtraSystemSessionCount1200 = 200;
 
         /* Atmosphere always allocates extra memory for system usage. */
         constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24_MB;
@@ -220,6 +222,11 @@ namespace ams::pm::resource {
         if (hos_version >= hos::Version_9_2_0) {
             /* 9.2.0 increased the system session limit. */
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount920;
+        }
+        if (hos_version >= hos::Version_12_0_0) {
+            /* 12.0.0 increased the system event and session limits. */
+            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_EventCountMax]   += ExtraSystemEventCount1200;
+            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount1200;
         }
 
         /* 7.0.0+: Calculate the number of extra application threads available. */

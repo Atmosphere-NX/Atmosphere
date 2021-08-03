@@ -256,7 +256,7 @@ namespace ams::fssystem::save {
         AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(this->verification_block_size)));
 
         switch (op_id) {
-            case fs::OperationId::Clear:
+            case fs::OperationId::FillZero:
                 {
                     /* Clear should only be called for save data. */
                     AMS_ASSERT(this->storage_type == fs::StorageType_SaveData);
@@ -289,7 +289,7 @@ namespace ams::fssystem::save {
 
                     return ResultSuccess();
                 }
-            case fs::OperationId::ClearSignature:
+            case fs::OperationId::DestroySignature:
                 {
                     /* Clear Signature should only be called for save data. */
                     AMS_ASSERT(this->storage_type == fs::StorageType_SaveData);
@@ -319,7 +319,7 @@ namespace ams::fssystem::save {
                     /* Write the cleared signature. */
                     return this->hash_storage.Write(sign_offset, buf.get(), sign_size);
                 }
-            case fs::OperationId::InvalidateCache:
+            case fs::OperationId::Invalidate:
                 {
                     /* Only allow cache invalidation for RomFs. */
                     R_UNLESS(this->storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInIntegrityVerificationStorageB());

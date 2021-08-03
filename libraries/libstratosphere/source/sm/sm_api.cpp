@@ -18,47 +18,52 @@
 
 namespace ams::sm {
 
+    namespace {
+
+        constinit int g_ref_count = 0;
+        constinit os::SdkMutex g_mutex;
+
+    }
+
+    /* Initialization. */
+    Result Initialize() {
+        std::scoped_lock lk(g_mutex);
+
+        if (g_ref_count > 0) {
+            ++g_ref_count;
+        } else {
+            R_TRY(::smInitialize());
+            g_ref_count = 1;
+        }
+
+        return ResultSuccess();
+    }
+
+    Result Finalize() {
+        /* NOTE: Nintendo does nothing here. */
+        return ResultSuccess();
+    }
+
     /* Ordinary SM API. */
     Result GetService(Service *out, ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smGetServiceWrapper(out, impl::ConvertName(name));
-        });
+        return smGetServiceWrapper(out, impl::ConvertName(name));
     }
 
     Result RegisterService(Handle *out, ServiceName name, size_t max_sessions, bool is_light) {
-        return impl::DoWithUserSession([&]() {
-            return smRegisterService(out, impl::ConvertName(name), is_light, static_cast<int>(max_sessions));
-        });
+        return smRegisterService(out, impl::ConvertName(name), is_light, static_cast<int>(max_sessions));
     }
 
     Result UnregisterService(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smUnregisterService(impl::ConvertName(name));
-        });
+        return smUnregisterService(impl::ConvertName(name));
     }
 
     /* Atmosphere extensions. */
     Result HasService(bool *out, ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereHasService(out, impl::ConvertName(name));
-        });
+        return smAtmosphereHasService(out, impl::ConvertName(name));
     }
 
     Result WaitService(ServiceName name) {
-        return impl::DoWithUserSession([&]() {
-            return smAtmosphereWaitService(impl::ConvertName(name));
-        });
-    }
-
-    namespace impl {
-
-        void DoWithSessionImpl(void (*Invoker)(void *), void *Function) {
-            impl::DoWithUserSession([&]() {
-                Invoker(Function);
-                return ResultSuccess();
-            });
-        }
-
+        return smAtmosphereWaitService(impl::ConvertName(name));
     }
 
 }

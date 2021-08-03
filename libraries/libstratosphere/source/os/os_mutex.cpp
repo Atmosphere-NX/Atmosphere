@@ -72,7 +72,7 @@ namespace ams::os {
         AMS_ASSERT((lock_level == 0) || (MutexLockLevelMin <= lock_level && lock_level <= MutexLockLevelMax));
 
         /* Create object. */
-        new (GetPointer(mutex->_storage)) impl::InternalCriticalSection;
+        util::ConstructAt(mutex->_storage);
 
         /* Set member variables. */
         mutex->is_recursive = recursive;
@@ -91,7 +91,7 @@ namespace ams::os {
         mutex->state = MutexType::State_NotInitialized;
 
         /* Destroy object. */
-        GetReference(mutex->_storage).~InternalCriticalSection();
+        util::DestroyAt(mutex->_storage);
     }
 
     void LockMutex(MutexType *mutex) {

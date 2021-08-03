@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_waitable_object_list.hpp"
 #include "impl/os_timeout_helper.hpp"
+#include "impl/os_waitable_object_list.hpp"
+#include "impl/os_waitable_holder_impl.hpp"
 
 namespace ams::os {
 
@@ -112,13 +113,13 @@ namespace ams::os {
         AMS_ASSERT(count >= 1);
 
         /* Setup objects. */
-        new (GetPointer(mq->cs_queue))     impl::InternalCriticalSection;
-        new (GetPointer(mq->cv_not_full))  impl::InternalConditionVariable;
-        new (GetPointer(mq->cv_not_empty)) impl::InternalConditionVariable;
+        util::ConstructAt(mq->cs_queue);
+        util::ConstructAt(mq->cv_not_full);
+        util::ConstructAt(mq->cv_not_empty);
 
         /* Setup wait lists. */
-        new (GetPointer(mq->waitlist_not_empty)) impl::WaitableObjectList;
-        new (GetPointer(mq->waitlist_not_full))  impl::WaitableObjectList;
+        util::ConstructAt(mq->waitlist_not_empty);
+        util::ConstructAt(mq->waitlist_not_full);
 
         /* Set member variables. */
         mq->buffer   = buffer;
@@ -140,13 +141,13 @@ namespace ams::os {
         mq->state = MessageQueueType::State_NotInitialized;
 
         /* Destroy wait lists. */
-        GetReference(mq->waitlist_not_empty).~WaitableObjectList();
-        GetReference(mq->waitlist_not_full).~WaitableObjectList();
+        util::DestroyAt(mq->waitlist_not_empty);
+        util::DestroyAt(mq->waitlist_not_full);
 
         /* Destroy objects. */
-        GetReference(mq->cv_not_empty).~InternalConditionVariable();
-        GetReference(mq->cv_not_full).~InternalConditionVariable();
-        GetReference(mq->cs_queue).~InternalCriticalSection();
+        util::DestroyAt(mq->cv_not_empty);
+        util::DestroyAt(mq->cv_not_full);
+        util::DestroyAt(mq->cs_queue);
     }
 
     /* Sending (FIFO functionality) */
@@ -397,6 +398,22 @@ namespace ams::os {
         }
 
         return true;
+    }
+
+    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, MessageQueueType *mq, MessageQueueWaitType type) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        switch (type) {
+            case MessageQueueWaitType::ForNotFull:
+                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_mq_for_not_full_storage, mq);
+                break;
+            case MessageQueueWaitType::ForNotEmpty:
+                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_mq_for_not_empty_storage, mq);
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
+        waitable_holder->user_data = 0;
     }
 
 }

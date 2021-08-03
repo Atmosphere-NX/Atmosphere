@@ -26,8 +26,8 @@ namespace ams::i2c::driver {
 
         Result OpenSessionImpl(I2cSession *out, I2cDeviceProperty *device) {
             /* Construct the session. */
-            auto *session = new (std::addressof(impl::GetI2cSessionImpl(*out))) impl::I2cSessionImpl(DefaultRetryCount, DefaultRetryInterval);
-            auto session_guard = SCOPE_GUARD { session->~I2cSessionImpl(); };
+            auto *session = std::construct_at(std::addressof(impl::GetI2cSessionImpl(*out)), DefaultRetryCount, DefaultRetryInterval);
+            auto session_guard = SCOPE_GUARD { std::destroy_at(session); };
 
             /* Open the session. */
             R_TRY(session->Open(device, ddsf::AccessMode_ReadWrite));
@@ -54,7 +54,7 @@ namespace ams::i2c::driver {
     }
 
     void CloseSession(I2cSession &session) {
-        impl::GetOpenI2cSessionImpl(session).~I2cSessionImpl();
+        std::destroy_at(std::addressof(impl::GetOpenI2cSessionImpl(session)));
     }
 
     Result Send(I2cSession &session, const void *src, size_t src_size, TransactionOption option) {

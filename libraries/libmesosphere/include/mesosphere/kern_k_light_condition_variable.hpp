@@ -24,40 +24,59 @@ namespace ams::kern {
 
     class KLightConditionVariable {
         private:
-            KThreadQueue m_thread_queue;
+            KThread::WaiterList m_wait_list;
         public:
-            constexpr ALWAYS_INLINE KLightConditionVariable() : m_thread_queue() { /* ... */ }
+            constexpr ALWAYS_INLINE KLightConditionVariable() : m_wait_list() { /* ... */ }
         private:
-            void WaitImpl(KLightLock *lock, s64 timeout) {
+            void WaitImpl(KLightLock *lock, s64 timeout, bool allow_terminating_thread) {
                 KThread *owner = GetCurrentThreadPointer();
                 KHardwareTimer *timer;
 
                 /* Sleep the thread. */
                 {
                     KScopedSchedulerLockAndSleep lk(&timer, owner, timeout);
-                    lock->Unlock();
 
-                    if (!m_thread_queue.SleepThread(owner)) {
+                    if (!allow_terminating_thread && owner->IsTerminationRequested()) {
                         lk.CancelSleep();
                         return;
                     }
+
+                    lock->Unlock();
+
+
+                    /* Set the thread as waiting. */
+                    GetCurrentThread().SetState(KThread::ThreadState_Waiting);
+
+                    /* Add the thread to the queue. */
+                    m_wait_list.push_back(GetCurrentThread());
+                }
+
+                /* Remove the thread from the wait list. */
+                {
+                    KScopedSchedulerLock sl;
+
+                    m_wait_list.erase(m_wait_list.iterator_to(GetCurrentThread()));
                 }
 
                 /* Cancel the task that the sleep setup. */
                 if (timer != nullptr) {
                     timer->CancelTask(owner);
                 }
+
+                /* Re-acquire the lock. */
+                lock->Lock();
             }
         public:
-            void Wait(KLightLock *lock, s64 timeout = -1ll) {
-                this->WaitImpl(lock, timeout);
-                lock->Lock();
+            void Wait(KLightLock *lock, s64 timeout = -1ll, bool allow_terminating_thread = true) {
+                this->WaitImpl(lock, timeout, allow_terminating_thread);
             }
 
             void Broadcast() {
                 KScopedSchedulerLock lk;
-                while (m_thread_queue.WakeupFrontThread() != nullptr) {
-                    /* We want to signal all threads, and so should continue waking up until there's nothing to wake. */
+
+                /* Signal all threads. */
+                for (auto &thread : m_wait_list) {
+                    thread.SetState(KThread::ThreadState_Runnable);
                 }
             }
 

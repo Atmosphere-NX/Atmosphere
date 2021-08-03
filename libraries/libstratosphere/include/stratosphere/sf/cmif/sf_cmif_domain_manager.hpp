@@ -77,8 +77,8 @@ namespace ams::sf::cmif {
                     virtual ServiceObjectHolder GetObject(DomainObjectId id) override final;
             };
         public:
-            using DomainEntryStorage  = TYPED_STORAGE(Entry);
-            using DomainStorage = TYPED_STORAGE(Domain);
+            using DomainEntryStorage  = util::TypedStorage<Entry>;
+            using DomainStorage       = util::TypedStorage<Domain>;
         private:
             class EntryManager {
                 private:
@@ -127,7 +127,8 @@ namespace ams::sf::cmif {
                 if (storage == nullptr) {
                     return nullptr;
                 }
-                return new (storage) Domain(this);
+
+                return std::construct_at(static_cast<Domain *>(storage), this);
             }
         public:
             static void DestroyDomainServiceObject(DomainServiceObject *obj) {

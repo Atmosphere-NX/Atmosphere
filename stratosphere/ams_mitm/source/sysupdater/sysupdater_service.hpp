@@ -57,8 +57,8 @@ namespace ams::mitm::sysupdater {
     class SystemUpdateService {
         private:
             SystemUpdateApplyManager apply_manager;
-            std::optional<ncm::PackageSystemDowngradeTask> update_task;
-            std::optional<os::TransferMemory> update_transfer_memory;
+            util::optional<ncm::PackageSystemDowngradeTask> update_task;
+            util::optional<os::TransferMemory> update_transfer_memory;
             bool setup_update;
             bool requested_update;
         public:

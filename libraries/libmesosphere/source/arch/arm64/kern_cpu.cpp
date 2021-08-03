@@ -262,25 +262,14 @@ namespace ams::kern::arch::arm64::cpu {
             __asm__ __volatile__("dc csw, %[v]" :: [v]"r"(sw_value) : "memory");
         }
 
-        template<bool Init, typename F>
-        ALWAYS_INLINE void PerformCacheOperationBySetWayShared(F f) {
-            CacheLineIdRegisterAccessor clidr_el1;
-            const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
-            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
-
-            for (int level = levels_of_coherency; level >= levels_of_unification; level--) {
-                PerformCacheOperationBySetWayImpl<Init>(level, f);
-            }
+        void StoreDataCacheBySetWay(int level) {
+            PerformCacheOperationBySetWayImpl<false>(level, StoreDataCacheLineBySetWayImpl);
+            cpu::DataSynchronizationBarrier();
         }
 
-        template<bool Init, typename F>
-        ALWAYS_INLINE void PerformCacheOperationBySetWayLocal(F f) {
-            CacheLineIdRegisterAccessor clidr_el1;
-            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
-
-            for (int level = levels_of_unification - 1; level >= 0; level--) {
-                PerformCacheOperationBySetWayImpl<Init>(level, f);
-            }
+        void FlushDataCacheBySetWay(int level) {
+            PerformCacheOperationBySetWayImpl<false>(level, FlushDataCacheLineBySetWayImpl);
+            cpu::DataSynchronizationBarrier();
         }
 
         void KCacheHelperInterruptHandler::ProcessOperation() {
@@ -291,12 +280,10 @@ namespace ams::kern::arch::arm64::cpu {
                     InstructionMemoryBarrier();
                     break;
                 case Operation::StoreDataCache:
-                    PerformCacheOperationBySetWayLocal<false>(StoreDataCacheLineBySetWayImpl);
-                    DataSynchronizationBarrier();
+                    StoreDataCacheBySetWay(0);
                     break;
                 case Operation::FlushDataCache:
-                    PerformCacheOperationBySetWayLocal<false>(FlushDataCacheLineBySetWayImpl);
-                    DataSynchronizationBarrier();
+                    FlushDataCacheBySetWay(0);
                     break;
             }
 
@@ -353,28 +340,80 @@ namespace ams::kern::arch::arm64::cpu {
 
     }
 
-    void FlushEntireDataCacheSharedForInit() {
-        return PerformCacheOperationBySetWayShared<true>(FlushDataCacheLineBySetWayImpl);
+    void StoreEntireCacheForInit() {
+        /* Store local. */
+        {
+            CacheLineIdRegisterAccessor clidr_el1;
+            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
+
+            for (int level = 0; level != levels_of_unification; ++level) {
+                PerformCacheOperationBySetWayImpl<true>(level, StoreDataCacheLineBySetWayImpl);
+            }
+        }
+
+        /* Store shared. */
+        {
+            CacheLineIdRegisterAccessor clidr_el1;
+            const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
+            const int levels_of_unification = clidr_el1.GetLevelsOfUnification();
+
+            for (int level = levels_of_unification; level <= levels_of_coherency; ++level) {
+                PerformCacheOperationBySetWayImpl<true>(level, StoreDataCacheLineBySetWayImpl);
+            }
+        }
+
+        /* Data synchronization barrier. */
+        DataSynchronizationBarrierInnerShareable();
+
+        /* Invalidate instruction cache. */
+        InvalidateEntireInstructionCacheLocalImpl();
+
+        /* Ensure local instruction consistency. */
+        DataSynchronizationBarrierInnerShareable();
+        InstructionMemoryBarrier();
     }
 
-    void FlushEntireDataCacheLocalForInit() {
-        return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
-    }
+    void FlushEntireCacheForInit() {
+        /* Flush data cache. */
+        {
+            /* Get levels of coherence/unificaiton. */
+            CacheLineIdRegisterAccessor clidr_el1;
+            const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
 
-    void InvalidateEntireInstructionCacheForInit() {
+            /* Store cache from L1 up to (level of coherence - 1). */
+            for (int level = 0; level < levels_of_coherency - 1; ++level) {
+                PerformCacheOperationBySetWayImpl<true>(level, StoreDataCacheLineBySetWayImpl);
+            }
+
+            /* Flush cache from (level of coherence - 1) down to L0. */
+            for (int level = levels_of_coherency; level > 0; --level) {
+                PerformCacheOperationBySetWayImpl<true>(level - 1, FlushDataCacheLineBySetWayImpl);
+            }
+        }
+
+        /* Invalidate instruction cache. */
         InvalidateEntireInstructionCacheLocalImpl();
         EnsureInstructionConsistency();
-    }
 
-    void StoreEntireCacheForInit() {
-        PerformCacheOperationBySetWayLocal<true>(StoreDataCacheLineBySetWayImpl);
-        PerformCacheOperationBySetWayShared<true>(StoreDataCacheLineBySetWayImpl);
-        DataSynchronizationBarrierInnerShareable();
-        InvalidateEntireInstructionCacheForInit();
+        /* Invalidate entire TLB. */
+        InvalidateEntireTlb();
     }
 
     void FlushEntireDataCache() {
-        return PerformCacheOperationBySetWayShared<false>(FlushDataCacheLineBySetWayImpl);
+        KScopedCoreMigrationDisable dm;
+
+        CacheLineIdRegisterAccessor clidr_el1;
+        const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency();
+
+        /* Store cache from L2 up to the level of coherence (if there's an L3 cache or greater). */
+        for (int level = 2; level < levels_of_coherency; ++level) {
+            StoreDataCacheBySetWay(level - 1);
+        }
+
+        /* Flush cache from the level of coherence down to L2. */
+        for (int level = levels_of_coherency; level > 1; --level) {
+            FlushDataCacheBySetWay(level - 1);
+        }
     }
 
     Result InvalidateDataCache(void *addr, size_t size) {

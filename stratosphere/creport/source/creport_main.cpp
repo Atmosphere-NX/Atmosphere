@@ -92,9 +92,9 @@ void __appInit(void) {
     InitializeFsHeap();
     fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 }
@@ -179,14 +179,16 @@ int main(int argc, char **argv) {
     if (hos::GetVersion() < hos::Version_11_0_0 || !enable_jit_debug) {
         if (hos::GetVersion() >= hos::Version_10_0_0) {
             /* On 10.0.0+, use pgl to terminate. */
-            sm::ScopedServiceHolder<pgl::Initialize, pgl::Finalize> pgl_holder;
-            if (pgl_holder) {
+            if (R_SUCCEEDED(pgl::Initialize())) {
+                ON_SCOPE_EXIT { pgl::Finalize(); };
+
                 pgl::TerminateProcess(crashed_pid);
             }
         } else {
             /* On < 10.0.0, use ns:dev to terminate. */
-            sm::ScopedServiceHolder<nsdevInitialize, nsdevExit> ns_holder;
-            if (ns_holder) {
+            if (R_SUCCEEDED(::nsdevInitialize())) {
+                ON_SCOPE_EXIT { ::nsdevExit(); };
+
                 nsdevTerminateProcess(static_cast<u64>(crashed_pid));
             }
         }

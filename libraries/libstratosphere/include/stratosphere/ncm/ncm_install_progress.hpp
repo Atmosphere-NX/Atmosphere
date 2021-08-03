@@ -29,7 +29,7 @@ namespace ams::ncm {
     struct InstallProgress {
         InstallProgressState state;
         u8 pad[3];
-        TYPED_STORAGE(Result) last_result;
+        util::TypedStorage<Result> last_result;
         s64 installed_size;
         s64 total_size;
 

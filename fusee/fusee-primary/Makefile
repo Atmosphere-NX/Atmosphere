@@ -46,6 +46,7 @@ DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\
 
 CFLAGS	:= \
 	-g \
+	-gdwarf-4 \
 	-O2 \
 	-fomit-frame-pointer \
 	-ffunction-sections \
@@ -53,6 +54,9 @@ CFLAGS	:= \
 	-std=gnu11 \
 	-Werror \
 	-Wall \
+	-Wno-array-bounds \
+	-Wno-stringop-overflow \
+	-Wno-stringop-overread \
 	-fstrict-volatile-bitfields \
 	$(ARCH) $(DEFINES)
 
@@ -60,8 +64,8 @@ CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ASFLAGS	:=	-g -gdwarf-4 $(ARCH)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g -gdwarf-4 $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 

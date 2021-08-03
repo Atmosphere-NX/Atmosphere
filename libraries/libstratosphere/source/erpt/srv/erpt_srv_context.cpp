@@ -126,4 +126,13 @@ namespace ams::erpt::srv {
         return ResultSuccess();
     }
 
+    Result Context::ClearContext(CategoryId cat) {
+        /* Make an empty record for the category. */
+        auto record = std::make_unique<ContextRecord>(cat);
+        R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
+        /* Submit the context record. */
+        return SubmitContextRecord(std::move(record));
+    }
+
 }

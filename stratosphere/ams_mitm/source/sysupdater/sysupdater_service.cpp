@@ -497,7 +497,7 @@ namespace ams::mitm::sysupdater {
         R_TRY(this->update_transfer_memory->Map(std::addressof(tmem_buffer), os::MemoryPermission_None));
         auto tmem_guard = SCOPE_GUARD {
             this->update_transfer_memory->Unmap();
-            this->update_transfer_memory = std::nullopt;
+            this->update_transfer_memory = util::nullopt;
         };
 
         /* Now that the memory is mapped, the input handle is managed and can be released. */

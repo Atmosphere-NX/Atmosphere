@@ -25,13 +25,18 @@ namespace ams::kern {
         constexpr size_t CarveoutAlignment      = 0x20000;
         constexpr size_t CarveoutSizeMax        = 512_MB - CarveoutAlignment;
 
+        template<typename... T> requires (std::same_as<T, KMemoryRegionAttr> && ...)
+        constexpr ALWAYS_INLINE KMemoryRegionType GetMemoryRegionType(KMemoryRegionType base, T... attr) {
+            return util::FromUnderlying<KMemoryRegionType>(util::ToUnderlying(base) | (util::ToUnderlying<T>(attr) | ...));
+        }
+
         ALWAYS_INLINE bool SetupUartPhysicalMemoryRegion() {
             #if   defined(MESOSPHERE_DEBUG_LOG_USE_UART)
                 switch (KSystemControl::Init::GetDebugLogUartPort()) {
-                    case 0:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-                    case 1:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-                    case 2:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-                    case 3:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                    case 0:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,  GetMemoryRegionType(KMemoryRegionType_Uart, KMemoryRegionAttr_ShouldKernelMap));
+                    case 1:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40,  GetMemoryRegionType(KMemoryRegionType_Uart, KMemoryRegionAttr_ShouldKernelMap));
+                    case 2:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, GetMemoryRegionType(KMemoryRegionType_Uart, KMemoryRegionAttr_ShouldKernelMap));
+                    case 3:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, GetMemoryRegionType(KMemoryRegionType_Uart, KMemoryRegionAttr_ShouldKernelMap));
                     default: return false;
                 }
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_IRAM_RINGBUFFER)
@@ -43,11 +48,11 @@ namespace ams::kern {
 
         ALWAYS_INLINE bool SetupPowerManagementControllerMemoryRegion() {
             /* For backwards compatibility, the PMC must remain mappable on < 2.0.0. */
-            const auto rtc_restrict_attr = GetTargetFirmware() >= TargetFirmware_2_0_0 ? KMemoryRegionAttr_NoUserMap : static_cast<KMemoryRegionAttr>(0);
-            const auto pmc_restrict_attr = GetTargetFirmware() >= TargetFirmware_2_0_0 ? KMemoryRegionAttr_NoUserMap : KMemoryRegionAttr_ShouldKernelMap;
+            const KMemoryRegionAttr rtc_restrict_attr = GetTargetFirmware() >= TargetFirmware_2_0_0 ? KMemoryRegionAttr_NoUserMap : static_cast<KMemoryRegionAttr>(0);
+            const KMemoryRegionAttr pmc_restrict_attr = GetTargetFirmware() >= TargetFirmware_2_0_0 ? KMemoryRegionAttr_NoUserMap : KMemoryRegionAttr_ShouldKernelMap;
 
-            return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E000, 0x400, KMemoryRegionType_None                      | rtc_restrict_attr) &&
-                   KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E400, 0xC00, KMemoryRegionType_PowerManagementController | pmc_restrict_attr);
+            return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E000, 0x400, GetMemoryRegionType(KMemoryRegionType_None,                      rtc_restrict_attr)) &&
+                   KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E400, 0xC00, GetMemoryRegionType(KMemoryRegionType_PowerManagementController, pmc_restrict_attr));
         }
 
         void InsertPoolPartitionRegionIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
@@ -67,29 +72,29 @@ namespace ams::kern {
             /* TODO: Give these constexpr defines somewhere? */
             MESOSPHERE_INIT_ABORT_UNLESS(SetupUartPhysicalMemoryRegion());
             MESOSPHERE_INIT_ABORT_UNLESS(SetupPowerManagementControllerMemoryRegion());
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,  KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,  KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,  KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,  KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,  KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,  KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000, KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_MemoryController,      KMemoryRegionAttr_NoUserMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_MemoryController0,     KMemoryRegionAttr_NoUserMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_MemoryController1,     KMemoryRegionAttr_NoUserMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_None,                  KMemoryRegionAttr_NoUserMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_InterruptDistributor,  KMemoryRegionAttr_ShouldKernelMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,  GetMemoryRegionType(KMemoryRegionType_InterruptCpuInterface, KMemoryRegionAttr_ShouldKernelMap)));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000, GetMemoryRegionType(KMemoryRegionType_None,                  KMemoryRegionAttr_NoUserMap)));
 
             /* Map IRAM unconditionally, to support debug-logging-to-iram build config. */
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x40000000, 0x40000, KMemoryRegionType_LegacyLpsIram | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x40000000, 0x40000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsIram, KMemoryRegionAttr_ShouldKernelMap)));
 
             if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
                 /* Prevent mapping the bpmp exception vectors or the ipatch region. */
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,  KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, GetMemoryRegionType(KMemoryRegionType_None,                      KMemoryRegionAttr_NoUserMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,  GetMemoryRegionType(KMemoryRegionType_None,                      KMemoryRegionAttr_NoUserMap)));
             } else {
                 /* Map devices required for legacy lps driver. */
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, KMemoryRegionType_LegacyLpsExceptionVectors | KMemoryRegionAttr_ShouldKernelMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60007000, 0x1000, KMemoryRegionType_LegacyLpsFlowController   | KMemoryRegionAttr_ShouldKernelMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60004000, 0x1000, KMemoryRegionType_LegacyLpsPrimaryICtlr     | KMemoryRegionAttr_ShouldKernelMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60001000, 0x1000, KMemoryRegionType_LegacyLpsSemaphore        | KMemoryRegionAttr_ShouldKernelMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70016000, 0x1000, KMemoryRegionType_LegacyLpsAtomics          | KMemoryRegionAttr_ShouldKernelMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60006000, 0x1000, KMemoryRegionType_LegacyLpsClkRst           | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsExceptionVectors, KMemoryRegionAttr_ShouldKernelMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60007000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsFlowController,   KMemoryRegionAttr_ShouldKernelMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60004000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsPrimaryICtlr,     KMemoryRegionAttr_ShouldKernelMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60001000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsSemaphore,        KMemoryRegionAttr_ShouldKernelMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70016000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsAtomics,          KMemoryRegionAttr_ShouldKernelMap)));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60006000, 0x1000, GetMemoryRegionType(KMemoryRegionType_LegacyLpsClkRst,           KMemoryRegionAttr_ShouldKernelMap)));
             }
         }
 
@@ -184,6 +189,12 @@ namespace ams::kern {
                 static_assert(KMemoryManager::Pool_Count == 4);
                 static_assert(KMemoryManager::Pool_Unsafe == KMemoryManager::Pool_Application);
                 static_assert(KMemoryManager::Pool_Secure == KMemoryManager::Pool_System);
+
+                /* NOTE: Beginning with 12.0.0 (and always, in mesosphere), the initial process binary is at the end of the pool region. */
+                /*       However, this is problematic for < 5.0.0, because we require the initial process binary to be parsed in order   */
+                /*       to determine the pool sizes. Hence, we will force an initial binary load with the known pool end directly, so   */
+                /*       that we retain compatibility with lower firmware versions. */
+                LoadInitialProcessBinaryHeaderDeprecated(pool_end);
 
                 /* Get Secure pool size. */
                 const size_t secure_pool_size = [] ALWAYS_INLINE_LAMBDA (auto target_firmware) -> size_t {

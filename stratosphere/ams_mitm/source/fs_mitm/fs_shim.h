@@ -16,6 +16,9 @@ Result fsOpenSdCardFileSystemFwd(Service* s, FsFileSystem* out);
 Result fsOpenBisStorageFwd(Service* s, FsStorage* out, FsBisPartitionId partition_id);
 Result fsOpenDataStorageByCurrentProcessFwd(Service* s, FsStorage* out);
 Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, NcmStorageId storage_id);
+Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 program_index);
+
+Result fsRegisterProgramIndexMapInfoFwd(Service* s, const void *buf, size_t buf_size, s32 count);
 
 Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpaceId save_data_space_id, const FsSaveDataAttribute *attr);
 

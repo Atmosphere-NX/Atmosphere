@@ -272,7 +272,19 @@ namespace ams::secmon::smc {
 
         void GetSecureDataImpl(u8 *dst, SecureData which, bool tweak) {
             /* Compute the appropriate AES-CTR. */
-            se::ComputeAes128Ctr(dst, AesKeySize, pkg1::AesKeySlot_Device, SecureDataSource, AesKeySize, GetSecureDataCounter(which), AesKeySize);
+            {
+                /* Ensure that the SE sees consistent data. */
+                hw::FlushDataCache(dst, AesKeySize);
+                hw::DataSynchronizationBarrierInnerShareable();
+
+                /* Perform the appropriate AES operation. */
+                se::ComputeAes128Ctr(dst, AesKeySize, pkg1::AesKeySlot_Device, SecureDataSource, AesKeySize, GetSecureDataCounter(which), AesKeySize);
+                hw::DataSynchronizationBarrierInnerShareable();
+
+                /* Ensure the CPU sees consistent data. */
+                hw::FlushDataCache(dst, AesKeySize);
+                hw::DataSynchronizationBarrierInnerShareable();
+            }
 
             /* Tweak, if we should. */
             if (tweak) {

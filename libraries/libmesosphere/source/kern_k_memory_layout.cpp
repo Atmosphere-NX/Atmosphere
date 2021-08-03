@@ -37,7 +37,7 @@ namespace ams::kern {
 
                     /* Create the new region. */
                     KMemoryRegion *region = std::addressof(this->region_heap[this->num_regions++]);
-                    new (region) KMemoryRegion(std::forward<Args>(args)...);
+                    std::construct_at(region, std::forward<Args>(args)...);
 
                     return region;
                 }
@@ -148,11 +148,7 @@ namespace ams::kern {
         }
     }
 
-    void KMemoryLayout::InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
-        /* Set static differences. */
-        s_linear_phys_to_virt_diff = GetInteger(linear_virtual_start) - GetInteger(aligned_linear_phys_start);
-        s_linear_virt_to_phys_diff = GetInteger(aligned_linear_phys_start) - GetInteger(linear_virtual_start);
-
+    void KMemoryLayout::InitializeLinearMemoryRegionTrees() {
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {
             if (region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
@@ -170,14 +166,8 @@ namespace ams::kern {
     size_t KMemoryLayout::GetResourceRegionSizeForInit() {
         /* Calculate resource region size based on whether we allow extra threads. */
         const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-        size_t resource_region_size = KernelResourceSize + (use_extra_resources ? KernelSlabHeapAdditionalSize : 0);
 
-        /* 10.0.0 reduced the slab heap gaps by 64K. */
-        if (kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0) {
-            resource_region_size += (KernelSlabHeapGapsSizeDeprecated - KernelSlabHeapGapsSize);
-        }
-
-        return resource_region_size;
+        return KernelResourceSize + (use_extra_resources ? KernelSlabHeapAdditionalSize : 0);
     }
 
 }

@@ -28,7 +28,7 @@ namespace ams::lm::impl {
         }
 
         inline bool ModifyUserSystemClockInfoImpl(impl::LogDataChunkKey chunk_key, u8 *log_payload_data, size_t log_payload_size, time::PosixTime &time_ref) {
-            if(chunk_key == impl::LogDataChunkKey_UserSystemClock) {
+            if (chunk_key == impl::LogDataChunkKey_UserSystemClock) {
                 /* TODO: properly implement this...? */
                 reinterpret_cast<time::PosixTime*>(log_payload_data)->value += time_ref.value;
             }

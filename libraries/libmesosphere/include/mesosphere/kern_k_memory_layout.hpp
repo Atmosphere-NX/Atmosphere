@@ -44,9 +44,8 @@ namespace ams::kern {
     constexpr size_t KernelInitialPageHeapSize  = 128_KB;
 
     constexpr size_t KernelSlabHeapDataSize           = 5_MB;
-    constexpr size_t KernelSlabHeapGapsSize           = 2_MB - 64_KB;
-    constexpr size_t KernelSlabHeapGapsSizeDeprecated = 2_MB;
-    constexpr size_t KernelSlabHeapSize               = KernelSlabHeapDataSize + KernelSlabHeapGapsSize;
+    constexpr size_t KernelSlabHeapGapsSizeMax        = 2_MB - 64_KB;
+    constexpr size_t KernelSlabHeapSize               = KernelSlabHeapDataSize + KernelSlabHeapGapsSizeMax;
 
     /* NOTE: This is calculated from KThread slab counts, assuming KThread size <= 0x860. */
     constexpr size_t KernelSlabHeapAdditionalSize     = 0x68000;
@@ -176,7 +175,14 @@ namespace ams::kern {
                 return std::make_tuple(total_size, kernel_size);
             }
 
-            static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
+            static void InitializeLinearMemoryAddresses(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start) {
+                /* Set static differences. */
+                s_linear_phys_to_virt_diff = GetInteger(linear_virtual_start) - GetInteger(aligned_linear_phys_start);
+                s_linear_virt_to_phys_diff = GetInteger(aligned_linear_phys_start) - GetInteger(linear_virtual_start);
+            }
+
+            static void InitializeLinearMemoryRegionTrees();
+
             static size_t GetResourceRegionSizeForInit();
 
             static NOINLINE auto GetKernelRegionExtents()      { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel); }

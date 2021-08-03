@@ -20,7 +20,8 @@
 namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     class I2cDevicePropertyManager : public IAllocator<I2cDeviceProperty::DevicePropertyList> {
-        /* ... */
+        public:
+            using IAllocator<I2cDeviceProperty::DevicePropertyList>::IAllocator;
     };
 
 }

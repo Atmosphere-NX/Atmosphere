@@ -492,7 +492,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Wait for a request. */
             {
                 KScopedLightLock lk(g_cv_lock);
-                while (!(g_sleep_target_cores & target_core_mask)) {
+                while ((g_sleep_target_cores & target_core_mask) == 0) {
                     g_cv.Wait(std::addressof(g_cv_lock));
                 }
             }

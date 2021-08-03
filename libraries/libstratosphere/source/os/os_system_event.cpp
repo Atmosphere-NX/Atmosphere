@@ -122,10 +122,10 @@ namespace ams::os {
     void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event) {
         switch (event->state) {
             case SystemEventType::State_InitializedAsInterProcessEvent:
-                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfInterProcessEvent(std::addressof(event->inter_process_event));
+                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_inter_process_event_storage, std::addressof(event->inter_process_event));
                 break;
             case SystemEventType::State_InitializedAsEvent:
-                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(std::addressof(event->event));
+                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_event_storage, std::addressof(event->event));
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

@@ -19,9 +19,11 @@ namespace ams::kern {
 
     namespace {
 
+        constexpr inline s32 TerminatingThreadPriority = ams::svc::SystemThreadPriorityHighest - 1;
+
         constexpr bool IsKernelAddressKey(KProcessAddress key) {
             const uintptr_t key_uptr = GetInteger(key);
-            return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast;
+            return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast && (key_uptr & 1) == 0;
         }
 
         void InitializeKernelStack(uintptr_t stack_top) {
@@ -153,8 +155,9 @@ namespace ams::kern {
         m_lock_owner                    = nullptr;
         m_num_core_migration_disables   = 0;
 
-        /* We have no waiters, but we do have an entrypoint. */
+        /* We have no waiters, and no closed objects. */
         m_num_kernel_waiters            = 0;
+        m_closed_object                 = nullptr;
 
         /* Set our current core id. */
         m_current_core_id               = phys_core;
@@ -182,7 +185,6 @@ namespace ams::kern {
         if (owner != nullptr) {
             m_parent = owner;
             m_parent->Open();
-            m_parent->IncrementThreadCount();
         }
 
         /* Initialize thread context. */
@@ -310,11 +312,6 @@ namespace ams::kern {
             CleanupKernelStack(reinterpret_cast<uintptr_t>(m_kernel_stack_top));
         }
 
-        /* Decrement the parent process's thread count. */
-        if (m_parent != nullptr) {
-            m_parent->DecrementThreadCount();
-        }
-
         /* Perform inherited finalization. */
         KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>::Finalize();
     }
@@ -426,19 +423,23 @@ namespace ams::kern {
             if (active_core != current_core || m_physical_affinity_mask.GetAffinityMask() != m_original_physical_affinity_mask.GetAffinityMask()) {
                 KScheduler::OnThreadAffinityMaskChanged(this, m_original_physical_affinity_mask, active_core);
             }
+
+            /* Set base priority-on-unpin. */
+            const s32 old_base_priority = m_base_priority;
+            m_base_priority_on_unpin    = old_base_priority;
+
+            /* Set base priority to higher than any possible process priority. */
+            m_base_priority = std::min<s32>(old_base_priority, __builtin_ctzll(this->GetOwnerProcess()->GetPriorityMask()));
+            RestorePriority(this);
         }
 
         /* Disallow performing thread suspension. */
         {
             /* Update our allow flags. */
-            m_suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
+            m_suspend_allowed_flags &= ~(1 << (util::ToUnderlying(SuspendType_Thread) + util::ToUnderlying(ThreadState_SuspendShift)));
 
             /* Update our state. */
-            const ThreadState old_state = m_thread_state;
-            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (m_thread_state != old_state) {
-                KScheduler::OnThreadStateChanged(this, old_state);
-            }
+            this->UpdateState();
         }
 
         /* Update our SVC access permissions. */
@@ -476,26 +477,23 @@ namespace ams::kern {
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
             }
+
+            m_base_priority = m_base_priority_on_unpin;
+            RestorePriority(this);
         }
 
         /* Allow performing thread suspension (if termination hasn't been requested). */
-        {
+        if (!this->IsTerminationRequested()) {
             /* Update our allow flags. */
-            if (!this->IsTerminationRequested()) {
-                m_suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
-            }
+            m_suspend_allowed_flags |= (1 << (util::ToUnderlying(SuspendType_Thread) + util::ToUnderlying(ThreadState_SuspendShift)));
 
             /* Update our state. */
-            const ThreadState old_state = m_thread_state;
-            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (m_thread_state != old_state) {
-                KScheduler::OnThreadStateChanged(this, old_state);
-            }
-        }
+            this->UpdateState();
 
-        /* Update our SVC access permissions. */
-        MESOSPHERE_ASSERT(m_parent != nullptr);
-        m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+            /* Update our SVC access permissions. */
+            MESOSPHERE_ASSERT(m_parent != nullptr);
+            m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+        }
 
         /* Resume any threads that began waiting on us while we were pinned. */
         for (auto it = m_pinned_waiter_list.begin(); it != m_pinned_waiter_list.end(); ++it) {
@@ -599,14 +597,16 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(m_num_core_migration_disables >= 0);
 
-            /* If the core id is no-update magic, preserve the ideal core id. */
-            if (core_id == ams::svc::IdealCoreNoUpdate) {
+            /* If we're updating, set our ideal virtual core. */
+            if (core_id != ams::svc::IdealCoreNoUpdate) {
+                m_virtual_ideal_core_id = core_id;
+            } else {
+                /* Preserve our ideal core id. */
                 core_id = m_virtual_ideal_core_id;
                 R_UNLESS(((1ul << core_id) & v_affinity_mask) != 0, svc::ResultInvalidCombination());
             }
 
-            /* Set the virtual core/affinity mask. */
-            m_virtual_ideal_core_id = core_id;
+            /* Set our affinity mask. */
             m_virtual_affinity_mask = v_affinity_mask;
 
             /* Translate the virtual core to a physical core. */
@@ -708,11 +708,36 @@ namespace ams::kern {
 
         KScopedSchedulerLock sl;
 
+        /* Determine the priority value to use. */
+        const s32 target_priority = m_termination_requested.load() && priority >= TerminatingThreadPriority ? TerminatingThreadPriority : priority;
+
         /* Change our base priority. */
-        m_base_priority = priority;
+        if (this->GetStackParameters().is_pinned) {
+            m_base_priority_on_unpin = target_priority;
+        } else {
+            m_base_priority = target_priority;
+        }
 
         /* Perform a priority restoration. */
         RestorePriority(this);
+    }
+
+    void KThread::IncreaseBasePriority(s32 priority) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority);
+
+        /* Set our unpin base priority, if we're pinned. */
+        if (this->GetStackParameters().is_pinned && m_base_priority_on_unpin > priority) {
+            m_base_priority_on_unpin = priority;
+        }
+
+        /* Set our base priority. */
+        if (m_base_priority > priority) {
+            m_base_priority = priority;
+
+            /* Perform a priority restoration. */
+            RestorePriority(this);
+        }
     }
 
     Result KThread::SetPriorityToIdle() {
@@ -735,7 +760,7 @@ namespace ams::kern {
         KScopedSchedulerLock lk;
 
         /* Note the request in our flags. */
-        m_suspend_request_flags |= (1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags |= (1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)));
 
         /* Try to perform the suspend. */
         this->TrySuspend();
@@ -747,14 +772,10 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Clear the request in our flags. */
-        m_suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags &= ~(1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)));
 
         /* Update our state. */
-        const ThreadState old_state = m_thread_state;
-        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-        if (m_thread_state != old_state) {
-            KScheduler::OnThreadStateChanged(this, old_state);
-        }
+        this->UpdateState();
     }
 
     void KThread::WaitCancel() {
@@ -790,20 +811,22 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(this->GetNumKernelWaiters() == 0);
 
         /* Perform the suspend. */
-        this->Suspend();
+        this->UpdateState();
     }
 
-    void KThread::Suspend() {
+    void KThread::UpdateState() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-        MESOSPHERE_ASSERT(this->IsSuspendRequested());
 
         /* Set our suspend flags in state. */
         const auto old_state = m_thread_state;
-        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        const auto new_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        m_thread_state = new_state;
 
         /* Note the state change in scheduler. */
-        KScheduler::OnThreadStateChanged(this, old_state);
+        if (new_state != old_state) {
+            KScheduler::OnThreadStateChanged(this, old_state);
+        }
     }
 
     void KThread::Continue() {
@@ -956,6 +979,7 @@ namespace ams::kern {
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
             MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters++) >= 0);
+            KScheduler::SetSchedulerUpdateNeeded();
         }
 
         /* Insert the waiter. */
@@ -970,6 +994,7 @@ namespace ams::kern {
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
             MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
+            KScheduler::SetSchedulerUpdateNeeded();
         }
 
         /* Remove the waiter. */
@@ -1048,6 +1073,7 @@ namespace ams::kern {
                 /* Keep track of how many kernel waiters we have. */
                 if (IsKernelAddressKey(thread->GetAddressKey())) {
                     MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
+                    KScheduler::SetSchedulerUpdateNeeded();
                 }
                 it = m_waiter_list.erase(it);
 
@@ -1094,14 +1120,20 @@ namespace ams::kern {
 
             /* If the current thread has been asked to suspend, suspend it and retry. */
             if (GetCurrentThread().IsSuspended()) {
-                GetCurrentThread().Suspend();
+                GetCurrentThread().UpdateState();
                 continue;
             }
 
             /* If we're not a kernel thread and we've been asked to suspend, suspend ourselves. */
-            if (this->IsUserThread() && this->IsSuspended()) {
-                this->Suspend();
+            if (KProcess *parent = this->GetOwnerProcess(); parent != nullptr) {
+                if (this->IsSuspended()) {
+                    this->UpdateState();
+                }
+                parent->IncrementRunningThreadCount();
             }
+
+            /* Open a reference, now that we're running. */
+            this->Open();
 
             /* Set our state and finish. */
             this->SetState(KThread::ThreadState_Runnable);
@@ -1117,11 +1149,15 @@ namespace ams::kern {
         /* Call the debug callback. */
         KDebug::OnExitThread(this);
 
-        /* Release the thread resource hint from parent. */
+        /* Release the thread resource hint, running thread count from parent. */
         if (m_parent != nullptr) {
             m_parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
             m_resource_limit_release_hint = true;
+            m_parent->DecrementRunningThreadCount();
         }
+
+        /* Destroy any dependent objects. */
+        this->DestroyClosedObjects();
 
         /* Perform termination. */
         {
@@ -1129,6 +1165,7 @@ namespace ams::kern {
 
             /* Disallow all suspension. */
             m_suspend_allowed_flags = 0;
+            this->UpdateState();
 
             /* Start termination. */
             this->StartTermination();
@@ -1140,7 +1177,7 @@ namespace ams::kern {
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }
 
-    void KThread::Terminate() {
+    Result KThread::Terminate() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this != GetCurrentThreadPointer());
 
@@ -1149,7 +1186,9 @@ namespace ams::kern {
             /* If the thread isn't terminated, wait for it to terminate. */
             s32 index;
             KSynchronizationObject *objects[] = { this };
-            KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+            return KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+        } else {
+            return ResultSuccess();
         }
     }
 
@@ -1177,15 +1216,20 @@ namespace ams::kern {
             /* Register the terminating dpc. */
             this->RegisterDpc(DpcFlag_Terminating);
 
+            /* If the thread is pinned, unpin it. */
+            if (this->GetStackParameters().is_pinned) {
+                this->GetOwnerProcess()->UnpinThread(this);
+            }
+
             /* If the thread is suspended, continue it. */
             if (this->IsSuspended()) {
                 m_suspend_allowed_flags = 0;
-                this->Continue();
+                this->UpdateState();
             }
 
             /* Change the thread's priority to be higher than any system thread's. */
             if (this->GetBasePriority() >= ams::svc::SystemThreadPriorityHighest) {
-                this->SetBasePriority(ams::svc::SystemThreadPriorityHighest - 1);
+                this->SetBasePriority(TerminatingThreadPriority);
             }
 
             /* If the thread is runnable, send a termination interrupt to other cores. */

@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <optional>
 
 #include "framework/CDescriptorSet.h"
 #include "framework/CMemPool.h"

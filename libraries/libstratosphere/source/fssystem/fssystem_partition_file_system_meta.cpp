@@ -162,7 +162,7 @@ namespace ams::fssystem {
     template class PartitionFileSystemMetaCore<impl::PartitionFileSystemFormat>;
     template class PartitionFileSystemMetaCore<impl::Sha256PartitionFileSystemFormat>;
 
-    Result Sha256PartitionFileSystemMeta::Initialize(fs::IStorage *base_storage, MemoryResource *allocator, const void *hash, size_t hash_size, std::optional<u8> suffix) {
+    Result Sha256PartitionFileSystemMeta::Initialize(fs::IStorage *base_storage, MemoryResource *allocator, const void *hash, size_t hash_size, util::optional<u8> suffix) {
         /* Ensure preconditions. */
         R_UNLESS(hash_size == crypto::Sha256Generator::HashSize, fs::ResultPreconditionViolation());
 

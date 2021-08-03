@@ -206,11 +206,11 @@ namespace ams::sf {
                 }
 
                 constexpr explicit operator Span<const T>() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
 
                 constexpr Span<const T> ToSpan() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
         };
 
@@ -238,11 +238,11 @@ namespace ams::sf {
                 }
 
                 constexpr explicit operator Span<T>() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
 
                 constexpr Span<T> ToSpan() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
         };
 
@@ -256,12 +256,16 @@ namespace ams::sf {
     using InNonSecureBuffer   = typename impl::InBufferImpl<BufferTransferMode::MapAlias, SfBufferAttr_HipcMapTransferAllowsNonSecure>;
     using InNonDeviceBuffer   = typename impl::InBufferImpl<BufferTransferMode::MapAlias, SfBufferAttr_HipcMapTransferAllowsNonDevice>;
 
+    using InNonSecureAutoSelectBuffer = typename impl::InBufferImpl<BufferTransferMode::AutoSelect, SfBufferAttr_HipcMapTransferAllowsNonSecure>;
+
     using OutBuffer           = typename impl::OutBufferImpl<BufferTransferMode::MapAlias>;
     using OutMapAliasBuffer   = typename impl::OutBufferImpl<BufferTransferMode::MapAlias>;
     using OutPointerBuffer    = typename impl::OutBufferImpl<BufferTransferMode::Pointer>;
     using OutAutoSelectBuffer = typename impl::OutBufferImpl<BufferTransferMode::AutoSelect>;
     using OutNonSecureBuffer  = typename impl::OutBufferImpl<BufferTransferMode::MapAlias, SfBufferAttr_HipcMapTransferAllowsNonSecure>;
     using OutNonDeviceBuffer  = typename impl::OutBufferImpl<BufferTransferMode::MapAlias, SfBufferAttr_HipcMapTransferAllowsNonDevice>;
+
+    using OutNonSecureAutoSelectBuffer = typename impl::OutBufferImpl<BufferTransferMode::AutoSelect, SfBufferAttr_HipcMapTransferAllowsNonSecure>;
 
     template<typename T>
     using InArray             = typename impl::InArrayImpl<T>;

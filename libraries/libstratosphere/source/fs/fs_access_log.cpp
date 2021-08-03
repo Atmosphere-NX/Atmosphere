@@ -156,6 +156,14 @@ namespace ams::fs::impl {
         }
     }
 
+    template<> const char *IdString::ToString<fs::DirectoryEntryType>(fs::DirectoryEntryType type) {
+        switch (type) {
+            case fs::DirectoryEntryType_Directory: return "Directory";
+            case fs::DirectoryEntryType_File:      return "File";
+            default:                               return ToValueString(static_cast<int>(type));
+        }
+    }
+
     namespace {
 
         class AccessLogPrinterCallbackManager {

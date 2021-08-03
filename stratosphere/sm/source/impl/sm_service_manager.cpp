@@ -15,19 +15,21 @@
  */
 #include <stratosphere.hpp>
 #include "sm_service_manager.hpp"
-#include "sm_wait_list.hpp"
+#include "../sm_wait_list.hpp"
 
 namespace ams::sm::impl {
 
     namespace {
 
         /* Constexpr definitions. */
-        static constexpr size_t ProcessCountMax      = 0x40;
-        static constexpr size_t ServiceCountMax      = 0x100;
+        static constexpr size_t ProcessCountMax      = 0x50;
+        static constexpr size_t ServiceCountMax      = 0x100 + 0x10; /* Extra 0x10 services over Nintendo for homebrew. */
         static constexpr size_t FutureMitmCountMax   = 0x20;
         static constexpr size_t AccessControlSizeMax = 0x200;
 
-        constexpr auto InitiallyDeferredServiceName = ServiceName::Encode("fsp-srv");
+        constexpr sm::ServiceName InitiallyDeferredServices[] = {
+            ServiceName::Encode("fsp-srv")
+        };
 
         /* Types. */
         struct ProcessInfo {
@@ -36,86 +38,55 @@ namespace ams::sm::impl {
             cfg::OverrideStatus override_status;
             size_t access_control_size;
             u8 access_control[AccessControlSizeMax];
-
-            ProcessInfo() {
-                this->Free();
-            }
-
-            void Free() {
-                this->process_id = os::InvalidProcessId;
-                this->program_id = ncm::InvalidProgramId;
-                this->override_status = {};
-                this->access_control_size = 0;
-                std::memset(this->access_control, 0, sizeof(this->access_control));
-            }
         };
 
-        /* Forward declaration, for use in ServiceInfo. */
-        void GetMitmProcessInfo(MitmProcessInfo *out, os::ProcessId process_id);
+        constexpr ProcessInfo InvalidProcessInfo = {
+            .process_id          = os::InvalidProcessId,
+            .program_id          = ncm::InvalidProgramId,
+            .override_status     = {},
+            .access_control_size = 0,
+            .access_control      = {},
+        };
 
         struct ServiceInfo {
             ServiceName name;
             os::ProcessId owner_process_id;
             os::ProcessId mitm_process_id;
             os::ProcessId mitm_waiting_ack_process_id;
-            os::ManagedHandle mitm_port_h;
-            os::ManagedHandle mitm_query_h;
-            os::ManagedHandle port_h;
-            os::ManagedHandle mitm_fwd_sess_h;
+            svc::Handle mitm_port_h;
+            svc::Handle mitm_query_h;
+            svc::Handle port_h;
+            svc::Handle mitm_fwd_sess_h;
             s32 max_sessions;
             bool is_light;
             bool mitm_waiting_ack;
+        };
 
-            ServiceInfo() {
-                this->Free();
-            }
-
-            void Free() {
-                /* Close any open handles. */
-                this->port_h.Clear();
-                this->mitm_port_h.Clear();
-                this->mitm_query_h.Clear();
-                this->mitm_fwd_sess_h.Clear();
-
-                /* Reset all other members. */
-                this->name = InvalidServiceName;
-                this->owner_process_id = os::InvalidProcessId;
-                this->max_sessions = 0;
-                this->is_light = false;
-                this->mitm_process_id = os::InvalidProcessId;
-                this->mitm_waiting_ack = false;
-                this->mitm_waiting_ack_process_id = os::InvalidProcessId;
-            }
-
-            void FreeMitm() {
-                /* Close mitm handles. */
-                this->mitm_port_h.Clear();
-                this->mitm_query_h.Clear();
-
-                /* Reset mitm members. */
-                this->mitm_process_id = os::InvalidProcessId;
-            }
-
-            void AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd) {
-                /* Copy to output. */
-                GetMitmProcessInfo(out_info, this->mitm_waiting_ack_process_id);
-                *out_hnd = this->mitm_fwd_sess_h.Move();
-                this->mitm_waiting_ack = false;
-                this->mitm_waiting_ack_process_id = os::InvalidProcessId;
-            }
+        constexpr ServiceInfo InvalidServiceInfo = {
+            .name                        = sm::InvalidServiceName,
+            .owner_process_id            = os::InvalidProcessId,
+            .mitm_process_id             = os::InvalidProcessId,
+            .mitm_waiting_ack_process_id = os::InvalidProcessId,
+            .mitm_port_h                 = svc::InvalidHandle,
+            .mitm_query_h                = svc::InvalidHandle,
+            .port_h                      = svc::InvalidHandle,
+            .mitm_fwd_sess_h             = svc::InvalidHandle,
+            .max_sessions                = 0,
+            .is_light                    = false,
+            .mitm_waiting_ack            = false,
         };
 
         class AccessControlEntry {
             private:
-                const u8 *entry;
-                size_t capacity;
+                const u8 *m_entry;
+                size_t m_capacity;
             public:
-                AccessControlEntry(const void *e, size_t c) : entry(reinterpret_cast<const u8 *>(e)), capacity(c) {
+                AccessControlEntry(const void *e, size_t c) : m_entry(static_cast<const u8 *>(e)), m_capacity(c) {
                     /* ... */
                 }
 
                 AccessControlEntry GetNextEntry() const {
-                    return AccessControlEntry(this->entry + this->GetSize(), this->capacity - this->GetSize());
+                    return AccessControlEntry(m_entry + this->GetSize(), m_capacity - this->GetSize());
                 }
 
                 size_t GetSize() const {
@@ -123,29 +94,29 @@ namespace ams::sm::impl {
                 }
 
                 size_t GetServiceNameSize() const {
-                    return (this->entry[0] & 7) + 1;
+                    return (m_entry[0] & 7) + 1;
                 }
 
                 ServiceName GetServiceName() const {
-                    return ServiceName::Encode(reinterpret_cast<const char *>(this->entry + 1), this->GetServiceNameSize());
+                    return ServiceName::Encode(reinterpret_cast<const char *>(m_entry + 1), this->GetServiceNameSize());
                 }
 
                 bool IsHost() const {
-                    return (this->entry[0] & 0x80) != 0;
+                    return (m_entry[0] & 0x80) != 0;
                 }
 
                 bool IsWildcard() const {
-                    return this->entry[this->GetServiceNameSize()] == '*';
+                    return m_entry[this->GetServiceNameSize()] == '*';
                 }
 
                 bool IsValid() const {
                     /* Validate that we can access data. */
-                    if (this->entry == nullptr || this->capacity == 0) {
+                    if (m_entry == nullptr || m_capacity == 0) {
                         return false;
                     }
 
                     /* Validate that the size is correct. */
-                    return this->GetSize() <= this->capacity;
+                    return this->GetSize() <= m_capacity;
                 }
         };
 
@@ -169,121 +140,57 @@ namespace ams::sm::impl {
         };
 
         /* Static members. */
-        ProcessInfo g_process_list[ProcessCountMax];
-        ServiceInfo g_service_list[ServiceCountMax];
-        ServiceName g_future_mitm_list[FutureMitmCountMax];
-        InitialProcessIdLimits g_initial_process_id_limits;
-        bool g_ended_initial_defers;
 
-        /* Helper functions for interacting with processes/services. */
-        ProcessInfo *GetProcessInfo(os::ProcessId process_id) {
-            for (size_t i = 0; i < ProcessCountMax; i++) {
-                if (g_process_list[i].process_id == process_id) {
-                    return &g_process_list[i];
-                }
+        /* NOTE: In 12.0.0, Nintendo added multithreaded processing to sm; however, official sm does not do */
+        /* any kind of mutual exclusivity when accessing (and modifying) global state. Previously, this was */
+        /* not a problem, because sm was strictly single-threaded, and so two threads could not race eachother. */
+        /* We will add a mutex (and perform locking) in order to prevent simultaneous access to global state. */
+        constinit os::Mutex g_mutex{true};
+
+        constinit std::array<ProcessInfo, ProcessCountMax> g_process_list = [] {
+            std::array<ProcessInfo, ProcessCountMax> list = {};
+
+            /* Initialize each info. */
+            for (auto &process_info : list) {
+                process_info = InvalidProcessInfo;
             }
-            return nullptr;
-        }
 
-        ProcessInfo *GetFreeProcessInfo() {
-            return GetProcessInfo(os::InvalidProcessId);
-        }
+            return list;
+        }();
 
-        bool HasProcessInfo(os::ProcessId process_id) {
-            return GetProcessInfo(process_id) != nullptr;
-        }
+        constinit std::array<ServiceInfo, ServiceCountMax> g_service_list = [] {
+            std::array<ServiceInfo, ServiceCountMax> list = {};
 
+            /* Initialize each info. */
+            for (auto &service_info : list) {
+                service_info = InvalidServiceInfo;
+            }
+
+            return list;
+        }();
+
+        constinit std::array<ServiceName, FutureMitmCountMax> g_future_mitm_list = [] {
+            std::array<ServiceName, FutureMitmCountMax> list = {};
+
+            /* Initialize each info. */
+            for (auto &name : list) {
+                name = InvalidServiceName;
+            }
+
+            return list;
+        }();
+
+        constinit bool g_ended_initial_defers = false;
+
+        InitialProcessIdLimits g_initial_process_id_limits;
+
+        /* Helper functionality. */
         bool IsInitialProcess(os::ProcessId process_id) {
             return g_initial_process_id_limits.IsInitialProcess(process_id);
         }
 
         constexpr inline bool IsValidProcessId(os::ProcessId process_id) {
             return process_id != os::InvalidProcessId;
-        }
-
-        ServiceInfo *GetServiceInfo(ServiceName service_name) {
-            for (size_t i = 0; i < ServiceCountMax; i++) {
-                if (g_service_list[i].name == service_name) {
-                    return &g_service_list[i];
-                }
-            }
-            return nullptr;
-        }
-
-        ServiceInfo *GetFreeServiceInfo() {
-            return GetServiceInfo(InvalidServiceName);
-        }
-
-        bool HasServiceInfo(ServiceName service) {
-            return GetServiceInfo(service) != nullptr;
-        }
-
-        bool HasMitm(ServiceName service) {
-            const ServiceInfo *service_info = GetServiceInfo(service);
-            return service_info != nullptr && IsValidProcessId(service_info->mitm_process_id);
-        }
-
-        void GetMitmProcessInfo(MitmProcessInfo *out_info, os::ProcessId process_id) {
-            /* Anything that can request a mitm session must have a process info. */
-            const auto process_info = GetProcessInfo(process_id);
-            AMS_ABORT_UNLESS(process_info != nullptr);
-
-            /* Write to output. */
-            out_info->process_id = process_id;
-            out_info->program_id = process_info->program_id;
-            out_info->override_status = process_info->override_status;
-        }
-
-        bool IsMitmDisallowed(ncm::ProgramId program_id) {
-            /* Mitm used on certain programs can prevent the boot process from completing. */
-            /* TODO: Is there a way to do this that's less hardcoded? Needs design thought. */
-            return program_id == ncm::SystemProgramId::Loader   ||
-                   program_id == ncm::SystemProgramId::Pm       ||
-                   program_id == ncm::SystemProgramId::Spl      ||
-                   program_id == ncm::SystemProgramId::Boot     ||
-                   program_id == ncm::SystemProgramId::Ncm      ||
-                   program_id == ncm::AtmosphereProgramId::Mitm ||
-                   program_id == ncm::SystemProgramId::Creport;
-        }
-
-        Result AddFutureMitmDeclaration(ServiceName service) {
-            for (size_t i = 0; i < FutureMitmCountMax; i++) {
-                if (g_future_mitm_list[i] == InvalidServiceName) {
-                    g_future_mitm_list[i] = service;
-                    return ResultSuccess();
-                }
-            }
-            return sm::ResultOutOfServices();
-        }
-
-        bool HasFutureMitmDeclaration(ServiceName service) {
-            for (size_t i = 0; i < FutureMitmCountMax; i++) {
-                if (g_future_mitm_list[i] == service) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        void ClearFutureMitmDeclaration(ServiceName service) {
-            for (size_t i = 0; i < FutureMitmCountMax; i++) {
-                if (g_future_mitm_list[i] == service) {
-                    g_future_mitm_list[i] = InvalidServiceName;
-                }
-            }
-
-            /* This might undefer some requests. */
-            TriggerResume(service);
-        }
-
-        void GetServiceInfoRecord(ServiceRecord *out_record, const ServiceInfo *service_info) {
-            out_record->service                     = service_info->name;
-            out_record->owner_process_id            = service_info->owner_process_id;
-            out_record->max_sessions                = service_info->max_sessions;
-            out_record->mitm_process_id             = service_info->mitm_process_id;
-            out_record->mitm_waiting_ack_process_id = service_info->mitm_waiting_ack_process_id;
-            out_record->is_light                    = service_info->is_light;
-            out_record->mitm_waiting_ack            = service_info->mitm_waiting_ack;
         }
 
         Result ValidateAccessControl(AccessControlEntry access_control, ServiceName service, bool is_host, bool is_wildcard) {
@@ -298,7 +205,7 @@ namespace ams::sm::impl {
                     } else if (access_control.IsWildcard()) {
                         /* Also allow fuzzy match for wildcard. */
                         ServiceName ac_service = access_control.GetServiceName();
-                        is_valid &= std::memcmp(&ac_service, &service, access_control.GetServiceNameSize() - 1) == 0;
+                        is_valid &= std::memcmp(std::addressof(ac_service), std::addressof(service), access_control.GetServiceNameSize() - 1) == 0;
                     }
 
                     R_SUCCEED_IF(is_valid);
@@ -347,56 +254,173 @@ namespace ams::sm::impl {
 
             /* This is a mechanism by which certain services will always be deferred until sm:m receives a special command. */
             /* This can be extended with more services as needed at a later date. */
-            return service == InitiallyDeferredServiceName;
+            for (const auto &service_name : InitiallyDeferredServices) {
+                if (service == service_name) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
+        ProcessInfo *GetProcessInfo(os::ProcessId process_id) {
+            /* Find a process info with a matching id. */
+            for (auto &process_info : g_process_list) {
+                if (process_info.process_id == process_id) {
+                    return std::addressof(process_info);
+                }
+            }
+
+            return nullptr;
+        }
+
+        ProcessInfo *GetFreeProcessInfo() {
+            return GetProcessInfo(os::InvalidProcessId);
+        }
+
+        bool HasProcessInfo(os::ProcessId process_id) {
+            return GetProcessInfo(process_id) != nullptr;
+        }
+
+        ServiceInfo *GetServiceInfo(ServiceName service_name) {
+            /* Find a service with a matching name. */
+            for (auto &service_info : g_service_list) {
+                if (service_info.name == service_name) {
+                    return std::addressof(service_info);
+                }
+            }
+
+            return nullptr;
+        }
+
+        ServiceInfo *GetFreeServiceInfo() {
+            return GetServiceInfo(InvalidServiceName);
+        }
+
+        bool HasServiceInfo(ServiceName service) {
+            return GetServiceInfo(service) != nullptr;
+        }
+
+        bool HasMitm(ServiceName service) {
+            const ServiceInfo *service_info = GetServiceInfo(service);
+            return service_info != nullptr && IsValidProcessId(service_info->mitm_process_id);
+        }
+
+        Result AddFutureMitmDeclaration(ServiceName service) {
+            for (auto &future_mitm : g_future_mitm_list) {
+                if (future_mitm == InvalidServiceName) {
+                    future_mitm = service;
+                    return ResultSuccess();
+                }
+            }
+
+            return sm::ResultOutOfServices();
+        }
+
+        bool HasFutureMitmDeclaration(ServiceName service) {
+            for (const auto &future_mitm : g_future_mitm_list){
+                if (future_mitm == service) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void ClearFutureMitmDeclaration(ServiceName service) {
+            for (auto &future_mitm : g_future_mitm_list) {
+                if (future_mitm == service) {
+                    future_mitm = InvalidServiceName;
+                }
+            }
+
+            /* This might undefer some requests. */
+            TriggerResume(service);
+        }
+
+        void GetMitmProcessInfo(MitmProcessInfo *out_info, os::ProcessId process_id) {
+            /* Anything that can request a mitm session must have a process info. */
+            const auto process_info = GetProcessInfo(process_id);
+            AMS_ABORT_UNLESS(process_info != nullptr);
+
+            /* Write to output. */
+            out_info->process_id      = process_id;
+            out_info->program_id      = process_info->program_id;
+            out_info->override_status = process_info->override_status;
+        }
+
+        bool IsMitmDisallowed(ncm::ProgramId program_id) {
+            /* Mitm used on certain programs can prevent the boot process from completing. */
+            /* TODO: Is there a way to do this that's less hardcoded? Needs design thought. */
+            return program_id == ncm::SystemProgramId::Loader   ||
+                   program_id == ncm::SystemProgramId::Pm       ||
+                   program_id == ncm::SystemProgramId::Spl      ||
+                   program_id == ncm::SystemProgramId::Boot     ||
+                   program_id == ncm::SystemProgramId::Ncm      ||
+                   program_id == ncm::AtmosphereProgramId::Mitm ||
+                   program_id == ncm::SystemProgramId::Creport;
+        }
+
+        Result GetMitmServiceHandleImpl(svc::Handle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
             /* Send command to query if we should mitm. */
             bool should_mitm;
             {
-                Service srv { .session = service_info->mitm_query_h.Get() };
-                R_TRY(serviceDispatchInOut(&srv, 65000, client_info, should_mitm));
+                /* TODO: Convert mitm internal messaging to use tipc? */
+                ::Service srv { .session = service_info->mitm_query_h };
+                R_ABORT_UNLESS(::serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm));
             }
 
             /* If we shouldn't mitm, give normal session. */
-            R_UNLESS(should_mitm, svcConnectToPort(out, service_info->port_h.Get()));
+            R_UNLESS(should_mitm, svc::ConnectToPort(out, service_info->port_h));
 
             /* Create both handles. */
             {
-                os::ManagedHandle fwd_hnd, hnd;
-                R_TRY(svcConnectToPort(fwd_hnd.GetPointer(), service_info->port_h.Get()));
-                R_TRY(svcConnectToPort(hnd.GetPointer(), service_info->mitm_port_h.Get()));
-                service_info->mitm_fwd_sess_h = std::move(fwd_hnd);
-                *out = hnd.Move();
+                /* Get the forward handle. */
+                svc::Handle fwd_hnd;
+                R_TRY(svc::ConnectToPort(std::addressof(fwd_hnd), service_info->port_h));
+
+                /* Ensure that the forward handle is closed, if we fail to get the mitm handle. */
+                auto fwd_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(fwd_hnd)); };
+
+                /* Get the mitm handle. */
+                /* This should be guaranteed to succeed, since we got a forward handle. */
+                svc::Handle hnd;
+                R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), service_info->mitm_port_h));
+
+                /* We got both handles, so we no longer need to clean up the forward handle. */
+                fwd_guard.Cancel();
+
+                /* Save the handles to their respective storages. */
+                service_info->mitm_fwd_sess_h = fwd_hnd;
+                *out                          = hnd;
             }
 
             service_info->mitm_waiting_ack_process_id = client_info.process_id;
-            service_info->mitm_waiting_ack = true;
+            service_info->mitm_waiting_ack            = true;
 
             return ResultSuccess();
         }
 
-        Result GetServiceHandleImpl(Handle *out, ServiceInfo *service_info, os::ProcessId process_id) {
+        Result GetServiceHandleImpl(svc::Handle *out, ServiceInfo *service_info, os::ProcessId process_id) {
             /* Clear handle output. */
-            *out = INVALID_HANDLE;
+            *out = svc::InvalidHandle;
 
             /* Check if we should return a mitm handle. */
             if (IsValidProcessId(service_info->mitm_process_id) && service_info->mitm_process_id != process_id) {
                 /* Get mitm process info, ensure that we're allowed to mitm the given program. */
                 MitmProcessInfo client_info;
-                GetMitmProcessInfo(&client_info, process_id);
+                GetMitmProcessInfo(std::addressof(client_info), process_id);
                 if (!IsMitmDisallowed(client_info.program_id)) {
-                    /* We're mitm'd. Assert, because mitm service host dead is an error state. */
-                    R_ABORT_UNLESS(GetMitmServiceHandleImpl(out, service_info, client_info));
-                    return ResultSuccess();
+                    /* Get a mitm service handle. */
+                    return GetMitmServiceHandleImpl(out, service_info, client_info);
                 }
             }
 
             /* We're not returning a mitm handle, so just return a normal port handle. */
-            return svcConnectToPort(out, service_info->port_h.Get());
+            return svc::ConnectToPort(out, service_info->port_h);
         }
 
-        Result RegisterServiceImpl(Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
+        Result RegisterServiceImpl(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
             /* Validate service name. */
             R_TRY(ValidateServiceName(service));
 
@@ -408,14 +432,16 @@ namespace ams::sm::impl {
             R_UNLESS(free_service != nullptr, sm::ResultOutOfServices());
 
             /* Create the new service. */
-            *out = INVALID_HANDLE;
-            R_TRY(svcCreatePort(out, free_service->port_h.GetPointerAndClear(), max_sessions, is_light, free_service->name.name));
+            *out                   = svc::InvalidHandle;
+            svc::Handle server_hnd = svc::InvalidHandle;
+            R_TRY(svc::CreatePort(out, std::addressof(server_hnd), max_sessions, is_light, reinterpret_cast<uintptr_t>(free_service->name.name)));
 
             /* Save info. */
-            free_service->name = service;
+            free_service->name             = service;
             free_service->owner_process_id = process_id;
-            free_service->max_sessions = max_sessions;
-            free_service->is_light = is_light;
+            free_service->max_sessions     = max_sessions;
+            free_service->is_light         = is_light;
+            free_service->port_h           = server_hnd;
 
             /* This might undefer some requests. */
             TriggerResume(service);
@@ -423,25 +449,42 @@ namespace ams::sm::impl {
             return ResultSuccess();
         }
 
+        void UnregisterServiceImpl(ServiceInfo *service_info) {
+            /* Close all valid handles. */
+            if (service_info->port_h != svc::InvalidHandle)          { R_ABORT_UNLESS(svc::CloseHandle(service_info->port_h)); }
+            if (service_info->mitm_port_h != svc::InvalidHandle)     { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_port_h)); }
+            if (service_info->mitm_query_h != svc::InvalidHandle)    { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_query_h)); }
+            if (service_info->mitm_fwd_sess_h != svc::InvalidHandle) { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_fwd_sess_h)); }
+
+            /* Reset the info's state. */
+            *service_info = InvalidServiceInfo;
+        }
+
     }
 
     /* Client disconnection callback. */
     void OnClientDisconnected(os::ProcessId process_id) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Ensure that the process id is valid. */
         if (process_id == os::InvalidProcessId) {
             return;
         }
 
         /* Unregister all services a client hosts, on attached-client-close. */
-        for (size_t i = 0; i < ServiceCountMax; i++) {
-            if (g_service_list[i].name != InvalidServiceName && g_service_list[i].owner_process_id == process_id) {
-                g_service_list[i].Free();
+        for (auto &service_info : g_service_list) {
+            if (service_info.name != InvalidServiceName && service_info.owner_process_id == process_id) {
+                UnregisterServiceImpl(std::addressof(service_info));
             }
         }
     }
 
     /* Process management. */
     Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Check that access control will fit in the ServiceInfo. */
         R_UNLESS(aci_sac_size <= AccessControlSizeMax, sm::ResultTooLargeAccessControl());
 
@@ -454,25 +497,34 @@ namespace ams::sm::impl {
         R_TRY(ValidateAccessControl(AccessControlEntry(acid_sac, acid_sac_size), AccessControlEntry(aci_sac, aci_sac_size)));
 
         /* Save info. */
-        proc->process_id = process_id;
-        proc->program_id = program_id;
-        proc->override_status = override_status;
+        proc->process_id          = process_id;
+        proc->program_id          = program_id;
+        proc->override_status     = override_status;
         proc->access_control_size = aci_sac_size;
         std::memcpy(proc->access_control, aci_sac, proc->access_control_size);
+
         return ResultSuccess();
     }
 
     Result UnregisterProcess(os::ProcessId process_id) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Find the process. */
         ProcessInfo *proc = GetProcessInfo(process_id);
         R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
 
-        proc->Free();
+        /* Free the process. */
+        *proc = InvalidProcessInfo;
+
         return ResultSuccess();
     }
 
     /* Service management. */
     Result HasService(bool *out, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -481,16 +533,24 @@ namespace ams::sm::impl {
     }
 
     Result WaitService(ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
+        /* Check that we have the service. */
         bool has_service = false;
         R_TRY(impl::HasService(&has_service, service));
 
-        /* Wait until we have the service. */
+        /* If we do, we can succeed immediately. */
         R_SUCCEED_IF(has_service);
 
+        /* Otherwise, we want to wait until the service is registered. */
         return StartRegisterRetry(service);
     }
 
-    Result GetServiceHandle(Handle *out, os::ProcessId process_id, ServiceName service) {
+    Result GetServiceHandle(svc::Handle *out, os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -523,7 +583,10 @@ namespace ams::sm::impl {
         return ResultSuccess();
     }
 
-    Result RegisterService(Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
+    Result RegisterService(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -535,15 +598,23 @@ namespace ams::sm::impl {
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
         }
 
+        /* Check that the service isn't already registered. */
         R_UNLESS(!HasServiceInfo(service), sm::ResultAlreadyRegistered());
+
         return RegisterServiceImpl(out, process_id, service, max_sessions, is_light);
     }
 
-    Result RegisterServiceForSelf(Handle *out, ServiceName service, size_t max_sessions) {
+    Result RegisterServiceForSelf(svc::Handle *out, ServiceName service, size_t max_sessions) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         return RegisterServiceImpl(out, os::GetCurrentProcessId(), service, max_sessions, false);
     }
 
     Result UnregisterService(os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -560,31 +631,44 @@ namespace ams::sm::impl {
         R_UNLESS(service_info->owner_process_id == process_id, sm::ResultNotAllowed());
 
         /* Unregister the service. */
-        service_info->Free();
+        UnregisterServiceImpl(service_info);
+
         return ResultSuccess();
     }
 
     /* Mitm extensions. */
     Result HasMitm(bool *out, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
-        const ServiceInfo *service_info = GetServiceInfo(service);
-        *out = service_info != nullptr && IsValidProcessId(service_info->mitm_process_id);
+        /* Get whether we have a mitm. */
+        *out = HasMitm(service);
+
         return ResultSuccess();
     }
 
     Result WaitMitm(ServiceName service) {
-        bool has_mitm = false;
-        R_TRY(impl::HasMitm(&has_mitm, service));
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
 
-        /* Wait until we have the mitm. */
+        /* Check that we have the mitm. */
+        bool has_mitm = false;
+        R_TRY(impl::HasMitm(std::addressof(has_mitm), service));
+
+        /* If we do, we can succeed immediately. */
         R_SUCCEED_IF(has_mitm);
 
+        /* Otherwise, we want to wait until the service is registered. */
         return StartRegisterRetry(service);
     }
 
-    Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId process_id, ServiceName service) {
+    Result InstallMitm(svc::Handle *out, svc::Handle *out_query, os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -599,20 +683,18 @@ namespace ams::sm::impl {
         ServiceInfo *service_info = GetServiceInfo(service);
 
         /* If it doesn't exist, defer until it does. */
-        if (service_info == nullptr) {
-            return StartRegisterRetry(service);
-        }
+        R_UNLESS(service_info != nullptr, StartRegisterRetry(service));
 
         /* Validate that the service isn't already being mitm'd. */
         R_UNLESS(!IsValidProcessId(service_info->mitm_process_id), sm::ResultAlreadyRegistered());
 
         /* Always clear output. */
-        *out = INVALID_HANDLE;
-        *out_query = INVALID_HANDLE;
+        *out       = svc::InvalidHandle;
+        *out_query = svc::InvalidHandle;
 
         /* If we don't have a future mitm declaration, add one. */
         /* Client will clear this when ready to process. */
-        bool has_existing_future_declaration = HasFutureMitmDeclaration(service);
+        const bool has_existing_future_declaration = HasFutureMitmDeclaration(service);
         if (!has_existing_future_declaration) {
             R_TRY(AddFutureMitmDeclaration(service));
         }
@@ -621,16 +703,26 @@ namespace ams::sm::impl {
 
         /* Create mitm handles. */
         {
-            os::ManagedHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
-            R_TRY(svcCreatePort(hnd.GetPointer(), port_hnd.GetPointer(), service_info->max_sessions, service_info->is_light, service_info->name.name));
-            R_TRY(svcCreateSession(qry_hnd.GetPointer(), mitm_qry_hnd.GetPointer(), 0, 0));
+            /* Get the port handles. */
+            svc::Handle hnd, port_hnd;
+            R_TRY(svc::CreatePort(std::addressof(hnd), std::addressof(port_hnd), service_info->max_sessions, service_info->is_light, reinterpret_cast<uintptr_t>(service_info->name.name)));
+
+            /* Ensure that we clean up the port handles, if something goes wrong creating the query sessions. */
+            auto port_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(hnd)); R_ABORT_UNLESS(svc::CloseHandle(port_hnd)); };
+
+            /* Create the session for our query service. */
+            svc::Handle qry_hnd, mitm_qry_hnd;
+            R_TRY(svc::CreateSession(std::addressof(qry_hnd), std::addressof(mitm_qry_hnd), false, 0));
+
+            /* We created the query service session, so we no longer need to clean up the port handles. */
+            port_guard.Cancel();
 
             /* Copy to output. */
             service_info->mitm_process_id = process_id;
-            service_info->mitm_port_h = std::move(port_hnd);
-            service_info->mitm_query_h = std::move(mitm_qry_hnd);
-            *out = hnd.Move();
-            *out_query = qry_hnd.Move();
+            service_info->mitm_port_h     = port_hnd;
+            service_info->mitm_query_h    = mitm_qry_hnd;
+            *out                          = hnd;
+            *out_query                    = qry_hnd;
 
             /* This might undefer some requests. */
             TriggerResume(service);
@@ -641,6 +733,9 @@ namespace ams::sm::impl {
     }
 
     Result UninstallMitm(os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -657,12 +752,26 @@ namespace ams::sm::impl {
         /* Validate that the client process_id is the mitm process. */
         R_UNLESS(service_info->mitm_process_id == process_id, sm::ResultNotAllowed());
 
-        /* Free Mitm session info. */
-        service_info->FreeMitm();
+        /* Uninstall the mitm. */
+        {
+            /* Close mitm handles. */
+            R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_port_h));
+            R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_query_h));
+
+            /* Reset mitm members. */
+            service_info->mitm_port_h     = svc::InvalidHandle;
+            service_info->mitm_query_h    = svc::InvalidHandle;
+            service_info->mitm_process_id = os::InvalidProcessId;
+
+        }
+
         return ResultSuccess();
     }
 
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -679,10 +788,14 @@ namespace ams::sm::impl {
 
         /* Try to forward declare it. */
         R_TRY(AddFutureMitmDeclaration(service));
+
         return ResultSuccess();
     }
 
     Result ClearFutureMitm(os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -707,10 +820,14 @@ namespace ams::sm::impl {
 
         /* Clear the forward declaration. */
         ClearFutureMitmDeclaration(service);
+
         return ResultSuccess();
     }
 
-    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd, os::ProcessId process_id, ServiceName service) {
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, svc::Handle *out_hnd, os::ProcessId process_id, ServiceName service) {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
@@ -729,7 +846,18 @@ namespace ams::sm::impl {
         R_UNLESS(service_info->mitm_waiting_ack,               sm::ResultNotAllowed());
 
         /* Acknowledge. */
-        service_info->AcknowledgeMitmSession(out_info, out_hnd);
+        {
+            /* Copy the mitm info to output. */
+            GetMitmProcessInfo(out_info, service_info->mitm_waiting_ack_process_id);
+
+            /* Set the output handle. */
+            *out_hnd                      = service_info->mitm_fwd_sess_h;
+            service_info->mitm_fwd_sess_h = svc::InvalidHandle;
+
+            /* Clear acknowledgement-related fields. */
+            service_info->mitm_waiting_ack            = false;
+            service_info->mitm_waiting_ack_process_id = os::InvalidProcessId;
+        }
 
         /* Undefer requests to the session. */
         TriggerResume(service);
@@ -737,44 +865,18 @@ namespace ams::sm::impl {
         return ResultSuccess();
     }
 
-    /* Dmnt record extensions. */
-    Result GetServiceRecord(ServiceRecord *out, ServiceName service) {
-        /* Validate service name. */
-        R_TRY(ValidateServiceName(service));
-
-        /* Validate that the service exists. */
-        const ServiceInfo *service_info = GetServiceInfo(service);
-        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
-
-        GetServiceInfoRecord(out, service_info);
-        return ResultSuccess();
-    }
-
-    Result ListServiceRecords(ServiceRecord *out, u64 *out_count, u64 offset, u64 max_count) {
-        u64 count = 0;
-
-        for (size_t i = 0; i < ServiceCountMax && count < max_count; i++) {
-            const ServiceInfo *service_info = &g_service_list[i];
-            if (service_info->name != InvalidServiceName) {
-                if (offset == 0) {
-                    GetServiceInfoRecord(out++, service_info);
-                    count++;
-                } else {
-                    offset--;
-                }
-            }
-        }
-
-        *out_count = 0;
-        return ResultSuccess();
-    }
-
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers() {
+        /* Acquire exclusive access to global state. */
+        std::scoped_lock lk(g_mutex);
+
+        /* Note that we have ended the initial deferral period. */
         g_ended_initial_defers = true;
 
         /* This might undefer some requests. */
-        TriggerResume(InitiallyDeferredServiceName);
+        for (const auto &service_name : InitiallyDeferredServices) {
+            TriggerResume(service_name);
+        }
 
         return ResultSuccess();
     }

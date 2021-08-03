@@ -102,14 +102,13 @@ namespace ams::kern {
                 }
             }
             MESOSPHERE_ASSERT(owner_thread.IsNotNull());
-        }
 
-        /* Remove the thread as a waiter from the lock owner. */
-        {
-            KScopedSchedulerLock sl;
-            KThread *owner_thread = cur_thread->GetLockOwner();
-            if (owner_thread != nullptr) {
-                owner_thread->RemoveWaiter(cur_thread);
+            /* Remove the thread as a waiter from the lock owner. */
+            {
+                KScopedSchedulerLock sl;
+                if (KThread *mutex_owner = cur_thread->GetLockOwner(); mutex_owner != nullptr) {
+                    mutex_owner->RemoveWaiter(cur_thread);
+                }
             }
         }
 
@@ -118,7 +117,7 @@ namespace ams::kern {
         return cur_thread->GetWaitResult(std::addressof(dummy));
     }
 
-    KThread *KConditionVariable::SignalImpl(KThread *thread) {
+    void KConditionVariable::SignalImpl(KThread *thread) {
         /* Check pre-conditions. */
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
@@ -133,11 +132,10 @@ namespace ams::kern {
 
             can_access = cpu::CanAccessAtomic(address);
             if (AMS_LIKELY(can_access)) {
-                UpdateLockAtomic(std::addressof(prev_tag), address, own_tag, ams::svc::HandleWaitMask);
+                can_access = UpdateLockAtomic(std::addressof(prev_tag), address, own_tag, ams::svc::HandleWaitMask);
             }
         }
 
-        KThread *thread_to_close = nullptr;
         if (AMS_LIKELY(can_access)) {
             if (prev_tag == ams::svc::InvalidHandle) {
                 /* If nobody held the lock previously, we're all good. */
@@ -150,7 +148,7 @@ namespace ams::kern {
                 if (AMS_LIKELY(owner_thread != nullptr)) {
                     /* Add the thread as a waiter on the owner. */
                     owner_thread->AddWaiter(thread);
-                    thread_to_close = owner_thread;
+                    owner_thread->Close();
                 } else {
                     /* The lock was tagged with a thread that doesn't exist. */
                     thread->SetSyncedObject(nullptr, svc::ResultInvalidState());
@@ -162,34 +160,19 @@ namespace ams::kern {
             thread->SetSyncedObject(nullptr, svc::ResultInvalidCurrentMemory());
             thread->Wakeup();
         }
-
-        return thread_to_close;
     }
 
     void KConditionVariable::Signal(uintptr_t cv_key, s32 count) {
-        /* Prepare for signaling. */
-        constexpr int MaxThreads = 16;
-        KLinkedList<KThread> thread_list;
-        KThread *thread_array[MaxThreads];
-        int num_to_close = 0;
-
         /* Perform signaling. */
         int num_waiters = 0;
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ cv_key, -1 });
+            auto it = m_tree.nfind_key({ cv_key, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 
-                if (KThread *thread = this->SignalImpl(target_thread); thread != nullptr) {
-                    if (num_to_close < MaxThreads) {
-                        thread_array[num_to_close++] = thread;
-                    } else {
-                        thread_list.push_back(*thread);
-                    }
-                }
-
+                this->SignalImpl(target_thread);
                 it = m_tree.erase(it);
                 target_thread->ClearConditionVariable();
                 ++num_waiters;
@@ -200,16 +183,6 @@ namespace ams::kern {
                 const u32 has_waiter_flag = 0;
                 WriteToUser(cv_key, std::addressof(has_waiter_flag));
             }
-        }
-
-        /* Close threads in the array. */
-        for (auto i = 0; i < num_to_close; ++i) {
-            thread_array[i]->Close();
-        }
-
-        /* Close threads in the list. */
-        for (auto it = thread_list.begin(); it != thread_list.end(); it = thread_list.erase(it)) {
-            (*it).Close();
         }
     }
 
@@ -276,11 +249,6 @@ namespace ams::kern {
             }
         }
 
-        /* Cancel the timer wait. */
-        if (timer != nullptr) {
-            timer->CancelTask(cur_thread);
-        }
-
         /* Remove from the condition variable. */
         {
             KScopedSchedulerLock sl;
@@ -293,6 +261,11 @@ namespace ams::kern {
                 m_tree.erase(m_tree.iterator_to(*cur_thread));
                 cur_thread->ClearConditionVariable();
             }
+        }
+
+        /* Cancel the timer wait. */
+        if (timer != nullptr) {
+            timer->CancelTask(cur_thread);
         }
 
         /* Get the result. */

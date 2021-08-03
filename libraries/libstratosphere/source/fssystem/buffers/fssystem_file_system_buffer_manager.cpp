@@ -88,8 +88,8 @@ namespace ams::fssystem {
             if (this->external_attr_info_buffer == nullptr) {
                 new_info = new AttrInfo(attr.GetLevel(), 1, size);
             } else if (0 <= attr.GetLevel() && attr.GetLevel() < this->external_attr_info_count) {
-                const auto buffer = this->external_attr_info_buffer + attr.GetLevel() * sizeof(AttrInfo);
-                new_info = new (buffer) AttrInfo(attr.GetLevel(), 1, size);
+                void *buffer = this->external_attr_info_buffer + attr.GetLevel() * sizeof(AttrInfo);
+                new_info = std::construct_at(reinterpret_cast<AttrInfo *>(buffer), attr.GetLevel(), 1, size);
             }
 
             /* If we failed to make a new attr info, we can't register. */

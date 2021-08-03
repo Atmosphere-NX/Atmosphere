@@ -78,7 +78,7 @@ namespace ams::pm::impl {
             NON_MOVEABLE(ProcessInfoAllocator);
             static_assert(MaxProcessInfos >= 0x40, "MaxProcessInfos is too small.");
             private:
-                TYPED_STORAGE(ProcessInfo) process_info_storages[MaxProcessInfos];
+                util::TypedStorage<ProcessInfo> process_info_storages[MaxProcessInfos];
                 bool process_info_allocated[MaxProcessInfos];
                 os::Mutex lock;
             private:
@@ -91,15 +91,20 @@ namespace ams::pm::impl {
                     std::memset(this->process_info_allocated, 0, sizeof(this->process_info_allocated));
                 }
 
-                void *AllocateProcessInfoStorage() {
+                template<typename... Args>
+                ProcessInfo *AllocateProcessInfo(Args &&... args) {
                     std::scoped_lock lk(this->lock);
+
                     for (size_t i = 0; i < MaxProcessInfos; i++) {
                         if (!this->process_info_allocated[i]) {
                             this->process_info_allocated[i] = true;
-                            std::memset(&this->process_info_storages[i], 0, sizeof(this->process_info_storages[i]));
-                            return GetPointer(this->process_info_storages[i]);
+
+                            std::memset(this->process_info_storages + i, 0, sizeof(this->process_info_storages[i]));
+
+                            return util::ConstructAt(this->process_info_storages[i], std::forward<Args>(args)...);
                         }
                     }
+
                     return nullptr;
                 }
 
@@ -110,7 +115,7 @@ namespace ams::pm::impl {
                     AMS_ABORT_UNLESS(index < MaxProcessInfos);
                     AMS_ABORT_UNLESS(this->process_info_allocated[index]);
 
-                    process_info->~ProcessInfo();
+                    util::DestroyAt(this->process_info_storages[index]);
                     this->process_info_allocated[index] = false;
                 }
         };
@@ -251,9 +256,8 @@ namespace ams::pm::impl {
             os::ProcessId process_id = os::GetProcessId(process_handle);
 
             /* Make new process info. */
-            void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();
-            AMS_ABORT_UNLESS(process_info_storage != nullptr);
-            ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location, override_status);
+            ProcessInfo *process_info  = g_process_info_allocator.AllocateProcessInfo(process_handle, process_id, pin_id, location, override_status);
+            AMS_ABORT_UNLESS(process_info != nullptr);
 
             /* Link new process info. */
             {

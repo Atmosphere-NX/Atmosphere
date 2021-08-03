@@ -23,12 +23,11 @@ namespace ams::kern {
         /* Set members. */
         m_owner = GetCurrentProcessPointer();
 
-        /* Initialize the page group. */
+        /* Get the owner page table. */
         auto &page_table = m_owner->GetPageTable();
-        new (GetPointer(m_page_group)) KPageGroup(page_table.GetBlockInfoManager());
 
-        /* Ensure that our page group's state is valid on exit. */
-        auto pg_guard = SCOPE_GUARD { GetReference(m_page_group).~KPageGroup(); };
+        /* Construct the page group, guarding to make sure our state is valid on exit. */
+        auto pg_guard = util::ConstructAtGuarded(m_page_group, page_table.GetBlockInfoManager());
 
         /* Lock the memory. */
         R_TRY(page_table.LockForCodeMemory(GetPointer(m_page_group), addr, size));

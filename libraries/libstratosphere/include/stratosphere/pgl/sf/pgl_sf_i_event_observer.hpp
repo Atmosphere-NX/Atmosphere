@@ -20,8 +20,9 @@
 #include <stratosphere/pm.hpp>
 #include <stratosphere/pgl/pgl_types.hpp>
 
-#define AMS_PGL_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                           \
+#define AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                        \
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::sf::OutCopyHandle out),             (out)) \
     AMS_SF_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::sf::Out<pm::ProcessEventInfo> out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IEventObserver, AMS_PGL_I_EVENT_OBSERVER_INTERFACE_INFO);
+AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IEventObserver, AMS_PGL_SF_I_EVENT_OBSERVER_INTERFACE_INFO);
+

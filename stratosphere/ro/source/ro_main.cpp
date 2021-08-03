@@ -145,14 +145,14 @@ void __appInit(void) {
 
     fs::SetAllocator(ro::Allocate, ro::Deallocate);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(fsInitialize());
-        spl::Initialize();
-        if (hos::GetVersion() < hos::Version_3_0_0) {
-            R_ABORT_UNLESS(pminfoInitialize());
-        }
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(fsInitialize());
+    spl::Initialize();
+    if (hos::GetVersion() < hos::Version_3_0_0) {
+        R_ABORT_UNLESS(pminfoInitialize());
+    }
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 

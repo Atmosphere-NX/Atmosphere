@@ -147,12 +147,11 @@ namespace ams::lmem::impl {
         }
 
         inline ExpHeapMemoryBlockHead *InitializeMemoryBlock(const MemoryRegion &region, u16 magic) {
-            ExpHeapMemoryBlockHead *block = reinterpret_cast<ExpHeapMemoryBlockHead *>(region.start);
+            /* Construct the block. */
+            ExpHeapMemoryBlockHead *block = std::construct_at(reinterpret_cast<ExpHeapMemoryBlockHead *>(region.start));
 
-            /* Ensure all member constructors are called. */
-            new (block) ExpHeapMemoryBlockHead;
-
-            block->magic = magic;
+            /* Initialize all members. */
+            block->magic      = magic;
             block->attributes = 0;
             block->block_size = GetPointerDifference(GetMemoryBlockStart(block), region.end);
 
@@ -175,8 +174,8 @@ namespace ams::lmem::impl {
             InitializeHeapHead(heap_head, ExpHeapMagic, GetExpHeapMemoryStart(exp_heap_head), end, option);
 
             /* Call exp heap member constructors. */
-            new (&exp_heap_head->free_list) ExpHeapMemoryBlockList;
-            new (&exp_heap_head->used_list) ExpHeapMemoryBlockList;
+            std::construct_at(std::addressof(exp_heap_head->free_list));
+            std::construct_at(std::addressof(exp_heap_head->used_list));
 
             /* Set exp heap fields. */
             exp_heap_head->group_id = DefaultGroupId;

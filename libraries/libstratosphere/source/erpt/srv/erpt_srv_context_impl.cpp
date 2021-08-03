@@ -19,6 +19,7 @@
 #include "erpt_srv_context.hpp"
 #include "erpt_srv_reporter.hpp"
 #include "erpt_srv_journal.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
@@ -31,6 +32,8 @@ namespace ams::erpt::srv {
 
         R_UNLESS(ctx_size == sizeof(ContextEntry), erpt::ResultInvalidArgument());
         R_UNLESS(data_size <= ArrayBufferSizeMax,  erpt::ResultInvalidArgument());
+
+        SubmitContextForForcedShutdownDetection(ctx, data, data_size);
 
         return Context::SubmitContext(ctx, data, data_size);
     }
@@ -47,8 +50,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, result);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0));
 
         ManagerImpl::NotifyAll();
 
@@ -70,12 +72,12 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::UpdatePowerOnTime() {
-        Reporter::UpdatePowerOnTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
     Result ContextImpl::UpdateAwakeTime() {
-        Reporter::UpdateAwakeTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
@@ -148,8 +150,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, nullptr, attachments, num_attachments, result);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments));
 
         ManagerImpl::NotifyAll();
 
@@ -158,6 +159,24 @@ namespace ams::erpt::srv {
 
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
         return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess());
+    }
+
+    Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
+        return Reporter::RegisterRunningApplet(program_id);
+    }
+
+    Result ContextImpl::UnregisterRunningApplet(ncm::ProgramId program_id) {
+        return Reporter::UnregisterRunningApplet(program_id);
+    }
+
+    Result ContextImpl::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration) {
+        return Reporter::UpdateAppletSuspendedDuration(program_id, duration);
+    }
+
+    Result ContextImpl::InvalidateForcedShutdownDetection() {
+        /* NOTE: Nintendo does not check the result here. */
+        erpt::srv::InvalidateForcedShutdownDetection();
+        return ResultSuccess();
     }
 
 }

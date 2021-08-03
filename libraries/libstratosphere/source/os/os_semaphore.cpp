@@ -24,11 +24,11 @@ namespace ams::os {
         AMS_ASSERT(count     >= 0);
 
         /* Setup objects. */
-        new (GetPointer(sema->cs_sema))      impl::InternalCriticalSection;
-        new (GetPointer(sema->cv_not_zero))  impl::InternalConditionVariable;
+        util::ConstructAt(sema->cs_sema);
+        util::ConstructAt(sema->cv_not_zero);
 
         /* Setup wait lists. */
-        new (GetPointer(sema->waitlist)) impl::WaitableObjectList;
+        util::ConstructAt(sema->waitlist);
 
         /* Set member variables. */
         sema->count     = count;
@@ -47,11 +47,11 @@ namespace ams::os {
         sema->state = SemaphoreType::State_NotInitialized;
 
         /* Destroy wait lists. */
-        GetReference(sema->waitlist).~WaitableObjectList();
+        util::DestroyAt(sema->waitlist);
 
         /* Destroy objects. */
-        GetReference(sema->cv_not_zero).~InternalConditionVariable();
-        GetReference(sema->cs_sema).~InternalCriticalSection();
+        util::DestroyAt(sema->cv_not_zero);
+        util::DestroyAt(sema->cs_sema);
     }
 
     void AcquireSemaphore(SemaphoreType *sema) {

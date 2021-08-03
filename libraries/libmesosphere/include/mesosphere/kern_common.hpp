@@ -17,6 +17,7 @@
 #include <vapours.hpp>
 #include <mesosphere/kern_build_config.hpp>
 #include <mesosphere/svc/kern_svc_results.hpp>
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 namespace ams::kern {
 

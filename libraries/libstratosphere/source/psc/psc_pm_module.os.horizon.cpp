@@ -46,9 +46,9 @@ namespace ams::psc {
     Result PmModule::Initialize(const PmModuleId mid, const PmModuleId *dependencies, u32 dependency_count, os::EventClearMode clear_mode) {
         R_UNLESS(!this->initialized, psc::ResultAlreadyInitialized());
 
-        static_assert(sizeof(*dependencies) == sizeof(u16));
+        static_assert(sizeof(*dependencies) == sizeof(u32));
         ::PscPmModule module;
-        R_TRY(::pscmGetPmModule(std::addressof(module), static_cast<::PscPmModuleId>(mid), reinterpret_cast<const u16 *>(dependencies), dependency_count, clear_mode == os::EventClearMode_AutoClear));
+        R_TRY(::pscmGetPmModule(std::addressof(module), static_cast<::PscPmModuleId>(mid), reinterpret_cast<const u32 *>(dependencies), dependency_count, clear_mode == os::EventClearMode_AutoClear));
 
         this->intf = RemoteObjectFactory::CreateSharedEmplaced<psc::sf::IPmModule, RemotePmModule>(module);
         this->system_event.AttachReadableHandle(module.event.revent, false, clear_mode);

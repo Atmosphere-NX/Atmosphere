@@ -28,6 +28,14 @@ namespace ams::kern::init::loader {
 
     namespace {
 
+        constexpr uintptr_t KernelBaseAlignment  = 0x200000;
+        constexpr uintptr_t KernelBaseRangeStart = 0xFFFFFF8000000000;
+        constexpr uintptr_t KernelBaseRangeEnd   = 0xFFFFFFFFFFE00000;
+        constexpr uintptr_t KernelBaseRangeLast  = KernelBaseRangeEnd - 1;
+        static_assert(util::IsAligned(KernelBaseRangeStart, KernelBaseAlignment));
+        static_assert(util::IsAligned(KernelBaseRangeEnd, KernelBaseAlignment));
+        static_assert(KernelBaseRangeStart <= KernelBaseRangeLast);
+
         static_assert(InitialProcessBinarySizeMax <= KernelResourceSize);
 
         constexpr size_t InitialPageTableRegionSizeMax = 2_MB;
@@ -51,47 +59,24 @@ namespace ams::kern::init::loader {
             }
         }
 
-        void EnsureEntireDataCacheFlushed() {
-            /* Flush shared cache. */
-            cpu::FlushEntireDataCacheSharedForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Flush local cache. */
-            cpu::FlushEntireDataCacheLocalForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Flush shared cache. */
-            cpu::FlushEntireDataCacheSharedForInit();
-            cpu::DataSynchronizationBarrier();
-
-            /* Invalidate entire instruction cache. */
-            cpu::InvalidateEntireInstructionCacheForInit();
-
-            /* Invalidate entire TLB. */
-            cpu::InvalidateEntireTlb();
-        }
-
-        void SetupInitialIdentityMapping(KInitialPageTable &ttbr1_table, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::IPageAllocator &allocator) {
-            /* Make a new page table for TTBR0_EL1. */
-            KInitialPageTable ttbr0_table(allocator.Allocate());
-
+        void SetupInitialIdentityMapping(KInitialPageTable &init_pt, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::IPageAllocator &allocator) {
             /* Map in an RWX identity mapping for the kernel. */
             constexpr PageTableEntry KernelRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            ttbr0_table.Map(base_address, kernel_size, base_address, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(base_address, kernel_size, base_address, KernelRWXIdentityAttribute, allocator);
 
             /* Map in an RWX identity mapping for ourselves. */
             constexpr PageTableEntry KernelLdrRWXIdentityAttribute(PageTableEntry::Permission_KernelRWX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
             const uintptr_t kernel_ldr_base = util::AlignDown(reinterpret_cast<uintptr_t>(__start__), PageSize);
             const uintptr_t kernel_ldr_size = util::AlignUp(reinterpret_cast<uintptr_t>(__end__), PageSize) - kernel_ldr_base;
-            ttbr0_table.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(kernel_ldr_base, kernel_ldr_size, kernel_ldr_base, KernelRWXIdentityAttribute, allocator);
 
             /* Map in the page table region as RW- for ourselves. */
             constexpr PageTableEntry PageTableRegionRWAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-            ttbr0_table.Map(page_table_region, page_table_region_size, page_table_region, KernelRWXIdentityAttribute, allocator);
+            init_pt.Map(page_table_region, page_table_region_size, page_table_region, KernelRWXIdentityAttribute, allocator);
 
             /* Place the L1 table addresses in the relevant system registers. */
-            cpu::SetTtbr0El1(ttbr0_table.GetL1TableAddress());
-            cpu::SetTtbr1El1(ttbr1_table.GetL1TableAddress());
+            cpu::SetTtbr0El1(init_pt.GetTtbr0L1TableAddress());
+            cpu::SetTtbr1El1(init_pt.GetTtbr1L1TableAddress());
 
             /* Setup MAIR_EL1, TCR_EL1. */
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
@@ -104,7 +89,7 @@ namespace ams::kern::init::loader {
             PerformBoardSpecificSetup();
 
             /* Ensure that the entire cache is flushed. */
-            EnsureEntireDataCacheFlushed();
+            cpu::FlushEntireCacheForInit();
 
             /* Setup SCTLR_EL1. */
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
@@ -115,19 +100,12 @@ namespace ams::kern::init::loader {
 
         KVirtualAddress GetRandomKernelBaseAddress(KInitialPageTable &page_table, KPhysicalAddress phys_base_address, size_t kernel_size) {
             /* Define useful values for random generation. */
-            constexpr uintptr_t KernelBaseAlignment = 0x200000;
-            constexpr uintptr_t KernelBaseRangeMin  = 0xFFFFFF8000000000;
-            constexpr uintptr_t KernelBaseRangeMax  = 0xFFFFFFFFFFE00000;
-            constexpr uintptr_t KernelBaseRangeEnd = KernelBaseRangeMax - 1;
-            static_assert(util::IsAligned(KernelBaseRangeMin, KernelBaseAlignment));
-            static_assert(util::IsAligned(KernelBaseRangeMax, KernelBaseAlignment));
-            static_assert(KernelBaseRangeMin <= KernelBaseRangeEnd);
 
             const uintptr_t kernel_offset = GetInteger(phys_base_address) % KernelBaseAlignment;
 
             /* Repeatedly generate a random virtual address until we get one that's unmapped in the destination page table. */
             while (true) {
-                const uintptr_t       random_kaslr_slide  = KSystemControl::Init::GenerateRandomRange(KernelBaseRangeMin / KernelBaseAlignment, KernelBaseRangeEnd / KernelBaseAlignment);
+                const uintptr_t       random_kaslr_slide  = KSystemControl::Init::GenerateRandomRange(KernelBaseRangeStart / KernelBaseAlignment, KernelBaseRangeLast / KernelBaseAlignment);
                 const KVirtualAddress kernel_region_start = random_kaslr_slide * KernelBaseAlignment;
                 const KVirtualAddress kernel_region_end   = kernel_region_start + util::AlignUp(kernel_offset + kernel_size, KernelBaseAlignment);
                 const size_t          kernel_region_size  = GetInteger(kernel_region_end) - GetInteger(kernel_region_start);
@@ -138,7 +116,7 @@ namespace ams::kern::init::loader {
                 }
 
                 /* Make sure that the region stays within our intended bounds. */
-                if (kernel_region_end > KernelBaseRangeMax) {
+                if (kernel_region_end > KernelBaseRangeEnd) {
                     continue;
                 }
 
@@ -174,7 +152,7 @@ namespace ams::kern::init::loader {
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      PageSize));
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, PageSize));
         const uintptr_t bss_offset            = layout->bss_offset;
-        const uintptr_t ini_load_offset       = layout->ini_load_offset;
+        const uintptr_t resource_offset       = layout->resource_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
@@ -183,8 +161,8 @@ namespace ams::kern::init::loader {
         const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
 
         /* Setup the INI1 header in memory for the kernel. */
-        const uintptr_t ini_end_address  = base_address + ini_load_offset + resource_region_size;
-        const uintptr_t ini_load_address = ini_end_address - InitialProcessBinarySizeMax;
+        const uintptr_t resource_end_address  = base_address + resource_offset + resource_region_size;
+        const uintptr_t ini_load_address = GetInteger(KSystemControl::Init::GetInitialProcessBinaryPhysicalAddress());
         if (ini_base_address != ini_load_address) {
             /* The INI is not at the correct address, so we need to relocate it. */
             const InitialProcessBinaryHeader *ini_header = reinterpret_cast<const InitialProcessBinaryHeader *>(ini_base_address);
@@ -197,32 +175,32 @@ namespace ams::kern::init::loader {
             }
         }
 
-        /* We want to start allocating page tables at ini_end_address. */
-        g_initial_page_allocator.Initialize(ini_end_address);
+        /* We want to start allocating page tables at the end of the resource region. */
+        g_initial_page_allocator.Initialize(resource_end_address);
 
         /* Make a new page table for TTBR1_EL1. */
-        KInitialPageTable ttbr1_table(g_initial_page_allocator.Allocate());
+        KInitialPageTable init_pt(KernelBaseRangeStart, KernelBaseRangeLast, g_initial_page_allocator);
 
         /* Setup initial identity mapping. TTBR1 table passed by reference. */
-        SetupInitialIdentityMapping(ttbr1_table, base_address, bss_end_offset, ini_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
+        SetupInitialIdentityMapping(init_pt, base_address, bss_end_offset, resource_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
 
         /* Generate a random slide for the kernel's base address. */
-        const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(ttbr1_table, base_address, bss_end_offset);
+        const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(init_pt, base_address, bss_end_offset);
 
         /* Map kernel .text as R-X. */
         constexpr PageTableEntry KernelTextAttribute(PageTableEntry::Permission_KernelRX, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-        ttbr1_table.Map(virtual_base_address + rx_offset, rx_end_offset - rx_offset, base_address + rx_offset, KernelTextAttribute, g_initial_page_allocator);
+        init_pt.Map(virtual_base_address + rx_offset, rx_end_offset - rx_offset, base_address + rx_offset, KernelTextAttribute, g_initial_page_allocator);
 
         /* Map kernel .rodata and .rwdata as RW-. */
         /* Note that we will later reprotect .rodata as R-- */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-        ttbr1_table.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator);
-        ttbr1_table.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
+        init_pt.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator);
+        init_pt.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
 
         /* Physically randomize the kernel region. */
         /* NOTE: Nintendo does this only on 10.0.0+ */
-        ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
+        init_pt.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
 
         /* Clear kernel .bss. */
         std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
@@ -237,14 +215,14 @@ namespace ams::kern::init::loader {
         Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
 
         /* Reprotect .rodata as R-- */
-        ttbr1_table.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
+        init_pt.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
 
         /* Return the difference between the random virtual base and the physical base. */
         return GetInteger(virtual_base_address) - base_address;
     }
 
     KPhysicalAddress AllocateKernelInitStack() {
-        return g_initial_page_allocator.Allocate() + PageSize;
+        return g_initial_page_allocator.Allocate(PageSize) + PageSize;
     }
 
     uintptr_t GetFinalPageAllocatorState() {

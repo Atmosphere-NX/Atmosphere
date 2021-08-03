@@ -20,23 +20,23 @@ namespace ams::fs::impl {
 
     class Newable {
         public:
-            static void *operator new(size_t size) {
+            static ALWAYS_INLINE void *operator new(size_t size) noexcept {
                 return ::ams::fs::impl::Allocate(size);
             }
 
-            static void *operator new(size_t size, Newable *placement) {
+            static ALWAYS_INLINE void *operator new(size_t size, Newable *placement) noexcept {
                 return placement;
             }
 
-            static void *operator new[](size_t size) {
+            static ALWAYS_INLINE void *operator new[](size_t size) noexcept {
                 return ::ams::fs::impl::Allocate(size);
             }
 
-            static void operator delete(void *ptr, size_t size) {
+            static ALWAYS_INLINE void operator delete(void *ptr, size_t size) noexcept {
                 return ::ams::fs::impl::Deallocate(ptr, size);
             }
 
-            static void operator delete[](void *ptr, size_t size) {
+            static ALWAYS_INLINE void operator delete[](void *ptr, size_t size) noexcept {
                 return ::ams::fs::impl::Deallocate(ptr, size);
             }
     };

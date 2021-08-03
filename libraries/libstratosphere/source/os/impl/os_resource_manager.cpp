@@ -18,6 +18,6 @@
 
 namespace ams::os::impl {
 
-    constinit TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+    constinit util::TypedStorage<OsResourceManager> ResourceManagerHolder::s_resource_manager_storage = {};
 
 }

@@ -24,6 +24,8 @@
 
 namespace ams::kern::init {
 
+    static_assert(util::IsPowerOfTwo(alignof(KInitArguments)) && util::IsPowerOfTwo(sizeof(KInitArguments)));
+
     KPhysicalAddress GetInitArgumentsAddress(s32 core_id);
 
 }

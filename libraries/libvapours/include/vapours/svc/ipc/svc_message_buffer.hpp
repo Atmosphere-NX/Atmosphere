@@ -152,6 +152,14 @@ namespace ams::svc::ipc {
                         this->header.Set<MoveHandleCount>(move);
                     }
 
+                    consteval explicit SpecialHeader(bool pid, s32 copy, s32 move, bool _has_header) : header{0}, has_header(_has_header) {
+                        this->header.Set<HasProcessId>(pid);
+                        this->header.Set<CopyHandleCount>(copy);
+                        this->header.Set<MoveHandleCount>(move);
+
+                        AMS_ASSUME(this->has_header == (this->GetHasProcessId() || this->GetCopyHandleCount() > 0 || this->GetMoveHandleCount() > 0));
+                    }
+
                     ALWAYS_INLINE explicit SpecialHeader(const MessageBuffer &buf, const MessageHeader &hdr) : header{0}, has_header(hdr.GetHasSpecialHeader()) {
                         if (this->has_header) {
                             buf.Get(MessageHeader::GetDataSize() / sizeof(util::BitPack32), std::addressof(this->header), sizeof(this->header) / sizeof(util::BitPack32));
@@ -378,6 +386,10 @@ namespace ams::svc::ipc {
             constexpr ALWAYS_INLINE MessageBuffer(u32 *b, size_t sz) : buffer(b), size(sz) { /* ... */ }
             constexpr explicit ALWAYS_INLINE MessageBuffer(u32 *b) : buffer(b), size(sizeof(::ams::svc::ThreadLocalRegion::message_buffer)) { /* ... */ }
 
+            constexpr ALWAYS_INLINE void *GetBufferForDebug() const {
+                return this->buffer;
+            }
+
             constexpr ALWAYS_INLINE size_t GetBufferSize() const {
                 return this->size;
             }
@@ -414,16 +426,16 @@ namespace ams::svc::ipc {
             }
 
             template<typename T>
-            ALWAYS_INLINE s32 SetRaw(s32 index, const T &val) {
+            ALWAYS_INLINE s32 SetRaw(s32 index, const T &val) const {
                 *reinterpret_cast<const T *>(this->buffer + index) = val;
                 return index + (util::AlignUp(sizeof(val), sizeof(*this->buffer)) / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE void GetRawArray(s32 index, void *dst, size_t len) {
+            ALWAYS_INLINE void GetRawArray(s32 index, void *dst, size_t len) const {
                 __builtin_memcpy(dst, this->buffer + index, len);
             }
 
-            ALWAYS_INLINE void SetRawArray(s32 index, const void *src, size_t len) {
+            ALWAYS_INLINE void SetRawArray(s32 index, const void *src, size_t len) const {
                 __builtin_memcpy(this->buffer + index, src, len);
             }
 
@@ -489,10 +501,18 @@ namespace ams::svc::ipc {
                 __builtin_memcpy(this->buffer + index, std::addressof(value), sizeof(value));
             }
 
+            ALWAYS_INLINE u32 Get32(s32 index) const {
+                return this->buffer[index];
+            }
+
+            ALWAYS_INLINE u64 Get64(s32 index) const {
+                u64 value;
+                __builtin_memcpy(std::addressof(value), this->buffer + index, sizeof(value));
+                return value;
+            }
+
             ALWAYS_INLINE u64 GetProcessId(s32 index) const {
-                u64 pid;
-                __builtin_memcpy(std::addressof(pid), this->buffer + index, sizeof(pid));
-                return pid;
+                return this->Get64(index);
             }
 
             ALWAYS_INLINE ams::svc::Handle GetHandle(s32 index) const {

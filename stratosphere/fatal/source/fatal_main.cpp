@@ -99,26 +99,26 @@ void __appInit(void) {
     fatal::InitializeFsHeap();
     fs::SetAllocator(fatal::AllocateForFs, fatal::DeallocateForFs);
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(setInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(i2cInitialize());
-        R_ABORT_UNLESS(bpcInitialize());
+    R_ABORT_UNLESS(sm::Initialize());
 
-        if (hos::GetVersion() >= hos::Version_8_0_0) {
-            R_ABORT_UNLESS(clkrstInitialize());
-        } else {
-            R_ABORT_UNLESS(pcvInitialize());
-        }
+    R_ABORT_UNLESS(setInitialize());
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(pminfoInitialize());
+    R_ABORT_UNLESS(i2cInitialize());
+    R_ABORT_UNLESS(bpcInitialize());
 
-        R_ABORT_UNLESS(lblInitialize());
-        R_ABORT_UNLESS(psmInitialize());
-        R_ABORT_UNLESS(spsmInitialize());
-        R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
-        gpio::Initialize();
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    if (hos::GetVersion() >= hos::Version_8_0_0) {
+        R_ABORT_UNLESS(clkrstInitialize());
+    } else {
+        R_ABORT_UNLESS(pcvInitialize());
+    }
+
+    R_ABORT_UNLESS(lblInitialize());
+    R_ABORT_UNLESS(psmInitialize());
+    R_ABORT_UNLESS(spsmInitialize());
+    R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
+    gpio::Initialize();
+    R_ABORT_UNLESS(fsInitialize());
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 

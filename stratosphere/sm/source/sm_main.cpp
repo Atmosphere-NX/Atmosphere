@@ -14,14 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "sm_user_service.hpp"
-#include "sm_manager_service.hpp"
-#include "sm_debug_monitor_service.hpp"
-#include "impl/sm_service_manager.hpp"
-#include "impl/sm_wait_list.hpp"
+#include "sm_tipc_server.hpp"
 
 extern "C" {
     extern u32 __start__;
+
+    extern int __system_argc;
+    extern char** __system_argv;
 
     u32 __nx_applet_type = AppletType_None;
 
@@ -30,6 +29,7 @@ extern "C" {
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
     void __libnx_initheap(void);
+    void argvSetup(void);
     void __appInit(void);
     void __appExit(void);
 
@@ -43,9 +43,19 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
+namespace {
+
+    constinit char *g_empty_argv = nullptr;
+
+}
+
 namespace ams {
 
     ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Sm;
+
+    void NORETURN Exit(int rc) {
+        AMS_ABORT("Exit called by immortal process");
+    }
 
 }
 
@@ -68,6 +78,12 @@ void __libnx_initheap(void) {
     fake_heap_end   = (char*)addr + size;
 }
 
+void argvSetup(void) {
+    /* We don't need argc/argv, so set them to empty defaults. */
+    __system_argc = 0;
+    __system_argv = std::addressof(g_empty_argv);
+}
+
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
@@ -76,46 +92,6 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Nothing to clean up, because we're sm. */
-}
-
-namespace {
-
-    enum PortIndex {
-        PortIndex_User,
-        PortIndex_Manager,
-        PortIndex_DebugMonitor,
-        PortIndex_Count,
-    };
-
-    class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count> {
-        private:
-            virtual ams::Result OnNeedsToAccept(int port_index, Server *server) override;
-    };
-
-    using Allocator     = sf::ExpHeapAllocator;
-    using ObjectFactory = sf::ObjectFactory<sf::ExpHeapAllocator::Policy>;
-
-    alignas(0x40) constinit u8 g_server_allocator_buffer[8_KB];
-    Allocator g_server_allocator;
-
-    ServerManager g_server_manager;
-
-    ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
-        switch (port_index) {
-            case PortIndex_User:
-                return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<sm::impl::IUserInterface, sm::UserService>(std::addressof(g_server_allocator)));
-            case PortIndex_Manager:
-                return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<sm::impl::IManagerInterface, sm::ManagerService>(std::addressof(g_server_allocator)));
-            case PortIndex_DebugMonitor:
-                return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<sm::impl::IDebugMonitorInterface, sm::DebugMonitorService>(std::addressof(g_server_allocator)));
-            AMS_UNREACHABLE_DEFAULT_CASE();
-        }
-    }
-
-    ams::Result ResumeImpl(os::WaitableHolderType *session_holder) {
-        return g_server_manager.Process(session_holder);
-    }
-
 }
 
 void *operator new(size_t size) {
@@ -144,52 +120,11 @@ int main(int argc, char **argv)
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(sm, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(sm, Main));
 
-    /* Setup server allocator. */
-    g_server_allocator.Attach(lmem::CreateExpHeap(g_server_allocator_buffer, sizeof(g_server_allocator_buffer), lmem::CreateOption_None));
+    /* Initialize the server. */
+    sm::InitializeTipcServer();
 
-    /* Create sm:, (and thus allow things to register to it). */
-    {
-        Handle sm_h;
-        R_ABORT_UNLESS(svc::ManageNamedPort(&sm_h, "sm:", 0x40));
-        g_server_manager.RegisterServer(PortIndex_User, sm_h);
-    }
-
-    /* Create sm:m manually. */
-    {
-        Handle smm_h;
-        R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
-        g_server_manager.RegisterServer(PortIndex_Manager, smm_h);
-        sm::impl::TestAndResume(ResumeImpl);
-    }
-
-    /*===== ATMOSPHERE EXTENSION =====*/
-    /* Create sm:dmnt manually. */
-    {
-        Handle smdmnt_h;
-        R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
-        g_server_manager.RegisterServer(PortIndex_DebugMonitor, smdmnt_h);
-        sm::impl::TestAndResume(ResumeImpl);
-    }
-
-    /*================================*/
-
-    /* Loop forever, servicing our services. */
-    while (true) {
-        /* Get the next signaled holder. */
-        auto *holder = g_server_manager.WaitSignaled();
-        AMS_ABORT_UNLESS(holder != nullptr);
-
-        /* Process the holder. */
-        R_TRY_CATCH(g_server_manager.Process(holder)) {
-            R_CATCH(sf::ResultRequestDeferred) {
-                sm::impl::ProcessRegisterRetry(holder);
-                continue;
-            }
-        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-        /* Test to see if anything can be undeferred. */
-        sm::impl::TestAndResume(ResumeImpl);
-    }
+    /* Loop forever, processing our services. */
+    sm::LoopProcessTipcServer();
 
     /* This can never be reached. */
     AMS_ASSUME(false);

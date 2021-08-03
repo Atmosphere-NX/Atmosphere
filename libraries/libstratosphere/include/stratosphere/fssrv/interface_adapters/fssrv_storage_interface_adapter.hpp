@@ -44,7 +44,7 @@ namespace ams::fssrv::impl {
 
             ~StorageInterfaceAdapter();
         private:
-            std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
+            util::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
         public:
             /* Command API. */
             Result Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size);

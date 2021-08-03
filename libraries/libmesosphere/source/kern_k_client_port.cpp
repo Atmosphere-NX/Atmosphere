@@ -42,6 +42,10 @@ namespace ams::kern {
         return this->GetParent()->IsLight();
     }
 
+    bool KClientPort::IsServerClosed() const {
+        return this->GetParent()->IsServerClosed();
+    }
+
     void KClientPort::Destroy() {
         /* Note with our parent that we're closed. */
         m_parent->OnClientClosed();

@@ -57,8 +57,8 @@ namespace ams::kvdb {
                 public:
                     Result Initialize(void *buffer, size_t buffer_size, size_t capacity);
                     void Invalidate();
-                    std::optional<size_t> TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size);
-                    std::optional<size_t> TryGetSize(const void *key, size_t key_size);
+                    util::optional<size_t> TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size);
+                    util::optional<size_t> TryGetSize(const void *key, size_t key_size);
                     void Set(const void *key, size_t key_size, const void *value, size_t value_size);
                     bool Contains(const void *key, size_t key_size);
             };

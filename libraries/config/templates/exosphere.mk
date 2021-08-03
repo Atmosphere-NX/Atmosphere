@@ -8,19 +8,25 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../common.mk
 #---------------------------------------------------------------------------------
 ifeq ($(strip $(ATMOSPHERE_ARCH_NAME)),arm64)
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_EXOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -mgeneral-regs-only -ffixed-x18 -Os -Wextra -Werror -fno-non-call-exceptions
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -mgeneral-regs-only -ffixed-x18 -Os -Wextra -Werror -fno-non-call-exceptions \
+               -Wno-array-bounds \
+               -Wno-stringop-overflow \
+               -Wno-stringop-overread
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
 else ifeq ($(strip $(ATMOSPHERE_ARCH_NAME)),arm)
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_EXOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -Os -Werror -fno-non-call-exceptions
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -Os -Werror -fno-non-call-exceptions \
+               -Wno-array-bounds \
+               -Wno-stringop-overflow \
+               -Wno-stringop-overread
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
 endif
 
-export LDFLAGS	=	-specs=$(TOPDIR)/$(notdir $(TOPDIR)).specs -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -fno-rtti -fno-use-cxa-atexit -nostdlib -nostartfiles -g $(SETTINGS) -Wl,-Map,$(notdir $*.map) -Wl,-z,relro,-z,now
+export LDFLAGS	=	-specs=$(TOPDIR)/$(notdir $(TOPDIR)).specs -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -fno-rtti -fno-use-cxa-atexit -nostdlib -nostartfiles -g -gdwarf-4 $(SETTINGS) -Wl,-Map,$(notdir $*.map) -Wl,-z,relro,-z,now
 
 export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,__cxa_throw \

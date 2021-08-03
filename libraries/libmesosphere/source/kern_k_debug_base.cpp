@@ -92,51 +92,7 @@ namespace ams::kern {
                 R_TRY(target_pt.ReadDebugMemory(GetVoidPointer(buffer), cur_address, cur_size));
             } else {
                 /* The memory is IO memory. */
-
-                /* Verify that the memory is readable. */
-                R_UNLESS((info.GetPermission() & KMemoryPermission_UserRead) == KMemoryPermission_UserRead, svc::ResultInvalidAddress());
-
-                /* Get the physical address of the memory.  */
-                /* NOTE: Nintendo does not verify the result of this call. */
-                KPhysicalAddress phys_addr;
-                target_pt.GetPhysicalAddress(std::addressof(phys_addr), cur_address);
-
-                /* Map the address as IO in the current process. */
-                R_TRY(debugger_pt.MapIo(util::AlignDown(GetInteger(phys_addr), PageSize), PageSize, KMemoryPermission_UserRead));
-
-                /* Get the address of the newly mapped IO. */
-                KProcessAddress io_address;
-                Result query_result = debugger_pt.QueryIoMapping(std::addressof(io_address), util::AlignDown(GetInteger(phys_addr), PageSize), PageSize);
-                MESOSPHERE_R_ASSERT(query_result);
-                R_TRY(query_result);
-
-                /* Ensure we clean up the new mapping on scope exit. */
-                ON_SCOPE_EXIT { MESOSPHERE_R_ABORT_UNLESS(debugger_pt.UnmapPages(util::AlignDown(GetInteger(io_address), PageSize), 1, KMemoryState_Io)); };
-
-                /* Adjust the io address for alignment. */
-                io_address += (GetInteger(cur_address) & (PageSize - 1));
-
-                /* Get the readable size. */
-                const size_t readable_size = std::min(cur_size, util::AlignDown(GetInteger(cur_address) + PageSize, PageSize) - GetInteger(cur_address));
-
-                /* Read the memory. */
-                switch ((GetInteger(cur_address) | readable_size) & 3) {
-                    case 0:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory32Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    case 2:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory16Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    default:
-                        {
-                            R_UNLESS(UserspaceAccess::ReadIoMemory8Bit(GetVoidPointer(buffer), GetVoidPointer(io_address), readable_size),  svc::ResultInvalidPointer());
-                        }
-                        break;
-                }
+                R_TRY(target_pt.ReadDebugIoMemory(GetVoidPointer(buffer), cur_address, cur_size));
             }
 
             /* Advance. */
@@ -185,51 +141,7 @@ namespace ams::kern {
                 R_TRY(target_pt.WriteDebugMemory(cur_address, GetVoidPointer(buffer), cur_size));
             } else {
                 /* The memory is IO memory. */
-
-                /* Verify that the memory is writable. */
-                R_UNLESS((info.GetPermission() & KMemoryPermission_UserReadWrite) == KMemoryPermission_UserReadWrite, svc::ResultInvalidAddress());
-
-                /* Get the physical address of the memory.  */
-                /* NOTE: Nintendo does not verify the result of this call. */
-                KPhysicalAddress phys_addr;
-                target_pt.GetPhysicalAddress(std::addressof(phys_addr), cur_address);
-
-                /* Map the address as IO in the current process. */
-                R_TRY(debugger_pt.MapIo(util::AlignDown(GetInteger(phys_addr), PageSize), PageSize, KMemoryPermission_UserReadWrite));
-
-                /* Get the address of the newly mapped IO. */
-                KProcessAddress io_address;
-                Result query_result = debugger_pt.QueryIoMapping(std::addressof(io_address), util::AlignDown(GetInteger(phys_addr), PageSize), PageSize);
-                MESOSPHERE_R_ASSERT(query_result);
-                R_TRY(query_result);
-
-                /* Ensure we clean up the new mapping on scope exit. */
-                ON_SCOPE_EXIT { MESOSPHERE_R_ABORT_UNLESS(debugger_pt.UnmapPages(util::AlignDown(GetInteger(io_address), PageSize), 1, KMemoryState_Io)); };
-
-                /* Adjust the io address for alignment. */
-                io_address += (GetInteger(cur_address) & (PageSize - 1));
-
-                /* Get the readable size. */
-                const size_t readable_size = std::min(cur_size, util::AlignDown(GetInteger(cur_address) + PageSize, PageSize) - GetInteger(cur_address));
-
-                /* Read the memory. */
-                switch ((GetInteger(cur_address) | readable_size) & 3) {
-                    case 0:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory32Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    case 2:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory16Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size), svc::ResultInvalidPointer());
-                        }
-                        break;
-                    default:
-                        {
-                            R_UNLESS(UserspaceAccess::WriteIoMemory8Bit(GetVoidPointer(io_address), GetVoidPointer(buffer), readable_size),  svc::ResultInvalidPointer());
-                        }
-                        break;
-                }
+                R_TRY(target_pt.WriteDebugIoMemory(cur_address, GetVoidPointer(buffer), cur_size));
             }
 
             /* Advance. */
@@ -396,8 +308,11 @@ namespace ams::kern {
         }
 
         /* Send an exception event to represent our breaking the process. */
-        static_assert(util::size(thread_ids) >= 4);
-        this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[0], thread_ids[1], thread_ids[2], thread_ids[3]);
+        /* TODO: How should this be handled in the case of more than 4 physical cores? */
+        static_assert(util::size(thread_ids) <= 4);
+        [&]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+            this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[Ix]...);
+        }(std::make_index_sequence<util::size(thread_ids)>());
 
         /* Signal. */
         this->NotifyAvailable();
@@ -443,6 +358,15 @@ namespace ams::kern {
                 } else if (state == KProcess::State_DebugBreak) {
                     /* If the process is debug breaked, transition it accordingly. */
                     new_state = KProcess::State_Crashed;
+
+                    /* Suspend all the threads in the process. */
+                    {
+                        auto end = target->GetThreadList().end();
+                        for (auto it = target->GetThreadList().begin(); it != end; ++it) {
+                            /* Request that we suspend the thread. */
+                            it->RequestSuspend(KThread::SuspendType_Debug);
+                        }
+                    }
                 } else {
                     /* Otherwise, don't transition. */
                     new_state = state;
@@ -557,8 +481,12 @@ namespace ams::kern {
 
             /* Verify that the thread's svc state is valid. */
             if (thread->IsCallingSvc()) {
-                R_UNLESS(thread->GetSvcId() != svc::SvcId_Break,               svc::ResultInvalidState());
-                R_UNLESS(thread->GetSvcId() != svc::SvcId_ReturnFromException, svc::ResultInvalidState());
+                const u8 svc_id         = thread->GetSvcId();
+
+                const bool is_valid_svc = svc_id == svc::SvcId_Break ||
+                                          svc_id == svc::SvcId_ReturnFromException;
+
+                R_UNLESS(is_valid_svc, svc::ResultInvalidState());
             }
 
             /* Set the thread context. */
@@ -924,9 +852,6 @@ namespace ams::kern {
 
             /* If the process isn't null, detach. */
             if (process.IsNotNull()) {
-                /* When we're done detaching, clear the reference we opened when we attached. */
-                ON_SCOPE_EXIT { process->Close(); };
-
                 /* Detach. */
                 {
                     /* Lock both ourselves and the target process. */
@@ -961,6 +886,9 @@ namespace ams::kern {
                             /* Clear our process. */
                             m_process = nullptr;
                         }
+
+                        /* We're done detaching, so clear the reference we opened when we attached. */
+                        process->Close();
                     }
                 }
             }

@@ -310,6 +310,9 @@ namespace ams::settings::fwdbg {
             /* Disable uploading error reports to Nintendo. */
             R_ABORT_UNLESS(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
 
+            /* Enable USB 3.0 superspeed for homebrew */
+            R_ABORT_UNLESS(ParseSettingsItemValue("usb", "usb30_force_enabled", spl::IsUsb30ForceEnabled() ? "u8!0x1" : "u8!0x0"));
+
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
             R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));
@@ -361,6 +364,11 @@ namespace ams::settings::fwdbg {
             /* Controls whether dns.mitm logs to the sd card for debugging. */
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm_debug_log", "u8!0x0"));
+
+            /* Controls whether htc is enabled. */
+            /* TODO: Change this to default 1 when tma2 is ready for inclusion in atmosphere releases. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_htc", "u8!0x0"));
 
             /* Hbloader custom settings. */
 

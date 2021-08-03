@@ -98,6 +98,10 @@ namespace ams::ncm {
         static const SystemProgramId Pgl;
 
         static const SystemProgramId End;
+
+        static const SystemProgramId Manu;
+        static const SystemProgramId Htc;
+        static const SystemProgramId DevServer;
     };
 
     struct AtmosphereProgramId {
@@ -196,6 +200,10 @@ namespace ams::ncm {
     inline constexpr const SystemProgramId SystemProgramId::Pgl         = { 0x0100000000000042ul };
 
     inline constexpr const SystemProgramId SystemProgramId::End   = { 0x01000000000007FFul };
+
+    inline constexpr const SystemProgramId SystemProgramId::Manu        = { 0x010000000000B14Aul };
+    inline constexpr const SystemProgramId SystemProgramId::Htc         = { 0x010000000000B240ul };
+    inline constexpr const SystemProgramId SystemProgramId::DevServer   = { 0x010000000000D623ul };
 
     inline constexpr bool IsSystemProgramId(const ProgramId &program_id) {
         return (SystemProgramId::Start <= program_id && program_id <= SystemProgramId::End) || IsAtmosphereProgramId(program_id);

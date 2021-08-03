@@ -28,7 +28,7 @@ namespace ams::dmnt::cheat::impl {
 
         class FrozenAddressMapEntry : public util::IntrusiveRedBlackTreeBaseNode<FrozenAddressMapEntry> {
             public:
-                using LightCompareType = u64;
+                using RedBlackKeyType = u64;
             private:
                 u64 m_address;
                 FrozenAddressValue m_value;
@@ -40,7 +40,7 @@ namespace ams::dmnt::cheat::impl {
                 constexpr const FrozenAddressValue &GetValue() const { return m_value; }
                 constexpr FrozenAddressValue &GetValue() { return m_value; }
 
-                static constexpr ALWAYS_INLINE int Compare(const LightCompareType &lval, const FrozenAddressMapEntry &rhs) {
+                static constexpr ALWAYS_INLINE int Compare(const RedBlackKeyType &lval, const FrozenAddressMapEntry &rhs) {
                     const auto rval = rhs.GetAddress();
 
                     if (lval < rval) {
@@ -66,13 +66,13 @@ namespace ams::dmnt::cheat::impl {
         FrozenAddressMapEntry *AllocateFrozenAddress(u64 address, FrozenAddressValue value) {
             FrozenAddressMapEntry *entry = static_cast<FrozenAddressMapEntry *>(lmem::AllocateFromUnitHeap(g_frozen_address_map_heap));
             if (entry != nullptr) {
-                new (entry) FrozenAddressMapEntry(address, value);
+                std::construct_at(entry, address, value);
             }
             return entry;
         }
 
         void DeallocateFrozenAddress(FrozenAddressMapEntry *entry) {
-            entry->~FrozenAddressMapEntry();
+            std::destroy_at(entry);
             lmem::FreeToUnitHeap(g_frozen_address_map_heap, entry);
         }
 
@@ -301,6 +301,11 @@ namespace ams::dmnt::cheat::impl {
                     return this->AttachToApplicationProcess(false);
                 }
 
+                Result ForceCloseCheatProcess() {
+                    this->CloseActiveCheatProcess();
+                    return ResultSuccess();
+                }
+
                 Result ReadCheatProcessMemoryUnsafe(u64 proc_addr, void *out_data, size_t size) {
                     return svcReadDebugProcessMemory(out_data, this->GetCheatProcessHandle(), proc_addr, size);
                 }
@@ -520,6 +525,9 @@ namespace ams::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
+                    /* Set output id. */
+                    *out_id = new_entry->cheat_id;
+
                     return ResultSuccess();
                 }
 
@@ -530,6 +538,25 @@ namespace ams::dmnt::cheat::impl {
                     R_UNLESS(cheat_id < MaxCheatCount, ResultCheatUnknownId());
 
                     this->ResetCheatEntry(cheat_id);
+
+                    /* Trigger a VM reload. */
+                    this->SetNeedsReloadVm(true);
+
+                    return ResultSuccess();
+                }
+
+                Result SetMasterCheat(const CheatDefinition &def) {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+
+                    R_UNLESS(def.num_opcodes != 0,                       ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), ResultCheatInvalid());
+
+                    CheatEntry *master_entry = this->cheat_entries + 0;
+
+                    master_entry->enabled    = true;
+                    master_entry->definition = def;
 
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
@@ -603,7 +630,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     frz_addr->address = it->GetAddress();
@@ -616,7 +643,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it == this->frozen_addresses_map.end(), ResultFrozenAddressAlreadyExists());
 
                     FrozenAddressValue value = {};
@@ -636,7 +663,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_light(address);
+                    const auto it = this->frozen_addresses_map.find_key(address);
                     R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
 
                     FrozenAddressMapEntry *entry = std::addressof(*it);
@@ -834,7 +861,11 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Open a debug handle. */
-            R_ABORT_UNLESS_IF_NEW_PROCESS(svcDebugActiveProcess(&this->cheat_process_debug_handle, static_cast<u64>(this->cheat_process_metadata.process_id)));
+            svc::Handle debug_handle = svc::InvalidHandle;
+            R_ABORT_UNLESS_IF_NEW_PROCESS(svc::DebugActiveProcess(std::addressof(debug_handle), this->cheat_process_metadata.process_id.value));
+
+            /* Set our debug handle. */
+            this->cheat_process_debug_handle = debug_handle;
 
             /* Cancel process guard. */
             proc_guard.Cancel();
@@ -1144,7 +1175,7 @@ namespace ams::dmnt::cheat::impl {
 
 
         /* Manager global. */
-        TYPED_STORAGE(CheatProcessManager) g_cheat_process_manager;
+        util::TypedStorage<CheatProcessManager> g_cheat_process_manager;
 
     }
 
@@ -1156,7 +1187,7 @@ namespace ams::dmnt::cheat::impl {
         g_frozen_address_map_heap = lmem::CreateUnitHeap(g_frozen_address_map_memory, sizeof(g_frozen_address_map_memory), sizeof(FrozenAddressMapEntry), lmem::CreateOption_ThreadSafe);
 
         /* Create the cheat process manager (spawning its threads). */
-        new (GetPointer(g_cheat_process_manager)) CheatProcessManager;
+        util::ConstructAt(g_cheat_process_manager);
     }
 
     bool GetHasActiveCheatProcess() {
@@ -1181,6 +1212,10 @@ namespace ams::dmnt::cheat::impl {
 
     Result ResumeCheatProcess() {
         return GetReference(g_cheat_process_manager).ResumeCheatProcess();
+    }
+
+    Result ForceCloseCheatProcess() {
+        return GetReference(g_cheat_process_manager).ForceCloseCheatProcess();
     }
 
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size) {
@@ -1241,6 +1276,10 @@ namespace ams::dmnt::cheat::impl {
 
     Result RemoveCheat(u32 cheat_id) {
         return GetReference(g_cheat_process_manager).RemoveCheat(cheat_id);
+    }
+
+    Result SetMasterCheat(const CheatDefinition &def) {
+        return GetReference(g_cheat_process_manager).SetMasterCheat(def);
     }
 
     Result ReadStaticRegister(u64 *out, size_t which) {

@@ -108,6 +108,7 @@ namespace ams::kern {
         R_UNLESS(m_current_values[which] <= value, svc::ResultInvalidState());
 
         m_limit_values[which] = value;
+        m_peak_values[which]  = m_current_values[which];
 
         return ResultSuccess();
     }
@@ -146,8 +147,12 @@ namespace ams::kern {
 
             if (m_current_hints[which] + value <= m_limit_values[which] && (timeout < 0 || KHardwareTimer::GetTick() < timeout)) {
                 m_waiter_count++;
-                m_cond_var.Wait(&m_lock, timeout);
+                m_cond_var.Wait(&m_lock, timeout, false);
                 m_waiter_count--;
+
+                if (GetCurrentThread().IsTerminationRequested()) {
+                    return false;
+                }
             } else {
                 break;
             }

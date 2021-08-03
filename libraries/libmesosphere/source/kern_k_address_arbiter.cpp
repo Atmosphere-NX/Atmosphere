@@ -51,7 +51,7 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -78,7 +78,7 @@ namespace ams::kern {
             R_UNLESS(UpdateIfEqual(std::addressof(user_value), addr, value, value + 1), svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value,                                               svc::ResultInvalidState());
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -100,57 +100,32 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = m_tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_key({ addr, -1 });
             /* Determine the updated value. */
             s32 new_value;
-            if (GetTargetFirmware() >= TargetFirmware_7_0_0) {
-                if (count <= 0) {
-                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
-                        new_value = value - 2;
-                    } else {
-                        new_value = value + 1;
-                    }
+            if (count <= 0) {
+                if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                    new_value = value - 2;
                 } else {
-                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
-                        auto tmp_it = it;
-                        s32 tmp_num_waiters = 0;
-                        while ((++tmp_it != m_tree.end()) && (tmp_it->GetAddressArbiterKey() == addr)) {
-                            if ((tmp_num_waiters++) >= count) {
-                                break;
-                            }
-                        }
-
-                        if (tmp_num_waiters < count) {
-                            new_value = value - 1;
-                        } else {
-                            new_value = value;
-                        }
-                    } else {
-                        new_value = value + 1;
-                    }
+                    new_value = value + 1;
                 }
             } else {
-                if (count <= 0) {
-                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
-                        new_value = value - 1;
-                    } else {
-                        new_value = value + 1;
-                    }
-                } else {
+                if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
                     auto tmp_it = it;
                     s32 tmp_num_waiters = 0;
-                    while ((tmp_it != m_tree.end()) && (tmp_it->GetAddressArbiterKey() == addr) && (tmp_num_waiters < count + 1)) {
-                        ++tmp_num_waiters;
-                        ++tmp_it;
+                    while ((++tmp_it != m_tree.end()) && (tmp_it->GetAddressArbiterKey() == addr)) {
+                        if ((tmp_num_waiters++) >= count) {
+                            break;
+                        }
                     }
 
-                    if (tmp_num_waiters == 0) {
-                        new_value = value + 1;
-                    } else if (tmp_num_waiters <= count) {
+                    if (tmp_num_waiters < count) {
                         new_value = value - 1;
                     } else {
                         new_value = value;
                     }
+                } else {
+                    new_value = value + 1;
                 }
             }
 

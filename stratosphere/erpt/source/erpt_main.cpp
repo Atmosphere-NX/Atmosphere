@@ -66,16 +66,16 @@ void __libnx_initheap(void) {
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(setInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(pscmInitialize());
-        R_ABORT_UNLESS(time::Initialize());
-        if (hos::GetVersion() >= hos::Version_11_0_0) {
-            R_ABORT_UNLESS(ectxrInitialize());
-        }
-        R_ABORT_UNLESS(fsInitialize());
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(setInitialize());
+    R_ABORT_UNLESS(setsysInitialize());
+    R_ABORT_UNLESS(pscmInitialize());
+    R_ABORT_UNLESS(time::Initialize());
+    if (hos::GetVersion() >= hos::Version_11_0_0) {
+        R_ABORT_UNLESS(ectxrInitialize());
+    }
+    R_ABORT_UNLESS(fsInitialize());
 
     ams::CheckApiVersion();
 }

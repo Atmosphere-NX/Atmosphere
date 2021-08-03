@@ -20,6 +20,10 @@
 
 namespace ams::sm {
 
+    /* Initialization. */
+    Result Initialize();
+    Result Finalize();
+
     /* Ordinary SM API. */
     Result GetService(Service *out, ServiceName name);
     Result RegisterService(Handle *out, ServiceName name, size_t max_sessions, bool is_light);
@@ -28,18 +32,5 @@ namespace ams::sm {
     /* Atmosphere extensions. */
     Result HasService(bool *out, ServiceName name);
     Result WaitService(ServiceName name);
-
-    /* Scoped session access. */
-    namespace impl {
-
-        void DoWithSessionImpl(void (*Invoker)(void *), void *Function);
-
-    }
-
-    template<typename F>
-    NX_CONSTEXPR void DoWithSession(F f) {
-        auto invoker = +[](void *func) { (*(F *)func)(); };
-        impl::DoWithSessionImpl(invoker, &f);
-    }
 
 }

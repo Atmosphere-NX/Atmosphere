@@ -389,17 +389,17 @@ namespace ams::fssystem::save {
         AMS_ASSERT(this->data_storage != nullptr);
 
         switch (op_id) {
-            case fs::OperationId::Clear:
+            case fs::OperationId::FillZero:
                 {
                     R_TRY(this->ClearImpl(offset, size));
                     return ResultSuccess();
                 }
-            case fs::OperationId::ClearSignature:
+            case fs::OperationId::DestroySignature:
                 {
                     R_TRY(this->ClearSignatureImpl(offset, size));
                     return ResultSuccess();
                 }
-            case fs::OperationId::InvalidateCache:
+            case fs::OperationId::Invalidate:
                 {
                     R_UNLESS(this->storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInBlockCacheBufferedStorageB());
                     R_TRY(this->InvalidateCacheImpl(offset, size));
@@ -531,7 +531,7 @@ namespace ams::fssystem::save {
         R_SUCCEED_IF(start_offset == end_offset);
 
         /* Clear the signature for the aligned range. */
-        R_TRY(this->UpdateLastResult(this->data_storage->OperateRange(fs::OperationId::Clear, start_offset, end_offset - start_offset)));
+        R_TRY(this->UpdateLastResult(this->data_storage->OperateRange(fs::OperationId::FillZero, start_offset, end_offset - start_offset)));
 
         /* Set blocking buffer manager allocations. */
         buffers::EnableBlockingBufferManagerAllocation();
@@ -558,7 +558,7 @@ namespace ams::fssystem::save {
         R_TRY(this->UpdateLastResult(this->FlushRangeCacheEntries(offset, size, true)));
 
         /* Clear the signature for the aligned range. */
-        R_TRY(this->UpdateLastResult(this->data_storage->OperateRange(fs::OperationId::ClearSignature, start_offset, end_offset - start_offset)));
+        R_TRY(this->UpdateLastResult(this->data_storage->OperateRange(fs::OperationId::DestroySignature, start_offset, end_offset - start_offset)));
 
         /* Set blocking buffer manager allocations. */
         buffers::EnableBlockingBufferManagerAllocation();
@@ -583,7 +583,7 @@ namespace ams::fssystem::save {
 
         /* Invalidate the aligned range. */
         {
-            Result result = this->data_storage->OperateRange(fs::OperationId::InvalidateCache, aligned_offset, aligned_size);
+            Result result = this->data_storage->OperateRange(fs::OperationId::Invalidate, aligned_offset, aligned_size);
             AMS_ASSERT(!fs::ResultBufferAllocationFailed::Includes(result));
             R_TRY(result);
         }

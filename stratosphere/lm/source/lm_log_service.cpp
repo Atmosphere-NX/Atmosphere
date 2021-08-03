@@ -16,9 +16,16 @@ namespace ams::lm {
         u8 g_logger_heap_memory[0x4000];
         os::SdkMutex g_logger_heap_lock;
 
-        lmem::HeapHandle GetLoggerHeapHandle() {
-            static lmem::HeapHandle g_logger_heap_handle = lmem::CreateExpHeap(g_logger_heap_memory, sizeof(g_logger_heap_memory), lmem::CreateOption_None);
-            return g_logger_heap_handle;
+        sf::ExpHeapAllocator GetLoggerAllocator() {
+            static auto logger_heap_handle = lmem::CreateExpHeap(g_logger_heap_memory, sizeof(g_logger_heap_memory), lmem::CreateOption_None);
+            sf::ExpHeapAllocator logger_allocator;
+            logger_allocator.Attach(logger_heap_handle);
+            return logger_allocator;
+        }
+
+        inline sf::SharedPointer<impl::ILogger> CreateLogger(os::ProcessId process_id) {
+            static auto logger_allocator = GetLoggerAllocator();
+            return sf::ObjectFactory<sf::ExpHeapAllocator::Policy>::CreateSharedEmplaced<impl::ILogger, Logger>(std::addressof(logger_allocator), process_id);
         }
 
     }
@@ -29,16 +36,6 @@ namespace ams::lm {
 
     Logger::~Logger() {
         impl::GetEventLogTransmitter()->SendLogSessionEndPacket(static_cast<u64>(this->process_id));
-    }
-
-    void *Logger::operator new(size_t size) {
-        std::scoped_lock lk(g_logger_heap_lock);
-        return lmem::AllocateFromExpHeap(GetLoggerHeapHandle(), size);
-    }
-
-    void Logger::operator delete(void *ptr) {
-        std::scoped_lock lk(g_logger_heap_lock);
-        lmem::FreeToExpHeap(GetLoggerHeapHandle(), ptr);
     }
 
     void Logger::Log(const sf::InAutoSelectBuffer &log_buffer) {
@@ -75,9 +72,9 @@ namespace ams::lm {
         g_log_destination = log_destination;
     }
 
-    void LogService::OpenLogger(const sf::ClientProcessId &client_pid, sf::Out<std::shared_ptr<impl::ILogger>> out_logger) {
+    void LogService::OpenLogger(const sf::ClientProcessId &client_pid, sf::Out<sf::SharedPointer<impl::ILogger>> out_logger) {
         /* Simply create a logger object, which will be allocated/freed with the exp heap created above. */
-        out_logger.SetValue(sf::MakeShared<impl::ILogger, Logger>(client_pid.process_id));
+        out_logger.SetValue(CreateLogger(client_pid.process_id));
     }
 
 }

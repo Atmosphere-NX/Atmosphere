@@ -174,13 +174,20 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
         MESOSPHERE_ASSERT(!KScheduler::IsSchedulerLockedByCurrentThread());
 
-        /* The only deferred procedure supported by Horizon is thread termination. */
-        /* Check if we need to terminate the current thread. */
-        KThread *cur_thread = GetCurrentThreadPointer();
-        if (cur_thread->IsTerminationRequested()) {
-            KScopedInterruptEnable ei;
-            cur_thread->Exit();
+        /* Get reference to the current thread. */
+        KThread &cur_thread = GetCurrentThread();
+
+        /* Enable interrupts, temporarily. */
+        KScopedInterruptEnable ei;
+
+        /* If the thread is scheduled for termination, exit the thread. */
+        if (cur_thread.IsTerminationRequested()) {
+            cur_thread.Exit();
+            __builtin_unreachable();
         }
+
+        /* We may also need to destroy any closed objects. */
+        cur_thread.DestroyClosedObjects();
     }
 
     void KDpcManager::Sync() {

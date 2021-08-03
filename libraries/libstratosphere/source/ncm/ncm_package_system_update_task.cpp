@@ -70,7 +70,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    std::optional<ContentMetaKey> PackageSystemUpdateTask::GetSystemUpdateMetaKey() {
+    util::optional<ContentMetaKey> PackageSystemUpdateTask::GetSystemUpdateMetaKey() {
         StorageContentMetaKey storage_keys[0x10];
         s32 ofs = 0;
 
@@ -93,7 +93,7 @@ namespace ams::ncm {
             }
         } while (count > 0);
 
-        return std::nullopt;
+        return util::nullopt;
     }
 
     Result PackageSystemUpdateTask::GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) {
@@ -117,7 +117,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentInfoOfContentMeta(std::addressof(info), key));
 
         /* Prepare the content meta. */
-        return this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(info.GetId(), info.GetSize(), key), key, std::nullopt);
+        return this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(info.GetId(), info.GetSize(), key), key, util::nullopt);
     }
 
     Result PackageSystemUpdateTask::PrepareDependency() {

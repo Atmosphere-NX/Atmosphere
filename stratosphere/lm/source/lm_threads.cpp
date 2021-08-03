@@ -34,8 +34,8 @@ namespace ams::lm {
             do {
                 auto server_fd = htcs::Socket();
                 log_server_proxy->SetHtcsServerFd(server_fd);
-                if(R_SUCCEEDED(htcs::Bind(server_fd, std::addressof(addr))) && R_SUCCEEDED(htcs::Listen(server_fd, 0))) {
-                    while(!os::TryWaitEvent(log_server_proxy->GetFinalizeEvent())) {
+                if (R_SUCCEEDED(htcs::Bind(server_fd, std::addressof(addr))) && R_SUCCEEDED(htcs::Listen(server_fd, 0))) {
+                    while (!os::TryWaitEvent(log_server_proxy->GetFinalizeEvent())) {
                         auto client_fd = htcs::Accept(server_fd, 0);
                         log_server_proxy->SetHtcsClientFd(client_fd);
                         log_server_proxy->SetEnabled(true);
@@ -53,12 +53,12 @@ namespace ams::lm {
                     }
                     htcs::Close(server_fd);
                 }
-            } while(!os::TimedWaitEvent(log_server_proxy->GetFinalizeEvent(), 1'000'000'000ul));
+            } while (!os::TimedWaitEvent(log_server_proxy->GetFinalizeEvent(), 1'000'000'000ul));
             <sub_710002B470>();
             */
 
             /* Placeholder loop while htcs is not implemented. */
-            while(!log_server_proxy->GetFinalizeEvent().TryWait()) {
+            while (!log_server_proxy->GetFinalizeEvent().TryWait()) {
                 log_server_proxy->SetEnabled(true);
 
                 log_server_proxy->DoHtcsLoopThing();
@@ -84,7 +84,7 @@ namespace ams::lm {
         os::Event g_sd_card_logging_enabled_event(os::EventClearMode_ManualClear);
         
         os::WaitableHolderType g_sd_card_detection_waitable_holder;
-        fs::SdCardDetectionEventNotifier g_sd_card_detection_event_notifier;
+        std::unique_ptr<fs::IEventNotifier> g_sd_card_detection_event_notifier;
         os::SystemEvent g_sd_card_detection_event;
         
         os::WaitableHolderType g_log_server_proxy_enabled_waitable_holder;
@@ -135,9 +135,6 @@ namespace ams::lm {
             g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
             AMS_ABORT_UNLESS(g_fs_heap_handle != nullptr);
             fs::SetAllocator(Allocate, Deallocate);
-            sm::DoWithSession([]() {
-                R_ABORT_UNLESS(time::Initialize());
-            });
 
             {
                 std::scoped_lock lk(g_waitable_manager_lock);
@@ -152,7 +149,7 @@ namespace ams::lm {
                 os::LinkWaitableHolder(std::addressof(g_waitable_manager), std::addressof(g_sd_card_logging_enabled_waitable_holder));
                 
                 R_ABORT_UNLESS(fs::OpenSdCardDetectionEventNotifier(std::addressof(g_sd_card_detection_event_notifier)));
-                R_ABORT_UNLESS(g_sd_card_detection_event_notifier.GetEventHandle(std::addressof(g_sd_card_detection_event), os::EventClearMode_ManualClear));
+                R_ABORT_UNLESS(g_sd_card_detection_event_notifier->BindEvent(g_sd_card_detection_event.GetBase(), os::EventClearMode_ManualClear));
                 os::InitializeWaitableHolder(std::addressof(g_sd_card_detection_waitable_holder), g_sd_card_detection_event.GetBase());
                 os::LinkWaitableHolder(std::addressof(g_waitable_manager), std::addressof(g_sd_card_detection_waitable_holder));
 
@@ -226,6 +223,7 @@ namespace ams::lm {
                 impl::GetSdCardLogging()->SetUpdateEnabledFunction(nullptr);
 
                 time::Finalize();
+                fsExit();
                 lmem::DestroyExpHeap(g_fs_heap_handle);
             }
         }

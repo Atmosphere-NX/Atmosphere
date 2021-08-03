@@ -28,9 +28,10 @@ namespace ams::kern {
         MESOSPHERE_AUTOOBJECT_TRAITS(KInterruptEvent, KReadableEvent);
         private:
             s32 m_interrupt_id;
+            s32 m_core_id;
             bool m_is_initialized;
         public:
-            constexpr KInterruptEvent() : m_interrupt_id(-1), m_is_initialized(false) { /* ... */ }
+            constexpr KInterruptEvent() : m_interrupt_id(-1), m_core_id(-1), m_is_initialized(false) { /* ... */ }
             virtual ~KInterruptEvent() { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
@@ -58,9 +59,9 @@ namespace ams::kern {
             virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
             virtual void DoTask() override;
 
-            void Unregister(s32 interrupt_id);
+            void Unregister(s32 interrupt_id, s32 core_id);
         public:
-            static Result Register(s32 interrupt_id, bool level, KInterruptEvent *event);
+            static Result Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event);
     };
 
 }

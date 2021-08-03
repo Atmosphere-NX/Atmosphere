@@ -16,18 +16,14 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_LM_I_LOG_GETTER_INFO(C, H)                                                                                                                                                                                          \
+    AMS_SF_METHOD_INFO(C, H,  0, void, StartLogging, (), ())                                                                                                                                                                    \
+    AMS_SF_METHOD_INFO(C, H,  1, void, StopLogging,  (), ())                                                                                                                                                                    \
+    AMS_SF_METHOD_INFO(C, H,  2, void, GetLog,       (const sf::OutAutoSelectBuffer &out_log_buffer, sf::Out<size_t> out_size, sf::Out<u64> out_log_packet_drop_count), (out_log_buffer, out_size, out_log_packet_drop_count))
+
+AMS_SF_DEFINE_INTERFACE(ams::lm::impl, ILogGetter, AMS_LM_I_LOG_GETTER_INFO)
+
 namespace ams::lm {
-
-    namespace impl {
-
-        #define AMS_LM_I_LOG_GETTER_INFO(C, H)                                                                                                                              \
-        AMS_SF_METHOD_INFO(C, H,  0, void, StartLogging, ())                                                                                                                \
-        AMS_SF_METHOD_INFO(C, H,  1, void, StopLogging,  ())                                                                                                                \
-        AMS_SF_METHOD_INFO(C, H,  2, void, GetLog,       (const sf::OutAutoSelectBuffer &out_log_buffer, sf::Out<size_t> out_size, sf::Out<u64> out_log_packet_drop_count)) \
-
-        AMS_SF_DEFINE_INTERFACE(ILogGetter, AMS_LM_I_LOG_GETTER_INFO)
-
-    }
 
     class LogGetter {
         public:

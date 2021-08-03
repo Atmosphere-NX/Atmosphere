@@ -18,28 +18,14 @@
 
 namespace ams::fs {
 
-    class SdCardDetectionEventNotifier {
-        NON_COPYABLE(SdCardDetectionEventNotifier);
-        NON_MOVEABLE(SdCardDetectionEventNotifier);
-        private:
-            void *notifier;
-        public:
-            SdCardDetectionEventNotifier() : notifier(nullptr) {}
-            ~SdCardDetectionEventNotifier();
-
-            void Open(void *notifier) {
-                this->notifier = notifier;
-            }
-
-            Result GetEventHandle(os::SystemEvent *out_event, os::EventClearMode clear_mode);
-    };
+    class IEventNotifier;
 
     Result MountSdCard(const char *name);
 
     Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name);
 
-    bool IsSdCardInserted();
+    Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out);
 
-    Result OpenSdCardDetectionEventNotifier(SdCardDetectionEventNotifier *out);
+    bool IsSdCardInserted();
 
 }

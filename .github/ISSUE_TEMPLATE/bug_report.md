@@ -49,6 +49,8 @@ X.X.X</br>
      - [ Ex: Kosmos' distribution of Atmosphère ]
 - Do you have additional kips or sysmodules you're loading:
 - Homebrew software installed: [ * ]
+- EmuMMC or SysNAND:
+  - [ If using an EmuMMC, include whether it's partition-based or file-based. ]
 
 ### Additional context?
 

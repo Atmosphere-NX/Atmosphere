@@ -29,6 +29,7 @@ ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mgeneral-regs-only #<- important
 
 CFLAGS	:= \
 		-g \
+		-gdwarf-4 \
 		-Os \
 		-ffunction-sections \
 		-fdata-sections \
@@ -37,14 +38,17 @@ CFLAGS	:= \
 		-std=gnu11 \
 		-Werror \
 		-Wall \
+		-Wno-array-bounds \
+		-Wno-stringop-overflow \
+		-Wno-stringop-overread \
 		$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ASFLAGS	:=	-g -gdwarf-4 $(ARCH)
+LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g -gdwarf-4 $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS	:=
 

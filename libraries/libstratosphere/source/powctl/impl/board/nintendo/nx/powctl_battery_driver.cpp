@@ -23,7 +23,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace {
 
-        constinit std::optional<BatteryDevice> g_battery_device;
+        constinit util::optional<BatteryDevice> g_battery_device;
 
         Max17050Driver &GetMax17050Driver() {
             static Max17050Driver s_max17050_driver;
@@ -91,7 +91,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         GetMax17050Driver().Finalize();
 
         /* Destroy the charger device. */
-        g_battery_device = std::nullopt;
+        g_battery_device = util::nullopt;
 
         /* Finalize gpio library. */
         gpio::Finalize();

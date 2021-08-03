@@ -22,7 +22,7 @@
 
 namespace ams::kern {
 
-    template<typename T>
+    template<typename T, bool ClearNode = false>
     class KDynamicSlabHeap {
         NON_COPYABLE(KDynamicSlabHeap);
         NON_MOVEABLE(KDynamicSlabHeap);
@@ -97,6 +97,13 @@ namespace ams::kern {
             T *Allocate() {
                 T *allocated = reinterpret_cast<T *>(this->GetImpl()->Allocate());
 
+                /* If we successfully allocated and we should clear the node, do so. */
+                if constexpr (ClearNode) {
+                    if (AMS_LIKELY(allocated != nullptr)) {
+                        reinterpret_cast<Impl::Node *>(allocated)->next = nullptr;
+                    }
+                }
+
                 /* If we fail to allocate, try to get a new page from our next allocator. */
                 if (AMS_UNLIKELY(allocated == nullptr)) {
                     if (m_page_allocator != nullptr) {
@@ -113,7 +120,7 @@ namespace ams::kern {
 
                 if (AMS_LIKELY(allocated != nullptr)) {
                     /* Construct the object. */
-                    new (allocated) T();
+                    std::construct_at(allocated);
 
                     /* Update our tracking. */
                     size_t used = m_used.fetch_add(1) + 1;

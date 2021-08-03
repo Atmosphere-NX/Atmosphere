@@ -47,9 +47,9 @@ namespace ams::secmon::smc {
             [fuse::DramId_IcosaSamsung4GB]    = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaHynix4GB]      = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaMicron4GB]     = pkg1::MemorySize_4GB,
-            [fuse::DramId_AulaHynix1y4GB]     = pkg1::MemorySize_4GB,
+            [fuse::DramId_IowaHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaSamsung6GB]    = pkg1::MemorySize_6GB,
-            [fuse::DramId_CopperHynix4GB]     = pkg1::MemorySize_4GB,
+            [fuse::DramId_HoagHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_CopperMicron4GB]    = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaX1X2Samsung4GB] = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSansung4GB]     = pkg1::MemorySize_4GB,
@@ -243,7 +243,7 @@ namespace ams::secmon::smc {
                                 (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 48) |
                                 (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 40) |
                                 (static_cast<u64>(GetKeyGeneration())                      << 32) |
-                                (static_cast<u64>(GetTargetFirmware())                     << 00);
+                                (static_cast<u64>(GetTargetFirmware())                     <<  0);
                     break;
                 case ConfigItem::ExosphereNeedsReboot:
                     /* We are executing, so we aren't in the process of rebooting. */
@@ -285,6 +285,16 @@ namespace ams::secmon::smc {
                 case ConfigItem::ExosphereLogConfiguration:
                     /* Get the log configuration. */
                     args.r[1] = (static_cast<u64>(static_cast<u8>(secmon::GetLogPort())) << 32) | static_cast<u64>(secmon::GetLogBaudRate());
+                    break;
+                case ConfigItem::ExosphereForceEnableUsb30:
+                    /* Get whether usb 3.0 should be force-enabled. */
+                    args.r[1] = GetSecmonConfiguration().IsUsb30ForceEnabled();
+                    break;
+                case ConfigItem::ExosphereSupportedHosVersion:
+                    /* Get information about the supported hos version. */
+                    args.r[1] = (static_cast<u64>(ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR & 0xFF) << 24) |
+                                (static_cast<u64>(ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR & 0xFF) << 16) |
+                                (static_cast<u64>(ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO & 0xFF) <<  8);
                     break;
                 default:
                     return SmcResult::InvalidArgument;

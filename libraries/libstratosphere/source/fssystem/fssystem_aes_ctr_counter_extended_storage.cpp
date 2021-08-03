@@ -189,7 +189,7 @@ namespace ams::fssystem {
 
     Result AesCtrCounterExtendedStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         switch (op_id) {
-            case fs::OperationId::InvalidateCache:
+            case fs::OperationId::Invalidate:
                 {
                     /* Validate preconditions. */
                     AMS_ASSERT(offset >= 0);

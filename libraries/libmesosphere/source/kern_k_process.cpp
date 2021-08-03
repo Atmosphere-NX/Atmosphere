@@ -28,11 +28,18 @@ namespace ams::kern {
         std::atomic<u64> g_initial_process_id = InitialProcessIdMin;
         std::atomic<u64> g_process_id         = ProcessIdMin;
 
-        void TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
+        Result TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
             /* Request that all children threads terminate. */
             {
                 KScopedLightLock proc_lk(process->GetListLock());
                 KScopedSchedulerLock sl;
+
+                if (thread_to_not_terminate != nullptr && process->GetPinnedThread(GetCurrentCoreId()) == thread_to_not_terminate) {
+                    /* NOTE: Here Nintendo unpins the current thread instead of the thread_to_not_terminate. */
+                    /* This is valid because the only caller which uses non-nullptr as argument uses GetCurrentThreadPointer(), */
+                    /* but it's still notable because it seems incorrect at first glance. */
+                    process->UnpinCurrentThread();
+                }
 
                 auto &thread_list = process->GetThreadList();
                 for (auto it = thread_list.begin(); it != thread_list.end(); ++it) {
@@ -70,9 +77,14 @@ namespace ams::kern {
                 }
 
                 /* Terminate and close the thread. */
-                cur_child->Terminate();
-                cur_child->Close();
+                ON_SCOPE_EXIT { cur_child->Close(); };
+
+                if (Result terminate_result = cur_child->Terminate(); svc::ResultTerminationRequested::Includes(terminate_result)) {
+                    return terminate_result;
+                }
             }
+
+            return ResultSuccess();
         }
 
     }
@@ -206,21 +218,20 @@ namespace ams::kern {
         KSystemControl::GenerateRandomBytes(m_entropy, sizeof(m_entropy));
 
         /* Clear remaining fields. */
-        m_num_threads           = 0;
-        m_peak_num_threads      = 0;
-        m_num_created_threads   = 0;
-        m_num_process_switches  = 0;
-        m_num_thread_switches   = 0;
-        m_num_fpu_switches      = 0;
-        m_num_supervisor_calls  = 0;
-        m_num_ipc_messages      = 0;
+        m_num_running_threads         = 0;
+        m_num_process_switches        = 0;
+        m_num_thread_switches         = 0;
+        m_num_fpu_switches            = 0;
+        m_num_supervisor_calls        = 0;
+        m_num_ipc_messages            = 0;
 
-        m_is_signaled           = false;
-        m_attached_object       = nullptr;
-        m_exception_thread      = nullptr;
-        m_is_suspended          = false;
-        m_memory_release_hint   = 0;
-        m_schedule_count        = 0;
+        m_is_signaled                 = false;
+        m_attached_object             = nullptr;
+        m_exception_thread            = nullptr;
+        m_is_suspended                = false;
+        m_memory_release_hint         = 0;
+        m_schedule_count              = 0;
+        m_is_handle_table_initialized = false;
 
         /* We're initialized! */
         m_is_initialized = true;
@@ -228,7 +239,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
+    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(res_limit != nullptr);
         MESOSPHERE_ABORT_UNLESS((params.code_num_pages * PageSize) / PageSize == static_cast<size_t>(params.code_num_pages));
@@ -238,6 +249,7 @@ namespace ams::kern {
         m_resource_limit            = res_limit;
         m_system_resource_address   = Null<KVirtualAddress>;
         m_system_resource_num_pages = 0;
+        m_is_immortal               = immortal;
 
         /* Setup page table. */
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
@@ -250,7 +262,7 @@ namespace ams::kern {
             auto *mem_block_manager     = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
             auto *block_info_manager    = std::addressof(Kernel::GetBlockInfoManager());
             auto *pt_manager            = std::addressof(Kernel::GetPageTableManager());
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
+            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
         auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
 
@@ -286,6 +298,7 @@ namespace ams::kern {
         /* Set pool and resource limit. */
         m_memory_pool               = pool;
         m_resource_limit            = res_limit;
+        m_is_immortal               = false;
 
         /* Get the memory sizes. */
         const size_t code_num_pages            = params.code_num_pages;
@@ -354,7 +367,7 @@ namespace ams::kern {
             const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
             const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
-            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
+            R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
         auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
 
@@ -395,6 +408,11 @@ namespace ams::kern {
         /* Terminate child threads. */
         TerminateChildren(this, nullptr);
 
+        /* Finalize the handle table, if we're not immortal. */
+        if (!m_is_immortal && m_is_handle_table_initialized) {
+            this->FinalizeHandleTable();
+        }
+
         /* Call the debug callback. */
         KDebug::OnExitProcess(this);
 
@@ -402,29 +420,36 @@ namespace ams::kern {
         this->FinishTermination();
     }
 
-    void KProcess::StartTermination() {
-        /* Terminate child threads other than the current one. */
-        TerminateChildren(this, GetCurrentThreadPointer());
+    Result KProcess::StartTermination() {
+        /* Finalize the handle table when we're done, if the process isn't immortal. */
+        ON_SCOPE_EXIT {
+            if (!m_is_immortal) {
+                this->FinalizeHandleTable();
+            }
+        };
 
-        /* Finalize the handle tahble. */
-        m_handle_table.Finalize();
+        /* Terminate child threads other than the current one. */
+        return TerminateChildren(this, GetCurrentThreadPointer());
     }
 
     void KProcess::FinishTermination() {
-        /* Release resource limit hint. */
-        if (m_resource_limit != nullptr) {
-            m_memory_release_hint = this->GetUsedUserPhysicalMemorySize();
-            m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, 0, m_memory_release_hint);
-        }
+        /* Only allow termination to occur if the process isn't immortal. */
+        if (!m_is_immortal) {
+            /* Release resource limit hint. */
+            if (m_resource_limit != nullptr) {
+                m_memory_release_hint = this->GetUsedUserPhysicalMemorySize();
+                m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, 0, m_memory_release_hint);
+            }
 
-        /* Change state. */
-        {
-            KScopedSchedulerLock sl;
-            this->ChangeState(State_Terminated);
-        }
+            /* Change state. */
+            {
+                KScopedSchedulerLock sl;
+                this->ChangeState(State_Terminated);
+            }
 
-        /* Close. */
-        this->Close();
+            /* Close. */
+            this->Close();
+        }
     }
 
     void KProcess::Exit() {
@@ -485,16 +510,22 @@ namespace ams::kern {
         /* If we need to terminate, do so. */
         if (needs_terminate) {
             /* Start termination. */
-            this->StartTermination();
+            if (R_SUCCEEDED(this->StartTermination())) {
+                /* Note for debug that we're terminating the process. */
+                MESOSPHERE_LOG("KProcess::Terminate() OK pid=%ld name=%-12s\n", m_process_id, m_name);
 
-            /* Note for debug that we're terminating the process. */
-            MESOSPHERE_LOG("KProcess::Terminate() pid=%ld name=%-12s\n", m_process_id, m_name);
+                /* Call the debug callback. */
+                KDebug::OnTerminateProcess(this);
 
-            /* Call the debug callback. */
-            KDebug::OnTerminateProcess(this);
+                /* Finish termination. */
+                this->FinishTermination();
+            } else {
+                /* Note for debug that we're terminating the process. */
+                MESOSPHERE_LOG("KProcess::Terminate() FAIL pid=%ld name=%-12s\n", m_process_id, m_name);
 
-            /* Finish termination. */
-            this->FinishTermination();
+                /* Register the process as a work task. */
+                KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+            }
         }
 
         return ResultSuccess();
@@ -703,19 +734,16 @@ namespace ams::kern {
         }
     }
 
-    void KProcess::IncrementThreadCount() {
-        MESOSPHERE_ASSERT(m_num_threads >= 0);
-        ++m_num_created_threads;
+    void KProcess::IncrementRunningThreadCount() {
+        MESOSPHERE_ASSERT(m_num_running_threads.load() >= 0);
 
-        if (const auto count = ++m_num_threads; count > m_peak_num_threads) {
-            m_peak_num_threads = count;
-        }
+        m_num_running_threads.fetch_add(1);
     }
 
-    void KProcess::DecrementThreadCount() {
-        MESOSPHERE_ASSERT(m_num_threads > 0);
+    void KProcess::DecrementRunningThreadCount() {
+        MESOSPHERE_ASSERT(m_num_running_threads.load() > 0);
 
-        if (const auto count = --m_num_threads; count == 0) {
+        if (m_num_running_threads.fetch_sub(1) == 1) {
             this->Terminate();
         }
     }
@@ -740,25 +768,22 @@ namespace ams::kern {
                     /* If we have no exception thread, we succeeded. */
                     if (m_exception_thread == nullptr) {
                         m_exception_thread = cur_thread;
+                        KScheduler::SetSchedulerUpdateNeeded();
                         return true;
                     }
 
                     /* Otherwise, wait for us to not have an exception thread. */
-                    cur_thread->SetAddressKey(address_key);
+                    cur_thread->SetAddressKey(address_key | 1);
                     m_exception_thread->AddWaiter(cur_thread);
-                    if (cur_thread->GetState() == KThread::ThreadState_Runnable) {
-                        cur_thread->SetState(KThread::ThreadState_Waiting);
-                    } else {
-                        KScheduler::SetSchedulerUpdateNeeded();
-                    }
+                    cur_thread->SetState(KThread::ThreadState_Waiting);
                 }
+
                 /* Remove the thread as a waiter from the lock owner. */
                 {
                     KScopedSchedulerLock sl;
-                    KThread *owner_thread = cur_thread->GetLockOwner();
-                    if (owner_thread != nullptr) {
+
+                    if (KThread *owner_thread = cur_thread->GetLockOwner(); owner_thread != nullptr) {
                         owner_thread->RemoveWaiter(cur_thread);
-                        KScheduler::SetSchedulerUpdateNeeded();
                     }
                 }
             }
@@ -779,14 +804,11 @@ namespace ams::kern {
 
             /* Remove waiter thread. */
             s32 num_waiters;
-            KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)));
-            if (next != nullptr) {
-                if (next->GetState() == KThread::ThreadState_Waiting) {
-                    next->SetState(KThread::ThreadState_Runnable);
-                } else {
-                    KScheduler::SetSchedulerUpdateNeeded();
-                }
+            if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
+                next->SetState(KThread::ThreadState_Runnable);
             }
+
+            KScheduler::SetSchedulerUpdateNeeded();
 
             return true;
         } else {
@@ -896,13 +918,13 @@ namespace ams::kern {
         R_TRY(m_page_table.SetMaxHeapSize(m_max_process_memory - (m_main_thread_stack_size + m_code_size)));
 
         /* Initialize our handle table. */
-        R_TRY(m_handle_table.Initialize(m_capabilities.GetHandleTableSize()));
-        auto ht_guard = SCOPE_GUARD { m_handle_table.Finalize(); };
+        R_TRY(this->InitializeHandleTable(m_capabilities.GetHandleTableSize()));
+        auto ht_guard = SCOPE_GUARD { this->FinalizeHandleTable(); };
 
         /* Create a new thread for the process. */
         KThread *main_thread = KThread::Create();
         R_UNLESS(main_thread != nullptr, svc::ResultOutOfResource());
-        auto thread_guard = SCOPE_GUARD { main_thread->Close(); };
+        ON_SCOPE_EXIT { main_thread->Close(); };
 
         /* Initialize the thread. */
         R_TRY(KThread::InitializeUserThread(main_thread, reinterpret_cast<KThreadFunction>(GetVoidPointer(this->GetEntryPoint())), 0, stack_top, priority, m_ideal_core_id, this));
@@ -925,9 +947,11 @@ namespace ams::kern {
         /* Run our thread. */
         R_TRY(main_thread->Run());
 
+        /* Open a reference to represent that we're running. */
+        this->Open();
+
         /* We succeeded! Cancel our guards. */
         state_guard.Cancel();
-        thread_guard.Cancel();
         ht_guard.Cancel();
         stack_guard.Cancel();
         mem_reservation.Commit();
@@ -1003,12 +1027,15 @@ namespace ams::kern {
         const s32 core_id   = GetCurrentCoreId();
         KThread *cur_thread = GetCurrentThreadPointer();
 
-        /* Pin it. */
-        this->PinThread(core_id, cur_thread);
-        cur_thread->Pin();
+        /* If the thread isn't terminated, pin it. */
+        if (!cur_thread->IsTerminationRequested()) {
+            /* Pin it. */
+            this->PinThread(core_id, cur_thread);
+            cur_thread->Pin();
 
-        /* An update is needed. */
-        KScheduler::SetSchedulerUpdateNeeded();
+            /* An update is needed. */
+            KScheduler::SetSchedulerUpdateNeeded();
+        }
     }
 
     void KProcess::UnpinCurrentThread() {
@@ -1021,6 +1048,20 @@ namespace ams::kern {
         /* Unpin it. */
         cur_thread->Unpin();
         this->UnpinThread(core_id, cur_thread);
+
+        /* An update is needed. */
+        KScheduler::SetSchedulerUpdateNeeded();
+    }
+
+    void KProcess::UnpinThread(KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Get the thread's core id. */
+        const auto core_id = thread->GetActiveCore();
+
+        /* Unpin it. */
+        this->UnpinThread(core_id, thread);
+        thread->Unpin();
 
         /* An update is needed. */
         KScheduler::SetSchedulerUpdateNeeded();

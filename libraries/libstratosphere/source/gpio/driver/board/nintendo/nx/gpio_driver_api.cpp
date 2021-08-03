@@ -38,7 +38,7 @@ namespace ams::gpio::driver::board::nintendo::nx {
         AMS_ABORT_UNLESS(driver_storage != nullptr);
 
         /* Construct the new driver. */
-        g_driver_impl = new (driver_storage) ams::gpio::driver::board::nintendo::nx::impl::DriverImpl(impl::GpioRegistersPhysicalAddress, impl::GpioRegistersSize);
+        g_driver_impl = std::construct_at(driver_storage, impl::GpioRegistersPhysicalAddress, impl::GpioRegistersSize);
 
         /* Register the driver. */
         gpio::driver::RegisterDriver(g_driver_impl);
@@ -47,11 +47,11 @@ namespace ams::gpio::driver::board::nintendo::nx {
         if (enable_interrupt_handlers) {
             for (size_t i = 0; i < util::size(impl::InterruptNameTable); ++i) {
                 /* Allocate a handler. */
-                impl::InterruptEventHandler *handler_storage = static_cast<impl::InterruptEventHandler *>(memory_resource->Allocate(sizeof(impl::InterruptEventHandler)));
+                void *handler_storage = memory_resource->Allocate(sizeof(impl::InterruptEventHandler));
                 AMS_ABORT_UNLESS(handler_storage != nullptr);
 
                 /* Initialize the handler. */
-                impl::InterruptEventHandler *handler = new (handler_storage) impl::InterruptEventHandler;
+                auto *handler = std::construct_at(static_cast<impl::InterruptEventHandler *>(handler_storage));
                 handler->Initialize(g_driver_impl, impl::InterruptNameTable[i], static_cast<int>(i));
 
                 /* Register the handler. */
@@ -62,11 +62,11 @@ namespace ams::gpio::driver::board::nintendo::nx {
         /* Create and register all pads. */
         for (const auto &entry : impl::PadMapCombinationList) {
             /* Allocate a pad for our device. */
-            impl::TegraPad *pad_storage = static_cast<impl::TegraPad *>(memory_resource->Allocate(sizeof(impl::TegraPad)));
+            void *pad_storage = memory_resource->Allocate(sizeof(impl::TegraPad));
             AMS_ABORT_UNLESS(pad_storage != nullptr);
 
             /* Create a pad for our device. */
-            impl::TegraPad *pad = new (pad_storage) impl::TegraPad;
+            auto *pad = std::construct_at(static_cast<impl::TegraPad *>(pad_storage));
             pad->SetParameters(entry.internal_number, impl::PadInfo{entry.wake_event});
 
             /* Register the pad with our driver. */

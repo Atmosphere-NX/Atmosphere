@@ -40,6 +40,7 @@ namespace ams::cfg {
     bool HasFlag(const sm::MitmProcessInfo &process_info, const char *flag);
     bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag);
     bool HasGlobalFlag(const char *flag);
+    Result DeleteGlobalFlag(const char *flag);
 
     /* HBL Configuration utilities. */
     bool HasHblFlag(const char *flag);

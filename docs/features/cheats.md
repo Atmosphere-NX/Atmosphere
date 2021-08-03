@@ -19,6 +19,8 @@ This behavior ensures that cheat codes are only loaded when the user would want 
 
 In cases where `dmnt` has not activated the cheat manager, but the user wants to make it do so anyway, the cheat manager's service API provides a `ForceOpenCheatProcess` command that homebrew can use. This command will cause the cheat manager to try to force itself to attach to the process.
 
+In cases where `dmnt` has activated the cheat manager, but the user wants to use an alternate debugger, the cheat manager's service API provides a `ForceCloseCheatProcess` command that homebrew can use. This command will cause the cheat manager to detach itself from the process.
+
 By default, all cheat codes listed in the loaded .txt file will be toggled on. This is configurable by the user by editing the `atmosphere!dmnt_cheats_enabled_by_default` [system setting](configurations.md).
 
 Users may use homebrew programs to toggle cheats on and off at runtime via the cheat manager's service API.
@@ -40,30 +42,30 @@ The following provides documentation of the instruction format for the virtual m
 
 Typically, instruction type is encoded in the upper nybble of the first instruction u32.
 
-### Code Type 0: Store Static Value to Memory
-Code type 0 allows writing a static value to a memory address.
+### Code Type 0x0: Store Static Value to Memory
+Code type 0x0 allows writing a static value to a memory address.
 
 #### Encoding
 `0TMR00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
 + R: Register to use as an offset from memory region base.
 + A: Immediate offset to use from memory region base.
 + V: Value to write.
 
 ---
 
-### Code Type 1: Begin Conditional Block
-Code type 1 performs a comparison of the contents of memory to a static value.
+### Code Type 0x1: Begin Conditional Block
+Code type 0x1 performs a comparison of the contents of memory to a static value.
 
-If the condition is not met, all instructions until the appropriate conditional block terminator are skipped.
+If the condition is not met, all instructions until the appropriate End or Else conditional block terminator are skipped.
 
 #### Encoding
 `1TMC00AA AAAAAAAA VVVVVVVV (VVVVVVVV)`
 
 + T: Width of memory write (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
 + C: Condition to use, see below.
 + A: Immediate offset to use from memory region base.
 + V: Value to compare to.
@@ -78,16 +80,20 @@ If the condition is not met, all instructions until the appropriate conditional 
 
 ---
 
-### Code Type 2: End Conditional Block
-Code type 2 marks the end of a conditional block (started by Code Type 1 or Code Type 8).
+### Code Type 0x2: End Conditional Block
+Code type 0x2 marks the end of a conditional block (started by Code Type 0x1 or Code Type 0x8).
+
+When an Else is executed, all instructions until the appropriate End conditional block terminator are skipped.
 
 #### Encoding
-`20000000`
+`2X000000`
+
++ X: End type (0 = End, 1 = Else).
 
 ---
 
-### Code Type 3: Start/End Loop
-Code type 3 allows for iterating in a loop a fixed number of times.
+### Code Type 0x3: Start/End Loop
+Code type 0x3 allows for iterating in a loop a fixed number of times.
 
 #### Start Loop Encoding
 `300R0000 VVVVVVVV`
@@ -102,8 +108,8 @@ Code type 3 allows for iterating in a loop a fixed number of times.
 
 ---
 
-### Code Type 4: Load Register with Static Value
-Code type 4 allows setting a register to a constant value.
+### Code Type 0x4: Load Register with Static Value
+Code type 0x4 allows setting a register to a constant value.
 
 #### Encoding
 `400R0000 VVVVVVVV VVVVVVVV`
@@ -113,29 +119,28 @@ Code type 4 allows setting a register to a constant value.
 
 ---
 
-### Code Type 5: Load Register with Memory Value
-Code type 5 allows loading a value from memory into a register, either using a fixed address or by dereferencing the destination register.
+### Code Type 0x5: Load Register with Memory Value
+Code type 0x5 allows loading a value from memory into a register, either using a fixed address or by dereferencing the destination register.
 
 #### Load From Fixed Address Encoding
 `5TMR00AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap).
++ M: Memory region to write to (0 = Main NSO, 1 = Heap, 2 = Alias, 3 = Aslr).
 + R: Register to load value into.
 + A: Immediate offset to use from memory region base.
 
 #### Load from Register Address Encoding
-`5TMR10AA AAAAAAAA`
+`5T0R10AA AAAAAAAA`
 
 + T: Width of memory read (1, 2, 4, or 8 bytes).
-+ M: Memory region to write to (0 = Main NSO, 1 = Heap).
-+ R: Register to load value into.
++ R: Register to load value into. (This register is also used as the base memory address).
 + A: Immediate offset to use from register R.
 
 ---
 
-### Code Type 6: Store Static Value to Register Memory Address
-Code type 6 allows writing a fixed value to a memory address specified by a register.
+### Code Type 0x6: Store Static Value to Register Memory Address
+Code type 0x6 allows writing a fixed value to a memory address specified by a register.
 
 #### Encoding
 `6T0RIor0 VVVVVVVV VVVVVVVV`
@@ -149,10 +154,10 @@ Code type 6 allows writing a fixed value to a memory address specified by a regi
 
 ---
 
-### Code Type 7: Legacy Arithmetic
-Code type 7 allows performing arithmetic on registers.
+### Code Type 0x7: Legacy Arithmetic
+Code type 0x7 allows performing arithmetic on registers.
 
-However, it has been deprecated by Code type 9, and is only kept for backwards compatibility.
+However, it has been deprecated by Code type 0x9, and is only kept for backwards compatibility.
 
 #### Encoding
 `7T0RC000 VVVVVVVV`
@@ -171,8 +176,8 @@ However, it has been deprecated by Code type 9, and is only kept for backwards c
 
 ---
 
-### Code Type 8: Begin Keypress Conditional Block
-Code type 8 enters or skips a conditional block based on whether a key combination is pressed.
+### Code Type 0x8: Begin Keypress Conditional Block
+Code type 0x8 enters or skips a conditional block based on whether a key combination is pressed.
 
 #### Encoding
 `8kkkkkkk`
@@ -213,8 +218,8 @@ Note: This is the direct output of `hidKeysDown()`.
 
 ---
 
-### Code Type 9: Perform Arithmetic
-Code type 9 allows performing arithmetic on registers.
+### Code Type 0x9: Perform Arithmetic
+Code type 0x9 allows performing arithmetic on registers.
 
 #### Register Arithmetic Encoding
 `9TCRS0s0`
@@ -248,8 +253,8 @@ Code type 9 allows performing arithmetic on registers.
 
 ---
 
-### Code Type 10: Store Register to Memory Address
-Code type 10 allows writing a register to memory.
+### Code Type 0xA: Store Register to Memory Address
+Code type 0xA allows writing a register to memory.
 
 #### Encoding
 `ATSRIOxa (aaaaaaaa)`
@@ -272,13 +277,13 @@ Code type 10 allows writing a register to memory.
 
 ---
 
-### Code Type 11: Reserved
-Code Type 11 is currently reserved for future use.
+### Code Type 0xB: Reserved
+Code Type 0xB is currently reserved for future use.
 
 ---
 
-### Code Type 12-15: Extended-Width Instruction
-Code Types 12-15 signal to the VM to treat the upper two nybbles of the first dword as instruction type, instead of just the upper nybble.
+### Code Type 0xC-0xF: Extended-Width Instruction
+Code Types 0xC-0xF signal to the VM to treat the upper two nybbles of the first dword as instruction type, instead of just the upper nybble.
 
 This reserves an additional 64 opcodes for future use.
 

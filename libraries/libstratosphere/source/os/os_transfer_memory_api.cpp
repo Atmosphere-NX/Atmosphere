@@ -46,7 +46,7 @@ namespace ams::os {
             tmem->handle_managed = managed;
 
             /* Create the critical section. */
-            new (GetPointer(tmem->cs_transfer_memory)) impl::InternalCriticalSection;
+            util::ConstructAt(tmem->cs_transfer_memory);
         }
 
     }
@@ -118,7 +118,7 @@ namespace ams::os {
         tmem->handle  = svc::InvalidHandle;
 
         /* Destroy the critical section. */
-        GetReference(tmem->cs_transfer_memory).~InternalCriticalSection();
+        util::DestroyAt(tmem->cs_transfer_memory);
     }
 
     Result MapTransferMemory(void **out, TransferMemoryType *tmem, MemoryPermission owner_perm) {

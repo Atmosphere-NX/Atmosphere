@@ -94,7 +94,7 @@ namespace ams::ncm {
                 StorageId storage_id;
                 SystemSaveDataInfo info;
                 sf::SharedPointer<IContentMetaDatabase> content_meta_database;
-                std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
+                util::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
                 ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
 

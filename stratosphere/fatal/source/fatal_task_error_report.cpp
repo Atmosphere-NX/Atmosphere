@@ -41,8 +41,12 @@ namespace ams::fatal::srv {
 
             /* Try to get the current time. */
             {
-                sm::ScopedServiceHolder<timeInitialize, timeExit> time_holder;
-                return time_holder && R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
+                if (R_FAILED(::timeInitialize())) {
+                    return false;
+                }
+                ON_SCOPE_EXIT { ::timeExit(); };
+
+                return R_SUCCEEDED(::timeGetCurrentTime(TimeType_LocalSystemClock, out));
             }
         }
 

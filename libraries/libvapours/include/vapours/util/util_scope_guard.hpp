@@ -30,12 +30,14 @@ namespace ams::util {
                 bool active;
             public:
                 constexpr ALWAYS_INLINE ScopeGuard(F f) : f(std::move(f)), active(true) { }
-                ALWAYS_INLINE ~ScopeGuard() { if (active) { f(); } }
-                ALWAYS_INLINE void Cancel() { active = false; }
+                constexpr ALWAYS_INLINE ~ScopeGuard() { if (active) { f(); } }
+                constexpr ALWAYS_INLINE void Cancel() { active = false; }
 
-                ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
+                constexpr ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
                     rhs.Cancel();
                 }
+
+                ScopeGuard &operator=(ScopeGuard&& rhs) = delete;
         };
 
         template<class F>

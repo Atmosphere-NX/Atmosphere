@@ -77,22 +77,34 @@ namespace ams::kern {
             };
 
             enum DpcFlag : u32 {
-                DpcFlag_Terminating = (1 << 0),
-                DpcFlag_Terminated  = (1 << 1),
+                DpcFlag_Terminating        = (1 << 0),
+                DpcFlag_Terminated         = (1 << 1),
+                DpcFlag_PerformDestruction = (1 << 2),
             };
 
             struct StackParameters {
-                alignas(0x10) u8 svc_permission[0x10];
+                alignas(0x10) u8 svc_permission[0x18];
+                KThreadContext *context;
+                KThread *cur_thread;
+                s16 disable_count;
                 std::atomic<u8> dpc_flags;
                 u8 current_svc_id;
                 bool is_calling_svc;
                 bool is_in_exception_handler;
                 bool is_pinned;
-                s32 disable_count;
-                KThreadContext *context;
-                KThread *cur_thread;
             };
             static_assert(alignof(StackParameters) == 0x10);
+            static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
+
+            static_assert(__builtin_offsetof(StackParameters, svc_permission)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
+            static_assert(__builtin_offsetof(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
+            static_assert(__builtin_offsetof(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
+            static_assert(__builtin_offsetof(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
+            static_assert(__builtin_offsetof(StackParameters, dpc_flags)               == THREAD_STACK_PARAMETERS_DPC_FLAGS);
+            static_assert(__builtin_offsetof(StackParameters, current_svc_id)          == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
+            static_assert(__builtin_offsetof(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
+            static_assert(__builtin_offsetof(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
+            static_assert(__builtin_offsetof(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
 
             struct QueueEntry {
                 private:
@@ -124,7 +136,7 @@ namespace ams::kern {
             static_assert(sizeof(SyncObjectBuffer::m_sync_objects) == sizeof(SyncObjectBuffer::m_handles));
 
             struct ConditionVariableComparator {
-                struct LightCompareType {
+                struct RedBlackKeyType {
                     uintptr_t m_cv_key;
                     s32 m_priority;
 
@@ -137,7 +149,7 @@ namespace ams::kern {
                     }
                 };
 
-                template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, LightCompareType>)
+                template<typename T> requires (std::same_as<T, KThread> || std::same_as<T, RedBlackKeyType>)
                 static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThread &rhs) {
                     const uintptr_t l_key = lhs.GetConditionVariableKey();
                     const uintptr_t r_key = rhs.GetConditionVariableKey();
@@ -153,8 +165,8 @@ namespace ams::kern {
                     }
                 }
             };
-            static_assert(ams::util::HasLightCompareType<ConditionVariableComparator>);
-            static_assert(std::same_as<ams::util::LightCompareType<ConditionVariableComparator, void>, ConditionVariableComparator::LightCompareType>);
+            static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
+            static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
             static inline std::atomic<u64> s_next_thread_id = 0;
         private:
@@ -192,12 +204,14 @@ namespace ams::kern {
             WaiterList                      m_pinned_waiter_list{};
             KThread                        *m_lock_owner{};
             uintptr_t                       m_debug_params[3]{};
+            KAutoObject                    *m_closed_object{};
             u32                             m_address_key_value{};
             u32                             m_suspend_request_flags{};
             u32                             m_suspend_allowed_flags{};
             Result                          m_wait_result;
             Result                          m_debug_exception_result;
             s32                             m_base_priority{};
+            s32                             m_base_priority_on_unpin{};
             s32                             m_physical_ideal_core_id{};
             s32                             m_virtual_ideal_core_id{};
             s32                             m_num_kernel_waiters{};
@@ -251,7 +265,7 @@ namespace ams::kern {
                 return *(reinterpret_cast<StackParameters *>(m_kernel_stack_top) - 1);
             }
         public:
-            ALWAYS_INLINE s32 GetDisableDispatchCount() const {
+            ALWAYS_INLINE s16 GetDisableDispatchCount() const {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetStackParameters().disable_count;
             }
@@ -312,15 +326,15 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags |= flag;
+                this->GetStackParameters().dpc_flags.fetch_or(flag);
             }
 
             ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags &= ~flag;
+                this->GetStackParameters().dpc_flags.fetch_and(~flag);
             }
 
             ALWAYS_INLINE u8 GetDpc() const {
-                return this->GetStackParameters().dpc_flags;
+                return this->GetStackParameters().dpc_flags.load();
             }
 
             ALWAYS_INLINE bool HasDpc() const {
@@ -328,13 +342,15 @@ namespace ams::kern {
                 return this->GetDpc() != 0;
             }
         private:
-            void Suspend();
+            void UpdateState();
             ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
             ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
             ALWAYS_INLINE static void RestorePriority(KThread *thread);
 
             void StartTermination();
             void FinishTermination();
+
+            void IncreaseBasePriority(s32 priority);
         public:
             constexpr u64 GetThreadId() const { return m_thread_id; }
 
@@ -471,11 +487,44 @@ namespace ams::kern {
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return m_tls_heap_address; }
 
             constexpr KSynchronizationObject **GetSynchronizationObjectBuffer() { return std::addressof(m_sync_object_buffer.m_sync_objects[0]); }
-            constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(m_sync_object_buffer.m_handles[sizeof(m_sync_object_buffer.m_sync_objects) / sizeof(ams::svc::Handle) - ams::svc::ArgumentHandleCountMax]); }
+            constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(m_sync_object_buffer.m_handles[sizeof(m_sync_object_buffer.m_sync_objects) / (sizeof(ams::svc::Handle)) - ams::svc::ArgumentHandleCountMax]); }
 
             u16 GetUserDisableCount() const { return static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->disable_count; }
             void SetInterruptFlag()   const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 1; }
             void ClearInterruptFlag() const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 0; }
+
+            ALWAYS_INLINE KAutoObject *GetClosedObject() { return m_closed_object; }
+
+            ALWAYS_INLINE void SetClosedObject(KAutoObject *object) {
+                MESOSPHERE_ASSERT(object != nullptr);
+
+                /* Set the object to destroy. */
+                m_closed_object = object;
+
+                /* Schedule destruction DPC. */
+                if ((this->GetStackParameters().dpc_flags.load(std::memory_order_relaxed) & DpcFlag_PerformDestruction) == 0) {
+                    this->RegisterDpc(DpcFlag_PerformDestruction);
+                }
+            }
+
+            ALWAYS_INLINE void DestroyClosedObjects() {
+                /* Destroy all objects that have been closed. */
+                if (KAutoObject *cur = m_closed_object; cur != nullptr) {
+                    do {
+                        /* Set our closed object as the next to close. */
+                        m_closed_object = cur->GetNextClosedObject();
+
+                        /* Destroy the current object. */
+                        cur->Destroy();
+
+                        /* Advance. */
+                        cur = m_closed_object;
+                    } while (cur != nullptr);
+
+                    /* Clear the pending DPC. */
+                    this->ClearDpc(DpcFlag_PerformDestruction);
+                }
+            }
 
             constexpr void SetDebugAttached() { m_debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
@@ -497,7 +546,7 @@ namespace ams::kern {
 
             constexpr u32 GetSuspendFlags() const { return m_suspend_allowed_flags & m_suspend_request_flags; }
             constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
-            constexpr bool IsSuspendRequested(SuspendType type) const { return (m_suspend_request_flags & (1u << (ThreadState_SuspendShift + type))) != 0; }
+            constexpr bool IsSuspendRequested(SuspendType type) const { return (m_suspend_request_flags & (1u << (util::ToUnderlying(ThreadState_SuspendShift) + util::ToUnderlying(type)))) != 0; }
             constexpr bool IsSuspendRequested() const { return m_suspend_request_flags != 0; }
             void RequestSuspend(SuspendType type);
             void Resume(SuspendType type);
@@ -521,7 +570,7 @@ namespace ams::kern {
             Result Run();
             void Exit();
 
-            void Terminate();
+            Result Terminate();
             ThreadState RequestTerminate();
 
             Result Sleep(s64 timeout);
@@ -587,6 +636,16 @@ namespace ams::kern {
 
     ALWAYS_INLINE s32 GetCurrentCoreId() {
         return GetCurrentThread().GetCurrentCore();
+    }
+
+    ALWAYS_INLINE void KAutoObject::ScheduleDestruction() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Set our object to destroy. */
+        m_next_closed_object = GetCurrentThread().GetClosedObject();
+
+        /* Set ourselves as the thread's next object to destroy. */
+        GetCurrentThread().SetClosedObject(this);
     }
 
 }

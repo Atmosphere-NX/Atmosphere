@@ -77,8 +77,7 @@ namespace ams::kern {
             bool                        m_is_initialized{};
             bool                        m_is_application{};
             char                        m_name[13]{};
-            std::atomic<u16>            m_num_threads{};
-            u16                         m_peak_num_threads{};
+            std::atomic<u16>            m_num_running_threads{};
             u32                         m_flags{};
             KMemoryManager::Pool        m_memory_pool{};
             s64                         m_schedule_count{};
@@ -99,7 +98,9 @@ namespace ams::kern {
             SharedMemoryInfoList        m_shared_memory_list{};
             BetaList                    m_beta_list{};
             bool                        m_is_suspended{};
+            bool                        m_is_immortal{};
             bool                        m_is_jit_debug{};
+            bool                        m_is_handle_table_initialized{};
             ams::svc::DebugEvent        m_jit_debug_event_type{};
             ams::svc::DebugException    m_jit_debug_exception_type{};
             uintptr_t                   m_jit_debug_params[4]{};
@@ -108,7 +109,6 @@ namespace ams::kern {
             KThread                    *m_running_threads[cpu::NumCores]{};
             u64                         m_running_thread_idle_counts[cpu::NumCores]{};
             KThread                    *m_pinned_threads[cpu::NumCores]{};
-            std::atomic<s32>            m_num_created_threads{};
             std::atomic<s64>            m_cpu_time{};
             std::atomic<s64>            m_num_process_switches{};
             std::atomic<s64>            m_num_thread_switches{};
@@ -124,17 +124,17 @@ namespace ams::kern {
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
 
-            void StartTermination();
+            Result StartTermination();
             void FinishTermination();
 
-            void PinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void PinThread(s32 core_id, KThread *thread) {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
                 MESOSPHERE_ASSERT(m_pinned_threads[core_id] == nullptr);
                 m_pinned_threads[core_id] = thread;
             }
 
-            void UnpinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void UnpinThread(s32 core_id, KThread *thread) {
                 MESOSPHERE_UNUSED(thread);
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
@@ -145,7 +145,7 @@ namespace ams::kern {
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
 
-            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal);
             Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
             void Exit();
 
@@ -285,8 +285,8 @@ namespace ams::kern {
             constexpr s64 GetScheduledCount() const { return m_schedule_count; }
             void IncrementScheduledCount() { ++m_schedule_count; }
 
-            void IncrementThreadCount();
-            void DecrementThreadCount();
+            void IncrementRunningThreadCount();
+            void DecrementRunningThreadCount();
 
             size_t GetTotalSystemResourceSize() const { return m_system_resource_num_pages * PageSize; }
             size_t GetUsedSystemResourceSize() const {
@@ -340,6 +340,7 @@ namespace ams::kern {
 
             void PinCurrentThread();
             void UnpinCurrentThread();
+            void UnpinThread(KThread *thread);
 
             Result SignalToAddress(KProcessAddress address) {
                 return m_cond_var.SignalToAddress(address);
@@ -404,6 +405,23 @@ namespace ams::kern {
                     m_is_signaled = true;
                     this->NotifyAvailable();
                 }
+            }
+
+            ALWAYS_INLINE Result InitializeHandleTable(s32 size) {
+                /* Try to initialize the handle table. */
+                R_TRY(m_handle_table.Initialize(size));
+
+                /* We succeeded, so note that we did. */
+                m_is_handle_table_initialized = true;
+                return ResultSuccess();
+            }
+
+            ALWAYS_INLINE void FinalizeHandleTable() {
+                /* Finalize the table. */
+                m_handle_table.Finalize();
+
+                /* Note that the table is finalized. */
+                m_is_handle_table_initialized = false;
             }
     };
 

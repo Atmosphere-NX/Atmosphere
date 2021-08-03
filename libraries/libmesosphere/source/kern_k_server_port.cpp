@@ -40,7 +40,7 @@ namespace ams::kern {
             KServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;
-                while (!m_session_list.empty()) {
+                if (!m_session_list.empty()) {
                     session = std::addressof(m_session_list.front());
                     m_session_list.pop_front();
                 }
@@ -60,7 +60,7 @@ namespace ams::kern {
             KLightServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;
-                while (!m_light_session_list.empty()) {
+                if (!m_light_session_list.empty()) {
                     session = std::addressof(m_light_session_list.front());
                     m_light_session_list.pop_front();
                 }

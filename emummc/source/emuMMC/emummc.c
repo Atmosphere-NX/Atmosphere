@@ -292,6 +292,36 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
         {
             fp = &f_emu.fp_gpp[sector / f_emu.part_size];
             sector = sector % f_emu.part_size;
+
+            // Special handling for reads/writes which cross file-boundaries.
+            if (__builtin_expect(sector + num_sectors > f_emu.part_size, 0))
+            {
+                unsigned int remaining = num_sectors;
+                while (remaining > 0) {
+                    const unsigned int cur_sectors = MIN(remaining, f_emu.part_size - sector);
+
+                    if (f_lseek(fp, (u64)sector << 9) != FR_OK)
+                        return 0; // Out of bounds.
+
+                    if (is_write)
+                    {
+                        if (f_write_fast(fp, buf, (u64)cur_sectors << 9) != FR_OK)
+                            return 0;
+                    }
+                    else
+                    {
+                        if (f_read_fast(fp, buf, (u64)cur_sectors << 9) != FR_OK)
+                            return 0;
+                    }
+
+                    buf = (char *)buf + ((u64)cur_sectors << 9);
+                    remaining -= cur_sectors;
+                    sector = 0;
+                    ++fp;
+                }
+
+                return 1;
+            }
         }
         else
         {
@@ -306,14 +336,14 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
         break;
     }
 
-    if (f_lseek(fp, sector << 9) != FR_OK)
+    if (f_lseek(fp, (u64)sector << 9) != FR_OK)
         return 0; // Out of bounds.
 
     uint64_t res = 0;
     if (!is_write)
-        res = !f_read_fast(fp, buf, num_sectors << 9);
+        res = !f_read_fast(fp, buf, (u64)num_sectors << 9);
     else
-        res = !f_write_fast(fp, buf, num_sectors << 9);
+        res = !f_write_fast(fp, buf, (u64)num_sectors << 9);
 
     return res;
 }
@@ -328,13 +358,13 @@ uint64_t sdmmc_wrapper_controller_open(int mmc_id)
     if (_this != NULL)
     {
         // Lock eMMC xfer while SD card is being initialized by FS.
-        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+        if (mmc_id == FS_SDMMC_SD)
             mutex_lock_handler(FS_SDMMC_EMMC); // Recursive Mutex, handler will lock SD as well if custom_driver
 
         result = _this->vtab->sdmmc_accessor_controller_open(_this);
 
         // Unlock eMMC.
-        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+        if (mmc_id == FS_SDMMC_SD)
             mutex_unlock_handler(FS_SDMMC_EMMC);
 
         return result;

@@ -18,13 +18,6 @@
 
 namespace ams::lm::impl {
 
-    class SdCardDetectionEventNotifier {
-        public:
-            SdCardDetectionEventNotifier(os::SystemEvent *out_event);
-        private:
-            fs::SdCardDetectionEventNotifier event_notifier;
-    };
-
     class SdCardLogging {
         NON_COPYABLE(SdCardLogging);
         NON_MOVEABLE(SdCardLogging);

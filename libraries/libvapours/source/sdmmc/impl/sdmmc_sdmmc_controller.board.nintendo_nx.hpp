@@ -237,7 +237,7 @@ namespace ams::sdmmc::impl {
             #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
             bool is_pcv_control;
             #endif
-            TYPED_STORAGE(PowerController) power_controller_storage;
+            util::TypedStorage<PowerController> power_controller_storage;
             PowerController *power_controller;
         private:
             Result PowerOnForRegisterControl(BusPower bus_power);

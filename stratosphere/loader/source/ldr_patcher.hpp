@@ -21,4 +21,7 @@ namespace ams::ldr {
     /* Apply IPS patches. */
     void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
 
+    /* Apply embedded patches. */
+    void ApplyEmbeddedPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size);
+
 }

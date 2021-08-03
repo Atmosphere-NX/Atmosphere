@@ -55,7 +55,7 @@ namespace ams::fs {
 
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                     switch (op_id) {
-                        case OperationId::InvalidateCache:
+                        case OperationId::Invalidate:
                         case OperationId::QueryRange:
                             return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
                         default:

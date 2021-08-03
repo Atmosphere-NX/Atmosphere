@@ -33,7 +33,7 @@ namespace ams::os::impl {
             event->auto_clear = (clear_mode == EventClearMode_AutoClear);
 
             /* Create the waitlist node. */
-            new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList;
+            util::ConstructAt(event->waitable_object_list_storage);
 
             /* Set state. */
             event->state = InterProcessEventType::State_Initialized;
@@ -71,7 +71,7 @@ namespace ams::os::impl {
         }
 
         /* Destroy the waitlist. */
-        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
+        util::DestroyAt(event->waitable_object_list_storage);
     }
 
     void AttachInterProcessEvent(InterProcessEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {

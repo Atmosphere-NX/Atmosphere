@@ -56,6 +56,7 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
+            Result OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size);
     };
     static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
@@ -91,7 +92,7 @@ namespace ams::fssrv::impl {
         public:
             bool IsDeepRetryEnabled() const;
             bool IsAccessFailureDetectionObserved() const;
-            std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
+            util::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
             os::ReadWriteLock &GetReadWriteLockForCacheInvalidation();
         public:
             /* Command API. */

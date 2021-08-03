@@ -49,7 +49,7 @@ namespace ams::ddsf {
         NON_MOVEABLE(DeviceCodeEntryHolder);
         private:
             util::IntrusiveListNode list_node;
-            TYPED_STORAGE(DeviceCodeEntry) entry_storage;
+            util::TypedStorage<DeviceCodeEntry> entry_storage;
             bool is_constructed;
         public:
             using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::list_node>;
@@ -80,7 +80,7 @@ namespace ams::ddsf {
 
             DeviceCodeEntry &Construct(DeviceCode dc, IDevice *dev) {
                 AMS_ASSERT(!this->IsConstructed());
-                DeviceCodeEntry *entry = new (GetPointer(this->entry_storage)) DeviceCodeEntry(dc, dev);
+                DeviceCodeEntry *entry = util::ConstructAt(this->entry_storage, dc, dev);
                 this->is_constructed = true;
                 return *entry;
             }
@@ -91,7 +91,7 @@ namespace ams::ddsf {
 
             void Destroy() {
                 AMS_ASSERT(this->IsConstructed());
-                GetReference(this->entry_storage).~DeviceCodeEntry();
+                util::DestroyAt(this->entry_storage);
                 this->is_constructed = false;
             }
 

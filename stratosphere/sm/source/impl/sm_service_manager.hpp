@@ -23,29 +23,25 @@ namespace ams::sm::impl {
     void OnClientDisconnected(os::ProcessId process_id);
 
     /* Process management. */
-    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
+    Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
     Result UnregisterProcess(os::ProcessId process_id);
 
     /* Service management. */
     Result HasService(bool *out, ServiceName service);
     Result WaitService(ServiceName service);
-    Result GetServiceHandle(Handle *out, os::ProcessId process_id, ServiceName service);
-    Result RegisterService(Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light);
-    Result RegisterServiceForSelf(Handle *out, ServiceName service, size_t max_sessions);
+    Result GetServiceHandle(svc::Handle *out, os::ProcessId process_id, ServiceName service);
+    Result RegisterService(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light);
+    Result RegisterServiceForSelf(svc::Handle *out, ServiceName service, size_t max_sessions);
     Result UnregisterService(os::ProcessId process_id, ServiceName service);
 
     /* Mitm extensions. */
     Result HasMitm(bool *out, ServiceName service);
     Result WaitMitm(ServiceName service);
-    Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId process_id, ServiceName service);
+    Result InstallMitm(svc::Handle *out, svc::Handle *out_query, os::ProcessId process_id, ServiceName service);
     Result UninstallMitm(os::ProcessId process_id, ServiceName service);
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service);
     Result ClearFutureMitm(os::ProcessId process_id, ServiceName service);
-    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd, os::ProcessId process_id, ServiceName service);
-
-    /* Dmnt record extensions. */
-    Result GetServiceRecord(ServiceRecord *out, ServiceName service);
-    Result ListServiceRecords(ServiceRecord *out, u64 *out_count, u64 offset, u64 max_count);
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, svc::Handle *out_hnd, os::ProcessId process_id, ServiceName service);
 
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers();

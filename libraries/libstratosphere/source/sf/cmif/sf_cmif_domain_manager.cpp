@@ -33,7 +33,7 @@ namespace ams::sf::cmif {
 
     void ServerDomainManager::Domain::DisposeImpl() {
         ServerDomainManager *manager = this->manager;
-        this->~Domain();
+        std::destroy_at(this);
         manager->FreeDomain(this);
     }
 
@@ -110,14 +110,13 @@ namespace ams::sf::cmif {
         this->entries = reinterpret_cast<Entry *>(entry_storage);
         this->num_entries = entry_count;
         for (size_t i = 0; i < this->num_entries; i++) {
-            Entry *entry = new (this->entries + i) Entry();
-            this->free_list.push_back(*entry);
+            this->free_list.push_back(*std::construct_at(this->entries + i));
         }
     }
 
     ServerDomainManager::EntryManager::~EntryManager() {
         for (size_t i = 0; i < this->num_entries; i++) {
-            this->entries[i].~Entry();
+            std::destroy_at(this->entries + i);
         }
     }
 

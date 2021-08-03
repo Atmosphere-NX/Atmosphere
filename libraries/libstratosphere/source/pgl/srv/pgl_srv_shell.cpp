@@ -85,12 +85,12 @@ namespace ams::pgl::srv {
             }
         }
 
-        std::optional<os::ProcessId> GetRunningApplicationProcessId() {
+        util::optional<os::ProcessId> GetRunningApplicationProcessId() {
             os::ProcessId process_id;
             if (R_SUCCEEDED(pm::shell::GetApplicationProcessIdForShell(std::addressof(process_id)))) {
                 return process_id;
             } else {
-                return std::nullopt;
+                return util::nullopt;
             }
         }
 

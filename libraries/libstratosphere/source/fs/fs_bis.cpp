@@ -29,7 +29,7 @@ namespace ams::fs {
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
                     const char *bis_mount_name = GetBisMountName(this->id);
-                    const size_t needed_size = strnlen(bis_mount_name, MountNameLengthMax) + 2;
+                    const size_t needed_size = util::Strnlen(bis_mount_name, MountNameLengthMax) + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */

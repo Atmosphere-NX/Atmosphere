@@ -181,7 +181,7 @@ namespace ams::kern::arch::arm64 {
         return ResultSuccess();
     }
 
-    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
+    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
         /* The input ID isn't actually used. */
         MESOSPHERE_UNUSED(id);
 
@@ -202,7 +202,7 @@ namespace ams::kern::arch::arm64 {
         const size_t as_width = GetAddressSpaceWidth(as_type);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager));
+        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager, resource_limit));
 
         /* We succeeded! */
         table_guard.Cancel();
@@ -279,9 +279,10 @@ namespace ams::kern::arch::arm64 {
                 if (l1_entry->IsTable()) {
                     L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
                     if (l2_entry->IsTable()) {
-                        KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
+                        const KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
                         if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
                             while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
+                            ClearPageTable(l3_table);
                             this->GetPageTableManager().Free(l3_table);
                         }
                     }
@@ -292,16 +293,21 @@ namespace ams::kern::arch::arm64 {
             for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
                 L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
                 if (l1_entry->IsTable()) {
-                    KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
+                    const KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
                     if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
                         while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
+                        ClearPageTable(l2_table);
                         this->GetPageTableManager().Free(l2_table);
                     }
                 }
             }
 
             /* Free the L1 table. */
-            this->GetPageTableManager().Free(reinterpret_cast<uintptr_t>(impl.Finalize()));
+            {
+                const KVirtualAddress l1_table = reinterpret_cast<uintptr_t>(impl.Finalize());
+                ClearPageTable(l1_table);
+                this->GetPageTableManager().Free(l1_table);
+            }
 
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
@@ -556,13 +562,13 @@ namespace ams::kern::arch::arm64 {
         /* If we're not forcing an unmap, separate pages immediately. */
         if (!force) {
             const size_t size = num_pages * PageSize;
-            R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+            R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
             if (num_pages > 1) {
                 const auto end_page  = virt_addr + size;
                 const auto last_page = end_page - PageSize;
 
                 auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-                R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
+                R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
                 merge_guard.Cancel();
             }
         }
@@ -1194,13 +1200,13 @@ namespace ams::kern::arch::arm64 {
 
         /* Separate pages before we change permissions. */
         const size_t size = num_pages * PageSize;
-        R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+        R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
         if (num_pages > 1) {
             const auto end_page  = virt_addr + size;
             const auto last_page = end_page - PageSize;
 
             auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-            R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
+            R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
             merge_guard.Cancel();
         }
 

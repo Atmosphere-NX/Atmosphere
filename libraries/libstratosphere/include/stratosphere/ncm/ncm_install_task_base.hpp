@@ -131,7 +131,7 @@ namespace ams::ncm {
         protected:
             Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
 
-            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> key, std::optional<u32> source_version);
+            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, util::optional<ContentMetaKey> key, util::optional<u32> source_version);
             Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
             Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
             void PrepareAgain();
@@ -145,7 +145,7 @@ namespace ams::ncm {
             Result PrepareSystemUpdateDependency();
             virtual Result PrepareContentMetaIfLatest(const ContentMetaKey &key); /* NOTE: This is not virtual in Nintendo's code. We do so to facilitate downgrades. */
             u32 GetConfig() const { return this->config; }
-            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
+            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, util::optional<bool> is_temporary);
 
             StorageId GetInstallStorage() const { return this->install_storage; }
 
@@ -164,7 +164,7 @@ namespace ams::ncm {
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
 
             virtual Result PrepareInstallContentMetaData() = 0;
-            virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
+            virtual Result GetLatestVersion(util::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
 
             virtual Result OnExecuteComplete() { return ResultSuccess(); }
 
@@ -187,9 +187,9 @@ namespace ams::ncm {
             void StartThroughputMeasurement();
             void UpdateThroughputMeasurement(s64 throughput);
 
-            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version);
+            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version);
 
-            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
+            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, util::optional<bool> is_temporary);
 
             Result ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
             Result ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset);

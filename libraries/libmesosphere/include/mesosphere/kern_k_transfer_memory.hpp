@@ -23,7 +23,7 @@ namespace ams::kern {
     class KTransferMemory final : public KAutoObjectWithSlabHeapAndContainer<KTransferMemory, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KTransferMemory, KAutoObject);
         private:
-            TYPED_STORAGE(KPageGroup) m_page_group;
+            util::TypedStorage<KPageGroup> m_page_group;
             KProcess *m_owner;
             KProcessAddress m_address;
             KLightLock m_lock;

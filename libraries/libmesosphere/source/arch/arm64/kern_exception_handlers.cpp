@@ -258,7 +258,7 @@ namespace ams::kern::arch::arm64 {
                          {
                              exception = ams::svc::DebugException_BreakPoint;
                              param2    = far;
-                             param3    = ams::svc::BreakPointType_HardwareInstruction;
+                             param3    = ams::svc::BreakPointType_HardwareData;
                          }
                          break;
                      case EsrEc_SErrorInterrupt:
@@ -520,6 +520,11 @@ namespace ams::kern::arch::arm64 {
                 /* Enable interrupts while we process the usermode exception. */
                 {
                     KScopedInterruptEnable ei;
+
+                    /* Terminate the thread, if we should. */
+                    if (GetCurrentThread().IsTerminationRequested()) {
+                        GetCurrentThread().Exit();
+                    }
 
                     HandleUserException(context, esr, far, afsr0, afsr1, data);
                 }

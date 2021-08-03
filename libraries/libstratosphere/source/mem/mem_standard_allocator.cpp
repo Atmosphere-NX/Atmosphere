@@ -68,7 +68,7 @@ namespace ams::mem {
 
     StandardAllocator::StandardAllocator() : initialized(false), enable_thread_cache(false), unused(0) {
         static_assert(sizeof(impl::heap::CentralHeap) <= sizeof(this->central_heap_storage));
-        new (std::addressof(this->central_heap_storage)) impl::heap::CentralHeap;
+        std::construct_at(GetCentral(this->central_heap_storage));
     }
 
     StandardAllocator::StandardAllocator(void *mem, size_t size) : StandardAllocator() {

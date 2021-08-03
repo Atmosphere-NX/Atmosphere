@@ -42,13 +42,13 @@ namespace ams::os::impl {
 
     class ResourceManagerHolder {
         private:
-            static TYPED_STORAGE(OsResourceManager) s_resource_manager_storage;
+            static util::TypedStorage<OsResourceManager> s_resource_manager_storage;
         private:
             constexpr ResourceManagerHolder() { /* ... */ }
         public:
             static ALWAYS_INLINE void InitializeResourceManagerInstance() {
                 /* Construct the resource manager instance. */
-                new (GetPointer(s_resource_manager_storage)) OsResourceManager;
+                util::ConstructAt(s_resource_manager_storage);
             }
 
             static ALWAYS_INLINE OsResourceManager &GetResourceManagerInstance() {

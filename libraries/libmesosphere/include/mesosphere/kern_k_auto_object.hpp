@@ -69,11 +69,12 @@ namespace ams::kern {
         private:
             MESOSPHERE_AUTOOBJECT_TRAITS(KAutoObject, KAutoObject);
         private:
+            KAutoObject *m_next_closed_object;
             std::atomic<u32> m_ref_count;
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : m_ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
             virtual ~KAutoObject() { MESOSPHERE_ASSERT_THIS(); }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
@@ -120,36 +121,16 @@ namespace ams::kern {
                 }
             }
 
-            ALWAYS_INLINE bool Open() {
-                MESOSPHERE_ASSERT_THIS();
-
-                /* Atomically increment the reference count, only if it's positive. */
-                u32 cur_ref_count = m_ref_count.load(std::memory_order_acquire);
-                do {
-                    if (AMS_UNLIKELY(cur_ref_count == 0)) {
-                        MESOSPHERE_AUDIT(cur_ref_count != 0);
-                        return false;
-                    }
-                    MESOSPHERE_ABORT_UNLESS(cur_ref_count < cur_ref_count + 1);
-                } while (!m_ref_count.compare_exchange_weak(cur_ref_count, cur_ref_count + 1, std::memory_order_relaxed));
-
-                return true;
-            }
-
-            ALWAYS_INLINE void Close() {
-                MESOSPHERE_ASSERT_THIS();
-
-                /* Atomically decrement the reference count, not allowing it to become negative. */
-                u32 cur_ref_count = m_ref_count.load(std::memory_order_acquire);
-                do {
-                    MESOSPHERE_ABORT_UNLESS(cur_ref_count > 0);
-                } while (!m_ref_count.compare_exchange_weak(cur_ref_count, cur_ref_count - 1, std::memory_order_relaxed));
-
-                /* If ref count hits zero, destroy the object. */
-                if (cur_ref_count - 1 == 0) {
-                    this->Destroy();
-                }
-            }
+            bool Open();
+            void Close();
+        private:
+            /* NOTE: This has to be defined *after* KThread is defined. */
+            /* Nintendo seems to handle this by defining Open/Close() in a cpp, but we'd like them to remain in headers. */
+            /* Implementation for this will be inside kern_k_thread.hpp, so it can be ALWAYS_INLINE. */
+            void ScheduleDestruction();
+        public:
+            /* Getter, for KThread. */
+            ALWAYS_INLINE KAutoObject *GetNextClosedObject() { return m_next_closed_object; }
     };
 
     class KAutoObjectWithListContainer;
@@ -198,7 +179,7 @@ namespace ams::kern {
                 }
             }
 
-            ~KScopedAutoObject() {
+            ALWAYS_INLINE ~KScopedAutoObject() {
                 if (m_obj != nullptr) {
                     m_obj->Close();
                 }

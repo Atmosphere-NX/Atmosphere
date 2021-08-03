@@ -38,6 +38,10 @@ namespace ams::erpt::srv {
             explicit ContextRecord(CategoryId category, u32 array_buf_size = ArrayBufferSizeDefault);
             ~ContextRecord();
 
+            const ContextEntry *GetContextEntryPtr() const {
+                return std::addressof(this->ctx);
+            }
+
             Result Initialize(const ContextEntry *ctx_ptr, const u8 *data, u32 data_size);
 
             Result Add(FieldId field_id, bool value_bool);

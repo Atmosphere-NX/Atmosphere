@@ -50,9 +50,9 @@ namespace ams::ncm {
             /* Check if this entry is content meta. */
             if (this->IsContentMetaContentName(entry.name)) {
                 /* Prepare content meta if id is valid. */
-                std::optional<ContentId> id = GetContentIdFromString(entry.name, strnlen(entry.name, fs::EntryNameLengthMax + 1));
+                util::optional<ContentId> id = GetContentIdFromString(entry.name, strnlen(entry.name, fs::EntryNameLengthMax + 1));
                 R_UNLESS(id, ncm::ResultInvalidPackageFormat());
-                R_TRY(this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(*id, entry.file_size), std::nullopt, std::nullopt));
+                R_TRY(this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(*id, entry.file_size), util::nullopt, util::nullopt));
             }
         }
 

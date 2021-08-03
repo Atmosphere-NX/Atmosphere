@@ -398,17 +398,17 @@ namespace ams::kern {
 
             /* Cleanup Send mappings. */
             for (size_t i = 0; i < request->GetSendCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i)));
             }
 
             /* Cleanup Receive mappings. */
             for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
             }
 
             /* Cleanup Exchange mappings. */
             for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
-                R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i), server_process));
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
             return ResultSuccess();
@@ -470,7 +470,7 @@ namespace ams::kern {
 
                 /* Ensure that we clean up on failure. */
                 auto setup_guard = SCOPE_GUARD {
-                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state, request->GetServerProcess());
+                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state);
                     src_page_table.CleanupForIpcClient(src_address, size, dst_state);
                 };
 
@@ -771,6 +771,9 @@ namespace ams::kern {
             /* NOTE: Session is used only for debugging, and so may go unused. */
             MESOSPHERE_UNUSED(session);
 
+            /* NOTE: Source page table is not used, and so may go unused. */
+            MESOSPHERE_UNUSED(src_page_table);
+
             /* Determine the message buffers. */
             u32 *dst_msg_ptr, *src_msg_ptr;
             bool dst_user, src_user;
@@ -907,7 +910,7 @@ namespace ams::kern {
 
                     /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
                     if (fast_size < raw_size) {
-                        R_TRY(src_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
+                        R_TRY(dst_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
                                                                       KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                       dst_perm,
                                                                       KMemoryAttribute_Uncached, KMemoryAttribute_None,
@@ -921,7 +924,7 @@ namespace ams::kern {
                     constexpr KMemoryPermission DestinationPermission = static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite);
 
                     /* Copy the memory. */
-                    R_TRY(src_page_table.CopyMemoryFromUserToLinear(dst_message_buffer + offset_words, raw_size,
+                    R_TRY(dst_page_table.CopyMemoryFromUserToLinear(dst_message_buffer + offset_words, raw_size,
                                                                     KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                     DestinationPermission,
                                                                     KMemoryAttribute_Uncached, KMemoryAttribute_None,

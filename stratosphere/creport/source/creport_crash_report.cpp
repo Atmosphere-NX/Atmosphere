@@ -41,8 +41,12 @@ namespace ams::creport {
 
             /* Try to get the current time. */
             {
-                sm::ScopedServiceHolder<timeInitialize, timeExit> time_holder;
-                return time_holder && R_SUCCEEDED(timeGetCurrentTime(TimeType_LocalSystemClock, out));
+                if (R_FAILED(::timeInitialize())) {
+                    return false;
+                }
+                ON_SCOPE_EXIT { ::timeExit(); };
+
+                return R_SUCCEEDED(::timeGetCurrentTime(TimeType_LocalSystemClock, out));
             }
         }
 
@@ -85,8 +89,8 @@ namespace ams::creport {
         this->heap_handle = lmem::CreateExpHeap(this->heap_storage, sizeof(this->heap_storage), lmem::CreateOption_None);
 
         /* Allocate members. */
-        this->module_list   = new (lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ModuleList))) ModuleList;
-        this->thread_list   = new (lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ThreadList))) ThreadList;
+        this->module_list   = std::construct_at(static_cast<ModuleList *>(lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ModuleList))));
+        this->thread_list   = std::construct_at(static_cast<ThreadList *>(lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ThreadList))));
         this->dying_message = static_cast<u8 *>(lmem::AllocateFromExpHeap(this->heap_handle, DyingMessageSizeMax));
         if (this->dying_message != nullptr) {
             std::memset(this->dying_message, 0, DyingMessageSizeMax);
@@ -321,8 +325,8 @@ namespace ams::creport {
             }
 
             /* Finalize our heap. */
-            this->module_list->~ModuleList();
-            this->thread_list->~ThreadList();
+            std::destroy_at(this->module_list);
+            std::destroy_at(this->thread_list);
             lmem::FreeToExpHeap(this->heap_handle, this->module_list);
             lmem::FreeToExpHeap(this->heap_handle, this->thread_list);
             if (this->dying_message != nullptr) {
@@ -337,8 +341,9 @@ namespace ams::creport {
             /* Since we save reports only locally and do not send them via telemetry, we will skip this. */
             AMS_UNUSED(enable_screenshot);
             if (hos::GetVersion() >= hos::Version_9_0_0 && this->IsApplication()) {
-                sm::ScopedServiceHolder<capsrv::InitializeScreenShotControl, capsrv::FinalizeScreenShotControl> capssc_holder;
-                if (capssc_holder) {
+                if (R_SUCCEEDED(capsrv::InitializeScreenShotControl())) {
+                    ON_SCOPE_EXIT { capsrv::FinalizeScreenShotControl(); };
+
                     u64 jpeg_size;
                     if (R_SUCCEEDED(capsrv::CaptureJpegScreenshot(std::addressof(jpeg_size), this->heap_storage, sizeof(this->heap_storage), vi::LayerStack_ApplicationForDebug, TimeSpan::FromSeconds(10)))) {
                         util::SNPrintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.jpg", timestamp, this->process_info.program_id);

@@ -23,7 +23,7 @@ namespace ams::boot2 {
 
         /* psc, bus, pcv is the minimal set of required programs to get SD card. */
         /* bus depends on pcie, and pcv depends on settings. */
-        constexpr ncm::SystemProgramId PreSdCardLaunchPrograms[] = {
+        constexpr const ncm::SystemProgramId PreSdCardLaunchPrograms[] = {
             ncm::SystemProgramId::Psc,         /* psc */
             ncm::SystemProgramId::Pcie,        /* pcie */
             ncm::SystemProgramId::Bus,         /* bus */
@@ -33,8 +33,7 @@ namespace ams::boot2 {
         };
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
-        constexpr ncm::SystemProgramId AdditionalLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+        constexpr const ncm::SystemProgramId AdditionalLaunchPrograms[] = {
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -72,15 +71,12 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
-            ncm::SystemProgramId::Grc,         /* grc */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
-        constexpr ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+        constexpr const ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -114,8 +110,6 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
-            ncm::SystemProgramId::Grc,         /* grc */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
@@ -186,6 +180,12 @@ namespace ams::boot2 {
             u8 force_maintenance = 1;
             settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
             return force_maintenance != 0;
+        }
+
+        bool IsHtcEnabled() {
+            u8 enable_htc = 1;
+            settings::fwdbg::GetSettingsItemValue(&enable_htc, sizeof(enable_htc), "atmosphere", "enable_htc");
+            return enable_htc != 0;
         }
 
         bool IsMaintenanceMode() {
@@ -303,6 +303,61 @@ namespace ams::boot2 {
             });
         }
 
+        bool IsUsbRequiredToMountSdCard() {
+            return hos::GetVersion() >= hos::Version_9_0_0;
+        }
+
+        /* Prior to 0.19.0, we distributed system modules inside /atmosphere/contents/. */
+        /* We need to clean these up, so that we don't break horribly on first upgrade. */
+        constexpr const ncm::SystemProgramId StratosphereSystemModulesForPostZeroPointNineteenPointZeroCleanup[] = {
+            ncm::SystemProgramId::Boot2,
+            ncm::SystemProgramId::Creport,
+            ncm::SystemProgramId::Dmnt,
+            ncm::SystemProgramId::Eclct,
+            ncm::SystemProgramId::Erpt,
+            ncm::SystemProgramId::Fatal,
+            ncm::SystemProgramId::JpegDec,
+            ncm::SystemProgramId::Pgl,
+            ncm::SystemProgramId::Ro,
+        };
+
+        alignas(0x40) constinit u8 g_fs_cleanup_buffer[4_KB];
+        lmem::HeapHandle g_fs_cleanup_heap_handle;
+
+        void *AllocateForFsForCleanup(size_t size) {
+            return lmem::AllocateFromExpHeap(g_fs_cleanup_heap_handle, size);
+        }
+
+        void DeallocateForFsForCleanup(void *p, size_t size) {
+            return lmem::FreeToExpHeap(g_fs_cleanup_heap_handle, p);
+        }
+
+        void InitializeFsHeapForCleanup() {
+            g_fs_cleanup_heap_handle = lmem::CreateExpHeap(g_fs_cleanup_buffer, sizeof(g_fs_cleanup_buffer), lmem::CreateOption_None);
+            fs::SetAllocator(AllocateForFsForCleanup, DeallocateForFsForCleanup);
+        }
+
+        void CleanupSdCardSystemProgramsForUpgradeToZeroPointNineteenPointZero() {
+            /* Temporarily mount the SD card. */
+            R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+            ON_SCOPE_EXIT { fs::Unmount("sdmc"); };
+
+            for (const auto program_id : StratosphereSystemModulesForPostZeroPointNineteenPointZeroCleanup) {
+                /* Get the program's contents path. */
+                char path[fs::EntryNameLengthMax];
+                util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/", program_id.value);
+
+                /* Check if we have old contents. */
+                bool has_dir;
+                R_ABORT_UNLESS(fs::HasDirectory(std::addressof(has_dir), path));
+
+                /* Cleanup the old contents, if we have them. */
+                if (has_dir) {
+                    R_ABORT_UNLESS(fs::DeleteDirectoryRecursively(path));
+                }
+            }
+        }
+
     }
 
     /* Boot2 API. */
@@ -332,8 +387,8 @@ namespace ams::boot2 {
             /* NOTE: Here we work around a race condition in the boot process by ensuring that settings initializes its db. */
             {
                 /* Connect to set:sys. */
-                sm::ScopedServiceHolder<::setsysInitialize, ::setsysExit> setsys_holder;
-                AMS_ABORT_UNLESS(setsys_holder);
+                R_ABORT_UNLESS(::setsysInitialize());
+                ON_SCOPE_EXIT { ::setsysExit(); };
 
                 /* Retrieve setting from the database. */
                 u8 force_maintenance = 0;
@@ -343,8 +398,10 @@ namespace ams::boot2 {
             /* Launch pcv. */
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Pcv, ncm::StorageId::BuiltInSystem), 0);
 
-            /* Launch usb. */
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            /* On 9.0.0+, FS depends on the USB sysmodule having been launched in order to mount the SD card. */
+            if (IsUsbRequiredToMountSdCard()) {
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            }
         }
 
         /* Wait for the SD card required services to be ready. */
@@ -360,12 +417,37 @@ namespace ams::boot2 {
             }
         }
 
+        /* Perform cleanup to faciliate upgrade to 0.19.0. */
+        /* NOTE: This will be removed in a future atmosphere revision. */
+        {
+            /* Setup FS heap for cleanup. */
+            InitializeFsHeapForCleanup();
+
+            /* Temporarily initialize fs. */
+            R_ABORT_UNLESS(fsInitialize());
+            ON_SCOPE_EXIT { fsExit(); };
+
+            /* Wait for the sd card to be available. */
+            cfg::WaitSdCardInitialized();
+
+            /* Cleanup. */
+            if (cfg::HasGlobalFlag("clean_stratosphere_for_0.19.0")) {
+                CleanupSdCardSystemProgramsForUpgradeToZeroPointNineteenPointZero();
+                R_ABORT_UNLESS(cfg::DeleteGlobalFlag("clean_stratosphere_for_0.19.0"));
+            }
+        }
+
         /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */
         LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Boot2, ncm::StorageId::None), 0);
     }
 
     void LaunchPostSdCardBootPrograms() {
         /* This code is normally run by boot2. */
+
+        /* Launch the usb system module, if we haven't already. */
+        if (!IsUsbRequiredToMountSdCard()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+        }
 
         /* Find out whether we are maintenance mode. */
         const bool maintenance = IsMaintenanceMode();
@@ -379,6 +461,14 @@ namespace ams::boot2 {
         /* Check for and forward declare non-atmosphere mitm modules. */
         DetectAndDeclareFutureMitms();
 
+        /* Device whether to launch tma or htc. */
+        if (svc::IsKernelMesosphere() && IsHtcEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Cs,  ncm::StorageId::None), 0);
+        } else {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma, ncm::StorageId::BuiltInSystem), 0);
+        }
+
         /* Launch additional programs. */
         if (maintenance) {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
@@ -388,6 +478,12 @@ namespace ams::boot2 {
             }
         } else {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
+        }
+
+        /* Prior to 12.0.0, boot2 was responsible for launching grc and migration. */
+        if (hos::GetVersion() < hos::Version_12_0_0) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Grc, ncm::StorageId::BuiltInSystem), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Migration, ncm::StorageId::BuiltInSystem), 0);
         }
 
         /* Launch user programs off of the SD. */

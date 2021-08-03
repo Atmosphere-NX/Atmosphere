@@ -40,6 +40,7 @@ namespace ams::erpt::srv {
             static Result SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size);
             static Result SubmitContextRecord(std::unique_ptr<ContextRecord> record);
             static Result WriteContextsToReport(Report *report);
+            static Result ClearContext(CategoryId cat);
     };
 
 }

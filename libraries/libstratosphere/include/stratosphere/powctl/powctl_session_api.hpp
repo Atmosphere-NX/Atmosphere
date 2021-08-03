@@ -35,7 +35,7 @@ namespace ams::powctl {
 
     struct Session {
         bool has_session;
-        TYPED_STORAGE(impl::SessionImpl) impl_storage;
+        util::TypedStorage<impl::SessionImpl> impl_storage;
 
         Session() : has_session(false) { /* ... */ }
     };

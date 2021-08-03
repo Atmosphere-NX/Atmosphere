@@ -24,8 +24,8 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
         spl::HardwareType GetHardwareType() {
             /* Acquire access to spl: */
-            sm::ScopedServiceHolder<spl::Initialize, spl::Finalize> spl_holder;
-            AMS_ABORT_UNLESS(static_cast<bool>(spl_holder));
+            spl::Initialize();
+            ON_SCOPE_EXIT { spl::Finalize(); };
 
             /* Get config. */
             return ::ams::spl::GetHardwareType();

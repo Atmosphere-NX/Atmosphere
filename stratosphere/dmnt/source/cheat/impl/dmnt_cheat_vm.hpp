@@ -56,7 +56,9 @@ namespace ams::dmnt::cheat::impl {
 
     enum MemoryAccessType : u32 {
         MemoryAccessType_MainNso = 0,
-        MemoryAccessType_Heap = 1,
+        MemoryAccessType_Heap    = 1,
+        MemoryAccessType_Alias   = 2,
+        MemoryAccessType_Aslr    = 3,
     };
 
     enum ConditionalComparisonType : u32 {
@@ -140,7 +142,9 @@ namespace ams::dmnt::cheat::impl {
         VmInt value;
     };
 
-    struct EndConditionalOpcode {};
+    struct EndConditionalOpcode {
+        bool is_else;
+    };
 
     struct ControlLoopOpcode {
         bool start_loop;
@@ -284,7 +288,7 @@ namespace ams::dmnt::cheat::impl {
             size_t loop_tops[NumRegisters] = {0};
         private:
             bool DecodeNextOpcode(CheatVmOpcode *out);
-            void SkipConditionalBlock();
+            void SkipConditionalBlock(bool is_if);
             void ResetState();
 
             /* For implementing the DebugLog opcode. */

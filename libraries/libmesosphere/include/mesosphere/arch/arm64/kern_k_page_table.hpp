@@ -176,7 +176,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager);
+            NOINLINE Result InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit);
             Result Finalize();
         private:
             Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);

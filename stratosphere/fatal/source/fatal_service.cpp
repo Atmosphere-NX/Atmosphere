@@ -105,9 +105,9 @@ namespace ams::fatal::srv {
             /* Decide whether to generate a report. */
             this->context.generate_error_report = (policy == FatalPolicy_ErrorReportAndErrorScreen);
 
-            /* Adjust error code (2000-0000 -> 2162-0002). */
+            /* Adjust error code (ResultSuccess()/2000-0000 -> err::ResultSystemProgramAbort()/2162-0002). */
             if (R_SUCCEEDED(this->context.result)) {
-                this->context.result = err::ResultSystemModuleAborted();
+                this->context.result = err::ResultSystemProgramAbort();
             }
 
             switch (policy) {

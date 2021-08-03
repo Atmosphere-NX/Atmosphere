@@ -36,7 +36,7 @@ namespace ams::mitm::socket::resolver {
                 if (!*string) {
                     if (!*pattern) return 1;
                     if ('*' == *pattern) return 1;
-                    if (!*s) return 0;
+                    if (!s || !*s) return 0;
                     string = s++;
                     pattern = w;
                     continue;

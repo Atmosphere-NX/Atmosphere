@@ -7,7 +7,9 @@ namespace ams::lm::impl {
         os::SystemEvent g_sd_card_detection_event;
 
         void UpdateSdCardStatus(bool *out_is_sd_inserted, bool *out_detection_changed) {
-            static SdCardDetectionEventNotifier sd_card_detection_event_notifier(std::addressof(g_sd_card_detection_event));
+            std::unique_ptr<fs::IEventNotifier> sd_card_detection_event_notifier;
+            R_ABORT_UNLESS(fs::OpenSdCardDetectionEventNotifier(std::addressof(sd_card_detection_event_notifier)));
+            R_ABORT_UNLESS(sd_card_detection_event_notifier->BindEvent(g_sd_card_detection_event.GetBase(), os::EventClearMode_ManualClear));
             static bool is_sd_card_inserted = fs::IsSdCardInserted();
 
             if (g_sd_card_detection_event.TryWait()) {
@@ -46,19 +48,19 @@ namespace ams::lm::impl {
                 /* Log file format: sdmc:/<log_dir>/<serial_no>_<year><month><day><hour><min><sec>[_<extra_index>].nxbinlog */
                 /* The extra index is used when multiple logs are logged at the same time */
                 char log_file[0x80] = {};
-                const auto log_file_len = static_cast<size_t>(snprintf(log_file, sizeof(log_file), "%s:/%s/%s_%04d%02d%02d%02d%02d%02d", "sdmc", log_dir, serial_number.str, local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday, local_time->tm_hour, local_time->tm_min, local_time->tm_sec));
+                const auto log_file_len = static_cast<size_t>(util::SNPrintf(log_file, sizeof(log_file), "%s:/%s/%s_%04d%02d%02d%02d%02d%02d", "sdmc", log_dir, serial_number.str, local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday, local_time->tm_hour, local_time->tm_min, local_time->tm_sec));
                 if (log_file_len <= log_dir_size) {
                     u32 extra_index = 1;
                     while(true) {
                         /* Only add the extra index if we couldn't create the default file name. */
                         if (extra_index == 1) {
-                            const auto log_file_ext_len = static_cast<size_t>(snprintf(out_path, len, "%s.%s", log_file, "nxbinlog"));
+                            const auto log_file_ext_len = static_cast<size_t>(util::SNPrintf(out_path, len, "%s.%s", log_file, "nxbinlog"));
                             if (log_file_ext_len >= len) {
                                 return false;
                             }
                         }
                         else {
-                            const auto log_file_ext_len = static_cast<size_t>(snprintf(out_path, len, "%s_%d.%s", log_file, extra_index, "nxbinlog"));
+                            const auto log_file_ext_len = static_cast<size_t>(util::SNPrintf(out_path, len, "%s_%d.%s", log_file, extra_index, "nxbinlog"));
                             if (log_file_ext_len >= len) {
                                 return false;
                             }
@@ -97,11 +99,6 @@ namespace ams::lm::impl {
 
     }
 
-    SdCardDetectionEventNotifier::SdCardDetectionEventNotifier(os::SystemEvent *out_event) {
-        R_ABORT_UNLESS(fs::OpenSdCardDetectionEventNotifier(std::addressof(this->event_notifier)));
-        R_ABORT_UNLESS(this->event_notifier.GetEventHandle(out_event, os::EventClearMode_ManualClear));
-    }
-
     bool SdCardLogging::Initialize() {
         /* Skip mounting the SD card if we don't have to. */
         if (this->sd_card_ok) {
@@ -138,7 +135,7 @@ namespace ams::lm::impl {
             if (log_dir_size <= sizeof(log_dir)) {
                 if (settings::fwdbg::GetSettingsItemValue(log_dir, sizeof(log_dir), "lm", "sd_card_log_output_directory") == log_dir_size) {
                     char log_dir_path[0x80] = {};
-                    const auto log_dir_path_len = static_cast<size_t>(snprintf(log_dir_path, sizeof(log_dir_path), "%s:/%s", "sdmc", log_dir));
+                    const auto log_dir_path_len = static_cast<size_t>(util::SNPrintf(log_dir_path, sizeof(log_dir_path), "%s:/%s", "sdmc", log_dir));
                     if (log_dir_path_len < sizeof(log_dir_path)) {
                         if (EnsureLogDirectory(log_dir_path)) {
                             if (PrepareLogPath(this->log_file_path, sizeof(this->log_file_path), log_dir, sizeof(log_dir))) {

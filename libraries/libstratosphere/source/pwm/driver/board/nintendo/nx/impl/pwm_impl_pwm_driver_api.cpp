@@ -40,7 +40,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         AMS_ABORT_UNLESS(driver_storage != nullptr);
 
         /* Create our driver. */
-        auto *driver = new (static_cast<PwmDriverImpl *>(driver_storage)) PwmDriverImpl(PwmRegistersPhysicalAddress, PwmRegistersSize, SupportedChannels, util::size(SupportedChannels));
+        auto *driver = std::construct_at(static_cast<PwmDriverImpl *>(driver_storage), PwmRegistersPhysicalAddress, PwmRegistersSize, SupportedChannels, util::size(SupportedChannels));
 
         /* Register our driver. */
         pwm::driver::RegisterDriver(driver);
@@ -51,7 +51,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
             AMS_ABORT_UNLESS(device_storage != nullptr);
 
             /* Create our driver. */
-            auto *device = new (static_cast<PwmDeviceImpl *>(device_storage)) PwmDeviceImpl(entry.channel_id);
+            auto *device = std::construct_at(static_cast<PwmDeviceImpl *>(device_storage), entry.channel_id);
 
             /* Register the device with our driver. */
             driver->RegisterDevice(device);

@@ -218,9 +218,7 @@ namespace ams::kern {
         KThread *task_thread = Kernel::GetInterruptTaskManager().GetThread();
         {
             KScopedSchedulerLock sl;
-            if (AMS_LIKELY(task_thread->GetState() == KThread::ThreadState_Waiting)) {
-                task_thread->SetState(KThread::ThreadState_Runnable);
-            }
+            task_thread->SetState(KThread::ThreadState_Runnable);
         }
     }
 
@@ -231,6 +229,10 @@ namespace ams::kern {
         /* We never want to schedule a null thread, so use the idle thread if we don't have a next. */
         if (next_thread == nullptr) {
             next_thread = m_idle_thread;
+        }
+
+        if (next_thread->GetCurrentCore() != m_core_id) {
+            next_thread->SetCurrentCore(m_core_id);
         }
 
         /* If we're not actually switching thread, there's nothing to do. */
@@ -264,10 +266,6 @@ namespace ams::kern {
         }
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
-
-        if (next_thread->GetCurrentCore() != m_core_id) {
-            next_thread->SetCurrentCore(m_core_id);
-        }
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {

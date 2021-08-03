@@ -39,6 +39,8 @@ namespace ams::mitm::socket::resolver {
                 virtual Result OnNeedsToAccept(int port_index, Server *server) override;
         };
 
+        alignas(os::MemoryPageSize) constinit u8 g_resolver_allocator_buffer[16_KB];
+
         ServerManager g_server_manager;
 
         Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
@@ -120,6 +122,9 @@ namespace ams::mitm::socket::resolver {
         if (!ShouldMitmDns()) {
             return;
         }
+
+        /* Initialize the socket allocator. */
+        ams::socket::InitializeAllocatorForInternal(g_resolver_allocator_buffer, sizeof(g_resolver_allocator_buffer));
 
         /* Initialize debug. */
         resolver::InitializeDebug(ShouldEnableDebugLog());

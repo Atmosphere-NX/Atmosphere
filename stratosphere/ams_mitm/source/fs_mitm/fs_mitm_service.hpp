@@ -24,7 +24,10 @@
     AMS_SF_METHOD_INFO(C, H,  51, Result, OpenSaveDataFileSystem,          (sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, u8 space_id, const ams::fs::SaveDataAttribute &attribute),                     (out, space_id, attribute))                                    \
     AMS_SF_METHOD_INFO(C, H,  12, Result, OpenBisStorage,                  (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u32 bis_partition_id),                                                            (out, bis_partition_id))                                       \
     AMS_SF_METHOD_INFO(C, H, 200, Result, OpenDataStorageByCurrentProcess, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out),                                                                                  (out))                                                         \
-    AMS_SF_METHOD_INFO(C, H, 202, Result, OpenDataStorageByDataId,         (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id),                                              (out, data_id, storage_id))
+    AMS_SF_METHOD_INFO(C, H, 202, Result, OpenDataStorageByDataId,         (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id),                                              (out, data_id, storage_id))                                    \
+    AMS_SF_METHOD_INFO(C, H, 205, Result, OpenDataStorageWithProgramIndex, (sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index),                                                                (out, program_index),                      hos::Version_7_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 810, Result, RegisterProgramIndexMapInfo,     (const sf::InBuffer &info_buffer, s32 info_count),                                                                                           (info_buffer, info_count),                 hos::Version_7_0_0)
+
 
 AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::fs, IFsMitmInterface, AMS_FS_MITM_INTERFACE_INFO)
 
@@ -40,7 +43,7 @@ namespace ams::mitm::fs {
                     return true;
                 }
 
-                /* We want to mitm ns, to intercept SD card requests. */
+                /* We want to mitm ns, to intercept SD card requests and program index map info registration. */
                 if (program_id == ncm::SystemProgramId::Ns) {
                     return true;
                 }
@@ -80,6 +83,8 @@ namespace ams::mitm::fs {
             Result OpenBisStorage(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u32 bis_partition_id);
             Result OpenDataStorageByCurrentProcess(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out);
             Result OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id);
+            Result OpenDataStorageWithProgramIndex(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index);
+            Result RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count);
     };
     static_assert(IsIFsMitmInterface<FsMitmService>);
 

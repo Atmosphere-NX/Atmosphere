@@ -42,7 +42,7 @@ namespace ams::os::impl {
         s32 index = WaitableManagerImpl::WaitInvalid;
         static_assert(WaitableManagerImpl::WaitInvalid != -1);
 
-        R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(index), arr, num, ns, reply_target)) {
+        R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(index), arr, num, reply_target, ns)) {
             R_CATCH(svc::ResultTimedOut)  { *out_index = WaitableManagerImpl::WaitTimedOut;  return R_CURRENT_RESULT; }
             R_CATCH(svc::ResultCancelled) { *out_index = WaitableManagerImpl::WaitCancelled; return R_CURRENT_RESULT; }
             R_CATCH(svc::ResultSessionClosed)   {
@@ -60,6 +60,7 @@ namespace ams::os::impl {
             }
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
+        *out_index = index;
         return ResultSuccess();
     }
 

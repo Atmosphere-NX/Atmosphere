@@ -303,17 +303,17 @@ namespace ams::ncm {
                 return static_cast<StorageId>(this->GetHeader()->storage_id);
             }
 
-            std::optional<ApplicationId> GetApplicationId(const ContentMetaKey &key) const {
+            util::optional<ApplicationId> GetApplicationId(const ContentMetaKey &key) const {
                 switch (key.type) {
                     case ContentMetaType::Application:  return ApplicationId{ key.id };
                     case ContentMetaType::Patch:        return this->GetExtendedHeader<PatchMetaExtendedHeader>()->application_id;
                     case ContentMetaType::AddOnContent: return this->GetExtendedHeader<AddOnContentMetaExtendedHeader>()->application_id;
                     case ContentMetaType::Delta:        return this->GetExtendedHeader<DeltaMetaExtendedHeader>()->application_id;
-                    default:                            return std::nullopt;
+                    default:                            return util::nullopt;
                 }
             }
 
-            std::optional<ApplicationId> GetApplicationId() const {
+            util::optional<ApplicationId> GetApplicationId() const {
                 return this->GetApplicationId(this->GetKey());
             }
     };

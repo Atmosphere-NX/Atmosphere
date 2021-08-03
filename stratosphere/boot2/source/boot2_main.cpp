@@ -90,14 +90,14 @@ void __appInit(void) {
     fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
     /* Initialize services we need. */
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(pmbmInitialize());
-        R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(pmshellInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        gpio::Initialize();
-    });
+    R_ABORT_UNLESS(sm::Initialize());
+
+    R_ABORT_UNLESS(fsInitialize());
+    R_ABORT_UNLESS(pmbmInitialize());
+    R_ABORT_UNLESS(pminfoInitialize());
+    R_ABORT_UNLESS(pmshellInitialize());
+    R_ABORT_UNLESS(setsysInitialize());
+    gpio::Initialize();
 
     /* Mount the SD card. */
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
