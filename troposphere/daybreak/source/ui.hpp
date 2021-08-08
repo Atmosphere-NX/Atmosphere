@@ -264,6 +264,7 @@ namespace dbk {
     };
 
     void InitializeMenu(u32 screen_width, u32 screen_height);
+    void InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path);
     void UpdateMenu(u64 ns);
     void RenderMenu(NVGcontext *vg, u64 ns);
     bool IsExitRequested();

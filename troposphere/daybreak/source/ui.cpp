@@ -1265,6 +1265,16 @@ namespace dbk {
         g_current_menu = std::make_shared<MainMenu>();
     }
 
+    void InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path) {
+        InitializeMenu(screen_width, screen_height);
+
+        /* Set the update path. */
+        snprintf(g_update_path, sizeof(g_update_path), "%s", update_path);
+
+        /* Change the menu. */
+        ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
+    }
+
     void UpdateMenu(u64 ns) {
         DBK_ABORT_UNLESS(g_initialized);
         DBK_ABORT_UNLESS(g_current_menu != nullptr);
