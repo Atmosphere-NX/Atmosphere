@@ -35,7 +35,7 @@
 #define TEGRA21_MAX_TABLE_ID_LEN                50
 #define TEGRA_EMC_ISO_USE_FREQ_MAX_NUM              12
 #define PLL_C_DIRECT_FLOOR                  333500000
-#define EMC_STATUS_UPDATE_TIMEOUT               1000
+#define EMC_STATUS_UPDATE_TIMEOUT               2000
 #define TEGRA_EMC_DEFAULT_CLK_LATENCY_US    2000
 
 #define TEGRA_EMC_MODE_REG_17                   0x00110000
