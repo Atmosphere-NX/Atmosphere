@@ -165,61 +165,6 @@ static void ccfifo_write(uint32_t ccfifo_addr, uint32_t ccfifo_data, uint32_t cc
     emc_write((ccfifo_addr & 0xFFFF) | ((ccfifo_stall_cnt & 0x7FFF) << 16) | 0x80000000, EMC_CCFIFO_ADDR);
 }
 
-static uint32_t g_comp_trim_registers[52] = {
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE0_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE0_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE0_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE1_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE1_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE1_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE2_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE2_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE2_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE3_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE3_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE3_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE4_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE4_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE4_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE5_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE5_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE5_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE6_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE6_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE6_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE7_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE7_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK0_BYTE7_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE0_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE0_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE0_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE1_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE1_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE1_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE2_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE2_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE2_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE3_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE3_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE3_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE4_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE4_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE4_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE5_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE5_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE5_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE6_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE6_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE6_2,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE7_0,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE7_1,
-    EMC_BASE + EMC_PMACRO_OB_DDLL_SHORT_DQ_RANK1_BYTE7_2,
-    EMC0_BASE + EMC_DATA_BRLSHFT_0,
-    EMC1_BASE + EMC_DATA_BRLSHFT_0,
-    EMC0_BASE + EMC_DATA_BRLSHFT_1,
-    EMC1_BASE + EMC_DATA_BRLSHFT_1,
-};
-
 static uint32_t g_burst_regs_addr[sizeof(t210b01_emc_burst_regs) / sizeof(uint32_t)] = {
     // TODO: By name instead of address
     EMC_BASE + 0x02C,
@@ -1440,9 +1385,9 @@ static uint32_t apply_periodic_compensation_trimmer(tegra_b01_emc_timing_t *timi
     int tree_delta_taps[4] = {0};
 
     /* Generate the intermediate array. */
-    #define SET_TRIM_INTERMEDIATE(_arr_, _rank_, _byte_)                                                                    \
+    #define SET_TRIM_INTERMEDIATE(_arr_, _emc_, _rank_, _byte_)                                                             \
     ({                                                                                                                      \
-        const uint32_t shft = timing_tables->trim_perch_regs.emc0_data_brlshft_## _rank_;                                   \
+        const uint32_t shft = timing_tables->trim_perch_regs.emc##  _emc_ ##_data_brlshft_## _rank_;                        \
         const uint32_t base = ((shft >> (3 * _byte_)) & 7) << 6;                                                            \
         const uint32_t val0 = timing_tables->trim_regs.emc_pmacro_ob_ddll_short_dq_rank ## _rank_ ## _byte ## _byte_ ## _0; \
         const uint32_t val1 = timing_tables->trim_regs.emc_pmacro_ob_ddll_short_dq_rank ## _rank_ ## _byte ## _byte_ ## _1; \
@@ -1458,22 +1403,22 @@ static uint32_t apply_periodic_compensation_trimmer(tegra_b01_emc_timing_t *timi
         _arr_[9 * (8 * _rank_ + _byte_) + 8] = base + ((val2 >>  0) & 0xFF);                                                \
     })
     {
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 0);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 1);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 2);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 3);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 4);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 5);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 6);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 7);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 0);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 1);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 2);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 3);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 4);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 5);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 6);
-        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 7);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 0, 0);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 0, 1);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 0, 2);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 0, 3);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 0, 4);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 0, 5);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 0, 6);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 0, 7);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 1, 0);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 1, 1);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 1, 2);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 0, 1, 3);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 1, 4);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 1, 5);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 1, 6);
+        SET_TRIM_INTERMEDIATE(g_periodic_timmer_compensation_intermediates, 1, 1, 7);
     }
     #undef SET_TRIM_INTERMEDIATE
 
@@ -3346,7 +3291,8 @@ static void freq_change(tegra_b01_emc_timing_t *src_timing_tables, tegra_b01_emc
     //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: freq_change - step 23e\n");
 
     if (wait_for_update(EMC_INTSTATUS, EMC_INTSTATUS_CLKCHANGE_COMPLETE, true, dst_emc_fbio_cfg7)) {
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: wait for clock change complete failed\n");
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: wait for clock change complete failed\n");
+        //mdelay(500);
         return;
     }
 
@@ -3584,7 +3530,7 @@ static void freq_change(tegra_b01_emc_timing_t *src_timing_tables, tegra_b01_emc
 
                 uint8_t emc0_mrw12_byte0 = (mod_reg_8  + ((emc0_training_opt_dq_ob_vref >>  0) & 0xFF));
                 uint8_t emc0_mrw12_byte1 = (mod_reg_9  + ((emc0_training_opt_dq_ob_vref >>  8) & 0xFF));
-                uint8_t emc0_mrw13_byte0 = (mod_reg_9  + ((emc0_training_opt_dq_ob_vref >> 16) & 0xFF));
+                uint8_t emc0_mrw13_byte0 = (mod_reg_8  + ((emc0_training_opt_dq_ob_vref >> 16) & 0xFF));
                 uint8_t emc0_mrw13_byte1 = (mod_reg_9  + ((emc0_training_opt_dq_ob_vref >> 24) & 0xFF));
                 uint8_t emc1_mrw12_byte0 = (mod_reg_10 + ((emc1_training_opt_dq_ob_vref >>  0) & 0xFF));
                 uint8_t emc1_mrw12_byte1 = (mod_reg_11 + ((emc1_training_opt_dq_ob_vref >>  8) & 0xFF));
@@ -4000,7 +3946,7 @@ static void train_freq(tegra_b01_emc_timing_t *src_timing_tables, tegra_b01_emc_
 
     /* Write training patterns. */
     if (g_wrote_training_pattern == 0) {
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Writing training patterns...\n");
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Writing training patterns...\n");
 
         tegra_b01_ram_pattern_t *ram_patterns = (tegra_b01_ram_pattern_t *)g_ram_pattern_raw_data;
 
@@ -4105,107 +4051,6 @@ static void train_freq(tegra_b01_emc_timing_t *src_timing_tables, tegra_b01_emc_
     }
 }
 
-static uint32_t do_periodic_emc_compensation(tegra_b01_emc_timing_t *timing_tables, tegra_b01_emc_timing_t *save_timing_tables) {
-    /* Read from EMC_CFG. */
-    uint32_t emc_cfg = emc_read(EMC_CFG);
-
-    /* Read from MC_EMEM_ADR_CFG */
-    uint32_t dram_dev_num = mc_read(MC_EMEM_ADR_CFG);
-
-    if (timing_tables->periodic_training) {
-        /* Disable dig dll. */
-        uint32_t emc_cfg_dig_dll = emc_read(EMC_CFG_DIG_DLL);
-        uint32_t emc_cfg_update  = emc_read(EMC_CFG_UPDATE);
-        emc_write(emc_cfg_dig_dll & 0xFFFFFFFE, EMC_CFG_DIG_DLL);
-
-        /* Write cfg update. */
-        emc_write((emc_cfg_update & 0xFFFFF9FF) | 0x400, EMC_CFG_UPDATE);
-
-        /* Write cfg. */
-        emc_write(emc_cfg & 0x0FFFFFFF, EMC_CFG);
-
-        /* Wait for update. */
-        emc_timing_update(timing_tables->emc_fbio_cfg7);
-
-        /* Wait for update to finish. */
-        wait_for_update(EMC_EMC_STATUS, ((dram_dev_num & 1) + 1 == 2) ? 0x30 : 0x10, false, timing_tables->emc_fbio_cfg7);
-        wait_for_update(EMC_EMC_STATUS, 0x300, false, timing_tables->emc_fbio_cfg7);
-
-        /* Start periodic compensation. */
-        start_periodic_compensation();
-
-        /* Wait a while. */
-        udelay(((1000 * actual_osc_clocks(timing_tables->run_clocks)) / timing_tables->rate_khz) + 1);
-
-        /* Set mpc again, if necessary. */
-        uint32_t training_mult = timing_tables->periodic_training;
-        if (training_mult) {
-            start_periodic_compensation();
-
-            /* Wait a while. */
-            udelay(((1000 * actual_osc_clocks(timing_tables->run_clocks)) / timing_tables->rate_khz) + 2);
-
-            training_mult = update_clock_tree_delay(timing_tables, timing_tables, (dram_dev_num & 1) + 1, 0, PERIODIC_TRAINING_UPDATE) << 7;
-        }
-
-        /* Apply periodic compensation trimmer, as necessary. */
-        if (((timing_tables->rate_khz / 1000) * training_mult) / 1000000 > timing_tables->tree_margin) {
-            for (int i = 0; i < sizeof(g_comp_trim_registers) / sizeof(g_comp_trim_registers[0]); ++i) {
-                uint32_t address = g_comp_trim_registers[i];
-                uint32_t value = apply_periodic_compensation_trimmer(timing_tables, address);
-
-                mmio_write(value, (volatile uint32_t *)address);
-            }
-        }
-
-        /* Save timing tables, if we should. */
-        if (save_timing_tables != NULL) {
-            save_timing_tables->ptfv_list.ptfv_write_samples        = timing_tables->ptfv_list.ptfv_write_samples;
-            save_timing_tables->ptfv_list.ptfv_dvfs_samples         = timing_tables->ptfv_list.ptfv_dvfs_samples;
-            save_timing_tables->ptfv_list.ptfv_movavg_weight        = timing_tables->ptfv_list.ptfv_movavg_weight;
-            save_timing_tables->ptfv_list.ptfv_config_ctrl          = timing_tables->ptfv_list.ptfv_config_ctrl;
-            save_timing_tables->current_dram_clktree_c0d0u0         = timing_tables->current_dram_clktree_c0d0u0;
-            save_timing_tables->current_dram_clktree_c0d0u1         = timing_tables->current_dram_clktree_c0d0u1;
-            save_timing_tables->trained_dram_clktree_c0d0u0         = timing_tables->trained_dram_clktree_c0d0u0;
-            save_timing_tables->trained_dram_clktree_c0d0u1         = timing_tables->trained_dram_clktree_c0d0u1;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d0u0 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d0u0;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d0u1 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d0u1;
-            save_timing_tables->current_dram_clktree_c0d1u0         = timing_tables->current_dram_clktree_c0d1u0;
-            save_timing_tables->current_dram_clktree_c0d1u1         = timing_tables->current_dram_clktree_c0d1u1;
-            save_timing_tables->trained_dram_clktree_c0d1u0         = timing_tables->trained_dram_clktree_c0d1u0;
-            save_timing_tables->trained_dram_clktree_c0d1u1         = timing_tables->trained_dram_clktree_c0d1u1;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d1u0 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d1u0;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d1u1 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c0d1u1;
-            save_timing_tables->current_dram_clktree_c1d0u0         = timing_tables->current_dram_clktree_c1d0u0;
-            save_timing_tables->current_dram_clktree_c1d0u1         = timing_tables->current_dram_clktree_c1d0u1;
-            save_timing_tables->trained_dram_clktree_c1d0u0         = timing_tables->trained_dram_clktree_c1d0u0;
-            save_timing_tables->trained_dram_clktree_c1d0u1         = timing_tables->trained_dram_clktree_c1d0u1;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d0u0 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d0u0;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d0u1 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d0u1;
-            save_timing_tables->current_dram_clktree_c1d1u0         = timing_tables->current_dram_clktree_c1d1u0;
-            save_timing_tables->current_dram_clktree_c1d1u1         = timing_tables->current_dram_clktree_c1d1u1;
-            save_timing_tables->trained_dram_clktree_c1d1u0         = timing_tables->trained_dram_clktree_c1d1u0;
-            save_timing_tables->trained_dram_clktree_c1d1u1         = timing_tables->trained_dram_clktree_c1d1u1;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d1u0 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d1u0;
-            save_timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d1u1 = timing_tables->ptfv_list.ptfv_dqsosc_movavg_c1d1u1;
-        }
-
-        /* Restore cfg. */
-        emc_write(emc_cfg, EMC_CFG);
-
-        /* Restore dig_dll. */
-        emc_write(emc_cfg_dig_dll, EMC_CFG_DIG_DLL);
-
-        /* Wait for update. */
-        emc_timing_update(timing_tables->emc_fbio_cfg7);
-
-        /* Restore cfg_update. */
-        emc_write(emc_cfg_update, EMC_CFG_UPDATE);
-    }
-
-    return 0;
-}
-
 static int dvfs(int z_val, uint32_t next_rate, uint32_t current_rate, tegra_b01_emc_timing_t *timing_tables, int num_timing_tables, TrainMode mode) {
     int current_timing_table_idx = -1, next_timing_table_idx = -1;
     tegra_b01_emc_timing_t *current_timing_table, *next_timing_table;
@@ -4232,7 +4077,7 @@ static int dvfs(int z_val, uint32_t next_rate, uint32_t current_rate, tegra_b01_
     uint32_t rate_from = current_timing_table->rate_khz;
     uint32_t rate_to = next_timing_table->rate_khz;
 
-    print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Changing rate from %d to %d!\n", rate_from, rate_to);
+    //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Changing rate from %d to %d!\n", rate_from, rate_to);
 
     /* Configure pll. */
     if ((clk_src_emc_to >> EMC_CLK_EMC_2X_CLK_SRC_SHIFT) != TEGRA_EMC_SRC_PLLP && (clk_src_emc_to >> EMC_CLK_EMC_2X_CLK_SRC_SHIFT) != TEGRA_EMC_SRC_PLLP_UD) {
@@ -4278,11 +4123,11 @@ static int dvfs(int z_val, uint32_t next_rate, uint32_t current_rate, tegra_b01_
 
     switch (mode) {
         case OP_SWITCH:
-            print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_SWITCH!\n");
+            //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_SWITCH!\n");
             freq_change(current_timing_table, next_timing_table, false, clk_src_emc_to, 0);
             return 0;
         case OP_TRAIN:
-            print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_TRAIN!\n");
+            //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_TRAIN!\n");
             train_freq(current_timing_table, next_timing_table, next_timing_table, false, clk_src_emc_to);
             if ((next_timing_table->emc_fbio_cfg7 & 0x6) == 0) {
                 return 0;
@@ -4297,7 +4142,7 @@ static int dvfs(int z_val, uint32_t next_rate, uint32_t current_rate, tegra_b01_
             }
             return 0;
         case OP_TRAIN_SWITCH:
-            print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_TRAIN_SWITCH!\n");
+            //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Train mode is OP_TRAIN_SWITCH!\n");
             train_freq(current_timing_table, next_timing_table, next_timing_table, true, clk_src_emc_to);
             return 0;
         default:
@@ -4318,7 +4163,7 @@ void train_dram_mariko(void) {
     /* TODO: Based on rate, rather than clock source? */
     int boot_index = 0;
     for (boot_index = 0; boot_index < num_timing_tables; boot_index++) {
-        print(SCREEN_LOG_LEVEL_DEBUG, "%d (%d kHz): %s\n", boot_index, timing_tables[boot_index].rate_khz, timing_tables[boot_index].dvfs_ver);
+        //print(SCREEN_LOG_LEVEL_DEBUG, "%d (%d kHz): %s\n", boot_index, timing_tables[boot_index].rate_khz, timing_tables[boot_index].dvfs_ver);
         if (car_read(&car->clk_source_emc) == timing_tables[boot_index].clk_src_emc)
             break;
     }
@@ -4328,27 +4173,21 @@ void train_dram_mariko(void) {
     }
 
     if (boot_index != 0) {
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: DRAM seems to be already trained, rate >= %dMhz\n", timing_tables[boot_index].rate_khz / 1000);
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: DRAM seems to be already trained, rate >= %dMhz\n", timing_tables[boot_index].rate_khz / 1000);
     } else {
         g_active_timing_table_idx = boot_index;
 
         /* Switch to upgraded timings. */
         for (int i = boot_index + 1; i < num_timing_tables; ++i) {
-            print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Training from %dMhz to %dMhz\n", timing_tables[boot_index].rate_khz / 1000, timing_tables[i].rate_khz / 1000);
+            //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Training from %dMhz to %dMhz\n", timing_tables[boot_index].rate_khz / 1000, timing_tables[i].rate_khz / 1000);
             dvfs(0, timing_tables[i].rate_khz, timing_tables[boot_index].rate_khz, timing_tables, num_timing_tables, OP_TRAIN);
-            print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switched\n");
+            //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switched\n");
         }
 
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switching from %dMhz to %dMhz\n", timing_tables[boot_index].rate_khz / 1000, timing_tables[num_timing_tables - 1].rate_khz / 1000);
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switching from %dMhz to %dMhz\n", timing_tables[boot_index].rate_khz / 1000, timing_tables[num_timing_tables - 1].rate_khz / 1000);
         dvfs(0, timing_tables[num_timing_tables - 1].rate_khz, timing_tables[boot_index].rate_khz, timing_tables, num_timing_tables, OP_SWITCH);
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switched\n");
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switched\n");
 
-        /* Wait a while. */
-        mdelay(100);
-
-        /* Do periodic compensation. */
-        do_periodic_emc_compensation(timing_tables + g_active_timing_table_idx, NULL);
-
-        print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Done!\n");
+        //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Done!\n");
     }
 }
