@@ -1577,7 +1577,6 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
     uint32_t mrr_req = 0, mrr_data = 0;
     uint32_t temp0_0 = 0, temp0_1 = 0, temp1_0 = 0, temp1_1 = 0;
     int tdel = 0, tmdel = 0, adel = 0;
-    uint32_t cval;
 
     uint32_t current_timing_rate_mhz = src_timing_tables->rate_khz / 1000;
     uint32_t next_timing_rate_mhz    = dst_timing_tables->rate_khz / 1000;
@@ -1622,47 +1621,45 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
         if (fbio_cfg7 & EMC_FBIO_CFG7_CH0_ENABLE) {
             mrr_data = ((emc0_read(EMC_MRR) & EMC_MRR_DATA_MASK) << EMC_MRR_DATA_SHIFT);
 
-            temp0_0 |= ((mrr_data & 0xff) << 8);
-            temp0_1 |= (mrr_data & 0xff00);
+            temp0_0 |= (mrr_data & 0xff);
+            temp0_1 |= (mrr_data & 0xff00) >> 8;
         }
         if (fbio_cfg7 & EMC_FBIO_CFG7_CH1_ENABLE) {
             mrr_data = ((emc1_read(EMC_MRR) & EMC_MRR_DATA_MASK) << EMC_MRR_DATA_SHIFT);
 
-            temp1_0 |= ((mrr_data & 0xff) << 8);
-            temp1_1 |= (mrr_data & 0xff00);
+            temp1_0 |= (mrr_data & 0xff);
+            temp1_1 |= (mrr_data & 0xff00) >> 8;
         }
     }
 
-    if (fbio_cfg7 & EMC_FBIO_CFG7_CH0_ENABLE) {
-        cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_0));
+    #define CVAL(v) ((uint32_t)((1000 * ((1000 * actual_osc_clocks(src_timing_tables->run_clocks)) / current_timing_rate_mhz)) / (2 * v)))
 
+    if (fbio_cfg7 & EMC_FBIO_CFG7_CH0_ENABLE) {
         if (dvfs_pt1 || training_pt1)
-            __INCREMENT_PTFV(c0d0u0, cval);
+            __INCREMENT_PTFV(c0d0u0, CVAL(temp0_0));
         else if (dvfs_update)
             __AVERAGE_PTFV(c0d0u0);
         else if (training_update)
             __AVERAGE_WRITE_PTFV(c0d0u0);
         else if (periodic_training_update)
-            __WEIGHTED_UPDATE_PTFV(c0d0u0, cval);
+            __WEIGHTED_UPDATE_PTFV(c0d0u0, CVAL(temp0_0));
 
         if (dvfs_update || training_update || periodic_training_update) {
             tdel = (dst_timing_tables->current_dram_clktree_c0d0u0 - __MOVAVG_AC(dst_timing_tables, c0d0u0));
-            tmdel = (tdel < 0) ? -1 * tdel : tdel;
+            tmdel = (tdel < 0) ? ~tdel : tdel;
             adel = tmdel;
-            if (mode == 1 || (adel * 128 * next_timing_rate_mhz / 1000000) > dst_timing_tables->tree_margin)
+            if (mode == 1 || ((adel * 128 * next_timing_rate_mhz) / 1000000) > dst_timing_tables->tree_margin)
                 dst_timing_tables->current_dram_clktree_c0d0u0 = __MOVAVG_AC(dst_timing_tables, c0d0u0);
         }
 
-        cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_1));
-
         if (dvfs_pt1 || training_pt1)
-            __INCREMENT_PTFV(c0d0u1, cval);
+            __INCREMENT_PTFV(c0d0u1, CVAL(temp0_1));
         else if (dvfs_update)
             __AVERAGE_PTFV(c0d0u1);
         else if (training_update)
             __AVERAGE_WRITE_PTFV(c0d0u1);
         else if (periodic_training_update)
-            __WEIGHTED_UPDATE_PTFV(c0d0u1, cval);
+            __WEIGHTED_UPDATE_PTFV(c0d0u1, CVAL(temp0_1));
 
         if (dvfs_update || training_update || periodic_training_update) {
             tdel = (dst_timing_tables->current_dram_clktree_c0d0u1 - __MOVAVG_AC(dst_timing_tables, c0d0u1));
@@ -1679,16 +1676,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
     }
 
     if (fbio_cfg7 & EMC_FBIO_CFG7_CH1_ENABLE) {
-        cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp1_0));
-
         if (dvfs_pt1 || training_pt1)
-            __INCREMENT_PTFV(c1d0u0, cval);
+            __INCREMENT_PTFV(c1d0u0, CVAL(temp1_0));
         else if (dvfs_update)
             __AVERAGE_PTFV(c1d0u0);
         else if (training_update)
             __AVERAGE_WRITE_PTFV(c1d0u0);
         else if (periodic_training_update)
-            __WEIGHTED_UPDATE_PTFV(c1d0u0, cval);
+            __WEIGHTED_UPDATE_PTFV(c1d0u0, CVAL(temp1_0));
 
         if (dvfs_update || training_update || periodic_training_update) {
             tdel = (dst_timing_tables->current_dram_clktree_c1d0u0 - __MOVAVG_AC(dst_timing_tables, c1d0u0));
@@ -1701,16 +1696,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
                 dst_timing_tables->current_dram_clktree_c1d0u0 = __MOVAVG_AC(dst_timing_tables, c1d0u0);
         }
 
-        cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp1_1));
-
         if (dvfs_pt1 || training_pt1)
-            __INCREMENT_PTFV(c1d0u1, cval);
+            __INCREMENT_PTFV(c1d0u1, CVAL(temp1_1));
         else if (dvfs_update)
             __AVERAGE_PTFV(c1d0u1);
         else if (training_update)
             __AVERAGE_WRITE_PTFV(c1d0u1);
         else if (periodic_training_update)
-            __WEIGHTED_UPDATE_PTFV(c1d0u1, cval);
+            __WEIGHTED_UPDATE_PTFV(c1d0u1, CVAL(temp1_1));
 
         if (dvfs_update || training_update || periodic_training_update) {
             tdel = (dst_timing_tables->current_dram_clktree_c1d0u1 - __MOVAVG_AC(dst_timing_tables, c1d0u1));
@@ -1766,16 +1759,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
         }
 
         if (fbio_cfg7 & EMC_FBIO_CFG7_CH0_ENABLE) {
-            cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_0));
-
             if (dvfs_pt1 || training_pt1)
-                __INCREMENT_PTFV(c0d1u0, cval);
+                __INCREMENT_PTFV(c0d1u0, CVAL(temp0_0));
             else if (dvfs_update)
                 __AVERAGE_PTFV(c0d1u0);
             else if (training_update)
                 __AVERAGE_WRITE_PTFV(c0d1u0);
             else if (periodic_training_update)
-                __WEIGHTED_UPDATE_PTFV(c0d1u0, cval);
+                __WEIGHTED_UPDATE_PTFV(c0d1u0, CVAL(temp0_0));
 
             if (dvfs_update || training_update || periodic_training_update) {
                 tdel = (dst_timing_tables->current_dram_clktree_c0d1u0 - __MOVAVG_AC(dst_timing_tables, c0d1u0));
@@ -1788,16 +1779,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
                     dst_timing_tables->current_dram_clktree_c0d1u0 = __MOVAVG_AC(dst_timing_tables, c0d1u0);
             }
 
-            cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_1));
-
             if (dvfs_pt1 || training_pt1)
-                __INCREMENT_PTFV(c0d1u1, cval);
+                __INCREMENT_PTFV(c0d1u1, CVAL(temp0_1));
             else if (dvfs_update)
                 __AVERAGE_PTFV(c0d1u1);
             else if (training_update)
                 __AVERAGE_WRITE_PTFV(c0d1u1);
             else if (periodic_training_update)
-                __WEIGHTED_UPDATE_PTFV(c0d1u1, cval);
+                __WEIGHTED_UPDATE_PTFV(c0d1u1, CVAL(temp0_1));
 
             if (dvfs_update || training_update || periodic_training_update) {
                 tdel = (dst_timing_tables->current_dram_clktree_c0d1u1 - __MOVAVG_AC(dst_timing_tables, c0d1u1));
@@ -1812,16 +1801,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
         }
 
         if (fbio_cfg7 & EMC_FBIO_CFG7_CH1_ENABLE) {
-            cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_0));
-
             if (dvfs_pt1 || training_pt1)
-                __INCREMENT_PTFV(c1d1u0, cval);
+                __INCREMENT_PTFV(c1d1u0, CVAL(temp1_0));
             else if (dvfs_update)
                 __AVERAGE_PTFV(c1d1u0);
             else if (training_update)
                 __AVERAGE_WRITE_PTFV(c1d1u0);
             else if (periodic_training_update)
-                __WEIGHTED_UPDATE_PTFV(c1d1u0, cval);
+                __WEIGHTED_UPDATE_PTFV(c1d1u0, CVAL(temp1_0));
 
             if (dvfs_update || training_update || periodic_training_update) {
                 tdel = (dst_timing_tables->current_dram_clktree_c1d1u0 - __MOVAVG_AC(dst_timing_tables, c1d1u0));
@@ -1834,16 +1821,14 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
                     dst_timing_tables->current_dram_clktree_c1d1u0 = __MOVAVG_AC(dst_timing_tables, c1d1u0);
             }
 
-            cval = ((1000000 * actual_osc_clocks(src_timing_tables->run_clocks)) / (current_timing_rate_mhz * 2 * temp0_1));
-
             if (dvfs_pt1 || training_pt1)
-                __INCREMENT_PTFV(c1d1u1, cval);
+                __INCREMENT_PTFV(c1d1u1, CVAL(temp1_1));
             else if (dvfs_update)
                 __AVERAGE_PTFV(c1d1u1);
             else if (training_update)
                 __AVERAGE_WRITE_PTFV(c1d1u1);
             else if (periodic_training_update)
-                __WEIGHTED_UPDATE_PTFV(c1d1u1, cval);
+                __WEIGHTED_UPDATE_PTFV(c1d1u1, CVAL(temp1_1));
 
             if (dvfs_update || training_update || periodic_training_update) {
                 tdel = (dst_timing_tables->current_dram_clktree_c1d1u1 - __MOVAVG_AC(dst_timing_tables, c1d1u1));
@@ -1857,6 +1842,8 @@ static uint32_t update_clock_tree_delay(tegra_b01_emc_timing_t *src_timing_table
             }
         }
     }
+
+    #undef CVAL
 
     if (mode == 1) {
         dst_timing_tables->trained_dram_clktree_c0d0u0 = dst_timing_tables->current_dram_clktree_c0d0u0;
