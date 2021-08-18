@@ -19,7 +19,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
- 
+
 #ifndef FUSEE_EMC_H_
 #define FUSEE_EMC_H_
 
@@ -393,6 +393,7 @@
 #define EMC_CFG_DIG_DLL_PERIOD                  0x2c0
 #define EMC_DIG_DLL_STATUS                  0x2c4
 #define EMC_DIG_DLL_STATUS_DLL_LOCK             (1 << 15)
+#define EMC_DIG_DLL_STATUS_DLL_LOCK_B01         (1 << 2)
 #define EMC_DIG_DLL_STATUS_DLL_PRIV_UPDATED         (1 << 17)
 #define EMC_DIG_DLL_STATUS_DLL_OUT_SHIFT            0
 #define EMC_DIG_DLL_STATUS_DLL_OUT_MASK             \
@@ -1065,6 +1066,10 @@
 #define EMC_PMACRO_DATA_PAD_TX_CTRL_DATA_DQSN_TX_E_DCC      (1 << 16)
 #define EMC_PMACRO_DATA_PAD_TX_CTRL_DATA_CMD_TX_E_DCC       (1 << 24)
 
+#define EMC_PMACRO_DATA_PAD_TX_CTRL_DATA_DQS_E_IVREF_B01       (1 << 10)
+
+
+
 #define EMC_PMACRO_COMMON_PAD_TX_CTRL               0xc68
 #define EMC_PMACRO_BRICK_MAPPING_0              0xc80
 #define EMC_PMACRO_BRICK_MAPPING_1              0xc84
@@ -1125,5 +1130,9 @@
 #define EMC_TR2REF                    0x10c
 
 #define EMC_PMACRO_DSR_VTTGEN_CTRL_0                    0xc6c
+
+// B01
+#define EMC_PMACRO_DLL_CFG_0 0x5E4
+#define EMC_PMACRO_DLL_CFG_1 0x5E8
 
 #endif
