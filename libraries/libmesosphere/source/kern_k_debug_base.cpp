@@ -469,8 +469,8 @@ namespace ams::kern {
                 for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
                     if (thread == Kernel::GetScheduler(i).GetSchedulerCurrentThread()) {
                         current = true;
+                        break;
                     }
-                    break;
                 }
 
                 /* If the thread is current, retry until it isn't. */
