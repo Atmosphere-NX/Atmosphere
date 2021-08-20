@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_TSEC_H_
 #define FUSEE_TSEC_H_
 
@@ -306,8 +306,7 @@ static inline volatile tegra_tsec_t *tsec_get_regs(void)
 
 void tsec_enable_clkrst();
 void tsec_disable_clkrst();
-int tsec_get_key(uint8_t *key, uint32_t rev, const void *tsec_fw, size_t tsec_fw_size);
-int tsec_load_fw(const void *tsec_fw, size_t tsec_fw_size);
-void tsec_run_fw();
+
+int tsec_run_fw(const void *tsec_fw, size_t tsec_fw_size);
 
 #endif

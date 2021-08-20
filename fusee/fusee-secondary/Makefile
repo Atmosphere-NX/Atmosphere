@@ -92,8 +92,8 @@ export KIPDIRS	:= $(AMS)/stratosphere/loader $(AMS)/stratosphere/ncm $(AMS)/stra
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
 			$(AMS)/exosphere $(AMS)/exosphere/warmboot $(AMS)/exosphere/program/rebootstub \
-			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
-			$(AMS)/sept/sept-secondary $(AMS)/emummc $(AMS)/mesosphere $(AMS)/mesosphere/kernel_ldr $(KIPDIRS)
+			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/emummc $(AMS)/mesosphere \
+			$(KIPDIRS)
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -103,9 +103,7 @@ SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 KIPFILES 	:=	loader.kip ncm.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin warmboot.bin rebootstub.bin thermosphere.bin splash_screen.bin \
-				sept-primary.bin sept-secondary_00.enc sept-secondary_01.enc emummc.kip \
-				sept-secondary_dev_00.enc sept-secondary_dev_01.enc mesosphere.bin kernel_ldr.bin \
-                mariko_fatal.bin $(KIPFILES)
+			    emummc.kip mesosphere.bin mariko_fatal.bin $(KIPFILES)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -133,7 +131,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: $(BUILD) clean all
-.PHONY: check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_stratosphere check_libraries
+.PHONY: check_fusee_primary check_exosphere check_emummc check_thermosphere check_stratosphere check_libraries
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -143,9 +141,6 @@ check_fusee_primary:
 
 check_exosphere:
 	@$(MAKE) -C $(AMS)/exosphere all
-
-check_sept:
-	@$(MAKE) -C $(AMS)/sept all
 
 check_emummc:
 	@$(MAKE) -C $(AMS)/emummc EMUMMCDIR=$(AMS)/emummc all
@@ -163,7 +158,7 @@ check_libraries:
 	@$(MAKE) -C $(AMS)/libraries all
 
 
-$(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_thermosphere check_libraries check_stratosphere check_mesosphere
+$(BUILD): check_fusee_primary check_exosphere check_emummc check_thermosphere check_libraries check_stratosphere check_mesosphere
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -176,7 +171,6 @@ clean:
 	@$(MAKE) -C $(AMS)/libraries clean
 	@$(MAKE) -C $(AMS)/mesosphere clean
 	@$(MAKE) -C $(AMS)/stratosphere clean
-	@$(MAKE) -C $(AMS)/sept clean
 	@$(MAKE) -C $(AMS)/emummc clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
@@ -212,31 +206,6 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
 fusee_primary.bin.o	fusee_primary_bin.h:	fusee-primary.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-sept_primary.bin.o	sept_primary_bin.h:	sept-primary.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-sept_secondary_00.enc.o	sept_secondary_00_enc.h:	sept-secondary_00.enc
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-sept_secondary_01.enc.o	sept_secondary_01_enc.h:	sept-secondary_01.enc
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-sept_secondary_dev_00.enc.o	sept_secondary_dev_00_enc.h:	sept-secondary_dev_00.enc
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-sept_secondary_dev_01.enc.o	sept_secondary_dev_01_enc.h:	sept-secondary_dev_01.enc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)

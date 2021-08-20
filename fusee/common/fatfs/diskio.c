@@ -17,8 +17,6 @@
 #include "../../../fusee/fusee-primary/fusee-primary-main/src/fs_utils.h"
 #elif defined(FUSEE_STAGE2_SRC)
 #include "../../../fusee/fusee-secondary/src/device_partition.h"
-#elif defined(SEPT_STAGE2_SRC)
-#include "../../../sept/sept-secondary/src/fs_utils.h"
 #endif
 
 #ifdef FUSEE_STAGE2_SRC

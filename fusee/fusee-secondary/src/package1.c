@@ -58,16 +58,12 @@ bool package1_is_custom_public_key(const void *bct, bool mariko) {
     }
 }
 
-int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0) {
+int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, FILE *boot0) {
     nvboot_config_table *bct; /* Normal firmware BCT, primary. TODO: check? */
     nv_bootloader_info *pk1l_info; /* TODO: check? */
     size_t fpos, pk1l_offset;
-    union {
-        nx_keyblob_t keyblob;
-        uint8_t sector[0x200];
-    } d;
 
-    if (package1loader == NULL || package1loader_size == NULL || keyblobs == NULL || revision == NULL || boot0 == NULL) {
+    if (package1loader == NULL || package1loader_size == NULL || boot0 == NULL) {
         errno = EINVAL;
         return -1;
     }
@@ -105,7 +101,6 @@ int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1
         return -1;
     }
 
-    *revision = pk1l_info->version - 1;
     *package1loader_size = pk1l_info->length;
 
     pk1l_offset = 0x4000 * pk1l_info->start_blk + 0x200 * pk1l_info->start_page;
@@ -126,14 +121,6 @@ int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1
     }
     if (fseek(boot0, fpos + pk1l_offset + 2 * PACKAGE1LOADER_SIZE_MAX, SEEK_SET) != 0) {
         return -1;
-    }
-
-    /* Read the full keyblob area.*/
-    for (size_t i = 0; i < 32; i++) {
-        if (!fread(d.sector, 0x200, 1, boot0)) {
-            return -1;
-        }
-        keyblobs[i] = d.keyblob;
     }
 
     return 0;
@@ -209,24 +196,6 @@ bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t pac
     }
 
     return false;
-}
-
-size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size) {
-    const uint8_t *crypt_hdr = (const uint8_t *)package1loader + 0x4000 - 0x20;
-    if (package1loader_size < 0x4000) {
-        return 0; /* Shouldn't happen, ever. */
-    }
-
-    memcpy(ctr, crypt_hdr + 0x10, 0x10);
-    (*package1) = (package1_header_t *)(crypt_hdr + 0x20);
-    return *(uint32_t *)crypt_hdr;
-}
-
-bool package1_decrypt(package1_header_t *package1, size_t package1_size, const uint8_t *ctr) {
-    uint8_t __attribute__((aligned(16))) ctrbuf[16];
-    memcpy(ctrbuf, ctr, 16);
-    se_aes_ctr_crypt(0xB, package1, package1_size, package1, package1_size, ctrbuf, 16);
-    return memcmp(package1->magic, "PK11", 4) == 0;
 }
 
 void *package1_get_warmboot_fw(const package1_header_t *package1) {

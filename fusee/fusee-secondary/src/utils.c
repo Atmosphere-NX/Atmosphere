@@ -34,7 +34,6 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "fusee_primary_bin.h"
-#include "sept_primary_bin.h"
 #include "rebootstub_bin.h"
 #undef u8
 #undef u32
@@ -131,42 +130,8 @@ __attribute__((noreturn)) void reboot_to_fusee_primary(void) {
     reboot_to_payload();
 }
 
-__attribute__((noreturn)) void reboot_to_sept(const void *tsec_fw, size_t tsec_fw_length, const void *stage2, size_t stage2_size) {
-    if (is_soc_mariko()) {
-        /* Reboot to sept isn't possible on mariko, so just do normal reboot. */
-        shutdown_system(true);
-    } else {
-        /* Copy tsec firmware. */
-        for (size_t i = 0; i < tsec_fw_length; i += sizeof(uint32_t)) {
-            write32le((void *)0x40010F00, i, read32le(tsec_fw, i));
-        }
-        MAKE_REG32(0x40010EFC) = tsec_fw_length;
-
-        /* Copy stage 2. */
-        for (size_t i = 0; i < stage2_size; i += sizeof(uint32_t)) {
-            write32le((void *)0x40016FE0, i, read32le(stage2, i));
-        }
-
-        /* Copy sept into IRAM low. */
-        for (size_t i = 0; i < sept_primary_bin_size; i += sizeof(uint32_t)) {
-            write32le((void *)0x4003F000, i, read32le(sept_primary_bin, i));
-        }
-
-        /* Patch SDRAM init to perform an SVC immediately after second write */
-        APBDEV_PMC_SCRATCH45_0 = 0x2E38DFFF;
-        APBDEV_PMC_SCRATCH46_0 = 0x6001DC28;
-        /* Set SVC handler to jump to reboot stub in IRAM. */
-        APBDEV_PMC_SCRATCH33_0 = 0x4003F000;
-        APBDEV_PMC_SCRATCH40_0 = 0x6000F208;
-
-        /* Trigger warm reboot. */
-        pmc_reboot(1 << 0);
-        while (true) { }
-    }
-}
-
 __attribute__((noreturn)) void reboot_to_iram_payload(void *payload, size_t payload_size) {
-    /* Copy sept into IRAM low. */
+    /* Copy payload into IRAM low. */
     for (size_t i = 0; i < payload_size; i += sizeof(uint32_t)) {
         write32le((void *)0x40010000, i, read32le(payload, i));
     }

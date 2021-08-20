@@ -41,15 +41,6 @@
 #include "../../../fusee/fusee-secondary/src/gpio.h"
 #include "../../../fusee/fusee-secondary/src/pmc.h"
 #include "../../../fusee/fusee-secondary/src/max7762x.h"
-#elif defined(SEPT_STAGE2_SRC)
-#include "../../../sept/sept-secondary/src/car.h"
-#include "../../../sept/sept-secondary/src/fuse.h"
-#include "../../../sept/sept-secondary/src/pinmux.h"
-#include "../../../sept/sept-secondary/src/timers.h"
-#include "../../../sept/sept-secondary/src/apb_misc.h"
-#include "../../../sept/sept-secondary/src/gpio.h"
-#include "../../../sept/sept-secondary/src/pmc.h"
-#include "../../../sept/sept-secondary/src/max7762x.h"
 #endif
 #include "../log.h"
 

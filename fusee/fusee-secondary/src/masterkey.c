@@ -185,8 +185,8 @@ void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigne
         if (relative_revision > mkey_get_revision()) {
             break;
         } else if (relative_revision == mkey_get_revision()) {
-            /* On 7.0.0 erista, sept will have derived this key for us already. */
-            if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0 || is_mariko) {
+            /* On Erista, this will already be derived. */
+            if (is_mariko) {
                 decrypt_data_into_keyslot(is_mariko ? KEYSLOT_SWITCH_DEVICEKEY_MARIKO : KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
             }
         } else {

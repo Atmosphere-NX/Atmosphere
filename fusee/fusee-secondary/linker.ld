@@ -244,12 +244,6 @@ SECTIONS
     PROVIDE(__pm_kip_size__ = pm_kip_end - pm_kip);
     PROVIDE(__rebootstub_bin_start__ = rebootstub_bin - __start__);
     PROVIDE(__rebootstub_bin_size__ = rebootstub_bin_end - rebootstub_bin);
-    PROVIDE(__sept_primary_bin_start__ = sept_primary_bin - __start__);
-    PROVIDE(__sept_primary_bin_size__ = sept_primary_bin_end - sept_primary_bin);
-    PROVIDE(__sept_secondary_00_enc_start__ = sept_secondary_00_enc - __start__);
-    PROVIDE(__sept_secondary_00_enc_size__ = sept_secondary_00_enc_end - sept_secondary_00_enc);
-    PROVIDE(__sept_secondary_01_enc_start__ = sept_secondary_01_enc - __start__);
-    PROVIDE(__sept_secondary_01_enc_size__ = sept_secondary_01_enc_end - sept_secondary_01_enc);
     PROVIDE(__sm_kip_start__ = sm_kip - __start__);
     PROVIDE(__sm_kip_size__ = sm_kip_end - sm_kip);
     PROVIDE(__spl_kip_start__ = spl_kip - __start__);
@@ -266,4 +260,6 @@ SECTIONS
     PROVIDE(__mesosphere_bin_size__ = mesosphere_bin_end - mesosphere_bin);
     PROVIDE(__mariko_fatal_bin_start__ = mariko_fatal_bin - __start__);
     PROVIDE(__mariko_fatal_bin_size__ = mariko_fatal_bin_end - mariko_fatal_bin);
+    PROVIDE(__tsec_keygen_bin_start__ = tsec_keygen_bin - __start__);
+    PROVIDE(__tsec_keygen_bin_size__ = tsec_keygen_bin_end - tsec_keygen_bin);
 }

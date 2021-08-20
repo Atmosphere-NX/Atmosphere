@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_CAR_H
 #define FUSEE_CAR_H
 
@@ -51,7 +51,7 @@ typedef enum {
     CARDEVICE_USB2      = ((1 << 5) | 0x1A),
     CARDEVICE_CORESIGHT = ((2 << 5) | 0x9),
     CARDEVICE_TSEC      = ((2 << 5) | 0x13),
-    CARDEVICE_MSELECT   = ((3 << 5) | 0x8),
+    CARDEVICE_MSELECT   = ((3 << 5) | 0x3),
     CARDEVICE_ACTMON    = ((3 << 5) | 0x17),
     CARDEVICE_TZRAM     = ((3 << 5) | 0x1E),
     CARDEVICE_SE        = ((3 << 5) | 0x1F),
@@ -489,7 +489,7 @@ typedef struct {
     uint32_t sdmmc4_pllc4_out0_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT0_SHAPER_CTRL_0, 0x738 */
     uint32_t sdmmc4_pllc4_out1_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT1_SHAPER_CTRL_0, 0x73c */
     uint32_t sdmmc4_pllc4_out2_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT2_SHAPER_CTRL_0, 0x740 */
-    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */    
+    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */
 } tegra_car_t;
 
 static inline volatile tegra_car_t *car_get_regs(void) {
