@@ -293,6 +293,13 @@ namespace ams::kern::arch::arm64 {
                 /* Print that an exception occurred. */
                 MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
 
+                {
+                    /* Print the current thread's registers. */
+                    KDebug::PrintRegister();
+
+                    /* Print a backtrace. */
+                    KDebug::PrintBacktrace();
+                }
 
                 /* If the SVC is handled, handle it. */
                 if (!svc::ResultNotHandled::Includes(result)) {

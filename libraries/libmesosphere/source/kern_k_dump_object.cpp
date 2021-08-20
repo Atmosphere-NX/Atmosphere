@@ -62,7 +62,7 @@ namespace ams::kern::KDumpObject {
 
             const auto end = accessor.end();
             const auto &handle_table = process->GetHandleTable();
-            const size_t max_handles = handle_table.GetMaxCount();
+            const size_t max_handles = handle_table.GetTableSize();
             for (size_t i = 0; i < max_handles; ++i) {
                 /* Get the object + handle. */
                 ams::svc::Handle handle = ams::svc::InvalidHandle;
@@ -181,7 +181,7 @@ namespace ams::kern::KDumpObject {
 
             const auto end = accessor.end();
             const auto &handle_table = process->GetHandleTable();
-            const size_t max_handles = handle_table.GetMaxCount();
+            const size_t max_handles = handle_table.GetTableSize();
             for (size_t i = 0; i < max_handles; ++i) {
                 /* Get the object + handle. */
                 ams::svc::Handle handle = ams::svc::InvalidHandle;
@@ -203,7 +203,7 @@ namespace ams::kern::KDumpObject {
                         {
                             for (auto it = accessor.begin(); it != end && client_port_process.IsNull(); ++it) {
                                 KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
-                                for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
+                                for (size_t j = 0; j < cur->GetHandleTable().GetTableSize(); ++j) {
                                     ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
                                     KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
                                     if (cur_o.IsNotNull()) {
@@ -236,7 +236,7 @@ namespace ams::kern::KDumpObject {
                     {
                         for (auto it = accessor.begin(); it != end; ++it) {
                             KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
-                            for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
+                            for (size_t j = 0; j < cur->GetHandleTable().GetTableSize(); ++j) {
                                 ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
                                 KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
                                 if (cur_o.IsNull()) {
