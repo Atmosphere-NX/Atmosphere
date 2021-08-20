@@ -158,7 +158,12 @@ static void config_se_brom(void) {
 
     /* Bootrom part we skipped. */
     uint32_t sbk[4] = {fuse_chip->FUSE_PRIVATE_KEY[0], fuse_chip->FUSE_PRIVATE_KEY[1], fuse_chip->FUSE_PRIVATE_KEY[2], fuse_chip->FUSE_PRIVATE_KEY[3]};
-    set_aes_keyslot(0xE, sbk, 0x10);
+    for (int i = 0; i < 4; ++i) {
+        if (sbk[i] != 0xFFFFFFFF) {
+            set_aes_keyslot(0xE, sbk, 0x10);
+            break;
+        }
+    }
 
     /* Lock SBK from being read. */
     se->SE_CRYPTO_KEYTABLE_ACCESS[0xE] = 0x7E;
