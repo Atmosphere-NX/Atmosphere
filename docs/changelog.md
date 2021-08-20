@@ -1,4 +1,31 @@
 # Changelog
+## 0.20.0
++ DRAM training (MTC) was implemented for Mariko hardware, increasing RAM speed from 204MHz to 1600MHz.
+  + This significantly optimizes Mariko boot speed, cutting boot time roughly in half.
+  + Typical boot time reductions (measured as "select fusee" to "home menu visible"):
+    + Normal (Iowa): ~35 seconds -> ~18 seconds.
+    + Lite (Hoag): ~65 seconds -> ~30 seconds.
+  + NOTE: Work is being started on a re-written `fusee` component, with an eye specifically towards ensuring a good boot speed.
+    + With any luck, boot will be much much faster on all units (Mariko and Erista) in an upcoming release.
++ Sept was replaced, and deleted from the repository.
+  + Erista units now use a custom TSEC firmware to manage key derivation.
+    + For more details, contact SciresM#0524 on discord.
+  + This has a number of benefits, including:
+    + This greatly simplifies key derivation logic by making it consistent on all firmwares.
+      + Fusee no longer accesses/uses keyblobs at all, so units which have accidentally destroyed/lost keyblobs can boot without them.
+    + This greatly increases stability (sept was the biggest source of boot failures).
+    + This improves boot speed (sept rebooted multiple times, performed hardware init multiple times, and was generally very slow).
+    + Atmosphère build process is now much saner.
++ A number of improvements were made to the dmnt cheat engine.
+  + Cheats which take in a memory region operand may now use types "2" or "3" to perform accesses relative to the alias/aslr regions, respectively.
+  + Support was added for an "else" opcode in the cheat engine, to make writing certain conditional logic more natural.
+  + Support was added for a cheat orchestrator homebrew (like edizon) to detach from a cheat process/set the master cheat programmatically.
++ Daybreak now provides a warning when attempting to install a firmware newer than the highest version atmosphère knows it supports.
+  + To facilitate this, exosphere now exposes the supported HOS version via an extension ConfigItem.
++ A number of minor issues were fixed, including:
+  + Several mesosphere debug SVC implementations were updated to reflect the semantics of the latest kernel.
+  + Support was fixed for deriving BIS encryption keys on certain prototype hardware.
++ General system stability improvements to enhance the user's experience.
 ## 0.19.5
 + Support was added for 12.1.0.
 + LayeredFS support was added for OpenDataStorageWithProgramIndex commands.
