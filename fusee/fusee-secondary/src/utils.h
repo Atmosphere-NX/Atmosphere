@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_UTILS_H
 #define FUSEE_UTILS_H
 
@@ -121,7 +121,6 @@ static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t s
 __attribute__((noreturn)) void watchdog_reboot(void);
 __attribute__((noreturn)) void pmc_reboot(uint32_t scratch0);
 __attribute__((noreturn)) void reboot_to_fusee_primary(void);
-__attribute__((noreturn)) void reboot_to_sept(const void *tsec_fw, size_t tsec_fw_length, const void *stage2, size_t stage2_size);
 __attribute__((noreturn)) void reboot_to_iram_payload(void *payload, size_t payload_size);
 __attribute__((noreturn)) void wait_for_button_and_reboot(void);
 void wait_for_button(void);

@@ -158,7 +158,12 @@ static void config_se_brom(void) {
 
     /* Bootrom part we skipped. */
     uint32_t sbk[4] = {fuse_chip->FUSE_PRIVATE_KEY[0], fuse_chip->FUSE_PRIVATE_KEY[1], fuse_chip->FUSE_PRIVATE_KEY[2], fuse_chip->FUSE_PRIVATE_KEY[3]};
-    set_aes_keyslot(0xE, sbk, 0x10);
+    for (int i = 0; i < 4; ++i) {
+        if (sbk[i] != 0xFFFFFFFF) {
+            set_aes_keyslot(0xE, sbk, 0x10);
+            break;
+        }
+    }
 
     /* Lock SBK from being read. */
     se->SE_CRYPTO_KEYTABLE_ACCESS[0xE] = 0x7E;
@@ -247,7 +252,7 @@ void nx_hwinit(bool enable_log) {
     } else {
         uint8_t val = 0x40;
         i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
-        val = 0x60;
+        val = 0x58;
         i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
         val = 0x38;
         i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);

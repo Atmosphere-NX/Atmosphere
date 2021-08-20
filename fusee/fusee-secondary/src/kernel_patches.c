@@ -21,12 +21,6 @@
 #include "kernel_patches.h"
 #include "ips.h"
 
-#define u8 uint8_t
-#define u32 uint32_t
-#include "kernel_ldr_bin.h"
-#undef u8
-#undef u32
-
 #define MAKE_BRANCH(a, o) 0x14000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
 #define MAKE_NOP 0xD503201F
 

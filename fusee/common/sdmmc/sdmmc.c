@@ -30,8 +30,6 @@
 #include "../../../fusee/fusee-primary/fusee-primary-main/src/timers.h"
 #elif defined(FUSEE_STAGE2_SRC)
 #include "../../../fusee/fusee-secondary/src/timers.h"
-#elif defined(SEPT_STAGE2_SRC)
-#include "../../../sept/sept-secondary/src/timers.h"
 #endif
 
 #define UNSTUFF_BITS(resp,start,size)                               \
@@ -102,7 +100,7 @@ static int sdmmc_device_send_r1_cmd(sdmmc_device_t *device, uint32_t opcode, uin
     if (resp_mask) {
         resp &= ~(resp_mask);
     }
-    
+
     /* We got an error state. */
     if (is_sdmmc_device_r1_error(resp)) {
         return 0;
@@ -355,7 +353,7 @@ static int sdmmc_sd_decode_scr(sdmmc_device_t *device, uint8_t *scr) {
     if (device->scr.sda_spec3) {
         device->scr.cmds = UNSTUFF_BITS(resp, 32, 2);
     }
-    
+
     /* Unknown SCR structure version. */
     if (UNSTUFF_BITS(resp, 60, 4)) {
         return 0;
@@ -465,7 +463,7 @@ static int sdmmc_sd_send_op_cond(sdmmc_device_t *device, bool is_sd_ver2, bool i
         if (is_uhs_en) {
             arg |= SD_OCR_S18R;
         }
-        
+
         cmd.opcode = SD_APP_OP_COND;
         cmd.arg = arg;
         cmd.flags = SDMMC_RSP_R3;
@@ -916,7 +914,7 @@ int sdmmc_device_sd_init(sdmmc_device_t *device, sdmmc_t *sdmmc, SdmmcBusWidth b
     if (!sdmmc_sd_decode_csd(device, csd)) {
         sdmmc_warn(sdmmc, "Got unknown CSD structure (0x%08x)!", device->csd.structure);
     }
-    
+
     /* If we never switched to 1.8V, change the bus speed mode. */
     if (!device->is_180v) {
         /* Reconfigure the internal clock. */
@@ -1155,7 +1153,7 @@ static int sdmmc_mmc_send_op_cond(sdmmc_device_t *device, SdmmcBusVoltage bus_vo
             if (resp & SD_OCR_CCS) {
                 device->is_block_sdhc = true;
             }
-            
+
             return 1;
         }
 
@@ -1439,7 +1437,7 @@ int sdmmc_device_mmc_init(sdmmc_device_t *device, sdmmc_t *sdmmc, SdmmcBusWidth 
     if (!sdmmc_mmc_decode_csd(device, csd)) {
         sdmmc_warn(sdmmc, "Got unknown CSD structure (0x%08x)!", device->csd.structure);
     }
-    
+
     /* Reconfigure the internal clock. */
     if (!sdmmc_select_speed(device->sdmmc, SDMMC_SPEED_MMC_LEGACY)) {
         sdmmc_error(sdmmc, "Failed to apply the correct bus speed!");
@@ -1498,7 +1496,7 @@ int sdmmc_device_mmc_init(sdmmc_device_t *device, sdmmc_t *sdmmc, SdmmcBusWidth 
     } else {
         sdmmc_info(sdmmc, "BKOPS is disabled!");
     }
-    
+
     /* Switch to high speed mode. */
     if (!sdmmc_mmc_select_timing(device, bus_speed)) {
         sdmmc_error(sdmmc, "Failed to switch to high speed mode!");

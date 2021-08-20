@@ -26,19 +26,6 @@
 
 #define AL16 ALIGN(16)
 
-static const uint8_t AL16 keyblob_seeds[MASTERKEY_REVISION_MAX][0x10] = {
-    {0xDF, 0x20, 0x6F, 0x59, 0x44, 0x54, 0xEF, 0xDC, 0x70, 0x74, 0x48, 0x3B, 0x0D, 0xED, 0x9F, 0xD3},   /* Keyblob seed 00. */
-    {0x0C, 0x25, 0x61, 0x5D, 0x68, 0x4C, 0xEB, 0x42, 0x1C, 0x23, 0x79, 0xEA, 0x82, 0x25, 0x12, 0xAC},   /* Keyblob seed 01. */
-    {0x33, 0x76, 0x85, 0xEE, 0x88, 0x4A, 0xAE, 0x0A, 0xC2, 0x8A, 0xFD, 0x7D, 0x63, 0xC0, 0x43, 0x3B},   /* Keyblob seed 02. */
-    {0x2D, 0x1F, 0x48, 0x80, 0xED, 0xEC, 0xED, 0x3E, 0x3C, 0xF2, 0x48, 0xB5, 0x65, 0x7D, 0xF7, 0xBE},   /* Keyblob seed 03. */
-    {0xBB, 0x5A, 0x01, 0xF9, 0x88, 0xAF, 0xF5, 0xFC, 0x6C, 0xFF, 0x07, 0x9E, 0x13, 0x3C, 0x39, 0x80},   /* Keyblob seed 04. */
-    {0xD8, 0xCC, 0xE1, 0x26, 0x6A, 0x35, 0x3F, 0xCC, 0x20, 0xF3, 0x2D, 0x3B, 0x51, 0x7D, 0xE9, 0xC0}    /* Keyblob seed 05. */
-};
-
-static const uint8_t AL16 keyblob_mac_seed[0x10] = {
-    0x59, 0xC7, 0xFB, 0x6F, 0xBE, 0x9B, 0xBE, 0x87, 0x65, 0x6B, 0x15, 0xC0, 0x53, 0x73, 0x36, 0xA5
-};
-
 static const uint8_t AL16 masterkey_seed[0x10] = {
     0xD8, 0xA2, 0x41, 0x0A, 0xC6, 0xC5, 0x90, 0x01, 0xC6, 0x1D, 0x6A, 0x26, 0x7C, 0x51, 0x3F, 0x3C
 };
@@ -55,164 +42,51 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
     0x2D, 0xC1, 0xF4, 0x8D, 0xF3, 0x5B, 0x69, 0x33, 0x42, 0x10, 0xAC, 0x65, 0xDA, 0x90, 0x46, 0x66
 };
 
-/* TODO: Bother adding 8.1.0 here? We'll never call into here... */
-static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_800 - MASTERKEY_REVISION_600_610][0x10] = {
-    {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* MasterKek seed 06. */
-    {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* MasterKek seed 07. */
+static const uint8_t AL16 keyblob_seed_00[0x10] = {
+    0xDF, 0x20, 0x6F, 0x59, 0x44, 0x54, 0xEF, 0xDC, 0x70, 0x74, 0x48, 0x3B, 0x0D, 0xED, 0x9F, 0xD3
+};
+
+static const uint8_t AL16 master_kek_seed_erista[0x10] = { /* TODO: Update on next change of keys. */
+    0x84, 0x67, 0xB6, 0x7F, 0x13, 0x11, 0xAE, 0xE6, 0x58, 0x9B, 0x19, 0xAF, 0x13, 0x6C, 0x80, 0x7A /* Erista MasterKek seed 0B. */
+};
+
+static const uint8_t AL16 master_devkey_seed_erista[0x10] = {
+    0xAA, 0xFD, 0xBC, 0xBB, 0x25, 0xC3, 0xA4, 0xEF, 0xE3, 0xEE, 0x58, 0x53, 0xB7, 0xF8, 0xDD, 0xD6
 };
 
 static const uint8_t AL16 master_kek_seed_mariko[0x10] = { /* TODO: Update on next change of keys. */
     0xE5, 0x41, 0xAC, 0xEC, 0xD1, 0xA7, 0xD1, 0xAB, 0xED, 0x03, 0x77, 0xF1, 0x27, 0xCA, 0xF8, 0xF1, /* Mariko MasterKek seed 0B. */
 };
 
-static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
-
-static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
-    if (revision >= 0x20) {
-        return -1;
-        /* TODO: what should we do? */
-    }
-
-    if (keyblobs != NULL) {
-        *dst = keyblobs[revision];
-    } else {
-        return -1;
-        /* TODO: what should we do? */
-    }
-
-    return 0;
-}
-
-static bool safe_memcmp(uint8_t *a, uint8_t *b, size_t sz) {
-    uint8_t different = 0;
-    for (unsigned int i = 0; i < sz; i++) {
-        different |= a[i] ^ b[i];
-    }
-    return different != 0;
-}
-
-static int decrypt_keyblob(const nx_keyblob_t *keyblobs, uint32_t revision, uint32_t available_revision) {
-    nx_keyblob_t AL16 keyblob;
-    uint8_t AL16 work_buffer[0x10];
-    unsigned int keyslot = revision == MASTERKEY_REVISION_100_230 ? 0xF : KEYSLOT_SWITCH_TEMPKEY;
-
-    if (get_keyblob(&keyblob, revision, keyblobs, available_revision) != 0) {
-        return -1;
-    }
-
-    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, keyblob_seeds[revision], 0x10);
-    decrypt_data_into_keyslot(keyslot, 0xE, work_buffer, 0x10);
-    decrypt_data_into_keyslot(0xB, keyslot, keyblob_mac_seed, 0x10);
-
-    /* Validate keyblob. */
-    se_compute_aes_128_cmac(0xB, work_buffer, 0x10, keyblob.mac + sizeof(keyblob.mac), sizeof(keyblob) - sizeof(keyblob.mac));
-    if (safe_memcmp(keyblob.mac, work_buffer, 0x10)) {
-        return -1;
-    }
-
-    /* Decrypt keyblob. */
-    se_aes_ctr_crypt(keyslot, &g_dec_keyblobs[revision], sizeof(g_dec_keyblobs[revision]), keyblob.data, sizeof(keyblob.data), keyblob.ctr, sizeof(keyblob.ctr));
-    return 0;
-}
-
-int load_package1_key(uint32_t revision) {
-    if (revision > MASTERKEY_REVISION_600_610) {
-        return -1;
-    }
-
-    set_aes_keyslot(0xB, g_dec_keyblobs[revision].package1_key, 0x10);
-    return 0;
-}
-
 /* Derive all Switch keys. */
-int derive_nx_keydata_erista(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
+int derive_nx_keydata_erista(uint32_t target_firmware) {
     uint8_t AL16 work_buffer[0x10];
-    uint8_t AL16 zeroes[0x10] = {0};
 
-    /* Initialize keygen type. */
-    *out_keygen_type = 0;
+    /* Get whether we're using dev keys. */
+    const bool is_retail = fuse_get_hardware_state() != 0;
 
-    /* TODO: Set keyslot flags properly in preparation of derivation. */
-    set_aes_keyslot_flags(0xE, 0x15);
-    set_aes_keyslot_flags(0xD, 0x15);
+    /* Derive Keyblob Key 00. */
+    se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, keyblob_seed_00, 0x10);
+    decrypt_data_into_keyslot(0xF, 0xE, work_buffer, 0x10);
 
-    /* Set the TSEC key. */
-    set_aes_keyslot(0xD, tsec_key, 0x10);
+    /* Derive master kek. */
+    decrypt_data_into_keyslot(0xE, is_retail ? 0xD : 0xB, master_kek_seed_erista, 0x10);
 
-    /* Decrypt all keyblobs, setting keyslot 0xF correctly. */
-    for (unsigned int rev = 0; rev <= MASTERKEY_REVISION_600_610; rev++) {
-        int ret = decrypt_keyblob(keyblobs, rev, available_revision);
-        if (ret) {
-            return ret;
-        }
-    }
+    /* Derive master key, device master key. */
+    decrypt_data_into_keyslot(0xD, 0xE, masterkey_seed, 0x10);
+    decrypt_data_into_keyslot(0xE, 0xE, masterkey_4x_seed, 0x10);
 
-    /* Do 6.2.0+ keygen. */
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
-        uint32_t desired_keyblob;
-
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
-            /* NOTE: We load in the current key for all >= 8.1.0 firmwares to reduce sept binaries. */
-            desired_keyblob = MASTERKEY_REVISION_C10_CURRENT;
-        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-            desired_keyblob = MASTERKEY_REVISION_700_800;
-        } else {
-            desired_keyblob = MASTERKEY_REVISION_620;
-        }
-
-        /* Try emulation result. */
-        for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
-            void *tsec_root_key = (void *)((uintptr_t)tsec_root_keys + 0x10 * (rev - MASTERKEY_REVISION_620));
-            if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
-                /* We got a valid key from emulation. */
-                set_aes_keyslot(0xD, tsec_root_key, 0x10);
-                se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
-                memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
-            }
-        }
-
-        if (memcmp(g_dec_keyblobs[desired_keyblob].master_kek, zeroes, 0x10) == 0) {
-            /* Try reading the keys from a file. */
-            const char *keyfile = fuse_get_hardware_state() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
-            FILE *extkey_file = fopen(keyfile, "r");
-            AL16 fusee_extkeys_t extkeys = {0};
-            if (extkey_file == NULL) {
-                fatal_error("Error: failed to read %s, needed for 6.2.0+ key derivation!", keyfile);
-            }
-            extkeys_initialize_keyset(&extkeys, extkey_file);
-            fclose(extkey_file);
-            for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
-                if (memcmp(extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], zeroes, 0x10) != 0) {
-                    set_aes_keyslot(0xD, extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], 0x10);
-                    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
-                    memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
-                } else {
-                    memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
-                }
-            }
-        }
-
-        if (memcmp(g_dec_keyblobs[available_revision].master_kek, zeroes, 0x10) == 0) {
-            fatal_error("Error: failed to derive master_kek_%02x!", available_revision);
-        }
-    }
-
-    /* Clear the SBK. */
-    clear_aes_keyslot(0xE);
-
-    /* Get needed data. */
-    set_aes_keyslot(0xD, g_dec_keyblobs[available_revision].master_kek, 0x10);
-
-    /* Also set the Package1 key for the revision that is stored on the eMMC boot0 partition. */
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
-        load_package1_key(available_revision);
-    }
-
-    /* Derive keys for Exosphere, lock critical keyslots. */
+    /* Derive device keys. */
     decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
-    decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed,    0x10);
-    decrypt_data_into_keyslot(0xC, 0xD, masterkey_4x_seed, 0x10);
-    decrypt_data_into_keyslot(0xD, 0xD, masterkey_seed,    0x10);
+    decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
+
+    /* Derive firmware specific device key. */
+    se_aes_ecb_decrypt_block(0xA, work_buffer, 0x10, master_devkey_seed_erista, 0x10);
+    decrypt_data_into_keyslot(0xC, 0xE, work_buffer, 0x10);
+
+    /* Clear keyslots 0xB/0xE. */
+    clear_aes_keyslot(0xB);
+    clear_aes_keyslot(0xE);
 
     /* Setup master key revision, derive older master keys for use. */
     return mkey_detect_revision(fuse_get_hardware_state() != 0);

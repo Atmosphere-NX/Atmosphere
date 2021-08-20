@@ -32,10 +32,7 @@ mesosphere: exosphere libraries
 troposphere: stratosphere
 	$(MAKE) -C troposphere all
 
-sept: exosphere
-	$(MAKE) -C sept all
-
-fusee: exosphere mesosphere stratosphere sept
+fusee: exosphere mesosphere stratosphere
 	$(MAKE) -C $@ all
 
 libraries:
@@ -61,7 +58,6 @@ dist-no-debug: all
 	rm -rf out
 	mkdir atmosphere-$(AMSVER)
 	mkdir atmosphere-$(AMSVER)/atmosphere
-	mkdir atmosphere-$(AMSVER)/sept
 	mkdir atmosphere-$(AMSVER)/switch
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
@@ -71,13 +67,6 @@ dist-no-debug: all
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
 	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/sept/payload.bin
-	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
-	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin
-	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
-	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
-	cp sept/sept-secondary/sept-secondary_dev_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_00.enc
-	cp sept/sept-secondary/sept-secondary_dev_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_01.enc
 	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmosphere/config_templates/BCT.ini
 	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
 	cp config_templates/system_settings.ini atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
@@ -109,7 +98,6 @@ dist-no-debug: all
 	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER)-WITHOUT_MESOSPHERE.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
@@ -133,9 +121,6 @@ dist: dist-no-debug
 	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
 	cp fusee/fusee-mtc/fusee-mtc.elf atmosphere-$(AMSVER)-debug/fusee-mtc.elf
 	cp fusee/fusee-secondary/fusee-secondary-experimental.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
-	cp sept/sept-primary/sept-primary.elf atmosphere-$(AMSVER)-debug/sept-primary.elf
-	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf
-	cp sept/sept-secondary/key_derivation/key_derivation.elf atmosphere-$(AMSVER)-debug/sept-secondary-key-derivation.elf
 	cp exosphere/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
 	cp exosphere/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
 	cp exosphere/warmboot/warmboot.elf atmosphere-$(AMSVER)-debug/exosphere-warmboot.elf

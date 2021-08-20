@@ -108,6 +108,7 @@ _metadata:
 #define CONTENT_TYPE_KLD 9
 #define CONTENT_TYPE_KRN 10
 #define CONTENT_TYPE_EXF 11
+#define CONTENT_TYPE_TKG 12
 
 #define CONTENT_FLAG_NONE          (0 << 0)
 
@@ -213,39 +214,6 @@ _content_headers:
 .asciz "rebootstub"
 .align 5
 
-/* sept_primary content header */
-.word __sept_primary_bin_start__
-.word __sept_primary_bin_size__
-.byte CONTENT_TYPE_SP1
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.word 0xCCCCCCCC
-.asciz "sept_primary"
-.align 5
-
-/* sept_secondary 00 content header */
-.word __sept_secondary_00_enc_start__
-.word __sept_secondary_00_enc_size__
-.byte CONTENT_TYPE_SP2
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.word 0xCCCCCCCC
-.asciz "septsecondary00"
-.align 5
-
-/* sept_secondary 01 content header */
-.word __sept_secondary_01_enc_start__
-.word __sept_secondary_01_enc_size__
-.byte CONTENT_TYPE_SP2
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.word 0xCCCCCCCC
-.asciz "septsecondary01"
-.align 5
-
 /* sm content header */
 .word __sm_kip_start__
 .word __sm_kip_size__
@@ -299,6 +267,17 @@ _content_headers:
 .byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "exosphere_fatal"
+.align 5
+
+/* tsec_keygen content header */
+.word __tsec_keygen_bin_start__
+.word __tsec_keygen_bin_size__
+.byte CONTENT_TYPE_TKG
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.word 0xCCCCCCCC
+.asciz "tsec_keygen"
 .align 5
 
 _content_headers_end:
