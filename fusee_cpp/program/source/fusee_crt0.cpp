@@ -14,13 +14,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "fusee_exception_handler.hpp"
 
 extern "C" void __libc_init_array();
 
 namespace ams::nxboot::crt0 {
 
+    namespace {
+
+        ALWAYS_INLINE void SetExceptionVector(u32 which, uintptr_t impl) {
+            reg::Write(secmon::MemoryRegionPhysicalDeviceExceptionVectors.GetAddress() + 0x200 + sizeof(u32) * which, static_cast<u32>(impl));
+        }
+
+    }
+
     void Initialize(uintptr_t bss_start, uintptr_t bss_end) {
         /* TODO: Collect timing information? */
+
+        /* Setup exception vectors. */
+        {
+            SetExceptionVector(0, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler0));
+            SetExceptionVector(1, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler1));
+            SetExceptionVector(2, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler2));
+            SetExceptionVector(3, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler3));
+            SetExceptionVector(4, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler4));
+            SetExceptionVector(5, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler5));
+            SetExceptionVector(6, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler6));
+            SetExceptionVector(7, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler7));
+        }
 
         /* Clear bss. */
         std::memset(reinterpret_cast<void *>(bss_start),      0, bss_end - bss_start);

@@ -16,7 +16,7 @@
 #include <exosphere.hpp>
 #pragma once
 
-namespace ams::nxboot::loader {
+namespace ams::nxboot {
 
     NORETURN void ExceptionHandler();
 
