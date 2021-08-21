@@ -16,7 +16,7 @@ def main(argc, argv):
     with open(argv[1], 'rb') as f:
         data = f.read()
     with open(argv[2], 'wb') as f:
-        f.write(lz4_compress(data))
+        f.write(lz4_compress(data[:0x2B000 + 0x11000]))
     return 0
 
 if __name__ == '__main__':

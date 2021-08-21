@@ -13,13 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <exosphere.hpp>
 #pragma once
-#include <vapours.hpp>
 
-namespace ams::tsec {
+namespace ams::nxboot {
 
-    bool RunTsecFirmware(const void *fw, size_t fw_size);
-
-    void Lock();
+    void SecureInitialize();
 
 }

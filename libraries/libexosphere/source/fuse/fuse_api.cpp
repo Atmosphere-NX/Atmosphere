@@ -432,6 +432,19 @@ namespace ams::fuse {
         return reg::HasValue(GetChipRegistersCommon().FUSE_SECURITY_MODE, FUSE_REG_BITS_ENUM(SECURITY_MODE_SECURITY_MODE, ENABLED));
     }
 
+    bool GetSecureBootKey(void *dst) {
+        /* Get the sbk from fuse data. */
+        bool valid = false;
+        for (size_t i = 0; i < 4; ++i) {
+            const u32 key_word = GetChipRegistersCommon().FUSE_PRIVATE_KEY[i];
+
+            static_cast<u32 *>(dst)[i] = key_word;
+            valid |= key_word != 0xFFFFFFFF;
+        }
+
+        return valid;
+    }
+
     void ConfigureFuseBypass() {
         /* Make the fuse registers visible. */
         clkrst::SetFuseVisibility(true);

@@ -14,10 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "fusee_secure_initialize.hpp"
 
 namespace ams::nxboot {
 
     void Main() {
+        /* Perform secure hardware initialization. */
+        SecureInitialize();
+
         /* TODO */
         AMS_INFINITE_LOOP();
     }

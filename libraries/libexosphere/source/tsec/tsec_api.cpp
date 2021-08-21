@@ -19,8 +19,41 @@ namespace ams::tsec {
 
     namespace {
 
+        enum TsecResult {
+            TsecResult_Success = 0xB0B0B0B0,
+            TsecResult_Failure = 0xD0D0D0D0,
+        };
 
+        bool RunFirmwareImpl(const void *fw, size_t fw_size) {
+            /* Enable relevant clocks. */
+            clkrst::EnableHost1xClock();
+            clkrst::EnableTsecClock();
+            clkrst::EnableSorSafeClock();
+            clkrst::EnableSor0Clock();
+            clkrst::EnableSor1Clock();
+            clkrst::EnableKfuseClock();
 
+            /* Disable clocks once we're done. */
+            ON_SCOPE_EXIT {
+                clkrst::DisableHost1xClock();
+                clkrst::DisableTsecClock();
+                clkrst::DisableSorSafeClock();
+                clkrst::DisableSor0Clock();
+                clkrst::DisableSor1Clock();
+                clkrst::DisableKfuseClock();
+            };
+
+            /* TODO */
+            AMS_UNUSED(fw, fw_size);
+            return true;
+        }
+
+    }
+
+    bool RunTsecFirmware(const void *fw, size_t fw_size) {
+        /* TODO */
+        AMS_UNUSED(fw, fw_size);
+        return RunFirmwareImpl(fw, fw_size);
     }
 
     void Lock() {

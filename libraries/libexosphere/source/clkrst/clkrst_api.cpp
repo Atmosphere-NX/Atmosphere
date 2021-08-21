@@ -62,9 +62,19 @@ namespace ams::clkrst {
                 .reset_offset   = CLK_RST_CONTROLLER_RST_DEVICES_##_REG_,                              \
                 .clk_enb_offset = CLK_RST_CONTROLLER_CLK_OUT_ENB_##_REG_,                              \
                 .clk_src_offset = CLK_RST_CONTROLLER_CLK_SOURCE_##_NAME_,                              \
-                .index          = CLK_RST_CONTROLLER_CLK_ENB_##_NAME_##_INDEX,                          \
+                .index          = CLK_RST_CONTROLLER_CLK_ENB_##_NAME_##_INDEX,                         \
                 .clk_src        = CLK_RST_CONTROLLER_CLK_SOURCE_##_NAME_##_##_NAME_##_CLK_SRC_##_CLK_, \
                 .clk_div        = _DIV_,                                                               \
+            }
+
+        #define DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(_VARNAME_, _REG_, _NAME_)                       \
+            constexpr inline const ClockParameters _VARNAME_ = {                                       \
+                .reset_offset   = CLK_RST_CONTROLLER_RST_DEVICES_##_REG_,                              \
+                .clk_enb_offset = CLK_RST_CONTROLLER_CLK_OUT_ENB_##_REG_,                              \
+                .clk_src_offset = 0,                                                                   \
+                .index          = CLK_RST_CONTROLLER_CLK_ENB_##_NAME_##_INDEX,                         \
+                .clk_src        = 0,                                                                   \
+                .clk_div        = 0,                                                                   \
             }
 
         DEFINE_CLOCK_PARAMETERS(UartAClock,  L,  UARTA, PLLP_OUT0, 0);
@@ -73,6 +83,14 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS(I2c1Clock,   L,   I2C1,     CLK_M, 0);
         DEFINE_CLOCK_PARAMETERS(I2c5Clock,   H,   I2C5,     CLK_M, 0);
         DEFINE_CLOCK_PARAMETERS(ActmonClock, V, ACTMON,     CLK_M, 0);
+
+        DEFINE_CLOCK_PARAMETERS(Host1xClock, L, HOST1X, PLLP_OUT0, 3);
+        DEFINE_CLOCK_PARAMETERS(TsecClock,   U, TSEC,   PLLP_OUT0, 2);
+        DEFINE_CLOCK_PARAMETERS(Sor1Clock,   X, SOR1,   PLLP_OUT0, 2);
+
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(SorSafeClock, Y, SOR_SAFE);
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Sor0Clock,    X, SOR0);
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(KfuseClock,   H, KFUSE);
 
     }
 
@@ -108,8 +126,56 @@ namespace ams::clkrst {
         EnableClock(I2c5Clock);
     }
 
+    void EnableHost1xClock() {
+        EnableClock(Host1xClock);
+    }
+
+    void EnableTsecClock() {
+        EnableClock(TsecClock);
+    }
+
+    void EnableSorSafeClock() {
+        EnableClock(SorSafeClock);
+    }
+
+    void EnableSor0Clock() {
+        EnableClock(Sor0Clock);
+    }
+
+    void EnableSor1Clock() {
+        EnableClock(Sor1Clock);
+    }
+
+    void EnableKfuseClock() {
+        EnableClock(KfuseClock);
+    }
+
     void DisableI2c1Clock() {
         DisableClock(I2c1Clock);
+    }
+
+    void DisableHost1xClock() {
+        DisableClock(Host1xClock);
+    }
+
+    void DisableTsecClock() {
+        DisableClock(TsecClock);
+    }
+
+    void DisableSorSafeClock() {
+        DisableClock(SorSafeClock);
+    }
+
+    void DisableSor0Clock() {
+        DisableClock(Sor0Clock);
+    }
+
+    void DisableSor1Clock() {
+        DisableClock(Sor1Clock);
+    }
+
+    void DisableKfuseClock() {
+        DisableClock(KfuseClock);
     }
 
 }
