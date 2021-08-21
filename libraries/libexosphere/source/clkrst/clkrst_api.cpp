@@ -88,6 +88,9 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS(TsecClock,   U, TSEC,   PLLP_OUT0, 2);
         DEFINE_CLOCK_PARAMETERS(Sor1Clock,   X, SOR1,   PLLP_OUT0, 2);
 
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(CldvfsClock, W, DVFS);
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(TzramClock,  V, TZRAM);
+
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(SorSafeClock, Y, SOR_SAFE);
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Sor0Clock,    X, SOR0);
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(KfuseClock,   H, KFUSE);
@@ -124,6 +127,14 @@ namespace ams::clkrst {
 
     void EnableI2c5Clock() {
         EnableClock(I2c5Clock);
+    }
+
+    void EnableCldvfsClock() {
+        EnableClock(CldvfsClock);
+    }
+
+    void EnableTzramClock() {
+        EnableClock(TzramClock);
     }
 
     void EnableHost1xClock() {

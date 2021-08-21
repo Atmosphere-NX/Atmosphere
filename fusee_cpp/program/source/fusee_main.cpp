@@ -20,7 +20,7 @@ namespace ams::nxboot {
 
     void Main() {
         /* Perform secure hardware initialization. */
-        SecureInitialize();
+        SecureInitialize(true);
 
         /* TODO */
         AMS_INFINITE_LOOP();

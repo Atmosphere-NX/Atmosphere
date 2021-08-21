@@ -36,4 +36,8 @@ namespace ams::pmic {
     bool IsAcOk();
     bool IsPowerButtonPressed();
 
+    void SetSystemSetting();
+    void EnableVddCore();
+    void EnableLdo8();
+
 }
