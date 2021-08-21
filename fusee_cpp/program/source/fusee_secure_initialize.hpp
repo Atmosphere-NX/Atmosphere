@@ -18,6 +18,6 @@
 
 namespace ams::nxboot {
 
-    void SecureInitialize();
+    void SecureInitialize(bool enable_log);
 
 }

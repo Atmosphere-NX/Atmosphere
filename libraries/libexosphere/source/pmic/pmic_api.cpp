@@ -215,4 +215,15 @@ namespace ams::pmic {
         return (GetPmicOnOffStat() & (1 << 2)) != 0;
     }
 
+    void SetSystemSetting() {
+        /* TODO */
+    }
+    void EnableVddCore() {
+        /* TODO */
+    }
+
+    void EnableLdo8() {
+        /* TODO */
+    }
+
 }

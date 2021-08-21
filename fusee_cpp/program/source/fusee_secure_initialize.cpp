@@ -161,11 +161,22 @@ namespace ams::nxboot {
             reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_NVENC,  CLK_RST_REG_BITS_ENUM(CLK_SOURCE_NVENC_NVENC_CLK_SRC,   PLLP_OUT0));
         }
 
+        void InitializeClock() {
+            /* TODO */
+        }
+
+        void InitializePinmux(fuse::HardwareType hw_type) {
+            /* TODO */
+        }
+
+
+
     }
 
-    void SecureInitialize() {
-        /* Get SoC type. */
+    void SecureInitialize(bool enable_log) {
+        /* Get SoC type/hardware type. */
         const auto soc_type = fuse::GetSocType();
+        const auto hw_type  = fuse::GetHardwareType();
 
         /* If Erista, perform bootrom logic (to compensate for RCM exploit) and MBIST workaround. */
         if (soc_type == fuse::SocType_Erista) {
@@ -179,7 +190,45 @@ namespace ams::nxboot {
             DoMbistWorkaround();
         }
 
-        /* TODO */
+        /* Setup initial clocks. */
+        InitializeClock();
+
+        /* Setup initial pinmux. */
+        InitializePinmux(hw_type);
+
+        /* Initialize logging. */
+        if (enable_log) {
+            clkrst::EnableUartAClock();
+        }
+
+        /* Enable various clocks. */
+        clkrst::EnableCldvfsClock();
+        clkrst::EnableI2c1Clock();
+        clkrst::EnableI2c5Clock();
+        clkrst::EnableTzramClock();
+
+        /* Initialize I2C5. */
+        i2c::Initialize(i2c::Port_5);
+
+        /* Configure pmic system setting. */
+        pmic::SetSystemSetting();
+
+        /* Enable VDD core */
+        pmic::EnableVddCore();
+
+        /* On hoag, enable Ldo8 */
+        if (hw_type == fuse::HardwareType_Hoag) {
+            pmic::EnableLdo8();
+        }
+
+        /* Initialize I2C1. */
+        i2c::Initialize(i2c::Port_1);
+
+        /* Configure SCLK_BURST_POLICY. */
+        reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_SCLK_BURST_POLICY, CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_FIQ_SOURCE,  PLLP_OUT0),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,  PLLP_OUT0),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,  PLLP_OUT0),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE, PLLP_OUT0));
     }
 
 }
