@@ -1,17 +1,10 @@
 OUTPUT_ARCH(arm)
 ENTRY(_ZN3ams6nxboot5StartEv)
 
-MEMORY
-{
-    NULL  : ORIGIN = 0,          LENGTH = 4K
-    main  : ORIGIN = 0x40001000, LENGTH = 0x2B000
-    ovl   : ORIGIN = 0x4002C000, LENGTH = 0x14000
-}
-
-
 SECTIONS
 {
 	/* =========== CODE section =========== */
+
 	PROVIDE(__start__ = ORIGIN(main));
 	. = __start__;
 	__main_start__ = . ;
@@ -20,7 +13,7 @@ SECTIONS
 	{
 		KEEP (*(.crt0 .crt0.*))
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
 	.text :
 	{
@@ -30,26 +23,26 @@ SECTIONS
 		*(.text.hot .text.hot.*)
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
 	.init :
 	{
 		KEEP( *(.init) )
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
 	.plt :
 	{
 		*(.plt)
 		*(.iplt)
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
 	.fini :
 	{
 		KEEP( *(.fini) )
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
 
 	/* =========== RODATA section =========== */
@@ -60,30 +53,30 @@ SECTIONS
 	{
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
 		. = ALIGN(8);
-	} >main
+	} >main AT>glob
 
-	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >main
-	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main
-	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } >main
-	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } >main
+	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >main AT>glob
+	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main AT>glob
+	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } >main AT>glob
+	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } >main AT>glob
 
-	.hash              : { *(.hash) } >main
+	.hash              : { *(.hash) } >main AT>glob
 
 	/* =========== DATA section =========== */
 	. = ALIGN(8);
 	__data_start = . ;
 
-	.eh_frame : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main
-	.gcc_except_table : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) } >main
-	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } >main
-	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } >main
+	.eh_frame : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main AT>glob
+	.gcc_except_table : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) } >main AT>glob
+	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } >main AT>glob
+	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } >main AT>glob
 
 	.preinit_array ALIGN(8) :
 	{
 		PROVIDE (__preinit_array_start = .);
 		KEEP (*(.preinit_array))
 		PROVIDE (__preinit_array_end = .);
-	} >main
+	} >main AT>glob
 
 	.init_array ALIGN(8) :
 	{
@@ -91,7 +84,7 @@ SECTIONS
 		KEEP (*(SORT(.init_array.*)))
 		KEEP (*(.init_array))
 		PROVIDE (__init_array_end = .);
-	} >main
+	} >main AT>glob
 
 	.fini_array ALIGN(8) :
 	{
@@ -99,7 +92,7 @@ SECTIONS
 		KEEP (*(.fini_array))
 		KEEP (*(SORT(.fini_array.*)))
 		PROVIDE (__fini_array_end = .);
-	} >main
+	} >main AT>glob
 
 	.ctors ALIGN(8) :
 	{
@@ -107,7 +100,7 @@ SECTIONS
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
 		KEEP (*(SORT(.ctors.*)))
 		KEEP (*(.ctors))
-	} >main
+	} >main AT>glob
 
 	.dtors ALIGN(8) :
 	{
@@ -115,7 +108,7 @@ SECTIONS
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
 		KEEP (*(SORT(.dtors.*)))
 		KEEP (*(.dtors))
-	} >main
+	} >main AT>glob
 
 	__got_start__ = .;
 
@@ -128,7 +121,7 @@ SECTIONS
 	{
 		*(.data .data.* .gnu.linkonce.d.*)
 		SORT(CONSTRUCTORS)
-	} >main
+	} >main AT>glob
 
 	__bss_start__ = .;
 	.bss ALIGN(8) :
@@ -137,10 +130,16 @@ SECTIONS
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
 		. = ALIGN(16);
-	} >main
-	__bss_end__ = .;
+	} >main AT>glob
 
+	__bss_end__ = .;
 	__main_end__ = ABSOLUTE(.) ;
+
+    .main.fill : {
+        FILL(0x00000000)
+        . = ORIGIN(main) + LENGTH(main) - 1;
+        BYTE(0x00);
+    } >main AT>glob
 
 	/* ==================
 	   ==== Metadata ====

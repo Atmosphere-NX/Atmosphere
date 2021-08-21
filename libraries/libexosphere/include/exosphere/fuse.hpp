@@ -100,6 +100,8 @@ namespace ams::fuse {
 
     DramId GetDramId();
 
+    bool GetSecureBootKey(void *dst);
+
     void            GetEcid(br::BootEcid *out);
     HardwareType    GetHardwareType();
     HardwareState   GetHardwareState();

@@ -76,7 +76,7 @@ check_libexo_$(strip $1):
 
 clean-$(strip $1):
 	@echo clean $(strip $1) ...
-	@rm -fr $$(ATMOSPHERE_BUILD_DIR)/$(strip $1) $$(OUTPUT_BASE)$(strip $2).bin $$(OUTPUT_BASE)$(strip $2).elf
+	@rm -fr $$(ATMOSPHERE_BUILD_DIR)/$(strip $1) $$(OUTPUT_BASE)$(strip $2).bin $$(OUTPUT_BASE)$(strip $2).lz4 $$(OUTPUT_BASE)$(strip $2).elf
 
 endef
 

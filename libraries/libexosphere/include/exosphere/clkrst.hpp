@@ -29,6 +29,21 @@ namespace ams::clkrst {
     void EnableI2c1Clock();
     void EnableI2c5Clock();
 
+
+    void EnableHost1xClock();
+    void EnableTsecClock();
+    void EnableSorSafeClock();
+    void EnableSor0Clock();
+    void EnableSor1Clock();
+    void EnableKfuseClock();
+
     void DisableI2c1Clock();
+
+    void DisableHost1xClock();
+    void DisableTsecClock();
+    void DisableSorSafeClock();
+    void DisableSor0Clock();
+    void DisableSor1Clock();
+    void DisableKfuseClock();
 
 }
