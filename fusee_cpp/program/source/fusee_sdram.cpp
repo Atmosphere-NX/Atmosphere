@@ -153,7 +153,7 @@ namespace ams::nxboot {
                                                                           CLK_RST_REG_BITS_VALUE(PLLM_BASE_PLLM_DIVN,   params->PllMFeedbackDivider),
                                                                           CLK_RST_REG_BITS_VALUE(PLLM_BASE_PLLM_DIVM,      params->PllMInputDivider));
 
-                        /* Wait 300us ffor stability. */
+                        /* Wait 300us for stability. */
                         const auto stable_time = util::GetMicroSeconds() + 300;
                         while (true) {
                             if (reg::HasValue(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE, CLK_RST_REG_BITS_ENUM(PLLM_BASE_PLLM_LOCK, LOCK))) {
