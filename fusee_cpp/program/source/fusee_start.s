@@ -62,9 +62,7 @@ _ZN3ams6nxboot5StartEv:
     ldr lr, =_ZN3ams6nxboot16ExceptionHandlerEv
 
     /* Perform runtime initialization. */
-    ldr r0, =__bss_start__
-    ldr r1, =__bss_end__
-    bl _ZN3ams6nxboot4crt010InitializeEjj
+    bl _ZN3ams6nxboot4crt010InitializeEv
 
     /* Perform nx boot procedure. */
     bl _ZN3ams6nxboot4MainEv

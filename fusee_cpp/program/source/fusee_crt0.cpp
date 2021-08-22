@@ -28,7 +28,7 @@ namespace ams::nxboot::crt0 {
 
     }
 
-    void Initialize(uintptr_t bss_start, uintptr_t bss_end) {
+    void Initialize() {
         /* TODO: Collect timing information? */
 
         /* Setup exception vectors. */
@@ -42,9 +42,6 @@ namespace ams::nxboot::crt0 {
             SetExceptionVector(6, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler6));
             SetExceptionVector(7, reinterpret_cast<uintptr_t>(::ams::nxboot::ExceptionHandler7));
         }
-
-        /* Clear bss. */
-        std::memset(reinterpret_cast<void *>(bss_start),      0, bss_end - bss_start);
 
         /* Call init array. */
         __libc_init_array();

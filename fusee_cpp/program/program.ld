@@ -11,8 +11,10 @@ SECTIONS
 
 	.crt0 :
 	{
+        FILL(0x00000000)
 		KEEP (*(.crt0 .crt0.*))
-		. = ALIGN(8);
+        . = ORIGIN(main) + 0xC0 - 1;
+        BYTE(00);
 	} >main AT>glob
 
 	.text :
@@ -22,37 +24,31 @@ SECTIONS
 		*(.text.startup .text.startup.*)
 		*(.text.hot .text.hot.*)
 		*(.text .stub .text.* .gnu.linkonce.t.*)
-		. = ALIGN(8);
 	} >main AT>glob
 
 	.init :
 	{
 		KEEP( *(.init) )
-		. = ALIGN(8);
 	} >main AT>glob
 
 	.plt :
 	{
 		*(.plt)
 		*(.iplt)
-		. = ALIGN(8);
 	} >main AT>glob
 
 	.fini :
 	{
 		KEEP( *(.fini) )
-		. = ALIGN(8);
 	} >main AT>glob
 
 
 	/* =========== RODATA section =========== */
-	. = ALIGN(8);
 	__rodata_start = . ;
 
 	.rodata :
 	{
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
-		. = ALIGN(8);
 	} >main AT>glob
 
 	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >main AT>glob
@@ -63,7 +59,6 @@ SECTIONS
 	.hash              : { *(.hash) } >main AT>glob
 
 	/* =========== DATA section =========== */
-	. = ALIGN(8);
 	__data_start = . ;
 
 	.eh_frame : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) } >main AT>glob
@@ -71,14 +66,14 @@ SECTIONS
 	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } >main AT>glob
 	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } >main AT>glob
 
-	.preinit_array ALIGN(8) :
+	.preinit_array :
 	{
 		PROVIDE (__preinit_array_start = .);
 		KEEP (*(.preinit_array))
 		PROVIDE (__preinit_array_end = .);
 	} >main AT>glob
 
-	.init_array ALIGN(8) :
+	.init_array :
 	{
 		PROVIDE (__init_array_start = .);
 		KEEP (*(SORT(.init_array.*)))
@@ -86,7 +81,7 @@ SECTIONS
 		PROVIDE (__init_array_end = .);
 	} >main AT>glob
 
-	.fini_array ALIGN(8) :
+	.fini_array :
 	{
 		PROVIDE (__fini_array_start = .);
 		KEEP (*(.fini_array))
@@ -94,7 +89,7 @@ SECTIONS
 		PROVIDE (__fini_array_end = .);
 	} >main AT>glob
 
-	.ctors ALIGN(8) :
+	.ctors :
 	{
 		KEEP (*crtbegin.o(.ctors)) /* MUST be first -- GCC requires it */
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
@@ -102,7 +97,7 @@ SECTIONS
 		KEEP (*(.ctors))
 	} >main AT>glob
 
-	.dtors ALIGN(8) :
+	.dtors :
 	{
 		KEEP (*crtbegin.o(.dtors))
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
@@ -117,29 +112,25 @@ SECTIONS
 
 	__got_end__ = .;
 
-	.data ALIGN(8) :
+	.data :
 	{
 		*(.data .data.* .gnu.linkonce.d.*)
 		SORT(CONSTRUCTORS)
 	} >main AT>glob
 
 	__bss_start__ = .;
-	.bss ALIGN(8) :
+	.main.fill :
 	{
+        FILL(0x00000000)
 		*(.dynbss)
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
-		. = ALIGN(16);
+        . = ORIGIN(main) + LENGTH(main) - 1;
+        BYTE(0x00);
 	} >main AT>glob
 
 	__bss_end__ = .;
 	__main_end__ = ABSOLUTE(.) ;
-
-    .main.fill : {
-        FILL(0x00000000)
-        . = ORIGIN(main) + LENGTH(main) - 1;
-        BYTE(0x00);
-    } >main AT>glob
 
 	/* ==================
 	   ==== Metadata ====
