@@ -82,6 +82,7 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS(UartCClock,  H,  UARTC, PLLP_OUT0, 0);
         DEFINE_CLOCK_PARAMETERS(I2c1Clock,   L,   I2C1,     CLK_M, 0);
         DEFINE_CLOCK_PARAMETERS(I2c5Clock,   H,   I2C5,     CLK_M, 0);
+        DEFINE_CLOCK_PARAMETERS(SeClock,     V,     SE, PLLP_OUT0, 0);
         DEFINE_CLOCK_PARAMETERS(ActmonClock, V, ACTMON,     CLK_M, 0);
 
         DEFINE_CLOCK_PARAMETERS(Host1xClock, L, HOST1X, PLLP_OUT0, 3);
@@ -127,6 +128,13 @@ namespace ams::clkrst {
 
     void EnableI2c5Clock() {
         EnableClock(I2c5Clock);
+    }
+
+    void EnableSeClock() {
+        EnableClock(SeClock);
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_CLK_SOURCE_SE, CLK_RST_REG_BITS_ENUM(CLK_SOURCE_SE_CLK_LOCK, ENABLE));
+        }
     }
 
     void EnableCldvfsClock() {
