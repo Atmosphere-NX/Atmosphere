@@ -29,6 +29,7 @@ namespace ams::clkrst {
     void EnableI2c1Clock();
     void EnableI2c5Clock();
 
+    void EnableSeClock();
     void EnableCldvfsClock();
     void EnableTzramClock();
 

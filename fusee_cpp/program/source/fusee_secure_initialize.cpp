@@ -23,6 +23,7 @@ namespace ams::nxboot {
 
         constexpr inline const uintptr_t CLKRST  = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
         constexpr inline const uintptr_t PMC     = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
+        constexpr inline const uintptr_t MC      = secmon::MemoryRegionPhysicalDeviceMemoryController.GetAddress();
         constexpr inline const uintptr_t APB     = secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
         constexpr inline const uintptr_t AHB     = AHB_ARBC(0);
         constexpr inline const uintptr_t I2S     = I2S_REG(0);
@@ -164,6 +165,34 @@ namespace ams::nxboot {
             reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_NVENC,  CLK_RST_REG_BITS_ENUM(CLK_SOURCE_NVENC_NVENC_CLK_SRC,   PLLP_OUT0));
         }
 
+        void EnableArc() {
+            /* Enable clocks for EMC/MC, using PLLP_OUT0. */
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_ENUM(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLP_OUT0));
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_ENB_H_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLK_ENB_EMC, ENABLE));
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_ENB_H_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLK_ENB_MEM, ENABLE));
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_ENB_X_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_X_CLK_ENB_EMC_DLL, ENABLE));
+
+            /* Clear reset for MEM/EMC. */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_RST_DEV_H_CLR, CLK_RST_REG_BITS_ENUM(RST_DEV_H_EMC_RST, ENABLE),
+                                                                  CLK_RST_REG_BITS_ENUM(RST_DEV_H_MEM_RST, ENABLE));
+
+            /* Wait 5 microseconds for configuration to take. */
+            util::WaitMicroSeconds(5);
+
+            /* Enable ARC_CLK_OVR_ON. */
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD, CLK_RST_REG_BITS_ENUM(LVL2_CLK_GATE_OVRD_ARC_CLK_OVR_ON, ON));
+
+            /* Enable the ARC. */
+            reg::ReadWrite(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, ENABLED));
+
+            /* Set IRAM BOM/TOP to open up access to all mmio. */
+            reg::Write(MC + MC_IRAM_BOM, 0x40000000);
+            reg::Write(MC + MC_IRAM_TOM, 0x80000000);
+
+            /* Read to ensure our configuration takes. */
+            reg::Read(MC + MC_IRAM_REG_CTRL);
+        }
+
         void InitializeClock() {
             /* Set SPARE_REG0 clock divisor 2. */
             reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_SPARE_REG0, CLK_RST_REG_BITS_ENUM(SPARE_REG0_CLK_M_DIVISOR, CLK_M_DIVISOR2));
@@ -248,8 +277,6 @@ namespace ams::nxboot {
             pinmux::SetupHomeButton();
         }
 
-
-
     }
 
     void SecureInitialize(bool enable_log) {
@@ -268,6 +295,21 @@ namespace ams::nxboot {
             }
             DoMbistWorkaround();
         }
+
+        /* Initialize security engine clock. */
+        clkrst::EnableSeClock();
+
+        /* Set fuse visibility. */
+        clkrst::SetFuseVisibility(true);
+
+        /* Disable fuse programming. */
+        fuse::Lockout();
+
+        /* Initialize the security engine. */
+        se::Initialize();
+
+        /* Enable the arc. */
+        EnableArc();
 
         /* Setup initial clocks. */
         InitializeClock();
