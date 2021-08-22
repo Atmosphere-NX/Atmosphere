@@ -218,9 +218,9 @@ namespace ams::nxboot {
             /* Set HOLD_CKE_LOW_EN. */
             reg::ReadWrite(PMC + APBDEV_PMC_CNTRL2, PMC_REG_BITS_ENUM(CNTRL2_HOLD_CKE_LOW_EN, ENABLE));
 
-            /* Set bit 25 in APBDEV_PMC_SCRATCH188. */
-            /* NOTE: This seems like a bug? It doesn't ever get used. */
-            reg::ReadWrite(PMC + APBDEV_PMC_SCRATCH188, REG_BITS_VALUE(25, 1, 1));
+            /* Set CFG2TMC_RAM_SVOP_PDP to 2. */
+            /* NOTE: Nintendo acidentally writes this to the PMC instead of the APB due to a bug. */
+            reg::ReadWrite(APB + APB_MISC_GP_ASDBGREG, APB_MISC_REG_BITS_VALUE(GP_ASDBGREG_CFG2TMC_RAM_SVOP_PDP, 2));
 
             /* Set CLK_SYSTEM_RATE. */
             reg::Write(CLKRST + CLK_RST_CONTROLLER_CLK_SYSTEM_RATE, CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_HCLK_DIS, 0),
