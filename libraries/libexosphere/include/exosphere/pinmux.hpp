@@ -15,15 +15,21 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/fuse.hpp>
 
 namespace ams::pinmux {
 
     void SetRegisterAddress(uintptr_t pinmux_address, uintptr_t gpio_address);
+
+    void SetupFirst(fuse::HardwareType hw_type);
 
     void SetupUartA();
     void SetupUartB();
     void SetupUartC();
     void SetupI2c1();
     void SetupI2c5();
+
+    void SetupVolumeButton();
+    void SetupHomeButton();
 
 }
