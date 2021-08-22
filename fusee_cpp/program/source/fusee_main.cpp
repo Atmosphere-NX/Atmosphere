@@ -15,12 +15,16 @@
  */
 #include <exosphere.hpp>
 #include "fusee_secure_initialize.hpp"
+#include "fusee_sdram.hpp"
 
 namespace ams::nxboot {
 
     void Main() {
         /* Perform secure hardware initialization. */
         SecureInitialize(true);
+
+        /* Initialize Sdram. */
+        InitializeSdram();
 
         /* TODO */
         AMS_INFINITE_LOOP();

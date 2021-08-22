@@ -15,15 +15,14 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <exosphere/pmic.hpp>
-#include <exosphere/fuse.hpp>
 
-namespace ams::pmic {
+namespace ams::br {
 
-    void SetSystemSetting(fuse::SocType soc_type);
-    void EnableVddCore(fuse::SocType soc_type);
-    void EnableLdo8();
-
-    void EnableVddMemory(fuse::SocType soc_type);
+    enum BootMemoryType : u32 {
+        BootMemoryType_None,
+        BootMemoryType_LpDdr2,
+        BootMemoryType_Ddr3,
+        BootMemoryType_LpDdr4,
+    };
 
 }

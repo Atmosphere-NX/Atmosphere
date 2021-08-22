@@ -10,9 +10,13 @@ SECTIONS {
     OVERLAY : NOCROSSREFS {
         .ovl_sein {
             fusee_secure_initialize.o(.text*);
+            fusee_sdram.o(.text*);
             fusee_secure_initialize.o(.rodata*);
+            fusee_sdram.o(.rodata*);
             fusee_secure_initialize.o(.data*);
+            fusee_sdram.o(.data*);
             fusee_secure_initialize.o(.bss*);
+            fusee_sdram.o(.bss*);
             FILL(0x00000000)
             . = ORIGIN(ovl) + LENGTH(ovl) - 1;
             BYTE(0x00);

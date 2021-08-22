@@ -13,17 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <vapours.hpp>
-#include <exosphere/pmic.hpp>
-#include <exosphere/fuse.hpp>
+#pragma once
 
-namespace ams::pmic {
+namespace ams::nxboot {
 
-    void SetSystemSetting(fuse::SocType soc_type);
-    void EnableVddCore(fuse::SocType soc_type);
-    void EnableLdo8();
-
-    void EnableVddMemory(fuse::SocType soc_type);
+    void Uncompress(void *dst, size_t dst_size, const void *src, size_t src_size);
 
 }
