@@ -15,25 +15,13 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/pmic.hpp>
+#include <exosphere/fuse.hpp>
 
 namespace ams::pmic {
 
-    enum Regulator {
-        /* Erista regulators. */
-        Regulator_Erista_Max77621   = 0, /* Device code 0x3A000001 */
-
-        /* Mariko regulators. */
-        Regulator_Mariko_Max77812_A = 1, /* Device code 0x3A000002 */
-        Regulator_Mariko_Max77812_B = 2, /* Device code 0x3A000006 */
-    };
-
-    void SetEnBit(Regulator regulator);
-    void EnableVddCpu(Regulator regulator);
-    void DisableVddCpu(Regulator regulator);
-    void EnableSleep();
-    void PowerOff();
-    void ShutdownSystem(bool reboot);
-    bool IsAcOk();
-    bool IsPowerButtonPressed();
+    void SetSystemSetting(fuse::SocType soc_type);
+    void EnableVddCore(fuse::SocType soc_type);
+    void EnableLdo8();
 
 }

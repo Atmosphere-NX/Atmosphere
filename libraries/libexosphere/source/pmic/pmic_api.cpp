@@ -32,10 +32,22 @@ namespace ams::pmic {
         /* TODO: Find datasheet, link to it instead. */
         /* NOTE: Tentatively, Max77620 "mostly" matches https://datasheets.maximintegrated.com/en/ds/MAX77863.pdf. */
         /*       This does not contain Max77621 documentation, though. */
+        constexpr inline int Max77620RegisterCnfgBbc    = 0x04;
         constexpr inline int Max77620RegisterOnOffStat  = 0x15;
+        constexpr inline int Max77620RegisterSd0        = 0x16;
+        constexpr inline int Max77620RegisterCnfg1Ldo8  = 0x33;
         constexpr inline int Max77620RegisterGpio0      = 0x36;
         constexpr inline int Max77620RegisterAmeGpio    = 0x40;
         constexpr inline int Max77620RegisterOnOffCnfg1 = 0x41;
+        constexpr inline int Max77620RegisterCnfgFps0   = 0x43;
+        constexpr inline int Max77620RegisterCnfgFps1   = 0x44;
+        constexpr inline int Max77620RegisterCnfgFps2   = 0x45;
+        constexpr inline int Max77620RegisterFpsLdo4    = 0x4A;
+        constexpr inline int Max77620RegisterFpsLdo8    = 0x4E;
+        constexpr inline int Max77620RegisterFpsSd0     = 0x4F;
+        constexpr inline int Max77620RegisterFpsSd1     = 0x50;
+        constexpr inline int Max77620RegisterFpsSd3     = 0x52;
+        constexpr inline int Max77620RegisterFpsGpio3   = 0x56;
 
         constexpr inline int Max77621RegisterVOut     = 0x00;
         constexpr inline int Max77621RegisterVOutDvc  = 0x01;
@@ -148,6 +160,35 @@ namespace ams::pmic {
             i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG1, on_off_1_val);
         }
 
+        void SetBackupBatteryConfig() {
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfgBbc, 0x40);
+        }
+
+        void SetForcePowerOffTimeConfig() {
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, 0x58);
+        }
+
+        void SetFlexiblePowerSequencer() {
+            /* Configure FPS registers. */
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfgFps0, 0x38);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfgFps1, 0x3A);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfgFps2, 0x38);
+
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsLdo4, 0x0F);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsLdo8, 0xC7);
+
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsSd0, 0x4F);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsSd1, 0x29);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsSd3, 0x1B);
+
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterFpsGpio3, 0x22);
+        }
+
+        void SetVoltage(int reg, int mv) {
+            const u8 v = ((mv - 600) * 1000) / 12500;
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, reg, v);
+        }
+
     }
 
     void SetEnBit(Regulator regulator) {
@@ -215,15 +256,24 @@ namespace ams::pmic {
         return (GetPmicOnOffStat() & (1 << 2)) != 0;
     }
 
-    void SetSystemSetting() {
-        /* TODO */
+    void SetSystemSetting(fuse::SocType soc_type) {
+        SetBackupBatteryConfig();
+        SetForcePowerOffTimeConfig();
+        if (soc_type == fuse::SocType_Erista) {
+            SetFlexiblePowerSequencer();
+        }
     }
-    void EnableVddCore() {
-        /* TODO */
+
+    void EnableVddCore(fuse::SocType soc_type) {
+        if (soc_type == fuse::SocType_Erista) {
+            SetVoltage(Max77620RegisterSd0, 1125);
+        } else /* if (soc_type == fuse::SocType_Mariko) */ {
+            SetVoltage(Max77620RegisterSd0, 1050);
+        }
     }
 
     void EnableLdo8() {
-        /* TODO */
+        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfg1Ldo8, 0xE8);
     }
 
 }

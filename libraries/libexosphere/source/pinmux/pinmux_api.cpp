@@ -22,11 +22,73 @@ namespace ams::pinmux {
         constinit uintptr_t g_pinmux_address = secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
         constinit uintptr_t g_gpio_address   = secmon::MemoryRegionPhysicalDeviceGpio.GetAddress();
 
+        void SetupFirstImpl(bool tx_cross_ext_con) {
+            if (tx_cross_ext_con) {
+                reg::Write(g_pinmux_address + PINMUX_AUX_UART2_TX, PINMUX_REG_BITS_ENUM(AUX_UART2_PM,       UARTB),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_E_INPUT,      DISABLE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_E_OD,         DISABLE));
+
+                reg::Write(g_pinmux_address + PINMUX_AUX_UART3_TX, PINMUX_REG_BITS_ENUM(AUX_UART3_PM,       UARTC),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_E_INPUT,      DISABLE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
+                                                                   PINMUX_REG_BITS_ENUM(AUX_E_OD,         DISABLE));
+
+                /* Configure GPIO for Uart-B/Uart-C. */
+                reg::ReadWrite(g_gpio_address + 0x108, REG_BITS_VALUE(0, 1, 1));
+                reg::ReadWrite(g_gpio_address + 0x00C, REG_BITS_VALUE(1, 1, 1));
+                reg::ReadWrite(g_gpio_address + 0x118, REG_BITS_VALUE(0, 1, 0));
+                reg::ReadWrite(g_gpio_address + 0x01C, REG_BITS_VALUE(1, 1, 0));
+            }
+
+            /* Configure PE6/PH6 */
+            reg::Write(g_pinmux_address + PINMUX_AUX_GPIO_PE6, PINMUX_REG_BITS_ENUM(AUX_GPIO_PE6_PM,       RSVD0),
+                                                               PINMUX_REG_BITS_ENUM(AUX_PUPD,               NONE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_TRISTATE,    PASSTHROUGH),
+                                                               PINMUX_REG_BITS_ENUM(AUX_E_INPUT,          ENABLE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_LOCK,            DISABLE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_E_OD,            DISABLE));
+
+            reg::Write(g_pinmux_address + PINMUX_AUX_GPIO_PH6, PINMUX_REG_BITS_ENUM(AUX_GPIO_PH6_PM,       RSVD0),
+                                                               PINMUX_REG_BITS_ENUM(AUX_PUPD,               NONE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_TRISTATE,    PASSTHROUGH),
+                                                               PINMUX_REG_BITS_ENUM(AUX_E_INPUT,          ENABLE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_LOCK,            DISABLE),
+                                                               PINMUX_REG_BITS_ENUM(AUX_E_OD,            DISABLE));
+
+            /* Configure GPIO E6/H6. */
+            reg::ReadWrite(g_gpio_address + 0x100, REG_BITS_VALUE(6, 1, 1));
+            reg::ReadWrite(g_gpio_address + 0x10C, REG_BITS_VALUE(6, 1, 1));
+            reg::ReadWrite(g_gpio_address + 0x110, REG_BITS_VALUE(6, 1, 0));
+            reg::ReadWrite(g_gpio_address + 0x11C, REG_BITS_VALUE(6, 1, 0));
+        }
+
     }
 
     void SetRegisterAddress(uintptr_t pinmux_address, uintptr_t gpio_address) {
         g_pinmux_address = pinmux_address;
         g_gpio_address   = gpio_address;
+    }
+
+    void SetupFirst(fuse::HardwareType hw_type) {
+        switch (hw_type) {
+            case fuse::HardwareType_Icosa:
+            case fuse::HardwareType_Iowa:
+            case fuse::HardwareType_Aula:
+                SetupFirstImpl(true);
+                break;
+            case fuse::HardwareType_Hoag:
+            case fuse::HardwareType_Calcio:
+                SetupFirstImpl(false);
+                break;
+            case fuse::HardwareType_Copper:
+            case fuse::HardwareType_Undefined:
+                break;
+        }
     }
 
     void SetupUartA() {
@@ -178,6 +240,20 @@ namespace ams::pinmux {
                                                      PINMUX_REG_BITS_ENUM(AUX_E_INPUT,       ENABLE),
                                                      PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
                                                      PINMUX_REG_BITS_ENUM(AUX_E_OD,         DISABLE));
+    }
+
+    void SetupVolumeButton() {
+        /* Configure VOL_UP/VOL_DOWN */
+        reg::ReadWrite(g_gpio_address + 0x50C, REG_BITS_VALUE(6, 1, 1));
+        reg::ReadWrite(g_gpio_address + 0x50C, REG_BITS_VALUE(7, 1, 1));
+        reg::ReadWrite(g_gpio_address + 0x51C, REG_BITS_VALUE(6, 1, 0));
+        reg::ReadWrite(g_gpio_address + 0x51C, REG_BITS_VALUE(7, 1, 0));
+    }
+
+    void SetupHomeButton() {
+        /* Configure BUTTON_HOME */
+        reg::ReadWrite(g_gpio_address + 0x600, REG_BITS_VALUE(1, 1, 1));
+        reg::ReadWrite(g_gpio_address + 0x610, REG_BITS_VALUE(1, 1, 0));
     }
 
 }

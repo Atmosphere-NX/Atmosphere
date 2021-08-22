@@ -23,6 +23,8 @@
 
 #define APB_MISC_PP_CONFIG_CTL                (0x024)
 
+#define APB_MISC_PP_PINMUX_GLOBAL_0           (0x040)
+
 #define APB_MISC_GP_ASDBGREG                  (0x810)
 
 #define APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL     (0xA98)

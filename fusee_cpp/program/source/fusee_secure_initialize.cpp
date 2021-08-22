@@ -23,6 +23,7 @@ namespace ams::nxboot {
 
         constexpr inline const uintptr_t CLKRST = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
         constexpr inline const uintptr_t PMC    = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
+        constexpr inline const uintptr_t APB    = secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
         constexpr inline const uintptr_t AHB    = AHB_ARBC(0);
         constexpr inline const uintptr_t I2S    = I2S_REG(0);
         constexpr inline const uintptr_t DISP1  = secmon::MemoryRegionPhysicalDeviceDisp1.GetAddress();
@@ -166,7 +167,18 @@ namespace ams::nxboot {
         }
 
         void InitializePinmux(fuse::HardwareType hw_type) {
-            /* TODO */
+            /* Clear global pinmux control register */
+            reg::Write(APB + APB_MISC_PP_PINMUX_GLOBAL_0, 0);
+
+            /* Perform initial pinmux setup. */
+            pinmux::SetupFirst(hw_type);
+
+            /* Setup important pinmux devices. */
+            pinmux::SetupI2c1();
+            pinmux::SetupI2c5();
+            pinmux::SetupUartA();
+            pinmux::SetupVolumeButton();
+            pinmux::SetupHomeButton();
         }
 
 
@@ -211,10 +223,10 @@ namespace ams::nxboot {
         i2c::Initialize(i2c::Port_5);
 
         /* Configure pmic system setting. */
-        pmic::SetSystemSetting();
+        pmic::SetSystemSetting(soc_type);
 
         /* Enable VDD core */
-        pmic::EnableVddCore();
+        pmic::EnableVddCore(soc_type);
 
         /* On hoag, enable Ldo8 */
         if (hw_type == fuse::HardwareType_Hoag) {
@@ -229,6 +241,17 @@ namespace ams::nxboot {
                                                                       CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,  PLLP_OUT0),
                                                                       CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,  PLLP_OUT0),
                                                                       CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE, PLLP_OUT0));
+
+        /* Do mariko-only TZRAM configuration. */
+        if (soc_type == fuse::SocType_Mariko) {
+            reg::ReadWrite(PMC + APBDEV_PMC_TZRAM_PWR_CNTRL, PMC_REG_BITS_VALUE(TZRAM_PWR_CNTRL_TZRAM_SD, 0));
+
+            reg::Write(PMC + APBDEV_PMC_TZRAM_NON_SEC_DISABLE, PMC_REG_BITS_ENUM(TZRAM_NON_SEC_DISABLE_SD_WRITE, ON),
+                                                               PMC_REG_BITS_ENUM(TZRAM_NON_SEC_DISABLE_SD_READ,  ON));
+
+            reg::Write(PMC + APBDEV_PMC_TZRAM_SEC_DISABLE, PMC_REG_BITS_ENUM(TZRAM_SEC_DISABLE_SD_WRITE, ON),
+                                                           PMC_REG_BITS_ENUM(TZRAM_SEC_DISABLE_SD_READ,  ON));
+        }
     }
 
 }
