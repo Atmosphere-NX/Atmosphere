@@ -26,16 +26,11 @@ namespace ams::nxboot::loader {
         constexpr size_t ProgramImageSizeMax = ProgramImageEnd - ProgramImageBase;
 
         void CopyBackwards(void *dst, const void *src, size_t size) {
-            /* We want to copy 32-bits at a time from destination to source. */
-            const size_t words = util::DivideUp(size, sizeof(u32));
+                  u8 *dst_8 = static_cast<u8 *>(dst) + size;
+            const u8 *src_8 = static_cast<const u8 *>(src) + size;
 
-            /* Convert to 32-bit pointers. */
-                  u32 *dst_32 = static_cast<u32 *>(dst) + words;
-            const u32 *src_32 = static_cast<const u32 *>(src) + words;
-
-            /* Copy data. */
-            for (size_t i = 0; i < words; ++i) {
-                *(--dst_32) = *(--src_32);
+            for (size_t i = 0; i < size; ++i) {
+                *(--dst_8) = *(--src_8);
             }
         }
 
@@ -43,7 +38,7 @@ namespace ams::nxboot::loader {
 
     NORETURN void UncompressAndExecute(const void *program, size_t program_size) {
         /* Relocate the compressed binary to a place where we can safely decompress it. */
-        void *relocated_program = reinterpret_cast<void *>(util::AlignDown(ProgramImageEnd - program_size, sizeof(u32)));
+        void *relocated_program = reinterpret_cast<void *>(ProgramImageEnd - program_size);
         if (relocated_program != program) {
             CopyBackwards(relocated_program, program, program_size);
         }

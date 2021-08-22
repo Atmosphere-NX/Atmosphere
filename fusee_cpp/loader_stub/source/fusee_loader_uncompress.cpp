@@ -87,7 +87,9 @@ namespace ams::nxboot::loader {
                 }
 
                 void Copy(size_t size) {
-                    __builtin_memcpy(this->dst + this->dst_offset, this->src + this->src_offset, size);
+                    for (size_t i = 0; i < size; ++i) {
+                        this->dst[this->dst_offset + i] = this->src[this->src_offset + i];
+                    }
                     this->dst_offset += size;
                     this->src_offset += size;
                 }
