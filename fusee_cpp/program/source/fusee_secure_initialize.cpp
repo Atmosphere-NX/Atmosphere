@@ -21,13 +21,15 @@ namespace ams::nxboot {
 
     namespace {
 
-        constexpr inline const uintptr_t CLKRST = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
-        constexpr inline const uintptr_t PMC    = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
-        constexpr inline const uintptr_t APB    = secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
-        constexpr inline const uintptr_t AHB    = AHB_ARBC(0);
-        constexpr inline const uintptr_t I2S    = I2S_REG(0);
-        constexpr inline const uintptr_t DISP1  = secmon::MemoryRegionPhysicalDeviceDisp1.GetAddress();
-        constexpr inline const uintptr_t VIC    = secmon::MemoryRegionPhysicalDeviceDsi.GetAddress() + 0x40000;
+        constexpr inline const uintptr_t CLKRST  = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
+        constexpr inline const uintptr_t PMC     = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
+        constexpr inline const uintptr_t APB     = secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
+        constexpr inline const uintptr_t AHB     = AHB_ARBC(0);
+        constexpr inline const uintptr_t I2S     = I2S_REG(0);
+        constexpr inline const uintptr_t DISP1   = secmon::MemoryRegionPhysicalDeviceDisp1.GetAddress();
+        constexpr inline const uintptr_t VIC     = secmon::MemoryRegionPhysicalDeviceDsi.GetAddress() + 0x40000;
+        constexpr inline const uintptr_t TIMER   = secmon::MemoryRegionPhysicalDeviceTimer.GetAddress();
+        constexpr inline const uintptr_t SYSCTR0 = secmon::MemoryRegionPhysicalDeviceSysCtr0.GetAddress();
 
         void DoRcmWorkaround(const void *sbk, size_t sbk_size) {
             /* Set the SBK inside the security engine. */
@@ -163,7 +165,72 @@ namespace ams::nxboot {
         }
 
         void InitializeClock() {
-            /* TODO */
+            /* Set SPARE_REG0 clock divisor 2. */
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_SPARE_REG0, CLK_RST_REG_BITS_ENUM(SPARE_REG0_CLK_M_DIVISOR, CLK_M_DIVISOR2));
+
+            /* Set system counter frequency. */
+            reg::Write(SYSCTR0 + SYSCTR0_CNTFID0, 19'200'000);
+
+            /* Restore TIMERUS config to 19.2 MHz. */
+            reg::Write(TIMER + TIMERUS_USEC_CFG, TIMER_REG_BITS_VALUE(USEC_CFG_USEC_DIVIDEND,  5 - 1),
+                                                 TIMER_REG_BITS_VALUE(USEC_CFG_USEC_DIVISOR,  96 - 1));
+
+            /* Enable the crystal oscillator, and copy the drive strength from pmc. */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_OSC_CTRL, CLK_RST_REG_BITS_ENUM (OSC_CTRL_OSC_FREQ, OSC38P4),
+                                                             CLK_RST_REG_BITS_ENUM (OSC_CTRL_XOE,       ENABLE),
+                                                             CLK_RST_REG_BITS_VALUE(OSC_CTRL_XOFS,           7));
+
+            /* Set the crystal oscillator value in PMC. */
+            reg::ReadWrite(PMC + APBDEV_PMC_OSC_EDPD_OVER, PMC_REG_BITS_VALUE(OSC_EDPD_OVER_XOFS, 7));
+
+            /* Configure the crystal oscillator to use PMC value on warmboot. */
+            reg::ReadWrite(PMC + APBDEV_PMC_OSC_EDPD_OVER, PMC_REG_BITS_ENUM(OSC_EDPD_OVER_OSC_CTRL_SELECT, PMC));
+
+            /* Set HOLD_CKE_LOW_EN. */
+            reg::ReadWrite(PMC + APBDEV_PMC_CNTRL2, PMC_REG_BITS_ENUM(CNTRL2_HOLD_CKE_LOW_EN, ENABLE));
+
+            /* Set bit 25 in APBDEV_PMC_SCRATCH188. */
+            /* NOTE: This seems like a bug? It doesn't ever get used. */
+            reg::ReadWrite(PMC + APBDEV_PMC_SCRATCH188, REG_BITS_VALUE(25, 1, 1));
+
+            /* Set CLK_SYSTEM_RATE. */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_CLK_SYSTEM_RATE, CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_HCLK_DIS, 0),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_AHB_RATE, 1),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_PCLK_DIS, 0),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_APB_RATE, 0));
+
+            /* Configure PLLMB_BASE. */
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE, CLK_RST_REG_BITS_ENUM(PLLMB_BASE_PLLMB_ENABLE, DISABLE));
+
+            /* Configure TSC_MULT. */
+            constexpr u32 TscMultValue = 19'200'000 * 16 / 32768;
+            reg::ReadWrite(PMC + APBDEV_PMC_TSC_MULT, PMC_REG_BITS_VALUE(TSC_MULT_MULT_VAL, TscMultValue));
+
+            /* Configure SCLK_BURST_POLICY */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_SCLK_BURST_POLICY, CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SYS_STATE,                       RUN),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_FIQ_SOURCE,        PLLP_OUT2),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,        PLLP_OUT2),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,        PLLP_OUT2),
+                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE,       PLLP_OUT2));
+
+            /* Configure SUPER_SCLK_DIVIDER */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_SUPER_SCLK_DIVIDER, CLK_RST_REG_BITS_ENUM (SUPER_SCLK_DIVIDER_SUPER_SDIV_ENB,              ENABLE),
+                                                                       CLK_RST_REG_BITS_ENUM (SUPER_SCLK_DIVIDER_SUPER_SDIV_DIS_FROM_COP_FIQ,    NOP),
+                                                                       CLK_RST_REG_BITS_ENUM (SUPER_SCLK_DIVIDER_SUPER_SDIV_DIS_FROM_CPU_FIQ,    NOP),
+                                                                       CLK_RST_REG_BITS_ENUM (SUPER_SCLK_DIVIDER_SUPER_SDIV_DIS_FROM_COP_IRQ,    NOP),
+                                                                       CLK_RST_REG_BITS_ENUM (SUPER_SCLK_DIVIDER_SUPER_SDIV_DIS_FROM_CPU_IRQ,    NOP),
+                                                                       CLK_RST_REG_BITS_VALUE(SUPER_SCLK_DIVIDER_SUPER_SDIV_DIVIDEND,              0),
+                                                                       CLK_RST_REG_BITS_VALUE(SUPER_SCLK_DIVIDER_SUPER_SDIV_DIVISOR,               0));
+
+            /* Set CLK_SYSTEM_RATE */
+            reg::Write(CLKRST + CLK_RST_CONTROLLER_CLK_SYSTEM_RATE, CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_HCLK_DIS, 0),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_AHB_RATE, 0),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_PCLK_DIS, 0),
+                                                                    CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_APB_RATE, 2));
         }
 
         void InitializePinmux(fuse::HardwareType hw_type) {
