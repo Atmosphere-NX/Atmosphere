@@ -35,6 +35,8 @@ namespace ams::pmic {
         constexpr inline int Max77620RegisterCnfgBbc    = 0x04;
         constexpr inline int Max77620RegisterOnOffStat  = 0x15;
         constexpr inline int Max77620RegisterSd0        = 0x16;
+        constexpr inline int Max77620RegisterSd1        = 0x17;
+        constexpr inline int Max77620RegisterCnfg2Sd    = 0x22;
         constexpr inline int Max77620RegisterCnfg1Ldo8  = 0x33;
         constexpr inline int Max77620RegisterGpio0      = 0x36;
         constexpr inline int Max77620RegisterAmeGpio    = 0x40;
@@ -274,6 +276,16 @@ namespace ams::pmic {
 
     void EnableLdo8() {
         i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfg1Ldo8, 0xE8);
+    }
+
+    void EnableVddMemory(fuse::SocType soc_type) {
+        /* Disable remote sense for Sd1. */
+        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterCnfg2Sd, 0x05);
+
+        /* On Erista, set Sd1 voltage. */
+        if (soc_type == fuse::SocType_Erista) {
+            SetVoltage(Max77620RegisterSd1, 1100);
+        }
     }
 
 }

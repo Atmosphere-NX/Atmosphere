@@ -13,17 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <exosphere.hpp>
 #pragma once
-#include <vapours.hpp>
-#include <exosphere/pmic.hpp>
-#include <exosphere/fuse.hpp>
 
-namespace ams::pmic {
+namespace ams::nxboot {
 
-    void SetSystemSetting(fuse::SocType soc_type);
-    void EnableVddCore(fuse::SocType soc_type);
-    void EnableLdo8();
-
-    void EnableVddMemory(fuse::SocType soc_type);
+    void InitializeSdram();
 
 }

@@ -52,3 +52,23 @@ __gnu_thumb1_case_uhi:
     bx  lr
 .type __gnu_thumb1_case_uhi, %function
 .size __gnu_thumb1_case_uhi, .-__gnu_thumb1_case_uhi
+
+.section    .text.__gnu_thumb1_case_si, "ax", %progbits
+.globl __gnu_thumb1_case_si
+.align      0
+.thumb_func
+.syntax unified
+__gnu_thumb1_case_si:
+    push    {r0, r1}
+    mov     r1, lr
+    adds.n  r1, r1, #2
+    lsrs    r1, r1, #2
+    lsls    r0, r0, #2
+    lsls    r1, r1, #2
+    ldr     r0, [r1, r0]
+    adds    r0, r0, r1
+    mov     lr, r0
+    pop     {r0, r1}
+    bx      lr
+.type __gnu_thumb1_case_si, %function
+.size __gnu_thumb1_case_si, .-__gnu_thumb1_case_si
