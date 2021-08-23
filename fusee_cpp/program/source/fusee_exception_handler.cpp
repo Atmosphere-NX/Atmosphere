@@ -19,6 +19,10 @@
 namespace ams::nxboot {
 
     NORETURN void ErrorStop() {
+        /* ABORT? */
+        *reinterpret_cast<volatile u32 *>(0x40038000) = 0xDEADDEAD;
+        *reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
+
         /* Halt ourselves. */
         while (true) {
             reg::Write(secmon::MemoryRegionPhysicalDeviceFlowController.GetAddress() + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
@@ -37,15 +41,30 @@ namespace ams::diag {
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
         AMS_UNUSED(file, line, func, expr, value, format);
+        {
+            u32 lr;
+            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
+        }
         ams::nxboot::ErrorStop();
     }
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
         AMS_UNUSED(file, line, func, expr, value);
+        {
+            u32 lr;
+            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
+        }
         ams::nxboot::ErrorStop();
     }
 
     NORETURN void AbortImpl() {
+        {
+            u32 lr;
+            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
+        }
         ams::nxboot::ErrorStop();
     }
 
