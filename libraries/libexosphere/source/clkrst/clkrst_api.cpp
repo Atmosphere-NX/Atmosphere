@@ -21,6 +21,8 @@ namespace ams::clkrst {
 
         constinit uintptr_t g_register_address = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
 
+        constinit BpmpClockRate g_bpmp_clock_rate = BpmpClockRate_408MHz;
+
         struct ClockParameters {
             uintptr_t reset_offset;
             uintptr_t clk_enb_offset;
@@ -98,6 +100,64 @@ namespace ams::clkrst {
 
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Cache2Clock, L, CACHE2);
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Cram2Clock, U, CRAM2);
+
+        constexpr const u32 PllcDivn[] = {
+            [BpmpClockRate_408MHz] =  0,
+            [BpmpClockRate_544MHz] = 85,
+            [BpmpClockRate_576MHz] = 90,
+            [BpmpClockRate_589MHz] = 92,
+        };
+
+        void EnablePllc(BpmpClockRate rate) {
+            const u32 desired_divn = PllcDivn[rate];
+
+            /* Check if we're already enabled. */
+            const bool is_enabled   = reg::HasValue(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_ENABLE, ENABLE));
+            const bool is_good_divn = reg::HasValue(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_VALUE(PLLC_BASE_PLLC_DIVN, desired_divn));
+            if (is_enabled && is_good_divn) {
+                return;
+            }
+
+            /* Take PLLC out of reset. */
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC, (reg::Read(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC) & 0xBFF0000F) | (0x80000 << 4));
+            reg::SetBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC2, 0xF0 << 8);
+
+            /* Disable pll. */
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_ENABLE, DISABLE));
+            reg::ClearBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC1, (1u << 27));
+            util::WaitMicroSeconds(10);
+
+            /* Set dividers. */
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_VALUE(PLLC_BASE_PLLC_DIVM,            4),
+                                                                          CLK_RST_REG_BITS_VALUE(PLLC_BASE_PLLC_DIVN, desired_divn));
+
+            /* Enable pll. */
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_ENABLE, ENABLE));
+            while (!reg::HasValue(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_LOCK, LOCK))) {
+                /* ... */
+            }
+
+            /* Disable PLLC_OUT1. */
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_PLLC_OUT, CLK_RST_REG_BITS_VALUE(PLLC_OUT_PLLC_OUT1_RATIO, 1));
+
+            /* Enable PLLC_OUT1. */
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_OUT, CLK_RST_REG_BITS_ENUM(PLLC_OUT_PLLC_OUT1_RSTN,  RESET_DISABLE),
+                                                                             CLK_RST_REG_BITS_ENUM(PLLC_OUT_PLLC_OUT1_CLKEN,        ENABLE));
+            util::WaitMicroSeconds(1'000);
+        }
+
+        void DisablePllc() {
+            /* Disable PLLC/PLLC_OUT1. */
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_OUT, CLK_RST_REG_BITS_ENUM(PLLC_OUT_PLLC_OUT1_RSTN,  RESET_ENABLE),
+                                                                             CLK_RST_REG_BITS_ENUM(PLLC_OUT_PLLC_OUT1_CLKEN,      DISABLE));
+
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_ENABLE, DISABLE));
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_REF_DIS, REF_DISABLE));
+            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_REF_DIS, REF_DISABLE));
+            reg::SetBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC1, (1u << 27));
+            reg::SetBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC, (1u << 30));
+            util::WaitMicroSeconds(10);
+        }
 
     }
 
@@ -206,6 +266,82 @@ namespace ams::clkrst {
 
     void DisableKfuseClock() {
         DisableClock(KfuseClock);
+    }
+
+    BpmpClockRate GetBpmpClockRate() {
+        return g_bpmp_clock_rate;
+    }
+
+    BpmpClockRate SetBpmpClockRate(BpmpClockRate rate) {
+        /* Get the current rate. */
+        const auto prev_rate = g_bpmp_clock_rate;
+
+        /* Cap our rate. */
+        if (rate >= BpmpClockRate_Count) {
+            rate = BpmpClockRate_589MHz;
+        }
+
+        /* Configure the rate. */
+        if (rate != BpmpClockRate_408MHz) {
+            /* If we were previously overclocked, restore to PLLP_OUT. */
+            if (prev_rate != BpmpClockRate_408MHz) {
+                reg::Write(g_register_address + CLK_RST_CONTROLLER_SCLK_BURST_POLICY, CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SYS_STATE,                       RUN),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_FIQ_SOURCE,        PLLP_OUT0),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,        PLLP_OUT0),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,        PLLP_OUT0),
+                                                                                      CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE,       PLLP_OUT0));
+                util::WaitMicroSeconds(1'000);
+            }
+
+            /* Configure PLLC. */
+            EnablePllc(rate);
+
+            /* Set SCLK. */
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_CLK_SYSTEM_RATE, CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_HCLK_DIS, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_AHB_RATE, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_PCLK_DIS, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_APB_RATE, 3));
+
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_SCLK_BURST_POLICY, CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SYS_STATE,                       RUN),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_FIQ_SOURCE,        PLLP_OUT0),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,        PLLP_OUT0),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,        PLLC_OUT1),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE,            CLKM));
+        } else {
+            /* Configure to use PLLP_OUT0. */
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_SCLK_BURST_POLICY, CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SYS_STATE,                       RUN),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_FIQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_COP_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_CPU_AUTO_SWAKEUP_FROM_IRQ,       NOP),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_FIQ_SOURCE,        PLLP_OUT0),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IRQ_SOURCE,        PLLP_OUT0),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_RUN_SOURCE,        PLLP_OUT0),
+                                                                                  CLK_RST_REG_BITS_ENUM(SCLK_BURST_POLICY_SWAKEUP_IDLE_SOURCE,            CLKM));
+            util::WaitMicroSeconds(1'000);
+
+            reg::Write(g_register_address + CLK_RST_CONTROLLER_CLK_SYSTEM_RATE, CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_HCLK_DIS, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_AHB_RATE, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_PCLK_DIS, 0),
+                                                                                CLK_RST_REG_BITS_VALUE(CLK_SYSTEM_RATE_APB_RATE, 2));
+
+            /* Disable PLLC. */
+            DisablePllc();
+        }
+
+        /* Set the clock rate. */
+        g_bpmp_clock_rate = rate;
+
+        /* Return the previous rate. */
+        return prev_rate;
     }
 
 }

@@ -52,4 +52,17 @@ namespace ams::clkrst {
     void DisableSor1Clock();
     void DisableKfuseClock();
 
+
+    enum BpmpClockRate {
+        BpmpClockRate_408MHz,
+        BpmpClockRate_544MHz,
+        BpmpClockRate_576MHz,
+        BpmpClockRate_589MHz,
+
+        BpmpClockRate_Count,
+    };
+
+    BpmpClockRate GetBpmpClockRate();
+    BpmpClockRate SetBpmpClockRate(BpmpClockRate rate);
+
 }
