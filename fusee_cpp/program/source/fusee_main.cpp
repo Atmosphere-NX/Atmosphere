@@ -15,11 +15,49 @@
  */
 #include <exosphere.hpp>
 #include "fusee_display.hpp"
-#include "fusee_secure_initialize.hpp"
-#include "fusee_sdram.hpp"
+#include "sein/fusee_secure_initialize.hpp"
+#include "sdram/fusee_sdram.hpp"
+#include "fs/fusee_fs_api.hpp"
 #include "fusee_sd_card.hpp"
+#include "fusee_fatal.hpp"
+#include "fusee_secondary_archive.hpp"
 
 namespace ams::nxboot {
+
+    namespace {
+
+        /* TODO: Change to fusee-secondary.bin when development is done. */
+        constexpr const char FuseeSecondaryFilePath[] = "sdmc:/atmosphere/fusee-boogaloo.bin";
+
+        void ReadFuseeSecondary() {
+            Result result;
+
+            /* Open fusee-secondary. */
+            fs::FileHandle file;
+            if (R_FAILED((result = fs::OpenFile(std::addressof(file), FuseeSecondaryFilePath, fs::OpenMode_Read)))) {
+                ShowFatalError("Failed to open %s!\n", FuseeSecondaryFilePath);
+            }
+
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+            /* Get file size. */
+            s64 file_size;
+            if (R_FAILED((result = fs::GetFileSize(std::addressof(file_size), file)))) {
+                ShowFatalError("Failed to get fusee-secondary size: 0x%08" PRIx32 "\n", result.GetValue());
+            }
+
+            /* Check file size. */
+            if (static_cast<size_t>(file_size) != SecondaryArchiveSize) {
+                ShowFatalError("fusee-secondary seems corrupted (size 0x%zx != 0x%zx)", static_cast<size_t>(file_size), SecondaryArchiveSize);
+            }
+
+            /* Read to fixed address. */
+            if (R_FAILED((result = fs::ReadFile(file, 0, const_cast<SecondaryArchive *>(std::addressof(GetSecondaryArchive())), SecondaryArchiveSize)))) {
+                ShowFatalError("Failed to read fusee-secondary: 0x%08" PRIx32 "\n", result.GetValue());
+            }
+        }
+
+    }
 
     void Main() {
         /* Perform secure hardware initialization. */
@@ -32,29 +70,25 @@ namespace ams::nxboot {
         hw::InitializeDataCache();
 
         /* Initialize SD card. */
-        Result result = InitializeSdCard();
-
-        /* DEBUG: Fatal error context */
         {
-            const ams::impl::FatalErrorContext *f_ctx = reinterpret_cast<const ams::impl::FatalErrorContext *>(0x4003E000);
-            InitializeDisplay();
-            ShowDisplay(f_ctx, ResultSuccess());
-        }
-
-        /* DEBUG: Check SD card connection. */
-        {
-            *reinterpret_cast<volatile u32 *>(0x40038000) = 0xAAAAAAAA;
-            *reinterpret_cast<volatile u32 *>(0x40038004) = result.GetValue();
-            if (R_SUCCEEDED(result)) {
-                sdmmc::SpeedMode sm;
-                sdmmc::BusWidth bw;
-                *reinterpret_cast<volatile u32 *>(0x40038008) = CheckSdCardConnection(std::addressof(sm), std::addressof(bw)).GetValue();
-                *reinterpret_cast<volatile u32 *>(0x4003800C) = static_cast<u32>(sm);
-                *reinterpret_cast<volatile u32 *>(0x40038010) = static_cast<u32>(bw);
+            Result result = InitializeSdCard();
+            if (R_FAILED(result)) {
+                ShowFatalError("Failed to initialize the SD card: 0x%08" PRIx32 "\n", result.GetValue());
             }
-
-            //*reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
         }
+
+        /* Mount SD card. */
+        if (!fs::MountSdCard()) {
+            ShowFatalError("Failed to mount the SD card.");
+        }
+
+        /* If we have a fatal error, save and display it. */
+        SaveAndShowFatalError();
+
+        /* Read our overlay file. */
+        ReadFuseeSecondary();
+
+        /* TODO */
 
         /* TODO */
         AMS_INFINITE_LOOP();

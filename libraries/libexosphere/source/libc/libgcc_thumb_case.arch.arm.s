@@ -91,3 +91,21 @@ __gnu_thumb1_case_shi:
     bx      lr
 .type __gnu_thumb1_case_shi, %function
 .size __gnu_thumb1_case_shi, .-__gnu_thumb1_case_shi
+
+.section    .text.__gnu_thumb1_case_sqi, "ax", %progbits
+.globl __gnu_thumb1_case_sqi
+.align      0
+.thumb_func
+.syntax unified
+__gnu_thumb1_case_sqi:
+    push    {r1}
+    mov     r1, lr
+    lsrs    r1, r1, #1
+    lsls    r1, r1, #1
+    ldrsb   r1, [r1, r0]
+    lsls    r1, r1, #1
+    add     lr, lr, r1
+    pop     {r1}
+    bx      lr
+.type __gnu_thumb1_case_sqi, %function
+.size __gnu_thumb1_case_sqi, .-__gnu_thumb1_case_sqi

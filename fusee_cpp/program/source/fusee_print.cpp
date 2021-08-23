@@ -101,28 +101,26 @@ namespace ams::nxboot {
         g_row          = 0;
 
         /* Clear the console. */
-        /* TODO: Assume it's already cleared? */
         std::memset(g_frame_buffer, 0, FrameBufferSize);
     }
 
-    void Print(const char *fmt, ...) {
+    void VPrint(const char *fmt, std::va_list vl) {
         /* Generate the string. */
         char log_str[1_KB];
-        {
-            std::va_list vl;
-            va_start(vl, fmt);
-            util::TVSNPrintf(log_str, sizeof(log_str), fmt, vl);
-            va_end(vl);
-        }
+        util::TVSNPrintf(log_str, sizeof(log_str), fmt, vl);
 
         /* Print each character. */
         const size_t len = std::strlen(log_str);
         for (size_t i = 0; i < len; ++i) {
             PutChar(log_str[i]);
         }
+    }
 
-        /* Flush the console. */
-        hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
+    void Print(const char *fmt, ...) {
+        std::va_list vl;
+        va_start(vl, fmt);
+        VPrint(fmt, vl);
+        va_end(vl);
     }
 
 }

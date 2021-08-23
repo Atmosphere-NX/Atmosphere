@@ -18,12 +18,12 @@
 
 namespace ams::nxboot {
 
-    constexpr inline size_t FrameBufferHeight = 768;
-    constexpr inline size_t FrameBufferWidth  = 1280;
-    constexpr inline size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
+    void ShowFatalError(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+    void ShowFatalError(const ams::impl::FatalErrorContext *f_ctx, const Result save_result);
 
-    bool IsDisplayInitialized();
-    void InitializeDisplay();
-    void FinalizeDisplay();
+    void SaveAndShowFatalError();
+
+    NORETURN void WaitForReboot();
+
 
 }

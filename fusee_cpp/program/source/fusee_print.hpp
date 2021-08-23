@@ -20,5 +20,6 @@ namespace ams::nxboot {
 
     void InitializeConsole(u32 *frame_buffer);
     void Print(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+    void VPrint(const char *fmt, std::va_list vl);
 
 }

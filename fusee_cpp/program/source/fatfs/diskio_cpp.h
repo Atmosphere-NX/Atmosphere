@@ -14,16 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
 
-namespace ams::nxboot {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    constexpr inline size_t FrameBufferHeight = 768;
-    constexpr inline size_t FrameBufferWidth  = 1280;
-    constexpr inline size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
+bool diskio_read_sd_card(void *dst, size_t size, size_t sector_index, size_t sector_count);
+bool diskio_write_sd_card(size_t sector_index, size_t sector_count, const void *src, size_t size);
 
-    bool IsDisplayInitialized();
-    void InitializeDisplay();
-    void FinalizeDisplay();
+bool diskio_read_system(void *dst, size_t size, size_t sector_index, size_t sector_count);
+bool diskio_write_system(size_t sector_index, size_t sector_count, const void *src, size_t size);
 
+#ifdef __cplusplus
 }
+#endif
