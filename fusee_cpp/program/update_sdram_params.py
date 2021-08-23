@@ -17,6 +17,12 @@ def write_file(fn, data):
     with open(fn, 'wb') as f:
         f.write(data)
 
+def get_param_size(soc):
+    return {
+        'erista' : 0x768,
+        'mariko' : 0x838,
+    }[soc]
+
 def main(argc, argv):
     if argc != 1:
         print('Usage: %s' % argv[0])
@@ -25,14 +31,30 @@ def main(argc, argv):
         'erista' : {},
         'mariko' : {},
     }
+    compressed_params = {
+        'erista' : {},
+        'mariko' : {},
+    }
     for fn in os.listdir('sdram_params/bin'):
         assert fn.startswith('sdram_params_') and fn.endswith('.bin')
         (_sdram, _params, soc, _id_bin) = tuple(fn.split('_'))
         param_id = int(_id_bin[:-len('.bin')])
         assert soc in params.keys()
-        compressed = lz4_compress(read_file(os.path.join('sdram_params/bin', fn)))
-        write_file(os.path.join('sdram_params/lz', fn.replace('.bin', '.lz4')), compressed)
-        params[soc][param_id] = compressed
+        uncompressed = read_file(os.path.join('sdram_params/bin', fn))
+        assert len(uncompressed) == get_param_size(soc)
+        params[soc][param_id] = uncompressed
+    for soc in ('erista', 'mariko'):
+        empty_params = '\x00' * get_param_size(soc)
+        for param_id in xrange(0, max(params[soc].keys()) + 4, 2):
+            param_id_l = param_id
+            param_id_h = param_id + 1
+            if param_id_l in params[soc] or param_id_h in params[soc]:
+                print soc, param_id_l, param_id_h
+                param_l = params[soc][param_id_l] if param_id_l in params[soc] else empty_params
+                param_h = params[soc][param_id_h] if param_id_h in params[soc] else empty_params
+                compressed = lz4_compress(param_l + param_h)
+                compressed_params[soc][(param_id_l, param_id_h)] = compressed
+                write_file(os.path.join('sdram_params/lz', 'sdram_params_%s_%d_%d.lz4' % (soc, param_id_l, param_id_h)), compressed)
     with open('source/fusee_sdram_params.inc', 'w') as f:
         f.write('%s\n' % "/*")
         f.write('%s\n' % " * Copyright (c) 2018-2020 Atmosph\xc3re-NX")
@@ -51,14 +73,20 @@ def main(argc, argv):
         f.write('%s\n' % " */")
         f.write('\n')
         for soc in ('Erista', 'Mariko'):
-            for param_id in sorted(params[soc.lower()].keys()):
-                compressed = params[soc.lower()][param_id]
-                f.write('%s\n' % ('constexpr inline const u8 SdramParams%s%d[0x%03X] = {' % (soc, param_id, len(compressed))))
+            for (param_id_l, param_id_h) in sorted(compressed_params[soc.lower()].keys(), key=lambda (l, h): l):
+                compressed = compressed_params[soc.lower()][(param_id_l, param_id_h)]
+                f.write('%s\n' % ('constexpr inline const u8 SdramParams%s%d_%d[0x%03X] = {' % (soc, param_id_l, param_id_h, len(compressed))))
                 while compressed:
                     block = compressed[:0x10]
                     compressed = compressed[0x10:]
                     f.write('    %s\n' % (', '.join('0x%02X' % ord(c) for c in block) + ','))
                 f.write('};\n\n')
+                f.write('%s\n' % ('constexpr inline const u8 * const SdramParams%s%d = SdramParams%s%d_%d;' % (soc, param_id_l, soc, param_id_l, param_id_h)))
+                f.write('%s\n' % ('constexpr inline const size_t SdramParamsSize%s%d = sizeof(SdramParams%s%d_%d);' % (soc, param_id_l, soc, param_id_l, param_id_h)))
+                f.write('\n')
+                f.write('%s\n' % ('constexpr inline const u8 * const SdramParams%s%d = SdramParams%s%d_%d;' % (soc, param_id_h, soc, param_id_l, param_id_h)))
+                f.write('%s\n' % ('constexpr inline const size_t SdramParamsSize%s%d = sizeof(SdramParams%s%d_%d);' % (soc, param_id_h, soc, param_id_l, param_id_h)))
+                f.write('\n')
     return 0
 
 if __name__ == '__main__':

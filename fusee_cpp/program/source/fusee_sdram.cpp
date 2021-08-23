@@ -39,17 +39,24 @@ namespace ams::nxboot {
 
         #include "fusee_sdram_params.inc"
 
+        #include "fusee_sdram_params_lp0_erista.inc"
+        #include "fusee_sdram_params_lp0_mariko.inc"
+
         void *GetSdramParams(fuse::SocType soc_type) {
             /* Get DRAM Id. */
             const auto dram_id = fuse::GetDramId();
 
             /* Extract to work buffer. */
-            void *sdram_params_work_buffer = reinterpret_cast<void *>(0x4003D000);
+            void *sdram_params_work_buffer;
 
             if (soc_type == fuse::SocType_Erista) {
-                #define HANDLE_DRAM_CASE(_DRAM_ID_, _INDEX_)                                                                                                                 \
-                    case _DRAM_ID_:                                                                                                                                          \
-                        Uncompress(sdram_params_work_buffer, sizeof(BootSdramParams<fuse::SocType_Erista>), SdramParamsErista##_INDEX_, sizeof(SdramParamsErista##_INDEX_)); \
+                sdram_params_work_buffer =  reinterpret_cast<void *>(0x4003E000 - 2 * sizeof(BootSdramParams<fuse::SocType_Erista>));
+                #define HANDLE_DRAM_CASE(_DRAM_ID_, _INDEX_)                                                                                                                            \
+                    case _DRAM_ID_:                                                                                                                                                     \
+                        Uncompress(sdram_params_work_buffer, 2 * sizeof(BootSdramParams<fuse::SocType_Erista>), SdramParamsErista##_INDEX_, SdramParamsSizeErista##_INDEX_);            \
+                        if (_INDEX_ & 1) {                                                                                                                                              \
+                            sdram_params_work_buffer = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(sdram_params_work_buffer) + sizeof(BootSdramParams<fuse::SocType_Erista>)); \
+                        }                                                                                                                                                               \
                         break;
                 switch (dram_id) {
                     HANDLE_DRAM_CASE(0, 0)
@@ -66,9 +73,13 @@ namespace ams::nxboot {
 
                 return static_cast<BootSdramParams<fuse::SocType_Erista> *>(sdram_params_work_buffer);
             } else /* if (soc_type == fuse::SocType_Mariko) */ {
-                #define HANDLE_DRAM_CASE(_DRAM_ID_, _INDEX_)                                                                                                                 \
-                    case _DRAM_ID_:                                                                                                                                          \
-                        Uncompress(sdram_params_work_buffer, sizeof(BootSdramParams<fuse::SocType_Mariko>), SdramParamsMariko##_INDEX_, sizeof(SdramParamsMariko##_INDEX_)); \
+                sdram_params_work_buffer =  reinterpret_cast<void *>(0x4003E000 - 2 * sizeof(BootSdramParams<fuse::SocType_Mariko>));
+                #define HANDLE_DRAM_CASE(_DRAM_ID_, _INDEX_)                                                                                                                            \
+                    case _DRAM_ID_:                                                                                                                                                     \
+                        Uncompress(sdram_params_work_buffer, 2 * sizeof(BootSdramParams<fuse::SocType_Mariko>), SdramParamsMariko##_INDEX_, SdramParamsSizeMariko##_INDEX_);            \
+                        if (_INDEX_ & 1) {                                                                                                                                              \
+                            sdram_params_work_buffer = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(sdram_params_work_buffer) + sizeof(BootSdramParams<fuse::SocType_Mariko>)); \
+                        }                                                                                                                                                               \
                         break;
                 switch (dram_id) {
                     HANDLE_DRAM_CASE( 3, 12)
@@ -913,9 +924,132 @@ namespace ams::nxboot {
             }
         }
 
+        consteval u32 GetBitMask32(u32 range) {
+            if (range == BITSIZEOF(u32)) {
+                return 0xFFFFFFFF;
+            } else {
+                return (1u << range) - 1;
+            }
+        }
+
         template<fuse::SocType SocType>
         void SaveSdramParamsToScratch(BootSdramParams<SocType> *params) {
-            /* TODO */
+            /* Clear the carveout parameters. */
+            params->McGeneralizedCarveout1Cfg0 = 0;
+            params->McGeneralizedCarveout2Cfg0 = 0;
+            params->McGeneralizedCarveout3Cfg0 = 0;
+            params->McGeneralizedCarveout4Cfg0 = 0;
+            params->McGeneralizedCarveout5Cfg0 = 0;
+
+            /* Patch spare write. */
+            {
+                /* TODO: Clean this up? */
+                u32 t0 = params->EmcSwizzleRank0Byte0 << 5 >> 29 > params->EmcSwizzleRank0Byte0 << 1 >> 29;
+                u32 t1 = (t0 & 0xFFFFFFEF) | ((params->EmcSwizzleRank1Byte0 << 5 >> 29 > params->EmcSwizzleRank1Byte0 << 1 >> 29) << 4);
+                u32 t2 = (t1 & 0xFFFFFFFD) | ((params->EmcSwizzleRank0Byte1 << 5 >> 29 > params->EmcSwizzleRank0Byte1 << 1 >> 29) << 1);
+                u32 t3 = (t2 & 0xFFFFFFDF) | ((params->EmcSwizzleRank1Byte1 << 5 >> 29 > params->EmcSwizzleRank1Byte1 << 1 >> 29) << 5);
+                u32 t4 = (t3 & 0xFFFFFFFB) | ((params->EmcSwizzleRank0Byte2 << 5 >> 29 > params->EmcSwizzleRank0Byte2 << 1 >> 29) << 2);
+                u32 t5 = (t4 & 0xFFFFFFBF) | ((params->EmcSwizzleRank1Byte2 << 5 >> 29 > params->EmcSwizzleRank1Byte2 << 1 >> 29) << 6);
+                u32 t6 = (t5 & 0xFFFFFFF7) | ((params->EmcSwizzleRank0Byte3 << 5 >> 29 > params->EmcSwizzleRank0Byte3 << 1 >> 29) << 3);
+                u32 t7 = (t6 & 0xFFFFFF7F) | ((params->EmcSwizzleRank1Byte3 << 5 >> 29 > params->EmcSwizzleRank1Byte3 << 1 >> 29) << 7);
+
+                params->SwizzleRankByteEncode = t7;
+
+                params->EmcBctSpare2 = 0x40000DD8;
+                params->EmcBctSpare3 = params->SwizzleRankByteEncode;
+            }
+
+            /* Save parameters to scratch. */
+            {
+                u32 cur_reg_offset = APBDEV_PMC_SCRATCH6;
+                u32 cur_reg_value  = reg::Read(PMC + cur_reg_offset);
+
+                #define RANGE_HIGH(RANGE) (1 ? RANGE)
+                #define RANGE_LOW(RANGE)  (0 ? RANGE)
+
+                static_assert(RANGE_HIGH(31:0) - RANGE_LOW(31:0) + 1 == BITSIZEOF(u32));
+
+                #define PROCESS_IMPL(PARAM, SCRATCH, SRC_RANGE, DST_RANGE, DO_READ)            \
+                {                                                                              \
+                    constexpr u32 RegisterOffset = APBDEV_PMC_##SCRATCH;                       \
+                                                                                               \
+                    if (RegisterOffset != cur_reg_offset) {                                    \
+                        reg::Write(PMC + cur_reg_offset, cur_reg_value);                       \
+                        cur_reg_offset = RegisterOffset;                                       \
+                        if constexpr (DO_READ) {                                               \
+                            cur_reg_value = reg::Read(PMC + RegisterOffset);                   \
+                        } else {                                                               \
+                            cur_reg_value = 0;                                                 \
+                        }                                                                      \
+                    }                                                                          \
+                                                                                               \
+                    constexpr u32 SrcRange = RANGE_HIGH(SRC_RANGE) - RANGE_LOW(SRC_RANGE) + 1; \
+                    constexpr u32 DstRange = RANGE_HIGH(DST_RANGE) - RANGE_LOW(DST_RANGE) + 1; \
+                    static_assert(SrcRange == DstRange);                                       \
+                    static_assert(SrcRange <= BITSIZEOF(u32));                                 \
+                                                                                               \
+                    const u32 src_value = params->PARAM;                                       \
+                    if constexpr (SrcRange == BITSIZEOF(u32)) {                                \
+                        cur_reg_value = src_value;                                             \
+                    } else if constexpr (SrcRange < BITSIZEOF(u32)) {                          \
+                        constexpr u32 Mask = GetBitMask32(SrcRange) << RANGE_LOW(DST_RANGE);   \
+                                                                                               \
+                        constexpr u32 SrcLow = RANGE_LOW(SRC_RANGE);                           \
+                        constexpr u32 DstLow = RANGE_LOW(DST_RANGE);                           \
+                                                                                               \
+                        cur_reg_value &= ~Mask;                                                \
+                        if constexpr (SrcLow == DstLow) {                                      \
+                            cur_reg_value |= (src_value & Mask);                               \
+                        } else if constexpr (SrcLow < DstLow) {                                \
+                            cur_reg_value |= ((src_value << (DstLow - SrcLow)) & Mask);        \
+                        } else {                                                               \
+                            cur_reg_value |= ((src_value >> (SrcLow - DstLow)) & Mask);        \
+                        }                                                                      \
+                    }                                                                          \
+                }
+
+                #define PROCESS_SCRATCH(PARAM, S, SRC_RANGE, DST_RANGE) PROCESS_IMPL(PARAM, SCRATCH##S, SRC_RANGE, DST_RANGE, true)
+                #define PROCESS_SECURE_SCRATCH(PARAM, S, SRC_RANGE, DST_RANGE) PROCESS_IMPL(PARAM, SECURE_SCRATCH##S, SRC_RANGE, DST_RANGE, true)
+
+                #define PROCESS_COMMON_SCRATCH(PARAM, S, SRC_RANGE, DST_RANGE) PROCESS_IMPL(PARAM, SCRATCH##S, SRC_RANGE, DST_RANGE, false)
+
+                if constexpr (SocType == fuse::SocType_Erista) {
+                    FOREACH_SDRAM_SCRATCH_REGISTER_ERISTA(PROCESS_SCRATCH);
+                    FOREACH_SDRAM_SECURE_SCRATCH_REGISTER_ERISTA(PROCESS_SECURE_SCRATCH);
+                } else /* if constexpr (SocType == fuse::SocType_Mariko) */ {
+                    FOREACH_SDRAM_SCRATCH_REGISTER_MARIKO(PROCESS_SCRATCH);
+                    FOREACH_SDRAM_SECURE_SCRATCH_REGISTER_MARIKO(PROCESS_SECURE_SCRATCH);
+                }
+
+                /* Manually process final fields. */
+                PROCESS_COMMON_SCRATCH(PllMInputDivider, 2, 7:0, 7:0);
+                PROCESS_COMMON_SCRATCH(PllMFeedbackDivider, 2, 7:0, 15:8);
+                PROCESS_COMMON_SCRATCH(PllMPostDivider, 2, 4:0, 20:16);
+                PROCESS_COMMON_SCRATCH(PllMKVCO, 2, 0:0, 17:17);
+                PROCESS_COMMON_SCRATCH(PllMKCP, 2, 1:0, 19:18);
+
+                PROCESS_COMMON_SCRATCH(PllMSetupControl, 35, 15:0, 15:0);
+
+                PROCESS_COMMON_SCRATCH(PllMInputDivider, 3, 7:0, 7:0);
+                cur_reg_value |= 0x3E << 8;
+                PROCESS_COMMON_SCRATCH(PllMKVCO, 3, 0:0, 21:21);
+                PROCESS_COMMON_SCRATCH(PllMKCP, 3, 1:0, 23:22);
+
+                PROCESS_COMMON_SCRATCH(PllMSetupControl, 36, 23:0, 23:0);
+
+                PROCESS_COMMON_SCRATCH(PllMStableTime, 4, 9:0, 9:0);
+                PROCESS_COMMON_SCRATCH(PllMStableTime, 4, 21:0, 31:10);
+
+                /* Write the final field value. */
+                reg::Write(PMC + cur_reg_offset, cur_reg_value);
+
+                #undef PROCESS_COMMON_SCRATCH
+                #undef PROCESS_SECURE_SCRATCH
+                #undef PROCESS_SCRATCH
+                #undef PROCESS_IMPL
+                #undef RANGE_LOW
+                #undef RANGE_HIGH
+            }
         }
 
         template<fuse::SocType SocType>
