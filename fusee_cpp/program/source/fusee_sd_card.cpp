@@ -86,13 +86,11 @@ namespace ams::nxboot {
     }
 
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {
-        /* TODO */
-        return ResultSuccess();
+        return sdmmc::Read(dst, size, SdCardPort, sector_index, sector_count);
     }
 
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size) {
-        /* TODO */
-        return ResultSuccess();
+        return sdmmc::Write(SdCardPort, sector_index, sector_count, src, size);
     }
 
 }
