@@ -19,7 +19,8 @@
 namespace ams::hw::arch::arm {
 
 #ifdef __BPMP__
-    constexpr inline size_t DataCacheLineSize = 0x1;
+    constexpr inline size_t DataCacheLineSize = 0x20;
+    constexpr inline size_t DataCacheSize = 32_KB;
 
     ALWAYS_INLINE void DataSynchronizationBarrier() {
         /* ... */
@@ -37,11 +38,20 @@ namespace ams::hw::arch::arm {
         /* ... */
     }
 
-    ALWAYS_INLINE void FlushDataCache(const void *ptr, size_t size) {
-        AMS_UNUSED(ptr);
-        AMS_UNUSED(size);
-        /* ... */
-    }
+    void InitializeDataCache();
+    void FinalizeDataCache();
+
+    void InvalidateEntireDataCache();
+    void StoreEntireDataCache();
+    void FlushEntireDataCache();
+
+    void InvalidateDataCacheLine(void *ptr);
+    void StoreDataCacheLine(void *ptr);
+    void FlushDataCacheLine(void *ptr);
+
+    void InvalidateDataCache(void *ptr, size_t size);
+    void StoreDataCache(const void *ptr, size_t size);
+    void FlushDataCache(const void *ptr, size_t size);
 #else
     #error "Unknown ARM board for ams::hw"
 #endif

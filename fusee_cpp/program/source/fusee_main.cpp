@@ -27,6 +27,9 @@ namespace ams::nxboot {
         /* Initialize Sdram. */
         InitializeSdram();
 
+        /* Initialize cache. */
+        hw::InitializeDataCache();
+
         /* Initialize SD card. */
         Result result = InitializeSdCard();
 

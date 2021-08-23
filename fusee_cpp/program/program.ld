@@ -117,7 +117,8 @@ SECTIONS
         FILL(0x00000000)
 		*(.data .data.* .gnu.linkonce.d.*)
 		SORT(CONSTRUCTORS)
-        . = ALIGN(64) - 1;
+        . = ALIGN(16);
+        . = . + 15;
         BYTE(0x00);
 	} >main AT>glob
 
