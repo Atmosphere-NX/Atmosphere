@@ -63,6 +63,9 @@ namespace ams::nxboot {
         /* Perform secure hardware initialization. */
         SecureInitialize(true);
 
+        /* Overclock the bpmp. */
+        clkrst::SetBpmpClockRate(fuse::GetSocType() == fuse::SocType_Mariko ? clkrst::BpmpClockRate_589MHz : clkrst::BpmpClockRate_576MHz);
+
         /* Initialize Sdram. */
         InitializeSdram();
 
@@ -88,7 +91,12 @@ namespace ams::nxboot {
         /* Read our overlay file. */
         ReadFuseeSecondary();
 
+        /* Initialize display (splash screen will be visible from this point onwards). */
+        InitializeDisplay();
+        ShowDisplay();
+
         /* TODO */
+        WaitForReboot();
 
         /* TODO */
         AMS_INFINITE_LOOP();

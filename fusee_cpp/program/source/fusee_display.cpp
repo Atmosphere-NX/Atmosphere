@@ -572,6 +572,16 @@ namespace ams::nxboot {
         g_display_initialized = false;
     }
 
+    void ShowDisplay() {
+        /* Enable backlight. */
+        constexpr auto DisplayBrightness = 100;
+        if (g_lcd_vendor == 0x2050) {
+            EnableBacklightForVendor2050ForAula(DisplayBrightness);
+        } else {
+            EnableBacklightForGeneric(DisplayBrightness);
+        }
+    }
+
     void ShowFatalError(const ams::impl::FatalErrorContext *f_ctx, const Result save_result) {
         /* If needed, initialize the display. */
         if (!IsDisplayInitialized()) {
@@ -601,13 +611,8 @@ namespace ams::nxboot {
         /* Ensure the device will see consistent data. */
         hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
 
-        /* Enable backlight. */
-        constexpr auto DisplayBrightness = 100;
-        if (g_lcd_vendor == 0x2050) {
-            EnableBacklightForVendor2050ForAula(DisplayBrightness);
-        } else {
-            EnableBacklightForGeneric(DisplayBrightness);
-        }
+        /* Show the console. */
+        ShowDisplay();
     }
 
     void ShowFatalError(const char *fmt, ...) {
@@ -635,13 +640,8 @@ namespace ams::nxboot {
         /* Ensure the device will see consistent data. */
         hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
 
-        /* Enable backlight. */
-        constexpr auto DisplayBrightness = 100;
-        if (g_lcd_vendor == 0x2050) {
-            EnableBacklightForVendor2050ForAula(DisplayBrightness);
-        } else {
-            EnableBacklightForGeneric(DisplayBrightness);
-        }
+        /* Show the console. */
+        ShowDisplay();
 
         WaitForReboot();
     }
