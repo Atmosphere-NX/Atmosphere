@@ -33,6 +33,9 @@ namespace ams::clkrst {
     void EnableCldvfsClock();
     void EnableTzramClock();
 
+    void EnableCache2Clock();
+    void EnableCram2Clock();
+
     void EnableHost1xClock();
     void EnableTsecClock();
     void EnableSorSafeClock();

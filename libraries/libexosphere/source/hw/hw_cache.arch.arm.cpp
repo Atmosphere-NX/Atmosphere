@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "avp_cache_registers.hpp"
 
 namespace ams::hw::arch::arm {
 
@@ -22,7 +21,7 @@ namespace ams::hw::arch::arm {
 
     namespace {
 
-        constexpr inline uintptr_t AVP_CACHE = 0x50040000;
+        constexpr inline uintptr_t AVP_CACHE = AVP_CACHE_ADDR(0);
 
         ALWAYS_INLINE bool IsLargeBuffer(size_t size) {
             /* From TRM: For very large physical buffers or when the full cache needs to be cleared, */
@@ -122,6 +121,8 @@ namespace ams::hw::arch::arm {
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_RD_ENA,  ENABLE),
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_EXE_ENA, ENABLE),
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_CACHED,  ENABLE));
+
+                reg::SetBits(AVP_CACHE + AVP_CACHE_MMU_SHADOW_COPY_MASK_0, (1 << 0));
             }
 
             /* Add IRAM as index 1, RWX/Cached. */
@@ -133,10 +134,9 @@ namespace ams::hw::arch::arm {
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_RD_ENA,  ENABLE),
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_EXE_ENA, ENABLE),
                                                                          AVP_CACHE_REG_BITS_ENUM(SHADOW_ENTRY_CFG_CACHED,  ENABLE));
-            }
 
-            /* Set index 0/1 in shadow copy mask. */
-            reg::Write(AVP_CACHE + AVP_CACHE_MMU_SHADOW_COPY_MASK_0, 0b11);
+                reg::SetBits(AVP_CACHE + AVP_CACHE_MMU_SHADOW_COPY_MASK_0, (1 << 1));
+            }
 
             /* Issue copy shadow mmu command. */
             reg::Write(AVP_CACHE + AVP_CACHE_MMU_CMD, AVP_CACHE_REG_BITS_ENUM(MMU_CMD_CMD, COPY_SHADOW));
