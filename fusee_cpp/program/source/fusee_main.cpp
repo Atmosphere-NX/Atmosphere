@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "fusee_display.hpp"
 #include "fusee_secure_initialize.hpp"
 #include "fusee_sdram.hpp"
 #include "fusee_sd_card.hpp"
@@ -33,6 +34,13 @@ namespace ams::nxboot {
         /* Initialize SD card. */
         Result result = InitializeSdCard();
 
+        /* DEBUG: Fatal error context */
+        {
+            const ams::impl::FatalErrorContext *f_ctx = reinterpret_cast<const ams::impl::FatalErrorContext *>(0x4003E000);
+            InitializeDisplay();
+            ShowDisplay(f_ctx, ResultSuccess());
+        }
+
         /* DEBUG: Check SD card connection. */
         {
             *reinterpret_cast<volatile u32 *>(0x40038000) = 0xAAAAAAAA;
@@ -45,7 +53,7 @@ namespace ams::nxboot {
                 *reinterpret_cast<volatile u32 *>(0x40038010) = static_cast<u32>(bw);
             }
 
-            *reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
+            //*reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
         }
 
         /* TODO */

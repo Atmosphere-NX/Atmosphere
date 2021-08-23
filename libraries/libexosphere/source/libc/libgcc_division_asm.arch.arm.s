@@ -42,7 +42,8 @@ __aeabi_ldivmod:
     mov     r0, sp
 	bl	    __l_divmod
 	pop	{r0-r3}
-	pop	{ip, pc}
+	pop	{ip, lr}
+    bx lr
 
 .type __aeabi_ldivmod, %function
 .size __aeabi_ldivmod, .-__aeabi_ldivmod
@@ -61,7 +62,8 @@ __aeabi_uldivmod :
     mov     r0, sp
 	bl	    __ul_divmod
 	pop	{r0-r3}
-	pop	{ip, pc}
+	pop	{ip, lr}
+    bx lr
 
 .type __aeabi_uldivmod, %function
 .size __aeabi_uldivmod, .-__aeabi_uldivmod
