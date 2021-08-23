@@ -16,6 +16,7 @@
 #include <exosphere.hpp>
 #include "fusee_secure_initialize.hpp"
 #include "fusee_sdram.hpp"
+#include "fusee_sd_card.hpp"
 
 namespace ams::nxboot {
 
@@ -25,6 +26,23 @@ namespace ams::nxboot {
 
         /* Initialize Sdram. */
         InitializeSdram();
+
+        /* Initialize SD card. */
+        Result result = InitializeSdCard();
+
+        /* DEBUG: Check SD card connection. */
+        {
+            *reinterpret_cast<volatile u32 *>(0x40038000) = 0xAAAAAAAA;
+            *reinterpret_cast<volatile u32 *>(0x40038004) = result.GetValue();
+            if (R_SUCCEEDED(result)) {
+                sdmmc::SpeedMode sm;
+                sdmmc::BusWidth bw;
+                *reinterpret_cast<volatile u32 *>(0x40038008) = CheckSdCardConnection(std::addressof(sm), std::addressof(bw)).GetValue();
+                *reinterpret_cast<volatile u32 *>(0x4003800C) = static_cast<u32>(sm);
+                *reinterpret_cast<volatile u32 *>(0x40038010) = static_cast<u32>(bw);
+            }
+            *reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
+        }
 
         /* TODO */
         AMS_INFINITE_LOOP();
