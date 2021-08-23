@@ -46,8 +46,7 @@ namespace ams::dd::impl {
                 const auto result = svc::StoreProcessDataCache(svc::PseudoHandle::CurrentProcess, reinterpret_cast<uintptr_t>(addr), size);
                 R_ASSERT(result);
             #elif defined(ATMOSPHERE_IS_EXOSPHERE) && defined(__BPMP__)
-                /* Do nothing. */
-                AMS_UNUSED(addr, size);
+                return hw::StoreDataCache(addr, size);
             #else
                 #error "Unknown execution context for ams::dd::impl::StoreDataCacheImpl"
             #endif
@@ -78,8 +77,7 @@ namespace ams::dd::impl {
                 const auto result = svc::FlushProcessDataCache(svc::PseudoHandle::CurrentProcess, reinterpret_cast<uintptr_t>(addr), size);
                 R_ASSERT(result);
             #elif defined(ATMOSPHERE_IS_EXOSPHERE) && defined(__BPMP__)
-                /* Do nothing. */
-                AMS_UNUSED(addr, size);
+                return hw::FlushDataCache(addr, size);
             #else
                 #error "Unknown execution context for ams::dd::impl::FlushDataCacheImpl"
             #endif
@@ -87,8 +85,12 @@ namespace ams::dd::impl {
     }
 
     void InvalidateDataCacheImpl(void *addr, size_t size) {
+        #if defined(ATMOSPHERE_IS_EXOSPHERE) && defined(__BPMP__)
+        return hw::InvalidateDataCache(addr, size);
+        #else
         /* Just perform a flush, which is clean + invalidate. */
         return FlushDataCacheImpl(addr, size);
+        #endif
     }
 
 }
