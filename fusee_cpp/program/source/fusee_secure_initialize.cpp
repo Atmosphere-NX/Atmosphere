@@ -328,6 +328,10 @@ namespace ams::nxboot {
         clkrst::EnableI2c5Clock();
         clkrst::EnableTzramClock();
 
+        /* Ensure avp cache is enabled, since we'll be using it. */
+        clkrst::EnableCache2Clock();
+        clkrst::EnableCram2Clock();
+
         /* Initialize I2C5. */
         i2c::Initialize(i2c::Port_5);
 

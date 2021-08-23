@@ -44,6 +44,7 @@ namespace ams::nxboot {
                 *reinterpret_cast<volatile u32 *>(0x4003800C) = static_cast<u32>(sm);
                 *reinterpret_cast<volatile u32 *>(0x40038010) = static_cast<u32>(bw);
             }
+
             *reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
         }
 

@@ -96,6 +96,9 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Sor0Clock,    X, SOR0);
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(KfuseClock,   H, KFUSE);
 
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Cache2Clock, L, CACHE2);
+        DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(Cram2Clock, U, CRAM2);
+
     }
 
     void SetRegisterAddress(uintptr_t address) {
@@ -143,6 +146,14 @@ namespace ams::clkrst {
 
     void EnableTzramClock() {
         EnableClock(TzramClock);
+    }
+
+    void EnableCache2Clock() {
+        EnableClock(Cache2Clock);
+    }
+
+    void EnableCram2Clock() {
+        EnableClock(Cram2Clock);
     }
 
     void EnableHost1xClock() {
