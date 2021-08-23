@@ -15,7 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "../fatfs/ff.h"
-#include "fatal_fs_api.hpp"
+#include "fusee_fs_api.hpp"
 
 namespace ams::fs {
 
@@ -25,9 +25,9 @@ namespace ams::fs {
 
         constinit bool g_is_sd_mounted = false;
 
-        FATFS g_sd_fs;
+        alignas(0x10) constinit FATFS g_sd_fs = {};
 
-        constinit FIL g_files[MaxFiles] = {};
+        alignas(0x10) constinit FIL g_files[MaxFiles] = {};
         constinit bool g_files_opened[MaxFiles] = {};
         constinit int g_open_modes[MaxFiles] = {};
 
@@ -104,13 +104,13 @@ namespace ams::fs {
 
     bool MountSdCard() {
         AMS_ASSERT(!g_is_sd_mounted);
-        g_is_sd_mounted = f_mount(std::addressof(g_sd_fs), "sdmc", 1) == FR_OK;
+        g_is_sd_mounted = f_mount(std::addressof(g_sd_fs), "", 1) == FR_OK;
         return g_is_sd_mounted;
     }
 
     void UnmountSdCard() {
         AMS_ASSERT(g_is_sd_mounted);
-        f_unmount("sdmc");
+        f_unmount("");
         g_is_sd_mounted = false;
     }
 
@@ -158,7 +158,7 @@ namespace ams::fs {
         R_TRY(TranslateFatFsError(f_lseek(GetInternalFile(handle), offset)));
 
         /* Read the data. */
-        u32 br;
+        UINT br;
         R_TRY(TranslateFatFsError(f_read(GetInternalFile(handle), buffer, size, std::addressof(br))));
 
         /* Check that we read the correct amount. */
@@ -179,7 +179,7 @@ namespace ams::fs {
         R_TRY(TranslateFatFsError(f_lseek(GetInternalFile(handle), offset)));
 
         /* Read the data. */
-        u32 br;
+        UINT br;
         R_TRY(TranslateFatFsError(f_read(GetInternalFile(handle), buffer, size, std::addressof(br))));
 
         /* Set the output size. */
@@ -207,7 +207,7 @@ namespace ams::fs {
         R_TRY(TranslateFatFsError(f_lseek(GetInternalFile(handle), offset)));
 
         /* Write the data. */
-        u32 bw;
+        UINT bw;
         R_TRY(TranslateFatFsError(f_write(GetInternalFile(handle), buffer, size, std::addressof(bw))));
 
         /* Check that we wrote the correct amount. */

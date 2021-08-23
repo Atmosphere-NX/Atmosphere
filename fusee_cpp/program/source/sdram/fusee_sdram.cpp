@@ -15,7 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "fusee_sdram.hpp"
-#include "fusee_uncompress.hpp"
+#include "../fusee_uncompress.hpp"
 
 namespace ams::nxboot {
 

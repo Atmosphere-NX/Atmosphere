@@ -15,7 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "fusee_secure_initialize.hpp"
-#include "fusee_registers_di.hpp"
+#include "../fusee_registers_di.hpp"
 
 namespace ams::nxboot {
 

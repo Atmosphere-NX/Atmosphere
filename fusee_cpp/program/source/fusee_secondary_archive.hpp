@@ -15,15 +15,26 @@
  */
 #pragma once
 #include <exosphere.hpp>
+#include "fusee_display.hpp"
 
 namespace ams::nxboot {
 
-    constexpr inline size_t FrameBufferHeight = 768;
-    constexpr inline size_t FrameBufferWidth  = 1280;
-    constexpr inline size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
+    constexpr inline const size_t SecondaryArchiveSize         = 4_MB + FrameBufferSize;
 
-    bool IsDisplayInitialized();
-    void InitializeDisplay();
-    void FinalizeDisplay();
+    constexpr inline const size_t InitialProcessStorageSizeMax = 3_MB / 8;
+
+    struct SecondaryArchiveHeader {
+        /* TODO */
+        u8 data[1_MB];
+    };
+
+    struct SecondaryArchive {
+        SecondaryArchiveHeader header;
+        u8 kips[8][InitialProcessStorageSizeMax];
+        u8 splash_screen_framebuffer[FrameBufferSize];
+    };
+    static_assert(sizeof(SecondaryArchive) == SecondaryArchiveSize);
+
+    ALWAYS_INLINE const SecondaryArchive &GetSecondaryArchive() { return *reinterpret_cast<const SecondaryArchive *>(0xC0000000); }
 
 }

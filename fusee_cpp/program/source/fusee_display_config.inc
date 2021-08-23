@@ -541,7 +541,7 @@ constexpr const SleepOrRegisterWrite DisplayConfigDc02[] = {
     {SleepOrRegisterWriteKind_Write, DC_CMD_DISPLAY_COMMAND_OPTION0, 0}
 };
 
-constexpr u32 DisplayConfigFrameBufferAddress = 0xD0000000;
+constexpr u32 DisplayConfigFrameBufferAddress = 0xC0400000;
 
 constexpr const SleepOrRegisterWrite DisplayConfigFrameBuffer[] = {
     {SleepOrRegisterWriteKind_Write, DC_CMD_DISPLAY_WINDOW_HEADER, WINDOW_C_SELECT}, //Enable window C.

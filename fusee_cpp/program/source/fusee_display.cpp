@@ -17,6 +17,7 @@
 #include "fusee_registers_di.hpp"
 #include "fusee_display.hpp"
 #include "fusee_print.hpp"
+#include "fusee_fatal.hpp"
 
 namespace ams::nxboot {
 
@@ -55,6 +56,7 @@ namespace ams::nxboot {
         constinit u32 *g_frame_buffer = nullptr;
 
         constinit u32 g_lcd_vendor = 0;
+        constinit bool g_display_initialized = false;
 
         inline void DoRegisterWrites(uintptr_t base_address, const RegisterWrite *reg_writes, size_t num_writes) {
             for (size_t i = 0; i < num_writes; i++) {
@@ -160,15 +162,10 @@ namespace ams::nxboot {
         #define DO_SLEEP_OR_REGISTER_WRITES(base_address, writes) DoSleepOrRegisterWrites(base_address, writes, util::size(writes))
 
         void InitializeFrameBuffer() {
-            if (g_frame_buffer != nullptr) {
-                std::memset(g_frame_buffer, 0, FrameBufferSize);
-                hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
-            } else {
-                /* Clear the frame buffer. */
-                g_frame_buffer = /* TODO */reinterpret_cast<u32 *>(0xD0000000);
-                std::memset(g_frame_buffer, 0, FrameBufferSize);
-                hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
+            if (g_frame_buffer == nullptr) {
+                g_frame_buffer = reinterpret_cast<u32 *>(0xC0400000);
             }
+            hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
         }
 
         [[maybe_unused]] void FinalizeFrameBuffer() {
@@ -259,7 +256,15 @@ namespace ams::nxboot {
         }
     }
 
+    bool IsDisplayInitialized() {
+        return g_display_initialized;
+    }
+
     void InitializeDisplay() {
+        if (IsDisplayInitialized()) {
+            return;
+        }
+
         /* Setup the framebuffer. */
         InitializeFrameBuffer();
 
@@ -489,9 +494,15 @@ namespace ams::nxboot {
         if (g_lcd_vendor != 0x2050) {
             util::WaitMicroSeconds(35'000ul);
         }
+
+        g_display_initialized = true;
     }
 
     void FinalizeDisplay() {
+        if (!IsDisplayInitialized()) {
+            return;
+        }
+
         /* TODO: What other configuration is needed, if any? */
 
         /* Configure LCD pinmux tristate + passthrough. */
@@ -557,9 +568,16 @@ namespace ams::nxboot {
 
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_PAD_CONTROL_0, (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF)));
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_POWER_CONTROL, 0);
+
+        g_display_initialized = false;
     }
 
-    void ShowDisplay(const ams::impl::FatalErrorContext *f_ctx, const Result save_result) {
+    void ShowFatalError(const ams::impl::FatalErrorContext *f_ctx, const Result save_result) {
+        /* If needed, initialize the display. */
+        if (!IsDisplayInitialized()) {
+            InitializeDisplay();
+        }
+
         /* Initialize the console. */
         InitializeConsole(g_frame_buffer);
 
@@ -590,6 +608,42 @@ namespace ams::nxboot {
         } else {
             EnableBacklightForGeneric(DisplayBrightness);
         }
+    }
+
+    void ShowFatalError(const char *fmt, ...) {
+        /* If needed, initialize the display. */
+        if (!IsDisplayInitialized()) {
+            InitializeDisplay();
+        }
+
+        /* Initialize the console. */
+        InitializeConsole(g_frame_buffer);
+
+        {
+            Print("%s\n", "A fatal error occurred when running Fus" "\xe9" "e.");
+            {
+                std::va_list vl;
+                va_start(vl, fmt);
+                VPrint(fmt, vl);
+                va_end(vl);
+            }
+            Print("\n");
+
+            Print("\nPress POWER to reboot.\n");
+        }
+
+        /* Ensure the device will see consistent data. */
+        hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
+
+        /* Enable backlight. */
+        constexpr auto DisplayBrightness = 100;
+        if (g_lcd_vendor == 0x2050) {
+            EnableBacklightForVendor2050ForAula(DisplayBrightness);
+        } else {
+            EnableBacklightForGeneric(DisplayBrightness);
+        }
+
+        WaitForReboot();
     }
 
 }
