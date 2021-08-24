@@ -18,7 +18,7 @@
 
 namespace ams::nxboot {
 
-    void ShowFatalError(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+    NORETURN void ShowFatalError(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
     void ShowFatalError(const ams::impl::FatalErrorContext *f_ctx, const Result save_result);
 
     void SaveAndShowFatalError();
