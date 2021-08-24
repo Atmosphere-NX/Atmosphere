@@ -55,7 +55,7 @@ def main(argc, argv):
                 compressed = lz4_compress(param_l + param_h)
                 compressed_params[soc][(param_id_l, param_id_h)] = compressed
                 write_file(os.path.join('sdram_params/lz', 'sdram_params_%s_%d_%d.lz4' % (soc, param_id_l, param_id_h)), compressed)
-    with open('source/fusee_sdram_params.inc', 'w') as f:
+    with open('source/sdram/fusee_sdram_params.inc', 'w') as f:
         f.write('%s\n' % "/*")
         f.write('%s\n' % " * Copyright (c) 2018-2020 Atmosph\xc3re-NX")
         f.write('%s\n' % " *")
