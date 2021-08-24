@@ -76,14 +76,17 @@ def main(argc, argv):
             f.write('%s\n' % " */")
             f.write('\n')
             for board in compressed_params[soc].keys():
-                data = compressed_params[soc][board][-1] if soc == 'mariko' else params[soc][board][-1]
+                data_1600 = compressed_params[soc][board][-1] if soc == 'mariko' else params[soc][board][-1]
+                data_204  = compressed_params[soc][board][0] if soc == 'mariko' else params[soc][board][3]
                 assert up('<I', params[soc][board][-1][0x40:0x44])[0] == 1600000
-                f.write('%s\n' % ('constexpr inline const u8 %s[0x%03X] = {' % (board, len(data))))
+                assert up('<I', params[soc][board][0 if soc == 'mariko' else 3][0x40:0x44])[0] == 204000
+                data = data_204 + data_1600
+                f.write('%s\n' % ('constinit u8 %s[0x%03X] = {' % (board, len(data))))
                 while data:
                     block = data[:0x10]
                     data = data[0x10:]
                     f.write('    %s\n' % (', '.join('0x%02X' % ord(c) for c in block) + ','))
-                f.write('};\n')
+                f.write('};\n\n')
     return 0
 
 if __name__ == '__main__':

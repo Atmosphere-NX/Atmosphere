@@ -20,11 +20,57 @@ namespace ams::nxboot {
     void DoMemoryTrainingErista();
     void DoMemoryTrainingMariko();
 
+    namespace {
+
+        constexpr const u8 MemoryTrainingTableIndex_Invalid = std::numeric_limits<u8>::max();
+
+        constexpr const u8 MemoryTrainingTableIndices[] = {
+            /* DramId_EristaIcosaSamsung4gb    */ 0x00,
+            /* DramId_EristaIcosaHynix4gb      */ 0x02,
+            /* DramId_EristaIcosaMicron4gb     */ 0x03,
+            /* DramId_MarikoIowaHynix1y4gb     */ 0x10,
+            /* DramId_EristaIcosaSamsung6gb    */ 0x01,
+            /* DramId_MarikoHoagHynix1y4gb     */ 0x10,
+            /* DramId_EristaCopperMicron4gb    */ MemoryTrainingTableIndex_Invalid,
+            /* DramId_MarikoIowax1x2Samsung4gb */ 0x00,
+            /* DramId_MarikoIowaSamsung4gb     */ 0x05,
+            /* DramId_MarikoIowaSamsung8gb     */ 0x06,
+            /* DramId_MarikoIowaHynix4gb       */ 0x07,
+            /* DramId_MarikoIowaMicron4gb      */ 0x08,
+            /* DramId_MarikoHoagSamsung4gb     */ 0x05,
+            /* DramId_MarikoHoagSamsung8gb     */ 0x06,
+            /* DramId_MarikoHoagHynix4gb       */ 0x07,
+            /* DramId_MarikoHoagMicron4gb      */ 0x08,
+            /* DramId_MarikoIowaSamsung4gbY    */ 0x09,
+            /* DramId_MarikoIowaSamsung1y4gbX  */ 0x0C,
+            /* DramId_MarikoIowaSamsung1y8gbX  */ 0x0D,
+            /* DramId_MarikoHoagSamsung1y4gbX  */ 0x0C,
+            /* DramId_MarikoIowaSamsung1y4gbY  */ 0x0A,
+            /* DramId_MarikoIowaSamsung1y8gbY  */ 0x0B,
+            /* DramId_MarikoAulaSamsung1y4gb   */ 0x0E,
+            /* DramId_MarikoHoagSamsung1y8gbX  */ 0x0D,
+            /* DramId_MarikoAulaSamsung1y4gbX  */ 0x0C,
+            /* DramId_MarikoIowaMicron1y4gb    */ 0x0F,
+            /* DramId_MarikoHoagMicron1y4gb    */ 0x0F,
+            /* DramId_MarikoAulaMicron1y4gb    */ 0x0F,
+            /* DramId_MarikoAulaSamsung1y8gbX  */ 0x0D,
+        };
+
+    }
+
     void DoMemoryTraining() {
         if (fuse::GetSocType() == fuse::SocType_Erista) {
             DoMemoryTrainingErista();
         } else {
             DoMemoryTrainingMariko();
+        }
+    }
+
+    int GetMemoryTrainingTableIndex() {
+        if (const auto dram_id = fuse::GetDramId(); dram_id < util::size(MemoryTrainingTableIndices) && MemoryTrainingTableIndices[dram_id] != MemoryTrainingTableIndex_Invalid) {
+            return static_cast<int>(MemoryTrainingTableIndices[dram_id]);
+        } else {
+            return -1;
         }
     }
 
