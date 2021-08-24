@@ -66,6 +66,7 @@ ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
 $(strip $1): check_libexo_$(strip $1) $$(ATMOSPHERE_BUILD_DIR)/$(strip $1)
 	@$$(MAKE) __RECURSIVE__=1 OUTPUT=$$(OUTPUT_BASE)$(strip $2) $(3) \
+	ATMOSPHERE_BUILD_TARGET=$(strip $2) \
 	DEPSDIR=$$(CURDIR)/$$(ATMOSPHERE_BUILD_DIR)/$(strip $1) \
 	LIBEXOSPHERE_NAME=exosphere$(strip $2) \
 	--no-print-directory -C $$(ATMOSPHERE_BUILD_DIR)/$(strip $1) \
@@ -110,7 +111,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 
 $(OUTPUT).lz4	:	$(OUTPUT).bin
-	@python $(TOPDIR)/lz4_compress.py $(OUTPUT).bin $(OUTPUT).lz4
+	@python $(TOPDIR)/split_bin.py "$(ATMOSPHERE_BUILD_TARGET)"
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf

@@ -17,6 +17,8 @@
 
 namespace ams::nxboot {
 
-    /* TODO */
+    void DoMemoryTrainingErista() {
+        /* TODO */
+    }
 
 }

@@ -17,7 +17,9 @@
 #include "fusee_display.hpp"
 #include "sein/fusee_secure_initialize.hpp"
 #include "sdram/fusee_sdram.hpp"
+#include "mtc/fusee_mtc.hpp"
 #include "fs/fusee_fs_api.hpp"
+#include "fusee_overlay_manager.hpp"
 #include "fusee_sd_card.hpp"
 #include "fusee_fatal.hpp"
 #include "fusee_secondary_archive.hpp"
@@ -27,22 +29,21 @@ namespace ams::nxboot {
     namespace {
 
         /* TODO: Change to fusee-secondary.bin when development is done. */
-        constexpr const char FuseeSecondaryFilePath[] = "sdmc:/atmosphere/fusee-boogaloo.bin";
+        constexpr const char SecondaryArchiveFilePath[] = "sdmc:/atmosphere/fusee-boogaloo.bin";
 
-        void ReadFuseeSecondary() {
+        constinit fs::FileHandle g_archive_file;
+
+        void OpenSecondaryArchive() {
             Result result;
 
             /* Open fusee-secondary. */
-            fs::FileHandle file;
-            if (R_FAILED((result = fs::OpenFile(std::addressof(file), FuseeSecondaryFilePath, fs::OpenMode_Read)))) {
-                ShowFatalError("Failed to open %s!\n", FuseeSecondaryFilePath);
+            if (R_FAILED((result = fs::OpenFile(std::addressof(g_archive_file), SecondaryArchiveFilePath, fs::OpenMode_Read)))) {
+                ShowFatalError("Failed to open %s!\n", SecondaryArchiveFilePath);
             }
-
-            ON_SCOPE_EXIT { fs::CloseFile(file); };
 
             /* Get file size. */
             s64 file_size;
-            if (R_FAILED((result = fs::GetFileSize(std::addressof(file_size), file)))) {
+            if (R_FAILED((result = fs::GetFileSize(std::addressof(file_size), g_archive_file)))) {
                 ShowFatalError("Failed to get fusee-secondary size: 0x%08" PRIx32 "\n", result.GetValue());
             }
 
@@ -50,10 +51,13 @@ namespace ams::nxboot {
             if (static_cast<size_t>(file_size) != SecondaryArchiveSize) {
                 ShowFatalError("fusee-secondary seems corrupted (size 0x%zx != 0x%zx)", static_cast<size_t>(file_size), SecondaryArchiveSize);
             }
+        }
 
-            /* Read to fixed address. */
-            if (R_FAILED((result = fs::ReadFile(file, 0, const_cast<SecondaryArchive *>(std::addressof(GetSecondaryArchive())), SecondaryArchiveSize)))) {
-                ShowFatalError("Failed to read fusee-secondary: 0x%08" PRIx32 "\n", result.GetValue());
+        void ReadFullSecondaryArchive() {
+            Result result;
+
+            if (R_FAILED((result = fs::ReadFile(g_archive_file, 0, const_cast<void *>(static_cast<const void *>(std::addressof(GetSecondaryArchive()))), SecondaryArchiveSize)))) {
+                ShowFatalError("Failed to read %s!\n", SecondaryArchiveFilePath);
             }
         }
 
@@ -88,8 +92,17 @@ namespace ams::nxboot {
         /* If we have a fatal error, save and display it. */
         SaveAndShowFatalError();
 
-        /* Read our overlay file. */
-        ReadFuseeSecondary();
+        /* Open the secondary archive. */
+        OpenSecondaryArchive();
+
+        /* Load the memory training overlay. */
+        LoadOverlay(g_archive_file, OverlayId_MemoryTraining);
+
+        /* Do memory training. */
+        DoMemoryTraining();
+
+        /* Read the rest of the archive file. */
+        ReadFullSecondaryArchive();
 
         /* Initialize display (splash screen will be visible from this point onwards). */
         InitializeDisplay();

@@ -153,7 +153,6 @@ namespace ams::clkrst {
 
             reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_ENABLE, DISABLE));
             reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_REF_DIS, REF_DISABLE));
-            reg::ReadWrite(g_register_address + CLK_RST_CONTROLLER_PLLC_BASE, CLK_RST_REG_BITS_ENUM(PLLC_BASE_PLLC_REF_DIS, REF_DISABLE));
             reg::SetBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC1, (1u << 27));
             reg::SetBits(g_register_address + CLK_RST_CONTROLLER_PLLC_MISC, (1u << 30));
             util::WaitMicroSeconds(10);
@@ -279,6 +278,11 @@ namespace ams::clkrst {
         /* Cap our rate. */
         if (rate >= BpmpClockRate_Count) {
             rate = BpmpClockRate_589MHz;
+        }
+
+        /* Change the rate, if we need to. */
+        if (rate == prev_rate) {
+            return prev_rate;
         }
 
         /* Configure the rate. */
