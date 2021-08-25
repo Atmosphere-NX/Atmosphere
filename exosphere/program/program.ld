@@ -176,13 +176,11 @@ SECTIONS
         KEEP (*(.warmboot.text.start)) /* Should be first */
         KEEP (*(.warmboot.text*))
         KEEP(secmon_setup_warm.o(.text*))
-        KEEP(tsec_*.o(.text*))
+        KEEP(*(.text._ZN3ams4tsec4LockEv))
         KEEP (*(.warmboot.rodata*))
         KEEP(secmon_setup_warm.o(.rodata*))
-        KEEP(tsec_*.o(.rodata*))
         KEEP (*(.warmboot.data*))
         KEEP(secmon_setup_warm.o(.data*))
-        KEEP(tsec_*.o(.data*))
     } >warmboot_text AT>glob
 
 	.text ORIGIN(main) + SIZEOF(.vectors) + SIZEOF(.warmboot) :

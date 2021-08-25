@@ -23,10 +23,16 @@ namespace ams::nxboot {
     namespace {
 
         constexpr inline const uintptr_t CLKRST  = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
+        constexpr inline const uintptr_t MC      = MC_BASE;
+        constexpr inline const uintptr_t EMC     = EMC_BASE;
+        constexpr inline const uintptr_t EMC0    = EMC0_BASE;
+        constexpr inline const uintptr_t EMC1    = EMC1_BASE;
 
         static constinit bool g_next_pll = false;
+        static constinit bool g_did_first_training = false;
 
         #include "fusee_mtc_tables_erista.inc"
+        #include "fusee_mtc_ram_training_pattern_erista.inc"
 
         using EmcDvfsTimingTable = erista::EmcDvfsTimingTable;
 
@@ -168,6 +174,68 @@ namespace ams::nxboot {
             return next_clk_src;
         }
 
+        void FreqChange(EmcDvfsTimingTable *src_timing_tables, EmcDvfsTimingTable *dst_timing_tables, u32 training, u32 next_clk_src) {
+            /* TODO */
+        }
+
+        void CleanupActiveShadowCopy(EmcDvfsTimingTable *src_timing_tables, EmcDvfsTimingTable *dst_timing_tables) {
+            /* TODO */
+        }
+
+        void TrainFreq(EmcDvfsTimingTable *src_timing_tables, EmcDvfsTimingTable *dst_timing_tables, u32 next_clk_src) {
+            /* Get dram dev num. */
+            const u32 dram_dev_num = (reg::Read(MC + MC_EMEM_ADR_CFG) & 1) + 1;
+
+            /* Write RAM patterns, if first training. */
+            if (!g_did_first_training) {
+                const auto * const pattern = GetEmcRamTrainingPattern();
+                for (u32 i = 0; i < 0x100; ++i) {
+                    reg::Write(EMC + EMC_TRAINING_PATRAM_DQ,   pattern[dst_timing_tables->training_pattern].dq[i]);
+                    reg::Write(EMC + EMC_TRAINING_PATRAM_DMI,  pattern[dst_timing_tables->training_pattern].dmi[i]);
+                    reg::Write(EMC + EMC_TRAINING_PATRAM_CTRL, 0x80000000 | i);
+                }
+
+                g_did_first_training = true;
+            }
+
+            /* Do training, if we need to. */
+            const u32 needed_training = dst_timing_tables->needs_training;
+            if (needed_training && !dst_timing_tables->trained) {
+                /* Determine what training to do. */
+                u32 training_params[8];
+                u32 num_params = 0;
+
+                if (needed_training & (CA_TRAINING | CA_VREF_TRAINING)) {
+                    training_params[num_params++] = (needed_training & (CA_TRAINING | CA_VREF_TRAINING | BIT_LEVEL_TRAINING));
+                }
+                if (dram_dev_num == TWO_RANK) {
+                    if (needed_training & (CA_TRAINING | CA_VREF_TRAINING)) {
+                        training_params[num_params++] = (needed_training & (CA_TRAINING | CA_VREF_TRAINING | TRAIN_SECOND_RANK | BIT_LEVEL_TRAINING));
+                    }
+                    if (needed_training & (QUSE_TRAINING | QUSE_VREF_TRAINING)) {
+                        training_params[num_params++] = (needed_training & (QUSE_TRAINING | QUSE_VREF_TRAINING | BIT_LEVEL_TRAINING));
+                        training_params[num_params++] = (needed_training & (QUSE_TRAINING | BIT_LEVEL_TRAINING));
+                    }
+                } else {
+                    if (needed_training & (QUSE_TRAINING | QUSE_VREF_TRAINING)) {
+                        training_params[num_params++] = (needed_training & (QUSE_TRAINING | QUSE_VREF_TRAINING | BIT_LEVEL_TRAINING));
+                    }
+                }
+                if (needed_training & (WRITE_TRAINING | WRITE_VREF_TRAINING | READ_TRAINING | READ_VREF_TRAINING)) {
+                    training_params[num_params++] = (needed_training & (WRITE_TRAINING | WRITE_VREF_TRAINING | READ_TRAINING | READ_VREF_TRAINING | BIT_LEVEL_TRAINING));
+                }
+
+                /* Apply all training. */
+                for (u32 i = 0; i < num_params; ++i) {
+                    FreqChange(src_timing_tables, dst_timing_tables, training_params[i], next_clk_src);
+                    CleanupActiveShadowCopy(src_timing_tables, dst_timing_tables);
+                }
+
+                /* Set tables as trained. */
+                dst_timing_tables->trained = 1;
+            }
+        }
+
         void Dvfs(EmcDvfsTimingTable *dst_timing_tables, EmcDvfsTimingTable *src_timing_tables, bool train) {
             /* Get the old 2x clock source. */
             const u32 prev_2x_clk_src = reg::GetValue(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
@@ -206,7 +274,7 @@ namespace ams::nxboot {
                     g_next_pll = !g_next_pll;
                 }
             } else {
-                FreqChange(src_timing_tables, dst_timing_tables, next_clk_src);
+                FreqChange(src_timing_tables, dst_timing_tables, 0, next_clk_src);
             }
         }
 
