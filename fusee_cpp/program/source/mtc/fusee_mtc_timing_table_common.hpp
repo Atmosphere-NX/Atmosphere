@@ -34,6 +34,25 @@ namespace ams::nxboot {
         PLLP_UD    = CLK_RST_CONTROLLER_CLK_SOURCE_EMC_EMC_2X_CLK_SRC_PLLP_UD
     };
 
+    enum {
+        ONE_RANK = 1,
+        TWO_RANK = 2,
+    };
+
+    enum {
+        NO_TRAINING         = (0 << 0),
+        CA_TRAINING         = (1 << 0),
+        CA_VREF_TRAINING    = (1 << 1),
+        QUSE_TRAINING       = (1 << 2),
+        QUSE_VREF_TRAINING  = (1 << 3),
+        WRITE_TRAINING      = (1 << 4),
+        WRITE_VREF_TRAINING = (1 << 5),
+        READ_TRAINING       = (1 << 6),
+        READ_VREF_TRAINING  = (1 << 7),
+        TRAIN_SECOND_RANK   = (1 << 8),
+        BIT_LEVEL_TRAINING  = (1 << 9),
+    };
+
     #define FOREACH_PER_CHANNEL_BURST_REG(HANDLER) \
         HANDLER(EMC0, EMC_MRW10, emc0_mrw10)       \
         HANDLER(EMC1, EMC_MRW10, emc1_mrw10)       \
