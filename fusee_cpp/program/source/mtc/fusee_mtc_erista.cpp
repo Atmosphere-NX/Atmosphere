@@ -22,6 +22,10 @@ namespace ams::nxboot {
 
     namespace {
 
+        constexpr inline const uintptr_t CLKRST  = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
+
+        static constinit bool g_next_pll = false;
+
         #include "fusee_mtc_tables_erista.inc"
 
         using EmcDvfsTimingTable = erista::EmcDvfsTimingTable;
@@ -41,6 +45,171 @@ namespace ams::nxboot {
             }
         }
 
+        bool IsSamePll(u32 next_2x, u32 prev_2x) {
+            if (next_2x == prev_2x) {
+                return true;
+            } else if ((next_2x == PLLM_OUT0 || next_2x == PLLM_UD) && (prev_2x == PLLM_OUT0 || prev_2x == PLLM_UD)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        bool PllReprogram(u32 next_rate_khz, u32 next_clk_src, u32 prev_rate_khz, u32 prev_clk_src) {
+            /* Get current pll/divp value. */
+            u32 pll_base, pll_p;
+            switch (reg::GetValue(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC))) {
+                case PLLM_UD:
+                case PLLM_OUT0:
+                    pll_base = reg::Read(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE);
+                    pll_p    = reg::GetField(pll_base, CLK_RST_REG_BITS_MASK(PLLM_BASE_PLLM_DIVP));
+                    break;
+                case PLLMB_UD:
+                case PLLMB_OUT0:
+                    pll_base = reg::Read(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE);
+                    pll_p    = reg::GetField(pll_base, CLK_RST_REG_BITS_MASK(PLLMB_BASE_PLLMB_DIVP));
+                    break;
+                default:
+                    pll_base = 0;
+                    pll_p    = 0;
+            }
+
+            /* Check pll divp. */
+            if (pll_p > 5) {
+                ShowFatalError("Invalid PLL divp: %" PRIu32 "\n", pll_p);
+            }
+
+            /* Get clk src/divisor. */
+            const u32 next_2x  = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+            const u32 prev_2x  = reg::GetField(prev_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+            u32 next_div = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_DIVISOR));
+            u32 prev_div = reg::GetField(prev_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_DIVISOR));
+
+            /* Update divisor, if necessary. */
+            if (next_2x == PLLM_UD || next_2x == PLLMB_UD) {
+                next_div = 0;
+            }
+            if (prev_2x == PLLM_UD || prev_2x == PLLMB_UD) {
+                prev_div = 0;
+            }
+
+            /* If the pll is different, reprogramming is necessary. */
+            if (!IsSamePll(next_2x, prev_2x)) {
+                return true;
+            }
+
+            /* Return whether the ratios are different. */
+            const float next_freq = next_rate_khz * (1 + (next_div >> 1) + (0.5 * (next_div & 1))) * (pll_p + 1);
+            const float prev_freq = prev_rate_khz * (1 + (prev_div >> 1) + (0.5 * (prev_div & 1))) * (pll_p + 1);
+
+            const float ratio = prev_freq / next_freq;
+
+            return ratio > 1.01 || ratio < 0.99;
+        }
+
+        u32 ProgramPllm(u32 next_rate_khz, u32 next_clk_src, bool is_pllmb) {
+            /* Hardcode values for 1600MHz. */
+            if (next_rate_khz != 1600000) {
+                ShowFatalError("Unexpected ProgramPllm next rate %" PRIu32 "\n", next_rate_khz);
+            }
+
+            const u32 divn = 0x7D;
+            const u32 divm = 0x03;
+            const u32 divp = 0x00;
+
+            const auto next_2x = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+            if (is_pllmb) {
+                /* Set divisors. */
+                reg::Write(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE, CLK_RST_REG_BITS_VALUE(PLLMB_BASE_PLLMB_DIVM, divm),
+                                                                   CLK_RST_REG_BITS_VALUE(PLLMB_BASE_PLLMB_DIVN, divn),
+                                                                   CLK_RST_REG_BITS_VALUE(PLLMB_BASE_PLLMB_DIVP, divp));
+                reg::Read(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE);
+
+                /* Set enable. */
+                reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE, CLK_RST_REG_BITS_ENUM(PLLMB_BASE_PLLMB_ENABLE, ENABLE));
+
+                /* Adjust next clock source. */
+                if (next_2x == PLLM_UD) {
+                    reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_UD));
+                } else if (next_2x == PLLM_OUT0) {
+                    reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_OUT0));
+                }
+
+                /* Wait for pll to lock. */
+                while (!reg::HasValue(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE, CLK_RST_REG_BITS_ENUM(PLLMB_BASE_PLLMB_LOCK, LOCK))) {
+                    /* ... */
+                }
+            } else {
+                /* Set divisors. */
+                reg::Write(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE, CLK_RST_REG_BITS_VALUE(PLLM_BASE_PLLM_DIVM, divm),
+                                                                  CLK_RST_REG_BITS_VALUE(PLLM_BASE_PLLM_DIVN, divn),
+                                                                  CLK_RST_REG_BITS_VALUE(PLLM_BASE_PLLM_DIVP, divp));
+                reg::Read(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE);
+
+                /* Set LKCDET. */
+                reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_PLLM_MISC2, CLK_RST_REG_BITS_ENUM(PLLM_MISC2_PLLM_EN_LCKDET, ENABLE));
+
+                /* Set enable. */
+                reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE, CLK_RST_REG_BITS_ENUM(PLLM_BASE_PLLM_ENABLE, ENABLE));
+
+                /* Adjust next clock source. */
+                if (next_2x == PLLM_UD) {
+                    reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLM_UD));
+                } else if (next_2x == PLLM_OUT0) {
+                    reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLM_OUT0));
+                }
+
+                /* Wait for pll to lock. */
+                while (!reg::HasValue(CLKRST + CLK_RST_CONTROLLER_PLLM_BASE, CLK_RST_REG_BITS_ENUM(PLLM_BASE_PLLM_LOCK, LOCK))) {
+                    /* ... */
+                }
+            }
+
+            return next_clk_src;
+        }
+
+        void Dvfs(EmcDvfsTimingTable *dst_timing_tables, EmcDvfsTimingTable *src_timing_tables, bool train) {
+            /* Get the old 2x clock source. */
+            const u32 prev_2x_clk_src = reg::GetValue(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+
+            /* Set g_next_pll. */
+            g_next_pll = prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0;
+
+            /* Reprogram pll. */
+            u32 next_clk_src;
+            if (PllReprogram(dst_timing_tables->rate_khz, dst_timing_tables->clk_src_emc, src_timing_tables->rate_khz, src_timing_tables->clk_src_emc)) {
+                if (prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0) {
+                    g_next_pll = 0;
+                } else if (prev_2x_clk_src == PLLM_UD || prev_2x_clk_src == PLLM_OUT0) {
+                    g_next_pll = !g_next_pll;
+                }
+
+                next_clk_src = ProgramPllm(dst_timing_tables->rate_khz, dst_timing_tables->clk_src_emc, g_next_pll);
+            } else {
+                next_clk_src = dst_timing_tables->clk_src_emc;
+
+                const u32 next_2x_clk_src = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+                if (next_2x_clk_src == PLLM_UD || next_2x_clk_src == PLLMB_UD) {
+                    if (g_next_pll) {
+                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_UD));
+                    }
+                } else if (next_2x_clk_src == PLLM_OUT0 || next_2x_clk_src == PLLMB_OUT0) {
+                    if (g_next_pll) {
+                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_OUT0));
+                    }
+                }
+            }
+
+            if (train) {
+                TrainFreq(src_timing_tables, dst_timing_tables, next_clk_src);
+                if (PllReprogram(dst_timing_tables->rate_khz, dst_timing_tables->clk_src_emc, src_timing_tables->rate_khz, src_timing_tables->clk_src_emc)) {
+                    g_next_pll = !g_next_pll;
+                }
+            } else {
+                FreqChange(src_timing_tables, dst_timing_tables, next_clk_src);
+            }
+        }
+
     }
 
     void DoMemoryTrainingErista() {
@@ -54,7 +223,20 @@ namespace ams::nxboot {
             ShowFatalError("EmcDvfsTimingTables seem corrupted %" PRIu32 " %" PRIu32 "?\n", src_timing_tables->rate_khz, dst_timing_tables->rate_khz);
         }
 
-        /* TODO */
+        /* Check that we should do training. */
+        if (src_timing_tables->clk_src_emc != reg::Read(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC)) {
+            /* Our clock source isn't what's expected, so presumably training has already been done? */
+            /* Either way, the safe bet is to skip it. */
+            return;
+        }
+
+        /* Train 1600MHz. */
+        Dvfs(dst_timing_tables, src_timing_tables, true);
+
+        /* Switch to 1600MHz. */
+        Dvfs(dst_timing_tables, src_timing_tables, false);
+
+        /* TODO: Periodic compensation */
     }
 
 }

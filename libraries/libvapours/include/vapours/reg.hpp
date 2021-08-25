@@ -57,6 +57,12 @@ namespace ams::reg {
     }
 
     template<typename IntType> requires UnsignedNonConstIntegral<IntType>
+    constexpr ALWAYS_INLINE IntType GetField(const IntType &value, const BitsMask mask) { return (value & EncodeMask(mask)) >> GetOffset(mask); }
+
+    template<typename IntType> requires UnsignedNonConstIntegral<IntType>
+    constexpr ALWAYS_INLINE void SetField(IntType &value, const BitsValue v) { value = (value & ~EncodeMask(v)) | EncodeValue(v); }
+
+    template<typename IntType> requires UnsignedNonConstIntegral<IntType>
     ALWAYS_INLINE void Write(volatile IntType *reg, std::type_identity_t<IntType> val) { *reg = val; }
 
     template<typename IntType> requires UnsignedNonConstIntegral<IntType>
