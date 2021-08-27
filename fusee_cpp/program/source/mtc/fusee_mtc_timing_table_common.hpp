@@ -40,6 +40,16 @@ namespace ams::nxboot {
     };
 
     enum {
+        DLL_OFF = 0,
+        DLL_ON  = 1,
+    };
+
+    enum {
+        AUTO_PD = 0,
+        MAN_SR  = 2,
+    };
+
+    enum {
         NO_TRAINING         = (0 << 0),
         CA_TRAINING         = (1 << 0),
         CA_VREF_TRAINING    = (1 << 1),
@@ -52,6 +62,78 @@ namespace ams::nxboot {
         TRAIN_SECOND_RANK   = (1 << 8),
         BIT_LEVEL_TRAINING  = (1 << 9),
     };
+
+    enum {
+        DRAM_TYPE_DDR4   = EMC_FBIO_CFG5_DRAM_TYPE_DDR4,
+        DRAM_TYPE_LPDDR4 = EMC_FBIO_CFG5_DRAM_TYPE_LPDDR4,
+        DRAM_TYPE_LPDDR2 = EMC_FBIO_CFG5_DRAM_TYPE_LPDDR2,
+        DRAM_TYPE_DDR2   = EMC_FBIO_CFG5_DRAM_TYPE_DDR2
+    };
+
+    enum {
+        ASSEMBLY = EMC_DBG_WRITE_MUX_ASSEMBLY,
+        ACTIVE   = EMC_DBG_WRITE_MUX_ACTIVE,
+    };
+
+    enum {
+        DVFS_SEQUENCE               =  1,
+        WRITE_TRAINING_SEQUENCE     =  2,
+        PERIODIC_TRAINING_SEQUENCE  =  3,
+        DVFS_PT1                    = 10,
+        DVFS_UPDATE                 = 11,
+        TRAINING_PT1                = 12,
+        TRAINING_UPDATE             = 13,
+        PERIODIC_TRAINING_UPDATE    = 14,
+    };
+
+    /*
+     * Do arithmetic in fixed point.
+     */
+    #define MOVAVG_PRECISION_FACTOR     100
+
+    /*
+     * The division portion of the average operation.
+     */
+    #define __AVERAGE_PTFV(dev)                     \
+        ({ dst_timing->ptfv_dqsosc_movavg_##dev = \
+           dst_timing->ptfv_dqsosc_movavg_##dev / \
+           dst_timing->ptfv_dvfs_samples; })
+
+    /*
+     * The division portion of the average write operation.
+     */
+    #define __AVERAGE_WRITE_PTFV(dev)                       \
+        ({ dst_timing->ptfv_dqsosc_movavg_##dev = \
+           dst_timing->ptfv_dqsosc_movavg_##dev / \
+           dst_timing->ptfv_write_samples; })
+
+    /*
+     * Convert val to fixed point and add it to the temporary average.
+     */
+    #define __INCREMENT_PTFV(dev, val)                  \
+        ({ dst_timing->ptfv_dqsosc_movavg_##dev += \
+           ((val) * MOVAVG_PRECISION_FACTOR); })
+
+    /*
+     * Convert a moving average back to integral form and return the value.
+     */
+    #define __MOVAVG_AC(timing, dev)                    \
+        ((timing)->ptfv_dqsosc_movavg_##dev /    \
+         MOVAVG_PRECISION_FACTOR)
+
+    /* Weighted update. */
+    #define __WEIGHTED_UPDATE_PTFV(dev, nval)               \
+        do {                                \
+            dst_timing->ptfv_dqsosc_movavg_##dev =               \
+                ((nval * MOVAVG_PRECISION_FACTOR) +     \
+                 (dst_timing->ptfv_dqsosc_movavg_##dev *         \
+                  dst_timing->ptfv_movavg_weight)) /         \
+                (dst_timing->ptfv_movavg_weight + 1);        \
+        } while (0)
+
+    /* Access a particular average. */
+    #define __MOVAVG(timing, dev)                      \
+        ((timing)->ptfv_dqsosc_movavg_##dev)
 
     #define FOREACH_PER_CHANNEL_BURST_REG(HANDLER) \
         HANDLER(EMC0, EMC_MRW10, emc0_mrw10)       \
@@ -303,5 +385,143 @@ namespace ams::nxboot {
         HANDLER(MC, MC_LATENCY_ALLOWANCE_VI2_0, mc_latency_allowance_vi2_0)         \
         HANDLER(MC, MC_LATENCY_ALLOWANCE_ISP2_0, mc_latency_allowance_isp2_0)       \
         HANDLER(MC, MC_LATENCY_ALLOWANCE_ISP2_1, mc_latency_allowance_isp2_1)
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE1_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE1_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE1_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE0_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE0_MASK \
+        0x3ff <<                                \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0_OB_DDLL_LONG_DQ_RANK0_BYTE0_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE3_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE3_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE3_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE2_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE2_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1_OB_DDLL_LONG_DQ_RANK0_BYTE2_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE5_SHIFT  \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE5_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE5_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE4_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE4_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_2_OB_DDLL_LONG_DQ_RANK0_BYTE4_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE7_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE7_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE7_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE6_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE6_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_3_OB_DDLL_LONG_DQ_RANK0_BYTE6_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE1_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE1_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE1_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE0_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE0_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_0_OB_DDLL_LONG_DQ_RANK1_BYTE0_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE3_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE3_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE3_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE2_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE2_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_1_OB_DDLL_LONG_DQ_RANK1_BYTE2_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE5_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE5_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE5_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE4_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE4_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_2_OB_DDLL_LONG_DQ_RANK1_BYTE4_SHIFT
+
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE7_SHIFT \
+        16
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE7_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE7_SHIFT
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE6_SHIFT \
+        0
+    #define EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE6_MASK  \
+        0x3ff <<                                 \
+        EMC_PMACRO_OB_DDLL_LONG_DQ_RANK1_3_OB_DDLL_LONG_DQ_RANK1_BYTE6_SHIFT
+
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE7_DATA_BRLSHFT_SHIFT   21
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE7_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE7_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE6_DATA_BRLSHFT_SHIFT   18
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE6_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE6_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE5_DATA_BRLSHFT_SHIFT   15
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE5_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE5_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE4_DATA_BRLSHFT_SHIFT   12
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE4_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE4_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE3_DATA_BRLSHFT_SHIFT   9
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE3_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE3_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE2_DATA_BRLSHFT_SHIFT   6
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE2_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE2_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE1_DATA_BRLSHFT_SHIFT   3
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE1_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE1_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE0_DATA_BRLSHFT_SHIFT   0
+    #define EMC_DATA_BRLSHFT_0_RANK0_BYTE0_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_0_RANK0_BYTE0_DATA_BRLSHFT_SHIFT)
+
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE7_DATA_BRLSHFT_SHIFT   21
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE7_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE7_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE6_DATA_BRLSHFT_SHIFT   18
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE6_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE6_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE5_DATA_BRLSHFT_SHIFT   15
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE5_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE5_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE4_DATA_BRLSHFT_SHIFT   12
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE4_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE4_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE3_DATA_BRLSHFT_SHIFT   9
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE3_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE3_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE2_DATA_BRLSHFT_SHIFT   6
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE2_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE2_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE1_DATA_BRLSHFT_SHIFT   3
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE1_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE1_DATA_BRLSHFT_SHIFT)
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE0_DATA_BRLSHFT_SHIFT   0
+    #define EMC_DATA_BRLSHFT_1_RANK1_BYTE0_DATA_BRLSHFT_MASK    \
+        (0x7 << EMC_DATA_BRLSHFT_1_RANK1_BYTE0_DATA_BRLSHFT_SHIFT)
 
 }
