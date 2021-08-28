@@ -23,7 +23,7 @@ SECTIONS {
             BYTE(0x00);
         }
         .ovl_mtc_erista {
-            KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingEristaEv))
+            KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingEristaEi))
             fusee_mtc_erista.o(.text*);
             fusee_mtc_erista.o(.rodata*);
             fusee_mtc_erista.o(.data*);
@@ -33,7 +33,7 @@ SECTIONS {
             BYTE(0x00);
         }
         .ovl_mtc_mariko {
-            KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingMarikoEv))
+            KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingMarikoEi))
             fusee_mtc_mariko.o(.text*);
             fusee_mtc_mariko.o(.rodata*);
             fusee_mtc_mariko.o(.data*);

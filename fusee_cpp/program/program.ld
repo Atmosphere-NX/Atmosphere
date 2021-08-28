@@ -19,6 +19,10 @@ SECTIONS
 
 	.text :
 	{
+        KEEP(*(.text._ZN3ams4util15GetMicroSecondsEv))
+        KEEP(*(.text._ZN3ams4util16WaitMicroSecondsEi))
+        KEEP(*(.text._ZN3ams6nxboot14ShowFatalErrorEPKcz))
+        _*.o(SORT(.text*))
 		*(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		*(.text.exit .text.exit.*)
 		*(.text.startup .text.startup.*)
