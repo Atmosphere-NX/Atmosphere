@@ -14,9 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include <exosphere/secmon/secmon_emummc_context.hpp>
 #include "fusee_key_derivation.hpp"
 #include "fusee_secondary_archive.hpp"
 #include "fusee_setup_horizon.hpp"
+#include "fusee_ini.hpp"
 #include "fusee_fatal.hpp"
 
 namespace ams::nxboot {
@@ -26,14 +28,16 @@ namespace ams::nxboot {
         constexpr inline const uintptr_t CLKRST  = secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
         constexpr inline const uintptr_t MC      = secmon::MemoryRegionPhysicalDeviceMemoryController.GetAddress();
 
+        constinit secmon::EmummcConfiguration g_emummc_cfg = {};
+
         void DisableArc() {
-            /* Enable ARC_CLK_OVR_ON. */
+            /* Disable ARC_CLK_OVR_ON. */
             reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD, CLK_RST_REG_BITS_ENUM(LVL2_CLK_GATE_OVRD_ARC_CLK_OVR_ON, OFF));
 
-            /* Enable the ARC. */
+            /* Disable the ARC. */
             reg::ReadWrite(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
 
-            /* Set IRAM BOM/TOP to open up access to all mmio. */
+            /* Set IRAM BOM/TOP to close all redirection access. */
             reg::Write(MC + MC_IRAM_BOM, 0xFFFFF000);
             reg::Write(MC + MC_IRAM_TOM, 0x00000000);
 
@@ -61,6 +65,103 @@ namespace ams::nxboot {
             }
         }
 
+        bool ParseIniSafe(IniSectionList &out_sections, const char *ini_path) {
+            const auto result = ParseIniFile(out_sections, ini_path);
+            if (result == ParseIniResult_Success) {
+                return true;
+            } else if (result == ParseIniResult_NoFile) {
+                return false;
+            } else {
+                ShowFatalError("Failed to parse %s!\n", ini_path);
+            }
+        }
+
+        u32 ParseHexInteger(const char *s) {
+            u32 x = 0;
+            if (s[0] == '0' && s[1] == 'x') {
+                s += 2;
+            }
+
+            while (true) {
+                const char c = *(s++);
+
+                if (c == '\x00') {
+                    return x;
+                } else {
+                    x <<= 4;
+
+                    if ('0' <= c && c <= '9') {
+                        x |= c - '0';
+                    } else if ('a' <= c && c <= 'f') {
+                        x |= c - 'a';
+                    } else if ('A' <= c && c <= 'F') {
+                        x |= c - 'A';
+                    }
+                }
+            }
+        }
+
+        bool ConfigureEmummc() {
+            /* Set magic. */
+            g_emummc_cfg.base_cfg.magic = secmon::EmummcBaseConfiguration::Magic;
+
+            /* Parse ini. */
+            bool enabled = false;
+            u32 id = 0;
+            u32 sector = 0;
+            const char *path = "";
+            const char *n_path = "";
+            {
+                IniSectionList sections;
+                if (ParseIniSafe(sections, "sdmc:/emummc/emummc.ini")) {
+                    for (const auto &section : sections) {
+                        /* We only care about the [emummc] section. */
+                        if (std::strcmp(section.name, "emummc")) {
+                            continue;
+                        }
+
+                        /* Handle individual fields. */
+                        for (const auto &entry : section.kv_list) {
+                            if (std::strcmp(entry.key, "enabled") == 0) {
+                                enabled = entry.value[0] == '1';
+                            } else if (std::strcmp(entry.key, "id") == 0) {
+                                id = ParseHexInteger(entry.value);
+                            } else if (std::strcmp(entry.key, "sector") == 0) {
+                                sector = ParseHexInteger(entry.value);
+                            } else if (std::strcmp(entry.key, "path") == 0) {
+                                path = entry.value;
+                            } else if (std::strcmp(entry.key, "nintendo_path") == 0) {
+                                n_path = entry.value;
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* Set values parsed from config. */
+            g_emummc_cfg.base_cfg.id = id;
+            std::strncpy(g_emummc_cfg.emu_dir_path.str, n_path, sizeof(g_emummc_cfg.emu_dir_path.str));
+            g_emummc_cfg.emu_dir_path.str[sizeof(g_emummc_cfg.emu_dir_path.str) - 1] = '\x00';
+
+            if (enabled) {
+                if (sector > 0) {
+                    g_emummc_cfg.base_cfg.type = secmon::EmummcType_Partition;
+                    g_emummc_cfg.partition_cfg.start_sector = sector;
+
+                    /* TODO */
+                } else if (/* TODO: directory exists */false) {
+                    g_emummc_cfg.base_cfg.type = secmon::EmummcType_File;
+
+                    /* TODO */
+                    AMS_UNUSED(path);
+                } else {
+                    ShowFatalError("Invalid emummc setting!\n");
+                }
+            }
+
+            return enabled;
+        }
+
     }
 
     void SetupAndStartHorizon() {
@@ -71,12 +172,15 @@ namespace ams::nxboot {
         /* Derive all keys. */
         DeriveAllKeys(soc_type);
 
-        /* Disable the ARC redirect. */
-        /* NOTE: Devices can no longer access IRAM from this point onwards. */
-        DisableArc();
+        /* Determine whether we're using emummc. */
+        const bool emummc_enabled = ConfigureEmummc();
+        AMS_UNUSED(emummc_enabled);
 
         AMS_UNUSED(hw_type);
         ShowFatalError("SetupAndStartHorizon not fully implemented\n");
+
+        /* Disable the ARC. */
+        DisableArc();
     }
 
 }
