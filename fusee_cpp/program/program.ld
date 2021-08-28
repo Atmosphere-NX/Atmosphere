@@ -19,6 +19,7 @@ SECTIONS
 
 	.text :
 	{
+        FILL(0x00000000)
         KEEP(*(.text._ZN3ams4util15GetMicroSecondsEv))
         KEEP(*(.text._ZN3ams4util16WaitMicroSecondsEi))
         KEEP(*(.text._ZN3ams6nxboot14ShowFatalErrorEPKcz))
@@ -28,6 +29,9 @@ SECTIONS
 		*(.text.startup .text.startup.*)
 		*(.text.hot .text.hot.*)
 		*(.text .stub .text.* .gnu.linkonce.t.*)
+        . = ALIGN(16);
+        . = . + 15;
+        BYTE(0x00);
 	} >main AT>glob
 
 	.init :
@@ -52,7 +56,11 @@ SECTIONS
 
 	.rodata :
 	{
+        FILL(0x00000000)
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
+        . = ALIGN(16);
+        . = . + 15;
+        BYTE(0x00);
 	} >main AT>glob
 
 	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >main AT>glob
