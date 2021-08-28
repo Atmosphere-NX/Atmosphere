@@ -72,8 +72,7 @@ namespace ams::nxboot {
 
         using EmcDvfsTimingTable = erista::EmcDvfsTimingTable;
 
-        EmcDvfsTimingTable *GetEmcDvfsTimingTables() {
-            const auto index = GetMemoryTrainingTableIndex();
+        EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index) {
             switch (index) {
                 case 0:
                 case 3:
@@ -2830,11 +2829,11 @@ namespace ams::nxboot {
 
     }
 
-    void DoMemoryTrainingErista() {
+    void DoMemoryTrainingErista(int index) {
         /* Get timing tables. */
-        auto *timing_tables     = GetEmcDvfsTimingTables();
-        auto *src_timing = timing_tables + 0;
-        auto *dst_timing = timing_tables + 1;
+        auto *timing_tables = GetEmcDvfsTimingTables(index);
+        auto *src_timing    = timing_tables + 0;
+        auto *dst_timing    = timing_tables + 1;
 
         /* Check timing tables. */
         if (src_timing->rate_khz != 204000 || dst_timing->rate_khz != 1600000) {

@@ -17,8 +17,8 @@
 
 namespace ams::nxboot {
 
-    void DoMemoryTrainingErista();
-    void DoMemoryTrainingMariko();
+    void DoMemoryTrainingErista(int index);
+    void DoMemoryTrainingMariko(int index);
 
     namespace {
 
@@ -56,21 +56,23 @@ namespace ams::nxboot {
             /* DramId_MarikoAulaSamsung1y8gbX  */ 0x0D,
         };
 
+        int GetMemoryTrainingTableIndex() {
+            if (const auto dram_id = fuse::GetDramId(); dram_id < util::size(MemoryTrainingTableIndices) && MemoryTrainingTableIndices[dram_id] != MemoryTrainingTableIndex_Invalid) {
+                return static_cast<int>(MemoryTrainingTableIndices[dram_id]);
+            } else {
+                return -1;
+            }
+        }
+
     }
 
     void DoMemoryTraining() {
-        if (fuse::GetSocType() == fuse::SocType_Erista) {
-            DoMemoryTrainingErista();
-        } else {
-            DoMemoryTrainingMariko();
-        }
-    }
+        const auto index = GetMemoryTrainingTableIndex();
 
-    int GetMemoryTrainingTableIndex() {
-        if (const auto dram_id = fuse::GetDramId(); dram_id < util::size(MemoryTrainingTableIndices) && MemoryTrainingTableIndices[dram_id] != MemoryTrainingTableIndex_Invalid) {
-            return static_cast<int>(MemoryTrainingTableIndices[dram_id]);
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            DoMemoryTrainingErista(index);
         } else {
-            return -1;
+            DoMemoryTrainingMariko(index);
         }
     }
 

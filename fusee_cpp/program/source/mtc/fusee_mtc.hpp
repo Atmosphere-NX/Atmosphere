@@ -20,6 +20,4 @@ namespace ams::nxboot {
 
     void DoMemoryTraining();
 
-    int GetMemoryTrainingTableIndex();
-
 }
