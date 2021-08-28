@@ -23,6 +23,8 @@
 #include "fusee_sd_card.hpp"
 #include "fusee_fatal.hpp"
 #include "fusee_secondary_archive.hpp"
+#include "fusee_setup_horizon.hpp"
+#include "fusee_secmon_sync.hpp"
 
 namespace ams::nxboot {
 
@@ -59,6 +61,10 @@ namespace ams::nxboot {
             if (R_FAILED((result = fs::ReadFile(g_archive_file, 0, const_cast<void *>(static_cast<const void *>(std::addressof(GetSecondaryArchive()))), SecondaryArchiveSize)))) {
                 ShowFatalError("Failed to read %s!\n", SecondaryArchiveFilePath);
             }
+        }
+
+        void CloseSecondaryArchive() {
+            fs::CloseFile(g_archive_file);
         }
 
     }
@@ -108,11 +114,29 @@ namespace ams::nxboot {
         InitializeDisplay();
         ShowDisplay();
 
-        /* TODO */
-        WaitForReboot();
+        /* Close the secondary archive. */
+        CloseSecondaryArchive();
 
-        /* TODO */
-        AMS_INFINITE_LOOP();
+        /* Perform rest of the boot process. */
+        SetupAndStartHorizon();
+
+        /* Finalize display. */
+        FinalizeDisplay();
+
+        /* Finalize the data cache. */
+        hw::FinalizeDataCache();
+
+        /* Downclock the bpmp. */
+        clkrst::SetBpmpClockRate(clkrst::BpmpClockRate_408MHz);
+
+        /* Signal to the secure monitor that we're done. */
+        SetBootloaderState(pkg1::BootloaderState_Done);
+
+        /* Halt ourselves. */
+        while (true) {
+            reg::Write(secmon::MemoryRegionPhysicalDeviceFlowController.GetAddress() + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+                                                                                                                  FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,        ENABLED));
+        }
     }
 
 }
