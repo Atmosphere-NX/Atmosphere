@@ -1099,6 +1099,9 @@ namespace ams::nxboot {
         } else /* if (soc_type == fuse::SocType_Mariko) */ {
             InitializeSdram<fuse::SocType_Mariko>(sdram_params);
         }
+
+        /* Lock DRAM scratch. */
+        pmc::LockSecureRegister(pmc::SecureRegister_DramParameters);
     }
 
 }
