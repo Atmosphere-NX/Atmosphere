@@ -1,4 +1,9 @@
 # Changelog
+## 0.20.1
++ An issue was fixed that caused severely degraded performance after wake-from-sleep on Mariko hardware.
+  + This was due to Mariko MTC resulting in a frequency of 1599.999MHz instead of 1600MHz.
+  + Due to this off-by-one, Nintendo's EMC management code failed to initialize/take over, and after wake from sleep RAM would be in a strange state.
++ General system stability improvements to enhance the user's experience.
 ## 0.20.0
 + DRAM training (MTC) was implemented for Mariko hardware, increasing RAM speed from 204MHz to 1600MHz.
   + This significantly optimizes Mariko boot speed, cutting boot time roughly in half.

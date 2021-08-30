@@ -118,7 +118,6 @@ dist: dist-no-debug
 	rm -rf atmosphere-$(AMSVER)-debug
 	mkdir atmosphere-$(AMSVER)-debug
 	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
-	cp fusee/fusee-mtc/fusee-mtc.elf atmosphere-$(AMSVER)-debug/fusee-mtc.elf
 	cp fusee/fusee-secondary/fusee-secondary-experimental.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
 	cp exosphere/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
 	cp exosphere/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
