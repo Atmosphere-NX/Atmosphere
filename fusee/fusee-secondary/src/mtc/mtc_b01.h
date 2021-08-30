@@ -686,4 +686,6 @@ _Static_assert(sizeof(tegra_b01_emc_timing_t) == 0x10CC);
 
 void train_dram_mariko(void);
 
+void restore_dram_mariko(void);
+
 #endif

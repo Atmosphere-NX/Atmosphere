@@ -17,10 +17,10 @@
 #include "mtc.h"
 #include "mtc_b01.h"
 #include "mtc_tables_b01.h"
-#include "car.h"
-#include "fuse.h"
-#include "timers.h"
-#include "../../../fusee/common/log.h"
+#include "../car.h"
+#include "../fuse.h"
+#include "../timers.h"
+#include "../../../../fusee/common/log.h"
 
 /*
  * Macros.
@@ -97,6 +97,8 @@ static uint32_t g_next_pll = 0;
 static uint32_t g_program_pllm_ret = 0;
 static uint32_t g_wrote_training_pattern = 0;
 static uint32_t g_fsp_for_next_freq = 0;
+
+static bool g_trained_dram = false;
 
 static uint32_t g_periodic_timmer_compensation_intermediates[9 * 0x10] = {};
 
@@ -4176,5 +4178,16 @@ void train_dram_mariko(void) {
         //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Switched\n");
 
         //print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Done!\n");
+
+        g_trained_dram = true;
+    }
+}
+
+void restore_dram_mariko(void) {
+    if (g_trained_dram) {
+        int32_t num_timing_tables = 0;
+        tegra_b01_emc_timing_t *timing_tables = get_t210_b01_emc_dvfs_timing_table(&num_timing_tables);
+
+        dvfs(0, timing_tables[0].rate_khz, timing_tables[num_timing_tables - 1].rate_khz, timing_tables, num_timing_tables, OP_SWITCH);
     }
 }

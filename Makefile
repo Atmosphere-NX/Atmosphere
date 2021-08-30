@@ -65,7 +65,6 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/flags
 	touch atmosphere-$(AMSVER)/atmosphere/flags/clean_stratosphere_for_0.19.0.flag
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
-	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
 	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
 	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmosphere/config_templates/BCT.ini
 	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini

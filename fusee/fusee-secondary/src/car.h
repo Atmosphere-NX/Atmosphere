@@ -51,7 +51,7 @@ typedef enum {
     CARDEVICE_USB2      = ((1 << 5) | 0x1A),
     CARDEVICE_CORESIGHT = ((2 << 5) | 0x9),
     CARDEVICE_TSEC      = ((2 << 5) | 0x13),
-    CARDEVICE_MSELECT   = ((3 << 5) | 0x3),
+    CARDEVICE_MSELECT   = ((3 << 5) | 0x8),
     CARDEVICE_ACTMON    = ((3 << 5) | 0x17),
     CARDEVICE_TZRAM     = ((3 << 5) | 0x1E),
     CARDEVICE_SE        = ((3 << 5) | 0x1F),
@@ -490,6 +490,15 @@ typedef struct {
     uint32_t sdmmc4_pllc4_out1_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT1_SHAPER_CTRL_0, 0x73c */
     uint32_t sdmmc4_pllc4_out2_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT2_SHAPER_CTRL_0, 0x740 */
     uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */
+
+    uint32_t _0x748[(0x774-0x748) / sizeof(uint32_t)]; // TODO
+
+    uint32_t pllm_ss_cfg;                           /* _PLLM_SS_CFG_0, 0x744 */
+    uint32_t pllm_ss_ctrl1;                         /* _PLLM_SS_CTRL1_0, 0x778 */
+    uint32_t pllm_ss_ctrl2;                         /* _PLLM_SS_CTRL2_0, 0x77C */
+    uint32_t pllmb_ss_cfg;                          /* _PLLMB_SS_CFG_0, 0x780 */
+    uint32_t pllmb_ss_ctrl1;                        /* _PLLMB_SS_CTRL1_0, 0x784 */
+    uint32_t pllmb_ss_ctrl2;                        /* _PLLMB_SS_CTRL2_0, 0x788 */
 } tegra_car_t;
 
 static inline volatile tegra_car_t *car_get_regs(void) {

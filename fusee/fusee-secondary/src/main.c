@@ -34,6 +34,9 @@
 #include "../../../fusee/common/display/video_fb.h"
 #include "../../../fusee/common/sdmmc/sdmmc.h"
 #include "../../../fusee/common/log.h"
+#include "fuse.h"
+#include "mtc/mtc.h"
+#include "mtc/mtc_b01.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -107,6 +110,9 @@ int main(int argc, void **argv) {
     /* Initialize the boot environment. */
     setup_env();
 
+    /* Train dram. */
+    train_dram();
+
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, u8"Welcome to Atmosphère Fusée Stage 2!\n");
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 executing from: %s\n", (const char *)argv[STAGE2_ARGV_PROGRAM_PATH]);
 
@@ -133,6 +139,11 @@ int main(int argc, void **argv) {
 
         /* Terminate the boot environment. */
         cleanup_env();
+
+        /* Restore dram if mariko. */
+        if (fuse_get_soc_type() == 1) {
+            restore_dram_mariko();
+        }
 
         /* Finish boot. */
         nxboot_finish(boot_memaddr);
