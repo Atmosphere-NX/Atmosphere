@@ -33,21 +33,6 @@ namespace ams::nxboot {
 
         constinit secmon::EmummcConfiguration g_emummc_cfg = {};
 
-        void DisableArc() {
-            /* Disable ARC_CLK_OVR_ON. */
-            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD, CLK_RST_REG_BITS_ENUM(LVL2_CLK_GATE_OVRD_ARC_CLK_OVR_ON, OFF));
-
-            /* Disable the ARC. */
-            reg::ReadWrite(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
-
-            /* Set IRAM BOM/TOP to close all redirection access. */
-            reg::Write(MC + MC_IRAM_BOM, 0xFFFFF000);
-            reg::Write(MC + MC_IRAM_TOM, 0x00000000);
-
-            /* Read to ensure our configuration takes. */
-            reg::Read(MC + MC_IRAM_REG_CTRL);
-        }
-
         void DeriveAllKeys(const fuse::SocType soc_type) {
             /* If on erista, run the TSEC keygen firmware. */
             if (soc_type == fuse::SocType_Erista) {
@@ -351,9 +336,8 @@ namespace ams::nxboot {
     }
 
     void SetupAndStartHorizon() {
-        /* Get soc/hardware type. */
+        /* Get soc type. */
         const auto soc_type = fuse::GetSocType();
-        const auto hw_type  = fuse::GetHardwareType();
 
         /* Derive all keys. */
         DeriveAllKeys(soc_type);
@@ -362,6 +346,7 @@ namespace ams::nxboot {
         const bool emummc_enabled = ConfigureEmummc();
 
         /* Initialize emummc. */
+        /* NOTE: SYSTEM:/ accessible past this point. */
         InitializeEmummc(emummc_enabled, g_emummc_cfg);
 
         /* Read bootloader. */
@@ -371,11 +356,16 @@ namespace ams::nxboot {
         const auto target_firmware = GetTargetFirmware(package1);
         AMS_UNUSED(target_firmware);
 
-        AMS_UNUSED(hw_type);
-        ShowFatalError("SetupAndStartHorizon not fully implemented\n");
+        /* TODO: Read/decrypt package2. */
 
-        /* Disable the ARC. */
-        DisableArc();
+        /* TODO: Setup warmboot firmware. */
+
+        /* TODO: Setup exosphere. */
+
+        /* TODO: Start CPU. */
+        /* NOTE: Security Engine unusable past this point. */
+
+        /* TODO: Build modified package2. */
     }
 
 }
