@@ -711,20 +711,20 @@ namespace ams::nxboot {
                     if (R_SUCCEEDED(fs::OpenFile(std::addressof(mariko_program_file), "sdmc:/atmosphere/mariko_fatal.bin", fs::OpenMode_Read))) {
                         ON_SCOPE_EXIT { fs::CloseFile(mariko_program_file); };
 
-                        /* Note that we're using sd_exo. */
-                        use_sd_exo = true;
+                        /* Note that we're using sd mariko fatal. */
+                        use_sd_mariko_fatal = true;
 
                         Result result;
 
                         /* Get the size. */
                         s64 size;
                         if (R_FAILED((result = fs::GetFileSize(std::addressof(size), mariko_program_file))) || size > sizeof(GetSecondaryArchive().mariko_fatal)) {
-                            ShowFatalError("Invalid SD exosphere size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
+                            ShowFatalError("Invalid SD mariko_fatal size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
                         }
 
                         /* Read the file. */
                         if (R_FAILED((result = fs::ReadFile(mariko_program_file, 0, mariko_fatal_dst, size)))) {
-                            ShowFatalError("Failed to read SD exosphere: 0x%08" PRIx32 "!\n", result.GetValue());
+                            ShowFatalError("Failed to read SD mariko_fatal: 0x%08" PRIx32 "!\n", result.GetValue());
                         }
 
                         /* Clear the remainder. */
