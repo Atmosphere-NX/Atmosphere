@@ -582,6 +582,10 @@ namespace ams::nxboot {
         }
     }
 
+    u16 GetDisplayLcdVendor() {
+        return g_lcd_vendor;
+    }
+
     void ShowFatalError(const ams::impl::FatalErrorContext *f_ctx, const Result save_result) {
         /* If needed, initialize the display. */
         if (!IsDisplayInitialized()) {

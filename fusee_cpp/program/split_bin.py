@@ -47,9 +47,9 @@ def main(argc, argv):
         # Write Mariko MTC
         f.write(get_overlay(data, 2))
         # TODO: Write exosphere
-        f.write('\xCC'*0x10000)
+        f.write('\xCC'*0xE000)
         # TODO: Write mesosphere
-        f.write('\xCC'*0xA8000)
+        f.write('\xCC'*0xAA000)
         # TODO: Write kips
         f.write('\xCC'*0x300000)
         # Write Splash Screen

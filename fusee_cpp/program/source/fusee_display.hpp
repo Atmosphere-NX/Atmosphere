@@ -26,6 +26,8 @@ namespace ams::nxboot {
     void InitializeDisplay();
     void FinalizeDisplay();
 
+    u16 GetDisplayLcdVendor();
+
     void ShowDisplay();
 
 }

@@ -18,6 +18,8 @@
 
 namespace ams::nxboot {
 
+    void InitializeSecureMonitorMailbox();
+
     void WaitSecureMonitorState(pkg1::SecureMonitorState state);
     void SetBootloaderState(pkg1::BootloaderState state);
 
