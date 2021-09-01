@@ -85,6 +85,10 @@ namespace ams::nxboot {
         return sdmmc::CheckSdCardConnection(out_sm, out_bw, SdCardPort);
     }
 
+    Result GetSdCardMemoryCapacity(u32 *out_num_sectors) {
+        return sdmmc::GetDeviceMemoryCapacity(out_num_sectors, SdCardPort);
+    }
+
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {
         return sdmmc::Read(dst, size, SdCardPort, sector_index, sector_count);
     }

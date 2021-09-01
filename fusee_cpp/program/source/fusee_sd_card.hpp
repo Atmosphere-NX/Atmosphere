@@ -20,6 +20,8 @@ namespace ams::nxboot {
 
     Result InitializeSdCard();
     Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw);
+    Result GetSdCardMemoryCapacity(u32 *out_num_sectors);
+
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count);
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size);
 

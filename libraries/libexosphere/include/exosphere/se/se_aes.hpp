@@ -47,6 +47,8 @@ namespace ams::se {
     void DecryptAes128Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
     void DecryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
 
+    void DecryptAes128Xts(void *dst, size_t dst_size, int slot_enc, int slot_tweak, const void *src, size_t src_size, size_t sector);
+
     void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler);
     void DecryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler);
     void ComputeAes128CtrAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler);

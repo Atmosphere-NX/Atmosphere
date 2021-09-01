@@ -14,12 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include <exosphere/secmon/secmon_emummc_context.hpp>
 #include "fusee_key_derivation.hpp"
 #include "fusee_secondary_archive.hpp"
 #include "fusee_setup_horizon.hpp"
 #include "fusee_ini.hpp"
+#include "fusee_emummc.hpp"
+#include "fusee_mmc.hpp"
 #include "fusee_fatal.hpp"
+#include "fs/fusee_fs_api.hpp"
 
 namespace ams::nxboot {
 
@@ -101,6 +103,24 @@ namespace ams::nxboot {
             }
         }
 
+        bool IsDirectoryExist(const char *path) {
+            fs::DirectoryEntryType entry_type;
+            bool archive;
+            return R_SUCCEEDED(fs::GetEntryType(std::addressof(entry_type), std::addressof(archive), path)) && entry_type == fs::DirectoryEntryType_Directory;
+        }
+
+        [[maybe_unused]] bool IsFileExist(const char *path) {
+            fs::DirectoryEntryType entry_type;
+            bool archive;
+            return R_SUCCEEDED(fs::GetEntryType(std::addressof(entry_type), std::addressof(archive), path)) && entry_type == fs::DirectoryEntryType_File;
+        }
+
+        [[maybe_unused]] bool IsConcatenationFileExist(const char *path) {
+            fs::DirectoryEntryType entry_type;
+            bool archive;
+            return R_SUCCEEDED(fs::GetEntryType(std::addressof(entry_type), std::addressof(archive), path)) && ((entry_type == fs::DirectoryEntryType_File) || (entry_type == fs::DirectoryEntryType_Directory && archive));
+        }
+
         bool ConfigureEmummc() {
             /* Set magic. */
             g_emummc_cfg.base_cfg.magic = secmon::EmummcBaseConfiguration::Magic;
@@ -147,13 +167,11 @@ namespace ams::nxboot {
                 if (sector > 0) {
                     g_emummc_cfg.base_cfg.type = secmon::EmummcType_Partition;
                     g_emummc_cfg.partition_cfg.start_sector = sector;
-
-                    /* TODO */
-                } else if (/* TODO: directory exists */false) {
+                } else if (path[0] != '\x00' && IsDirectoryExist(path)) {
                     g_emummc_cfg.base_cfg.type = secmon::EmummcType_File;
 
-                    /* TODO */
-                    AMS_UNUSED(path);
+                    std::strncpy(g_emummc_cfg.file_cfg.path.str, path, sizeof(g_emummc_cfg.file_cfg.path.str));
+                    g_emummc_cfg.file_cfg.path.str[sizeof(g_emummc_cfg.file_cfg.path.str) - 1] = '\x00';
                 } else {
                     ShowFatalError("Invalid emummc setting!\n");
                 }
@@ -174,7 +192,9 @@ namespace ams::nxboot {
 
         /* Determine whether we're using emummc. */
         const bool emummc_enabled = ConfigureEmummc();
-        AMS_UNUSED(emummc_enabled);
+
+        /* Initialize emummc. */
+        InitializeEmummc(emummc_enabled, g_emummc_cfg);
 
         AMS_UNUSED(hw_type);
         ShowFatalError("SetupAndStartHorizon not fully implemented\n");

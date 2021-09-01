@@ -69,12 +69,26 @@ namespace ams::fs {
 
     static_assert(util::is_pod<WriteOption>::value && sizeof(WriteOption) == sizeof(u32));
 
+    enum DirectoryEntryType {
+        DirectoryEntryType_Directory = 0,
+        DirectoryEntryType_File      = 1,
+    };
+
     struct FileHandle {
+        void *_handle;
+    };
+
+    struct DirectoryHandle {
         void *_handle;
     };
 
     bool MountSdCard();
     void UnmountSdCard();
+
+    bool MountSystem();
+    void UnmountSystem();
+
+    Result GetEntryType(DirectoryEntryType *out_entry_type, bool *out_archive, const char *path);
 
     Result CreateFile(const char *path, s64 size);
     Result CreateDirectory(const char *path);

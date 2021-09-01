@@ -18,19 +18,11 @@
 
 namespace ams::nxboot {
 
-    void *AllocateMemory(size_t size);
+    Result InitializeMmc();
+    Result CheckMmcConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw);
+    Result GetMmcMemoryCapacity(u32 *out_num_sectors, sdmmc::MmcPartition partition);
 
-    ALWAYS_INLINE void *AllocateAligned(size_t size, size_t align) {
-        return reinterpret_cast<void *>(util::AlignUp(reinterpret_cast<uintptr_t>(AllocateMemory(size + align)), align));
-    }
-
-    template<typename T, typename... Args> requires std::constructible_from<T, Args...>
-    inline T *AllocateObject(Args &&... args) {
-        T * const obj = static_cast<T *>(AllocateAligned(sizeof(T), alignof(T)));
-
-        std::construct_at(obj, std::forward<Args>(args)...);
-
-        return obj;
-    }
+    Result ReadMmc(void *dst, size_t size, sdmmc::MmcPartition partition, size_t sector_index, size_t sector_count);
+    Result WriteMmc(sdmmc::MmcPartition partition, size_t sector_index, size_t sector_count, const void *src, size_t size);
 
 }
