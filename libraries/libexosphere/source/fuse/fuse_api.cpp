@@ -394,6 +394,10 @@ namespace ams::fuse {
         return GetExpectedFuseVersionImpl(target_fw);
     }
 
+    int GetFuseVersion() {
+        return util::PopCount(GetCommonOdmWord(7));
+    }
+
     bool HasRcmVulnerabilityPatch() {
         /* Only check for RCM bug patch once, and cache our result. */
         if (!g_checked_for_rcm_bug_patch) {

@@ -113,6 +113,7 @@ namespace ams::fuse {
 
     SocType         GetSocType();
     int             GetExpectedFuseVersion(TargetFirmware target_fw);
+    int             GetFuseVersion();
     bool            HasRcmVulnerabilityPatch();
 
     bool IsOdmProductionMode();
