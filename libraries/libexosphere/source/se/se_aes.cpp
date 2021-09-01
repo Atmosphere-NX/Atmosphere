@@ -191,6 +191,21 @@ namespace ams::se {
             }
         }
 
+        void ExpandSubkeyLittleEndian(u8 *subkey) {
+            /* Shift everything left one bit. */
+            u8 prev = 0;
+            for (size_t i = 0; i < AesBlockSize; ++i) {
+                const u8 top = (subkey[i] >> 7);
+                subkey[i] = ((subkey[i] << 1) | prev);
+                prev = top;
+            }
+
+            /* And xor with Rb if necessary. */
+            if (prev != 0) {
+                subkey[0] ^= 0x87;
+            }
+        }
+
         void GetCmacResult(volatile SecurityEngineRegisters *SE, void *dst, size_t dst_size) {
             const int num_words = dst_size / sizeof(u32);
             for (int i = 0; i < num_words; ++i) {
@@ -337,6 +352,80 @@ namespace ams::se {
 
             /* Execute the operation. */
             ExecuteOperation(SE, SE_OPERATION_OP_START, dst, dst_size, src, aligned_size);
+        }
+
+        void XorWithXtsTweak(void *dst, size_t dst_size, const void *src, size_t src_size, const void *base_tweak) {
+            /* Copy tweak. */
+            u8 tweak[se::AesBlockSize];
+            std::memcpy(tweak, base_tweak, sizeof(tweak));
+
+            /* Perform xor. */
+            u8 *dst_u8 = static_cast<u8 *>(dst);
+            const u8 *src_u8 = static_cast<const u8 *>(src);
+
+            const size_t num_blocks = std::min<size_t>(dst_size, src_size) / sizeof(tweak);
+            for (size_t i = 0; i < num_blocks; ++i) {
+                for (size_t j = 0; j < sizeof(tweak); ++j) {
+                    dst_u8[j] = src_u8[j] ^ tweak[j];
+                }
+
+                dst_u8 += sizeof(tweak);
+                src_u8 += sizeof(tweak);
+
+                ExpandSubkeyLittleEndian(tweak);
+            }
+        }
+
+        void DecryptAesXts(void *dst, size_t dst_size, int slot_enc, int slot_tweak, const void *src, size_t src_size, size_t sector, AesMode mode) {
+            /* If nothing to decrypt, succeed. */
+            if (src_size == 0) { return; }
+
+            /* Validate input. */
+            AMS_ABORT_UNLESS(util::IsAligned(dst_size, AesBlockSize));
+            AMS_ABORT_UNLESS(util::IsAligned(src_size, AesBlockSize));
+            AMS_ABORT_UNLESS(0 <= slot_enc && slot_enc < AesKeySlotCount);
+            AMS_ABORT_UNLESS(0 <= slot_tweak && slot_tweak < AesKeySlotCount);
+
+            /* Generate tweak. */
+            u32 base_tweak[se::AesBlockSize / sizeof(u32)] = {};
+            base_tweak[util::size(base_tweak) - 1] = util::ConvertToBigEndian<u32>(static_cast<u32>(sector));
+            if constexpr (sizeof(sector) > sizeof(u32)) {
+                static_assert(sizeof(sector) <= sizeof(u64));
+                base_tweak[util::size(base_tweak) - 2] = util::ConvertToBigEndian<u32>(static_cast<u32>(sector >> BITSIZEOF(u32)));
+            }
+            se::EncryptAes128(base_tweak, sizeof(base_tweak), slot_tweak, base_tweak, sizeof(base_tweak));
+
+            /* Xor all data. */
+            XorWithXtsTweak(dst, dst_size, src, src_size, base_tweak);
+
+            /* Ensure the SE sees correct data. */
+            hw::FlushDataCache(dst, dst_size);
+
+            /* Decrypt all data. */
+            {
+                /* Get the engine. */
+                auto *SE = GetRegisters();
+
+                /* Determine extents. */
+                const size_t num_blocks = dst_size / AesBlockSize;
+
+                /* Configure for AES-ECB decryption to memory. */
+                SetConfig(SE, false, SE_CONFIG_DST_MEMORY);
+                SetAesConfig(SE, slot_enc, false, AesConfigEcb);
+                UpdateAesMode(SE, mode);
+
+                /* Set the block count. */
+                SetBlockCount(SE, num_blocks);
+
+                /* Execute the operation. */
+                ExecuteOperation(SE, SE_OPERATION_OP_START, dst, dst_size, dst, dst_size);
+
+                /* Ensure the cpu sees correct data. */
+                hw::InvalidateDataCache(dst, dst_size);
+            }
+
+            /* Xor all data. */
+            XorWithXtsTweak(dst, dst_size, dst, dst_size, base_tweak);
         }
 
         void ComputeAes128Async(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, DoneHandler handler, u32 config, bool encrypt, volatile SecurityEngineRegisters *SE) {
@@ -560,6 +649,10 @@ namespace ams::se {
 
     void DecryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
         return DecryptAesCbc(dst, dst_size, slot, src, src_size, iv, iv_size, AesMode_Aes256);
+    }
+
+    void DecryptAes128Xts(void *dst, size_t dst_size, int slot_enc, int slot_tweak, const void *src, size_t src_size, size_t sector) {
+        return DecryptAesXts(dst, dst_size, slot_enc, slot_tweak, src, src_size, sector, AesMode_Aes128);
     }
 
     void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {

@@ -16,7 +16,7 @@
 #include <exosphere.hpp>
 #include "diskio_cpp.h"
 #include "../fusee_sd_card.hpp"
-
+#include "../fusee_emummc.hpp"
 
 bool diskio_read_sd_card(void *dst, size_t size, size_t sector_index, size_t sector_count) {
     return R_SUCCEEDED(::ams::nxboot::ReadSdCard(dst, size, sector_index, sector_count));
@@ -27,11 +27,9 @@ bool diskio_write_sd_card(size_t sector_index, size_t sector_count, const void *
 }
 
 bool diskio_read_system(void *dst, size_t size, size_t sector_index, size_t sector_count) {
-    /* TODO */
-    return false;
+    return R_SUCCEEDED(::ams::nxboot::ReadSystem(sector_index * 0x200, dst, size));
 }
 
 bool diskio_write_system(size_t sector_index, size_t sector_count, const void *src, size_t size) {
-    /* TODO */
     return false;
 }
