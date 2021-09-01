@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include <exosphere/secmon/secmon_monitor_context.hpp>
 #include "fusee_key_derivation.hpp"
 #include "fusee_secondary_archive.hpp"
 #include "fusee_setup_horizon.hpp"
@@ -86,6 +87,23 @@ namespace ams::nxboot {
                         x |= c - 'a';
                     } else if ('A' <= c && c <= 'F') {
                         x |= c - 'A';
+                    }
+                }
+            }
+        }
+
+        u32 ParseDecimalInteger(const char *s) {
+            u32 x = 0;
+            while (true) {
+                const char c = *(s++);
+
+                if (c == '\x00') {
+                    return x;
+                } else {
+                    x *= 10;
+
+                    if ('0' <= c && c <= '9') {
+                        x += c - '0';
                     }
                 }
             }
@@ -505,7 +523,7 @@ namespace ams::nxboot {
 
                             /* Allocate memory. */
                             warmboot_src_size = static_cast<size_t>(size);
-                            void *tmp = AllocateMemory(warmboot_src_size);
+                            void *tmp = AllocateAligned(warmboot_src_size, 0x10);
 
                             /* Read the file. */
                             if (R_FAILED(fs::ReadFile(file, 0, tmp, warmboot_src_size))) {
@@ -542,6 +560,184 @@ namespace ams::nxboot {
             }
         }
 
+        void ConfigureExosphere(fuse::SocType soc_type, ams::TargetFirmware target_firmware, bool emummc_enabled) {
+            /* Get monitor configuration. */
+            auto &storage_ctx = *secmon::MemoryRegionPhysicalDramMonitorConfiguration.GetPointer<secmon::SecureMonitorStorageConfiguration>();
+            std::memset(std::addressof(storage_ctx), 0, sizeof(storage_ctx));
+
+            /* Set magic. */
+            storage_ctx.magic = secmon::SecureMonitorStorageConfiguration::Magic;
+
+            /* Set some defaults. */
+            storage_ctx.target_firmware = target_firmware;
+            storage_ctx.lcd_vendor      = GetDisplayLcdVendor();
+            storage_ctx.emummc_cfg      = g_emummc_cfg;
+            storage_ctx.flags[0]        = secmon::SecureMonitorConfigurationFlag_Default;
+            storage_ctx.flags[1]        = secmon::SecureMonitorConfigurationFlag_None;
+            storage_ctx.log_port        = uart::Port_ReservedDebug;
+            storage_ctx.log_baud_rate   = 115200;
+
+            /* Parse fields from exosphere.ini */
+            {
+                IniSectionList sections;
+                if (ParseIniSafe(sections, "sdmc:/exosphere.ini")) {
+                    for (const auto &section : sections) {
+                        /* We only care about the [exosphere] section. */
+                        if (std::strcmp(section.name, "exosphere")) {
+                            continue;
+                        }
+
+                        /* Handle individual fields. */
+                        for (const auto &entry : section.kv_list) {
+                            if (std::strcmp(entry.key, "debugmode") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel;
+                                }
+                            } else if (std::strcmp(entry.key, "debugmode_user") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser;
+                                }
+                            } else if (std::strcmp(entry.key, "disable_user_exception_handlers") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_DisableUserModeExceptionHandlers;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_DisableUserModeExceptionHandlers;
+                                }
+                            } else if (std::strcmp(entry.key, "enable_user_pmu_access") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess;
+                                }
+                            } else if (std::strcmp(entry.key, "blank_prodinfo_sysmmc") == 0) {
+                                if (entry.value[0] == '1' && !emummc_enabled) {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary;
+                                }
+                            } else if (std::strcmp(entry.key, "blank_prodinfo_emummc") == 0) {
+                                if (entry.value[0] == '1' && emummc_enabled) {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary;
+                                }
+                            } else if (std::strcmp(entry.key, "allow_writing_to_cal_sysmmc") == 0) {
+                                if (entry.value[0] == '1') {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc;
+                                } else {
+                                    storage_ctx.flags[0] &= ~secmon::SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc;
+                                }
+                            } else if (std::strcmp(entry.key, "log_port") == 0) {
+                                const u32 log_port = ParseDecimalInteger(entry.value);
+                                if (0 <= log_port && log_port < 4) {
+                                    storage_ctx.log_port = log_port;
+                                }
+                            } else if (std::strcmp(entry.key, "log_baud_rate") == 0) {
+                                storage_ctx.log_baud_rate = ParseDecimalInteger(entry.value);
+                            } else if (std::strcmp(entry.key, "log_inverted") == 0) {
+                                if (entry.value[0] == 1) {
+                                    storage_ctx.log_flags |= uart::Flag_Inverted;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* Parse usb setting from system_settings.ini */
+            {
+                IniSectionList sections;
+                if (ParseIniSafe(sections, "sdmc:/atmosphere/config/system_settings.ini")) {
+                    for (const auto &section : sections) {
+                        /* We only care about the [usb] section. */
+                        if (std::strcmp(section.name, "usb")) {
+                            continue;
+                        }
+
+                        /* Handle individual fields. */
+                        for (const auto &entry : section.kv_list) {
+                            if (std::strcmp(entry.key, "usb30_force_enabled") == 0) {
+                                if (std::strcmp(entry.value, "u8!0x1") == 0) {
+                                    storage_ctx.flags[0] |= secmon::SecureMonitorConfigurationFlag_ForceEnableUsb30;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* Copy exosphere. */
+            void *exosphere_dst = reinterpret_cast<void *>(0x40030000);
+            bool use_sd_exo = false;
+            {
+                /* Try to use an sd card file, if present. */
+                fs::FileHandle exo_file;
+                if (R_SUCCEEDED(fs::OpenFile(std::addressof(exo_file), "sdmc:/atmosphere/exosphere.bin", fs::OpenMode_Read))) {
+                    ON_SCOPE_EXIT { fs::CloseFile(exo_file); };
+
+                    /* Note that we're using sd_exo. */
+                    use_sd_exo = true;
+
+                    Result result;
+
+                    /* Get the size. */
+                    s64 size;
+                    if (R_FAILED((result = fs::GetFileSize(std::addressof(size), exo_file))) || size > sizeof(GetSecondaryArchive().exosphere)) {
+                        ShowFatalError("Invalid SD exosphere size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
+                    }
+
+                    /* Read the file. */
+                    if (R_FAILED((result = fs::ReadFile(exo_file, 0, exosphere_dst, size)))) {
+                        ShowFatalError("Failed to read SD exosphere: 0x%08" PRIx32 "!\n", result.GetValue());
+                    }
+                }
+            }
+
+            if (!use_sd_exo) {
+                std::memcpy(exosphere_dst, GetSecondaryArchive().exosphere, sizeof(GetSecondaryArchive().exosphere));
+            }
+
+            /* Copy mariko fatal. */
+            if (soc_type == fuse::SocType_Mariko) {
+                u8 *mariko_fatal_dst = secmon::MemoryRegionPhysicalMarikoProgramImage.GetPointer<u8>();
+                bool use_sd_mariko_fatal = false;
+                {
+                    /* Try to use an sd card file, if present. */
+                    fs::FileHandle mariko_program_file;
+                    if (R_SUCCEEDED(fs::OpenFile(std::addressof(mariko_program_file), "sdmc:/atmosphere/mariko_fatal.bin", fs::OpenMode_Read))) {
+                        ON_SCOPE_EXIT { fs::CloseFile(mariko_program_file); };
+
+                        /* Note that we're using sd_exo. */
+                        use_sd_exo = true;
+
+                        Result result;
+
+                        /* Get the size. */
+                        s64 size;
+                        if (R_FAILED((result = fs::GetFileSize(std::addressof(size), mariko_program_file))) || size > sizeof(GetSecondaryArchive().mariko_fatal)) {
+                            ShowFatalError("Invalid SD exosphere size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
+                        }
+
+                        /* Read the file. */
+                        if (R_FAILED((result = fs::ReadFile(mariko_program_file, 0, mariko_fatal_dst, size)))) {
+                            ShowFatalError("Failed to read SD exosphere: 0x%08" PRIx32 "!\n", result.GetValue());
+                        }
+
+                        /* Clear the remainder. */
+                        std::memset(mariko_fatal_dst + size, 0, sizeof(GetSecondaryArchive().mariko_fatal) - size);
+                    }
+                }
+
+                if (!use_sd_mariko_fatal) {
+                    std::memcpy(mariko_fatal_dst, GetSecondaryArchive().mariko_fatal, sizeof(GetSecondaryArchive().mariko_fatal));
+                }
+            }
+        }
+
     }
 
     void SetupAndStartHorizon() {
@@ -571,7 +767,8 @@ namespace ams::nxboot {
         /* Setup warmboot firmware. */
         LoadWarmbootFirmware(soc_type, target_firmware, package1);
 
-        /* TODO: Setup exosphere. */
+        /* Setup exosphere. */
+        ConfigureExosphere(soc_type, target_firmware, emummc_enabled);
 
         /* TODO: Start CPU. */
         /* NOTE: Security Engine unusable past this point. */

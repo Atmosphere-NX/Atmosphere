@@ -49,7 +49,7 @@ namespace ams::nxboot {
         file_size = std::min(IniFileSizeMax, file_size);
 
         /* Allocate memory for file. */
-        char *buffer = static_cast<char *>(AllocateMemory(util::AlignUp(file_size + 1, 0x10)));
+        char *buffer = static_cast<char *>(AllocateAligned(util::AlignUp(file_size + 1, 0x10), 0x10));
         buffer[file_size] = '\x00';
 
         /* Read file. */
@@ -64,6 +64,7 @@ namespace ams::nxboot {
             SectionName,
             Key,
             KvSpace,
+            KvSpace2,
             Value,
             TrailingSpace,
         };
@@ -120,18 +121,31 @@ namespace ams::nxboot {
                     } else if (c == '=') {
                         buffer[i] = '\x00';
 
-                        val_start = buffer + i + 1;
-
-                        state = State::Value;
+                        state = State::KvSpace2;
                     }
                     break;
                 case State::KvSpace:
                     if (c == '=') {
-                        val_start = buffer + i + 1;
-
-                        state = State::Value;
+                        state = State::KvSpace2;
                     } else if (!IsWhiteSpace(c)) {
                         return ParseIniResult_InvalidFormat;
+                    }
+                    break;
+                case State::KvSpace2:
+                    if (c == '\n') {
+                        buffer[i] = '\x00';
+
+                        auto *entry = AllocateObject<IniKeyValueEntry>();
+                        entry->key   = key_start;
+                        entry->value = buffer + i;
+
+                        cur_sec->kv_list.push_back(*entry);
+
+                        state = State::Newline;
+                    } else if (!IsWhiteSpace(c)) {
+                        val_start = buffer + i;
+
+                        state = State::Value;
                     }
                     break;
                 case State::Value:

@@ -70,8 +70,8 @@ namespace ams::nxboot {
         u8 mariko_fatal[0x1C000];             /* 0x004000-0x020000 */
         u8 ovl_mtc_erista[0x14000];           /* 0x020000-0x034000 */
         u8 ovl_mtc_mariko[0x14000];           /* 0x034000-0x048000 */
-        u8 exosphere[0x10000];                /* 0x048000-0x058000 */
-        u8 mesosphere[0xA8000];               /* 0x058000-0x100000 */
+        u8 exosphere[0xE000];                 /* 0x048000-0x056000 */
+        u8 mesosphere[0xAA000];               /* 0x056000-0x100000 */
         u8 kips[3_MB];                        /* 0x100000-0x400000 */
         u8 splash_screen_fb[FrameBufferSize]; /* 0x400000-0x7C0000 */
     };

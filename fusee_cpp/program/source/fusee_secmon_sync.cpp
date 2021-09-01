@@ -26,6 +26,10 @@ namespace ams::nxboot {
 
     }
 
+    void InitializeSecureMonitorMailbox() {
+        std::memset(std::addressof(GetSecureMonitorParameters()), 0, sizeof(GetSecureMonitorParameters()));
+    }
+
     void WaitSecureMonitorState(pkg1::SecureMonitorState state) {
         auto &secmon_params = GetSecureMonitorParameters();
 
