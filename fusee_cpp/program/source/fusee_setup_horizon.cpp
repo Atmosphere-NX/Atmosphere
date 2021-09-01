@@ -21,6 +21,7 @@
 #include "fusee_emummc.hpp"
 #include "fusee_mmc.hpp"
 #include "fusee_fatal.hpp"
+#include "fusee_package2.hpp"
 #include "fusee_malloc.hpp"
 #include "fs/fusee_fs_api.hpp"
 
@@ -333,6 +334,39 @@ namespace ams::nxboot {
             return target_firmware;
         }
 
+        u8 *LoadBootConfigAndPackage2() {
+            Result result;
+
+            /* Load boot config. */
+            if (R_FAILED((result = ReadPackage2(0, secmon::MemoryRegionPhysicalIramBootConfig.GetPointer<void>(), secmon::MemoryRegionPhysicalIramBootConfig.GetSize())))) {
+                ShowFatalError("Failed to read boot config: 0x%08" PRIx32 "!\n", result.GetValue());
+            }
+
+            /* Read package2 header. */
+            u8 *package2;
+            size_t package2_size;
+            {
+                constexpr s64 Package2Offset = __builtin_offsetof(pkg2::StorageLayout, package2_header);
+
+                pkg2::Package2Header header;
+                if (R_FAILED((result = ReadPackage2(Package2Offset, std::addressof(header), sizeof(header))))) {
+                    ShowFatalError("Failed to read package2 header: 0x%08" PRIx32 "!\n", result.GetValue());
+                }
+
+                package2_size = header.meta.GetSize();
+                package2 = static_cast<u8 *>(AllocateAligned(util::AlignUp(package2_size, 0x4000), 0x4000));
+
+                if (R_FAILED((result = ReadPackage2(Package2Offset, package2, util::AlignUp(package2_size, 0x4000))))) {
+                    ShowFatalError("Failed to read package2: 0x%08" PRIx32 "!\n", result.GetValue());
+                }
+            }
+
+            /* Decrypt package2. */
+            DecryptPackage2(package2);
+
+            return package2;
+        }
+
     }
 
     void SetupAndStartHorizon() {
@@ -356,7 +390,9 @@ namespace ams::nxboot {
         const auto target_firmware = GetTargetFirmware(package1);
         AMS_UNUSED(target_firmware);
 
-        /* TODO: Read/decrypt package2. */
+        /* Read/decrypt package2. */
+        u8 * const package2 = LoadBootConfigAndPackage2();
+        AMS_UNUSED(package2);
 
         /* TODO: Setup warmboot firmware. */
 
@@ -366,6 +402,7 @@ namespace ams::nxboot {
         /* NOTE: Security Engine unusable past this point. */
 
         /* TODO: Build modified package2. */
+        WaitForReboot();
     }
 
 }
