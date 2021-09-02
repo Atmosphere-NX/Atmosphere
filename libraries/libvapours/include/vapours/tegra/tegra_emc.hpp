@@ -242,6 +242,7 @@
 /* Mariko */
 #define EMC_PMACRO_DLL_CFG_0                      (0x5E4)
 #define EMC_PMACRO_DLL_CFG_1                      (0x5E8)
+#define EMC_PMACRO_DLL_CFG_2                      (0x5F8)
 
 #define EMC_CONFIG_SAMPLE_DELAY                   (0x5F0)
 #define EMC_CFG_UPDATE                            (0x5F4)

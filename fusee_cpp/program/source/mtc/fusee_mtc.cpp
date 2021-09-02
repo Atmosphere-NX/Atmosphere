@@ -18,11 +18,15 @@
 namespace ams::nxboot {
 
     void DoMemoryTrainingErista(int index, void *mtc_tables_buffer);
-    void DoMemoryTrainingMariko(int index, void *mtc_tables_buffer);
+    void DoMemoryTrainingMariko(bool *out_did_training, int index, void *mtc_tables_buffer);
+
+    void RestoreMemoryClockRateMariko(void *mtc_tables_buffer);
 
     namespace {
 
         alignas(4) constinit u8 g_mtc_tables_buffer[0x26C0];
+
+        constinit bool g_did_training_mariko = false;
 
         constexpr const u8 MemoryTrainingTableIndex_Invalid = std::numeric_limits<u8>::max();
 
@@ -74,7 +78,14 @@ namespace ams::nxboot {
         if (fuse::GetSocType() == fuse::SocType_Erista) {
             DoMemoryTrainingErista(index, g_mtc_tables_buffer);
         } else {
-            DoMemoryTrainingMariko(index, g_mtc_tables_buffer);
+            DoMemoryTrainingMariko(std::addressof(g_did_training_mariko), index, g_mtc_tables_buffer);
+        }
+    }
+
+    void RestoreMemoryClockRate() {
+        /* NOTE: This resolves an off-by-one issue in PCV's detection of memory clock rate on Mariko. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko && g_did_training_mariko) {
+            RestoreMemoryClockRateMariko(g_mtc_tables_buffer);
         }
     }
 
