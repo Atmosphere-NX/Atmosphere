@@ -27,7 +27,7 @@ namespace ams::nxboot {
 
         using EmcDvfsTimingTable = mariko::EmcDvfsTimingTable;
 
-        EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index) {
+        EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index, void *mtc_tables_buffer) {
             /* Get the compressed table. */
             u8 *cmp_table;
             size_t cmp_table_size;
@@ -55,7 +55,7 @@ namespace ams::nxboot {
             }
 
             /* Uncompress the table. */
-            EmcDvfsTimingTable *out_tables = reinterpret_cast<EmcDvfsTimingTable *>(0x40040000 - 2 * sizeof(EmcDvfsTimingTable));
+            EmcDvfsTimingTable *out_tables = reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
             Uncompress(out_tables, 2 * sizeof(EmcDvfsTimingTable), cmp_table, cmp_table_size);
 
             return out_tables;
@@ -63,9 +63,9 @@ namespace ams::nxboot {
 
     }
 
-    void DoMemoryTrainingMariko(int index) {
+    void DoMemoryTrainingMariko(int index, void *mtc_tables_buffer) {
         /* Get timing tables. */
-        auto *timing_tables     = GetEmcDvfsTimingTables(index);
+        auto *timing_tables     = GetEmcDvfsTimingTables(index, mtc_tables_buffer);
         auto *src_timing_tables = timing_tables + 0;
         auto *dst_timing_tables = timing_tables + 1;
 
