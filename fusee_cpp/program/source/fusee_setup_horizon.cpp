@@ -21,9 +21,11 @@
 #include "fusee_ini.hpp"
 #include "fusee_emummc.hpp"
 #include "fusee_mmc.hpp"
+#include "fusee_cpu.hpp"
 #include "fusee_fatal.hpp"
 #include "fusee_package2.hpp"
 #include "fusee_malloc.hpp"
+#include "fusee_secmon_sync.hpp"
 #include "fs/fusee_fs_api.hpp"
 
 namespace ams::nxboot {
@@ -736,6 +738,15 @@ namespace ams::nxboot {
                     std::memcpy(mariko_fatal_dst, GetSecondaryArchive().mariko_fatal, sizeof(GetSecondaryArchive().mariko_fatal));
                 }
             }
+
+            /* Setup the CPU to boot exosphere. */
+            SetupCpu(reinterpret_cast<uintptr_t>(exosphere_dst));
+
+            /* Set our bootloader state. */
+            SetBootloaderState(pkg1::BootloaderState_LoadedBootConfig);
+
+            /* Ensure that the CPU will see consistent data. */
+            hw::FlushEntireDataCache();
         }
 
     }
@@ -770,8 +781,11 @@ namespace ams::nxboot {
         /* Setup exosphere. */
         ConfigureExosphere(soc_type, target_firmware, emummc_enabled);
 
-        /* TODO: Start CPU. */
+        /* Start CPU. */
         /* NOTE: Security Engine unusable past this point. */
+        StartCpu();
+
+        WaitSecureMonitorState(pkg1::SecureMonitorState_Initialized);
 
         /* TODO: Build modified package2. */
         WaitForReboot();

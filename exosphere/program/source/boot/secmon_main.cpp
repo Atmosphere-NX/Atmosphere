@@ -80,6 +80,8 @@ namespace ams::secmon {
 
             /* Alert the bootloader that we're initialized. */
             secmon_params.secmon_state = pkg1::SecureMonitorState_Initialized;
+            hw::FlushDataCache(std::addressof(secmon_params.secmon_state), sizeof(secmon_params.secmon_state));
+            hw::DataSynchronizationBarrierInnerShareable();
         }
 
         /* Wait for NX Bootloader to finish loading the BootConfig. */
