@@ -495,6 +495,7 @@
 #define EMC_PMACRO_IB_RXRT                        (0xCF4)
 #define EMC_PMACRO_TRAINING_CTRL_0                (0xCF8)
 #define EMC_PMACRO_TRAINING_CTRL_1                (0xCFC)
+#define EMC_PMACRO_DIG_DLL_STATUS_0               (0xD20)
 #define EMC_PMACRO_PERBIT_FGCG_CTRL_0             (0xD40)
 #define EMC_PMACRO_PERBIT_FGCG_CTRL_1             (0xD44)
 #define EMC_PMACRO_PERBIT_FGCG_CTRL_2             (0xD48)

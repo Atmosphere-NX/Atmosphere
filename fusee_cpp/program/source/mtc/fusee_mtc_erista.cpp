@@ -33,7 +33,7 @@ namespace ams::nxboot {
         static constinit bool g_fsp_for_next_freq = false;
 
         #include "fusee_mtc_tables_erista.inc"
-        #include "fusee_mtc_ram_training_pattern_erista.inc"
+        #include "fusee_mtc_ram_training_pattern.inc"
 
         #define DECLARE_OFFSET_HANDLER(BASE, REG, NAME) REG,
         #define DECLARE_REGISTER_HANDLER(BASE, REG, NAME) BASE + REG,
