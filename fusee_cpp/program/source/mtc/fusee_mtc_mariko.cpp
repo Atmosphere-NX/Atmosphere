@@ -74,7 +74,7 @@ namespace ams::nxboot {
 
         EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index, void *mtc_tables_buffer) {
             /* Get the compressed table. */
-            u8 *cmp_table;
+            const u8 *cmp_table;
             size_t cmp_table_size;
             switch (index) {
                 #define HANDLE_CASE(N, TABLE)           \
