@@ -87,11 +87,13 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS(SeClock,     V,     SE, PLLP_OUT0, 0);
         DEFINE_CLOCK_PARAMETERS(ActmonClock, V, ACTMON,     CLK_M, 0);
 
+        DEFINE_CLOCK_PARAMETERS(CsiteClock,  U,  CSITE, PLLP_OUT0, 4);
         DEFINE_CLOCK_PARAMETERS(Host1xClock, L, HOST1X, PLLP_OUT0, 3);
-        DEFINE_CLOCK_PARAMETERS(TsecClock,   U, TSEC,   PLLP_OUT0, 2);
-        DEFINE_CLOCK_PARAMETERS(Sor1Clock,   X, SOR1,   PLLP_OUT0, 2);
+        DEFINE_CLOCK_PARAMETERS(TsecClock,   U,   TSEC, PLLP_OUT0, 2);
+        DEFINE_CLOCK_PARAMETERS(Sor1Clock,   X,   SOR1, PLLP_OUT0, 2);
 
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(CldvfsClock, W, DVFS);
+
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(TzramClock,  V, TZRAM);
 
         DEFINE_CLOCK_PARAMETERS_WITHOUT_CLKDIV(SorSafeClock, Y, SOR_SAFE);
@@ -201,6 +203,10 @@ namespace ams::clkrst {
 
     void EnableCldvfsClock() {
         EnableClock(CldvfsClock);
+    }
+
+    void EnableCsiteClock() {
+        EnableClock(CsiteClock);
     }
 
     void EnableTzramClock() {

@@ -14,6 +14,7 @@ def read_file(fn):
         return f.read()
 
 def pad(data, size):
+    assert len(data) <= size
     return (data + '\x00' * size)[:size]
 
 def get_overlay(program, i):
@@ -36,20 +37,20 @@ def main(argc, argv):
     with open('../../fusee-boogaloo%s.bin' % target, 'wb') as f:
         # TODO: Write header
         f.write('\xCC'*0x800)
-        # TODO: Write warmboot
-        f.write('\xCC'*0x1800)
+        # Write warmboot
+        f.write(pad(read_file('../../../../exosphere/warmboot%s.bin' % target), 0x1800))
         # Write TSEC Keygen
         f.write(pad(read_file('../../tsec_keygen/tsec_keygen.bin'), 0x2000))
-        # TODO: Write Mariko Fatal
-        f.write('\xCC'*0x1C000)
+        # Write Mariko Fatal
+        f.write(pad(read_file('../../../../exosphere/mariko_fatal%s.bin' % target), 0x1C000))
         # Write Erista MTC
         f.write(get_overlay(data, 1))
         # Write Mariko MTC
         f.write(get_overlay(data, 2))
-        # TODO: Write exosphere
-        f.write('\xCC'*0xE000)
-        # TODO: Write mesosphere
-        f.write('\xCC'*0xAA000)
+        # Write exosphere
+        f.write(pad(read_file('../../../../exosphere/exosphere%s.bin' % target), 0xE000))
+        # Write mesosphere
+        f.write(pad(read_file('../../../../mesosphere/mesosphere%s.bin' % target), 0xAA000))
         # TODO: Write kips
         f.write('\xCC'*0x300000)
         # Write Splash Screen

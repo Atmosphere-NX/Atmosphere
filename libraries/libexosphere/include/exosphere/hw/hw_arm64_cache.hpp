@@ -53,5 +53,6 @@ namespace ams::hw::arch::arm64 {
     }
 
     void FlushDataCache(const void *ptr, size_t size);
+    void InvalidateDataCache(const void *ptr, size_t size);
 
 }

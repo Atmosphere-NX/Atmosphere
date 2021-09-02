@@ -65,13 +65,13 @@ namespace ams::pmic {
             u8 val;
 
             /* Clear the AE for the GPIO */
-            if (i2c::Query(std::addressof(val), sizeof(val), i2c::Port_5, I2cAddressEristaMax77621, Max77620RegisterAmeGpio)) {
+            if (i2c::Query(std::addressof(val), sizeof(val), i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterAmeGpio)) {
                 val &= ~(1 << gpio);
-                i2c::SendByte(i2c::Port_5, I2cAddressEristaMax77621, Max77620RegisterAmeGpio, val);
+                i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterAmeGpio, val);
             }
 
             /* Set GPIO_DRV_PUSHPULL (bit 0), GPIO_OUTPUT_VAL_HIGH (bit 3). */
-            i2c::SendByte(i2c::Port_5, I2cAddressEristaMax77621, Max77620RegisterGpio0 + gpio, MAX77620_CNFG_GPIO_DRV_PUSHPULL | MAX77620_CNFG_GPIO_OUTPUT_VAL_HIGH);
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterGpio0 + gpio, MAX77620_CNFG_GPIO_DRV_PUSHPULL | MAX77620_CNFG_GPIO_OUTPUT_VAL_HIGH);
         }
 
         void SetEnBitErista() {
