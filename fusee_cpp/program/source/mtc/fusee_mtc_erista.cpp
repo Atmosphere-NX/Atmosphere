@@ -72,15 +72,18 @@ namespace ams::nxboot {
 
         using EmcDvfsTimingTable = erista::EmcDvfsTimingTable;
 
-        EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index) {
+        EmcDvfsTimingTable *GetEmcDvfsTimingTables(int index, void *mtc_tables_buffer) {
             switch (index) {
                 case 0:
                 case 3:
-                    return reinterpret_cast<EmcDvfsTimingTable *>(T210SdevEmcDvfsTableS4gb01);
+                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS4gb01, sizeof(T210SdevEmcDvfsTableS4gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
                 case 1:
-                    return reinterpret_cast<EmcDvfsTimingTable *>(T210SdevEmcDvfsTableS6gb01);
+                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS6gb01, sizeof(T210SdevEmcDvfsTableS6gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
                 case 2:
-                    return reinterpret_cast<EmcDvfsTimingTable *>(T210SdevEmcDvfsTableH4gb01);
+                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableH4gb01, sizeof(T210SdevEmcDvfsTableH4gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
                 default:
                     ShowFatalError("Unknown EmcDvfsTimingTableIndex: %d\n", index);
             }
@@ -2829,9 +2832,9 @@ namespace ams::nxboot {
 
     }
 
-    void DoMemoryTrainingErista(int index) {
+    void DoMemoryTrainingErista(int index, void *mtc_tables_buffer) {
         /* Get timing tables. */
-        auto *timing_tables = GetEmcDvfsTimingTables(index);
+        auto *timing_tables = GetEmcDvfsTimingTables(index, mtc_tables_buffer);
         auto *src_timing    = timing_tables + 0;
         auto *dst_timing    = timing_tables + 1;
 

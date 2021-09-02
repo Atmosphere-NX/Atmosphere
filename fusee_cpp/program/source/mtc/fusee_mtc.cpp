@@ -17,10 +17,12 @@
 
 namespace ams::nxboot {
 
-    void DoMemoryTrainingErista(int index);
-    void DoMemoryTrainingMariko(int index);
+    void DoMemoryTrainingErista(int index, void *mtc_tables_buffer);
+    void DoMemoryTrainingMariko(int index, void *mtc_tables_buffer);
 
     namespace {
+
+        alignas(4) constinit u8 g_mtc_tables_buffer[0x26C0];
 
         constexpr const u8 MemoryTrainingTableIndex_Invalid = std::numeric_limits<u8>::max();
 
@@ -70,9 +72,9 @@ namespace ams::nxboot {
         const auto index = GetMemoryTrainingTableIndex();
 
         if (fuse::GetSocType() == fuse::SocType_Erista) {
-            DoMemoryTrainingErista(index);
+            DoMemoryTrainingErista(index, g_mtc_tables_buffer);
         } else {
-            DoMemoryTrainingMariko(index);
+            DoMemoryTrainingMariko(index, g_mtc_tables_buffer);
         }
     }
 
