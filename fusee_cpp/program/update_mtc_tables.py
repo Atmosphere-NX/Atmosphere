@@ -81,7 +81,7 @@ def main(argc, argv):
                 assert up('<I', params[soc][board][-1][0x40:0x44])[0] == 1600000
                 assert up('<I', params[soc][board][0 if soc == 'mariko' else 3][0x40:0x44])[0] == 204000
                 data = data_204 + data_1600
-                f.write('%s\n' % ('constinit u8 %s[0x%03X] = {' % (board, len(data))))
+                f.write('%s\n' % ('constexpr const u8 %s[0x%03X] = {' % (board, len(data))))
                 while data:
                     block = data[:0x10]
                     data = data[0x10:]
