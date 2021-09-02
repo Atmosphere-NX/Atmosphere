@@ -211,10 +211,10 @@ namespace ams::nxboot {
                 se::DecryptAes128Cbc(package1 + 0x20, 0x40000 - (0x20 + 0x170), pkg1::AesKeySlot_MarikoBek, package1 + 0x20, 0x40000 - (0x20 + 0x170), iv, sizeof(iv));
 
                 hw::InvalidateDataCache(package1 + 0x20, 0x40000 - (0x20 + 0x170));
-            }
 
-            if (std::memcmp(package1, package1 + 0x20, 0x20) != 0) {
-                ShowFatalError("Package1 seems corrupt!\n");
+                if (std::memcmp(package1, package1 + 0x20, 0x20) != 0) {
+                    ShowFatalError("Package1 seems corrupt!\n");
+                }
             }
 
             return package1;
