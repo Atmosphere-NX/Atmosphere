@@ -725,6 +725,8 @@ namespace ams::nxboot {
                 AddNogcPatches(fs_meta, fs_version);
             }
 
+            /* TODO ams.tma2: add mount_host patches. */
+
             /* Add generic patches. */
             {
                 /* Create patch path. */
