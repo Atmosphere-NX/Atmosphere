@@ -132,7 +132,11 @@ def main(argc, argv):
     all_kips = get_kips()
     with open('../../program%s.bin' % target, 'rb') as f:
         data = f.read()
-    fusee_program = lz4_compress(data[:0x2B000] + get_overlay(data, 0)[:0x11000])
+    erista_mtc = get_overlay(data, 1)
+    mariko_mtc = get_overlay(data, 2)
+    erista_hsh = hashlib.sha256(erista_mtc[:-4]).digest()[:4]
+    mariko_hsh = hashlib.sha256(mariko_mtc[:-4]).digest()[:4]
+    fusee_program = lz4_compress(data[:0x2B000 - 8] + erista_hsh + mariko_hsh + get_overlay(data, 0)[:0x11000])
     with open('../../program%s.lz4' % target, 'wb') as f:
         f.write(fusee_program)
     with open('../../fusee-boogaloo%s.bin' % target, 'wb') as f:
@@ -145,9 +149,9 @@ def main(argc, argv):
         # Write Mariko Fatal
         f.write(pad(read_file('../../../../exosphere/mariko_fatal%s.bin' % target), 0x1C000))
         # Write Erista MTC
-        f.write(get_overlay(data, 1))
+        f.write(erista_mtc[:-4] + erista_hsh)
         # Write Mariko MTC
-        f.write(get_overlay(data, 2))
+        f.write(mariko_mtc[:-4] + mariko_hsh)
         # Write exosphere
         f.write(pad(read_file('../../../../exosphere/exosphere%s.bin' % target), 0xE000))
         # Write mesosphere
