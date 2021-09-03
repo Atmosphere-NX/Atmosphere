@@ -32,6 +32,10 @@ namespace ams::nxboot {
 
     NORETURN void ExceptionHandlerImpl(s32 which, u32 lr, u32 svc_lr) {
         /* TODO */
+        *reinterpret_cast<volatile u32 *>(0x40038004) = 0xCAFEBABE;
+        *reinterpret_cast<volatile u32 *>(0x40038008) = which;
+        *reinterpret_cast<volatile u32 *>(0x4003800C) = lr;
+        *reinterpret_cast<volatile u32 *>(0x40038010) = svc_lr;
         ErrorStop();
     }
 
