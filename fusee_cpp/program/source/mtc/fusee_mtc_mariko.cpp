@@ -956,7 +956,7 @@ namespace ams::nxboot {
         }
 
         void PllDisable(u32 dst_clk_src) {
-            switch (dst_clk_src) {
+            switch (reg::GetField(dst_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC))) {
                 case PLLM_OUT0:
                 case PLLM_UD:
                     reg::ClearBits(CLKRST + CLK_RST_CONTROLLER_PLLMB_BASE, 0x40000000);
@@ -2706,6 +2706,8 @@ namespace ams::nxboot {
 
                 g_did_first_training = true;
             }
+
+            reg::Write(EMC + EMC_TRAINING_QUSE_CTRL_MISC, (dst_timing->burst_regs.emc_training_read_ctrl_misc & 0xFFFF0000) | 0x00001000);
 
             /* Do training, if we need to. */
             const u32 needed_training = dst_timing->needs_training;

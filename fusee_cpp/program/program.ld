@@ -23,6 +23,7 @@ SECTIONS
         KEEP(*(.text._ZN3ams4util15GetMicroSecondsEv))
         KEEP(*(.text._ZN3ams4util16WaitMicroSecondsEi))
         KEEP(*(.text._ZN3ams6nxboot14ShowFatalErrorEPKcz))
+        KEEP(*(.text._ZN3ams6nxboot10UncompressEPvjPKvj))
         KEEP(*(.text.memcpy))
         KEEP(*(.text.memset))
         KEEP(*(.text.memcmp))
