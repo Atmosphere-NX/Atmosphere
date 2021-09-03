@@ -208,8 +208,7 @@ namespace ams::nxboot {
             if (soc_type == fuse::SocType_Mariko) {
                 package1 += 0x170;
 
-                const u8 iv[0x10] = {};
-                se::DecryptAes128Cbc(package1 + 0x20, 0x40000 - (0x20 + 0x170), pkg1::AesKeySlot_MarikoBek, package1 + 0x20, 0x40000 - (0x20 + 0x170), iv, sizeof(iv));
+                se::DecryptAes128Cbc(package1 + 0x20, 0x40000 - (0x20 + 0x170), pkg1::AesKeySlot_MarikoBek, package1 + 0x20, 0x40000 - (0x20 + 0x170), package1 + 0x10, se::AesBlockSize);
 
                 hw::InvalidateDataCache(package1 + 0x20, 0x40000 - (0x20 + 0x170));
 
