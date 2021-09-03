@@ -85,11 +85,11 @@ namespace ams::nxboot {
                     x <<= 4;
 
                     if ('0' <= c && c <= '9') {
-                        x |= c - '0';
+                        x |= (c - '0');
                     } else if ('a' <= c && c <= 'f') {
-                        x |= c - 'a';
+                        x |= (c - 'a') + 10;
                     } else if ('A' <= c && c <= 'F') {
-                        x |= c - 'A';
+                        x |= (c - 'A') + 10;
                     }
                 }
             }

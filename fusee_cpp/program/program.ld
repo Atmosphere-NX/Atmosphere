@@ -17,18 +17,6 @@ SECTIONS
         BYTE(00);
 	} >main AT>glob
 
-    .ovl_data :
-    {
-        FILL(0x00000000)
-        fusee_mtc_erista.o(SORT(.data*));
-        fusee_mtc_erista.o(SORT(.bss*));
-        fusee_mtc_mariko.o(SORT(.data*));
-        fusee_mtc_mariko.o(SORT(.bss*));
-        . = ALIGN(16);
-        . = . + 15;
-        BYTE(00);
-    }  >main AT>glob
-
 	.text :
 	{
         FILL(0x00000000)
