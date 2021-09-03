@@ -64,8 +64,10 @@ namespace ams::nxboot {
         static_assert(sizeof(InitialProcessHeader) == 0x100);
 
         struct PatchMeta {
-            u32 offset;
-            void *data;
+            PatchMeta *next;
+            u32 start_segment;
+            u32 rel_offset;
+            const void *data;
             u32 size;
         };
 
@@ -73,7 +75,8 @@ namespace ams::nxboot {
             InitialProcessMeta *next = nullptr;
             const InitialProcessHeader *kip;
             u32 kip_size;
-            PatchMeta *patches;
+            PatchMeta *patches_head;
+            PatchMeta *patches_tail;
             u32 patch_segments;
             u64 program_id;
             se::Sha256Hash kip_hash;
@@ -271,7 +274,8 @@ namespace ams::nxboot {
             }
 
             /* Clear patches. */
-            meta->patches = nullptr;
+            meta->patches_head   = nullptr;
+            meta->patches_tail   = nullptr;
             meta->patch_segments = 0;
 
             /* Increase the initial process binary's size. */
@@ -308,13 +312,200 @@ namespace ams::nxboot {
             return true;
         }
 
-        const InitialProcessMeta *FindInitialProcess(u64 program_id) {
-            for (const InitialProcessMeta *cur = std::addressof(g_initial_process_meta); cur != nullptr; cur = cur->next) {
+        InitialProcessMeta *FindInitialProcess(u64 program_id) {
+            for (InitialProcessMeta *cur = std::addressof(g_initial_process_meta); cur != nullptr; cur = cur->next) {
                 if (cur->program_id == program_id) {
                     return cur;
                 }
             }
             return nullptr;
+        }
+
+        u32 GetPatchSegments(const InitialProcessHeader *kip, u32 offset, size_t size) {
+            /* Create segment mask. */
+            u32 segments = 0;
+
+            /* Get the segment extents. */
+            const u32 rx_start = kip->rx_address;
+            const u32 ro_start = kip->ro_address;
+            const u32 rw_start = kip->rw_address;
+            const u32 rx_end   = ro_start;
+            const u32 ro_end   = rw_start;
+            const u32 rw_end   = rw_start + kip->rw_size;
+
+            /* If the offset is below the kip header, ignore it. */
+            if (offset < sizeof(*kip)) {
+                return segments;
+            }
+
+            /* Adjust the offset in bounds. */
+            offset -= sizeof(*kip);
+
+            /* Check if the offset strays out of bounds. */
+            if (offset + size > rw_end) {
+                return segments;
+            }
+
+            /* Set bits for the affected segments. */
+            if (util::HasOverlap(offset, size, rx_start, rx_end - rx_start)) {
+                segments |= (1 << 0);
+            }
+            if (util::HasOverlap(offset, size, ro_start, ro_end - ro_start)) {
+                segments |= (1 << 1);
+            }
+            if (util::HasOverlap(offset, size, rw_start, rw_end - rw_start)) {
+                segments |= (1 << 2);
+            }
+
+            return segments;
+        }
+
+        void AddPatch(InitialProcessMeta *meta, u32 offset, const void *data, size_t data_size) {
+            /* Determine the segment. */
+            const u32 segments = GetPatchSegments(meta->kip, offset, data_size);
+
+            /* If the patch hits no segments, we don't need it. */
+            if (segments == 0) {
+                return;
+            }
+
+            /* Update patch segments. */
+            meta->patch_segments |= segments;
+
+            /* Adjust offset. */
+            const u32 start_segment = util::CountTrailingZeros(segments);
+            offset -= sizeof(*meta->kip);
+            switch (start_segment) {
+                case 0: offset -= meta->kip->rx_address; break;
+                case 1: offset -= meta->kip->ro_address; break;
+                case 2: offset -= meta->kip->rw_address; break;
+            }
+
+            /* Create patch. */
+            auto *new_patch = static_cast<PatchMeta *>(AllocateAligned(sizeof(PatchMeta), alignof(PatchMeta)));
+
+            new_patch->next          = nullptr;
+            new_patch->start_segment = start_segment;
+            new_patch->rel_offset    = offset;
+            new_patch->data          = data;
+            new_patch->size          = data_size;
+
+            /* Add the patch. */
+            if (meta->patches_head == nullptr) {
+                meta->patches_head = new_patch;
+            } else {
+                meta->patches_tail->next = new_patch;
+            }
+
+            meta->patches_tail = new_patch;
+        }
+
+        constexpr const u8 NogcPatch0[] = {
+            0x80
+        };
+
+        constexpr const u8 NogcPatch1[] = {
+            0xE0, 0x03, 0x1F, 0x2A, 0xC0, 0x03, 0x5F, 0xD6,
+        };
+
+        void AddNogcPatches(InitialProcessMeta *fs_meta, FsVersion fs_version) {
+            switch (fs_version) {
+                case FsVersion_1_0_0:
+                case FsVersion_2_0_0:
+                case FsVersion_2_0_0_Exfat:
+                case FsVersion_2_1_0:
+                case FsVersion_2_1_0_Exfat:
+                case FsVersion_3_0_0:
+                case FsVersion_3_0_0_Exfat:
+                case FsVersion_3_0_1:
+                case FsVersion_3_0_1_Exfat:
+                    /* There were no lotus firmware updates prior to 4.0.0. */
+                    /* TODO: Implement patches, regardless? */
+                    break;
+                case FsVersion_4_0_0:
+                case FsVersion_4_0_0_Exfat:
+                    AddPatch(fs_meta, 0x0A3539, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x0AAC44, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_4_1_0:
+                case FsVersion_4_1_0_Exfat:
+                    AddPatch(fs_meta, 0x0A35BD, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x0AACA8, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_5_0_0:
+                case FsVersion_5_0_0_Exfat:
+                    AddPatch(fs_meta, 0x0CF4C5, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x0D74A0, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_5_1_0:
+                case FsVersion_5_1_0_Exfat:
+                    AddPatch(fs_meta, 0x0CF895, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x0D7870, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_6_0_0:
+                    AddPatch(fs_meta, 0x1539F5, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x12CD20, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_6_0_0_Exfat:
+                    AddPatch(fs_meta, 0x15F0F5, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x138420, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_7_0_0:
+                    AddPatch(fs_meta, 0x15C005, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x134260, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_7_0_0_Exfat:
+                    AddPatch(fs_meta, 0x1675B5, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x13F810, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_8_0_0:
+                case FsVersion_8_1_0:
+                    AddPatch(fs_meta, 0x15EC95, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x136900, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_8_0_0_Exfat:
+                case FsVersion_8_1_0_Exfat:
+                    AddPatch(fs_meta, 0x16A245, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x141EB0, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_9_0_0:
+                case FsVersion_9_0_0_Exfat:
+                    AddPatch(fs_meta, 0x143369, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x129520, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_9_1_0:
+                case FsVersion_9_1_0_Exfat:
+                    AddPatch(fs_meta, 0x143379, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x129530, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_10_0_0:
+                case FsVersion_10_0_0_Exfat:
+                    AddPatch(fs_meta, 0x14DF09, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x13BF90, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_10_2_0:
+                case FsVersion_10_2_0_Exfat:
+                    AddPatch(fs_meta, 0x14E369, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x13C3F0, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_11_0_0:
+                case FsVersion_11_0_0_Exfat:
+                    AddPatch(fs_meta, 0x156FB9, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x1399B4, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_12_0_0:
+                case FsVersion_12_0_0_Exfat:
+                    AddPatch(fs_meta, 0x155469, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x13EB24, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                case FsVersion_12_0_3:
+                case FsVersion_12_0_3_Exfat:
+                    AddPatch(fs_meta, 0x155579, NogcPatch0, sizeof(NogcPatch0));
+                    AddPatch(fs_meta, 0x13EC34, NogcPatch1, sizeof(NogcPatch1));
+                    break;
+                default:
+                    break;
+            }
         }
 
     }
@@ -393,7 +584,7 @@ namespace ams::nxboot {
 
         /* Get meta for FS process. */
         constexpr u64 FsProgramId = 0x0100000000000000;
-        const auto *fs_meta = FindInitialProcess(FsProgramId);
+        auto *fs_meta = FindInitialProcess(FsProgramId);
         if (fs_meta == nullptr) {
             /* Get nintendo header/data. */
             const pkg2::Package2Header *nn_header = reinterpret_cast<const pkg2::Package2Header *>(nn_package2);
@@ -431,7 +622,15 @@ namespace ams::nxboot {
             }
         }
 
-        /* TODO: Parse/prepare relevant nogc/kip patches. */
+        /* Parse/prepare relevant nogc/kip patches. */
+        {
+            /* Add nogc patches. */
+            if (nogc_enabled) {
+                AddNogcPatches(fs_meta, fs_version);
+            }
+
+            /* Add generic patches. */
+        }
 
         /* Return the fs version we're using. */
         return static_cast<u32>(fs_version);

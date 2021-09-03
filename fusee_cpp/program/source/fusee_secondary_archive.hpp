@@ -19,7 +19,7 @@
 
 namespace ams::nxboot {
 
-    constexpr inline const size_t SecondaryArchiveSize         = 4_MB + FrameBufferSize;
+    constexpr inline const size_t SecondaryArchiveSize         = 8_MB;
 
     constexpr inline const size_t InitialProcessStorageSizeMax = 3_MB / 8;
 
@@ -46,12 +46,12 @@ namespace ams::nxboot {
 
         u32 reserved0; /* Previously entrypoint. */
         u32 metadata_offset;
-        u32 reserved1;
+        u32 flags;
         u32 num_kips;
-        u32 reserved2[4];
+        u32 reserved1[4];
         u32 magic;
         u32 total_size;
-        u32 reserved3; /* Previously crt0 offset. */
+        u32 reserved2; /* Previously crt0 offset. */
         u32 content_header_offset;
         u32 num_content_headers;
         u32 supported_hos_version;
@@ -60,7 +60,7 @@ namespace ams::nxboot {
         SecondaryArchiveContentMeta content_metas[(0x400 - 0x40) / sizeof(SecondaryArchiveContentMeta)];
         SecondaryArchiveKipMeta emummc_meta;
         SecondaryArchiveKipMeta kip_metas[8];
-        u8 reserved4[0x800 - (0x400 + 9 * sizeof(SecondaryArchiveKipMeta))];
+        u8 reserved3[0x800 - (0x400 + 9 * sizeof(SecondaryArchiveKipMeta))];
     };
     static_assert(sizeof(SecondaryArchiveHeader) == 0x800);
 
@@ -75,6 +75,9 @@ namespace ams::nxboot {
         u8 mesosphere[0xAA000];               /* 0x056000-0x100000 */
         u8 kips[3_MB];                        /* 0x100000-0x400000 */
         u8 splash_screen_fb[FrameBufferSize]; /* 0x400000-0x7C0000 */
+        u8 fusee[0x20000];                    /* 0x7C0000-0x7E0000 */
+        u8 reboot_stub[0x1000];               /* 0x7E0000-0x7E1000 */
+        u8 reserved[0x1F000];                 /* 0x7E1000-0x800000 */
     };
     static_assert(sizeof(SecondaryArchive) == SecondaryArchiveSize);
 
