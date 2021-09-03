@@ -713,6 +713,11 @@ namespace ams::nxboot {
             }
         }
 
+        /* If emummc is enabled, we need to decompress fs .text. */
+        if (emummc_enabled) {
+            fs_meta->patch_segments |= (1 << 0);
+        }
+
         /* Parse/prepare relevant nogc/kip patches. */
         {
             /* Add nogc patches. */
