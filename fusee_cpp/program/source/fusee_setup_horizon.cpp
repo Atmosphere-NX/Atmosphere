@@ -26,6 +26,7 @@
 #include "fusee_package2.hpp"
 #include "fusee_malloc.hpp"
 #include "fusee_secmon_sync.hpp"
+#include "fusee_stratosphere.hpp"
 #include "fs/fusee_fs_api.hpp"
 
 namespace ams::nxboot {
@@ -562,7 +563,7 @@ namespace ams::nxboot {
             }
         }
 
-        void ConfigureExosphere(fuse::SocType soc_type, ams::TargetFirmware target_firmware, bool emummc_enabled) {
+        void ConfigureExosphere(fuse::SocType soc_type, ams::TargetFirmware target_firmware, bool emummc_enabled, u32 fs_version) {
             /* Get monitor configuration. */
             auto &storage_ctx = *secmon::MemoryRegionPhysicalDramMonitorConfiguration.GetPointer<secmon::SecureMonitorStorageConfiguration>();
             std::memset(std::addressof(storage_ctx), 0, sizeof(storage_ctx));
@@ -578,6 +579,9 @@ namespace ams::nxboot {
             storage_ctx.flags[1]        = secmon::SecureMonitorConfigurationFlag_None;
             storage_ctx.log_port        = uart::Port_ReservedDebug;
             storage_ctx.log_baud_rate   = 115200;
+
+            /* Set the fs version. */
+            storage_ctx.emummc_cfg.base_cfg.fs_version = fs_version;
 
             /* Parse fields from exosphere.ini */
             {
@@ -749,6 +753,45 @@ namespace ams::nxboot {
             hw::FlushEntireDataCache();
         }
 
+        bool IsNogcEnabled(ams::TargetFirmware target_firmware) {
+            /* First parse from ini. */
+            {
+                IniSectionList sections;
+                if (ParseIniSafe(sections, "sdmc:/atmosphere/config/stratosphere.ini")) {
+                    for (const auto &section : sections) {
+                        /* We only care about the [stratosphere] section. */
+                        if (std::strcmp(section.name, "stratosphere")) {
+                            continue;
+                        }
+
+                        /* Handle individual fields. */
+                        for (const auto &entry : section.kv_list) {
+                            if (std::strcmp(entry.key, "nogc") == 0) {
+                                return entry.value[0] == '1';
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* That failed, so try to decide automatically. */
+            const auto fuse_version = fuse::GetFuseVersion();
+            if (target_firmware >= ams::TargetFirmware_12_0_2 && fuse_version < fuse::GetExpectedFuseVersion(ams::TargetFirmware_12_0_2)) {
+                return true;
+            }
+            if (target_firmware >= ams::TargetFirmware_11_0_0 && fuse_version < fuse::GetExpectedFuseVersion(ams::TargetFirmware_11_0_0)) {
+                return true;
+            }
+            if (target_firmware >= ams::TargetFirmware_9_0_0 && fuse_version < fuse::GetExpectedFuseVersion(ams::TargetFirmware_9_0_0)) {
+                return true;
+            }
+            if (target_firmware >= ams::TargetFirmware_4_0_0 && fuse_version < fuse::GetExpectedFuseVersion(ams::TargetFirmware_4_0_0)) {
+                return true;
+            }
+
+            return false;
+        }
+
     }
 
     void SetupAndStartHorizon() {
@@ -773,21 +816,25 @@ namespace ams::nxboot {
 
         /* Read/decrypt package2. */
         u8 * const package2 = LoadBootConfigAndPackage2();
-        AMS_UNUSED(package2);
 
         /* Setup warmboot firmware. */
         LoadWarmbootFirmware(soc_type, target_firmware, package1);
 
+        /* Decide whether to use nogc patches. */
+        const bool nogc_enabled = IsNogcEnabled(target_firmware);
+
+        /* Decide what KIPs/patches we're loading. */
+        const auto fs_version = ConfigureStratosphere(package2, target_firmware, emummc_enabled, nogc_enabled);
+
         /* Setup exosphere. */
-        ConfigureExosphere(soc_type, target_firmware, emummc_enabled);
+        ConfigureExosphere(soc_type, target_firmware, emummc_enabled, fs_version);
 
         /* Start CPU. */
-        /* NOTE: Security Engine unusable past this point. */
         StartCpu();
 
-        WaitSecureMonitorState(pkg1::SecureMonitorState_Initialized);
+        /* Build modified package2. */
+        RebuildPackage2(target_firmware, emummc_enabled);
 
-        /* TODO: Build modified package2. */
         WaitForReboot();
     }
 
