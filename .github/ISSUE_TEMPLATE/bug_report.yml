@@ -1,0 +1,93 @@
+name: Bug Report
+description: Something doesn't work correctly in Atmosphère.
+#assignees:
+#labels:
+#title:
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If any section does not apply, replace its content with "N/A"
+        **Note**: If the bug or crash you encountered is related to:
+
+        - software used to make "backups"
+        - software explicitly distributed for piracy, etc
+
+        then contributors will not provide support for your issue and your issue will be closed.
+  - type: textarea
+    attributes:
+      label: What's the issue you encountered?
+      description: |
+        Describe the issue in detail and what you were doing beforehand.
+        Did you make any changes related to Atmosphère itself?
+        If so, make sure to include details relating to what exactly you changed.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: How can the issue be reproduced?
+      description: Include a detailed step by step process for recreating your issue.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Crash Report
+      description: |
+        Crash reports can be found under `/atmosphere/crash_reports`.
+        If your issue caused Atmosphère to crash, include the crash report(s) by creating a [gist](https://gist.github.com/) and pasting the link here.
+        If your don't include a crash report in instances of crash related issues, we will ask you to provide one.
+  - type: input
+    attributes:
+      label: System Firmware Version
+      description: |
+        Replace ×'s with system firmware version at time of crash.
+        You can find your firmware version in the Settings -> System, under "System Update".
+        If if says "Update Pending", you can clear the pending update by rebooting to [Maintenance Mode](https://switchbrew.org/wiki/Boot_Modes#Button_combination).
+      placeholder: ×.×.×
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "## Environment"
+  - type: dropdown
+    attributes:
+      label: What bootloader was Atmosphère launched by
+      options:
+        - fusèe
+        - hekate
+        - other
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Release type
+      options:
+        - Official release
+        - Unofficial build
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: If using an unofficial build, include details on where/how you acquired the build.
+      description: |
+        Ex: Self-compliation
+        Ex: DeepSea's distribution of Atmosphère
+  - type: textarea
+    attributes:
+      label: Additional kips or sysmodules you're loading
+  - type: textarea
+    attributes:
+      label: Homebrew software installed
+  - type: dropdown
+    attributes:
+      label: NAND type
+      options:
+        - EmuNAND - partition-based
+        - EmuNAND - file-based
+        - SysNAND
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Additional info about your environment
+        Any other information relevant to your issue.
