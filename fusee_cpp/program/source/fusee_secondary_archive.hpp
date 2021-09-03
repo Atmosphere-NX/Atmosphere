@@ -37,20 +37,21 @@ namespace ams::nxboot {
         u64 program_id;
         u32 offset;
         u32 size;
+        se::Sha256Hash hash;
     };
-    static_assert(sizeof(SecondaryArchiveKipMeta) == 0x10);
+    static_assert(sizeof(SecondaryArchiveKipMeta) == 0x30);
 
     struct SecondaryArchiveHeader {
         static constexpr u32 Magic = util::FourCC<'F','S','S','0'>::Code;
 
         u32 reserved0; /* Previously entrypoint. */
         u32 metadata_offset;
-        u32 revision;
+        u32 reserved1;
         u32 num_kips;
-        u32 reserved1[4];
+        u32 reserved2[4];
         u32 magic;
         u32 total_size;
-        u32 reserved2; /* Previously crt0 offset. */
+        u32 reserved3; /* Previously crt0 offset. */
         u32 content_header_offset;
         u32 num_content_headers;
         u32 supported_hos_version;
@@ -59,7 +60,7 @@ namespace ams::nxboot {
         SecondaryArchiveContentMeta content_metas[(0x400 - 0x40) / sizeof(SecondaryArchiveContentMeta)];
         SecondaryArchiveKipMeta emummc_meta;
         SecondaryArchiveKipMeta kip_metas[8];
-        u8 reserved3[0x800 - 0x490];
+        u8 reserved4[0x800 - (0x400 + 9 * sizeof(SecondaryArchiveKipMeta))];
     };
     static_assert(sizeof(SecondaryArchiveHeader) == 0x800);
 

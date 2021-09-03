@@ -19,9 +19,12 @@
 
 namespace ams::fs {
 
+    static_assert(sizeof(DirectoryEntry) == sizeof(FILINFO));
+
     namespace {
 
         constexpr size_t MaxFiles = 8;
+        constexpr size_t MaxDirectories = 2;
 
         constinit bool g_is_sd_mounted = false;
         constinit bool g_is_sys_mounted = false;
@@ -30,7 +33,9 @@ namespace ams::fs {
         alignas(0x10) constinit FATFS g_sys_fs = {};
 
         alignas(0x10) constinit FIL g_files[MaxFiles] = {};
+        alignas(0x10) constinit DIR g_dirs[MaxDirectories] = {};
         constinit bool g_files_opened[MaxFiles] = {};
+        constinit bool g_dirs_opened[MaxFiles] = {};
         constinit int g_open_modes[MaxFiles] = {};
 
         Result TranslateFatFsError(FRESULT res) {
@@ -96,10 +101,20 @@ namespace ams::fs {
             return static_cast<FIL *>(handle._handle);
         }
 
+        DIR *GetInternalDirectory(DirectoryHandle handle) {
+            return static_cast<DIR *>(handle._handle);
+        }
+
         ALWAYS_INLINE size_t GetFileIndex(FIL *fp) {
             const size_t file_index = (fp - g_files);
             AMS_ASSERT(file_index < MaxFiles);
             return file_index;
+        }
+
+        ALWAYS_INLINE size_t GetDirectoryIndex(DIR *dp) {
+            const size_t dir_index = (dp - g_dirs);
+            AMS_ASSERT(dir_index < MaxDirectories);
+            return dir_index;
         }
 
     }
@@ -174,6 +189,47 @@ namespace ams::fs {
             }
         }
         return fs::ResultOpenCountLimit();
+    }
+
+    Result OpenDirectory(DirectoryHandle *out_dir, const char *path) {
+        /* Find a free directory. */
+        for (size_t i = 0; i < MaxDirectories; ++i) {
+            if (!g_dirs_opened[i]) {
+                /* Open the file. */
+                DIR *dp = std::addressof(g_dirs[i]);
+                R_TRY(TranslateFatFsError(f_opendir(dp, path)));
+
+                /* Set the output. */
+                out_dir->_handle = dp;
+                g_dirs_opened[i] = true;
+                return ResultSuccess();
+            }
+        }
+        return fs::ResultOpenCountLimit();
+    }
+
+    Result ReadDirectory(s64 *out_count, DirectoryEntry *out_entries, DirectoryHandle handle, s64 max_entries) {
+        DIR * const dp = GetInternalDirectory(handle);
+
+        s64 count = 0;
+        while (count < max_entries) {
+            R_TRY(TranslateFatFsError(f_readdir(dp, reinterpret_cast<FILINFO *>(out_entries + count))));
+
+            if (out_entries[count].file_name[0] == '\x00') {
+                break;
+            }
+
+            ++count;
+        }
+
+        *out_count = count;
+        return ResultSuccess();
+    }
+
+    void CloseDirectory(DirectoryHandle handle) {
+        const size_t index = GetDirectoryIndex(GetInternalDirectory(handle));
+        f_closedir(std::addressof(g_dirs[index]));
+        g_dirs_opened[index] = false;
     }
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {

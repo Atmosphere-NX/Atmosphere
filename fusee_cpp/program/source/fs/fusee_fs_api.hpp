@@ -74,6 +74,19 @@ namespace ams::fs {
         DirectoryEntryType_File      = 1,
     };
 
+    struct DirectoryEntry {
+        u64 file_size;
+        u16 file_date;
+        u16 file_time;
+        u8 file_attr;
+        char altname[13];
+        char file_name[0x100];
+    };
+
+    constexpr ALWAYS_INLINE DirectoryEntryType GetEntryType(const DirectoryEntry &entry) {
+        return (entry.file_attr & 0x10) ? DirectoryEntryType_Directory : DirectoryEntryType_File;
+    }
+
     struct FileHandle {
         void *_handle;
     };
@@ -93,6 +106,11 @@ namespace ams::fs {
     Result CreateFile(const char *path, s64 size);
     Result CreateDirectory(const char *path);
     Result OpenFile(FileHandle *out_file, const char *path, int mode);
+
+    Result OpenDirectory(DirectoryHandle *out_dir, const char *path);
+
+    Result ReadDirectory(s64 *out_count, DirectoryEntry *out_entries, DirectoryHandle handle, s64 max_entries);
+    void CloseDirectory(DirectoryHandle handle);
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option);
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size);
