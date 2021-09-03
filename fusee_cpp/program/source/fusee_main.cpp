@@ -110,6 +110,9 @@ namespace ams::nxboot {
         /* Read the rest of the archive file. */
         ReadFullSecondaryArchive();
 
+        /* Save the memory training overlay. */
+        SaveMemoryTrainingOverlay();
+
         /* Initialize display (splash screen will be visible from this point onwards). */
         InitializeDisplay();
         ShowDisplay();
@@ -119,6 +122,12 @@ namespace ams::nxboot {
 
         /* Perform rest of the boot process. */
         SetupAndStartHorizon();
+
+        /* Restore the memory training overlay. */
+        RestoreMemoryTrainingOverlay();
+
+        /* Restore memory clock rate. */
+        RestoreMemoryClockRate();
 
         /* Finalize display. */
         FinalizeDisplay();

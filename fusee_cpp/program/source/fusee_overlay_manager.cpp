@@ -49,4 +49,22 @@ namespace ams::nxboot {
         }
     }
 
+    void SaveMemoryTrainingOverlay() {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            /* NOTE: Erista does not do memory clock restoration. */
+            /* std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_erista), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
+        } else {
+            std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_mariko), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_mariko));
+        }
+    }
+
+    void RestoreMemoryTrainingOverlay() {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            /* NOTE: Erista does not do memory clock restoration. */
+            /* std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_erista, sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
+        } else {
+            std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_mariko, sizeof(SecondaryArchive{}.ovl_mtc_mariko));
+        }
+    }
+
 }

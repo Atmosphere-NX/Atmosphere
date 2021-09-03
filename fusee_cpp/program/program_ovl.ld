@@ -26,6 +26,8 @@ SECTIONS {
             KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingEristaEiPv))
             fusee_mtc_erista.o(.text*);
             fusee_mtc_erista.o(SORT(.rodata*));
+            fusee_mtc_erista.o(SORT(.data*));
+            fusee_mtc_erista.o(SORT(.bss*));
             FILL(0x00000000)
             . = ORIGIN(ovl) + LENGTH(ovl) - 1;
             BYTE(0x00);
@@ -34,6 +36,8 @@ SECTIONS {
             KEEP(*(.text._ZN3ams6nxboot22DoMemoryTrainingMarikoEPbiPv))
             fusee_mtc_mariko.o(.text*);
             fusee_mtc_mariko.o(SORT(.rodata*));
+            fusee_mtc_mariko.o(SORT(.data*));
+            fusee_mtc_mariko.o(SORT(.bss*));
             FILL(0x00000000)
             . = ORIGIN(ovl) + LENGTH(ovl) - 1;
             BYTE(0x00);

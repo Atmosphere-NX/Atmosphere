@@ -26,4 +26,7 @@ namespace ams::nxboot {
 
     void LoadOverlay(fs::FileHandle archive_file, OverlayId ovl);
 
+    void SaveMemoryTrainingOverlay();
+    void RestoreMemoryTrainingOverlay();
+
 }
