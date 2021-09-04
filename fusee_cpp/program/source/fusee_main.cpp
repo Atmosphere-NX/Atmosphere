@@ -129,6 +129,9 @@ namespace ams::nxboot {
         /* Restore memory clock rate. */
         RestoreMemoryClockRate();
 
+        /* Restore secure monitor code. */
+        RestoreSecureMonitorOverlay();
+
         /* Finalize display. */
         FinalizeDisplay();
 

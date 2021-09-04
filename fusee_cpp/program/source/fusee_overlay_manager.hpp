@@ -28,5 +28,6 @@ namespace ams::nxboot {
 
     void SaveMemoryTrainingOverlay();
     void RestoreMemoryTrainingOverlay();
+    void RestoreSecureMonitorOverlay();
 
 }

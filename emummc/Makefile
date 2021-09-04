@@ -98,7 +98,10 @@ else
 
 DEPENDS	:=	$(OFILES:.o=.d)
 
-all	:	$(OUTPUT).kip
+all	:	$(OUTPUT)_unpacked.kip
+
+$(OUTPUT)_unpacked.kip	:	$(OUTPUT).kip
+	@hactool -t kip --uncompressed=$(OUTPUT)_unpacked.kip $(OUTPUT).kip
 
 $(OUTPUT).kip	:	$(OUTPUT).elf
 
