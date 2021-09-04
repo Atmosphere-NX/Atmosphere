@@ -85,6 +85,8 @@ namespace ams::nxboot {
         static_assert(sizeof(InitialProcessMeta) == 0x40);
         static_assert(alignof(InitialProcessMeta) == 0x10);
 
+        constexpr inline const u64 FsProgramId = 0x0100000000000000;
+
         enum FsVersion {
             FsVersion_1_0_0 = 0,
 
@@ -284,6 +286,11 @@ namespace ams::nxboot {
         }
 
         bool AddInitialProcess(const InitialProcessHeader *kip, const se::Sha256Hash *hash = nullptr) {
+            /* Check kip magic. */
+            if (kip->magic != InitialProcessHeader::Magic) {
+                ShowFatalError("KIP seems corrupted!\n");
+            }
+
             /* Handle the initial case. */
             if (g_initial_process_binary_size == 0) {
                 AddInitialProcessImpl(std::addressof(g_initial_process_meta), kip, hash);
@@ -591,6 +598,60 @@ namespace ams::nxboot {
             }
         }
 
+        struct BlzSegmentFlags {
+            using Offset = util::BitPack16::Field<0,            12, u32>;
+            using Size   = util::BitPack16::Field<Offset::Next,  4, u32>;
+        };
+
+        void BlzUncompress(void *_end) {
+            /* Parse the footer, endian agnostic. */
+            static_assert(sizeof(u32) == 4);
+            static_assert(sizeof(u16) == 2);
+            static_assert(sizeof(u8)  == 1);
+
+            u8 *end = static_cast<u8 *>(_end);
+            const u32 total_size      = (end[-12] << 0) | (end[-11] << 8) | (end[-10] << 16) | (end[- 9] << 24);
+            const u32 footer_size     = (end[- 8] << 0) | (end[- 7] << 8) | (end[- 6] << 16) | (end[- 5] << 24);
+            const u32 additional_size = (end[- 4] << 0) | (end[- 3] << 8) | (end[- 2] << 16) | (end[- 1] << 24);
+
+            /* Prepare to decompress. */
+            u8 *cmp_start = end - total_size;
+            u32 cmp_ofs = total_size - footer_size;
+            u32 out_ofs = total_size + additional_size;
+
+            /* Decompress. */
+            while (out_ofs) {
+                u8 control = cmp_start[--cmp_ofs];
+
+                /* Each bit in the control byte is a flag indicating compressed or not compressed. */
+                for (size_t i = 0; i < 8 && out_ofs; ++i, control <<= 1) {
+                    if (control & 0x80) {
+                        /* NOTE: Nintendo does not check if it's possible to decompress. */
+                        /* As such, we will leave the following as a debug assertion, and not a release assertion. */
+                        AMS_AUDIT(cmp_ofs >= sizeof(u16));
+                        cmp_ofs -= sizeof(u16);
+
+                        /* Extract segment bounds. */
+                        const util::BitPack16 seg_flags{static_cast<u16>((cmp_start[cmp_ofs] << 0) | (cmp_start[cmp_ofs + 1] << 8))};
+                        const u32 seg_ofs  = seg_flags.Get<BlzSegmentFlags::Offset>() + 3;
+                        const u32 seg_size = std::min(seg_flags.Get<BlzSegmentFlags::Size>() + 3, out_ofs);
+                        AMS_AUDIT(out_ofs + seg_ofs <= total_size + additional_size);
+
+                        /* Copy the data. */
+                        out_ofs -= seg_size;
+                        for (size_t j = 0; j < seg_size; j++) {
+                            cmp_start[out_ofs + j] = cmp_start[out_ofs + seg_ofs + j];
+                        }
+                    } else {
+                        /* NOTE: Nintendo does not check if it's possible to copy. */
+                        /* As such, we will leave the following as a debug assertion, and not a release assertion. */
+                        AMS_AUDIT(cmp_ofs >= sizeof(u8));
+                        cmp_start[--out_ofs] = cmp_start[--cmp_ofs];
+                    }
+                }
+            }
+        }
+
         void *ReadFile(s64 *out_size, const char *path, size_t align = 0x10) {
             fs::FileHandle file;
             if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
@@ -674,7 +735,6 @@ namespace ams::nxboot {
         }
 
         /* Get meta for FS process. */
-        constexpr u64 FsProgramId = 0x0100000000000000;
         auto *fs_meta = FindInitialProcess(FsProgramId);
         if (fs_meta == nullptr) {
             /* Get nintendo header/data. */
@@ -833,7 +893,220 @@ namespace ams::nxboot {
     }
 
     void RebuildPackage2(ams::TargetFirmware target_firmware, bool emummc_enabled) {
-        /* TODO */
+        /* Get the secondary archive. */
+        const auto &secondary_archive = GetSecondaryArchive();
+
+        /* Clear package2 header. */
+        auto *package2 = secmon::MemoryRegionDramPackage2.GetPointer<pkg2::Package2Header>();
+        std::memset(package2, 0, sizeof(*package2));
+
+        /* Get payload data pointer. */
+        u8 * const payload_data = reinterpret_cast<u8 *>(package2 + 1);
+
+        /* Useful values. */
+        constexpr u32 KernelPayloadBase = 0x60000;
+
+        /* Set fields. */
+        package2->meta.key_generation = pkg1::KeyGeneration_Current;
+        std::memcpy(package2->meta.magic, pkg2::Package2Meta::Magic::String, sizeof(package2->meta.magic));
+        package2->meta.entrypoint         = KernelPayloadBase;
+        package2->meta.bootloader_version = pkg2::CurrentBootloaderVersion;
+        package2->meta.package2_version   = pkg2::MinimumValidDataVersion;
+
+        /* Load mesosphere. */
+        s64 meso_size;
+        if (void *sd_meso = ReadFile(std::addressof(meso_size), "sdmc:/atmosphere/mesosphere.bin"); sd_meso != nullptr) {
+            std::memcpy(payload_data, sd_meso, meso_size);
+        } else {
+            meso_size = secondary_archive.header.meso_size;
+            std::memcpy(payload_data, secondary_archive.mesosphere, meso_size);
+        }
+
+        /* Read emummc, if needed. */
+        const InitialProcessHeader *emummc;
+        s64 emummc_size;
+        if (emummc_enabled) {
+            emummc = static_cast<const InitialProcessHeader *>(ReadFile(std::addressof(emummc_size), "sdmc:/atmosphere/emummc.kip"));
+            if (emummc == nullptr) {
+                emummc      = reinterpret_cast<const InitialProcessHeader *>(secondary_archive.kips + secondary_archive.header.emummc_meta.offset);
+                emummc_size = secondary_archive.header.emummc_meta.size;
+            }
+        }
+
+        /* Set the embedded ini pointer. */
+        std::memcpy(payload_data + 8, std::addressof(meso_size), sizeof(meso_size));
+
+        /* Get the ini pointer. */
+        InitialProcessBinaryHeader * const ini = reinterpret_cast<InitialProcessBinaryHeader *>(payload_data + meso_size);
+
+        /* Set ini fields. */
+        ini->magic         = InitialProcessBinaryHeader::Magic;
+        ini->num_processes = 0;
+        ini->reserved      = 0;
+
+        /* Iterate all processes. */
+        u8 * const dst_kip_start = reinterpret_cast<u8 *>(ini + 1);
+        u8 *       dst_kip_cur   = dst_kip_start;
+
+        for (InitialProcessMeta *meta = std::addressof(g_initial_process_meta); meta != nullptr; meta = meta->next) {
+            /* Get the current kip. */
+            const auto *src_kip = meta->kip;
+                  auto *dst_kip = reinterpret_cast<InitialProcessHeader *>(dst_kip_cur);
+
+            /* Copy the kip header */
+            std::memcpy(dst_kip, src_kip, sizeof(*src_kip));
+
+            const u8 *src_kip_data = reinterpret_cast<const u8 *>(src_kip + 1);
+                  u8 *dst_kip_data = reinterpret_cast<      u8 *>(dst_kip + 1);
+
+            /* If necessary, inject emummc. */
+            u32 addl_text_offset = 0;
+            if (dst_kip->program_id == FsProgramId && emummc_enabled) {
+                /* Get emummc extents. */
+                addl_text_offset = emummc->bss_address + emummc->bss_size;
+                if ((emummc->flags & 7) || !util::IsAligned(addl_text_offset, 0x1000)) {
+                    ShowFatalError("Invalid emummc kip!\n");
+                }
+
+                /* Copy emummc capabilities. */
+                {
+                    std::memcpy(dst_kip->capabilities, emummc->capabilities, sizeof(emummc->capabilities));
+
+                    if (target_firmware <= ams::TargetFirmware_1_0_0) {
+                        for (size_t i = 0; i < util::size(dst_kip->capabilities); ++i) {
+                            if (dst_kip->capabilities[i] == 0xFFFFFFFF) {
+                                dst_kip->capabilities[i] = 0x07000E7F;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                /* Update section headers. */
+                dst_kip->ro_address  += addl_text_offset;
+                dst_kip->rw_address  += addl_text_offset;
+                dst_kip->bss_address += addl_text_offset;
+
+                /* Get emummc sections. */
+                const u8 *emummc_data = reinterpret_cast<const u8 *>(emummc + 1);
+
+                /* Copy emummc sections. */
+                std::memcpy(dst_kip_data + emummc->rx_address, emummc_data, emummc->rx_compressed_size);
+                std::memcpy(dst_kip_data + emummc->ro_address, emummc_data + emummc->rx_compressed_size, emummc->ro_compressed_size);
+                std::memcpy(dst_kip_data + emummc->rw_address, emummc_data + emummc->rx_compressed_size + emummc->ro_compressed_size, emummc->rw_compressed_size);
+                std::memset(dst_kip_data + emummc->bss_address, 0, emummc->bss_size);
+
+                /* Advance. */
+                dst_kip_data += addl_text_offset;
+            }
+
+            /* Prepare to process segments. */
+            u8 *dst_rx_data, *dst_ro_data, *dst_rw_data;
+
+            /* Process .text. */
+            {
+                dst_rx_data = dst_kip_data;
+
+                std::memcpy(dst_kip_data, src_kip_data, src_kip->rx_compressed_size);
+
+                /* Uncompress, if necessary. */
+                if ((meta->patch_segments & src_kip->flags) & (1 << 0)) {
+                    BlzUncompress(dst_kip_data + dst_kip->rx_compressed_size);
+
+                    dst_kip->rx_compressed_size = dst_kip->rx_size;
+                }
+
+                /* Advance. */
+                dst_kip_data += dst_kip->rx_compressed_size;
+                src_kip_data += src_kip->rx_compressed_size;
+
+                /* Account for potential emummc. */
+                dst_kip->rx_size            += addl_text_offset;
+                dst_kip->rx_compressed_size += addl_text_offset;
+            }
+
+            /* Process .rodata. */
+            {
+                dst_ro_data = dst_kip_data;
+
+                std::memcpy(dst_kip_data, src_kip_data, src_kip->ro_compressed_size);
+
+                /* Uncompress, if necessary. */
+                if ((meta->patch_segments & src_kip->flags) & (1 << 1)) {
+                    BlzUncompress(dst_kip_data + dst_kip->ro_compressed_size);
+
+                    dst_kip->ro_compressed_size = dst_kip->ro_size;
+                }
+
+                /* Advance. */
+                dst_kip_data += dst_kip->ro_compressed_size;
+                src_kip_data += src_kip->ro_compressed_size;
+            }
+
+            /* Process .rwdata. */
+            {
+                dst_rw_data = dst_kip_data;
+
+                std::memcpy(dst_kip_data, src_kip_data, src_kip->rw_compressed_size);
+
+                /* Uncompress, if necessary. */
+                if ((meta->patch_segments & src_kip->flags) & (1 << 2)) {
+                    BlzUncompress(dst_kip_data + dst_kip->rw_compressed_size);
+
+                    dst_kip->rw_compressed_size = dst_kip->rw_size;
+                }
+
+                /* Advance. */
+                dst_kip_data += dst_kip->rw_compressed_size;
+                src_kip_data += src_kip->rw_compressed_size;
+            }
+
+            /* Adjust flags. */
+            dst_kip->flags &= ~meta->patch_segments;
+
+            /* Apply patches. */
+            for (auto *patch = meta->patches_head; patch != nullptr; patch = patch->next) {
+                /* Get the destination segment. */
+                u8 *patch_dst_segment;
+                switch (patch->start_segment) {
+                    case 0:  patch_dst_segment = dst_rx_data; break;
+                    case 1:  patch_dst_segment = dst_ro_data; break;
+                    case 2:  patch_dst_segment = dst_rw_data; break;
+                    default: ShowFatalError("Unknown patch segment %" PRIu32 "\n", patch->start_segment); break;
+                }
+
+                /* Get the destination. */
+                u8 * const patch_dst = patch_dst_segment + patch->rel_offset;
+
+                /* Apply the patch. */
+                if (patch->is_memset) {
+                    const u8 val = *static_cast<const u8 *>(patch->data);
+                    std::memset(patch_dst, val, patch->size);
+                } else {
+                    std::memcpy(patch_dst, patch->data, patch->size);
+                }
+            }
+
+            /* Advance. */
+            dst_kip_cur += GetInitialProcessSize(dst_kip);
+
+            /* Increment num kips. */
+            ++ini->num_processes;
+        }
+
+        /* Set INI size. */
+        ini->size = sizeof(*ini) + (dst_kip_cur - dst_kip_start);
+        if (ini->size > 12_MB) {
+            ShowFatalError("INI is too big! (0x%08" PRIx32 ")\n", ini->size);
+        }
+
+        /* Set the payload size/offset. */
+        package2->meta.payload_offsets[0] = KernelPayloadBase;
+        package2->meta.payload_sizes[0]   = util::AlignUp(meso_size + ini->size, 0x10);
+
+
+        /* Set total size. */
+        package2->meta.package2_size = sizeof(*package2) + package2->meta.payload_sizes[0];
     }
 
 }

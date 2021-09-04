@@ -834,7 +834,8 @@ namespace ams::nxboot {
         /* Build modified package2. */
         RebuildPackage2(target_firmware, emummc_enabled);
 
-        WaitForReboot();
+        /* Wait for confirmation that exosphere is ready. */
+        WaitSecureMonitorState(pkg1::SecureMonitorState_Initialized);
     }
 
 }

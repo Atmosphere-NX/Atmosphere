@@ -22,6 +22,8 @@ namespace ams::nxboot {
 
     namespace {
 
+        constinit u8 g_secmon_debug_storage[secmon::MemoryRegionPhysicalIramSecureMonitorDebug.GetSize()];
+
         ALWAYS_INLINE void *GetOverlayDestination() {
             return reinterpret_cast<void *>(0x4002C000);
         }
@@ -64,7 +66,7 @@ namespace ams::nxboot {
             /* NOTE: Erista does not do memory clock restoration. */
             /* std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_erista), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
         } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-            std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_mariko), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_mariko));
+            std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_mariko), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_mariko) - 0x2000);
         }
     }
 
@@ -73,7 +75,16 @@ namespace ams::nxboot {
             /* NOTE: Erista does not do memory clock restoration. */
             /* std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_erista, sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
         } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-            std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_mariko, sizeof(SecondaryArchive{}.ovl_mtc_mariko));
+            std::memcpy(g_secmon_debug_storage, secmon::MemoryRegionPhysicalIramSecureMonitorDebug.GetPointer<void>(), sizeof(g_secmon_debug_storage));
+            std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_mariko, sizeof(SecondaryArchive{}.ovl_mtc_mariko) - 0x2000);
+        }
+    }
+
+    void RestoreSecureMonitorOverlay() {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            /* NOTE: Erista does not do memory clock restoration. */
+        } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
+            std::memcpy(secmon::MemoryRegionPhysicalIramSecureMonitorDebug.GetPointer<void>(), g_secmon_debug_storage, sizeof(g_secmon_debug_storage));
         }
     }
 

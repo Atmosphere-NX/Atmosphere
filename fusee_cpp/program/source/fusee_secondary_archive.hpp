@@ -47,8 +47,9 @@ namespace ams::nxboot {
         u32 reserved0; /* Previously entrypoint. */
         u32 metadata_offset;
         u32 flags;
+        u32 meso_size;
         u32 num_kips;
-        u32 reserved1[4];
+        u32 reserved1[3];
         u32 magic;
         u32 total_size;
         u32 reserved2; /* Previously crt0 offset. */
