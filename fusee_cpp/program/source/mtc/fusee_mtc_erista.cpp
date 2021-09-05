@@ -76,14 +76,14 @@ namespace ams::nxboot {
             switch (index) {
                 case 0:
                 case 3:
-                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS4gb01, sizeof(T210SdevEmcDvfsTableS4gb01));
-                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
+                    //std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS4gb01, sizeof(T210SdevEmcDvfsTableS4gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(const_cast<u8 *>(T210SdevEmcDvfsTableS4gb01));
                 case 1:
-                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS6gb01, sizeof(T210SdevEmcDvfsTableS6gb01));
-                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
+                    //std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableS6gb01, sizeof(T210SdevEmcDvfsTableS6gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(const_cast<u8 *>(T210SdevEmcDvfsTableS6gb01));
                 case 2:
-                    std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableH4gb01, sizeof(T210SdevEmcDvfsTableH4gb01));
-                    return reinterpret_cast<EmcDvfsTimingTable *>(mtc_tables_buffer);
+                    //std::memcpy(mtc_tables_buffer, T210SdevEmcDvfsTableH4gb01, sizeof(T210SdevEmcDvfsTableH4gb01));
+                    return reinterpret_cast<EmcDvfsTimingTable *>(const_cast<u8 *>(T210SdevEmcDvfsTableH4gb01));
                 default:
                     ShowFatalError("Unknown EmcDvfsTimingTableIndex: %d\n", index);
             }
@@ -153,13 +153,18 @@ namespace ams::nxboot {
 
         u32 ProgramPllm(u32 next_rate_khz, u32 next_clk_src, bool is_pllmb) {
             /* Hardcode values for 1600MHz. */
-            if (next_rate_khz != 1600000) {
+            u32 divn, divm, divp;
+            if (next_rate_khz == 1600000) {
+                divn = 0x7D;
+                divm = 0x03;
+                divp = 0x00;
+            } else if (next_rate_khz == 800000) {
+                divn = 0x7D;
+                divm = 0x03;
+                divp = 0x01;
+            } else {
                 ShowFatalError("Unexpected ProgramPllm next rate %" PRIu32 "\n", next_rate_khz);
             }
-
-            const u32 divn = 0x7D;
-            const u32 divm = 0x03;
-            const u32 divp = 0x00;
 
             const auto next_2x = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
             if (is_pllmb) {
@@ -2712,48 +2717,6 @@ namespace ams::nxboot {
             }
         }
 
-        void Dvfs(EmcDvfsTimingTable *dst_timing, EmcDvfsTimingTable *src_timing, bool train) {
-            /* Get the old 2x clock source. */
-            const u32 prev_2x_clk_src = reg::GetValue(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
-
-            /* Set g_next_pll. */
-            g_next_pll = prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0;
-
-            /* Reprogram pll. */
-            u32 next_clk_src;
-            if (PllReprogram(dst_timing->rate_khz, dst_timing->clk_src_emc, src_timing->rate_khz, src_timing->clk_src_emc)) {
-                if (prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0) {
-                    g_next_pll = 0;
-                } else if (prev_2x_clk_src == PLLM_UD || prev_2x_clk_src == PLLM_OUT0) {
-                    g_next_pll = !g_next_pll;
-                }
-
-                next_clk_src = ProgramPllm(dst_timing->rate_khz, dst_timing->clk_src_emc, g_next_pll);
-            } else {
-                next_clk_src = dst_timing->clk_src_emc;
-
-                const u32 next_2x_clk_src = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
-                if (next_2x_clk_src == PLLM_UD || next_2x_clk_src == PLLMB_UD) {
-                    if (g_next_pll) {
-                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_UD));
-                    }
-                } else if (next_2x_clk_src == PLLM_OUT0 || next_2x_clk_src == PLLMB_OUT0) {
-                    if (g_next_pll) {
-                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_OUT0));
-                    }
-                }
-            }
-
-            if (train) {
-                TrainFreq(src_timing, dst_timing, next_clk_src);
-                if (PllReprogram(dst_timing->rate_khz, dst_timing->clk_src_emc, src_timing->rate_khz, src_timing->clk_src_emc)) {
-                    g_next_pll = !g_next_pll;
-                }
-            } else {
-                FreqChange(src_timing, dst_timing, 0, next_clk_src);
-            }
-        }
-
         constexpr inline const u16 PeriodicCompensationRegisters[] = {
             EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_0,
             EMC_PMACRO_OB_DDLL_LONG_DQ_RANK0_1,
@@ -2830,36 +2793,87 @@ namespace ams::nxboot {
             }
         }
 
+        void Dvfs(EmcDvfsTimingTable *dst_timing, EmcDvfsTimingTable *src_timing, bool train) {
+            /* Get the old 2x clock source. */
+            const u32 prev_2x_clk_src = reg::GetValue(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+
+            /* Set g_next_pll. */
+            g_next_pll = prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0;
+
+            /* Reprogram pll. */
+            u32 next_clk_src;
+            if (PllReprogram(dst_timing->rate_khz, dst_timing->clk_src_emc, src_timing->rate_khz, src_timing->clk_src_emc)) {
+                if (prev_2x_clk_src == PLLMB_UD || prev_2x_clk_src == PLLMB_OUT0) {
+                    g_next_pll = 0;
+                } else if (prev_2x_clk_src == PLLM_UD || prev_2x_clk_src == PLLM_OUT0) {
+                    g_next_pll = !g_next_pll;
+                }
+
+                next_clk_src = ProgramPllm(dst_timing->rate_khz, dst_timing->clk_src_emc, g_next_pll);
+            } else {
+                next_clk_src = dst_timing->clk_src_emc;
+
+                const u32 next_2x_clk_src = reg::GetField(next_clk_src, CLK_RST_REG_BITS_MASK(CLK_SOURCE_EMC_EMC_2X_CLK_SRC));
+                if (next_2x_clk_src == PLLM_UD || next_2x_clk_src == PLLMB_UD) {
+                    if (g_next_pll) {
+                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_UD));
+                    }
+                } else if (next_2x_clk_src == PLLM_OUT0 || next_2x_clk_src == PLLMB_OUT0) {
+                    if (g_next_pll) {
+                        reg::SetField(next_clk_src, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_EMC_EMC_2X_CLK_SRC, PLLMB_OUT0));
+                    }
+                }
+            }
+
+            if (train) {
+                TrainFreq(src_timing, dst_timing, next_clk_src);
+                if (PllReprogram(dst_timing->rate_khz, dst_timing->clk_src_emc, src_timing->rate_khz, src_timing->clk_src_emc)) {
+                    g_next_pll = !g_next_pll;
+                }
+            } else {
+                FreqChange(src_timing, dst_timing, 0, next_clk_src);
+                PeriodicCompensationRoutine(dst_timing);
+            }
+        }
+
     }
 
     void DoMemoryTrainingErista(int index, void *mtc_tables_buffer) {
         /* Get timing tables. */
         auto *timing_tables = GetEmcDvfsTimingTables(index, mtc_tables_buffer);
-        auto *src_timing    = timing_tables + 0;
-        auto *dst_timing    = timing_tables + 1;
+        auto *timing_204    = timing_tables + 0;
+        auto *timing_800    = timing_tables + 1;
+        auto *timing_1600   = timing_tables + 2;
 
         /* Check timing tables. */
-        if (src_timing->rate_khz != 204000 || dst_timing->rate_khz != 1600000) {
-            ShowFatalError("EmcDvfsTimingTables seem corrupted %" PRIu32 " %" PRIu32 "?\n", src_timing->rate_khz, dst_timing->rate_khz);
+        if (timing_204->rate_khz != 204000 || timing_1600->rate_khz != 1600000) {
+            ShowFatalError("EmcDvfsTimingTables seem corrupted %" PRIu32 " %" PRIu32  " %" PRIu32 "?\n", timing_204->rate_khz, timing_800->rate_khz, timing_1600->rate_khz);
         }
 
         /* Check that we should do training. */
-        if (src_timing->clk_src_emc != reg::Read(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC)) {
+        if (timing_204->clk_src_emc != reg::Read(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_EMC)) {
             /* Our clock source isn't what's expected, so presumably training has already been done? */
             /* Either way, the safe bet is to skip it. */
             return;
         }
 
+        /* Train 800MHz. */
+        Dvfs(timing_800, timing_204, true);
+
         /* Train 1600MHz. */
-        Dvfs(dst_timing, src_timing, true);
+        Dvfs(timing_1600, timing_204, true);
+
+        /* Switch to 800MHz. */
+        Dvfs(timing_800, timing_204, false);
 
         /* Switch to 1600MHz. */
-        Dvfs(dst_timing, src_timing, false);
+        Dvfs(timing_1600, timing_800, false);
+
+        /* Wait 100ms. */
+        util::WaitMicroSeconds(100000);
 
         /* Do Periodic compensation */
-        PeriodicCompensationRoutine(dst_timing);
-
-        util::WaitMicroSeconds(100);
+        PeriodicCompensationRoutine(timing_1600);
     }
 
 }

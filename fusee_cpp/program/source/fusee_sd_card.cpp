@@ -81,6 +81,14 @@ namespace ams::nxboot {
         return sdmmc::Activate(SdCardPort);
     }
 
+    void FinalizeSdCard() {
+        /* Deactivate the SD card. */
+        sdmmc::Deactivate(SdCardPort);
+
+        /* Finalize the SD card. */
+        sdmmc::Finalize(SdCardPort);
+    }
+
     Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
         return sdmmc::CheckSdCardConnection(out_sm, out_bw, SdCardPort);
     }
