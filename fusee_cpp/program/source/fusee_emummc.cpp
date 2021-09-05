@@ -44,7 +44,7 @@ namespace ams::nxboot {
                     u32 num_sectors;
                     R_TRY(GetSdCardMemoryCapacity(std::addressof(num_sectors)));
 
-                    *out = num_sectors * sdmmc::SectorSize;
+                    *out = static_cast<s64>(num_sectors) * static_cast<s64>(sdmmc::SectorSize);
                     return ResultSuccess();
                 }
 
@@ -439,8 +439,8 @@ namespace ams::nxboot {
                 continue;
             }
 
-            const s64 offset = 0x200 * gpt->entries[i].starting_lba;
-            const u64 size   = 0x200 * (gpt->entries[i].ending_lba + 1 - gpt->entries[i].starting_lba);
+            const s64 offset =  INT64_C(0x200) * gpt->entries[i].starting_lba;
+            const u64 size   = UINT64_C(0x200) * (gpt->entries[i].ending_lba + 1 - gpt->entries[i].starting_lba);
 
             if (std::memcmp(gpt->entries[i].partition_name, SystemPartitionName, sizeof(SystemPartitionName)) == 0) {
                 g_system_storage = AllocateObject<SystemPartitionStorage>(offset, size);
