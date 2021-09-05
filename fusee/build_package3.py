@@ -75,11 +75,11 @@ def write_header(f, all_kips, meso_size, git_revision, major, minor, micro, rels
     # Write num_content_headers;
     f.write(pk('<I', 8 + len(KIP_NAMES)))
     # Write supported_hos_version;
-    f.write(pk('<BBBB', s_relstep, s_micro, s_minor, s_major)) # TODO
+    f.write(pk('<BBBB', s_relstep, s_micro, s_minor, s_major))
     # Write release_version;
-    f.write(pk('<BBBB', relstep, micro, minor, major)) # TODO
+    f.write(pk('<BBBB', relstep, micro, minor, major))
     # Write git_revision;
-    f.write(pk('<I', git_revision)) # TODO
+    f.write(pk('<I', git_revision))
     # Write content metas
     f.write(pk('<IIBBBBI16s', 0x000800, 0x001800,  2, 0, 0, 0, 0xCCCCCCCC, 'warmboot'))
     f.write(pk('<IIBBBBI16s', 0x002000, 0x002000, 12, 0, 0, 0, 0xCCCCCCCC, 'tsec_keygen'))
