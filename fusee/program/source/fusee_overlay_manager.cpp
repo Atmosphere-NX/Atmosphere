@@ -15,7 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "fusee_overlay_manager.hpp"
-#include "fusee_secondary_archive.hpp"
+#include "fusee_external_package.hpp"
 #include "fusee_fatal.hpp"
 
 namespace ams::nxboot {
@@ -33,13 +33,13 @@ namespace ams::nxboot {
             u32 verif_hash;
             u32 store_hash;
             if (fuse::GetSocType() == fuse::SocType_Erista) {
-                result = fs::ReadFile(archive_file, __builtin_offsetof(SecondaryArchive, ovl_mtc_erista), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_erista));
+                result = fs::ReadFile(archive_file, __builtin_offsetof(ExternalPackage, ovl_mtc_erista), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_erista));
                 verif_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[-2];
-                store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(SecondaryArchive{}.ovl_mtc_erista) / sizeof(u32)) - 1];
+                store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(ExternalPackage{}.ovl_mtc_erista) / sizeof(u32)) - 1];
             } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-                result = fs::ReadFile(archive_file, __builtin_offsetof(SecondaryArchive, ovl_mtc_mariko), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_mariko));
+                result = fs::ReadFile(archive_file, __builtin_offsetof(ExternalPackage, ovl_mtc_mariko), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_mariko));
                 verif_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[-1];
-                store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(SecondaryArchive{}.ovl_mtc_mariko) / sizeof(u32)) - 1];
+                store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(ExternalPackage{}.ovl_mtc_mariko) / sizeof(u32)) - 1];
             }
 
             if (R_FAILED(result)) {
@@ -64,19 +64,19 @@ namespace ams::nxboot {
     void SaveMemoryTrainingOverlay() {
         if (fuse::GetSocType() == fuse::SocType_Erista) {
             /* NOTE: Erista does not do memory clock restoration. */
-            /* std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_erista), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
+            /* std::memcpy(const_cast<u8 *>(GetExternalPackage().ovl_mtc_erista), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_erista)); */
         } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-            std::memcpy(const_cast<u8 *>(GetSecondaryArchive().ovl_mtc_mariko), GetOverlayDestination(), sizeof(SecondaryArchive{}.ovl_mtc_mariko) - 0x2000);
+            std::memcpy(const_cast<u8 *>(GetExternalPackage().ovl_mtc_mariko), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_mariko) - 0x2000);
         }
     }
 
     void RestoreMemoryTrainingOverlay() {
         if (fuse::GetSocType() == fuse::SocType_Erista) {
             /* NOTE: Erista does not do memory clock restoration. */
-            /* std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_erista, sizeof(SecondaryArchive{}.ovl_mtc_erista)); */
+            /* std::memcpy(GetOverlayDestination(), GetExternalPackage().ovl_mtc_erista, sizeof(ExternalPackage{}.ovl_mtc_erista)); */
         } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
             std::memcpy(g_secmon_debug_storage, secmon::MemoryRegionPhysicalIramSecureMonitorDebug.GetPointer<void>(), sizeof(g_secmon_debug_storage));
-            std::memcpy(GetOverlayDestination(), GetSecondaryArchive().ovl_mtc_mariko, sizeof(SecondaryArchive{}.ovl_mtc_mariko) - 0x2000);
+            std::memcpy(GetOverlayDestination(), GetExternalPackage().ovl_mtc_mariko, sizeof(ExternalPackage{}.ovl_mtc_mariko) - 0x2000);
         }
     }
 

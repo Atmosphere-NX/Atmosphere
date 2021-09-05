@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, lz4, hashlib
+import sys, lz4, hashlib, os
 from struct import unpack as up, pack as pk
 
 def lz4_compress(data):
@@ -22,15 +22,15 @@ def get_overlay(program, i):
 
 KIP_NAMES = ['Loader', 'NCM', 'ProcessManager', 'sm', 'boot', 'spl', 'ams_mitm']
 
-def get_kips():
-    emummc   = read_file('../../../../emummc/emummc_unpacked.kip')
-    loader   = read_file('../../../../stratosphere/loader/loader.kip')
-    ncm      = read_file('../../../../stratosphere/ncm/ncm.kip')
-    pm       = read_file('../../../../stratosphere/pm/pm.kip')
-    sm       = read_file('../../../../stratosphere/sm/sm.kip')
-    boot     = read_file('../../../../stratosphere/boot/boot.kip')
-    spl      = read_file('../../../../stratosphere/spl/spl.kip')
-    ams_mitm = read_file('../../../../stratosphere/ams_mitm/ams_mitm.kip')
+def get_kips(ams_dir):
+    emummc   = read_file(os.path.join(ams_dir, 'emummc/emummc_unpacked.kip'))
+    loader   = read_file(os.path.join(ams_dir, 'stratosphere/loader/loader.kip'))
+    ncm      = read_file(os.path.join(ams_dir, 'stratosphere/ncm/ncm.kip'))
+    pm       = read_file(os.path.join(ams_dir, 'stratosphere/pm/pm.kip'))
+    sm       = read_file(os.path.join(ams_dir, 'stratosphere/sm/sm.kip'))
+    boot     = read_file(os.path.join(ams_dir, 'stratosphere/boot/boot.kip'))
+    spl      = read_file(os.path.join(ams_dir, 'stratosphere/spl/spl.kip'))
+    ams_mitm = read_file(os.path.join(ams_dir, 'stratosphere/ams_mitm/ams_mitm.kip'))
     return (emummc, {
         'Loader' : loader,
         'NCM' : ncm,
@@ -49,7 +49,7 @@ def write_kip_meta(f, kip, ofs):
     # Write hash
     f.write(hashlib.sha256(kip).digest())
 
-def write_header(f, all_kips, meso_size):
+def write_header(f, all_kips, meso_size, git_revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep):
     # Unpack kips
     emummc, kips = all_kips
     # Write reserved0 (previously entrypoint) as infinite loop instruction.
@@ -75,11 +75,11 @@ def write_header(f, all_kips, meso_size):
     # Write num_content_headers;
     f.write(pk('<I', 8 + len(KIP_NAMES)))
     # Write supported_hos_version;
-    f.write(pk('<I', 0xCCCCCCCC)) # TODO
+    f.write(pk('<BBBB', s_relstep, s_micro, s_minor, s_major)) # TODO
     # Write release_version;
-    f.write(pk('<I', 0xCCCCCCCC)) # TODO
+    f.write(pk('<BBBB', relstep, micro, minor, major)) # TODO
     # Write git_revision;
-    f.write(pk('<I', 0xCCCCCCCC)) # TODO
+    f.write(pk('<I', git_revision)) # TODO
     # Write content metas
     f.write(pk('<IIBBBBI16s', 0x000800, 0x001800,  2, 0, 0, 0, 0xCCCCCCCC, 'warmboot'))
     f.write(pk('<IIBBBBI16s', 0x002000, 0x002000, 12, 0, 0, 0, 0xCCCCCCCC, 'tsec_keygen'))
@@ -134,51 +134,63 @@ def write_kips(f, all_kips):
     f.write(b'\xCC' * (0x300000 - tot))
 
 def main(argc, argv):
-    if argc == 2:
-        target = argv[1]
-        if len(target) == 0:
-            target = ''
-    elif argc == 1:
-        target = ''
-    else:
-        print('Usage: %s target' % argv[0])
+    if argc != 12:
+        print('Usage: %s ams_dir target revision major minor micro relstep s_major s_minor s_micro s_relstep' % argv[0])
         return 1
-    all_kips = get_kips()
-    with open('../../program%s.bin' % target, 'rb') as f:
-        data = f.read()
-    erista_mtc = get_overlay(data, 1)
-    mariko_mtc = get_overlay(data, 2)
+    # Parse arguments
+    ams_dir   = argv[1]
+    target    = '' if argv[2] == 'release' else ('_%s' % argv[2])
+    revision  = int(argv[3], 16)
+    major     = int(argv[4])
+    minor     = int(argv[5])
+    micro     = int(argv[6])
+    relstep   = int(argv[7])
+    s_major   = int(argv[8])
+    s_minor   = int(argv[9])
+    s_micro   = int(argv[10])
+    s_relstep = int(argv[11])
+    # Read/parse fusee
+    fusee_program = read_file(os.path.join(ams_dir, 'fusee/program/program%s.bin' % target))
+    fusee_bin     = read_file(os.path.join(ams_dir, 'fusee/fusee%s.bin' % target))
+    erista_mtc = get_overlay(fusee_program, 1)
+    mariko_mtc = get_overlay(fusee_program, 2)
     erista_hsh = hashlib.sha256(erista_mtc[:-4]).digest()[:4]
     mariko_hsh = hashlib.sha256(mariko_mtc[:-4]).digest()[:4]
-    fusee_program = lz4_compress(data[:0x2B000 - 8] + erista_hsh + mariko_hsh + get_overlay(data, 0)[:0x11000])
-    mesosphere = read_file('../../../../mesosphere/mesosphere%s.bin' % target)
-    with open('../../program%s.lz4' % target, 'wb') as f:
-        f.write(fusee_program)
-    with open('../../fusee-boogaloo%s.bin' % target, 'wb') as f:
+    # Read other files
+    exosphere    = read_file(os.path.join(ams_dir, 'exosphere/exosphere%s.bin' % target))
+    warmboot     = read_file(os.path.join(ams_dir, 'exosphere/warmboot%s.bin' % target))
+    mariko_fatal = read_file(os.path.join(ams_dir, 'exosphere/mariko_fatal%s.bin' % target))
+    rebootstub   = read_file(os.path.join(ams_dir, 'exosphere/program/rebootstub/rebootstub%s.bin' % target))
+    mesosphere   = read_file(os.path.join(ams_dir, 'mesosphere/mesosphere%s.bin' % target))
+    all_kips     = get_kips(ams_dir)
+    tsec_keygen  = read_file(os.path.join(ams_dir, 'fusee/program/tsec_keygen/tsec_keygen.bin'))
+    splash_bin   = read_file(os.path.join(ams_dir, 'fusee/program/splash_screen/splash_screen.bin'))
+    assert len(splash_bin) == 0x3C0000
+    with open(os.path.join(ams_dir, 'fusee/package3%s' % target), 'wb') as f:
         # Write header
-        write_header(f, all_kips, len(mesosphere))
+        write_header(f, all_kips, len(mesosphere), revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep)
         # Write warmboot
-        f.write(pad(read_file('../../../../exosphere/warmboot%s.bin' % target), 0x1800))
+        f.write(pad(warmboot, 0x1800))
         # Write TSEC Keygen
-        f.write(pad(read_file('../../tsec_keygen/tsec_keygen.bin'), 0x2000))
+        f.write(pad(tsec_keygen, 0x2000))
         # Write Mariko Fatal
-        f.write(pad(read_file('../../../../exosphere/mariko_fatal%s.bin' % target), 0x1C000))
+        f.write(pad(mariko_fatal, 0x1C000))
         # Write Erista MTC
         f.write(erista_mtc[:-4] + erista_hsh)
         # Write Mariko MTC
         f.write(mariko_mtc[:-4] + mariko_hsh)
         # Write exosphere
-        f.write(pad(read_file('../../../../exosphere/exosphere%s.bin' % target), 0xE000))
+        f.write(pad(exosphere, 0xE000))
         # Write mesosphere
-        f.write(pad(read_file('../../../../mesosphere/mesosphere%s.bin' % target), 0xAA000))
+        f.write(pad(mesosphere, 0xAA000))
         # Write kips
         write_kips(f, all_kips)
         # Write Splash Screen
-        f.write(pad(read_file('../../splash_screen/splash_screen.bin'), 0x3C0000))
+        f.write(splash_bin)
         # Write fusee
-        f.write(pad(fusee_program, 0x20000))
+        f.write(pad(fusee_bin, 0x20000))
         # Write rebootstub
-        f.write(pad(read_file('../../../../exosphere/program/rebootstub/rebootstub%s.bin' % target), 0x1000))
+        f.write(pad(rebootstub, 0x1000))
         # Pad to 8 MB
         f.write(b'\xCC' * (0x800000 - 0x7E1000))
 

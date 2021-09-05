@@ -22,7 +22,7 @@
 #include "fusee_overlay_manager.hpp"
 #include "fusee_sd_card.hpp"
 #include "fusee_fatal.hpp"
-#include "fusee_secondary_archive.hpp"
+#include "fusee_external_package.hpp"
 #include "fusee_setup_horizon.hpp"
 #include "fusee_secmon_sync.hpp"
 
@@ -30,41 +30,40 @@ namespace ams::nxboot {
 
     namespace {
 
-        /* TODO: Change to fusee-secondary.bin when development is done. */
-        constexpr const char SecondaryArchiveFilePath[] = "sdmc:/atmosphere/fusee-boogaloo.bin";
+        constexpr const char ExternalPackageFilePath[] = "sdmc:/atmosphere/package3";
 
-        constinit fs::FileHandle g_archive_file;
+        constinit fs::FileHandle g_package_file;
 
-        void OpenSecondaryArchive() {
+        void OpenExternalPackage() {
             Result result;
 
-            /* Open fusee-secondary. */
-            if (R_FAILED((result = fs::OpenFile(std::addressof(g_archive_file), SecondaryArchiveFilePath, fs::OpenMode_Read)))) {
-                ShowFatalError("Failed to open %s!\n", SecondaryArchiveFilePath);
+            /* Open external package. */
+            if (R_FAILED((result = fs::OpenFile(std::addressof(g_package_file), ExternalPackageFilePath, fs::OpenMode_Read)))) {
+                ShowFatalError("Failed to open %s!\n", ExternalPackageFilePath);
             }
 
             /* Get file size. */
             s64 file_size;
-            if (R_FAILED((result = fs::GetFileSize(std::addressof(file_size), g_archive_file)))) {
-                ShowFatalError("Failed to get fusee-secondary size: 0x%08" PRIx32 "\n", result.GetValue());
+            if (R_FAILED((result = fs::GetFileSize(std::addressof(file_size), g_package_file)))) {
+                ShowFatalError("Failed to get package3 size: 0x%08" PRIx32 "\n", result.GetValue());
             }
 
             /* Check file size. */
-            if (static_cast<size_t>(file_size) != SecondaryArchiveSize) {
-                ShowFatalError("fusee-secondary seems corrupted (size 0x%zx != 0x%zx)", static_cast<size_t>(file_size), SecondaryArchiveSize);
+            if (static_cast<size_t>(file_size) != ExternalPackageSize) {
+                ShowFatalError("package3 seems corrupted (size 0x%zx != 0x%zx)", static_cast<size_t>(file_size), ExternalPackageSize);
             }
         }
 
-        void ReadFullSecondaryArchive() {
+        void ReadFullExternalPackage() {
             Result result;
 
-            if (R_FAILED((result = fs::ReadFile(g_archive_file, 0, const_cast<void *>(static_cast<const void *>(std::addressof(GetSecondaryArchive()))), SecondaryArchiveSize)))) {
-                ShowFatalError("Failed to read %s!\n", SecondaryArchiveFilePath);
+            if (R_FAILED((result = fs::ReadFile(g_package_file, 0, const_cast<void *>(static_cast<const void *>(std::addressof(GetExternalPackage()))), ExternalPackageSize)))) {
+                ShowFatalError("Failed to read %s!\n", ExternalPackageFilePath);
             }
         }
 
-        void CloseSecondaryArchive() {
-            fs::CloseFile(g_archive_file);
+        void CloseExternalPackage() {
+            fs::CloseFile(g_package_file);
         }
 
     }
@@ -98,17 +97,17 @@ namespace ams::nxboot {
         /* If we have a fatal error, save and display it. */
         SaveAndShowFatalError();
 
-        /* Open the secondary archive. */
-        OpenSecondaryArchive();
+        /* Open the external package. */
+        OpenExternalPackage();
 
         /* Load the memory training overlay. */
-        LoadOverlay(g_archive_file, OverlayId_MemoryTraining);
+        LoadOverlay(g_package_file, OverlayId_MemoryTraining);
 
         /* Do memory training. */
         DoMemoryTraining();
 
         /* Read the rest of the archive file. */
-        ReadFullSecondaryArchive();
+        ReadFullExternalPackage();
 
         /* Save the memory training overlay. */
         SaveMemoryTrainingOverlay();
@@ -117,8 +116,8 @@ namespace ams::nxboot {
         InitializeDisplay();
         ShowDisplay();
 
-        /* Close the secondary archive. */
-        CloseSecondaryArchive();
+        /* Close the external package. */
+        CloseExternalPackage();
 
         /* Perform rest of the boot process. */
         SetupAndStartHorizon();

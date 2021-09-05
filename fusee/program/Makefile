@@ -111,7 +111,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 
 $(OUTPUT).lz4	:	$(OUTPUT).bin
-	@python $(TOPDIR)/split_bin.py "$(ATMOSPHERE_BUILD_TARGET)"
+	@python $(TOPDIR)/lz4_compress.py $(OUTPUT).bin $(OUTPUT).lz4
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf

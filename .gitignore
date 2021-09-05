@@ -95,4 +95,6 @@ dkms.conf
 **/build_nintendo_nx_x64
 **/build_nintendo_nx_x86
 
+package3
+
 stratosphere/test/

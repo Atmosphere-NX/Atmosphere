@@ -16,7 +16,7 @@
 #include <exosphere.hpp>
 #include <exosphere/secmon/secmon_monitor_context.hpp>
 #include "fusee_key_derivation.hpp"
-#include "fusee_secondary_archive.hpp"
+#include "fusee_external_package.hpp"
 #include "fusee_setup_horizon.hpp"
 #include "fusee_ini.hpp"
 #include "fusee_emummc.hpp"
@@ -44,7 +44,7 @@ namespace ams::nxboot {
             if (soc_type == fuse::SocType_Erista) {
                 clkrst::SetBpmpClockRate(clkrst::BpmpClockRate_408MHz);
 
-                if (!tsec::RunTsecFirmware(GetSecondaryArchive().tsec_keygen, sizeof(GetSecondaryArchive().tsec_keygen))) {
+                if (!tsec::RunTsecFirmware(GetExternalPackage().tsec_keygen, sizeof(GetExternalPackage().tsec_keygen))) {
                     ShowFatalError("Failed to run tsec_keygen firmware!\n");
                 }
 
@@ -428,10 +428,10 @@ namespace ams::nxboot {
 
         void LoadWarmbootFirmware(fuse::SocType soc_type, ams::TargetFirmware target_firmware, const u8 *package1) {
             u8 *warmboot_dst     = secmon::MemoryRegionPhysicalIramWarmbootBin.GetPointer<u8>();
-            size_t warmboot_size = std::min(sizeof(GetSecondaryArchive().warmboot), secmon::MemoryRegionPhysicalIramWarmbootBin.GetSize());
+            size_t warmboot_size = std::min(sizeof(GetExternalPackage().warmboot), secmon::MemoryRegionPhysicalIramWarmbootBin.GetSize());
             if (soc_type == fuse::SocType_Erista) {
                 /* Copy the ams warmboot binary. */
-                std::memcpy(warmboot_dst, GetSecondaryArchive().warmboot, warmboot_size);
+                std::memcpy(warmboot_dst, GetExternalPackage().warmboot, warmboot_size);
 
                 /* Set the rsa modulus. */
                 if (fuse::GetHardwareState() == fuse::HardwareState_Production) {
@@ -694,7 +694,7 @@ namespace ams::nxboot {
 
                     /* Get the size. */
                     s64 size;
-                    if (R_FAILED((result = fs::GetFileSize(std::addressof(size), exo_file))) || size > sizeof(GetSecondaryArchive().exosphere)) {
+                    if (R_FAILED((result = fs::GetFileSize(std::addressof(size), exo_file))) || size > sizeof(GetExternalPackage().exosphere)) {
                         ShowFatalError("Invalid SD exosphere size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
                     }
 
@@ -706,7 +706,7 @@ namespace ams::nxboot {
             }
 
             if (!use_sd_exo) {
-                std::memcpy(exosphere_dst, GetSecondaryArchive().exosphere, sizeof(GetSecondaryArchive().exosphere));
+                std::memcpy(exosphere_dst, GetExternalPackage().exosphere, sizeof(GetExternalPackage().exosphere));
             }
 
             /* Copy mariko fatal. */
@@ -726,7 +726,7 @@ namespace ams::nxboot {
 
                         /* Get the size. */
                         s64 size;
-                        if (R_FAILED((result = fs::GetFileSize(std::addressof(size), mariko_program_file))) || size > sizeof(GetSecondaryArchive().mariko_fatal)) {
+                        if (R_FAILED((result = fs::GetFileSize(std::addressof(size), mariko_program_file))) || size > sizeof(GetExternalPackage().mariko_fatal)) {
                             ShowFatalError("Invalid SD mariko_fatal size: 0x%08" PRIx32 ", %" PRIx64 "!\n", result.GetValue(), static_cast<u64>(size));
                         }
 
@@ -736,12 +736,12 @@ namespace ams::nxboot {
                         }
 
                         /* Clear the remainder. */
-                        std::memset(mariko_fatal_dst + size, 0, sizeof(GetSecondaryArchive().mariko_fatal) - size);
+                        std::memset(mariko_fatal_dst + size, 0, sizeof(GetExternalPackage().mariko_fatal) - size);
                     }
                 }
 
                 if (!use_sd_mariko_fatal) {
-                    std::memcpy(mariko_fatal_dst, GetSecondaryArchive().mariko_fatal, sizeof(GetSecondaryArchive().mariko_fatal));
+                    std::memcpy(mariko_fatal_dst, GetExternalPackage().mariko_fatal, sizeof(GetExternalPackage().mariko_fatal));
                 }
             }
 
