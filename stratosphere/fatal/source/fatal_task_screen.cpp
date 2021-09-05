@@ -234,7 +234,6 @@ namespace ams::fatal::srv {
             font::PrintFormatLine(  "Program:  %016lX", static_cast<u64>(this->context->program_id));
             font::AddSpacingLines(0.5f);
 
-            /* TODO: Remove Mesosphere identifier in 1.0.0. */
             font::PrintFormatLine("Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
             font::AddSpacingLines(1.5f);
             if (!exosphere::ResultVersionMismatch::Includes(this->context->result)) {
