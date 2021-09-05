@@ -56,27 +56,11 @@ namespace ams::os::impl {
             }
 
             static u64 GetAslrSpaceBeginAddress() {
-                if (hos::GetVersion() >= hos::Version_2_0_0 || svc::IsKernelMesosphere()) {
-                    return GetAslrInfo(svc::InfoType_AslrRegionAddress);
-                } else {
-                    if (GetHeapSpaceBeginAddress() < AslrBase64BitDeprecated || GetAliasSpaceBeginAddress() < AslrBase64BitDeprecated) {
-                        return AslrBase32Bit;
-                    } else {
-                        return AslrBase64BitDeprecated;
-                    }
-                }
+                return GetAslrInfo(svc::InfoType_AslrRegionAddress);
             }
 
             static u64 GetAslrSpaceEndAddress() {
-                if (hos::GetVersion() >= hos::Version_2_0_0 || svc::IsKernelMesosphere()) {
-                    return GetAslrInfo(svc::InfoType_AslrRegionAddress) + GetAslrInfo(svc::InfoType_AslrRegionSize);
-                } else {
-                    if (GetHeapSpaceBeginAddress() < AslrBase64BitDeprecated || GetAliasSpaceBeginAddress() < AslrBase64BitDeprecated) {
-                        return AslrBase32Bit + AslrSize32Bit;
-                    } else {
-                        return AslrBase64BitDeprecated + AslrSize64BitDeprecated;
-                    }
-                }
+                return GetAslrInfo(svc::InfoType_AslrRegionAddress) + GetAslrInfo(svc::InfoType_AslrRegionSize);
             }
     };
 

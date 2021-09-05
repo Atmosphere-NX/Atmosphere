@@ -171,10 +171,6 @@ namespace ams::pm::resource {
         }
 
         bool IsKTraceEnabled() {
-            if (!svc::IsKernelMesosphere()) {
-                return false;
-            }
-
             u64 value = 0;
             R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_MesosphereMeta, INVALID_HANDLE, svc::MesosphereMetaInfo_IsKTraceEnabled));
 
@@ -248,7 +244,7 @@ namespace ams::pm::resource {
         }
 
         /* Choose and initialize memory arrangement. */
-        const bool use_dynamic_memory_arrangement = (hos_version >= hos::Version_6_0_0) || (svc::IsKernelMesosphere() && hos_version >= hos::Version_5_0_0);
+        const bool use_dynamic_memory_arrangement = (hos_version >= hos::Version_5_0_0);
         if (use_dynamic_memory_arrangement) {
             /* 6.0.0 retrieves memory limit information from the kernel, rather than using a hardcoded profile. */
             g_memory_arrangement = spl::MemoryArrangement_Dynamic;

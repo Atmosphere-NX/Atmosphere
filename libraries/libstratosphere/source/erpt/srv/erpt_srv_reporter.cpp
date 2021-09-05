@@ -219,10 +219,8 @@ namespace ams::erpt::srv {
         }
 
         void SubmitResourceLimitContexts() {
-            if (hos::GetVersion() >= hos::Version_11_0_0 || svc::IsKernelMesosphere()) {
-                SubmitResourceLimitLimitContext();
-                SubmitResourceLimitPeakContext();
-            }
+            SubmitResourceLimitLimitContext();
+            SubmitResourceLimitPeakContext();
         }
 
         Result ValidateCreateReportContext(const ContextEntry *ctx) {
