@@ -271,8 +271,7 @@ namespace ams::pm::resource {
 
             /* Adjust memory limits for atmosphere. */
             /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
-            /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
-            /* via patches in fusee-secondary. */
+            /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead rely on mesosphere support. */
             const size_t extra_memory_size = hos_version == hos::Version_5_0_0 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
             const auto src_group = hos_version >= hos::Version_3_0_0 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
             for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {

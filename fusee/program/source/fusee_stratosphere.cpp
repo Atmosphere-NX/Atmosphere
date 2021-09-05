@@ -17,7 +17,7 @@
 #include "fusee_stratosphere.hpp"
 #include "fusee_fatal.hpp"
 #include "fusee_malloc.hpp"
-#include "fusee_secondary_archive.hpp"
+#include "fusee_external_package.hpp"
 #include "fs/fusee_fs_api.hpp"
 
 namespace ams::nxboot {
@@ -726,11 +726,11 @@ namespace ams::nxboot {
 
         /* Add the stratosphere kips. */
         {
-            const auto &secondary_archive = GetSecondaryArchive();
-            for (u32 i = 0; i < secondary_archive.header.num_kips; ++i) {
-                const auto &meta = secondary_archive.header.kip_metas[i];
+            const auto &external_package = GetExternalPackage();
+            for (u32 i = 0; i < external_package.header.num_kips; ++i) {
+                const auto &meta = external_package.header.kip_metas[i];
 
-                AddInitialProcess(reinterpret_cast<const InitialProcessHeader *>(secondary_archive.kips + meta.offset), std::addressof(meta.hash));
+                AddInitialProcess(reinterpret_cast<const InitialProcessHeader *>(external_package.kips + meta.offset), std::addressof(meta.hash));
             }
         }
 
@@ -893,8 +893,8 @@ namespace ams::nxboot {
     }
 
     void RebuildPackage2(ams::TargetFirmware target_firmware, bool emummc_enabled) {
-        /* Get the secondary archive. */
-        const auto &secondary_archive = GetSecondaryArchive();
+        /* Get the external package. */
+        const auto &external_package = GetExternalPackage();
 
         /* Clear package2 header. */
         auto *package2 = secmon::MemoryRegionDramPackage2.GetPointer<pkg2::Package2Header>();
@@ -918,8 +918,8 @@ namespace ams::nxboot {
         if (void *sd_meso = ReadFile(std::addressof(meso_size), "sdmc:/atmosphere/mesosphere.bin"); sd_meso != nullptr) {
             std::memcpy(payload_data, sd_meso, meso_size);
         } else {
-            meso_size = secondary_archive.header.meso_size;
-            std::memcpy(payload_data, secondary_archive.mesosphere, meso_size);
+            meso_size = external_package.header.meso_size;
+            std::memcpy(payload_data, external_package.mesosphere, meso_size);
         }
 
         /* Read emummc, if needed. */
@@ -928,8 +928,8 @@ namespace ams::nxboot {
         if (emummc_enabled) {
             emummc = static_cast<const InitialProcessHeader *>(ReadFile(std::addressof(emummc_size), "sdmc:/atmosphere/emummc.kip"));
             if (emummc == nullptr) {
-                emummc      = reinterpret_cast<const InitialProcessHeader *>(secondary_archive.kips + secondary_archive.header.emummc_meta.offset);
-                emummc_size = secondary_archive.header.emummc_meta.size;
+                emummc      = reinterpret_cast<const InitialProcessHeader *>(external_package.kips + external_package.header.emummc_meta.offset);
+                emummc_size = external_package.header.emummc_meta.size;
             }
         }
 

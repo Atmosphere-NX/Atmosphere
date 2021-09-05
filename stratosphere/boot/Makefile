@@ -14,7 +14,7 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) $(TOPDIR)/../../fusee/fusee-primary
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) $(TOPDIR)/../../fusee
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -22,7 +22,7 @@ CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
 CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
 SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
 
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -68,7 +68,7 @@ endif
 all: $(BUILD)
 
 check_fusee:
-	@$(MAKE) -C $(TOPDIR)/../../fusee/fusee-primary all
+	@$(MAKE) -C $(TOPDIR)/../../fusee release
 
 $(BUILD): check_fusee
 	@[ -d $@ ] || mkdir -p $@
@@ -77,7 +77,7 @@ $(BUILD): check_fusee
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(TOPDIR)/../../fusee/fusee-primary clean
+	@$(MAKE) -C $(TOPDIR)/../../fusee clean
 	@rm -fr $(BUILD) $(TARGET).kip $(TARGET).elf
 
 
@@ -96,12 +96,12 @@ $(OUTPUT).kip	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
 
-boot_power_utils.o: fusee-primary.bin.o
+boot_power_utils.o: fusee.bin.o
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-fusee-primary.bin.o:	fusee-primary.bin
+fusee.bin.o:	fusee.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)

@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
 #include "boot_pmic_driver.hpp"
-#include "fusee-primary_bin.h"
+#include "fusee_bin.h"
 
 namespace ams::boot {
 
@@ -48,8 +48,8 @@ namespace ams::boot {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), sizeof(g_work_page)));
+            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &fusee_bin[ofs], std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -61,8 +61,8 @@ namespace ams::boot {
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), sizeof(g_work_page)));
+            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &fusee_bin[ofs], std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -93,7 +93,7 @@ namespace ams::boot {
     }
 
     void SetInitialRebootPayload() {
-        ::ams::SetInitialRebootPayload(fusee_primary_bin, fusee_primary_bin_size);
+        ::ams::SetInitialRebootPayload(fusee_bin, fusee_bin_size);
     }
 
     void RebootForFatalError(ams::FatalErrorContext *ctx) {

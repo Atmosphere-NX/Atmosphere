@@ -19,11 +19,11 @@
 
 namespace ams::nxboot {
 
-    constexpr inline const size_t SecondaryArchiveSize         = 8_MB;
+    constexpr inline const size_t ExternalPackageSize         = 8_MB;
 
     constexpr inline const size_t InitialProcessStorageSizeMax = 3_MB / 8;
 
-    struct SecondaryArchiveContentMeta {
+    struct ExternalPackageContentMeta {
         u32 offset;
         u32 size;
         u8 type;
@@ -31,17 +31,17 @@ namespace ams::nxboot {
         u32 pad;
         char name[0x10];
     };
-    static_assert(sizeof(SecondaryArchiveContentMeta) == 0x20);
+    static_assert(sizeof(ExternalPackageContentMeta) == 0x20);
 
-    struct SecondaryArchiveKipMeta {
+    struct ExternalPackageKipMeta {
         u64 program_id;
         u32 offset;
         u32 size;
         se::Sha256Hash hash;
     };
-    static_assert(sizeof(SecondaryArchiveKipMeta) == 0x30);
+    static_assert(sizeof(ExternalPackageKipMeta) == 0x30);
 
-    struct SecondaryArchiveHeader {
+    struct ExternalPackageHeader {
         static constexpr u32 Magic = util::FourCC<'F','S','S','0'>::Code;
 
         u32 reserved0; /* Previously entrypoint. */
@@ -58,15 +58,15 @@ namespace ams::nxboot {
         u32 supported_hos_version;
         u32 release_version;
         u32 git_revision;
-        SecondaryArchiveContentMeta content_metas[(0x400 - 0x40) / sizeof(SecondaryArchiveContentMeta)];
-        SecondaryArchiveKipMeta emummc_meta;
-        SecondaryArchiveKipMeta kip_metas[8];
-        u8 reserved3[0x800 - (0x400 + 9 * sizeof(SecondaryArchiveKipMeta))];
+        ExternalPackageContentMeta content_metas[(0x400 - 0x40) / sizeof(ExternalPackageContentMeta)];
+        ExternalPackageKipMeta emummc_meta;
+        ExternalPackageKipMeta kip_metas[8];
+        u8 reserved3[0x800 - (0x400 + 9 * sizeof(ExternalPackageKipMeta))];
     };
-    static_assert(sizeof(SecondaryArchiveHeader) == 0x800);
+    static_assert(sizeof(ExternalPackageHeader) == 0x800);
 
-    struct SecondaryArchive {
-        SecondaryArchiveHeader header;        /* 0x000000-0x000800 */
+    struct ExternalPackage {
+        ExternalPackageHeader header;        /* 0x000000-0x000800 */
         u8 warmboot[0x1800];                  /* 0x000800-0x002000 */
         u8 tsec_keygen[0x2000];               /* 0x002000-0x004000 */
         u8 mariko_fatal[0x1C000];             /* 0x004000-0x020000 */
@@ -80,8 +80,8 @@ namespace ams::nxboot {
         u8 reboot_stub[0x1000];               /* 0x7E0000-0x7E1000 */
         u8 reserved[0x1F000];                 /* 0x7E1000-0x800000 */
     };
-    static_assert(sizeof(SecondaryArchive) == SecondaryArchiveSize);
+    static_assert(sizeof(ExternalPackage) == ExternalPackageSize);
 
-    ALWAYS_INLINE const SecondaryArchive &GetSecondaryArchive() { return *reinterpret_cast<const SecondaryArchive *>(0xC0000000); }
+    ALWAYS_INLINE const ExternalPackage &GetExternalPackage() { return *reinterpret_cast<const ExternalPackage *>(0xC0000000); }
 
 }

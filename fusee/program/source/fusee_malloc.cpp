@@ -15,7 +15,6 @@
  */
 #include <exosphere.hpp>
 #include "fusee_malloc.hpp"
-#include "fusee_secondary_archive.hpp"
 #include "fusee_fatal.hpp"
 
 namespace ams::nxboot {
