@@ -307,57 +307,6 @@ namespace ams::boot2 {
             return hos::GetVersion() >= hos::Version_9_0_0;
         }
 
-        /* Prior to 0.19.0, we distributed system modules inside /atmosphere/contents/. */
-        /* We need to clean these up, so that we don't break horribly on first upgrade. */
-        constexpr const ncm::SystemProgramId StratosphereSystemModulesForPostZeroPointNineteenPointZeroCleanup[] = {
-            ncm::SystemProgramId::Boot2,
-            ncm::SystemProgramId::Creport,
-            ncm::SystemProgramId::Dmnt,
-            ncm::SystemProgramId::Eclct,
-            ncm::SystemProgramId::Erpt,
-            ncm::SystemProgramId::Fatal,
-            ncm::SystemProgramId::JpegDec,
-            ncm::SystemProgramId::Pgl,
-            ncm::SystemProgramId::Ro,
-        };
-
-        alignas(0x40) constinit u8 g_fs_cleanup_buffer[4_KB];
-        lmem::HeapHandle g_fs_cleanup_heap_handle;
-
-        void *AllocateForFsForCleanup(size_t size) {
-            return lmem::AllocateFromExpHeap(g_fs_cleanup_heap_handle, size);
-        }
-
-        void DeallocateForFsForCleanup(void *p, size_t size) {
-            return lmem::FreeToExpHeap(g_fs_cleanup_heap_handle, p);
-        }
-
-        void InitializeFsHeapForCleanup() {
-            g_fs_cleanup_heap_handle = lmem::CreateExpHeap(g_fs_cleanup_buffer, sizeof(g_fs_cleanup_buffer), lmem::CreateOption_None);
-            fs::SetAllocator(AllocateForFsForCleanup, DeallocateForFsForCleanup);
-        }
-
-        void CleanupSdCardSystemProgramsForUpgradeToZeroPointNineteenPointZero() {
-            /* Temporarily mount the SD card. */
-            R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
-            ON_SCOPE_EXIT { fs::Unmount("sdmc"); };
-
-            for (const auto program_id : StratosphereSystemModulesForPostZeroPointNineteenPointZeroCleanup) {
-                /* Get the program's contents path. */
-                char path[fs::EntryNameLengthMax];
-                util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/", program_id.value);
-
-                /* Check if we have old contents. */
-                bool has_dir;
-                R_ABORT_UNLESS(fs::HasDirectory(std::addressof(has_dir), path));
-
-                /* Cleanup the old contents, if we have them. */
-                if (has_dir) {
-                    R_ABORT_UNLESS(fs::DeleteDirectoryRecursively(path));
-                }
-            }
-        }
-
     }
 
     /* Boot2 API. */
@@ -414,26 +363,6 @@ namespace ams::boot2 {
                 R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
             } else {
                 R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
-            }
-        }
-
-        /* Perform cleanup to faciliate upgrade to 0.19.0. */
-        /* NOTE: This will be removed in a future atmosphere revision. */
-        {
-            /* Setup FS heap for cleanup. */
-            InitializeFsHeapForCleanup();
-
-            /* Temporarily initialize fs. */
-            R_ABORT_UNLESS(fsInitialize());
-            ON_SCOPE_EXIT { fsExit(); };
-
-            /* Wait for the sd card to be available. */
-            cfg::WaitSdCardInitialized();
-
-            /* Cleanup. */
-            if (cfg::HasGlobalFlag("clean_stratosphere_for_0.19.0")) {
-                CleanupSdCardSystemProgramsForUpgradeToZeroPointNineteenPointZero();
-                R_ABORT_UNLESS(cfg::DeleteGlobalFlag("clean_stratosphere_for_0.19.0"));
             }
         }
 
