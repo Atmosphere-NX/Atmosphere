@@ -59,6 +59,10 @@ namespace ams::nxboot {
         }
 
         void DoMbistWorkaround() {
+            /* Enable AHUB/APE clock prior to I2S accesses. */
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_OUT_ENB_V, CLK_RST_REG_BITS_ENUM(CLK_ENB_V_CLK_ENB_AHUB, ENABLE));
+            reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_OUT_ENB_Y, CLK_RST_REG_BITS_ENUM(CLK_ENB_Y_CLK_ENB_APE,  ENABLE));
+
             /* Configure CLK_RST_CONTROLLER_CLK_SOURCE_SOR1. */
             reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_CLK_SOURCE_SOR1, CLK_RST_REG_BITS_ENUM(CLK_SOURCE_SOR1_SOR1_CLK_SEL0,               MUX),
                                                                         CLK_RST_REG_BITS_ENUM(CLK_SOURCE_SOR1_SOR1_CLK_SEL1, SOR1_CLOCK_SWITCH));
