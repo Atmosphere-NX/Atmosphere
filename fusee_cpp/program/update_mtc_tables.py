@@ -77,12 +77,16 @@ def main(argc, argv):
             f.write('\n')
             for board in compressed_params[soc].keys():
                 data_1600 = params[soc][board][-1]
+                data_800 = params[soc][board][-4] if soc == 'erista' else ''
                 data_204  = params[soc][board][0] if soc == 'mariko' else params[soc][board][3]
                 assert up('<I', data_1600[0x40:0x44])[0] == 1600000
                 assert up('<I', data_204[0x40:0x44])[0] == 204000
-                data = data_204 + data_1600
+                if soc == 'erista':
+                    assert up('<I', data_800[0x40:0x44])[0] == 800000
                 if soc == 'mariko':
-                    data = lz4_compress(data)
+                    data = lz4_compress(data_204 + data_1600)
+                else:
+                    data = data_204 + data_800 + data_1600
                 f.write('%s\n' % ('constexpr const u8 %s[0x%03X] = {' % (board, len(data))))
                 while data:
                     block = data[:0x10]

@@ -439,6 +439,9 @@ namespace ams::nxboot {
                 } else {
                     std::memcpy(warmboot_dst + 0x10, PkcModulusDevelopmentErista, sizeof(PkcModulusDevelopmentErista));
                 }
+
+                /* Set the target firmware. */
+                std::memcpy(warmboot_dst + 0x248, std::addressof(target_firmware), sizeof(target_firmware));
             } else /* if (soc_type == fuse::SocType_Mariko) */ {
                 /* Declare path for mariko warmboot files. */
                 char warmboot_path[0x80] = "sdmc:/warmboot_mariko/wb_xx.bin";
@@ -744,6 +747,9 @@ namespace ams::nxboot {
 
             /* Setup the CPU to boot exosphere. */
             SetupCpu(reinterpret_cast<uintptr_t>(exosphere_dst));
+
+            /* Initialize bootloader parameters. */
+            InitializeSecureMonitorMailbox();
 
             /* Set our bootloader state. */
             SetBootloaderState(pkg1::BootloaderState_LoadedBootConfig);

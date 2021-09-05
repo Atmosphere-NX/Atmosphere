@@ -25,4 +25,6 @@ namespace ams::nxboot {
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count);
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size);
 
+    void FinalizeSdCard();
+
 }

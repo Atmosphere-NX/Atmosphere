@@ -135,6 +135,9 @@ namespace ams::nxboot {
         /* Finalize display. */
         FinalizeDisplay();
 
+        /* Finalize sd card. */
+        FinalizeSdCard();
+
         /* Finalize the data cache. */
         hw::FinalizeDataCache();
 

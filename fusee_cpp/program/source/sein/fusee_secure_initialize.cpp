@@ -365,6 +365,9 @@ namespace ams::nxboot {
             reg::Write(PMC + APBDEV_PMC_TZRAM_SEC_DISABLE, PMC_REG_BITS_ENUM(TZRAM_SEC_DISABLE_SD_WRITE, ON),
                                                            PMC_REG_BITS_ENUM(TZRAM_SEC_DISABLE_SD_READ,  ON));
         }
+
+        /* Hold certain devices in reset. */
+        reg::ReadWrite(CLKRST + CLK_RST_CONTROLLER_RST_DEVICES_L, CLK_RST_REG_BITS_ENUM(RST_DEVICES_L_SWR_USBD_RST, ENABLE));
     }
 
 }
