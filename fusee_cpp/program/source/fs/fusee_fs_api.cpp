@@ -23,7 +23,7 @@ namespace ams::fs {
 
     namespace {
 
-        constexpr size_t MaxFiles = 8;
+        constexpr size_t MaxFiles = 8 + 64;
         constexpr size_t MaxDirectories = 2;
 
         constinit bool g_is_sd_mounted = false;
