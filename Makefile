@@ -61,6 +61,11 @@ libraries:
 clean:
 	$(MAKE) -C fusee clean
 	$(MAKE) -C emummc clean
+	$(MAKE) -C libraries clean
+	$(MAKE) -C exosphere clean
+	$(MAKE) -C thermosphere clean
+	$(MAKE) -C mesosphere clean
+	$(MAKE) -C stratosphere clean
 	rm -rf out
 
 dist-no-debug: all
