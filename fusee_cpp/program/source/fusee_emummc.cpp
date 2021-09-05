@@ -99,33 +99,38 @@ namespace ams::nxboot {
         class EmummcFileStorage : public fs::IStorage {
             private:
                 s64 m_file_size;
-                fs::FileHandle m_handle;
-                int m_id;
+                fs::FileHandle m_handles[64];
+                bool m_open[64];
                 int m_file_path_ofs;
             private:
-                void SwitchFile(int id) {
-                    if (m_id != id) {
-                        fs::CloseFile(m_handle);
-
+                void EnsureFile(int id) {
+                    if (!m_open[id]) {
                         /* Update path. */
                         g_emummc_path[m_file_path_ofs + 1] = '0' + (id % 10);
                         g_emummc_path[m_file_path_ofs + 0] = '0' + (id / 10);
 
                         /* Open new file. */
-                        const Result result = fs::OpenFile(std::addressof(m_handle), g_emummc_path, fs::OpenMode_Read);
+                        const Result result = fs::OpenFile(m_handles + id, g_emummc_path, fs::OpenMode_Read);
                         if (R_FAILED(result)) {
                             ShowFatalError("Failed to open emummc user %02d file: 0x%08" PRIx32 "!\n", id, result.GetValue());
                         }
 
-                        m_id = id;
+                        m_open[id] = true;
                     }
                 }
             public:
-                EmummcFileStorage(fs::FileHandle user00, int ofs) : m_handle(user00), m_id(0), m_file_path_ofs(ofs) {
-                    const Result result = fs::GetFileSize(std::addressof(m_file_size), m_handle);
+                EmummcFileStorage(fs::FileHandle user00, int ofs) : m_file_path_ofs(ofs) {
+                    const Result result = fs::GetFileSize(std::addressof(m_file_size), user00);
                     if (R_FAILED(result)) {
                         ShowFatalError("Failed to get emummc file size: 0x%08" PRIx32 "!\n", result.GetValue());
                     }
+
+                    for (size_t i = 0; i < util::size(m_handles); ++i) {
+                        m_open[i] = false;
+                    }
+
+                    m_handles[0] = user00;
+                    m_open[0]    = true;
                 }
 
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
@@ -135,12 +140,12 @@ namespace ams::nxboot {
                     u8 *cur_dst = static_cast<u8 *>(buffer);
 
                     for (/* ... */; size > 0; ++file) {
-                        /* Switch to the current file. */
-                        SwitchFile(file);
+                        /* Ensure the current file is open. */
+                        EnsureFile(file);
 
                         /* Perform the current read. */
                         const size_t cur_size = std::min<size_t>(m_file_size - subofs, size);
-                        R_TRY(fs::ReadFile(m_handle, subofs, cur_dst, cur_size));
+                        R_TRY(fs::ReadFile(m_handles[file], subofs, cur_dst, cur_size));
 
                         /* Advance. */
                         cur_dst += cur_size;
@@ -152,7 +157,7 @@ namespace ams::nxboot {
                 }
 
                 virtual Result Flush() override {
-                    return fs::FlushFile(m_handle);
+                    return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result GetSize(s64 *out) override {
@@ -360,7 +365,7 @@ namespace ams::nxboot {
 
                 /* Append emmc. */
                 std::memcpy(g_emummc_path + len, "/eMMC", 6);
-                len += 6;
+                len += 5;
 
                 /* Open boot0. */
                 fs::FileHandle boot0_file;
