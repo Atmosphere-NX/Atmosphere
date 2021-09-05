@@ -83,7 +83,6 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/flags
-	touch atmosphere-$(AMSVER)/atmosphere/flags/clean_stratosphere_for_0.19.0.flag
 	cp fusee/fusee.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	cp fusee/package3 atmosphere-$(AMSVER)/atmosphere/package3
 	cp config_templates/stratosphere.ini atmosphere-$(AMSVER)/atmosphere/config_templates/stratosphere.ini
