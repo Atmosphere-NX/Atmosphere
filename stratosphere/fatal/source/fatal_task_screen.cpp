@@ -235,7 +235,7 @@ namespace ams::fatal::srv {
             font::AddSpacingLines(0.5f);
 
             /* TODO: Remove Mesosphere identifier in 1.0.0. */
-            font::PrintFormatLine("Firmware: %s (Atmosphère%s %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, svc::IsKernelMesosphere() ? " M" : "", ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
+            font::PrintFormatLine("Firmware: %s (Atmosphère %u.%u.%u-%s)", config.GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
             font::AddSpacingLines(1.5f);
             if (!exosphere::ResultVersionMismatch::Includes(this->context->result)) {
                 font::Print(config.GetErrorDescription());

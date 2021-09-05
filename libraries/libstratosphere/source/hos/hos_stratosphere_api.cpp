@@ -40,6 +40,9 @@ namespace ams::hos {
 
         /* Initialize hos::Version API. */
         hos::SetVersionForLibnxInternal();
+
+        /* Check that we're running under mesosphere. */
+        AMS_ABORT_UNLESS(svc::IsKernelMesosphere());
     }
 
     void InitializeForStratosphereDebug(hos::Version debug_version) {
@@ -48,6 +51,9 @@ namespace ams::hos {
 
         /* Initialize hos::Version API. */
         hos::SetVersionForLibnxInternalDebug(debug_version);
+
+        /* Check that we're running under mesosphere. */
+        AMS_ABORT_UNLESS(svc::IsKernelMesosphere());
     }
 
 }
