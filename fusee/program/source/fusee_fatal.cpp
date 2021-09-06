@@ -15,11 +15,14 @@
  */
 #include <exosphere.hpp>
 #include "fusee_fatal.hpp"
+#include "fusee_external_package.hpp"
 #include "fs/fusee_fs_api.hpp"
 
 namespace ams::nxboot {
 
     namespace {
+
+        constexpr inline const uintptr_t PMC = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
 
         Result SaveFatalErrorContext(const ams::impl::FatalErrorContext *ctx) {
             /* Create and open the file. */
@@ -45,6 +48,31 @@ namespace ams::nxboot {
             return ResultSuccess();
         }
 
+    }
+
+    NORETURN void RebootToSelf() {
+        /* Patch SDRAM init to perform an SVC immediately after second write. */
+        reg::Write(PMC + APBDEV_PMC_SCRATCH45, 0x2E38DFFF);
+        reg::Write(PMC + APBDEV_PMC_SCRATCH46, 0x6001DC28);
+
+        /* Set SVC handler to jump to reboot stub in IRAM. */
+        reg::Write(PMC + APBDEV_PMC_SCRATCH33, 0x4003F000);
+        reg::Write(PMC + APBDEV_PMC_SCRATCH40, 0x6000F208);
+
+        /* Set boot as warmboot. */
+        reg::Write(PMC + APBDEV_PMC_SCRATCH0, (1 << 0));
+
+        /* Copy reboot stub into high IRAM. */
+        std::memcpy(reinterpret_cast<void *>(0x4003F000), GetExternalPackage().reboot_stub, sizeof(GetExternalPackage().reboot_stub));
+
+        /* Copy our main payload into low IRAM. */
+        std::memcpy(reinterpret_cast<void *>(0x40010000), GetExternalPackage().fusee, sizeof(GetExternalPackage().fusee));
+
+        /* Reboot. */
+        reg::Write(PMC + APBDEV_PMC_CNTRL, PMC_REG_BITS_ENUM(CNTRL_MAIN_RESET, ENABLE));
+
+        /* Wait for the reboot to take. */
+        AMS_INFINITE_LOOP();
     }
 
     void SaveAndShowFatalError() {
@@ -81,11 +109,16 @@ namespace ams::nxboot {
             AMS_INFINITE_LOOP();
         }
 
-        /* TODO: Reboot to payload. */
-        pmic::ShutdownSystem(true);
+        /* Reboot to self, if we can. */
+        if (GetExternalPackage().header.magic == ExternalPackageHeader::Magic) {
+            RebootToSelf();
+        } else {
+            /* Just do a normal reboot. */
+            pmic::ShutdownSystem(true);
 
-        /* Wait for our reboot to complete. */
-        AMS_INFINITE_LOOP();
+            /* Wait for our reboot to complete. */
+            AMS_INFINITE_LOOP();
+        }
     }
 
 }

@@ -15,28 +15,12 @@
  */
 #include <exosphere.hpp>
 #include "fusee_exception_handler.hpp"
+#include "fusee_fatal.hpp"
 
 namespace ams::nxboot {
 
-    NORETURN void ErrorStop() {
-        /* ABORT? */
-        *reinterpret_cast<volatile u32 *>(0x40038000) = 0xDEADDEAD;
-        *reinterpret_cast<volatile u32 *>(0x7000E400) = 0x10;
-
-        /* Halt ourselves. */
-        while (true) {
-            reg::Write(secmon::MemoryRegionPhysicalDeviceFlowController.GetAddress() + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
-                                                                                                                  FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,        ENABLED));
-        }
-    }
-
     NORETURN void ExceptionHandlerImpl(s32 which, u32 lr, u32 svc_lr) {
-        /* TODO */
-        *reinterpret_cast<volatile u32 *>(0x40038004) = 0xCAFEBABE;
-        *reinterpret_cast<volatile u32 *>(0x40038008) = which;
-        *reinterpret_cast<volatile u32 *>(0x4003800C) = lr;
-        *reinterpret_cast<volatile u32 *>(0x40038010) = svc_lr;
-        ErrorStop();
+        ShowFatalError("Exception: which=%" PRId32 ", lr=%p, svc_lr=%p\n", which, reinterpret_cast<void *>(lr), reinterpret_cast<void *>(svc_lr));
     }
 
 }
@@ -44,32 +28,39 @@ namespace ams::nxboot {
 namespace ams::diag {
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        AMS_UNUSED(file, line, func, expr, value, format);
-        {
-            u32 lr;
-            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
-            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
-        }
-        ams::nxboot::ErrorStop();
+        AMS_UNUSED(file, line, func, expr, format);
+
+        u32 lr;
+        __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+        nxboot::ShowFatalError("Abort called, lr=%p, value=%" PRIx64 "\n", reinterpret_cast<void *>(lr), value);
     }
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        AMS_UNUSED(file, line, func, expr, value);
-        {
-            u32 lr;
-            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
-            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
-        }
-        ams::nxboot::ErrorStop();
+        AMS_UNUSED(file, line, func, expr);
+
+        u32 lr;
+        __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+        nxboot::ShowFatalError("Abort called, lr=%p, value=%" PRIx64 "\n", reinterpret_cast<void *>(lr), value);
     }
 
     NORETURN void AbortImpl() {
-        {
-            u32 lr;
-            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
-            *reinterpret_cast<volatile u32 *>(0x40038004) = lr;
-        }
-        ams::nxboot::ErrorStop();
+        u32 lr;
+        __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+        nxboot::ShowFatalError("Abort called, lr=%p\n", reinterpret_cast<void *>(lr));
     }
+
+}
+
+namespace ams::result::impl {
+
+        NORETURN void OnResultAbort(const char *file, int line, const char *func, const char *expr, Result result) {
+            ::ams::diag::AbortImpl(file, line, func, expr, result.GetValue(), "Result Abort: 2%03" PRId32 "-%04" PRId32 "", result.GetModule(), result.GetDescription());
+            AMS_INFINITE_LOOP();
+            __builtin_unreachable();
+        }
+
+        NORETURN void OnResultAbort(Result result) {
+            OnResultAbort("", 0, "", "", result);
+        }
 
 }
