@@ -52,8 +52,8 @@ def write_kip_meta(f, kip, ofs):
 def write_header(f, all_kips, wb_size, tk_size, xf_size, ex_size, ms_size, fs_size, rb_size, git_revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep):
     # Unpack kips
     emummc, kips = all_kips
-    # Write reserved0 (previously entrypoint) as infinite loop instruction.
-    f.write(pk('<I', 0xEAFFFFFE))
+    # Write magic as PK31 magic.
+    f.write(b'PK31')
     # Write metadata offset = 0x10
     f.write(pk('<I', 0x20))
     # Write flags
@@ -64,8 +64,8 @@ def write_header(f, all_kips, wb_size, tk_size, xf_size, ex_size, ms_size, fs_si
     f.write(pk('<I', len(KIP_NAMES)))
     # Write reserved1
     f.write(b'\xCC' * 0xC)
-    # Write magic
-    f.write('FSS0')
+    # Write legacy magic
+    f.write(b'FSS0')
     # Write total size
     f.write(pk('<I', 0x800000))
     # Write reserved2
