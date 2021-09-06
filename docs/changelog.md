@@ -1,4 +1,19 @@
 # Changelog
+## 1.0.0
++ `fusee` was completely re-written in C++ to use the same atmosphere-libs APIs as the rest of atmosphere's code.
+  + The rewrite was performed with a big emphasis on ensuring a good boot speed, and generally boot should be much faster than it was previously.
+    + Depending on SD card/environment, boot speed may now be slightly faster than, roughly the same as, or slightly slower than when booting with hekate.
+    + The obvious low-hanging fruit for performance improvements has been picked, so hopefully the improved performance is to everybody's liking.
+  + SD card compatibility was improved: fusee should now have SD card compatibility identical to the official OS driver.
+  + **Please Note**: various components were renamed (fusee-primary.bin -> fusee.bin, fusee-secondary.bin -> package3).
+    + If you use another bootloader (like hekate), you may need to update your configuration to use the new layout.
+  + **Please Note**: BCT.ini no longer exists, nogc configuration has been moved to `/atmosphere/stratosphere.ini`.
+    + If you rely on custom nogc configuration, please be sure to update accordingly.
++ A number of pending changes were made, following the end of the relevant testing periods:
+  + `mesosphere` is no longer opt-out, and stratosphere code will begin depending on its being present/in use.
+  + `NCM` is no longer opt-out.
+  + The cleanup to ease the transition from < 0.19.0 to 0.19.0 has been removed.
++ General system stability improvements to enhance the user's experience.
 ## 0.20.1
 + An issue was fixed that caused severely degraded performance after wake-from-sleep on Mariko hardware.
   + This was due to Mariko MTC resulting in a frequency of 1599.999MHz instead of 1600MHz.
