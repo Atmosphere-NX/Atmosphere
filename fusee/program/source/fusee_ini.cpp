@@ -171,11 +171,22 @@ namespace ams::nxboot {
             }
         }
 
-        if (state == State::TrailingSpace || state == State::Comment || state == State::Newline) {
+        /* Accept value-state. */
+        if (state == State::Value) {
+            auto *entry = AllocateObject<IniKeyValueEntry>();
+            entry->key   = key_start;
+            entry->value = val_start;
+
+            cur_sec->kv_list.push_back(*entry);
+
+            return ParseIniResult_Success;
+        } else if (state == State::TrailingSpace || state == State::Comment || state == State::Newline) {
             return ParseIniResult_Success;
         } else {
             return ParseIniResult_InvalidFormat;
         }
+
+
     }
 
 }
