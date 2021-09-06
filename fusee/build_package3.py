@@ -164,7 +164,7 @@ def main(argc, argv):
     mesosphere   = read_file(os.path.join(ams_dir, 'mesosphere/mesosphere%s.bin' % target))
     all_kips     = get_kips(ams_dir)
     tsec_keygen  = read_file(os.path.join(ams_dir, 'fusee/program/tsec_keygen/tsec_keygen.bin'))
-    splash_bin   = read_file(os.path.join(ams_dir, 'fusee/program/splash_screen/splash_screen.bin'))
+    splash_bin   = read_file(os.path.join(ams_dir, 'img/splash.bin'))
     assert len(splash_bin) == 0x3C0000
     with open(os.path.join(ams_dir, 'fusee/package3%s' % target), 'wb') as f:
         # Write header
