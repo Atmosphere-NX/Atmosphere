@@ -69,7 +69,7 @@ namespace ams::nxboot {
             TrailingSpace,
         };
 
-        char *sec_start, *key_start, *val_start;
+        char *sec_start, *key_start, *val_start, *val_end;
         IniSection *cur_sec = nullptr;
 
         State state = State::Newline;
@@ -144,13 +144,15 @@ namespace ams::nxboot {
                         state = State::Newline;
                     } else if (!IsWhiteSpace(c)) {
                         val_start = buffer + i;
+                        val_end   = buffer + i + 1;
 
                         state = State::Value;
                     }
                     break;
                 case State::Value:
-                    if (IsWhiteSpace(c) || c == '\n') {
+                    if (c == '\r' || c == '\n') {
                         buffer[i] = '\x00';
+                        *val_end  = '\x00';
 
                         auto *entry = AllocateObject<IniKeyValueEntry>();
                         entry->key   = key_start;
@@ -159,6 +161,8 @@ namespace ams::nxboot {
                         cur_sec->kv_list.push_back(*entry);
 
                         state = (c == '\n') ? State::Newline : State::TrailingSpace;
+                    } else if (c != ' ') {
+                        val_end = buffer + i + 1;
                     }
                     break;
                 case State::TrailingSpace:
