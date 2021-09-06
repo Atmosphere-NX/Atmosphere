@@ -42,15 +42,16 @@ namespace ams::nxboot {
     static_assert(sizeof(ExternalPackageKipMeta) == 0x30);
 
     struct ExternalPackageHeader {
-        static constexpr u32 Magic = util::FourCC<'F','S','S','0'>::Code;
+        static constexpr u32 Magic = util::FourCC<'P', 'K', '3', '1'>::Code;
+        static constexpr u32 LegacyMagic = util::FourCC<'F','S','S','0'>::Code;
 
-        u32 reserved0; /* Previously entrypoint. */
+        u32 magic; /* Previously entrypoint. */
         u32 metadata_offset;
         u32 flags;
         u32 meso_size;
         u32 num_kips;
         u32 reserved1[3];
-        u32 magic;
+        u32 legacy_magic;
         u32 total_size;
         u32 reserved2; /* Previously crt0 offset. */
         u32 content_header_offset;
