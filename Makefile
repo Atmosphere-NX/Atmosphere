@@ -13,7 +13,7 @@ ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
 
-COMPONENTS := fusee stratosphere mesosphere exosphere thermosphere troposphere libraries
+COMPONENTS := fusee stratosphere mesosphere exosphere emummc thermosphere troposphere libraries
 
 all: $(COMPONENTS)
 	$(eval MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
@@ -51,6 +51,9 @@ mesosphere: exosphere libraries
 
 troposphere: stratosphere
 	$(MAKE) -C troposphere all
+
+emummc:
+	$(MAKE) -C emummc all
 
 fusee: exosphere mesosphere stratosphere
 	$(MAKE) -C $@ all
@@ -94,6 +97,7 @@ dist-no-debug: all
 	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
 	cp config_templates/system_settings.ini atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
 	cp config_templates/exosphere.ini atmosphere-$(AMSVER)/atmosphere/config_templates/exosphere.ini
+	mkdir config_templates/kip_patches
 	cp -r config_templates/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
 	cp -r config_templates/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008
