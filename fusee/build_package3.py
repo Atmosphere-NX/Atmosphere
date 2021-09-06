@@ -49,7 +49,7 @@ def write_kip_meta(f, kip, ofs):
     # Write hash
     f.write(hashlib.sha256(kip).digest())
 
-def write_header(f, all_kips, meso_size, git_revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep):
+def write_header(f, all_kips, wb_size, tk_size, xf_size, ex_size, ms_size, fs_size, rb_size, git_revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep):
     # Unpack kips
     emummc, kips = all_kips
     # Write reserved0 (previously entrypoint) as infinite loop instruction.
@@ -59,7 +59,7 @@ def write_header(f, all_kips, meso_size, git_revision, major, minor, micro, rels
     # Write flags
     f.write(pk('<I', 0x00000000))
     # Write meso_size
-    f.write(pk('<I', meso_size))
+    f.write(pk('<I', ms_size))
     # Write num_kips
     f.write(pk('<I', len(KIP_NAMES)))
     # Write reserved1
@@ -81,13 +81,13 @@ def write_header(f, all_kips, meso_size, git_revision, major, minor, micro, rels
     # Write git_revision;
     f.write(pk('<I', git_revision))
     # Write content metas
-    f.write(pk('<IIBBBBI16s', 0x000800, 0x001800,  2, 0, 0, 0, 0xCCCCCCCC, 'warmboot'))
-    f.write(pk('<IIBBBBI16s', 0x002000, 0x002000, 12, 0, 0, 0, 0xCCCCCCCC, 'tsec_keygen'))
-    f.write(pk('<IIBBBBI16s', 0x004000, 0x01C000, 11, 0, 0, 0, 0xCCCCCCCC, 'exosphere_fatal'))
-    f.write(pk('<IIBBBBI16s', 0x048000, 0x00E000,  1, 0, 0, 0, 0xCCCCCCCC, 'exosphere'))
-    f.write(pk('<IIBBBBI16s', 0x056000, 0x0AA000, 10, 0, 0, 0, 0xCCCCCCCC, 'mesosphere'))
-    f.write(pk('<IIBBBBI16s', 0x7C0000, 0x020000,  0, 0, 0, 0, 0xCCCCCCCC, 'fusee'))
-    f.write(pk('<IIBBBBI16s', 0x7E0000, 0x001000,  3, 0, 0, 0, 0xCCCCCCCC, 'rebootstub'))
+    f.write(pk('<IIBBBBI16s', 0x000800, wb_size,  2, 0, 0, 0, 0xCCCCCCCC, 'warmboot'))
+    f.write(pk('<IIBBBBI16s', 0x002000, tk_size, 12, 0, 0, 0, 0xCCCCCCCC, 'tsec_keygen'))
+    f.write(pk('<IIBBBBI16s', 0x004000, xf_size, 11, 0, 0, 0, 0xCCCCCCCC, 'exosphere_fatal'))
+    f.write(pk('<IIBBBBI16s', 0x048000, ex_size,  1, 0, 0, 0, 0xCCCCCCCC, 'exosphere'))
+    f.write(pk('<IIBBBBI16s', 0x056000, ms_size, 10, 0, 0, 0, 0xCCCCCCCC, 'mesosphere'))
+    f.write(pk('<IIBBBBI16s', 0x7C0000, fs_size,  0, 0, 0, 0, 0xCCCCCCCC, 'fusee'))
+    f.write(pk('<IIBBBBI16s', 0x7E0000, rb_size,  3, 0, 0, 0, 0xCCCCCCCC, 'rebootstub'))
     f.write(pk('<IIBBBBI16s', 0x100000, len(emummc),  8, 0, 0, 0, 0xCCCCCCCC, 'emummc'))
     ofs = (0x100000 + len(emummc) + 0xF) & ~0xF
     for kip_name in KIP_NAMES:
@@ -168,7 +168,7 @@ def main(argc, argv):
     assert len(splash_bin) == 0x3C0000
     with open(os.path.join(ams_dir, 'fusee/package3%s' % target), 'wb') as f:
         # Write header
-        write_header(f, all_kips, len(mesosphere), revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep)
+        write_header(f, all_kips, len(warmboot), len(tsec_keygen), len(mariko_fatal), len(exosphere), len(mesosphere), len(fusee_bin), len(rebootstub), revision, major, minor, micro, relstep, s_major, s_minor, s_micro, s_relstep)
         # Write warmboot
         f.write(pad(warmboot, 0x1800))
         # Write TSEC Keygen
