@@ -9,6 +9,9 @@
     + If you use another bootloader (like hekate), you may need to update your configuration to use the new layout.
   + **Please Note**: BCT.ini no longer exists, nogc configuration has been moved to `/atmosphere/stratosphere.ini`.
     + If you rely on custom nogc configuration, please be sure to update accordingly.
+  + Custom splash screen BMP parsing is no longer supported (as it slows down boot for 99% of users).
+    + To compensate for this, a script to insert a custom splash screen into a `package3` binary has been added to the `utilities` folder of the atmosphere repository.
+    + The release build should be equivalent to running the following command from the root of the atmosphere repository: `python utilities/insert_splash_screen.py img/splash.png fusee/package3`
 + A number of pending changes were made, following the end of the relevant testing periods:
   + `mesosphere` is no longer opt-out, and stratosphere code will begin depending on its being present/in use.
   + `NCM` is no longer opt-out.
