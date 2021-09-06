@@ -18,7 +18,7 @@
 namespace ams::result::impl {
 
         NORETURN WEAK_SYMBOL void OnResultAbort(const char *file, int line, const char *func, const char *expr, Result result) {
-            ::ams::diag::AbortImpl(file, line, func, expr, result.GetValue(), "Result Abort: %203d-%04d", result.GetModule(), result.GetDescription());
+            ::ams::diag::AbortImpl(file, line, func, expr, result.GetValue(), "Result Abort: 2%03d-%04d", result.GetModule(), result.GetDescription());
             AMS_INFINITE_LOOP();
             __builtin_unreachable();
         }
@@ -28,7 +28,7 @@ namespace ams::result::impl {
         }
 
         NORETURN WEAK_SYMBOL void OnResultAssertion(const char *file, int line, const char *func, const char *expr, Result result) {
-            ::ams::diag::AssertionFailureImpl(file, line, func, expr, result.GetValue(), "Result Assertion: %203d-%04d", result.GetModule(), result.GetDescription());
+            ::ams::diag::AssertionFailureImpl(file, line, func, expr, result.GetValue(), "Result Assertion: 2%03d-%04d", result.GetModule(), result.GetDescription());
             AMS_INFINITE_LOOP();
             __builtin_unreachable();
         }
