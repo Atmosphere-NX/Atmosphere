@@ -20,12 +20,13 @@
 namespace ams::psc {
 
     enum PmState {
-        PmState_Awake               = 0,
-        PmState_ReadyAwaken         = 1,
-        PmState_ReadySleep          = 2,
-        PmState_ReadySleepCritical  = 3,
-        PmState_ReadyAwakenCritical = 4,
-        PmState_ReadyShutdown       = 5,
+        PmState_FullAwake                   = 0,
+        PmState_MinimumAwake                = 1,
+        PmState_SleepReady                  = 2,
+        PmState_EssentialServicesSleepReady = 3,
+        PmState_EssentialServicesAwake      = 4,
+        PmState_ShutdownReady               = 5,
+        PmState_Unknown                     = 6,
     };
 
     constexpr inline u32 MaximumDependencyLevels  = 20;

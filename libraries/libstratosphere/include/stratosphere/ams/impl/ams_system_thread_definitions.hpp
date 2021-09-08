@@ -24,7 +24,7 @@ namespace ams::impl {
     };
 
     #define AMS_DEFINE_SYSTEM_THREAD(__AMS_THREAD_PRIORITY__, __AMS_MODULE__, __AMS_THREAD_NAME__) \
-        constexpr inline const ::ams::impl::SystemThreadDefinition SystemThreadDefinition##__AMS_MODULE__##__AMS_THREAD_NAME__ = { __AMS_THREAD_PRIORITY__, "ams." # __AMS_MODULE__ "." #__AMS_THREAD_NAME__ }
+        constexpr inline const ::ams::impl::SystemThreadDefinition SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__ = { __AMS_THREAD_PRIORITY__, "ams." # __AMS_MODULE__ "." #__AMS_THREAD_NAME__ }
 
     /* sm. */
     AMS_DEFINE_SYSTEM_THREAD(-1, sm, Main);
@@ -68,6 +68,12 @@ namespace ams::impl {
 
     /* boot2. */
     AMS_DEFINE_SYSTEM_THREAD(20, boot2, Main);
+
+    /* LogManager. */
+    AMS_DEFINE_SYSTEM_THREAD(10, LogManager, MainThread);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, IpcServer);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, Flush);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, HtcsConnection);
 
     /* dmnt. */
     AMS_DEFINE_SYSTEM_THREAD(-3, dmnt, MultiCoreEventManager);
@@ -167,5 +173,5 @@ namespace ams::impl {
 
 }
 
-#define AMS_GET_SYSTEM_THREAD_PRIORITY(__AMS_MODULE__, __AMS_THREAD_NAME__) ::ams::impl::SystemThreadDefinition##__AMS_MODULE__##__AMS_THREAD_NAME__.priority
-#define AMS_GET_SYSTEM_THREAD_NAME(__AMS_MODULE__, __AMS_THREAD_NAME__)     ::ams::impl::SystemThreadDefinition##__AMS_MODULE__##__AMS_THREAD_NAME__.name
+#define AMS_GET_SYSTEM_THREAD_PRIORITY(__AMS_MODULE__, __AMS_THREAD_NAME__) ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__.priority
+#define AMS_GET_SYSTEM_THREAD_NAME(__AMS_MODULE__, __AMS_THREAD_NAME__)     ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__.name

@@ -48,6 +48,7 @@
 #include <vapours/util/util_character_encoding.hpp>
 #include <vapours/util/util_format_string.hpp>
 #include <vapours/util/util_range.hpp>
+#include <vapours/util/util_utf8_string_util.hpp>
 
 #include <vapours/util/util_fixed_map.hpp>
 #include <vapours/util/util_fixed_set.hpp>

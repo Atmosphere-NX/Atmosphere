@@ -114,14 +114,14 @@ namespace ams::erpt::srv {
                     pm_module.GetEventPointer()->Clear();
                     if (R_SUCCEEDED(pm_module.GetRequest(std::addressof(pm_state), std::addressof(pm_flags)))) {
                         switch (pm_state) {
-                            case psc::PmState_Awake:
-                            case psc::PmState_ReadyAwaken:
+                            case psc::PmState_FullAwake:
+                            case psc::PmState_MinimumAwake:
                                 Stream::EnableFsAccess(true);
                                 break;
-                            case psc::PmState_ReadyShutdown:
+                            case psc::PmState_ShutdownReady:
                                 FinalizeForcedShutdownDetection();
                                 [[fallthrough]];
-                            case psc::PmState_ReadySleep:
+                            case psc::PmState_SleepReady:
                                 Stream::EnableFsAccess(false);
                                 break;
                             default:

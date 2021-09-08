@@ -17,9 +17,11 @@
 #pragma once
 
 #include <stratosphere/time/time_common.hpp>
-#include <stratosphere/time/time_posix_time.hpp>
-#include <stratosphere/time/time_steady_clock_time_point.hpp>
 #include <stratosphere/time/time_api.hpp>
+#include <stratosphere/time/time_posix_time.hpp>
+#include <stratosphere/time/time_calendar_time.hpp>
+#include <stratosphere/time/time_timezone_api.hpp>
+#include <stratosphere/time/time_steady_clock_time_point.hpp>
 #include <stratosphere/time/time_standard_steady_clock.hpp>
 #include <stratosphere/time/time_standard_user_system_clock.hpp>
 #include <stratosphere/time/time_standard_network_system_clock.hpp>

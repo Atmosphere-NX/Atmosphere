@@ -20,10 +20,10 @@
 
 namespace ams::util {
 
-    int SNPrintf(char *dst, size_t dst_size, const char *fmt, ...);
+    int SNPrintf(char *dst, size_t dst_size, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
     int VSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl);
 
-    int TSNPrintf(char *dst, size_t dst_size, const char *fmt, ...);
+    int TSNPrintf(char *dst, size_t dst_size, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
     int TVSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl);
 
 }

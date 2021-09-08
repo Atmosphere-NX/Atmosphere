@@ -136,6 +136,7 @@ namespace ams::util {
 
                 /* Parse length. */
                 constexpr bool SizeIsLong    = sizeof(size_t)    == sizeof(long);
+                constexpr bool PointerIsLong = sizeof(uintptr_t) == sizeof(long);
                 constexpr bool IntMaxIsLong  = sizeof(intmax_t)  == sizeof(long);
                 constexpr bool PtrDiffIsLong = sizeof(ptrdiff_t) == sizeof(long);
                 switch (*format) {
@@ -174,10 +175,10 @@ namespace ams::util {
                 const char specifier = *(format++);
                 switch (specifier) {
                     case 'p':
-                        if constexpr (sizeof(uintptr_t) == sizeof(long long)) {
-                            SetFlag(FormatSpecifierFlag_LongLong);
-                        } else {
+                        if constexpr (PointerIsLong) {
                             SetFlag(FormatSpecifierFlag_Long);
+                        } else {
+                            SetFlag(FormatSpecifierFlag_LongLong);
                         }
                         SetFlag(FormatSpecifierFlag_Hash);
                         [[fallthrough]];

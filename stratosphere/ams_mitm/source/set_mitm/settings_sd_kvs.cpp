@@ -317,6 +317,14 @@ namespace ams::settings::fwdbg {
             /* (note: this is normally not necessary, and ips patches can be used.) */
             R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));
 
+            /* Control whether lm should log to the SD card. */
+            /* Note that this setting does nothing when log manager is not enabled. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("lm", "enable_sd_card_logging", "u8!0x1"));
+
+            /* Control the output directory for SD card logs. */
+            /* Note that this setting does nothing when log manager is not enabled/sd card logging is not enabled. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("lm", "sd_card_log_output_directory", "str!atmosphere/binlogs"));
+
             /* Atmosphere custom settings. */
 
             /* Reboot from fatal automatically after some number of milliseconds. */
@@ -369,6 +377,11 @@ namespace ams::settings::fwdbg {
             /* TODO: Change this to default 1 when tma2 is ready for inclusion in atmosphere releases. */
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_htc", "u8!0x0"));
+
+            /* Controls whether atmosphere's log manager is enabled. */
+            /* Note that this setting is ignored (and treated as 1) when htc is enabled. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_log_manager", "u8!0x0"));
 
             /* Hbloader custom settings. */
 

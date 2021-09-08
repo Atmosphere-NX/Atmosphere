@@ -34,11 +34,10 @@ namespace ams::time {
             InitializeMode_SystemUser,
         };
 
-        u32 g_initialize_count = 0;
-        InitializeMode g_initialize_mode = InitializeMode_None;
+        constinit u32 g_initialize_count = 0;
+        constinit InitializeMode g_initialize_mode = InitializeMode_None;
 
-        /* TODO: os::SdkMutex */
-        os::Mutex g_initialize_mutex(false);
+        constinit os::SdkMutex g_initialize_mutex;
 
         Result InitializeImpl(InitializeMode mode) {
             std::scoped_lock lk(g_initialize_mutex);
@@ -76,7 +75,11 @@ namespace ams::time {
     }
 
     Result InitializeForSystemUser() {
-        return InitializeImpl(InitializeMode_System);
+        if (hos::GetVersion() >= hos::Version_9_0_0) {
+            return InitializeImpl(InitializeMode_SystemUser);
+        } else {
+            return InitializeImpl(InitializeMode_Normal);
+        }
     }
 
     Result Finalize() {
@@ -96,6 +99,10 @@ namespace ams::time {
         std::scoped_lock lk(g_initialize_mutex);
 
         return g_initialize_count > 0;
+    }
+
+    bool IsValidDate(int year, int month, int day) {
+        return impl::util::IsValidDate(year, month, day);
     }
 
     Result GetElapsedSecondsBetween(s64 *out, const SteadyClockTimePoint &from, const SteadyClockTimePoint &to) {
