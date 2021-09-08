@@ -651,7 +651,7 @@ namespace ams::nxboot {
                             } else if (std::strcmp(entry.key, "log_baud_rate") == 0) {
                                 storage_ctx.log_baud_rate = ParseDecimalInteger(entry.value);
                             } else if (std::strcmp(entry.key, "log_inverted") == 0) {
-                                if (entry.value[0] == 1) {
+                                if (entry.value[0] == '1') {
                                     storage_ctx.log_flags |= uart::Flag_Inverted;
                                 }
                             }
