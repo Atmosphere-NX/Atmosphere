@@ -261,7 +261,10 @@ class Daybreak : public CApplication {
 
 int main(int argc, char **argv) {
     /* Initialize the menu. */
-    dbk::InitializeMenu(FramebufferWidth, FramebufferHeight);
+    if (argc > 1)
+        dbk::InitializeMenu(FramebufferWidth, FramebufferHeight, argv[1]);
+    else
+        dbk::InitializeMenu(FramebufferWidth, FramebufferHeight);
 
     Daybreak daybreak;
     daybreak.run();
