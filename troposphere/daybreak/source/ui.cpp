@@ -1216,7 +1216,7 @@ namespace dbk {
         }
     }
 
-    void InitializeMenu(u32 screen_width, u32 screen_height) {
+    bool InitializeMenu(u32 screen_width, u32 screen_height) {
         Result rc = 0;
 
         /* Configure and initialize the gamepad. */
@@ -1237,7 +1237,7 @@ namespace dbk {
         u64 version;
         if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &version))) {
             ChangeMenu(std::make_shared<ErrorMenu>("Atmosphere not found", "Daybreak requires Atmosphere to be installed.", rc));
-            return;
+            return false;
         }
 
         const u32 version_micro = (version >> 40) & 0xff;
@@ -1248,7 +1248,13 @@ namespace dbk {
         const bool ams_supports_sysupdate_api = EncodeVersion(version_major, version_minor, version_micro) >= EncodeVersion(0, 14, 0);
         if (!ams_supports_sysupdate_api) {
             ChangeMenu(std::make_shared<ErrorMenu>("Outdated Atmosphere version", "Daybreak requires Atmosphere 0.14.0 or later.", rc));
-            return;
+            return false;
+        }
+
+        /* Ensure DayBreak is ran as a NRO. */
+        if (envIsNso()) {
+            ChangeMenu(std::make_shared<ErrorMenu>("DayBreak installs are not supported", "Please launch Daybreak via the Homebrew menu.", rc));
+            return false;
         }
 
         /* Attempt to get the supported version. */
@@ -1263,16 +1269,23 @@ namespace dbk {
 
         /* Change the current menu to the main menu. */
         g_current_menu = std::make_shared<MainMenu>();
+
+        return true;
     }
 
-    void InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path) {
-        InitializeMenu(screen_width, screen_height);
+    bool InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path) {
+        if (InitializeMenu(screen_width, screen_height)) {
 
-        /* Set the update path. */
-        snprintf(g_update_path, sizeof(g_update_path), "%s", update_path);
+            /* Set the update path. */
+            strncpy(g_update_path, update_path, sizeof(g_update_path));
 
-        /* Change the menu. */
-        ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
+            /* Change the menu. */
+            ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
+
+            return true;
+        }
+
+        return false;
     }
 
     void UpdateMenu(u64 ns) {
