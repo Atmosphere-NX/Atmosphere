@@ -1253,7 +1253,7 @@ namespace dbk {
 
         /* Ensure DayBreak is ran as a NRO. */
         if (envIsNso()) {
-            ChangeMenu(std::make_shared<ErrorMenu>("DayBreak installs are not supported", "Please launch Daybreak via the Homebrew menu.", rc));
+            ChangeMenu(std::make_shared<ErrorMenu>("Unsupported Environment", "Please launch Daybreak via the Homebrew menu.", rc));
             return false;
         }
 
