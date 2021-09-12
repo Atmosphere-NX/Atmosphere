@@ -110,6 +110,7 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000420
 	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008/exefs.nsp
 	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D/exefs.nsp
 	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000002B/exefs.nsp
@@ -119,6 +120,7 @@ dist-no-debug: all
 	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000037/exefs.nsp
 	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000003C/exefs.nsp
 	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
+	cp stratosphere/LogManager/LogManager.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000420/exefs.nsp
 	@build_romfs atmosphere-$(AMSVER)/stratosphere_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere.romfs
 	rm -r atmosphere-$(AMSVER)/stratosphere_romfs
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro

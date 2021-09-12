@@ -13,9 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 
-#include "util/util_uuid_api.hpp"
-#include "util/util_compression.hpp"
-#include "util/util_ini.hpp"
+#include <stratosphere/util/util_uuid_api.hpp>
+#include <stratosphere/util/util_compression.hpp>
+#include <stratosphere/util/util_ini.hpp>
+#include <stratosphere/util/util_singleton_traits.hpp>

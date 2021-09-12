@@ -19,6 +19,9 @@
 /* libvapours (pulls in util, svc, results). */
 #include <vapours.hpp>
 
+/* Libstratosphere diagnostics. */
+#include <stratosphere/diag.hpp>
+
 /* Libstratosphere definitions. */
 #include <stratosphere/ams/impl/ams_system_thread_definitions.hpp>
 
@@ -62,6 +65,7 @@
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/lr.hpp>
+#include <stratosphere/lm.hpp>
 #include <stratosphere/map.hpp>
 #include <stratosphere/ncm.hpp>
 #include <stratosphere/nim.hpp>

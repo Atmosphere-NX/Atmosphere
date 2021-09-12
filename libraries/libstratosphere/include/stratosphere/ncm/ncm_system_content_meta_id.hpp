@@ -116,12 +116,14 @@ namespace ams::ncm {
         }
 
         static const AtmosphereProgramId Mitm;
+        static const AtmosphereProgramId AtmosphereLogManager;
     };
 
     inline constexpr const AtmosphereProgramId AtmosphereProgramId::Mitm = { 0x010041544D530000ul };
+    inline constexpr const AtmosphereProgramId AtmosphereProgramId::AtmosphereLogManager = { 0x0100000000000420ul };
 
     inline constexpr bool IsAtmosphereProgramId(const ProgramId &program_id) {
-        return program_id == AtmosphereProgramId::Mitm;
+        return program_id == AtmosphereProgramId::Mitm || program_id == AtmosphereProgramId::AtmosphereLogManager;
     }
 
     inline constexpr bool IsSystemProgramId(const AtmosphereProgramId &program_id) {

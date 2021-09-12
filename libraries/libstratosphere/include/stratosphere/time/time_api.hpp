@@ -29,6 +29,8 @@ namespace ams::time {
 
     bool IsInitialized();
 
+    bool IsValidDate(int year, int month, int day);
+
     Result GetElapsedSecondsBetween(s64 *out, const SteadyClockTimePoint &from, const SteadyClockTimePoint &to);
 
 }

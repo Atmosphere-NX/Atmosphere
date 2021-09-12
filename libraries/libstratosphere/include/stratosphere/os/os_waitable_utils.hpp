@@ -88,6 +88,17 @@ namespace ams::os {
 
         using WaitAnyFunction = WaitableHolderType * (*)(WaitableManagerType *);
 
+        class NotBoolButInt {
+            private:
+                int m_value;
+            public:
+                constexpr ALWAYS_INLINE NotBoolButInt(int v) : m_value(v) { /* ... */ }
+
+                constexpr ALWAYS_INLINE operator int() const { return m_value; }
+
+                explicit operator bool() const = delete;
+        };
+
     }
 
     template<typename... Args> requires (sizeof...(Args) > 0)
@@ -98,6 +109,16 @@ namespace ams::os {
     template<typename... Args> requires (sizeof...(Args) > 0)
     inline int WaitAny(Args &&... args) {
         return impl::WaitAnyImpl(static_cast<impl::WaitAnyFunction>(&::ams::os::WaitAny), std::forward<Args>(args)...).second;
+    }
+
+    template<typename... Args> requires (sizeof...(Args) > 0)
+    inline std::pair<WaitableHolderType *, int> TryWaitAny(WaitableManagerType *manager, Args &&... args) {
+        return impl::WaitAnyImpl(static_cast<impl::WaitAnyFunction>(&::ams::os::TryWaitAny), manager, std::forward<Args>(args)...);
+    }
+
+    template<typename... Args> requires (sizeof...(Args) > 0)
+    inline impl::NotBoolButInt TryWaitAny(Args &&... args) {
+        return impl::WaitAnyImpl(static_cast<impl::WaitAnyFunction>(&::ams::os::TryWaitAny), std::forward<Args>(args)...).second;
     }
 
 }
