@@ -412,7 +412,7 @@ namespace ams::boot2 {
         if (IsAtmosphereLogManagerEnabled()) {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::AtmosphereProgramId::AtmosphereLogManager, ncm::StorageId::None), 0);
         } else {
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::LogManager, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::LogManager, ncm::StorageId::BuiltInSystem), 0);
         }
 
         /* Launch additional programs. */
