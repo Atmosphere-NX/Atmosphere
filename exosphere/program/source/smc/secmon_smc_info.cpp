@@ -50,7 +50,7 @@ namespace ams::secmon::smc {
             [fuse::DramId_IowaHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaSamsung6GB]    = pkg1::MemorySize_6GB,
             [fuse::DramId_HoagHynix1y4GB]     = pkg1::MemorySize_4GB,
-            [fuse::DramId_CopperMicron4GB]    = pkg1::MemorySize_4GB,
+            [fuse::DramId_AulaHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaX1X2Samsung4GB] = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSansung4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSamsung8GB]     = pkg1::MemorySize_8GB,
