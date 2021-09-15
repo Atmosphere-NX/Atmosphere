@@ -54,7 +54,7 @@ namespace ams::fuse {
         DramId_IowaHynix1y4GB     =  3,
         DramId_IcosaSamsung6GB    =  4,
         DramId_HoagHynix1y4GB     =  5,
-        DramId_CopperMicron4GB    =  6,
+        DramId_AulaHynix1y4GB     =  6,
         DramId_IowaX1X2Samsung4GB =  7,
         DramId_IowaSansung4GB     =  8,
         DramId_IowaSamsung8GB     =  9,
