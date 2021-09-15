@@ -270,6 +270,8 @@ namespace ams::nxboot {
                         target_firmware = ams::TargetFirmware_12_0_2;
                     } else if (std::memcmp(package1 + 0x10, "20210607", 8) == 0) {
                         target_firmware = ams::TargetFirmware_12_1_0;
+                    } else if (std::memcmp(package1 + 0x10, "20210805", 8) == 0) {
+                        target_firmware = ams::TargetFirmware_13_0_0;
                     } else {
                         ShowFatalError("Unable to identify package1!\n");
                     }
@@ -281,7 +283,9 @@ namespace ams::nxboot {
 
             #define CHECK_NCA(NCA_ID, VERSION) do { if (IsNcaExist(NCA_ID)) { return ams::TargetFirmware_##VERSION; } } while(0)
 
-            if (target_firmware >= ams::TargetFirmware_12_1_0) {
+            if (target_firmware >= ams::TargetFirmware_13_0_0) {
+                CHECK_NCA("bf2337ee88bd9f963a33b3ecbbc3732a", 13_0_0);
+            } else if (target_firmware >= ams::TargetFirmware_12_1_0) {
                 CHECK_NCA("9d9d83d68d9517f245f3e8cd7f93c416", 12_1_0);
             } else if (target_firmware >= ams::TargetFirmware_12_0_2) {
                 CHECK_NCA("a1863a5c0e1cedd442f5e60b0422dc15", 12_0_3);
