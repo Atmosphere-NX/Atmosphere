@@ -83,6 +83,8 @@ namespace ams::nxboot {
                         break;
                 switch (dram_id) {
                     HANDLE_DRAM_CASE( 3, 12)
+                    HANDLE_DRAM_CASE( 5, 12)
+                    HANDLE_DRAM_CASE( 6, 12)
                     HANDLE_DRAM_CASE( 7,  0)
                     HANDLE_DRAM_CASE( 8,  1)
                     HANDLE_DRAM_CASE( 9,  2)

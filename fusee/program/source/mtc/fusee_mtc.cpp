@@ -37,7 +37,7 @@ namespace ams::nxboot {
             /* DramId_MarikoIowaHynix1y4gb     */ 0x10,
             /* DramId_EristaIcosaSamsung6gb    */ 0x01,
             /* DramId_MarikoHoagHynix1y4gb     */ 0x10,
-            /* DramId_EristaCopperMicron4gb    */ MemoryTrainingTableIndex_Invalid,
+            /* DramId_MarikoAulaHynix1y4gb     */ 0x10,
             /* DramId_MarikoIowax1x2Samsung4gb */ 0x00,
             /* DramId_MarikoIowaSamsung4gb     */ 0x05,
             /* DramId_MarikoIowaSamsung8gb     */ 0x06,
