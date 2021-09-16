@@ -89,7 +89,7 @@ static void _sdmmc_ensure_initialized(void)
     }
 }
 
-static void _file_based_update_filename(char *outFilename, u32 sd_path_len, u32 part_idx)
+static void _file_based_update_filename(char *outFilename, unsigned int sd_path_len, unsigned int part_idx)
 {
     snprintf(outFilename + sd_path_len, 3, "%02d", part_idx);
 }
@@ -103,9 +103,7 @@ static void _file_based_emmc_finalize(void)
         f_close(&f_emu.fp_boot1);
 
         for (int i = 0; i < f_emu.parts; i++)
-        {
             f_close(&f_emu.fp_gpp[i]);
-        }
 
         // Force unmount FAT volume.
         f_mount(NULL, "", 1);
@@ -114,12 +112,59 @@ static void _file_based_emmc_finalize(void)
     }
 }
 
+static void _nand_patrol_ensure_integrity(void)
+{
+    fs_nand_patrol_t nand_patrol;
+    static bool nand_patrol_checked = false;
+
+    if (!nand_patrol_checked)
+    {
+        if (emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw)
+        {
+            unsigned int nand_patrol_sector = emuMMC_ctx.EMMC_StoragePartitionOffset + NAND_PATROL_SECTOR;
+            if (!sdmmc_storage_read(&sd_storage, nand_patrol_sector, 1, &nand_patrol))
+                goto out;
+
+            // Clear nand patrol if last offset exceeds storage.
+            if (nand_patrol.offset > sd_storage.sec_cnt)
+            {
+                memset(&nand_patrol, 0, sizeof(fs_nand_patrol_t));
+                sdmmc_storage_write(&sd_storage, nand_patrol_sector, 1, &nand_patrol);
+            }
+        }
+        else if (emuMMC_ctx.EMMC_Type == emuMMC_SD_File && fat_mounted)
+        {
+            FIL *fp = &f_emu.fp_boot0;
+            if (f_lseek(fp, NAND_PATROL_OFFSET) != FR_OK)
+                goto out;
+
+            if (f_read_fast(fp, &nand_patrol, sizeof(fs_nand_patrol_t)) != FR_OK)
+                goto out;
+
+            // Clear nand patrol if last offset exceeds total file based size.
+            if (nand_patrol.offset > f_emu.total_sect)
+            {
+                memset(&nand_patrol, 0, sizeof(fs_nand_patrol_t));
+
+                if (f_lseek(fp, NAND_PATROL_OFFSET) != FR_OK)
+                    goto out;
+
+                if (f_write_fast(fp, &nand_patrol, sizeof(fs_nand_patrol_t)) != FR_OK)
+                    goto out;
+
+                f_sync(fp);
+            }
+        }
+
+out:
+        nand_patrol_checked = true;
+    }
+}
+
 void sdmmc_finalize(void)
 {
     if (!sdmmc_storage_end(&sd_storage))
-    {
         fatal_abort(Fatal_InitSD);
-    }
 
     storageSDinitialized = false;
 }
@@ -137,14 +182,14 @@ static void _file_based_emmc_initialize(void)
     memcpy(path + path_len, "BOOT0", 6);
     if (f_open(&f_emu.fp_boot0, path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_FatfsFileOpen);
-    if (!f_expand_cltbl(&f_emu.fp_boot0, 0x400, f_emu.clmt_boot0, f_size(&f_emu.fp_boot0)))
+    if (!f_expand_cltbl(&f_emu.fp_boot0, EMUMMC_FP_CLMT_COUNT, f_emu.clmt_boot0, f_size(&f_emu.fp_boot0)))
         fatal_abort(Fatal_FatfsMemExhaustion);
 
     // Open BOOT1 physical partition.
     memcpy(path + path_len, "BOOT1", 6);
     if (f_open(&f_emu.fp_boot1, path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_FatfsFileOpen);
-    if (!f_expand_cltbl(&f_emu.fp_boot1, 0x400, f_emu.clmt_boot1, f_size(&f_emu.fp_boot1)))
+    if (!f_expand_cltbl(&f_emu.fp_boot1, EMUMMC_FP_CLMT_COUNT, f_emu.clmt_boot1, f_size(&f_emu.fp_boot1)))
         fatal_abort(Fatal_FatfsMemExhaustion);
 
     // Open handles for GPP physical partition files.
@@ -152,15 +197,14 @@ static void _file_based_emmc_initialize(void)
 
     if (f_open(&f_emu.fp_gpp[0], path, FA_READ | FA_WRITE) != FR_OK)
         fatal_abort(Fatal_FatfsFileOpen);
-    if (!f_expand_cltbl(&f_emu.fp_gpp[0], 0x400, &f_emu.clmt_gpp[0], f_size(&f_emu.fp_gpp[0])))
+    if (!f_expand_cltbl(&f_emu.fp_gpp[0], EMUMMC_FP_CLMT_COUNT, &f_emu.clmt_gpp[0], f_size(&f_emu.fp_gpp[0])))
         fatal_abort(Fatal_FatfsMemExhaustion);
 
-    f_emu.part_size = f_size(&f_emu.fp_gpp[0]) >> 9;
+    f_emu.part_size = (uint64_t)f_size(&f_emu.fp_gpp[0]) >> 9;
+    f_emu.total_sect = f_emu.part_size;
 
     // Iterate folder for split parts and stop if next doesn't exist.
-    // Supports up to 32 parts of any size.
-    // TODO: decide on max parts and define them. (hekate produces up to 30 parts on 1GB mode.)
-    for (f_emu.parts = 1; f_emu.parts < 32; f_emu.parts++)
+    for (f_emu.parts = 1; f_emu.parts < EMUMMC_FILE_MAX_PARTS; f_emu.parts++)
     {
         _file_based_update_filename(path, path_len, f_emu.parts);
 
@@ -173,8 +217,13 @@ static void _file_based_emmc_initialize(void)
             return;
         }
 
-        if (!f_expand_cltbl(&f_emu.fp_gpp[f_emu.parts], 0x400, &f_emu.clmt_gpp[f_emu.parts * 0x400], f_size(&f_emu.fp_gpp[f_emu.parts])))
+        if (!f_expand_cltbl(&f_emu.fp_gpp[f_emu.parts], EMUMMC_FP_CLMT_COUNT,
+            &f_emu.clmt_gpp[f_emu.parts * EMUMMC_FP_CLMT_COUNT], f_size(&f_emu.fp_gpp[f_emu.parts])))
+        {
             fatal_abort(Fatal_FatfsMemExhaustion);
+        }
+
+        f_emu.total_sect += (uint64_t)f_size(&f_emu.fp_gpp[f_emu.parts]) >> 9;
     }
 }
 
@@ -189,7 +238,7 @@ bool sdmmc_initialize(void)
             {
                 storageSDinitialized = true;
 
-                // File based emummc.
+                // Init file based emummc.
                 if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_File) && !fat_mounted)
                 {
                     if (f_mount(&f_emu.sd_fs, "", 1) != FR_OK)
@@ -200,6 +249,9 @@ bool sdmmc_initialize(void)
                     _file_based_emmc_initialize();
                 }
 
+                // Check if nand patrol offset is inside limits.
+                _nand_patrol_ensure_integrity();
+
                 break;
             }
 
@@ -207,9 +259,7 @@ bool sdmmc_initialize(void)
         }
 
         if (!storageSDinitialized)
-        {
             fatal_abort(Fatal_InitSD);
-        }
     }
 
     return storageSDinitialized;
@@ -239,19 +289,17 @@ sdmmc_accessor_t *sdmmc_accessor_get(int mmc_id)
 void mutex_lock_handler(int mmc_id)
 {
     if (custom_driver)
-    {
         lock_mutex(sd_mutex);
-    }
+
     lock_mutex(nand_mutex);
 }
 
 void mutex_unlock_handler(int mmc_id)
 {
     unlock_mutex(nand_mutex);
+
     if (custom_driver)
-    {
         unlock_mutex(sd_mutex);
-    }
 }
 
 int sdmmc_nand_get_active_partition_index()
@@ -271,12 +319,16 @@ int sdmmc_nand_get_active_partition_index()
 
 static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned int num_sectors, bool is_write)
 {
-    if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw))
+    if (emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw)
     {
         // raw partition sector offset: emuMMC_ctx.EMMC_StoragePartitionOffset.
         sector += emuMMC_ctx.EMMC_StoragePartitionOffset;
         // Set physical partition offset.
         sector += (sdmmc_nand_get_active_partition_index() * BOOT_PARTITION_SIZE);
+
+        if (__builtin_expect(sector + num_sectors > sd_storage.sec_cnt, 0))
+            return 0; // Out of bounds. Can only happen with Nand Patrol if resized.
+
         if (!is_write)
             return sdmmc_storage_read(&sd_storage, sector, num_sectors, buf);
         else
@@ -290,6 +342,9 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
     case FS_EMMC_PARTITION_GPP:
         if (f_emu.parts)
         {
+            if (__builtin_expect(sector + num_sectors > f_emu.total_sect, 0))
+                return 0; // Out of bounds. Can only happen with Nand Patrol if resized.
+
             fp = &f_emu.fp_gpp[sector / f_emu.part_size];
             sector = sector % f_emu.part_size;
 
@@ -300,21 +355,21 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
                 while (remaining > 0) {
                     const unsigned int cur_sectors = MIN(remaining, f_emu.part_size - sector);
 
-                    if (f_lseek(fp, (u64)sector << 9) != FR_OK)
+                    if (f_lseek(fp, (uint64_t)sector << 9) != FR_OK)
                         return 0; // Out of bounds.
 
-                    if (is_write)
+                    if (!is_write)
                     {
-                        if (f_write_fast(fp, buf, (u64)cur_sectors << 9) != FR_OK)
+                        if (f_read_fast(fp, buf, (uint64_t)cur_sectors << 9) != FR_OK)
                             return 0;
                     }
                     else
                     {
-                        if (f_read_fast(fp, buf, (u64)cur_sectors << 9) != FR_OK)
+                        if (f_write_fast(fp, buf, (uint64_t)cur_sectors << 9) != FR_OK)
                             return 0;
                     }
 
-                    buf = (char *)buf + ((u64)cur_sectors << 9);
+                    buf = (char *)buf + ((uint64_t)cur_sectors << 9);
                     remaining -= cur_sectors;
                     sector = 0;
                     ++fp;
@@ -324,28 +379,25 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
             }
         }
         else
-        {
             fp = &f_emu.fp_gpp[0];
-        }
         break;
+
     case FS_EMMC_PARTITION_BOOT1:
         fp = &f_emu.fp_boot1;
         break;
+
     case FS_EMMC_PARTITION_BOOT0:
         fp = &f_emu.fp_boot0;
         break;
     }
 
-    if (f_lseek(fp, (u64)sector << 9) != FR_OK)
-        return 0; // Out of bounds.
+    if (f_lseek(fp, (uint64_t)sector << 9) != FR_OK)
+        return 0; // Out of bounds. Can only happen with Nand Patrol if resized.
 
-    uint64_t res = 0;
     if (!is_write)
-        res = !f_read_fast(fp, buf, (u64)num_sectors << 9);
+        return !f_read_fast(fp, buf, (uint64_t)num_sectors << 9);
     else
-        res = !f_write_fast(fp, buf, (u64)num_sectors << 9);
-
-    return res;
+        return !f_write_fast(fp, buf, (uint64_t)num_sectors << 9);
 }
 
 // Controller open wrapper
@@ -382,9 +434,7 @@ uint64_t sdmmc_wrapper_controller_close(int mmc_id)
     if (_this != NULL)
     {
         if (mmc_id == FS_SDMMC_SD)
-        {
             return 0;
-        }
 
         if (mmc_id == FS_SDMMC_EMMC)
         {
@@ -503,8 +553,6 @@ uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_s
         {
             mutex_lock_handler(mmc_id);
             _current_accessor = _this;
-
-            sector += 0;
 
             // Call hekates driver.
             if (sdmmc_storage_write(&sd_storage, sector, num_sectors, buf))
