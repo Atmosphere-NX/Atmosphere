@@ -86,6 +86,9 @@ namespace ams::sprofile::srv {
         /* Create the profile manager. */
         util::ConstructAt(g_profile_manager, SaveDataInfo);
 
+        /* Process profile manager savedata. */
+        util::GetReference(g_profile_manager).InitializeSaveData();
+
         /* Create the service objects. */
         util::ConstructAt(g_bg_service_object, std::addressof(g_sf_memory_resource), util::GetPointer(g_profile_manager));
         util::ConstructAt(g_sp_service_object, std::addressof(g_sf_memory_resource), util::GetPointer(g_profile_manager));
