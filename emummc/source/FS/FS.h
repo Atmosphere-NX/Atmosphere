@@ -37,4 +37,15 @@
 #define BOOT_PARTITION_SIZE 0x2000
 #define FS_READ_WRITE_ERROR 1048
 
+#define NAND_PATROL_SECTOR 0xC20
+#define NAND_PATROL_OFFSET 0x184000
+
+typedef struct _fs_nand_patrol_t
+{
+	uint8_t hmac[0x20];
+	unsigned int offset;
+	unsigned int count;
+	uint8_t rsvd[0x1D8];
+} fs_nand_patrol_t;
+
 #endif /* __FS_H__ */
