@@ -17,6 +17,7 @@
 #include <stratosphere.hpp>
 #include "sprofile_srv_types.hpp"
 #include "sprofile_srv_profile_update_observer_impl.hpp"
+#include "sprofile_srv_profile_importer.hpp"
 
 namespace ams::sprofile::srv {
 
@@ -35,11 +36,11 @@ namespace ams::sprofile::srv {
             os::SdkMutex m_fs_mutex{};
             SaveDataInfo m_save_data_info;
             bool m_save_file_mounted;
-            /* TODO: util::optional<ProfileImporter> m_profile_importer; */
+            util::optional<ProfileImporter> m_profile_importer;
             os::SdkMutex m_profile_importer_mutex{};
             util::optional<ProfileMetadata> m_profile_metadata;
             os::SdkMutex m_profile_metadata_mutex{};
-            /* TODO: util::optional<ServiceProfile> m_service_profile; */
+            util::optional<ServiceProfile> m_service_profile;
             os::SdkMutex m_service_profile_mutex{};
             ProfileUpdateObserverManager m_update_observer_manager;
         public:
@@ -48,11 +49,33 @@ namespace ams::sprofile::srv {
             void InitializeSaveData();
             Result ResetSaveData();
 
+            Result OpenProfileImporter();
+            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &data);
+            Result Commit();
+            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data);
+
             Result LoadPrimaryMetadata(ProfileMetadata *out);
+
+            Result GetSigned64(s64 *out, Identifier profile, Identifier key);
+            Result GetUnsigned64(u64 *out, Identifier profile, Identifier key);
+            Result GetSigned32(s32 *out, Identifier profile, Identifier key);
+            Result GetUnsigned32(u32 *out, Identifier profile, Identifier key);
+            Result GetByte(u8 *out, Identifier profile, Identifier key);
+
+            Result GetRaw(u8 *out_type, u64 *out_value, Identifier profile, Identifier key);
 
             ProfileUpdateObserverManager &GetUpdateObserverManager() { return m_update_observer_manager; }
         private:
-            /* TODO */
+            Result CommitImpl();
+
+            void OnCommitted();
+
+            Result GetDataEntry(ProfileDataEntry *out, Identifier profile, Identifier key);
+
+            Result LoadProfile(Identifier profile);
+
+            Result EnsurePrimaryDirectories();
+            Result EnsureTemporaryDirectories();
     };
 
 }

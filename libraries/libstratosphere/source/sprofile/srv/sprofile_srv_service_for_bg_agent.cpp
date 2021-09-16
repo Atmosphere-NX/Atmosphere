@@ -16,12 +16,22 @@
 #include <stratosphere.hpp>
 #include "sprofile_srv_profile_manager.hpp"
 #include "sprofile_srv_service_for_bg_agent.hpp"
+#include "sprofile_srv_profile_importer_impl.hpp"
 #include "sprofile_srv_fs_utils.hpp"
 
 namespace ams::sprofile::srv {
 
     Result ServiceForBgAgent::OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out) {
-        AMS_ABORT("TODO: OpenProfileImporter");
+        /* Allocate an object. */
+        auto obj = sf::ObjectFactory<sf::MemoryResourceAllocationPolicy>::CreateSharedEmplaced<IProfileImporter, ProfileImporterImpl>(m_memory_resource, m_profile_manager);
+        R_UNLESS(obj != nullptr, sprofile::ResultAllocationFailed());
+
+        /* Confirm that we can begin an import. */
+        R_TRY(m_profile_manager->OpenProfileImporter());
+
+        /* Return the object. */
+        *out = std::move(obj);
+        return ResultSuccess();
     }
 
     Result ServiceForBgAgent::ReadMetadata(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ReadMetadataEntry> &out, const sprofile::srv::ReadMetadataArgument &arg) {

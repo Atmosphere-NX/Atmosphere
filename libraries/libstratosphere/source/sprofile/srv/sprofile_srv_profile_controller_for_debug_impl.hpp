@@ -15,13 +15,21 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "sprofile_srv_i_profile_controller_for_debug.hpp"
 
 namespace ams::sprofile::srv {
 
-    Result ReadFile(const char *path, void *dst, size_t size, s64 offset);
-    Result WriteFile(const char *path, const void *src, size_t size);
-    Result MoveFile(const char *src_path, const char *dst_path);
+    class ProfileManager;
 
-    Result EnsureDirectory(const char *path);
+    class ProfileControllerForDebugImpl {
+        private:
+            ProfileManager *m_manager;
+        public:
+            ProfileControllerForDebugImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
+        public:
+            Result Reset();
+            Result GetRaw(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key);
+    };
+    static_assert(IsIProfileControllerForDebug<ProfileControllerForDebugImpl>);
 
 }

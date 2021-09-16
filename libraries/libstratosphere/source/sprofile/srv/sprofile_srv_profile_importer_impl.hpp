@@ -15,13 +15,22 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "sprofile_srv_i_profile_importer.hpp"
 
 namespace ams::sprofile::srv {
 
-    Result ReadFile(const char *path, void *dst, size_t size, s64 offset);
-    Result WriteFile(const char *path, const void *src, size_t size);
-    Result MoveFile(const char *src_path, const char *dst_path);
+    class ProfileManager;
 
-    Result EnsureDirectory(const char *path);
+    class ProfileImporterImpl {
+        private:
+            ProfileManager *m_manager;
+        public:
+            ProfileImporterImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
+        public:
+            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &data);
+            Result Commit();
+            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data);
+    };
+    static_assert(IsIProfileImporter<ProfileImporterImpl>);
 
 }

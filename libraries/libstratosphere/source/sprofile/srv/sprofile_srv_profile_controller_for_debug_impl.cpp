@@ -13,15 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
+#include "sprofile_srv_profile_manager.hpp"
+#include "sprofile_srv_profile_controller_for_debug_impl.hpp"
 
 namespace ams::sprofile::srv {
 
-    Result ReadFile(const char *path, void *dst, size_t size, s64 offset);
-    Result WriteFile(const char *path, const void *src, size_t size);
-    Result MoveFile(const char *src_path, const char *dst_path);
+    Result ProfileControllerForDebugImpl::Reset() {
+        return m_manager->ResetSaveData();
+    }
 
-    Result EnsureDirectory(const char *path);
+    Result ProfileControllerForDebugImpl::GetRaw(sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key) {
+        return m_manager->GetRaw(out_type.GetPointer(), out_value.GetPointer(), profile, key);
+    }
 
 }

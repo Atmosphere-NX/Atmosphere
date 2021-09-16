@@ -13,15 +13,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
+#include "sprofile_srv_profile_manager.hpp"
+#include "sprofile_srv_profile_importer_impl.hpp"
 
 namespace ams::sprofile::srv {
 
-    Result ReadFile(const char *path, void *dst, size_t size, s64 offset);
-    Result WriteFile(const char *path, const void *src, size_t size);
-    Result MoveFile(const char *src_path, const char *dst_path);
+    Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfileDataForImportData &data) {
+        return m_manager->ImportProfile(data);
+    }
 
-    Result EnsureDirectory(const char *path);
+    Result ProfileImporterImpl::Commit() {
+        return m_manager->Commit();
+    }
+
+    Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data) {
+        return m_manager->ImportMetadata(data);
+    }
 
 }
