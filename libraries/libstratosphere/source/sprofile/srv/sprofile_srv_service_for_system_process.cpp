@@ -16,12 +16,19 @@
 #include <stratosphere.hpp>
 #include "sprofile_srv_profile_manager.hpp"
 #include "sprofile_srv_service_for_system_process.hpp"
+#include "sprofile_srv_profile_reader_impl.hpp"
+#include "sprofile_srv_profile_controller_for_debug_impl.hpp"
 
 namespace ams::sprofile::srv {
 
     Result ServiceForSystemProcess::OpenProfileReader(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileReader>> out) {
-        /* TODO */
-        AMS_ABORT("TODO: OpenProfileReader");
+        /* Allocate an object. */
+        auto obj = sf::ObjectFactory<sf::MemoryResourceAllocationPolicy>::CreateSharedEmplaced<IProfileReader, ProfileReaderImpl>(m_memory_resource, m_profile_manager);
+        R_UNLESS(obj != nullptr, sprofile::ResultAllocationFailed());
+
+        /* Return the object. */
+        *out = std::move(obj);
+        return ResultSuccess();
     }
 
     Result ServiceForSystemProcess::OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> out) {
@@ -29,8 +36,16 @@ namespace ams::sprofile::srv {
     }
 
     Result ServiceForSystemProcess::OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileControllerForDebug>> out) {
-        /* TODO */
-        AMS_ABORT("TODO: OpenProfileControllerForDebug");
+        /* Require debug mode in order to open a debug controller. */
+        R_UNLESS(settings::fwdbg::IsDebugModeEnabled(), sprofile::ResultNotPermitted());
+
+        /* Allocate an object. */
+        auto obj = sf::ObjectFactory<sf::MemoryResourceAllocationPolicy>::CreateSharedEmplaced<IProfileControllerForDebug, ProfileControllerForDebugImpl>(m_memory_resource, m_profile_manager);
+        R_UNLESS(obj != nullptr, sprofile::ResultAllocationFailed());
+
+        /* Return the object. */
+        *out = std::move(obj);
+        return ResultSuccess();
     }
 
 }

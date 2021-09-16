@@ -78,6 +78,13 @@ namespace ams::sprofile::srv {
     static_assert(util::is_pod<ProfileData>::value);
     static_assert(sizeof(ProfileData) == 0x4000);
 
+    struct ServiceProfile {
+        Identifier name;
+        ProfileData data;
+    };
+    static_assert(util::is_pod<ServiceProfile>::value);
+    static_assert(sizeof(ServiceProfile) == 0x4008);
+
     struct ProfileDataForImportData : public sf::LargeData, public sf::PrefersMapAliasTransferMode {
         Identifier identifier_0;
         Identifier identifier_1;

@@ -76,7 +76,7 @@ namespace ams::util {
         constexpr int PopCount(const Storage arr[]) {
             int count = 0;
             for (size_t i = 0; i < Count; i++) {
-                count += PopCount(arr[i]);
+                count += ::ams::util::PopCount(arr[i]);
             }
             return count;
         }

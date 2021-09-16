@@ -24,7 +24,12 @@ namespace ams::sprofile {
     R_DEFINE_ERROR_RESULT(InvalidArgument,  100);
     R_DEFINE_ERROR_RESULT(InvalidState,     101);
 
+    R_DEFINE_ERROR_RESULT(NotPermitted,     303);
+
     R_DEFINE_ERROR_RESULT(AllocationFailed, 401);
+
+    R_DEFINE_ERROR_RESULT(KeyNotFound,      600);
+    R_DEFINE_ERROR_RESULT(InvalidDataType,  601);
 
     R_DEFINE_ERROR_RESULT(MaxListeners,     620);
     R_DEFINE_ERROR_RESULT(AlreadyListening, 621);
@@ -32,5 +37,6 @@ namespace ams::sprofile {
     R_DEFINE_ERROR_RESULT(MaxObservers,     623);
 
     R_DEFINE_ERROR_RESULT(InvalidMetadataVersion, 3210);
+    R_DEFINE_ERROR_RESULT(InvalidDataVersion,     3230);
 
 }

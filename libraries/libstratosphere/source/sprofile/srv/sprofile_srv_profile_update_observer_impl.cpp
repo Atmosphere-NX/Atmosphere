@@ -22,51 +22,11 @@ namespace ams::sprofile::srv {
     namespace {
 
         class AutoUnregisterObserver : public ProfileUpdateObserverImpl {
-            public:
-                static constexpr auto MaxProfiles = 4;
             private:
-                Identifier m_profiles[MaxProfiles];
-                int m_profile_count;
-                os::SdkMutex m_mutex;
                 ProfileUpdateObserverManager *m_manager;
             public:
-                AutoUnregisterObserver(ProfileUpdateObserverManager *manager) : m_profile_count(0), m_mutex(), m_manager(manager) { /* ... */ }
+                AutoUnregisterObserver(ProfileUpdateObserverManager *manager) : m_manager(manager) { /* ... */ }
                 virtual ~AutoUnregisterObserver() { m_manager->CloseObserver(this); }
-            public:
-                Result Listen(Identifier profile) {
-                    /* Lock ourselves. */
-                    std::scoped_lock lk(m_mutex);
-
-                    /* Check if we can listen. */
-                    R_UNLESS(m_profile_count < MaxProfiles, sprofile::ResultMaxListeners());
-
-                    /* Check if we're already listening. */
-                    for (auto i = 0; i < m_profile_count; ++i) {
-                        R_UNLESS(m_profiles[i] != profile, sprofile::ResultAlreadyListening());
-                    }
-
-                    /* Add the profile. */
-                    m_profiles[m_profile_count++] = profile;
-                    return ResultSuccess();
-                }
-
-                Result Unlisten(Identifier profile) {
-                    /* Check that we're listening. */
-                    for (auto i = 0; i < m_profile_count; ++i) {
-                        if (m_profiles[i] == profile) {
-                            m_profiles[i] = m_profiles[--m_profile_count];
-                            AMS_ABORT_UNLESS(m_profile_count >= 0);
-                            return ResultSuccess();
-                        }
-                    }
-
-                    return sprofile::ResultNotListening();
-                }
-
-                Result GetEventHandle(sf::OutCopyHandle out) {
-                    out.SetValue(this->GetEvent().GetReadableHandle());
-                    return ResultSuccess();
-                }
         };
         static_assert(sprofile::IsIProfileUpdateObserver<AutoUnregisterObserver>);
 

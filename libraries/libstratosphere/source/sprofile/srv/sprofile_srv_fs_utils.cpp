@@ -54,4 +54,31 @@ namespace ams::sprofile::srv {
         return fs::WriteFile(file, 0, src, size, fs::WriteOption::Flush);
     }
 
+    Result MoveFile(const char *src_path, const char *dst_path) {
+        /* Require that the source path is a file. */
+        {
+            fs::DirectoryEntryType type;
+            R_ABORT_UNLESS(fs::GetEntryType(std::addressof(type), src_path));
+            AMS_ABORT_UNLESS(type == fs::DirectoryEntryType_File);
+        }
+
+        /* Delete the destination file. */
+        R_TRY_CATCH(fs::DeleteFile(dst_path)) {
+            R_CATCH(fs::ResultPathNotFound) { /* It's okay if the dst path doesn't exist. */ }
+        } R_END_TRY_CATCH;
+
+        /* Move the source file to the destination file. */
+        R_TRY(fs::RenameFile(src_path, dst_path));
+
+        return ResultSuccess();
+    }
+
+    Result EnsureDirectory(const char *path) {
+        R_TRY_CATCH(fs::CreateDirectory(path)) {
+            R_CATCH(fs::ResultPathAlreadyExists) { /* It's okay if the directory already exists. */ }
+        } R_END_TRY_CATCH;
+
+        return ResultSuccess();
+    }
+
 }
