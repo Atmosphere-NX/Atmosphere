@@ -897,4 +897,12 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result ContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
+        return ncm::ResultInvalidOperation();
+    }
+
+    Result ContentStorageImpl::ClearRegisteredPath() {
+        return ncm::ResultInvalidOperation();
+    }
+
 }
