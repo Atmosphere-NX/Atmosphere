@@ -75,6 +75,8 @@ namespace ams::ncm {
             virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) = 0;
             virtual Result RepairInvalidFileAttribute() = 0;
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
+            virtual Result RegisterPath(const ContentId &content_id, const Path &path) = 0;
+            virtual Result ClearRegisteredPath() = 0;
     };
     static_assert(ncm::IsIContentStorage<ContentStorageImplBase>);
 

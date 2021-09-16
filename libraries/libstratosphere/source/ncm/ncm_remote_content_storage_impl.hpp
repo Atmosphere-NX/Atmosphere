@@ -189,6 +189,14 @@ namespace ams::ncm {
                 ::NcmRightsId *out = reinterpret_cast<::NcmRightsId *>(out_rights_id.GetPointer());
                 return ncmContentStorageGetRightsIdFromPlaceHolderIdWithCache(std::addressof(this->srv), out, Convert(placeholder_id), Convert(cache_content_id));
             }
+
+            Result RegisterPath(const ContentId &content_id, const Path &path) {
+                AMS_ABORT("TODO");
+            }
+
+            Result ClearRegisteredPath() {
+                AMS_ABORT("TODO");
+            }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
 
