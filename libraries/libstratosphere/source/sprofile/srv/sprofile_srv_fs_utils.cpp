@@ -18,6 +18,24 @@
 
 namespace ams::sprofile::srv {
 
+    Result ReadFile(const char *path, void *dst, size_t size, s64 offset) {
+        /* Open the file. */
+        fs::FileHandle file;
+        R_TRY_CATCH(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read)) {
+            R_CATCH_RETHROW(fs::ResultPathNotFound) /* It's okay if the file doesn't exist. */
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+        /* Read the file. */
+        size_t read_size;
+        R_TRY(fs::ReadFile(std::addressof(read_size), file, offset, dst, size));
+
+        /* Check the size was correct. */
+        AMS_ABORT_UNLESS(size == read_size);
+
+        return ResultSuccess();
+    }
+
     Result WriteFile(const char *path, const void *src, size_t size) {
         /* Create the file. */
         R_TRY_CATCH(fs::CreateFile(path, size)) {

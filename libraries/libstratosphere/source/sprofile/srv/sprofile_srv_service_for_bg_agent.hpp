@@ -29,7 +29,7 @@ namespace ams::sprofile::srv {
             constexpr ServiceForBgAgent(MemoryResource *mr, ProfileManager *pm) : m_memory_resource(mr), m_profile_manager(pm) { /* ... */ }
         public:
             Result OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out);
-            Result ReadMetadata(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, const sf::InBuffer &meta);
+            Result ReadMetadata(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ReadMetadataEntry> &out, const sprofile::srv::ReadMetadataArgument &arg);
             Result IsUpdateNeeded(sf::Out<bool> out, Identifier revision_key);
             Result Reset();
     };
