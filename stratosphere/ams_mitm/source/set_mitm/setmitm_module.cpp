@@ -33,7 +33,7 @@ namespace ams::mitm::settings {
         constexpr sm::ServiceName SetSysMitmServiceName = sm::ServiceName::Encode("set:sys");
 
         struct ServerOptions {
-            static constexpr size_t PointerBufferSize = 0x100;
+            static constexpr size_t PointerBufferSize = 0x200;
             static constexpr size_t MaxDomains = 0;
             static constexpr size_t MaxDomainObjects = 0;
         };
