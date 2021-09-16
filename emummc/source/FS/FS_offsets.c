@@ -55,6 +55,8 @@
 #include "offsets/1200_exfat.h"
 #include "offsets/1203.h"
 #include "offsets/1203_exfat.h"
+#include "offsets/1300.h"
+#include "offsets/1300_exfat.h"
 #include "../utils/fatal.h"
 
 #define GET_OFFSET_STRUCT_NAME(vers) g_offsets##vers
@@ -121,6 +123,8 @@ DEFINE_OFFSET_STRUCT(_1200);
 DEFINE_OFFSET_STRUCT(_1200_EXFAT);
 DEFINE_OFFSET_STRUCT(_1203);
 DEFINE_OFFSET_STRUCT(_1203_EXFAT);
+DEFINE_OFFSET_STRUCT(_1300);
+DEFINE_OFFSET_STRUCT(_1300_EXFAT);
 
 const fs_offsets_t *get_fs_offsets(enum FS_VER version) {
     switch (version) {
@@ -202,6 +206,10 @@ const fs_offsets_t *get_fs_offsets(enum FS_VER version) {
             return &(GET_OFFSET_STRUCT_NAME(_1203));
         case FS_VER_12_0_3_EXFAT:
             return &(GET_OFFSET_STRUCT_NAME(_1203_EXFAT));
+        case FS_VER_13_0_0:
+            return &(GET_OFFSET_STRUCT_NAME(_1300));
+        case FS_VER_13_0_0_EXFAT:
+            return &(GET_OFFSET_STRUCT_NAME(_1300_EXFAT));
         default:
             fatal_abort(Fatal_UnknownVersion);
     }
