@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "sprofile_srv_profile_update_observer_impl.hpp"
 
 namespace ams::sprofile::srv {
 
@@ -28,19 +29,21 @@ namespace ams::sprofile::srv {
                 u32 flags;
             };
         private:
-            class UpdateObserverManager;
         private:
             os::SdkMutex m_general_mutex;
             os::SdkMutex m_fs_mutex;
             SaveDataInfo m_save_data_info;
+            bool m_save_file_mounted;
             /* TODO: util::optional<ProfileImporter> m_profile_importer; */
             /* TODO: util::optional<ProfileMetadata> m_profile_metadata; */
             /* TODO: util::optional<ServiceProfile> m_service_profile; */
-            UpdateObserverManager *m_update_observer_manager;
+            ProfileUpdateObserverManager m_update_observer_manager;
         public:
             ProfileManager(const SaveDataInfo &save_data_info);
         public:
-            /* TODO */
+            void InitializeSaveData();
+
+            ProfileUpdateObserverManager &GetUpdateObserverManager() { return m_update_observer_manager; }
         private:
             /* TODO */
     };
