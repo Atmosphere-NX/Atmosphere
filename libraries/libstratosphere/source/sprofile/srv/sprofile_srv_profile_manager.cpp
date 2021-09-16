@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "sprofile_srv_profile_manager.hpp"
+#include "sprofile_srv_fs_utils.hpp"
 
 namespace ams::sprofile::srv {
 
@@ -30,8 +31,8 @@ namespace ams::sprofile::srv {
     }
 
     ProfileManager::ProfileManager(const SaveDataInfo &save_data_info)
-        : m_general_mutex(), m_fs_mutex(), m_save_data_info(save_data_info), m_save_file_mounted(false),
-          m_update_observer_manager()
+        : m_save_data_info(save_data_info), m_save_file_mounted(false),
+          m_profile_metadata(util::nullopt), m_update_observer_manager()
     {
         /* ... */
     }
@@ -48,6 +49,59 @@ namespace ams::sprofile::srv {
             /* TODO: Remove this after implementation, as it's for debugging. */
             R_ABORT_UNLESS(fs::MountSdCard("sprof-dbg"));
         }
+    }
+
+    Result ProfileManager::ResetSaveData() {
+        /* Acquire locks. */
+        std::scoped_lock lk1(m_service_profile_mutex);
+        std::scoped_lock lk2(m_profile_metadata_mutex);
+        std::scoped_lock lk3(m_general_mutex);
+        std::scoped_lock lk4(m_fs_mutex);
+
+        /* Unmount save file. */
+        fs::Unmount(m_save_data_info.mount_name);
+        m_save_file_mounted = false;
+
+        /* Delete save file. */
+        R_TRY(fs::DeleteSystemSaveData(fs::SaveDataSpaceId::System, m_save_data_info.id, fs::InvalidUserId));
+
+        /* Unload profile. */
+        m_profile_metadata = util::nullopt;
+        /* TODO m_service_profile = util::nullopt; */
+
+        /* Create the save data. */
+        R_TRY(CreateSaveData(m_save_data_info));
+
+        /* Try to mount the save file. */
+        const auto result = fs::MountSystemSaveData(m_save_data_info.mount_name, m_save_data_info.id);
+        m_save_file_mounted = R_SUCCEEDED(result);
+
+        return result;
+    }
+
+    Result ProfileManager::LoadPrimaryMetadata(ProfileMetadata *out) {
+        /* Acquire locks. */
+        std::scoped_lock lk1(m_profile_metadata_mutex);
+        std::scoped_lock lk2(m_general_mutex);
+
+        /* If we don't have metadata, load it. */
+        if (!m_profile_metadata.has_value()) {
+            /* Emplace our metadata. */
+            m_profile_metadata.emplace();
+            auto meta_guard = SCOPE_GUARD { m_profile_metadata = util::nullopt; };
+
+            /* Read profile metadata. */
+            char path[0x30];
+            AMS_ABORT_UNLESS(util::TSNPrintf(path, sizeof(path), "%s:/%s/metadata", m_save_data_info.mount_name, "primary") < static_cast<int>(sizeof(path)));
+            R_TRY(ReadFile(path, std::addressof(*m_profile_metadata), sizeof(*m_profile_metadata), 0));
+
+            /* We read the metadata successfully. */
+            meta_guard.Cancel();
+        }
+
+        /* Set the output. */
+        *out = *m_profile_metadata;
+        return ResultSuccess();
     }
 
 }

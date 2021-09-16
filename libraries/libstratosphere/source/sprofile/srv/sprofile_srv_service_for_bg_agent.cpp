@@ -24,17 +24,58 @@ namespace ams::sprofile::srv {
         AMS_ABORT("TODO: OpenProfileImporter");
     }
 
-    Result ServiceForBgAgent::ReadMetadata(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, const sf::InBuffer &meta) {
-        WriteFile("sprof-dbg:/sprof/meta.bin", meta.GetPointer(), meta.GetSize());
-        AMS_ABORT("TODO: ReadMetadata");
+    Result ServiceForBgAgent::ReadMetadata(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ReadMetadataEntry> &out, const sprofile::srv::ReadMetadataArgument &arg) {
+        /* Check size. */
+        R_UNLESS(out.GetSize() >= arg.metadata.num_entries, sprofile::ResultInvalidArgument());
+
+        /* Load primary metadata. */
+        sprofile::srv::ProfileMetadata primary_metadata;
+        R_TRY_CATCH(m_profile_manager->LoadPrimaryMetadata(std::addressof(primary_metadata))) {
+            R_CATCH(fs::ResultPathNotFound) {
+                /* If we have no metadata, we can't get any entries. */
+                *out_count = 0;
+                return ResultSuccess();
+            }
+        } R_END_TRY_CATCH;
+
+        /* Copy matching entries. */
+        u32 count = 0;
+        for (u32 i = 0; i < arg.metadata.num_entries; ++i) {
+            const auto &arg_entry = arg.metadata.entries[i];
+
+            for (u32 j = 0; j < primary_metadata.num_entries; ++j) {
+                const auto &pri_entry = primary_metadata.entries[j];
+
+                if (pri_entry.identifier_0 == arg_entry.identifier_0 && pri_entry.identifier_1 == arg_entry.identifier_1) {
+                    out[count++] = arg.entries[i];
+                    break;
+                }
+            }
+        }
+
+        /* Set output count. */
+        *out_count = count;
+        return ResultSuccess();
+
     }
     Result ServiceForBgAgent::IsUpdateNeeded(sf::Out<bool> out, Identifier revision_key) {
-        WriteFile("sprof-dbg:/sprof/revision_key.bin", std::addressof(revision_key), sizeof(revision_key));
-        AMS_ABORT("TODO: IsUpdateNeeded");
+        /* Load primary metadata. */
+        bool loaded_metadata = true;
+        sprofile::srv::ProfileMetadata primary_metadata;
+        R_TRY_CATCH(m_profile_manager->LoadPrimaryMetadata(std::addressof(primary_metadata))) {
+            R_CATCH(fs::ResultPathNotFound) {
+                /* If we have no metadata, we don't have a revision key. */
+                loaded_metadata = false;
+            }
+        } R_END_TRY_CATCH;
+
+        /* Determine if update is needed. */
+        *out = !(loaded_metadata && revision_key == primary_metadata.revision_key);
+        return ResultSuccess();
     }
 
     Result ServiceForBgAgent::Reset() {
-        AMS_ABORT("TODO: Reset");
+        return m_profile_manager->ResetSaveData();
     }
 
 }
