@@ -224,6 +224,9 @@ CATEGORIES = {
     130 : 'AcpUserAccountSettingsInfo',
     131 : 'AudioDeviceInfo',
     132 : 'AbnormalWakeInfo',
+    133 : 'ServiceProfileInfo',
+    134 : 'BluetoothAudioInfo',
+    135 : 'BluetoothPairingCountInfo',
 }
 
 FIELD_TYPES = {

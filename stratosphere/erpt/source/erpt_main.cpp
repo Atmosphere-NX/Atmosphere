@@ -201,6 +201,12 @@ int main(int argc, char **argv)
     /* Start the erpt server. */
     R_ABORT_UNLESS(erpt::srv::InitializeAndStartService());
 
+    /* Initialize the sprofile server. */
+    sprofile::srv::Initialize();
+
+    /* Start the sprofile ipc server. */
+    sprofile::srv::StartIpcServer();
+
     /* Wait forever. */
     erpt::srv::Wait();
 

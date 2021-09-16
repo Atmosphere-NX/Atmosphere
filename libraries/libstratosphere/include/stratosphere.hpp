@@ -88,6 +88,7 @@
 #include <stratosphere/sm.hpp>
 #include <stratosphere/socket.hpp>
 #include <stratosphere/spl.hpp>
+#include <stratosphere/sprofile.hpp>
 #include <stratosphere/time.hpp>
 #include <stratosphere/tipc.hpp>
 #include <stratosphere/tma.hpp>
