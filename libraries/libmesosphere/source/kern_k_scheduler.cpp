@@ -26,17 +26,13 @@ namespace ams::kern {
 
     namespace {
 
-        class KSchedulerInterruptTask : public KInterruptTask {
+        class KSchedulerInterruptHandler : public KInterruptHandler {
             public:
-                constexpr KSchedulerInterruptTask() : KInterruptTask() { /* ... */ }
+                constexpr KSchedulerInterruptHandler() : KInterruptHandler() { /* ... */ }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
                     MESOSPHERE_UNUSED(interrupt_id);
                     return GetDummyInterruptTask();
-                }
-
-                virtual void DoTask() override {
-                    MESOSPHERE_PANIC("KSchedulerInterruptTask::DoTask was called!");
                 }
         };
 
@@ -46,10 +42,10 @@ namespace ams::kern {
             }
         }
 
-        KSchedulerInterruptTask g_scheduler_interrupt_task;
+        KSchedulerInterruptHandler g_scheduler_interrupt_handler;
 
-        ALWAYS_INLINE auto *GetSchedulerInterruptTask() {
-            return std::addressof(g_scheduler_interrupt_task);
+        ALWAYS_INLINE auto *GetSchedulerInterruptHandler() {
+            return std::addressof(g_scheduler_interrupt_handler);
         }
 
     }
@@ -69,7 +65,7 @@ namespace ams::kern {
         }
 
         /* Bind interrupt handler. */
-        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptTask(), KInterruptName_Scheduler, m_core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptHandler(), KInterruptName_Scheduler, m_core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
 
         /* Set the current thread. */
         m_current_thread = GetCurrentThreadPointer();
