@@ -156,7 +156,9 @@
 
 /* ams::kern::KScheduler (::SchedulingState), https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_scheduler.hpp */
 /* NOTE: Due to constraints on ldarb relative offsets, KSCHEDULER_NEEDS_SCHEDULING cannot trivially be changed, and will require assembly edits. */
-#define KSCHEDULER_NEEDS_SCHEDULING               0x00
-#define KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE 0x01
-#define KSCHEDULER_HIGHEST_PRIORITY_THREAD        0x10
-#define KSCHEDULER_IDLE_THREAD_STACK              0x18
+#define KSCHEDULER_NEEDS_SCHEDULING        0x00
+#define KSCHEDULER_INTERRUPT_TASK_RUNNABLE 0x01
+#define KSCHEDULER_HIGHEST_PRIORITY_THREAD 0x10
+#define KSCHEDULER_IDLE_THREAD_STACK       0x18
+#define KSCHEDULER_PREVIOUS_THREAD         0x20
+#define KSCHEDULER_INTERRUPT_TASK_MANAGER  0x28

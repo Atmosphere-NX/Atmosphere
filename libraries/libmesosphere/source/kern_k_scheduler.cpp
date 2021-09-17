@@ -55,10 +55,11 @@ namespace ams::kern {
     }
 
     void KScheduler::Initialize(KThread *idle_thread) {
-        /* Set core ID and idle thread. */
-        m_core_id = GetCurrentCoreId();
-        m_idle_thread = idle_thread;
-        m_state.idle_thread_stack = m_idle_thread->GetStackTop();
+        /* Set core ID/idle thread/interrupt task manager. */
+        m_core_id                      = GetCurrentCoreId();
+        m_idle_thread                  = idle_thread;
+        m_state.idle_thread_stack      = m_idle_thread->GetStackTop();
+        m_state.interrupt_task_manager = std::addressof(Kernel::GetInterruptTaskManager());
 
         /* Insert the main thread into the priority queue. */
         {
@@ -212,19 +213,9 @@ namespace ams::kern {
         return cores_needing_scheduling;
     }
 
-    void KScheduler::InterruptTaskThreadToRunnable() {
-        MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);
-
-        KThread *task_thread = Kernel::GetInterruptTaskManager().GetThread();
-        {
-            KScopedSchedulerLock sl;
-            task_thread->SetState(KThread::ThreadState_Runnable);
-        }
-    }
-
     void KScheduler::SwitchThread(KThread *next_thread) {
-        KProcess *cur_process = GetCurrentProcessPointer();
-        KThread  *cur_thread  = GetCurrentThreadPointer();
+        KProcess * const cur_process = GetCurrentProcessPointer();
+        KThread  * const cur_thread  = GetCurrentThreadPointer();
 
         /* We never want to schedule a null thread, so use the idle thread if we don't have a next. */
         if (next_thread == nullptr) {
@@ -257,12 +248,10 @@ namespace ams::kern {
         if (cur_process != nullptr) {
             /* NOTE: Combining this into AMS_LIKELY(!... && ...) triggers an internal compiler error: Segmentation fault in GCC 9.2.0. */
             if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == m_core_id)) {
-                m_prev_thread = cur_thread;
+                m_state.prev_thread = cur_thread;
             } else {
-                m_prev_thread = nullptr;
+                m_state.prev_thread = nullptr;
             }
-        } else if (cur_thread == m_idle_thread) {
-            m_prev_thread = nullptr;
         }
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
@@ -284,7 +273,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
         for (size_t i = 0; i < cpu::NumCores; ++i) {
             /* Get an atomic reference to the core scheduler's previous thread. */
-            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).m_prev_thread);
+            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).m_state.prev_thread);
             static_assert(std::atomic_ref<KThread *>::is_always_lock_free);
 
             /* Atomically clear the previous thread if it's our target. */

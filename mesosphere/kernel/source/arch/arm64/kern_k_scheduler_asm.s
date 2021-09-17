@@ -112,35 +112,26 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     /* KScheduler layout has state at +0x0, this is guaranteed statically by assembly offsets. */
     mov    x1, x0
 
-    /* First thing we want to do is check whether the interrupt task thread is runnable. */
-    ldrb   w3, [x1, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
-    cbz    w3, 0f
-
-    /* If it is, we want to call KScheduler::InterruptTaskThreadToRunnable() to change its state to runnable. */
-    stp     x0,  x1, [sp, #-16]!
-    stp    x30, xzr, [sp, #-16]!
-    bl     _ZN3ams4kern10KScheduler29InterruptTaskThreadToRunnableEv
-    ldp    x30, xzr, [sp], 16
-    ldp     x0,  x1, [sp], 16
-
-    /* Clear the interrupt task thread as runnable. */
-    strb   wzr, [x1, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
-
-0:  /* Interrupt task thread runnable checked. */
-    /* Now we want to check if there's any scheduling to do. */
-
     /* First, clear the need's scheduling bool (and dmb ish after, as it's an atomic). */
     /* TODO: Should this be a stlrb? Nintendo does not do one. */
     strb   wzr, [x1]
     dmb    ish
 
-    /* Check if the highest priority thread is the same as the current thread. */
+    /* Check whether there are runnable interrupt tasks. */
+    ldrb   w8, [x1, #(KSCHEDULER_INTERRUPT_TASK_RUNNABLE)]
+    cbnz   w8, 0f
+
+    /* If it isn't, we want to check if the highest priority thread is the same as the current thread. */
     ldr    x7, [x1, #(KSCHEDULER_HIGHEST_PRIORITY_THREAD)]
     cmp    x7, x18
     b.ne   1f
 
     /* If they're the same, then we can just return as there's nothing to do. */
     ret
+
+0:  /* The interrupt task thread is runnable. */
+    /* We want to switch to the interrupt task/idle thread. */
+    mov    x7, #0
 
 1:  /* The highest priority thread is not the same as the current thread. */
     /* Get a reference to the current thread's stack parameters. */
@@ -271,12 +262,19 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     /* Call ams::kern::KScheduler::SwitchThread(ams::kern::KThread *) */
     bl     _ZN3ams4kern10KScheduler12SwitchThreadEPNS0_7KThreadE
 
-12: /* We've switched to the idle thread, so we want to loop until we schedule a non-idle thread. */
-    /* Check if we need scheduling. */
-    ldarb  w3, [x20] // ldarb w3, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
+12: /* We've switched to the idle thread, so we want to process interrupt tasks until we schedule a non-idle thread. */
+    /* Check whether there are runnable interrupt tasks. */
+    ldrb   w3, [x20, #(KSCHEDULER_INTERRUPT_TASK_RUNNABLE)]
     cbnz   w3, 13f
 
-    /* If we don't, wait for an interrupt and check again. */
+    /* Check if we need scheduling. */
+    ldarb  w3, [x20] // ldarb w3, [x20, #(KSCHEDULER_NEEDS_SCHEDULING)]
+    cbnz   w3, 4b
+
+    /* Clear the previous thread. */
+    str    xzr, [x20, #(KSCHEDULER_PREVIOUS_THREAD)]
+
+    /* Wait for an interrupt and check again. */
     wfi
 
     msr    daifclr, #2
@@ -284,16 +282,13 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
     b      12b
 
-13: /* We need scheduling again! */
-    /* Check whether the interrupt task thread needs to be set runnable. */
-    ldrb   w3, [x20, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
-    cbz    w3, 4b
-
-    /* It does, so do so. We're using the idle thread stack so no register state preserve needed. */
-    bl     _ZN3ams4kern10KScheduler29InterruptTaskThreadToRunnableEv
+13: /* We have interrupt tasks to execute! */
+    /* Execute any pending interrupt tasks. */
+    ldr    x0, [x20, #(KSCHEDULER_INTERRUPT_TASK_MANAGER)]
+    bl     _ZN3ams4kern21KInterruptTaskManager7DoTasksEv
 
     /* Clear the interrupt task thread as runnable. */
-    strb   wzr, [x20, #(KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE)]
+    strb   wzr, [x20, #(KSCHEDULER_INTERRUPT_TASK_RUNNABLE)]
 
     /* Retry the scheduling loop. */
     b      4b
