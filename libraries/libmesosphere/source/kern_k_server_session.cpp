@@ -1025,7 +1025,7 @@ namespace ams::kern {
                 ON_SCOPE_EXIT { request->Close(); };
 
                 /* Get the event to check whether the request is async. */
-                if (KWritableEvent *event = request->GetEvent(); event != nullptr) {
+                if (KEvent *event = request->GetEvent(); event != nullptr) {
                     /* The client sent an async request. */
                     KProcess *client = client_thread->GetOwnerProcess();
                     auto &client_pt  = client->GetPageTable();
@@ -1091,7 +1091,7 @@ namespace ams::kern {
         const uintptr_t client_message  = request->GetAddress();
         const size_t client_buffer_size = request->GetSize();
         KThread *client_thread          = request->GetThread();
-        KWritableEvent *event           = request->GetEvent();
+        KEvent *event                   = request->GetEvent();
 
         /* Check whether we're closed. */
         const bool closed = (client_thread == nullptr || m_parent->IsClientClosed());
@@ -1242,7 +1242,7 @@ namespace ams::kern {
             const uintptr_t client_message  = request->GetAddress();
             const size_t client_buffer_size = request->GetSize();
             KThread *client_thread          = request->GetThread();
-            KWritableEvent *event           = request->GetEvent();
+            KEvent *event                   = request->GetEvent();
 
             KProcess *server_process             = request->GetServerProcess();
             KProcess *client_process             = (client_thread != nullptr) ? client_thread->GetOwnerProcess() : nullptr;
@@ -1285,7 +1285,7 @@ namespace ams::kern {
         while (true) {
             /* Declare variables for processing the request. */
             KSessionRequest *request = nullptr;
-            KWritableEvent  *event   = nullptr;
+            KEvent          *event   = nullptr;
             KThread         *thread  = nullptr;
             bool cur_request = false;
             bool terminate   = false;

@@ -53,7 +53,7 @@ namespace ams::kern {
         return GetCurrentThread().GetWaitResult(std::addressof(dummy));
     }
 
-    Result KClientSession::SendAsyncRequest(KWritableEvent *event, uintptr_t address, size_t size) {
+    Result KClientSession::SendAsyncRequest(KEvent *event, uintptr_t address, size_t size) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Create a session request. */

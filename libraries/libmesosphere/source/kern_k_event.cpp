@@ -20,19 +20,11 @@ namespace ams::kern {
     void KEvent::Initialize() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Increment reference count. */
-        /* Because reference count is one on creation, this will result */
-        /* in a reference count of two. Thus, when both readable and */
-        /* writable events are closed this object will be destroyed. */
-        this->Open();
-
-        /* Create our sub events. */
+        /* Create our readable event. */
         KAutoObject::Create(std::addressof(m_readable_event));
-        KAutoObject::Create(std::addressof(m_writable_event));
 
-        /* Initialize our sub sessions. */
+        /* Initialize our readable event. */
         m_readable_event.Initialize(this);
-        m_writable_event.Initialize(this);
 
         /* Set our owner process. */
         m_owner = GetCurrentProcessPointer();
@@ -46,6 +38,22 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList>::Finalize();
+    }
+
+    Result KEvent::Signal() {
+        KScopedSchedulerLock sl;
+
+        R_SUCCEED_IF(m_readable_event_destroyed);
+
+        return m_readable_event.Signal();
+    }
+
+    Result KEvent::Clear() {
+        KScopedSchedulerLock sl;
+
+        R_SUCCEED_IF(m_readable_event_destroyed);
+
+        return m_readable_event.Clear();
     }
 
     void KEvent::PostDestroy(uintptr_t arg) {

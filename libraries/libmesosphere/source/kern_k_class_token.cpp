@@ -37,13 +37,12 @@ namespace ams::kern {
     static_assert(ClassToken<KSession>                 == 0b00011001'00000000);
     static_assert(ClassToken<KSharedMemory>            == 0b00101001'00000000);
     static_assert(ClassToken<KEvent>                   == 0b01001001'00000000);
-    static_assert(ClassToken<KWritableEvent>           == 0b10001001'00000000);
-    static_assert(ClassToken<KLightClientSession>      == 0b00110001'00000000);
-    static_assert(ClassToken<KLightServerSession>      == 0b01010001'00000000);
-    static_assert(ClassToken<KTransferMemory>          == 0b10010001'00000000);
-    static_assert(ClassToken<KDeviceAddressSpace>      == 0b01100001'00000000);
-    static_assert(ClassToken<KSessionRequest>          == 0b10100001'00000000);
-    static_assert(ClassToken<KCodeMemory>              == 0b11000001'00000000);
+    static_assert(ClassToken<KLightClientSession>      == 0b10001001'00000000);
+    static_assert(ClassToken<KLightServerSession>      == 0b00110001'00000000);
+    static_assert(ClassToken<KTransferMemory>          == 0b01010001'00000000);
+    static_assert(ClassToken<KDeviceAddressSpace>      == 0b10010001'00000000);
+    static_assert(ClassToken<KSessionRequest>          == 0b01100001'00000000);
+    static_assert(ClassToken<KCodeMemory>              == 0b10100001'00000000);
 
     /* Ensure that the token hierarchy is correct. */
 
@@ -67,13 +66,12 @@ namespace ams::kern {
     static_assert(ClassToken<KSession>                 == ((0b00011001 << 8) | ClassToken<KAutoObject>));
     static_assert(ClassToken<KSharedMemory>            == ((0b00101001 << 8) | ClassToken<KAutoObject>));
     static_assert(ClassToken<KEvent>                   == ((0b01001001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KWritableEvent>           == ((0b10001001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KLightClientSession>      == ((0b00110001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KLightServerSession>      == ((0b01010001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KTransferMemory>          == ((0b10010001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KDeviceAddressSpace>      == ((0b01100001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KSessionRequest>          == ((0b10100001 << 8) | ClassToken<KAutoObject>));
-    static_assert(ClassToken<KCodeMemory>              == ((0b11000001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KLightClientSession>      == ((0b10001001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KLightServerSession>      == ((0b00110001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KTransferMemory>          == ((0b01010001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KDeviceAddressSpace>      == ((0b10010001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KSessionRequest>          == ((0b01100001 << 8) | ClassToken<KAutoObject>));
+    static_assert(ClassToken<KCodeMemory>              == ((0b10100001 << 8) | ClassToken<KAutoObject>));
 
     /* Ensure that the token hierarchy reflects the class hierarchy. */
 
@@ -96,7 +94,6 @@ namespace ams::kern {
     static_assert(std::is_final<KSession>::value                  && std::is_base_of<KAutoObject, KSession>::value);
     static_assert(std::is_final<KSharedMemory>::value             && std::is_base_of<KAutoObject, KSharedMemory>::value);
     static_assert(std::is_final<KEvent>::value                    && std::is_base_of<KAutoObject, KEvent>::value);
-    static_assert(std::is_final<KWritableEvent>::value            && std::is_base_of<KAutoObject, KWritableEvent>::value);
     static_assert(std::is_final<KLightClientSession>::value       && std::is_base_of<KAutoObject, KLightClientSession>::value);
     static_assert(std::is_final<KLightServerSession>::value       && std::is_base_of<KAutoObject, KLightServerSession>::value);
     static_assert(std::is_final<KTransferMemory>::value           && std::is_base_of<KAutoObject, KTransferMemory>::value);

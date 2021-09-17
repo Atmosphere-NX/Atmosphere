@@ -191,7 +191,7 @@ namespace ams::kern::svc {
             /* At end of scope, kill the standing references to the sub events. */
             ON_SCOPE_EXIT {
                 event->GetReadableEvent().Close();
-                event->GetWritableEvent().Close();
+                event->Close();
             };
 
             /* Register the event. */
@@ -204,7 +204,7 @@ namespace ams::kern::svc {
             auto read_guard = SCOPE_GUARD { handle_table.Remove(*out_event_handle); };
 
             /* Send the async request. */
-            R_TRY(session->SendAsyncRequest(std::addressof(event->GetWritableEvent()), message, buffer_size));
+            R_TRY(session->SendAsyncRequest(event, message, buffer_size));
 
             /* We succeeded. */
             read_guard.Cancel();
