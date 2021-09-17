@@ -105,6 +105,8 @@ namespace ams::kern {
 
         KMemoryState_GeneratedCode      = ams::svc::MemoryState_GeneratedCode       | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted    | KMemoryState_FlagCanDebug,
         KMemoryState_CodeOut            = ams::svc::MemoryState_CodeOut             | KMemoryState_FlagMapped | KMemoryState_FlagReferenceCounted,
+
+        KMemoryState_Coverage           = ams::svc::MemoryState_Coverage            | KMemoryState_FlagMapped,
     };
 
 #if 1
@@ -130,6 +132,7 @@ namespace ams::kern {
     static_assert(KMemoryState_Kernel           == 0x00002013);
     static_assert(KMemoryState_GeneratedCode    == 0x00402214);
     static_assert(KMemoryState_CodeOut          == 0x00402015);
+    static_assert(KMemoryState_Coverage         == 0x00002016);
 #endif
 
     enum KMemoryPermission : u8 {

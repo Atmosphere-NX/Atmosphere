@@ -381,6 +381,7 @@ namespace ams::kern {
             case KMemoryState_SharedCode:
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
+            case KMemoryState_Coverage:
                 return m_alias_code_region_start;
             case KMemoryState_Code:
             case KMemoryState_CodeData:
@@ -414,6 +415,7 @@ namespace ams::kern {
             case KMemoryState_SharedCode:
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
+            case KMemoryState_Coverage:
                 return m_alias_code_region_end - m_alias_code_region_start;
             case KMemoryState_Code:
             case KMemoryState_CodeData:
@@ -450,6 +452,7 @@ namespace ams::kern {
             case KMemoryState_SharedCode:
             case KMemoryState_GeneratedCode:
             case KMemoryState_CodeOut:
+            case KMemoryState_Coverage:
                 return is_in_region && !is_in_heap && !is_in_alias;
             case KMemoryState_Normal:
                 MESOSPHERE_ASSERT(is_in_heap);
