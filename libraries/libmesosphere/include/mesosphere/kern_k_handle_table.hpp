@@ -54,14 +54,10 @@ namespace ams::kern {
             }
 
             union EntryInfo {
-                struct {
-                    u16 linear_id;
-                    u16 type;
-                } info;
-                s32 next_free_index;
+                u16 linear_id;
+                s16 next_free_index;
 
-                constexpr ALWAYS_INLINE u16 GetLinearId() const { return info.linear_id; }
-                constexpr ALWAYS_INLINE u16 GetType() const { return info.type; }
+                constexpr ALWAYS_INLINE u16 GetLinearId() const { return linear_id; }
                 constexpr ALWAYS_INLINE s32 GetNextFreeIndex() const { return next_free_index; }
             };
         private:
@@ -187,17 +183,8 @@ namespace ams::kern {
             NOINLINE Result Reserve(ams::svc::Handle *out_handle);
             NOINLINE void Unreserve(ams::svc::Handle handle);
 
-            template<typename T>
-            ALWAYS_INLINE Result Add(ams::svc::Handle *out_handle, T *obj) {
-                static_assert(std::is_base_of<KAutoObject, T>::value);
-                return this->Add(out_handle, obj, obj->GetTypeObj().GetClassToken());
-            }
-
-            template<typename T>
-            ALWAYS_INLINE void Register(ams::svc::Handle handle, T *obj) {
-                static_assert(std::is_base_of<KAutoObject, T>::value);
-                return this->Register(handle, obj, obj->GetTypeObj().GetClassToken());
-            }
+            NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj);
+            NOINLINE void Register(ams::svc::Handle handle, KAutoObject *obj);
 
             template<typename T>
             ALWAYS_INLINE bool GetMultipleObjects(T **out, const ams::svc::Handle *handles, size_t num_handles) const {
@@ -242,8 +229,6 @@ namespace ams::kern {
                 return false;
             }
         private:
-            NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type);
-            NOINLINE void Register(ams::svc::Handle handle, KAutoObject *obj, u16 type);
 
             constexpr ALWAYS_INLINE s32 AllocateEntry() {
                 MESOSPHERE_ASSERT_THIS();

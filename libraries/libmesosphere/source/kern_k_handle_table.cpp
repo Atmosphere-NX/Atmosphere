@@ -74,7 +74,7 @@ namespace ams::kern {
         return true;
     }
 
-    Result KHandleTable::Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type) {
+    Result KHandleTable::Add(ams::svc::Handle *out_handle, KAutoObject *obj) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
         KScopedSpinLock lk(m_lock);
@@ -87,8 +87,8 @@ namespace ams::kern {
             const auto linear_id = this->AllocateLinearId();
             const auto index     = this->AllocateEntry();
 
-            m_entry_infos[index].info = { .linear_id = linear_id, .type = type };
-            m_objects[index]          = obj;
+            m_entry_infos[index].linear_id = linear_id;
+            m_objects[index]               = obj;
 
             obj->Open();
 
@@ -131,7 +131,7 @@ namespace ams::kern {
         }
     }
 
-    void KHandleTable::Register(ams::svc::Handle handle, KAutoObject *obj, u16 type) {
+    void KHandleTable::Register(ams::svc::Handle handle, KAutoObject *obj) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
         KScopedSpinLock lk(m_lock);
@@ -149,8 +149,8 @@ namespace ams::kern {
             /* Set the entry. */
             MESOSPHERE_ASSERT(m_objects[index] == nullptr);
 
-            m_entry_infos[index].info = { .linear_id = linear_id, .type = type };
-            m_objects[index]          = obj;
+            m_entry_infos[index].linear_id = linear_id;
+            m_objects[index]               = obj;
 
             obj->Open();
         }
