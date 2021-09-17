@@ -18,7 +18,6 @@
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_readable_event.hpp>
-#include <mesosphere/kern_k_writable_event.hpp>
 
 namespace ams::kern {
 
@@ -26,12 +25,12 @@ namespace ams::kern {
         MESOSPHERE_AUTOOBJECT_TRAITS(KEvent, KAutoObject);
         private:
             KReadableEvent m_readable_event;
-            KWritableEvent m_writable_event;
             KProcess *m_owner;
             bool m_initialized;
+            bool m_readable_event_destroyed;
         public:
             constexpr KEvent()
-                : m_readable_event(), m_writable_event(), m_owner(), m_initialized()
+                : m_readable_event(), m_owner(), m_initialized(), m_readable_event_destroyed()
             {
                 /* ... */
             }
@@ -47,7 +46,11 @@ namespace ams::kern {
             virtual KProcess *GetOwner() const override { return m_owner; }
 
             KReadableEvent &GetReadableEvent() { return m_readable_event; }
-            KWritableEvent &GetWritableEvent() { return m_writable_event; }
+
+            Result Signal();
+            Result Clear();
+
+            ALWAYS_INLINE void OnReadableEventDestroyed() { m_readable_event_destroyed = true; }
     };
 
 }

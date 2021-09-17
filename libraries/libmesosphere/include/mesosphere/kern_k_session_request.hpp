@@ -17,7 +17,7 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
-#include <mesosphere/kern_k_writable_event.hpp>
+#include <mesosphere/kern_k_event.hpp>
 #include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_k_process.hpp>
 #include <mesosphere/kern_k_memory_block.hpp>
@@ -126,7 +126,7 @@ namespace ams::kern {
             SessionMappings m_mappings;
             KThread *m_thread;
             KProcess *m_server;
-            KWritableEvent *m_event;
+            KEvent *m_event;
             uintptr_t m_address;
             size_t m_size;
         public:
@@ -145,7 +145,7 @@ namespace ams::kern {
                 KSessionRequest::Free(this);
             }
 
-            void Initialize(KWritableEvent *event, uintptr_t address, size_t size) {
+            void Initialize(KEvent *event, uintptr_t address, size_t size) {
                 m_mappings.Initialize();
 
                 m_thread  = std::addressof(GetCurrentThread());
@@ -176,7 +176,7 @@ namespace ams::kern {
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr ALWAYS_INLINE KThread *GetThread() const { return m_thread; }
-            constexpr ALWAYS_INLINE KWritableEvent *GetEvent() const { return m_event; }
+            constexpr ALWAYS_INLINE KEvent *GetEvent() const { return m_event; }
             constexpr ALWAYS_INLINE uintptr_t GetAddress() const { return m_address; }
             constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
             constexpr ALWAYS_INLINE KProcess *GetServerProcess() const { return m_server; }

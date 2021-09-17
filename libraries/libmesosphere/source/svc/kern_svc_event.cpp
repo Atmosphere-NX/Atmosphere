@@ -26,10 +26,10 @@ namespace ams::kern::svc {
             auto &handle_table = GetCurrentProcess().GetHandleTable();
 
             /* Get the writable event. */
-            KScopedAutoObject writable_event = handle_table.GetObject<KWritableEvent>(event_handle);
-            R_UNLESS(writable_event.IsNotNull(), svc::ResultInvalidHandle());
+            KScopedAutoObject event = handle_table.GetObject<KEvent>(event_handle);
+            R_UNLESS(event.IsNotNull(), svc::ResultInvalidHandle());
 
-            return writable_event->Signal();
+            return event->Signal();
         }
 
         Result ClearEvent(ams::svc::Handle event_handle) {
@@ -38,9 +38,9 @@ namespace ams::kern::svc {
 
             /* Try to clear the writable event. */
             {
-                KScopedAutoObject writable_event = handle_table.GetObject<KWritableEvent>(event_handle);
-                if (writable_event.IsNotNull()) {
-                    return writable_event->Clear();
+                KScopedAutoObject event = handle_table.GetObject<KEvent>(event_handle);
+                if (event.IsNotNull()) {
+                    return event->Clear();
                 }
             }
 
@@ -76,15 +76,15 @@ namespace ams::kern::svc {
 
             /* Ensure that we clean up the event (and its only references are handle table) on function end. */
             ON_SCOPE_EXIT {
-                event->GetWritableEvent().Close();
                 event->GetReadableEvent().Close();
+                event->Close();
             };
 
             /* Register the event. */
             KEvent::Register(event);
 
-            /* Add the writable event to the handle table. */
-            R_TRY(handle_table.Add(out_write, std::addressof(event->GetWritableEvent())));
+            /* Add the event to the handle table. */
+            R_TRY(handle_table.Add(out_write, event));
 
             /* Ensure that we maintaing a clean handle state on exit. */
             auto handle_guard = SCOPE_GUARD { handle_table.Remove(*out_write); };

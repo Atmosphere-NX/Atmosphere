@@ -104,7 +104,6 @@ namespace ams::kern {
                 KSession,
                 KSharedMemory,
                 KEvent,
-                KWritableEvent,
                 KLightClientSession,
                 KLightServerSession,
                 KTransferMemory,
