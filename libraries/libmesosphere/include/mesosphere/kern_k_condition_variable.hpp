@@ -29,8 +29,8 @@ namespace ams::kern {
             constexpr KConditionVariable() : m_tree() { /* ... */ }
 
             /* Arbitration. */
-            Result SignalToAddress(KProcessAddress addr);
-            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress addr, u32 value);
+            static Result SignalToAddress(KProcessAddress addr);
+            static Result WaitForAddress(ams::svc::Handle handle, KProcessAddress addr, u32 value);
 
             /* Condition variable. */
             void Signal(uintptr_t cv_key, s32 count);
