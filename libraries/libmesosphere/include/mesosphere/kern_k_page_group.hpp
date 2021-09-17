@@ -86,6 +86,7 @@ namespace ams::kern {
             explicit KPageGroup(KBlockInfoManager *m) : m_block_list(), m_manager(m) { /* ... */ }
             ~KPageGroup() { this->Finalize(); }
 
+            void CloseAndReset();
             void Finalize();
 
             iterator begin() const { return m_block_list.begin(); }
