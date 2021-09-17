@@ -308,7 +308,7 @@ namespace ams::kern::arch::arm64 {
                 {
                     if (ec != EsrEc_SoftwareStepEl0) {
                         /* If the exception wasn't single-step, print details. */
-                        MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
+                        MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
                         {
                             /* Print the current thread's registers. */
@@ -327,7 +327,7 @@ namespace ams::kern::arch::arm64 {
                 #else
                 {
                     /* Print that an exception occurred. */
-                    MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
+                    MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
                     {
                         /* Print the current thread's registers. */
@@ -496,7 +496,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Print that an exception occurred. */
-        MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
+        MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
         /* Exit the current process. */
         GetCurrentProcess().Exit();

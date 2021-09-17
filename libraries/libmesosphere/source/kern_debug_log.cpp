@@ -20,15 +20,15 @@ namespace ams::kern {
 
     namespace {
 
-        KSpinLock g_debug_log_lock;
-        bool      g_initialized_impl;
+        constinit KSpinLock g_debug_log_lock;
+        constinit bool      g_initialized_impl;
 
         /* NOTE: Nintendo's print buffer is size 0x100. */
-        char g_print_buffer[0x400];
+        constinit char g_print_buffer[0x400];
 
         void PutString(const char *str) {
             /* Only print if the implementation is initialized. */
-            if (!g_initialized_impl) {
+            if (AMS_UNLIKELY(!g_initialized_impl)) {
                 return;
             }
 
@@ -73,6 +73,20 @@ namespace ams::kern {
 
         #endif
 
+        ALWAYS_INLINE void FormatU64(char * const dst, u64 value) {
+            /* Adjust, so that we can print the value backwards. */
+            char *cur = dst + 2 * sizeof(value);
+
+            /* Format the value in (as %016lx) */
+            while (cur > dst) {
+                /* Extract the digit. */
+                const auto digit = value & 0xF;
+                value >>= 4;
+
+                *(--cur) = (digit <= 9) ? ('0' + digit) : ('a' + digit - 10);
+            }
+        }
+
     }
 
     void KDebugLog::Initialize() {
@@ -107,6 +121,33 @@ namespace ams::kern {
 
     void KDebugLog::VSNPrintf(char *dst, const size_t dst_size, const char *format, ::std::va_list vl) {
         ::ams::util::TVSNPrintf(dst, dst_size, format, vl);
+    }
+
+    void KDebugLog::LogException(const char *str) {
+        if (KTargetSystem::IsDebugLoggingEnabled()) {
+            /* Get the current program ID. */
+            /* NOTE: Nintendo does this after printing the string, */
+            /* but it seems wise to avoid holding the lock/disabling interrupts */
+            /* for longer than is strictly necessary. */
+            char suffix[18];
+            if (const auto *cur_process = GetCurrentProcessPointer(); AMS_LIKELY(cur_process != nullptr)) {
+                FormatU64(suffix, cur_process->GetProgramId());
+                suffix[16] = '\n';
+                suffix[17] = '\x00';
+            } else {
+                suffix[0] = '\n';
+                suffix[1] = '\x00';
+            }
+
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_debug_log_lock);
+
+            /* Log the string. */
+            PutString(str);
+
+            /* Log the program id (and newline) suffix. */
+            PutString(suffix);
+        }
     }
 
     Result KDebugLog::PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len) {
