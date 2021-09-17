@@ -17,10 +17,7 @@
 
 namespace ams::kern {
 
-    void KWorkerTaskManager::Initialize(WorkerType wt, s32 priority) {
-        /* Set type, other members already initialized in constructor. */
-        m_type = wt;
-
+    void KWorkerTaskManager::Initialize(s32 priority) {
         /* Reserve a thread from the system limit. */
         MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));
 
