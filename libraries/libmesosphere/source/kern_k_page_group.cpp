@@ -26,6 +26,18 @@ namespace ams::kern {
         }
     }
 
+    void KPageGroup::CloseAndReset() {
+        auto &mm = Kernel::GetMemoryManager();
+
+        auto it = m_block_list.begin();
+        while (it != m_block_list.end()) {
+            KBlockInfo *info = std::addressof(*it);
+            it = m_block_list.erase(it);
+            mm.Close(info->GetAddress(), info->GetNumPages());
+            m_manager->Free(info);
+        }
+    }
+
     size_t KPageGroup::GetNumPages() const {
         size_t num_pages = 0;
 

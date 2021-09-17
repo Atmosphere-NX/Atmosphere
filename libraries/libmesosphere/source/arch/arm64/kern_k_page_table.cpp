@@ -579,7 +579,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Ensure that any pages we track close on exit. */
         KPageGroup pages_to_close(this->GetBlockInfoManager());
-        ON_SCOPE_EXIT { pages_to_close.Close(); };
+        ON_SCOPE_EXIT { pages_to_close.CloseAndReset(); };
 
         /* Begin traversal. */
         TraversalContext context;
@@ -601,8 +601,9 @@ namespace ams::kern::arch::arm64 {
             if (next_entry.block_size > remaining_pages * PageSize) {
                 MESOSPHERE_ABORT_UNLESS(force);
                 MESOSPHERE_R_ABORT_UNLESS(this->SeparatePages(virt_addr, remaining_pages * PageSize, page_list, reuse_ll));
-                next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
-                MESOSPHERE_ASSERT(next_valid);
+                const bool new_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
+                MESOSPHERE_ASSERT(new_valid);
+                MESOSPHERE_UNUSED(new_valid);
             }
 
             /* Check that our state is coherent. */
@@ -641,6 +642,7 @@ namespace ams::kern::arch::arm64 {
                                 *l1_entry = InvalidL1PageTableEntry;
                                 this->NoteUpdated();
                                 this->FreePageTable(page_list, l2_virt);
+                                pages_to_close.CloseAndReset();
                             }
                         }
                     }
@@ -684,6 +686,7 @@ namespace ams::kern::arch::arm64 {
                                 }
 
                                 this->FreePageTable(page_list, l3_virt);
+                                pages_to_close.CloseAndReset();
                             }
                         }
                     }
@@ -698,6 +701,7 @@ namespace ams::kern::arch::arm64 {
                 if (R_FAILED(pages_to_close.AddBlock(block_virt_addr, block_num_pages))) {
                     this->NoteUpdated();
                     Kernel::GetMemoryManager().Close(block_virt_addr, block_num_pages);
+                    pages_to_close.CloseAndReset();
                 }
             }
 
