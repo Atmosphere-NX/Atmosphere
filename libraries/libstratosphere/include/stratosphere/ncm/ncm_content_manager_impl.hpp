@@ -26,6 +26,7 @@
 #include <stratosphere/ncm/ncm_rights_id_cache.hpp>
 #include <stratosphere/ncm/ncm_content_management_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta_utils.hpp>
+#include <stratosphere/ncm/ncm_registered_host_content.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
@@ -108,8 +109,11 @@ namespace ams::ncm {
             u32 num_content_storage_entries;
             u32 num_content_meta_entries;
             RightsIdCache rights_id_cache;
+            RegisteredHostContent registered_host_content;
         public:
-            ContentManagerImpl() : mutex(true), initialized(false) { /* ... */ };
+            ContentManagerImpl() : mutex(true), initialized(false), num_content_storage_entries(0), num_content_meta_entries(0), rights_id_cache(), registered_host_content() { 
+                /* ... */ 
+            };
             ~ContentManagerImpl();
         public:
             Result Initialize(const ContentManagerConfig &config);

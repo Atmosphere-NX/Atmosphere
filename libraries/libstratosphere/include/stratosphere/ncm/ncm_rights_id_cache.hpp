@@ -35,9 +35,9 @@ namespace ams::ncm {
         private:
             Entry entries[MaxEntries];
             u64 counter;
-            os::Mutex mutex;
+            os::SdkMutex mutex;
         public:
-            RightsIdCache() : mutex(false) {
+            RightsIdCache() : mutex() {
                 this->Invalidate();
             }
 

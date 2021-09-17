@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "ncm_content_storage_impl.hpp"
 #include "ncm_read_only_content_storage_impl.hpp"
+#include "ncm_host_content_storage_impl.hpp"
 #include "ncm_content_meta_database_impl.hpp"
 #include "ncm_on_memory_content_meta_database_impl.hpp"
 #include "ncm_fs_utils.hpp"
@@ -551,7 +552,11 @@ namespace ams::ncm {
         /* Unmount on failure. */
         auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
 
-        if (storage_id == StorageId::GameCard) {
+        if (storage_id == StorageId::Host) {
+            /* Create a host content storage. */
+            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, HostContentStorageImpl>(std::addressof(this->registered_host_content));
+            root->content_storage = std::move(content_storage);
+        } else if (storage_id == StorageId::GameCard) {
             /* Game card content storage is read only. */
             auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ReadOnlyContentStorageImpl>();
             R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath));
@@ -593,7 +598,12 @@ namespace ams::ncm {
             /* N doesn't bother checking the result of this */
             root->content_storage->DisableForcibly();
             root->content_storage = nullptr;
-            fs::Unmount(root->mount_name);
+
+            if (storage_id == StorageId::Host) {
+                this->registered_host_content.ClearPaths();
+            } else {
+                fs::Unmount(root->mount_name);
+            }
         }
 
         return ResultSuccess();
