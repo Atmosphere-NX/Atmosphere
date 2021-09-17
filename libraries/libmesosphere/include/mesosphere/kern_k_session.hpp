@@ -57,8 +57,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KSession() { /* ... */ }
-
             void Initialize(KClientPort *client_port, uintptr_t name);
             virtual void Finalize() override;
 

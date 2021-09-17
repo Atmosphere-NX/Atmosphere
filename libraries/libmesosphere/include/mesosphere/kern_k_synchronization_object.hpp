@@ -33,7 +33,6 @@ namespace ams::kern {
             ThreadListNode *m_thread_list_tail;
         protected:
             constexpr ALWAYS_INLINE explicit KSynchronizationObject() : KAutoObjectWithList(), m_thread_list_head(), m_thread_list_tail() { MESOSPHERE_ASSERT_THIS(); }
-            virtual ~KSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
             virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 

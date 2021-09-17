@@ -37,8 +37,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KBeta() { /* ... */ }
-
             /* virtual void Finalize() override; */
 
             virtual bool IsInitialized() const override { return false /* TODO */; }

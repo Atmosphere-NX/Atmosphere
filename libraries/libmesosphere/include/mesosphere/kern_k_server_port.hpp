@@ -35,7 +35,6 @@ namespace ams::kern {
             KPort *m_parent;
         public:
             constexpr KServerPort() : m_session_list(), m_light_session_list(), m_parent() { /* ... */ }
-            virtual ~KServerPort() { /* ... */ }
 
             void Initialize(KPort *parent);
             void EnqueueSession(KServerSession *session);

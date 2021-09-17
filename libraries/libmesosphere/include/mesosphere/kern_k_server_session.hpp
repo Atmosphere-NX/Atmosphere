@@ -34,7 +34,6 @@ namespace ams::kern {
             KLightLock m_lock;
         public:
             constexpr KServerSession() : m_parent(), m_request_list(), m_current_request(), m_lock() { /* ... */ }
-            virtual ~KServerSession() { /* ... */ }
 
             virtual void Destroy() override;
 

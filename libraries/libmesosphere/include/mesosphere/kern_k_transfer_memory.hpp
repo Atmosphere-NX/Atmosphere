@@ -35,8 +35,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KTransferMemory() { /* ... */ }
-
             Result Initialize(KProcessAddress addr, size_t size, ams::svc::MemoryPermission own_perm);
             virtual void Finalize() override;
 

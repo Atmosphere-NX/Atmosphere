@@ -143,7 +143,6 @@ namespace ams::kern {
             }
         public:
             KProcess() { /* ... */ }
-            virtual ~KProcess() { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal);
             Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);

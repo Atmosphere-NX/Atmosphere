@@ -28,7 +28,6 @@ namespace ams::kern {
             KEvent *m_parent;
         public:
             constexpr explicit KReadableEvent() : KSynchronizationObject(), m_is_signaled(), m_parent() { MESOSPHERE_ASSERT_THIS(); }
-            virtual ~KReadableEvent() { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr void Initialize(KEvent *parent) {
                 MESOSPHERE_ASSERT_THIS();

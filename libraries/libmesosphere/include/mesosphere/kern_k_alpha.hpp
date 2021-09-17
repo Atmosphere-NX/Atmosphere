@@ -30,8 +30,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KAlpha() { /* ... */ }
-
             /* virtual void Finalize() override; */
 
             virtual bool IsInitialized() const override { return false /* TODO */; }

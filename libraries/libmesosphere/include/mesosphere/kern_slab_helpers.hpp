@@ -74,7 +74,6 @@ namespace ams::kern {
             };
         public:
             constexpr KAutoObjectWithSlabHeapAndContainer() : Base() { /* ... */ }
-            virtual ~KAutoObjectWithSlabHeapAndContainer() { /* ... */ }
 
             virtual void Destroy() override {
                 const bool is_initialized = this->IsInitialized();

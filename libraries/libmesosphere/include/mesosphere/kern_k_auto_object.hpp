@@ -75,7 +75,6 @@ namespace ams::kern {
             static KAutoObject *Create(KAutoObject *ptr);
         public:
             constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
-            virtual ~KAutoObject() { MESOSPHERE_ASSERT_THIS(); }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
             virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }
@@ -139,8 +138,10 @@ namespace ams::kern {
         private:
             friend class KAutoObjectWithListContainer;
         private:
-            util::IntrusiveRedBlackTreeNode list_node;
+            util::IntrusiveRedBlackTreeNode m_list_node;
         public:
+            constexpr ALWAYS_INLINE KAutoObjectWithList() : m_list_node() { /* ... */ }
+
             static ALWAYS_INLINE int Compare(const KAutoObjectWithList &lhs, const KAutoObjectWithList &rhs) {
                 const u64 lid = lhs.GetId();
                 const u64 rid = rhs.GetId();
