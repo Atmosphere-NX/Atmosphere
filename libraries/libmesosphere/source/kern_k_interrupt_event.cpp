@@ -60,8 +60,8 @@ namespace ams::kern {
     Result KInterruptEvent::Reset() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Lock the task. */
-        KScopedLightLock lk(g_interrupt_event_task_table[m_interrupt_id]->GetLock());
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
 
         /* Clear the event. */
         R_TRY(KReadableEvent::Reset());
@@ -95,8 +95,8 @@ namespace ams::kern {
 
         /* Register/bind the interrupt task. */
         {
-            /* Acqquire exclusive access to the task. */
-            KScopedLightLock tlk(task->m_lock);
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
 
             /* Bind the interrupt handler. */
             R_TRY(Kernel::GetInterruptManager().BindHandler(task, interrupt_id, core_id, KInterruptController::PriorityLevel_High, true, level));
@@ -121,8 +121,8 @@ namespace ams::kern {
         /* Lock the task table. */
         KScopedLightLock lk(g_interrupt_event_lock);
 
-        /* Lock the task. */
-        KScopedLightLock tlk(m_lock);
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
 
         /* Ensure we can unregister. */
         MESOSPHERE_ABORT_UNLESS(g_interrupt_event_task_table[interrupt_id] == this);
@@ -142,8 +142,8 @@ namespace ams::kern {
     void KInterruptEventTask::DoTask() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Lock the task table. */
-        KScopedLightLock lk(m_lock);
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
 
         if (m_event != nullptr) {
             m_event->Signal();

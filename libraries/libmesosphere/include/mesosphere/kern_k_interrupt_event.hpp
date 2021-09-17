@@ -48,12 +48,9 @@ namespace ams::kern {
     class KInterruptEventTask : public KSlabAllocated<KInterruptEventTask>, public KInterruptTask {
         private:
             KInterruptEvent *m_event;
-            KLightLock m_lock;
         public:
-            constexpr KInterruptEventTask() : m_event(nullptr), m_lock() { /* ... */ }
+            constexpr KInterruptEventTask() : m_event(nullptr) { /* ... */ }
             ~KInterruptEventTask() { /* ... */ }
-
-            KLightLock &GetLock() { return m_lock; }
 
             virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
             virtual void DoTask() override;
