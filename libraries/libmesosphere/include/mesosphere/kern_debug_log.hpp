@@ -28,6 +28,8 @@ namespace ams::kern {
             static NOINLINE void Printf(const char *format, ...) __attribute__((format(printf, 1, 2)));
             static NOINLINE void VPrintf(const char *format, ::std::va_list vl);
 
+            static NOINLINE void LogException(const char *str);
+
             static NOINLINE Result PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len);
 
             /* Functionality for preserving across sleep. */
@@ -48,6 +50,8 @@ namespace ams::kern {
     #define MESOSPHERE_DEBUG_LOG_SELECTED
 
 #endif
+
+#define MESOSPHERE_EXCEPTION_LOG(str) ::ams::kern::KDebugLog::LogException(str)
 
 #define MESOSPHERE_RELEASE_LOG(fmt, ...) ::ams::kern::KDebugLog::Printf((fmt), ## __VA_ARGS__)
 #define MESOSPHERE_RELEASE_VLOG(fmt, vl) ::ams::kern::KDebugLog::VPrintf((fmt), (vl))
