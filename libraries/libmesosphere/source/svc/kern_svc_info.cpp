@@ -181,6 +181,9 @@ namespace ams::kern::svc {
                         /* Verify the input handle is invalid. */
                         R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
 
+                        /* Disable dispatch while we get the tick count. */
+                        KScopedDisableDispatch dd;
+
                         /* Verify the requested core is valid. */
                         const bool core_valid = (info_subtype == static_cast<u64>(-1ul)) || (info_subtype == static_cast<u64>(GetCurrentCoreId()));
                         R_UNLESS(core_valid, svc::ResultInvalidCombination());
@@ -223,28 +226,27 @@ namespace ams::kern::svc {
                         KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(handle);
                         R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
-                        /* Disable interrupts while we get the tick count. */
+                        /* Disable dispatch while we get the tick count. */
+                        KScopedDisableDispatch dd;
+
+                        /* Determine the tick count. */
                         s64 tick_count;
-                        {
-                            KScopedInterruptDisable di;
+                        if (info_subtype == static_cast<u64>(-1ul)) {
+                            tick_count = thread->GetCpuTime();
+                            if (GetCurrentThreadPointer() == thread.GetPointerUnsafe()) {
+                                const s64 cur_tick    = KHardwareTimer::GetTick();
+                                const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
+                                tick_count += (cur_tick - prev_switch);
+                            }
+                        } else {
+                            const s32 phys_core = cpu::VirtualToPhysicalCoreMap[info_subtype];
+                            MESOSPHERE_ABORT_UNLESS(phys_core < static_cast<s32>(cpu::NumCores));
 
-                            if (info_subtype == static_cast<u64>(-1ul)) {
-                                tick_count = thread->GetCpuTime();
-                                if (GetCurrentThreadPointer() == thread.GetPointerUnsafe()) {
-                                    const s64 cur_tick    = KHardwareTimer::GetTick();
-                                    const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
-                                    tick_count += (cur_tick - prev_switch);
-                                }
-                            } else {
-                                const s32 phys_core = cpu::VirtualToPhysicalCoreMap[info_subtype];
-                                MESOSPHERE_ABORT_UNLESS(phys_core < static_cast<s32>(cpu::NumCores));
-
-                                tick_count = thread->GetCpuTime(phys_core);
-                                if (GetCurrentThreadPointer() == thread.GetPointerUnsafe() && phys_core == GetCurrentCoreId()) {
-                                    const s64 cur_tick    = KHardwareTimer::GetTick();
-                                    const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
-                                    tick_count += (cur_tick - prev_switch);
-                                }
+                            tick_count = thread->GetCpuTime(phys_core);
+                            if (GetCurrentThreadPointer() == thread.GetPointerUnsafe() && phys_core == GetCurrentCoreId()) {
+                                const s64 cur_tick    = KHardwareTimer::GetTick();
+                                const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
+                                tick_count += (cur_tick - prev_switch);
                             }
                         }
 
