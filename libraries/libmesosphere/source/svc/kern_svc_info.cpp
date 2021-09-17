@@ -189,7 +189,7 @@ namespace ams::kern::svc {
                         R_UNLESS(core_valid, svc::ResultInvalidCombination());
 
                         /* Get the idle tick count. */
-                        *out = Kernel::GetScheduler().GetIdleThread()->GetCpuTime();
+                        *out = Kernel::GetScheduler().GetIdleThread()->GetCpuTime() - Kernel::GetInterruptTaskManager().GetCpuTime();
                     }
                     break;
                 case ams::svc::InfoType_RandomEntropy:

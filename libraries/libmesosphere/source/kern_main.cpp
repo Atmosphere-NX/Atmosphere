@@ -99,7 +99,6 @@ namespace ams::kern {
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
             KThread::Register(std::addressof(Kernel::GetMainThread(core_id)));
             KThread::Register(std::addressof(Kernel::GetIdleThread(core_id)));
-            Kernel::GetInterruptTaskManager().Initialize();
         });
 
         /* Activate the scheduler and enable interrupts. */

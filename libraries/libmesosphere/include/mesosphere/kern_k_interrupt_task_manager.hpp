@@ -27,28 +27,25 @@ namespace ams::kern {
                     KInterruptTask *m_head;
                     KInterruptTask *m_tail;
                 public:
-                    constexpr TaskQueue() : m_head(nullptr), m_tail(nullptr) { /* ... */ }
+                    constexpr ALWAYS_INLINE TaskQueue() : m_head(nullptr), m_tail(nullptr) { /* ... */ }
 
-                    constexpr KInterruptTask *GetHead() { return m_head; }
-                    constexpr bool IsEmpty() const { return m_head == nullptr; }
-                    constexpr void Clear() { m_head = nullptr; m_tail = nullptr; }
+                    constexpr ALWAYS_INLINE KInterruptTask *GetHead() { return m_head; }
+                    constexpr ALWAYS_INLINE bool IsEmpty() const { return m_head == nullptr; }
+                    constexpr ALWAYS_INLINE void Clear() { m_head = nullptr; m_tail = nullptr; }
 
                     void Enqueue(KInterruptTask *task);
                     void Dequeue();
             };
         private:
             TaskQueue m_task_queue;
-            KThread *m_thread;
-        private:
-            static void ThreadFunction(uintptr_t arg);
-            void ThreadFunctionImpl();
+            s64 m_cpu_time;
         public:
-            constexpr KInterruptTaskManager() : m_task_queue(), m_thread(nullptr) { /* ... */ }
+            constexpr KInterruptTaskManager() : m_task_queue(), m_cpu_time(0) { /* ... */ }
 
-            constexpr KThread *GetThread() const { return m_thread; }
+            constexpr ALWAYS_INLINE s64 GetCpuTime() const { return m_cpu_time; }
 
-            NOINLINE void Initialize();
             void EnqueueTask(KInterruptTask *task);
+            void DoTasks();
     };
 
 }

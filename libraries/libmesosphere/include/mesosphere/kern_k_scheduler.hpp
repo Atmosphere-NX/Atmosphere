@@ -17,6 +17,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_k_priority_queue.hpp>
+#include <mesosphere/kern_k_interrupt_task_manager.hpp>
 #include <mesosphere/kern_k_scheduler_lock.hpp>
 
 namespace ams::kern {
@@ -39,11 +40,13 @@ namespace ams::kern {
 
             struct SchedulingState {
                 std::atomic<u8> needs_scheduling;
-                bool interrupt_task_thread_runnable;
+                bool interrupt_task_runnable;
                 bool should_count_idle;
                 u64  idle_count;
                 KThread *highest_priority_thread;
                 void *idle_thread_stack;
+                KThread *prev_thread;
+                KInterruptTaskManager *interrupt_task_manager;
             };
         private:
             friend class KScopedSchedulerLock;
@@ -53,28 +56,29 @@ namespace ams::kern {
             SchedulingState m_state;
             bool m_is_active;
             s32 m_core_id;
-            KThread *m_prev_thread;
             s64 m_last_context_switch_time;
             KThread *m_idle_thread;
             std::atomic<KThread *> m_current_thread;
         public:
             constexpr KScheduler()
-                : m_state(), m_is_active(false), m_core_id(0), m_prev_thread(nullptr), m_last_context_switch_time(0), m_idle_thread(nullptr), m_current_thread(nullptr)
+                : m_state(), m_is_active(false), m_core_id(0), m_last_context_switch_time(0), m_idle_thread(nullptr), m_current_thread(nullptr)
             {
-                m_state.needs_scheduling = true;
-                m_state.interrupt_task_thread_runnable = false;
-                m_state.should_count_idle = false;
-                m_state.idle_count = 0;
-                m_state.idle_thread_stack = nullptr;
+                m_state.needs_scheduling        = true;
+                m_state.interrupt_task_runnable = false;
+                m_state.should_count_idle       = false;
+                m_state.idle_count              = 0;
+                m_state.idle_thread_stack       = nullptr;
                 m_state.highest_priority_thread = nullptr;
+                m_state.prev_thread             = nullptr;
+                m_state.interrupt_task_manager  = nullptr;
             }
 
             NOINLINE void Initialize(KThread *idle_thread);
             NOINLINE void Activate();
 
             ALWAYS_INLINE void SetInterruptTaskRunnable() {
-                m_state.interrupt_task_thread_runnable = true;
-                m_state.needs_scheduling               = true;
+                m_state.interrupt_task_runnable = true;
+                m_state.needs_scheduling        = true;
             }
 
             ALWAYS_INLINE void RequestScheduleOnInterrupt() {
@@ -94,7 +98,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE KThread *GetPreviousThread() const {
-                return m_prev_thread;
+                return m_state.prev_thread;
             }
 
             ALWAYS_INLINE KThread *GetSchedulerCurrentThread() const {
@@ -108,8 +112,6 @@ namespace ams::kern {
             /* Static private API. */
             static ALWAYS_INLINE KSchedulerPriorityQueue &GetPriorityQueue() { return s_priority_queue; }
             static NOINLINE u64 UpdateHighestPriorityThreadsImpl();
-
-            static NOINLINE void InterruptTaskThreadToRunnable();
         public:
             /* Static public API. */
             static ALWAYS_INLINE bool CanSchedule() { return GetCurrentThread().GetDisableDispatchCount() == 0; }
@@ -124,13 +126,14 @@ namespace ams::kern {
                 GetCurrentThread().DisableDispatch();
             }
 
-            static NOINLINE void EnableScheduling(u64 cores_needing_scheduling) {
+            static ALWAYS_INLINE void EnableScheduling(u64 cores_needing_scheduling) {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 1);
+
+                GetCurrentScheduler().RescheduleOtherCores(cores_needing_scheduling);
 
                 if (GetCurrentThread().GetDisableDispatchCount() > 1) {
                     GetCurrentThread().EnableDispatch();
                 } else {
-                    GetCurrentScheduler().RescheduleOtherCores(cores_needing_scheduling);
                     GetCurrentScheduler().RescheduleCurrentCore();
                 }
             }
@@ -176,14 +179,23 @@ namespace ams::kern {
 
             ALWAYS_INLINE void RescheduleCurrentCore() {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);
-                {
-                    /* Disable interrupts, and then context switch. */
-                    KScopedInterruptDisable intr_disable;
-                    ON_SCOPE_EXIT { GetCurrentThread().EnableDispatch(); };
 
-                    if (m_state.needs_scheduling.load()) {
-                        Schedule();
-                    }
+                GetCurrentThread().EnableDispatch();
+
+                if (m_state.needs_scheduling.load()) {
+                    /* Disable interrupts, and then check again if rescheduling is needed. */
+                    KScopedInterruptDisable intr_disable;
+
+                    GetCurrentScheduler().RescheduleCurrentCoreImpl();
+                }
+            }
+
+            ALWAYS_INLINE void RescheduleCurrentCoreImpl() {
+                /* Check that scheduling is needed. */
+                if (AMS_LIKELY(m_state.needs_scheduling.load())) {
+                    GetCurrentThread().DisableDispatch();
+                    this->Schedule();
+                    GetCurrentThread().EnableDispatch();
                 }
             }
 
@@ -199,10 +211,12 @@ namespace ams::kern {
     };
 
     consteval bool KScheduler::ValidateAssemblyOffsets() {
-        static_assert(__builtin_offsetof(KScheduler, m_state.needs_scheduling)               == KSCHEDULER_NEEDS_SCHEDULING);
-        static_assert(__builtin_offsetof(KScheduler, m_state.interrupt_task_thread_runnable) == KSCHEDULER_INTERRUPT_TASK_THREAD_RUNNABLE);
-        static_assert(__builtin_offsetof(KScheduler, m_state.highest_priority_thread)        == KSCHEDULER_HIGHEST_PRIORITY_THREAD);
-        static_assert(__builtin_offsetof(KScheduler, m_state.idle_thread_stack)              == KSCHEDULER_IDLE_THREAD_STACK);
+        static_assert(__builtin_offsetof(KScheduler, m_state.needs_scheduling)        == KSCHEDULER_NEEDS_SCHEDULING);
+        static_assert(__builtin_offsetof(KScheduler, m_state.interrupt_task_runnable) == KSCHEDULER_INTERRUPT_TASK_RUNNABLE);
+        static_assert(__builtin_offsetof(KScheduler, m_state.highest_priority_thread) == KSCHEDULER_HIGHEST_PRIORITY_THREAD);
+        static_assert(__builtin_offsetof(KScheduler, m_state.idle_thread_stack)       == KSCHEDULER_IDLE_THREAD_STACK);
+        static_assert(__builtin_offsetof(KScheduler, m_state.prev_thread)             == KSCHEDULER_PREVIOUS_THREAD);
+        static_assert(__builtin_offsetof(KScheduler, m_state.interrupt_task_manager)  == KSCHEDULER_INTERRUPT_TASK_MANAGER);
 
         return true;
     }

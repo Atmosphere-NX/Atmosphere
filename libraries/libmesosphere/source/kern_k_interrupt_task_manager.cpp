@@ -59,56 +59,32 @@ namespace ams::kern {
         #endif
     }
 
-    void KInterruptTaskManager::ThreadFunction(uintptr_t arg) {
-        reinterpret_cast<KInterruptTaskManager *>(arg)->ThreadFunctionImpl();
-    }
-
-    void KInterruptTaskManager::ThreadFunctionImpl() {
-        MESOSPHERE_ASSERT_THIS();
-
-        while (true) {
-            /* Get a task. */
-            KInterruptTask *task = nullptr;
-            {
-                KScopedInterruptDisable di;
-
-                task = m_task_queue.GetHead();
-                if (task == nullptr) {
-                    m_thread->SetState(KThread::ThreadState_Waiting);
-                    continue;
-                }
-
-                m_task_queue.Dequeue();
-            }
-
-            /* Do the task. */
-            task->DoTask();
-
-            /* Destroy any objects we may need to close. */
-            m_thread->DestroyClosedObjects();
-        }
-    }
-
-    void KInterruptTaskManager::Initialize() {
-        /* Reserve a thread from the system limit. */
-        MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));
-
-        /* Create and initialize the thread. */
-        m_thread = KThread::Create();
-        MESOSPHERE_ABORT_UNLESS(m_thread != nullptr);
-        MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeHighPriorityThread(m_thread, ThreadFunction, reinterpret_cast<uintptr_t>(this)));
-        KThread::Register(m_thread);
-
-        /* Run the thread. */
-        m_thread->Run();
-    }
-
     void KInterruptTaskManager::EnqueueTask(KInterruptTask *task) {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
 
         /* Enqueue the task and signal the scheduler. */
         m_task_queue.Enqueue(task);
         Kernel::GetScheduler().SetInterruptTaskRunnable();
+    }
+
+    void KInterruptTaskManager::DoTasks() {
+        /* Execute pending tasks. */
+        const s64 start_time = KHardwareTimer::GetTick();
+        for (KInterruptTask *task = m_task_queue.GetHead(); task != nullptr; task = m_task_queue.GetHead()) {
+            /* Dequeue the task. */
+            m_task_queue.Dequeue();
+
+            /* Do the task with interrupts temporarily enabled. */
+            {
+                KScopedInterruptEnable ei;
+
+                task->DoTask();
+            }
+        }
+        const s64 end_time = KHardwareTimer::GetTick();
+
+        /* Increment the time we've spent executing. */
+        m_cpu_time += end_time - start_time;
     }
 
 }
