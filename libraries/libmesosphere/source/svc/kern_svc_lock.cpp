@@ -30,7 +30,7 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            return GetCurrentProcess().WaitForAddress(thread_handle, address, tag);
+            return KConditionVariable::WaitForAddress(thread_handle, address, tag);
         }
 
         Result ArbitrateUnlock(uintptr_t address) {
@@ -38,7 +38,7 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            return GetCurrentProcess().SignalToAddress(address);
+            return KConditionVariable::SignalToAddress(address);
         }
 
     }

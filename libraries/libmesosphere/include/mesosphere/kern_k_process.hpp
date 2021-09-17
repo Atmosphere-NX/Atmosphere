@@ -341,14 +341,6 @@ namespace ams::kern {
             void UnpinCurrentThread();
             void UnpinThread(KThread *thread);
 
-            Result SignalToAddress(KProcessAddress address) {
-                return m_cond_var.SignalToAddress(address);
-            }
-
-            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress address, u32 tag) {
-                return m_cond_var.WaitForAddress(handle, address, tag);
-            }
-
             void SignalConditionVariable(uintptr_t cv_key, int32_t count) {
                 return m_cond_var.Signal(cv_key, count);
             }
