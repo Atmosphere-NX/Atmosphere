@@ -157,11 +157,10 @@ namespace ams::svc {
         InfoType_UsedNonSystemMemorySize        = 22,
         InfoType_IsApplication                  = 23,
         InfoType_FreeThreadCount                = 24,
+        InfoType_ThreadTickCount                = 25,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,
-
-        InfoType_ThreadTickCount                = 0xF0000002,
     };
 
     enum TickCountInfo : u64 {
