@@ -23,7 +23,7 @@ namespace ams::kern {
 
     class KLightSession;
 
-    class KLightServerSession final : public KAutoObjectWithSlabHeapAndContainer<KLightServerSession, KAutoObjectWithList>, public util::IntrusiveListBaseNode<KLightServerSession> {
+    class KLightServerSession final : public KAutoObject, public util::IntrusiveListBaseNode<KLightServerSession> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KLightServerSession, KAutoObject);
         private:
             KLightSession *m_parent;
@@ -33,7 +33,6 @@ namespace ams::kern {
             KThread *m_server_thread;
         public:
             constexpr KLightServerSession() : m_parent(), m_request_queue(), m_server_queue(), m_current_request(), m_server_thread() { /* ... */ }
-            virtual ~KLightServerSession() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */

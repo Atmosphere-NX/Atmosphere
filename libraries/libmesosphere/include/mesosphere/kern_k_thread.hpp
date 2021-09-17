@@ -239,10 +239,7 @@ namespace ams::kern {
         public:
             constexpr KThread() : m_wait_result(svc::ResultNoSynchronizationObject()), m_debug_exception_result(ResultSuccess()) { /* ... */ }
 
-            virtual ~KThread() { /* ... */ }
-
             Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
-
         private:
             static Result InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
         public:

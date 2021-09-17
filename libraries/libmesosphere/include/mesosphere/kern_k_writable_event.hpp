@@ -28,7 +28,6 @@ namespace ams::kern {
             KEvent *m_parent;
         public:
             constexpr explicit KWritableEvent() : m_parent(nullptr) { /* ... */ }
-            virtual ~KWritableEvent() { /* ... */ }
 
             virtual void Destroy() override;
 

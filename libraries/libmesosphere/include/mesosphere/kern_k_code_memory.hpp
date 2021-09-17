@@ -35,8 +35,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KCodeMemory() { /* ... */ }
-
             Result Initialize(KProcessAddress address, size_t size);
             virtual void Finalize() override;
 

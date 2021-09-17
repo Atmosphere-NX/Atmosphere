@@ -131,7 +131,6 @@ namespace ams::kern {
             size_t m_size;
         public:
             constexpr KSessionRequest() : m_mappings(), m_thread(), m_server(), m_event(), m_address(), m_size() { /* ... */ }
-            virtual ~KSessionRequest() { /* ... */ }
 
             static KSessionRequest *Create() {
                 KSessionRequest *req = KSessionRequest::Allocate();

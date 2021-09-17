@@ -36,8 +36,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KEvent() { /* ... */ }
-
             void Initialize();
             virtual void Finalize() override;
 

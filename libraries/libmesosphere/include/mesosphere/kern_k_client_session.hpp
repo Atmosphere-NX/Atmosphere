@@ -21,13 +21,12 @@ namespace ams::kern {
 
     class KSession;
 
-    class KClientSession final : public KAutoObjectWithSlabHeapAndContainer<KClientSession, KAutoObjectWithList> {
+    class KClientSession final : public KAutoObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KClientSession, KAutoObject);
         private:
             KSession *m_parent;
         public:
             constexpr KClientSession() : m_parent() { /* ... */ }
-            virtual ~KClientSession() { /* ... */ }
 
             void Initialize(KSession *parent) {
                 /* Set member variables. */

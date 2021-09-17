@@ -33,7 +33,6 @@ namespace ams::kern {
             KProcess::State m_old_process_state;
         public:
             explicit KDebugBase() { /* ... */ }
-            virtual ~KDebugBase() { /* ... */ }
         protected:
             bool Is64Bit() const;
         public:

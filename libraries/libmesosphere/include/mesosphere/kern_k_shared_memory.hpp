@@ -41,8 +41,6 @@ namespace ams::kern {
                 /* ... */
             }
 
-            virtual ~KSharedMemory() { /* ... */ }
-
             Result Initialize(KProcess *owner, size_t size, ams::svc::MemoryPermission own_perm, ams::svc::MemoryPermission rem_perm);
             virtual void Finalize() override;
 

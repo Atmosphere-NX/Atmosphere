@@ -31,7 +31,6 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDebug, KSynchronizationObject);
         public:
             explicit KDebug() { /* ... */ }
-            virtual ~KDebug() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
         public:

@@ -34,7 +34,6 @@ namespace ams::kern {
             KPort *m_parent;
         public:
             constexpr KClientPort() : m_num_sessions(), m_peak_sessions(), m_max_sessions(), m_parent() { /* ... */ }
-            virtual ~KClientPort() { /* ... */ }
 
             void Initialize(KPort *parent, s32 max_sessions);
             void OnSessionFinalized();

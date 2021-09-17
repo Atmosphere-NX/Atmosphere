@@ -21,13 +21,12 @@ namespace ams::kern {
 
     class KLightSession;
 
-    class KLightClientSession final : public KAutoObjectWithSlabHeapAndContainer<KLightClientSession, KAutoObjectWithList> {
+    class KLightClientSession final : public KAutoObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KLightClientSession, KAutoObject);
         private:
             KLightSession *m_parent;
         public:
             constexpr KLightClientSession() : m_parent() { /* ... */ }
-            virtual ~KLightClientSession() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */

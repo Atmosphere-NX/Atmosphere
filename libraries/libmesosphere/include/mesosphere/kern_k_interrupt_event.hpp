@@ -32,7 +32,6 @@ namespace ams::kern {
             bool m_is_initialized;
         public:
             constexpr KInterruptEvent() : m_interrupt_id(-1), m_core_id(-1), m_is_initialized(false) { /* ... */ }
-            virtual ~KInterruptEvent() { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
             virtual void Finalize() override;
