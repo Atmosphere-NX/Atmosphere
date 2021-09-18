@@ -293,7 +293,7 @@ namespace ams::kern::arch::arm64::init {
                 }
 
                 /* Swap the mappings. */
-                const u64 attr_preserve_mask  = (negative_block_size_for_mask | 0xFFFF000000000000ul) ^ ((1ul << 48) - 1);
+                const u64 attr_preserve_mask  = (block_size - 1) | 0xFFFF000000000000ul;
                 const size_t shift_for_contig = contig ? 4 : 0;
                 size_t advanced_size = 0;
                 const u64 src_attr_val = src_saved.GetRawAttributesUnsafeForSwap() & attr_preserve_mask;
@@ -726,8 +726,8 @@ namespace ams::kern::arch::arm64::init {
                 m_state.end_address  = address;
             }
 
-            ALWAYS_INLINE void InitializeFromState(uintptr_t state_val) {
-                m_state = *reinterpret_cast<State *>(state_val);
+            ALWAYS_INLINE void InitializeFromState(const State *state) {
+                m_state = *state;
             }
 
             ALWAYS_INLINE void GetFinalState(State *out) {

@@ -25,18 +25,18 @@ namespace ams::kern {
             s32 priority;
         };
 
+        constinit KPhysicalAddress g_initial_process_binary_phys_addr = Null<KPhysicalAddress>;
         constinit KVirtualAddress g_initial_process_binary_address = Null<KVirtualAddress>;
         constinit InitialProcessBinaryHeader g_initial_process_binary_header = {};
         constinit size_t g_initial_process_secure_memory_size = 0;
         constinit u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
         constinit u64 g_initial_process_id_max = std::numeric_limits<u64>::min();
 
-        void LoadInitialProcessBinaryHeader(KVirtualAddress virt_addr = Null<KVirtualAddress>) {
+        void LoadInitialProcessBinaryHeader() {
             if (g_initial_process_binary_header.magic != InitialProcessBinaryMagic) {
-                /* Get the virtual address, if it's not overridden. */
-                if (virt_addr == Null<KVirtualAddress>) {
-                    virt_addr = GetInitialProcessBinaryAddress();
-                }
+                /* Get the virtual address. */
+                MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
+                const KVirtualAddress virt_addr = KMemoryLayout::GetLinearVirtualAddress(g_initial_process_binary_phys_addr);
 
                 /* Copy and validate the header. */
                 g_initial_process_binary_header = *GetPointer<InitialProcessBinaryHeader>(virt_addr);
@@ -273,10 +273,18 @@ namespace ams::kern {
             }
         }
 
-        ALWAYS_INLINE KVirtualAddress GetInitialProcessBinaryAddress(KVirtualAddress pool_end) {
-            return pool_end - InitialProcessBinarySizeMax;
-        }
+    }
 
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr) {
+        MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr == Null<KPhysicalAddress>);
+
+        g_initial_process_binary_phys_addr = phys_addr;
+    }
+
+    KPhysicalAddress GetInitialProcessBinaryPhysicalAddress() {
+        MESOSPHERE_INIT_ABORT_UNLESS(g_initial_process_binary_phys_addr != Null<KPhysicalAddress>);
+
+        return g_initial_process_binary_phys_addr;
     }
 
     u64 GetInitialProcessIdMin() {
@@ -285,15 +293,6 @@ namespace ams::kern {
 
     u64 GetInitialProcessIdMax() {
         return g_initial_process_id_max;
-    }
-
-    KVirtualAddress GetInitialProcessBinaryAddress() {
-        /* Get, validate the pool region. */
-        const auto *pool_region = KMemoryLayout::GetVirtualMemoryRegionTree().FindLastDerived(KMemoryRegionType_VirtualDramUserPool);
-        MESOSPHERE_INIT_ABORT_UNLESS(pool_region != nullptr);
-        MESOSPHERE_INIT_ABORT_UNLESS(pool_region->GetEndAddress() != 0);
-        MESOSPHERE_ABORT_UNLESS(pool_region->GetSize() >= InitialProcessBinarySizeMax);
-        return GetInitialProcessBinaryAddress(pool_region->GetEndAddress());
     }
 
     size_t GetInitialProcessesSecureMemorySize() {
@@ -319,10 +318,6 @@ namespace ams::kern {
         } else {
             return 0;
         }
-    }
-
-    void LoadInitialProcessBinaryHeaderDeprecated(KPhysicalAddress pool_end) {
-        LoadInitialProcessBinaryHeader(GetInitialProcessBinaryAddress(KMemoryLayout::GetLinearVirtualAddress(pool_end)));
     }
 
     void CreateAndRunInitialProcesses() {

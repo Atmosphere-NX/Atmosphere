@@ -29,14 +29,19 @@ namespace ams::kern {
         u32 reserved;
     };
 
-    NOINLINE size_t CopyInitialProcessBinaryToKernelMemory();
-    NOINLINE void CreateAndRunInitialProcesses();
+    struct InitialProcessBinaryLayout {
+        uintptr_t address;
+        uintptr_t _08;
+    };
+
+    KPhysicalAddress GetInitialProcessBinaryPhysicalAddress();
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr);
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
-    KVirtualAddress GetInitialProcessBinaryAddress();
     size_t GetInitialProcessesSecureMemorySize();
 
-    void LoadInitialProcessBinaryHeaderDeprecated(KPhysicalAddress pool_end);
+    NOINLINE size_t CopyInitialProcessBinaryToKernelMemory();
+    NOINLINE void CreateAndRunInitialProcesses();
 
 }

@@ -107,7 +107,7 @@ namespace ams::kern {
 
         /* Free each region to its corresponding heap. */
         size_t reserved_sizes[MaxManagerCount] = {};
-        const KPhysicalAddress ini_start = KMemoryLayout::GetLinearPhysicalAddress(GetInitialProcessBinaryAddress());
+        const KPhysicalAddress ini_start = GetInitialProcessBinaryPhysicalAddress();
         const KPhysicalAddress ini_end   = ini_start + InitialProcessBinarySizeMax;
         const KPhysicalAddress ini_last  = ini_end - 1;
         for (const auto &it : KMemoryLayout::GetPhysicalMemoryRegionTree()) {

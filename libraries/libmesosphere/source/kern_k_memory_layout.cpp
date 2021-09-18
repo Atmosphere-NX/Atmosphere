@@ -111,43 +111,6 @@ namespace ams::kern {
         return true;
     }
 
-    KVirtualAddress KMemoryRegionTree::GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id) {
-        /* We want to find the total extents of the type id. */
-        const auto extents = this->GetDerivedRegionExtents(type_id);
-
-        /* Ensure that our alignment is correct. */
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.GetAddress(), alignment));
-
-        const uintptr_t first_address = extents.GetAddress();
-        const uintptr_t last_address  = extents.GetLastAddress();
-
-        const uintptr_t first_index = first_address / alignment;
-        const uintptr_t last_index  = last_address / alignment;
-
-        while (true) {
-            const uintptr_t candidate = KSystemControl::Init::GenerateRandomRange(first_index, last_index) * alignment;
-
-            /* Ensure that the candidate doesn't overflow with the size. */
-            if (!(candidate < candidate + size)) {
-                continue;
-            }
-
-            const uintptr_t candidate_last = candidate + size - 1;
-
-            /* Ensure that the candidate fits within the region. */
-            if (candidate_last > last_address) {
-                continue;
-            }
-
-            /* Locate the candidate region, and ensure it fits and has the correct type id. */
-            if (const auto &candidate_region = *this->Find(candidate); !(candidate_last <= candidate_region.GetLastAddress() && candidate_region.GetType() == type_id)) {
-                continue;
-            }
-
-            return candidate;
-        }
-    }
-
     void KMemoryLayout::InitializeLinearMemoryRegionTrees() {
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {

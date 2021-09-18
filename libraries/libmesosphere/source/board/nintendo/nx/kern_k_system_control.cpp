@@ -346,8 +346,11 @@ namespace ams::kern::board::nintendo::nx {
         }
     }
 
-    KPhysicalAddress KSystemControl::Init::GetInitialProcessBinaryPhysicalAddress() {
-        return GetKernelPhysicalBaseAddress(DramPhysicalAddress) + GetIntendedMemorySize() - KTraceBufferSize - InitialProcessBinarySizeMax;
+    void KSystemControl::Init::GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out) {
+        *out = {
+            .address = GetInteger(GetKernelPhysicalBaseAddress(DramPhysicalAddress)) + GetIntendedMemorySize() - KTraceBufferSize - InitialProcessBinarySizeMax,
+            ._08     = 0,
+        };
     }
 
     bool KSystemControl::Init::ShouldIncreaseThreadResourceLimit() {
