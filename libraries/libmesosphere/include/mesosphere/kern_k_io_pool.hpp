@@ -17,30 +17,34 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
+#include <mesosphere/kern_k_io_region.hpp>
 
 namespace ams::kern {
 
-    class KProcess;
-
-    class KBeta final : public KAutoObjectWithSlabHeapAndContainer<KBeta, KAutoObjectWithList> {
-        MESOSPHERE_AUTOOBJECT_TRAITS(KBeta, KAutoObject);
+    class KIoPool final : public KAutoObjectWithSlabHeapAndContainer<KIoPool, KAutoObjectWithList> {
+        MESOSPHERE_AUTOOBJECT_TRAITS(KIoPool, KAutoObject);
         private:
-            friend class KProcess;
+            using IoRegionList = util::IntrusiveListMemberTraits<&KIoRegion::m_pool_list_node>::ListType;
         private:
-            /* NOTE: Official KBeta has size 0x88, corresponding to 0x58 bytes of fields. */
-            /* TODO: Add these fields, if KBeta is ever instantiable in the NX kernel. */
-            util::IntrusiveListNode m_process_list_node;
+            KLightLock m_lock;
+            IoRegionList m_io_region_list;
+            ams::svc::IoPoolType m_pool_type;
+            bool m_is_initialized;
         public:
-            explicit KBeta()
-                : m_process_list_node()
-            {
+            static bool IsValidIoPoolType(ams::svc::IoPoolType pool_type);
+        public:
+            explicit KIoPool() : m_lock(), m_io_region_list(), m_is_initialized(false) {
                 /* ... */
             }
 
-            /* virtual void Finalize() override; */
+            Result Initialize(ams::svc::IoPoolType pool_type);
+            virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return false /* TODO */; }
+            virtual bool IsInitialized() const override { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
+
+            Result AddIoRegion(KIoRegion *region);
+            void RemoveIoRegion(KIoRegion *region);
     };
 
 }

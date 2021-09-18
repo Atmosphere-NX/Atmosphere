@@ -346,8 +346,8 @@ namespace ams::kern::KDumpObject {
                 DUMP_KSLABOBJ(KEventInfo);
                 DUMP_KSLABOBJ(KSessionRequest);
                 DUMP_KSLABOBJ(KResourceLimit);
-                DUMP_KSLABOBJ(KAlpha);
-                DUMP_KSLABOBJ(KBeta);
+                DUMP_KSLABOBJ(KIoPool);
+                DUMP_KSLABOBJ(KIoRegion);
 
                 #undef DUMP_KSLABOBJ
 
