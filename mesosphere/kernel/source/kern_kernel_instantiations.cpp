@@ -21,10 +21,6 @@ namespace ams::kern {
     constinit Kernel::State           Kernel::s_state = Kernel::State::Invalid;
     constinit KResourceLimit          Kernel::s_system_resource_limit;
               KMemoryManager          Kernel::s_memory_manager;
-    constinit KPageTableManager       Kernel::s_page_table_manager;
-    constinit KMemoryBlockSlabManager Kernel::s_app_memory_block_manager;
-    constinit KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
-    constinit KBlockInfoManager       Kernel::s_block_info_manager;
     constinit KSupervisorPageTable    Kernel::s_supervisor_page_table;
     constinit KUnsafeMemory           Kernel::s_unsafe_memory;
     constinit KWorkerTaskManager      Kernel::s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
@@ -32,6 +28,17 @@ namespace ams::kern {
     constinit KScheduler              Kernel::s_schedulers[cpu::NumCores];
     constinit KInterruptTaskManager   Kernel::s_interrupt_task_managers[cpu::NumCores];
     constinit KHardwareTimer          Kernel::s_hardware_timers[cpu::NumCores];
+
+    constinit KPageTableSlabHeap      Kernel::s_page_table_heap;
+    constinit KMemoryBlockSlabHeap    Kernel::s_app_memory_block_heap;
+    constinit KMemoryBlockSlabHeap    Kernel::s_sys_memory_block_heap;
+    constinit KBlockInfoSlabHeap      Kernel::s_block_info_heap;
+    constinit KPageTableManager       Kernel::s_app_page_table_manager;
+    constinit KPageTableManager       Kernel::s_sys_page_table_manager;
+    constinit KMemoryBlockSlabManager Kernel::s_app_memory_block_manager;
+    constinit KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
+    constinit KBlockInfoManager       Kernel::s_app_block_info_manager;
+    constinit KBlockInfoManager       Kernel::s_sys_block_info_manager;
 
     namespace {
 

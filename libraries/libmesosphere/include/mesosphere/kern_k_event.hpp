@@ -21,7 +21,7 @@
 
 namespace ams::kern {
 
-    class KEvent final : public KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList> {
+    class KEvent final : public KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList, true> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KEvent, KAutoObject);
         private:
             KReadableEvent m_readable_event;

@@ -25,7 +25,7 @@ namespace ams::kern {
     class KClientPort;
     class KProcess;
 
-    class KSession final : public KAutoObjectWithSlabHeapAndContainer<KSession, KAutoObjectWithList> {
+    class KSession final : public KAutoObjectWithSlabHeapAndContainer<KSession, KAutoObjectWithList, true> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KSession, KAutoObject);
         private:
             enum class State : u8 {

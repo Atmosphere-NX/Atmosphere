@@ -63,14 +63,21 @@ namespace ams::kern {
             static constexpr size_t ApplicationMemoryBlockSlabHeapSize = 20000;
             static constexpr size_t SystemMemoryBlockSlabHeapSize      = 10000;
             static constexpr size_t BlockInfoSlabHeapSize              = 4000;
+            static constexpr size_t ReservedDynamicPageCount           = 70;
         private:
             static State s_state;
             static KResourceLimit s_system_resource_limit;
             static KMemoryManager s_memory_manager;
-            static KPageTableManager s_page_table_manager;
+            static KPageTableSlabHeap s_page_table_heap;
+            static KMemoryBlockSlabHeap s_app_memory_block_heap;
+            static KMemoryBlockSlabHeap s_sys_memory_block_heap;
+            static KBlockInfoSlabHeap s_block_info_heap;
+            static KPageTableManager s_app_page_table_manager;
+            static KPageTableManager s_sys_page_table_manager;
             static KMemoryBlockSlabManager s_app_memory_block_manager;
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
-            static KBlockInfoManager s_block_info_manager;
+            static KBlockInfoManager s_app_block_info_manager;
+            static KBlockInfoManager s_sys_block_info_manager;
             static KSupervisorPageTable s_supervisor_page_table;
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
@@ -130,12 +137,20 @@ namespace ams::kern {
                 return s_sys_memory_block_manager;
             }
 
-            static ALWAYS_INLINE KBlockInfoManager &GetBlockInfoManager() {
-                return s_block_info_manager;
+            static ALWAYS_INLINE KBlockInfoManager &GetApplicationBlockInfoManager() {
+                return s_app_block_info_manager;
             }
 
-            static ALWAYS_INLINE KPageTableManager &GetPageTableManager() {
-                return s_page_table_manager;
+            static ALWAYS_INLINE KBlockInfoManager &GetSystemBlockInfoManager() {
+                return s_sys_block_info_manager;
+            }
+
+            static ALWAYS_INLINE KPageTableManager &GetApplicationPageTableManager() {
+                return s_app_page_table_manager;
+            }
+
+            static ALWAYS_INLINE KPageTableManager &GetSystemPageTableManager() {
+                return s_sys_page_table_manager;
             }
 
             static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {

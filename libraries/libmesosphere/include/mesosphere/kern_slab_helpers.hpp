@@ -18,15 +18,16 @@
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_k_slab_heap.hpp>
 #include <mesosphere/kern_k_auto_object_container.hpp>
+#include <mesosphere/kern_k_unused_slab_memory.hpp>
 
 namespace ams::kern {
 
-    template<class Derived>
+    template<class Derived, bool SupportDynamicExpansion = false>
     class KSlabAllocated {
         private:
-            static inline KSlabHeap<Derived> s_slab_heap;
+            static constinit inline KSlabHeap<Derived, SupportDynamicExpansion> s_slab_heap;
         public:
-            constexpr KSlabAllocated() { /* ... */ }
+            constexpr KSlabAllocated() = default;
 
             size_t GetSlabIndex() const {
                 return s_slab_heap.GetIndex(static_cast<const Derived *>(this));
@@ -36,12 +37,23 @@ namespace ams::kern {
                 s_slab_heap.Initialize(memory, memory_size);
             }
 
-            static ALWAYS_INLINE Derived *Allocate() {
+            static Derived *Allocate() {
                 return s_slab_heap.Allocate();
             }
 
-            static ALWAYS_INLINE void Free(Derived *obj) {
+            static void Free(Derived *obj) {
                 s_slab_heap.Free(obj);
+            }
+
+            template<bool Enable = SupportDynamicExpansion, typename = typename std::enable_if<Enable>::type>
+            static Derived *AllocateFromUnusedSlabMemory() {
+                static_assert(Enable == SupportDynamicExpansion);
+
+                Derived * const obj = GetPointer<Derived>(AllocateUnusedSlabMemory(sizeof(Derived), alignof(Derived)));
+                if (AMS_LIKELY(obj != nullptr)) {
+                    std::construct_at(obj);
+                }
+                return obj;
             }
 
             static size_t GetObjectSize() { return s_slab_heap.GetObjectSize(); }
@@ -52,12 +64,12 @@ namespace ams::kern {
             static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
-    template<typename Derived, typename Base>
+    template<typename Derived, typename Base, bool SupportDynamicExpansion = false>
     class KAutoObjectWithSlabHeapAndContainer : public Base {
         static_assert(std::is_base_of<KAutoObjectWithList, Base>::value);
         private:
-            static inline KSlabHeap<Derived> s_slab_heap;
-            static inline KAutoObjectWithListContainer s_container;
+            static constinit inline KSlabHeap<Derived, SupportDynamicExpansion> s_slab_heap;
+            static constinit inline KAutoObjectWithListContainer s_container;
         private:
             static ALWAYS_INLINE Derived *Allocate() {
                 return s_slab_heap.Allocate();
@@ -73,7 +85,7 @@ namespace ams::kern {
                     ALWAYS_INLINE ~ListAccessor() { /* ... */ }
             };
         public:
-            constexpr KAutoObjectWithSlabHeapAndContainer() : Base() { /* ... */ }
+            constexpr KAutoObjectWithSlabHeapAndContainer() = default;
 
             virtual void Destroy() override {
                 const bool is_initialized = this->IsInitialized();
@@ -104,6 +116,18 @@ namespace ams::kern {
             static Derived *Create() {
                 Derived *obj = Allocate();
                 if (AMS_LIKELY(obj != nullptr)) {
+                    KAutoObject::Create(obj);
+                }
+                return obj;
+            }
+
+            template<bool Enable = SupportDynamicExpansion, typename = typename std::enable_if<Enable>::type>
+            static Derived *CreateFromUnusedSlabMemory() {
+                static_assert(Enable == SupportDynamicExpansion);
+
+                Derived * const obj = GetPointer<Derived>(AllocateUnusedSlabMemory(sizeof(Derived), alignof(Derived)));
+                if (AMS_LIKELY(obj != nullptr)) {
+                    std::construct_at(obj);
                     KAutoObject::Create(obj);
                 }
                 return obj;

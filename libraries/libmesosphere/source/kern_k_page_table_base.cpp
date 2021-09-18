@@ -106,7 +106,7 @@ namespace ams::kern {
         m_mapped_ipc_server_memory          = 0;
 
         m_memory_block_slab_manager         = std::addressof(Kernel::GetSystemMemoryBlockManager());
-        m_block_info_manager                = std::addressof(Kernel::GetBlockInfoManager());
+        m_block_info_manager                = std::addressof(Kernel::GetSystemBlockInfoManager());
         m_resource_limit                    = std::addressof(Kernel::GetSystemResourceLimit());
 
         m_allocate_option                   = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);

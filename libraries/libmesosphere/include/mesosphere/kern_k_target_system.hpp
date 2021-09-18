@@ -23,12 +23,13 @@ namespace ams::kern {
         private:
             friend class KSystemControl;
         private:
-            static inline bool s_is_debug_mode;
-            static inline bool s_enable_debug_logging;
-            static inline bool s_enable_user_exception_handlers;
-            static inline bool s_enable_debug_memory_fill;
-            static inline bool s_enable_user_pmu_access;
-            static inline bool s_enable_kernel_debugging;
+            static inline constinit bool s_is_debug_mode;
+            static inline constinit bool s_enable_debug_logging;
+            static inline constinit bool s_enable_user_exception_handlers;
+            static inline constinit bool s_enable_debug_memory_fill;
+            static inline constinit bool s_enable_user_pmu_access;
+            static inline constinit bool s_enable_kernel_debugging;
+            static inline constinit bool s_enable_dynamic_resource_limits;
         private:
             static ALWAYS_INLINE void SetIsDebugMode(bool en) { s_is_debug_mode = en; }
             static ALWAYS_INLINE void EnableDebugLogging(bool en) { s_enable_debug_logging = en; }
@@ -36,6 +37,7 @@ namespace ams::kern {
             static ALWAYS_INLINE void EnableDebugMemoryFill(bool en) { s_enable_debug_memory_fill = en; }
             static ALWAYS_INLINE void EnableUserPmuAccess(bool en) { s_enable_user_pmu_access = en; }
             static ALWAYS_INLINE void EnableKernelDebugging(bool en) { s_enable_kernel_debugging = en; }
+            static ALWAYS_INLINE void EnableDynamicResourceLimits(bool en) { s_enable_dynamic_resource_limits = en; }
         public:
             static ALWAYS_INLINE bool IsDebugMode() { return s_is_debug_mode; }
             static ALWAYS_INLINE bool IsDebugLoggingEnabled() { return s_enable_debug_logging; }
@@ -43,6 +45,7 @@ namespace ams::kern {
             static ALWAYS_INLINE bool IsDebugMemoryFillEnabled() { return s_enable_debug_memory_fill; }
             static ALWAYS_INLINE bool IsUserPmuAccessEnabled() { return s_enable_user_pmu_access; }
             static ALWAYS_INLINE bool IsKernelDebuggingEnabled() { return s_enable_kernel_debugging; }
+            static ALWAYS_INLINE bool IsDynamicResourceLimitsEnabled() { return s_enable_dynamic_resource_limits; }
     };
 
 }

@@ -27,12 +27,44 @@ namespace ams::kern::svc {
             auto &process      = GetCurrentProcess();
             auto &handle_table = process.GetHandleTable();
 
+            /* Declare the session we're going to allocate. */
+            T *session;
+
             /* Reserve a new session from the process resource limit. */
             KScopedResourceReservation session_reservation(std::addressof(process), ams::svc::LimitableResource_SessionCountMax);
-            R_UNLESS(session_reservation.Succeeded(), svc::ResultLimitReached());
+            if (session_reservation.Succeeded()) {
+                /* Allocate a session normally. */
+                session = T::Create();
+            } else {
+                /* We couldn't reserve a session. Check that we support dynamically expanding the resource limit. */
+                R_UNLESS(process.GetResourceLimit() == std::addressof(Kernel::GetSystemResourceLimit()), svc::ResultLimitReached());
+                R_UNLESS(KTargetSystem::IsDynamicResourceLimitsEnabled(),                                svc::ResultLimitReached());
 
-            /* Create a new session. */
-            T *session = T::Create();
+                /* Try to allocate a session from unused slab memory. */
+                session = T::CreateFromUnusedSlabMemory();
+                R_UNLESS(session != nullptr, svc::ResultLimitReached());
+
+                /* If we're creating a KSession, we want to add two KSessionRequests to the heap, to prevent request exhaustion. */
+                /* NOTE: Nintendo checks if session->DynamicCast<KSession *>() != nullptr, but there's no reason to not do this statically. */
+                if constexpr (std::same_as<T, KSession>) {
+                    /* Ensure that if we fail to allocate our session requests, we close the session we created. */
+                    auto session_guard = SCOPE_GUARD { session->Close(); };
+                    {
+                        for (size_t i = 0; i < 2; ++i) {
+                            KSessionRequest *request = KSessionRequest::CreateFromUnusedSlabMemory();
+                            R_UNLESS(request != nullptr, svc::ResultLimitReached());
+
+                            request->Close();
+                        }
+                    }
+                    session_guard.Cancel();
+                }
+
+                /* We successfully allocated a session, so add the object we allocated to the resource limit. */
+                Kernel::GetSystemResourceLimit().Add(ams::svc::LimitableResource_SessionCountMax, 1);
+            }
+
+            /* Check that we successfully created a session. */
             R_UNLESS(session != nullptr, svc::ResultOutOfResource());
 
             /* Initialize the session. */

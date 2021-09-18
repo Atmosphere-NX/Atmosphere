@@ -459,6 +459,7 @@ namespace ams::kern::board::nintendo::nx {
 
             KTargetSystem::EnableDebugMemoryFill(kernel_config.Get<smc::KernelConfiguration::DebugFillMemory>());
             KTargetSystem::EnableUserExceptionHandlers(kernel_config.Get<smc::KernelConfiguration::EnableUserExceptionHandlers>());
+            KTargetSystem::EnableDynamicResourceLimits(!kernel_config.Get<smc::KernelConfiguration::DisableDynamicResourceLimits>());
             KTargetSystem::EnableUserPmuAccess(kernel_config.Get<smc::KernelConfiguration::EnableUserPmuAccess>());
 
             g_call_smc_on_panic = kernel_config.Get<smc::KernelConfiguration::UseSecureMonitorPanicCall>();

@@ -62,11 +62,46 @@ namespace ams::kern {
     Result KClientPort::CreateSession(KClientSession **out) {
         MESOSPHERE_ASSERT_THIS();
 
+        /* Declare the session we're going to allocate. */
+        KSession *session;
+
         /* Reserve a new session from the resource limit. */
         KScopedResourceReservation session_reservation(GetCurrentProcessPointer(), ams::svc::LimitableResource_SessionCountMax);
-        R_UNLESS(session_reservation.Succeeded(), svc::ResultLimitReached());
+        if (session_reservation.Succeeded()) {
+            /* Allocate a session normally. */
+            session = KSession::Create();
+        } else {
+            /* We couldn't reserve a session. Check that we support dynamically expanding the resource limit. */
+            R_UNLESS(GetCurrentProcess().GetResourceLimit() == std::addressof(Kernel::GetSystemResourceLimit()), svc::ResultLimitReached());
+            R_UNLESS(KTargetSystem::IsDynamicResourceLimitsEnabled(),                                            svc::ResultLimitReached());
+
+            /* Try to allocate a session from unused slab memory. */
+            session = KSession::CreateFromUnusedSlabMemory();
+            R_UNLESS(session != nullptr, svc::ResultLimitReached());
+
+            /* Ensure that if we fail to allocate our session requests, we close the session we created. */
+            auto session_guard = SCOPE_GUARD { session->Close(); };
+            {
+                /* We want to add two KSessionRequests to the heap, to prevent request exhaustion. */
+                for (size_t i = 0; i < 2; ++i) {
+                    KSessionRequest *request = KSessionRequest::CreateFromUnusedSlabMemory();
+                    R_UNLESS(request != nullptr, svc::ResultLimitReached());
+
+                    request->Close();
+                }
+            }
+            session_guard.Cancel();
+
+            /* We successfully allocated a session, so add the object we allocated to the resource limit. */
+            Kernel::GetSystemResourceLimit().Add(ams::svc::LimitableResource_SessionCountMax, 1);
+        }
+
+        /* Check that we successfully created a session. */
+        R_UNLESS(session != nullptr, svc::ResultOutOfResource());
+
 
         /* Update the session counts. */
+        auto count_guard = SCOPE_GUARD { session->Close(); };
         {
             /* Atomically increment the number of sessions. */
             s32 new_sessions;
@@ -90,18 +125,7 @@ namespace ams::kern {
                 } while (!m_peak_sessions.compare_exchange_weak(peak, new_sessions, std::memory_order_relaxed));
             }
         }
-
-        /* Create a new session. */
-        KSession *session = KSession::Create();
-        if (session == nullptr) {
-            /* Decrement the session count. */
-            const auto prev = m_num_sessions--;
-            if (prev == m_max_sessions) {
-                this->NotifyAvailable();
-            }
-
-            return svc::ResultOutOfResource();
-        }
+        count_guard.Cancel();
 
         /* Initialize the session. */
         session->Initialize(this, m_parent->GetName());
@@ -128,11 +152,32 @@ namespace ams::kern {
     Result KClientPort::CreateLightSession(KLightClientSession **out) {
         MESOSPHERE_ASSERT_THIS();
 
+        /* Declare the session we're going to allocate. */
+        KLightSession *session;
+
         /* Reserve a new session from the resource limit. */
         KScopedResourceReservation session_reservation(GetCurrentProcessPointer(), ams::svc::LimitableResource_SessionCountMax);
-        R_UNLESS(session_reservation.Succeeded(), svc::ResultLimitReached());
+        if (session_reservation.Succeeded()) {
+            /* Allocate a session normally. */
+            session = KLightSession::Create();
+        } else {
+            /* We couldn't reserve a session. Check that we support dynamically expanding the resource limit. */
+            R_UNLESS(GetCurrentProcess().GetResourceLimit() == std::addressof(Kernel::GetSystemResourceLimit()), svc::ResultLimitReached());
+            R_UNLESS(KTargetSystem::IsDynamicResourceLimitsEnabled(),                                            svc::ResultLimitReached());
+
+            /* Try to allocate a session from unused slab memory. */
+            session = KLightSession::CreateFromUnusedSlabMemory();
+            R_UNLESS(session != nullptr, svc::ResultLimitReached());
+
+            /* We successfully allocated a session, so add the object we allocated to the resource limit. */
+            Kernel::GetSystemResourceLimit().Add(ams::svc::LimitableResource_SessionCountMax, 1);
+        }
+
+        /* Check that we successfully created a session. */
+        R_UNLESS(session != nullptr, svc::ResultOutOfResource());
 
         /* Update the session counts. */
+        auto count_guard = SCOPE_GUARD { session->Close(); };
         {
             /* Atomically increment the number of sessions. */
             s32 new_sessions;
@@ -156,18 +201,7 @@ namespace ams::kern {
                 } while (!m_peak_sessions.compare_exchange_weak(peak, new_sessions, std::memory_order_relaxed));
             }
         }
-
-        /* Create a new session. */
-        KLightSession *session = KLightSession::Create();
-        if (session == nullptr) {
-            /* Decrement the session count. */
-            const auto prev = m_num_sessions--;
-            if (prev == m_max_sessions) {
-                this->NotifyAvailable();
-            }
-
-            return svc::ResultOutOfResource();
-        }
+        count_guard.Cancel();
 
         /* Initialize the session. */
         session->Initialize(this, m_parent->GetName());

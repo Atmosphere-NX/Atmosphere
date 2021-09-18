@@ -80,14 +80,15 @@ namespace ams::kern::board::nintendo::nx::smc {
     };
 
     struct KernelConfiguration {
-        using DebugFillMemory             = util::BitPack32::Field<0,                                 1, bool>;
-        using EnableUserExceptionHandlers = util::BitPack32::Field<DebugFillMemory::Next,             1, bool>;
-        using EnableUserPmuAccess         = util::BitPack32::Field<EnableUserExceptionHandlers::Next, 1, bool>;
-        using IncreaseThreadResourceLimit = util::BitPack32::Field<EnableUserPmuAccess::Next,         1, bool>;
-        using Reserved4                   = util::BitPack32::Field<IncreaseThreadResourceLimit::Next, 4, u32>;
-        using UseSecureMonitorPanicCall   = util::BitPack32::Field<Reserved4::Next,                   1, bool>;
-        using Reserved9                   = util::BitPack32::Field<UseSecureMonitorPanicCall::Next,   7, u32>;
-        using MemorySize                  = util::BitPack32::Field<Reserved9::Next,                   2, smc::MemorySize>;
+        using DebugFillMemory              = util::BitPack32::Field<0,                                  1, bool>;
+        using EnableUserExceptionHandlers  = util::BitPack32::Field<DebugFillMemory::Next,              1, bool>;
+        using EnableUserPmuAccess          = util::BitPack32::Field<EnableUserExceptionHandlers::Next,  1, bool>;
+        using IncreaseThreadResourceLimit  = util::BitPack32::Field<EnableUserPmuAccess::Next,          1, bool>;
+        using DisableDynamicResourceLimits = util::BitPack32::Field<IncreaseThreadResourceLimit::Next,  1, bool>;
+        using Reserved5                    = util::BitPack32::Field<DisableDynamicResourceLimits::Next, 3, u32>;
+        using UseSecureMonitorPanicCall    = util::BitPack32::Field<Reserved5::Next,                    1, bool>;
+        using Reserved9                    = util::BitPack32::Field<UseSecureMonitorPanicCall::Next,    7, u32>;
+        using MemorySize                   = util::BitPack32::Field<Reserved9::Next,                    2, smc::MemorySize>;
     };
 
     enum UserRebootType {

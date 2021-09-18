@@ -24,7 +24,7 @@
 
 namespace ams::kern {
 
-    class KSessionRequest final : public KSlabAllocated<KSessionRequest>, public KAutoObject, public util::IntrusiveListBaseNode<KSessionRequest> {
+    class KSessionRequest final : public KSlabAllocated<KSessionRequest, true>, public KAutoObject, public util::IntrusiveListBaseNode<KSessionRequest> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KSessionRequest, KAutoObject);
         public:
             class SessionMappings {
@@ -134,6 +134,14 @@ namespace ams::kern {
 
             static KSessionRequest *Create() {
                 KSessionRequest *req = KSessionRequest::Allocate();
+                if (req != nullptr) {
+                    KAutoObject::Create(req);
+                }
+                return req;
+            }
+
+            static KSessionRequest *CreateFromUnusedSlabMemory() {
+                KSessionRequest *req = KSessionRequest::AllocateFromUnusedSlabMemory();
                 if (req != nullptr) {
                     KAutoObject::Create(req);
                 }

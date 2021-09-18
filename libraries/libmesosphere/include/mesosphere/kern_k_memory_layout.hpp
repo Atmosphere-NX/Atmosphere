@@ -144,6 +144,7 @@ namespace ams::kern {
             static NOINLINE const KMemoryRegion &GetPageTableHeapRegion()  { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_VirtualDramKernelPtHeap)); }
             static NOINLINE const KMemoryRegion &GetKernelStackRegion()    { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelStack)); }
             static NOINLINE const KMemoryRegion &GetTempRegion()           { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelTemp)); }
+            static NOINLINE const KMemoryRegion &GetSlabRegion()           { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelSlab)); }
 
             static NOINLINE const KMemoryRegion &GetKernelTraceBufferRegion() { return Dereference(GetVirtualLinearMemoryRegionTree().FindByType(KMemoryRegionType_VirtualDramKernelTraceBuffer)); }
 
