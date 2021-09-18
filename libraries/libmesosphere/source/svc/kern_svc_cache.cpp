@@ -43,7 +43,7 @@ namespace ams::kern::svc {
                 ON_SCOPE_EXIT { contig_range.Close(); };
 
                 /* Adjust to remain within range. */
-                KVirtualAddress operate_address = contig_range.address;
+                KVirtualAddress operate_address = KMemoryLayout::GetLinearVirtualAddress(contig_range.address);
                 size_t operate_size             = contig_range.size;
                 if (cur_address < address) {
                     operate_address += (address - cur_address);

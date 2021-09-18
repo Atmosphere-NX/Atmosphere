@@ -51,7 +51,7 @@ namespace ams::kern {
 
         /* Clear all pages in the memory. */
         for (const auto &block : m_page_group) {
-            std::memset(GetVoidPointer(block.GetAddress()), 0, block.GetSize());
+            std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress())), 0, block.GetSize());
         }
 
         return ResultSuccess();

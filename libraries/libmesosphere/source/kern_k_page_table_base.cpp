@@ -116,7 +116,6 @@ namespace ams::kern {
 
         m_cached_physical_linear_region     = nullptr;
         m_cached_physical_heap_region       = nullptr;
-        m_cached_virtual_heap_region        = nullptr;
 
         /* Initialize our implementation. */
         m_impl.InitializeForKernel(table, start, end);
@@ -1145,7 +1144,7 @@ namespace ams::kern {
 
         /* Clear all pages. */
         for (const auto &it : pg) {
-            std::memset(GetVoidPointer(it.GetAddress()), m_heap_fill_value, it.GetSize());
+            std::memset(GetVoidPointer(GetHeapVirtualAddress(it.GetAddress())), m_heap_fill_value, it.GetSize());
         }
 
         /* Map the pages. */
@@ -1171,13 +1170,9 @@ namespace ams::kern {
 
         /* Iterate, mapping all pages in the group. */
         for (const auto &block : pg) {
-            /* We only allow mapping pages in the heap, and we require we're mapping non-empty blocks. */
-            MESOSPHERE_ABORT_UNLESS(block.GetAddress() < block.GetLastAddress());
-            MESOSPHERE_ABORT_UNLESS(IsHeapVirtualAddress(block.GetAddress(), block.GetSize()));
-
             /* Map and advance. */
             const KPageProperties cur_properties = (cur_address == start_address) ? properties : KPageProperties{ properties.perm, properties.io, properties.uncached, DisableMergeAttribute_None };
-            R_TRY(this->Operate(page_list, cur_address, block.GetNumPages(), GetHeapPhysicalAddress(block.GetAddress()), true, cur_properties, OperationType_Map, reuse_ll));
+            R_TRY(this->Operate(page_list, cur_address, block.GetNumPages(), block.GetAddress(), true, cur_properties, OperationType_Map, reuse_ll));
             cur_address += block.GetSize();
         }
 
@@ -1198,7 +1193,7 @@ namespace ams::kern {
         auto pg_it = pg.begin();
         MESOSPHERE_ABORT_UNLESS(pg_it != pg.end());
 
-        KPhysicalAddress pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+        KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
         size_t pg_pages = pg_it->GetNumPages();
 
         auto it = m_memory_block_manager.FindIterator(start_address);
@@ -1228,7 +1223,7 @@ namespace ams::kern {
 
                     /* Advance our physical block. */
                     ++pg_it;
-                    pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                    pg_phys_addr = pg_it->GetAddress();
                     pg_pages     = pg_it->GetNumPages();
                 }
 
@@ -1285,7 +1280,7 @@ namespace ams::kern {
                 const size_t cur_pages = cur_size / PageSize;
 
                 R_UNLESS(IsHeapPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
-                R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_addr), cur_pages));
+                R_TRY(pg.AddBlock(cur_addr, cur_pages));
 
                 cur_addr           = next_entry.phys_addr;
                 cur_size           = next_entry.block_size;
@@ -1304,7 +1299,7 @@ namespace ams::kern {
         /* add the last block. */
         const size_t cur_pages = cur_size / PageSize;
         R_UNLESS(IsHeapPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
-        R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_addr), cur_pages));
+        R_TRY(pg.AddBlock(cur_addr, cur_pages));
 
         return ResultSuccess();
     }
@@ -1323,7 +1318,7 @@ namespace ams::kern {
 
         /* We're going to validate that the group we'd expect is the group we see. */
         auto cur_it = pg.begin();
-        KVirtualAddress cur_block_address = cur_it->GetAddress();
+        KPhysicalAddress cur_block_address = cur_it->GetAddress();
         size_t cur_block_pages = cur_it->GetNumPages();
 
         auto UpdateCurrentIterator = [&]() ALWAYS_INLINE_LAMBDA {
@@ -1367,7 +1362,7 @@ namespace ams::kern {
                     return false;
                 }
 
-                if (cur_block_address != GetHeapVirtualAddress(cur_addr) || cur_block_pages < cur_pages) {
+                if (cur_block_address != cur_addr || cur_block_pages < cur_pages) {
                     return false;
                 }
 
@@ -1395,7 +1390,7 @@ namespace ams::kern {
             return false;
         }
 
-        return cur_block_address == GetHeapVirtualAddress(cur_addr) && cur_block_pages == (cur_size / PageSize);
+        return cur_block_address == cur_addr && cur_block_pages == (cur_size / PageSize);
     }
 
     Result KPageTableBase::GetContiguousMemoryRangeWithState(MemoryRange *out, KProcessAddress address, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
@@ -1434,7 +1429,7 @@ namespace ams::kern {
 
         /* The memory is contiguous, so set the output range. */
         *out = {
-            .address = GetLinearMappedVirtualAddress(phys_address),
+            .address = phys_address,
             .size    = size,
         };
 
@@ -1533,7 +1528,7 @@ namespace ams::kern {
         /* Ensure cache coherency, if we're setting pages as executable. */
         if (is_x) {
             for (const auto &block : pg) {
-                cpu::StoreDataCache(GetVoidPointer(block.GetAddress()), block.GetSize());
+                cpu::StoreDataCache(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), block.GetSize());
             }
             cpu::InvalidateEntireInstructionCache();
         }
@@ -1658,7 +1653,7 @@ namespace ams::kern {
 
         /* Clear all the newly allocated pages. */
         for (const auto &it : pg) {
-            std::memset(GetVoidPointer(it.GetAddress()), m_heap_fill_value, it.GetSize());
+            std::memset(GetVoidPointer(GetHeapVirtualAddress(it.GetAddress())), m_heap_fill_value, it.GetSize());
         }
 
         /* Map the pages. */
@@ -3579,16 +3574,16 @@ namespace ams::kern {
         R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
         /* Ensure that we manage page references correctly. */
-        KVirtualAddress start_partial_page = Null<KVirtualAddress>;
-        KVirtualAddress end_partial_page   = Null<KVirtualAddress>;
-        KProcessAddress cur_mapped_addr    = dst_addr;
+        KPhysicalAddress start_partial_page = Null<KPhysicalAddress>;
+        KPhysicalAddress end_partial_page   = Null<KPhysicalAddress>;
+        KProcessAddress cur_mapped_addr     = dst_addr;
 
         /* If the partial pages are mapped, an extra reference will have been opened. Otherwise, they'll free on scope exit. */
         ON_SCOPE_EXIT {
-            if (start_partial_page != Null<KVirtualAddress>) {
+            if (start_partial_page != Null<KPhysicalAddress>) {
                 Kernel::GetMemoryManager().Close(start_partial_page, 1);
             }
-            if (end_partial_page != Null<KVirtualAddress>) {
+            if (end_partial_page != Null<KPhysicalAddress>) {
                 Kernel::GetMemoryManager().Close(end_partial_page, 1);
             }
         };
@@ -3603,13 +3598,13 @@ namespace ams::kern {
         /* Allocate the start page as needed. */
         if (aligned_src_start < mapping_src_start) {
             start_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, m_allocate_option);
-            R_UNLESS(start_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+            R_UNLESS(start_partial_page != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
         }
 
         /* Allocate the end page as needed. */
         if (mapping_src_end < aligned_src_end && (aligned_src_start < mapping_src_end || aligned_src_start == mapping_src_start)) {
             end_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, m_allocate_option);
-            R_UNLESS(end_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+            R_UNLESS(end_partial_page != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
         }
 
         /* Get the implementation. */
@@ -3631,8 +3626,9 @@ namespace ams::kern {
         size_t tot_block_size           = cur_block_size;
 
         /* Map the start page, if we have one. */
-        if (start_partial_page != Null<KVirtualAddress>) {
+        if (start_partial_page != Null<KPhysicalAddress>) {
             /* Ensure the page holds correct data. */
+            const KVirtualAddress start_partial_virt = GetHeapVirtualAddress(start_partial_page);
             if (send) {
                 const size_t partial_offset = src_start - aligned_src_start;
                 size_t copy_size, clear_size;
@@ -3644,18 +3640,18 @@ namespace ams::kern {
                     clear_size = 0;
                 }
 
-                std::memset(GetVoidPointer(start_partial_page), fill_val, partial_offset);
-                std::memcpy(GetVoidPointer(start_partial_page + partial_offset), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr) + partial_offset), copy_size);
+                std::memset(GetVoidPointer(start_partial_virt), fill_val, partial_offset);
+                std::memcpy(GetVoidPointer(start_partial_virt + partial_offset), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr) + partial_offset), copy_size);
                 if (clear_size > 0) {
-                    std::memset(GetVoidPointer(start_partial_page + partial_offset + copy_size), fill_val, clear_size);
+                    std::memset(GetVoidPointer(start_partial_virt + partial_offset + copy_size), fill_val, clear_size);
                 }
             } else {
-                std::memset(GetVoidPointer(start_partial_page), fill_val, PageSize);
+                std::memset(GetVoidPointer(start_partial_virt), fill_val, PageSize);
             }
 
             /* Map the page. */
             const KPageProperties start_map_properties = { test_perm, false, false, DisableMergeAttribute_DisableHead };
-            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, GetHeapPhysicalAddress(start_partial_page), true, start_map_properties, OperationType_Map, false));
+            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, start_partial_page, true, start_map_properties, OperationType_Map, false));
 
             /* Update tracking extents. */
             cur_mapped_addr += PageSize;
@@ -3715,19 +3711,20 @@ namespace ams::kern {
         }
 
         /* Map the end page, if we have one. */
-        if (end_partial_page != Null<KVirtualAddress>) {
+        if (end_partial_page != Null<KPhysicalAddress>) {
             /* Ensure the page holds correct data. */
+            const KVirtualAddress end_partial_virt = GetHeapVirtualAddress(end_partial_page);
             if (send) {
                 const size_t copy_size = src_end - mapping_src_end;
-                std::memcpy(GetVoidPointer(end_partial_page), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr)), copy_size);
-                std::memset(GetVoidPointer(end_partial_page + copy_size), fill_val, PageSize - copy_size);
+                std::memcpy(GetVoidPointer(end_partial_virt), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr)), copy_size);
+                std::memset(GetVoidPointer(end_partial_virt + copy_size), fill_val, PageSize - copy_size);
             } else {
-                std::memset(GetVoidPointer(end_partial_page), fill_val, PageSize);
+                std::memset(GetVoidPointer(end_partial_virt), fill_val, PageSize);
             }
 
             /* Map the page. */
             const KPageProperties map_properties = { test_perm, false, false, (cur_mapped_addr == dst_addr) ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
-            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, GetHeapPhysicalAddress(end_partial_page), true, map_properties, OperationType_Map, false));
+            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, end_partial_page, true, map_properties, OperationType_Map, false));
         }
 
         /* Update memory blocks to reflect our changes */
@@ -4246,7 +4243,7 @@ namespace ams::kern {
 
                     /* Iterate over the memory. */
                     auto pg_it = pg.begin();
-                    KPhysicalAddress pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                    KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
                     size_t pg_pages = pg_it->GetNumPages();
 
                     auto it = m_memory_block_manager.FindIterator(cur_address);
@@ -4272,7 +4269,7 @@ namespace ams::kern {
 
                                     /* Advance our physical block. */
                                     ++pg_it;
-                                    pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                                    pg_phys_addr = pg_it->GetAddress();
                                     pg_pages     = pg_it->GetNumPages();
                                 }
 
@@ -4410,7 +4407,7 @@ namespace ams::kern {
                 } else {
                     if (cur_valid) {
                         MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
-                        R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize));
+                        R_TRY(pg.AddBlock(cur_entry.phys_addr, cur_entry.block_size / PageSize));
                     }
 
                     /* Update tracking variables. */
@@ -4429,7 +4426,7 @@ namespace ams::kern {
             /* Add the last block. */
             if (cur_valid) {
                 MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
-                R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_entry.phys_addr), (size - tot_size) / PageSize));
+                R_TRY(pg.AddBlock(cur_entry.phys_addr, (size - tot_size) / PageSize));
             }
         }
         MESOSPHERE_ASSERT(pg.GetNumPages() == mapped_size / PageSize);
@@ -4457,7 +4454,7 @@ namespace ams::kern {
                 /* Iterate over the memory we unmapped. */
                 auto it = m_memory_block_manager.FindIterator(cur_address);
                 auto pg_it = pg.begin();
-                KPhysicalAddress pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                KPhysicalAddress pg_phys_addr = pg_it->GetAddress();
                 size_t pg_pages = pg_it->GetNumPages();
 
                 while (true) {
@@ -4479,7 +4476,7 @@ namespace ams::kern {
 
                                 /* Advance our physical block. */
                                 ++pg_it;
-                                pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                                pg_phys_addr = pg_it->GetAddress();
                                 pg_pages     = pg_it->GetNumPages();
                             }
 
@@ -4567,7 +4564,7 @@ namespace ams::kern {
 
         /* Clear the new memory. */
         for (const auto &block : pg) {
-            std::memset(GetVoidPointer(block.GetAddress()), m_heap_fill_value, block.GetSize());
+            std::memset(GetVoidPointer(GetHeapVirtualAddress(block.GetAddress())), m_heap_fill_value, block.GetSize());
         }
 
         /* Map the new memory. */

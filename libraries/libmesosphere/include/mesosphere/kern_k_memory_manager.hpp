@@ -70,37 +70,37 @@ namespace ams::kern {
                 public:
                     Impl() : m_heap(), m_page_reference_counts(), m_management_region(), m_pool(), m_next(), m_prev() { /* ... */ }
 
-                    size_t Initialize(uintptr_t address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
+                    size_t Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
 
-                    KVirtualAddress AllocateBlock(s32 index, bool random) { return m_heap.AllocateBlock(index, random); }
-                    void Free(KVirtualAddress addr, size_t num_pages) { m_heap.Free(addr, num_pages); }
+                    KPhysicalAddress AllocateBlock(s32 index, bool random) { return m_heap.AllocateBlock(index, random); }
+                    void Free(KPhysicalAddress addr, size_t num_pages) { m_heap.Free(addr, num_pages); }
 
                     void SetInitialUsedHeapSize(size_t reserved_size) { m_heap.SetInitialUsedSize(reserved_size); }
 
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(m_management_region), 0, CalculateOptimizedProcessOverheadSize(m_heap.GetSize())); }
 
-                    void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
-                    void TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
+                    void TrackUnoptimizedAllocation(KPhysicalAddress block, size_t num_pages);
+                    void TrackOptimizedAllocation(KPhysicalAddress block, size_t num_pages);
 
-                    bool ProcessOptimizedAllocation(KVirtualAddress block, size_t num_pages, u8 fill_pattern);
+                    bool ProcessOptimizedAllocation(KPhysicalAddress block, size_t num_pages, u8 fill_pattern);
 
                     constexpr Pool GetPool() const { return m_pool; }
                     constexpr size_t GetSize() const { return m_heap.GetSize(); }
-                    constexpr KVirtualAddress GetEndAddress() const { return m_heap.GetEndAddress(); }
+                    constexpr KPhysicalAddress GetEndAddress() const { return m_heap.GetEndAddress(); }
 
                     size_t GetFreeSize() const { return m_heap.GetFreeSize(); }
 
                     void DumpFreeList() const { return m_heap.DumpFreeList(); }
 
-                    constexpr size_t GetPageOffset(KVirtualAddress address)      const { return m_heap.GetPageOffset(address); }
-                    constexpr size_t GetPageOffsetToEnd(KVirtualAddress address) const { return m_heap.GetPageOffsetToEnd(address); }
+                    constexpr size_t GetPageOffset(KPhysicalAddress address)      const { return m_heap.GetPageOffset(address); }
+                    constexpr size_t GetPageOffsetToEnd(KPhysicalAddress address) const { return m_heap.GetPageOffsetToEnd(address); }
 
                     constexpr void SetNext(Impl *n) { m_next = n; }
                     constexpr void SetPrev(Impl *n) { m_prev = n; }
                     constexpr Impl *GetNext() const { return m_next; }
                     constexpr Impl *GetPrev() const { return m_prev; }
 
-                    void OpenFirst(KVirtualAddress address, size_t num_pages) {
+                    void OpenFirst(KPhysicalAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
@@ -111,7 +111,7 @@ namespace ams::kern {
                         }
                     }
 
-                    void Open(KVirtualAddress address, size_t num_pages) {
+                    void Open(KPhysicalAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
@@ -122,7 +122,7 @@ namespace ams::kern {
                         }
                     }
 
-                    void Close(KVirtualAddress address, size_t num_pages) {
+                    void Close(KPhysicalAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
 
@@ -164,12 +164,12 @@ namespace ams::kern {
             u64 m_optimized_process_ids[Pool_Count];
             bool m_has_optimized_process[Pool_Count];
         private:
-            Impl &GetManager(KVirtualAddress address) {
-                return m_managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
+            Impl &GetManager(KPhysicalAddress address) {
+                return m_managers[KMemoryLayout::GetPhysicalLinearRegion(address).GetAttributes()];
             }
 
-            const Impl &GetManager(KVirtualAddress address) const {
-                return m_managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
+            const Impl &GetManager(KPhysicalAddress address) const {
+                return m_managers[KMemoryLayout::GetPhysicalLinearRegion(address).GetAttributes()];
             }
 
             constexpr Impl *GetFirstManager(Pool pool, Direction dir) {
@@ -197,15 +197,15 @@ namespace ams::kern {
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
-            NOINLINE KVirtualAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE KPhysicalAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
             NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
-            Pool GetPool(KVirtualAddress address) const {
+            Pool GetPool(KPhysicalAddress address) const {
                 return this->GetManager(address).GetPool();
             }
 
-            void Open(KVirtualAddress address, size_t num_pages) {
+            void Open(KPhysicalAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);
@@ -221,7 +221,7 @@ namespace ams::kern {
                 }
             }
 
-            void Close(KVirtualAddress address, size_t num_pages) {
+            void Close(KPhysicalAddress address, size_t num_pages) {
                 /* Repeatedly close references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);

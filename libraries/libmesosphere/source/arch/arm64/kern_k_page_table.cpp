@@ -247,7 +247,7 @@ namespace ams::kern::arch::arm64 {
                         cur_entry.block_size += next_entry.block_size;
                     } else {
                         if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                            mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                            mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
                         }
 
                         /* Update tracking variables. */
@@ -265,7 +265,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Handle the last block. */
                 if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                    mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                    mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
                 }
             }
 
@@ -696,11 +696,10 @@ namespace ams::kern::arch::arm64 {
 
             /* Close the blocks. */
             if (!force && IsHeapPhysicalAddress(next_entry.phys_addr)) {
-                const KVirtualAddress block_virt_addr = GetHeapVirtualAddress(next_entry.phys_addr);
                 const size_t block_num_pages = next_entry.block_size / PageSize;
-                if (R_FAILED(pages_to_close.AddBlock(block_virt_addr, block_num_pages))) {
+                if (R_FAILED(pages_to_close.AddBlock(next_entry.phys_addr, block_num_pages))) {
                     this->NoteUpdated();
-                    Kernel::GetMemoryManager().Close(block_virt_addr, block_num_pages);
+                    Kernel::GetMemoryManager().Close(next_entry.phys_addr, block_num_pages);
                     pages_to_close.CloseAndReset();
                 }
             }
@@ -792,7 +791,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
-            Kernel::GetMemoryManager().Open(GetHeapVirtualAddress(orig_phys_addr), num_pages);
+            Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
         }
 
         return ResultSuccess();
@@ -815,7 +814,7 @@ namespace ams::kern::arch::arm64 {
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 for (const auto &block : pg) {
-                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = block.GetAddress();
                     const size_t cur_pages = block.GetNumPages();
                     R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, disable_head_merge && virt_addr == orig_virt_addr, L3BlockSize, page_list, reuse_ll));
 
@@ -827,7 +826,7 @@ namespace ams::kern::arch::arm64 {
                 AlignedMemoryBlock virt_block(GetInteger(virt_addr), num_pages, L1BlockSize);
                 for (const auto &block : pg) {
                     /* Create a block representing this physical group, synchronize its alignment to our virtual block. */
-                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = block.GetAddress();
                     size_t cur_pages = block.GetNumPages();
 
                     AlignedMemoryBlock phys_block(GetInteger(block_phys_addr), cur_pages, virt_block.GetAlignment());

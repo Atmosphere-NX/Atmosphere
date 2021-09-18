@@ -101,7 +101,7 @@ namespace ams::kern {
                 /* If we crossed a page boundary, free the pages we're done using. */
                 if (KVirtualAddress aligned_current = util::AlignDown(GetInteger(current), PageSize); aligned_current != data) {
                     const size_t freed_size = data - aligned_current;
-                    Kernel::GetMemoryManager().Close(aligned_current, freed_size / PageSize);
+                    Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(aligned_current), freed_size / PageSize);
                     Kernel::GetSystemResourceLimit().Release(ams::svc::LimitableResource_PhysicalMemoryMax, freed_size);
                 }
 
@@ -114,7 +114,7 @@ namespace ams::kern {
                 const size_t binary_pages = binary_size / PageSize;
 
                 /* Get the pool for both the current (compressed) image, and the decompressed process. */
-                const auto src_pool = Kernel::GetMemoryManager().GetPool(data);
+                const auto src_pool = Kernel::GetMemoryManager().GetPool(KMemoryLayout::GetLinearPhysicalAddress(data));
                 const auto dst_pool = reader.UsesSecureMemory() ? secure_pool : unsafe_pool;
 
                 /* Determine the process size, and how much memory isn't already reserved. */
@@ -140,7 +140,7 @@ namespace ams::kern {
                         /* Add the previously reserved pages. */
                         if (src_pool == dst_pool && binary_pages != 0) {
                             /* NOTE: Nintendo does not check the result of this operation. */
-                            pg.AddBlock(data, binary_pages);
+                            pg.AddBlock(KMemoryLayout::GetLinearPhysicalAddress(data), binary_pages);
                         }
 
                         /* Add the previously unreserved pages. */
@@ -176,7 +176,7 @@ namespace ams::kern {
                         } else {
                             if (src_pool != dst_pool) {
                                 std::memcpy(GetVoidPointer(temp_address + process_size - binary_size), GetVoidPointer(data), aligned_size);
-                                Kernel::GetMemoryManager().Close(data, aligned_size / PageSize);
+                                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(data), aligned_size / PageSize);
                             }
                         }
 
@@ -218,7 +218,7 @@ namespace ams::kern {
 
                                     const size_t cur_pages = std::min(block_remaining, work_remaining);
                                     const size_t cur_size  = cur_pages * PageSize;
-                                    std::memcpy(GetVoidPointer(block_address), GetVoidPointer(work_address), cur_size);
+                                    std::memcpy(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block_address)), GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(work_address)), cur_size);
 
                                     block_address += cur_size;
                                     work_address  += cur_size;
@@ -268,7 +268,7 @@ namespace ams::kern {
             {
                 const size_t remaining_size  = util::AlignUp(GetInteger(g_initial_process_binary_address) + g_initial_process_binary_header.size, PageSize) - util::AlignDown(GetInteger(current), PageSize);
                 const size_t remaining_pages = remaining_size / PageSize;
-                Kernel::GetMemoryManager().Close(util::AlignDown(GetInteger(current), PageSize), remaining_pages);
+                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(util::AlignDown(GetInteger(current), PageSize)), remaining_pages);
                 Kernel::GetSystemResourceLimit().Release(ams::svc::LimitableResource_PhysicalMemoryMax, remaining_size);
             }
         }
@@ -312,7 +312,7 @@ namespace ams::kern {
 
             /* The initial process binary is potentially over-allocated, so free any extra pages. */
             if (total_size < InitialProcessBinarySizeMax) {
-                Kernel::GetMemoryManager().Close(g_initial_process_binary_address + total_size, (InitialProcessBinarySizeMax - total_size) / PageSize);
+                Kernel::GetMemoryManager().Close(KMemoryLayout::GetLinearPhysicalAddress(g_initial_process_binary_address + total_size), (InitialProcessBinarySizeMax - total_size) / PageSize);
             }
 
             return total_size;

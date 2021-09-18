@@ -165,11 +165,11 @@ namespace ams::kern::init {
 
         /* Allocate memory for the slab. */
         constexpr auto AllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-        const KVirtualAddress slab_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, 1, AllocateOption);
-        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KVirtualAddress>);
+        const KPhysicalAddress slab_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, 1, AllocateOption);
+        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KPhysicalAddress>);
 
         /* Initialize the slabheap. */
-        KPageBuffer::InitializeSlabHeap(GetVoidPointer(slab_address), slab_size);
+        KPageBuffer::InitializeSlabHeap(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(slab_address)), slab_size);
     }
 
     void InitializeSlabHeaps() {

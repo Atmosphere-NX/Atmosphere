@@ -18,24 +18,30 @@
 namespace ams::kern {
 
     void KPageGroup::Finalize() {
-        auto it = m_block_list.begin();
-        while (it != m_block_list.end()) {
-            KBlockInfo *info = std::addressof(*it);
-            it = m_block_list.erase(it);
-            m_manager->Free(info);
+        KBlockInfo *cur = m_first_block;
+        while (cur != nullptr) {
+            KBlockInfo *next = cur->GetNext();
+            m_manager->Free(cur);
+            cur = next;
         }
+
+        m_first_block = nullptr;
+        m_last_block  = nullptr;
     }
 
     void KPageGroup::CloseAndReset() {
         auto &mm = Kernel::GetMemoryManager();
 
-        auto it = m_block_list.begin();
-        while (it != m_block_list.end()) {
-            KBlockInfo *info = std::addressof(*it);
-            it = m_block_list.erase(it);
-            mm.Close(info->GetAddress(), info->GetNumPages());
-            m_manager->Free(info);
+        KBlockInfo *cur = m_first_block;
+        while (cur != nullptr) {
+            KBlockInfo *next = cur->GetNext();
+            mm.Close(cur->GetAddress(), cur->GetNumPages());
+            m_manager->Free(cur);
+            cur = next;
         }
+
+        m_first_block = nullptr;
+        m_last_block  = nullptr;
     }
 
     size_t KPageGroup::GetNumPages() const {
@@ -48,7 +54,7 @@ namespace ams::kern {
         return num_pages;
     }
 
-    Result KPageGroup::AddBlock(KVirtualAddress addr, size_t num_pages) {
+    Result KPageGroup::AddBlock(KPhysicalAddress addr, size_t num_pages) {
         /* Succeed immediately if we're adding no pages. */
         R_SUCCEED_IF(num_pages == 0);
 
@@ -56,9 +62,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(addr < addr + num_pages * PageSize);
 
         /* Try to just append to the last block. */
-        if (!m_block_list.empty()) {
-            auto it = --(m_block_list.end());
-            R_SUCCEED_IF(it->TryConcatenate(addr, num_pages));
+        if (m_last_block != nullptr) {
+            R_SUCCEED_IF(m_last_block->TryConcatenate(addr, num_pages));
         }
 
         /* Allocate a new block. */
@@ -67,7 +72,14 @@ namespace ams::kern {
 
         /* Initialize the block. */
         new_block->Initialize(addr, num_pages);
-        m_block_list.push_back(*new_block);
+
+        /* Add the block to our list. */
+        if (m_last_block != nullptr) {
+            m_last_block->SetNext(new_block);
+        } else {
+            m_first_block = new_block;
+        }
+        m_last_block = new_block;
 
         return ResultSuccess();
     }
@@ -89,10 +101,10 @@ namespace ams::kern {
     }
 
     bool KPageGroup::IsEquivalentTo(const KPageGroup &rhs) const {
-        auto lit  = m_block_list.cbegin();
-        auto rit  = rhs.m_block_list.cbegin();
-        auto lend = m_block_list.cend();
-        auto rend = rhs.m_block_list.cend();
+        auto lit  = this->begin();
+        auto rit  = rhs.begin();
+        auto lend = this->end();
+        auto rend = rhs.end();
 
         while (lit != lend && rit != rend) {
             if (*lit != *rit) {

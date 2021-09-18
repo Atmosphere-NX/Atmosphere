@@ -35,8 +35,9 @@ namespace ams::kern {
         /* Clear the memory. */
         for (const auto &block : GetReference(m_page_group)) {
             /* Clear and store cache. */
-            std::memset(GetVoidPointer(block.GetAddress()), 0xFF, block.GetSize());
-            cpu::StoreDataCache(GetVoidPointer(block.GetAddress()), block.GetSize());
+            void * const block_address = GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress()));
+            std::memset(block_address, 0xFF, block.GetSize());
+            cpu::StoreDataCache(block_address, block.GetSize());
         }
 
         /* Set remaining tracking members. */

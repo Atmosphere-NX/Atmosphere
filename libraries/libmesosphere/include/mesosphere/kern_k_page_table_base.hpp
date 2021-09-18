@@ -57,7 +57,7 @@ namespace ams::kern {
             using TraversalContext = KPageTableImpl::TraversalContext;
 
             struct MemoryRange {
-                KVirtualAddress address;
+                KPhysicalAddress address;
                 size_t size;
 
                 void Close();
@@ -178,7 +178,6 @@ namespace ams::kern {
             KResourceLimit *m_resource_limit{};
             const KMemoryRegion *m_cached_physical_linear_region{};
             const KMemoryRegion *m_cached_physical_heap_region{};
-            const KMemoryRegion *m_cached_virtual_heap_region{};
             MemoryFillValue m_heap_fill_value{};
             MemoryFillValue m_ipc_fill_value{};
             MemoryFillValue m_stack_fill_value{};
@@ -255,18 +254,6 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapPhysicalAddress(m_cached_physical_heap_region, phys_addr);
-            }
-
-            ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress virt_addr) {
-                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-
-                return KMemoryLayout::IsHeapVirtualAddress(m_cached_virtual_heap_region, virt_addr);
-            }
-
-            ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress virt_addr, size_t size) {
-                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-
-                return KMemoryLayout::IsHeapVirtualAddress(m_cached_virtual_heap_region, virt_addr, size);
             }
 
             ALWAYS_INLINE bool ContainsPages(KProcessAddress addr, size_t num_pages) const {
