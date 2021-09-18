@@ -237,12 +237,6 @@ namespace ams::kern {
         public:
             NOINLINE void InsertDirectly(uintptr_t address, uintptr_t last_address, u32 attr = 0, u32 type_id = 0);
             NOINLINE bool Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr = 0, u32 old_attr = 0);
-
-            NOINLINE KVirtualAddress GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id);
-
-            ALWAYS_INLINE KVirtualAddress GetRandomAlignedRegionWithGuard(size_t size, size_t alignment, u32 type_id, size_t guard_size) {
-                return this->GetRandomAlignedRegion(size + 2 * guard_size, alignment, type_id) + guard_size;
-            }
         public:
             /* Iterator accessors. */
             iterator begin() {

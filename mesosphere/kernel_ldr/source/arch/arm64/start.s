@@ -110,10 +110,10 @@ _main:
     str x0, [sp, #0x20]
 
 
-    /* Call ams::kern::init::loader::GetFinalPageAllocatorState() */
-    bl _ZN3ams4kern4init6loader26GetFinalPageAllocatorStateEv
+    /* Call ams::kern::init::loader::GetFinalState() */
+    bl _ZN3ams4kern4init6loader13GetFinalStateEv
 
-    /* X0 is now the saved state for the page allocator. */
+    /* X0 is now the saved state. */
     /* We will return this to the kernel. */
 
     /* Return to the newly-relocated kernel. */

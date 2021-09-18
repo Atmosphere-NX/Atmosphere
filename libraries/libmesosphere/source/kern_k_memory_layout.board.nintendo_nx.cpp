@@ -190,12 +190,6 @@ namespace ams::kern {
                 static_assert(KMemoryManager::Pool_Unsafe == KMemoryManager::Pool_Application);
                 static_assert(KMemoryManager::Pool_Secure == KMemoryManager::Pool_System);
 
-                /* NOTE: Beginning with 12.0.0 (and always, in mesosphere), the initial process binary is at the end of the pool region. */
-                /*       However, this is problematic for < 5.0.0, because we require the initial process binary to be parsed in order   */
-                /*       to determine the pool sizes. Hence, we will force an initial binary load with the known pool end directly, so   */
-                /*       that we retain compatibility with lower firmware versions. */
-                LoadInitialProcessBinaryHeaderDeprecated(pool_end);
-
                 /* Get Secure pool size. */
                 const size_t secure_pool_size = [] ALWAYS_INLINE_LAMBDA (auto target_firmware) -> size_t {
                     constexpr size_t LegacySecureKernelSize = 8_MB;          /* KPageBuffer pages, other small kernel allocations. */

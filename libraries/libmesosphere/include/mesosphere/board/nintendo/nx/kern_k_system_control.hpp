@@ -16,6 +16,12 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 
+namespace ams::kern {
+
+    struct InitialProcessBinaryLayout;
+
+}
+
 namespace ams::kern::board::nintendo::nx {
 
     class KSystemControl {
@@ -25,7 +31,7 @@ namespace ams::kern::board::nintendo::nx {
                     /* Initialization. */
                     static size_t GetIntendedMemorySize();
                     static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
-                    static KPhysicalAddress GetInitialProcessBinaryPhysicalAddress();
+                    static void GetInitialProcessBinaryLayout(InitialProcessBinaryLayout *out);
                     static bool ShouldIncreaseThreadResourceLimit();
                     static void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
                     static size_t GetApplicationPoolSize();

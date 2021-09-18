@@ -48,16 +48,6 @@ namespace ams::kern::init {
 
         constexpr PageTableEntry KernelRwDataUncachedAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemoryNotCacheable, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
 
-        void MapStackForCore(KInitialPageTable &page_table, KMemoryRegionType type, u32 core_id) {
-            constexpr size_t StackSize  = PageSize;
-            constexpr size_t StackAlign = PageSize;
-            const KVirtualAddress  stack_start_virt = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(StackSize, StackAlign, KMemoryRegionType_KernelMisc, PageSize);
-            const KPhysicalAddress stack_start_phys = g_initial_page_allocator.Allocate(PageSize);
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_start_virt), StackSize, type, core_id));
-
-            page_table.Map(stack_start_virt, StackSize, stack_start_phys, KernelRwDataAttribute, g_initial_page_allocator);
-        }
-
         void StoreDataCache(const void *addr, size_t size) {
             uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), cpu::DataCacheLineSize);
             uintptr_t end   = reinterpret_cast<uintptr_t>(addr) + size;
@@ -121,14 +111,78 @@ namespace ams::kern::init {
             StoreDataCache(g_init_arguments, sizeof(g_init_arguments));
         }
 
+        KVirtualAddress GetRandomAlignedRegionWithGuard(size_t size, size_t alignment, KInitialPageTable &pt, KMemoryRegionTree &tree, u32 type_id, size_t guard_size) {
+            /* Check that the size is valid. */
+            MESOSPHERE_INIT_ABORT_UNLESS(size > 0);
+
+            /* We want to find the total extents of the type id. */
+            const auto extents = tree.GetDerivedRegionExtents(type_id);
+
+            /* Ensure that our alignment is correct. */
+            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(extents.GetAddress(), alignment));
+
+            const uintptr_t first_address = extents.GetAddress();
+            const uintptr_t last_address  = extents.GetLastAddress();
+
+            const uintptr_t first_index = first_address / alignment;
+            const uintptr_t last_index  = last_address / alignment;
+
+            while (true) {
+                const uintptr_t candidate_start = KSystemControl::Init::GenerateRandomRange(first_index, last_index) * alignment;
+                const uintptr_t candidate_end   = candidate_start + size + guard_size;
+
+                /* Ensure that the candidate doesn't overflow with the size/guard. */
+                if (!(candidate_start < candidate_end) || !(candidate_start >= guard_size)) {
+                    continue;
+                }
+
+                const uintptr_t candidate_last = candidate_end - 1;
+
+                /* Ensure that the candidate fits within the region. */
+                if (candidate_last > last_address) {
+                    continue;
+                }
+
+                /* Ensure that the candidate range is free. */
+                if (!pt.IsFree(candidate_start, size)) {
+                    continue;
+                }
+
+                /* Locate the candidate's guard start, and ensure the whole range fits/has the correct type id. */
+                if (const auto &candidate_region = *tree.Find(candidate_start - guard_size); !(candidate_last <= candidate_region.GetLastAddress() && candidate_region.GetType() == type_id)) {
+                    continue;
+                }
+
+                return candidate_start;
+            }
+        }
+
+        KVirtualAddress GetRandomAlignedRegion(size_t size, size_t alignment, KInitialPageTable &pt, KMemoryRegionTree &tree, u32 type_id) {
+            return GetRandomAlignedRegionWithGuard(size, alignment, pt, tree, type_id, 0);
+        }
+
+        void MapStackForCore(KInitialPageTable &page_table, KMemoryRegionType type, u32 core_id) {
+            constexpr size_t StackSize  = PageSize;
+            constexpr size_t StackAlign = PageSize;
+            const KVirtualAddress  stack_start_virt = GetRandomAlignedRegionWithGuard(StackSize, StackAlign, page_table, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_KernelMisc, PageSize);
+            const KPhysicalAddress stack_start_phys = g_initial_page_allocator.Allocate(PageSize);
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_start_virt), StackSize, type, core_id));
+
+            page_table.Map(stack_start_virt, StackSize, stack_start_phys, KernelRwDataAttribute, g_initial_page_allocator);
+        }
+
     }
 
-    void InitializeCore(uintptr_t misc_unk_debug_phys_addr, uintptr_t initial_page_allocator_state) {
+    void InitializeCore(uintptr_t misc_unk_debug_phys_addr, void **initial_state) {
         /* Ensure our first argument is page aligned. */
         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(misc_unk_debug_phys_addr, PageSize));
 
+        /* Decode the initial state. */
+        const auto initial_page_allocator_state  = *static_cast<KInitialPageAllocator::State *>(initial_state[0]);
+        const auto initial_process_binary_layout = *static_cast<InitialProcessBinaryLayout *>(initial_state[1]);
+
         /* Restore the page allocator state setup by kernel loader. */
-        g_initial_page_allocator.InitializeFromState(initial_page_allocator_state);
+        g_initial_page_allocator.InitializeFromState(std::addressof(initial_page_allocator_state));
 
         /* Ensure that the T1SZ is correct (and what we expect). */
         MESOSPHERE_INIT_ABORT_UNLESS((cpu::TranslationControlRegisterAccessor().GetT1Size() / arch::arm64::L1BlockSize) == arch::arm64::MaxPageTableEntries);
@@ -207,13 +261,13 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS(misc_region_size > 0);
 
         /* Setup the misc region. */
-        const KVirtualAddress misc_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(misc_region_size, MiscRegionAlign, KMemoryRegionType_Kernel);
+        const KVirtualAddress misc_region_start = GetRandomAlignedRegion(misc_region_size, MiscRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_region_start), misc_region_size, KMemoryRegionType_KernelMisc));
 
         /* Setup the stack region. */
         constexpr size_t StackRegionSize  = 14_MB;
         constexpr size_t StackRegionAlign = KernelAslrAlignment;
-        const KVirtualAddress stack_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(StackRegionSize, StackRegionAlign, KMemoryRegionType_Kernel);
+        const KVirtualAddress stack_region_start = GetRandomAlignedRegion(StackRegionSize, StackRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), StackRegionSize, KMemoryRegionType_KernelStack));
 
         /* Determine the size of the resource region. */
@@ -230,13 +284,13 @@ namespace ams::kern::init {
         const KPhysicalAddress slab_end_phys_addr   = slab_start_phys_addr + slab_region_size;
         constexpr size_t SlabRegionAlign = KernelAslrAlignment;
         const size_t slab_region_needed_size = util::AlignUp(GetInteger(code_end_phys_addr) + slab_region_size, SlabRegionAlign) - util::AlignDown(GetInteger(code_end_phys_addr), SlabRegionAlign);
-        const KVirtualAddress slab_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(slab_region_needed_size, SlabRegionAlign, KMemoryRegionType_Kernel) + (GetInteger(code_end_phys_addr) % SlabRegionAlign);
+        const KVirtualAddress slab_region_start = GetRandomAlignedRegion(slab_region_needed_size, SlabRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel) + (GetInteger(code_end_phys_addr) % SlabRegionAlign);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(slab_region_start), slab_region_size, KMemoryRegionType_KernelSlab));
 
         /* Setup the temp region. */
         constexpr size_t TempRegionSize  = 128_MB;
         constexpr size_t TempRegionAlign = KernelAslrAlignment;
-        const KVirtualAddress temp_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(TempRegionSize, TempRegionAlign, KMemoryRegionType_Kernel);
+        const KVirtualAddress temp_region_start = GetRandomAlignedRegion(TempRegionSize, TempRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(temp_region_start), TempRegionSize, KMemoryRegionType_KernelTemp));
 
         /* Automatically map in devices that have auto-map attributes, from largest region to smallest region. */
@@ -282,7 +336,7 @@ namespace ams::kern::init {
                     const size_t map_size  = util::AlignUp(largest->GetEndAddress(), PageSize) - GetInteger(map_phys_addr);
                     const size_t min_align = std::min<size_t>(util::GetAlignment(map_size), util::GetAlignment(GetInteger(map_phys_addr)));
                     const size_t map_align = min_align >= KernelAslrAlignment ? KernelAslrAlignment : PageSize;
-                    const KVirtualAddress map_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(map_size, map_align, KMemoryRegionType_KernelMisc, map_align);
+                    const KVirtualAddress map_virt_addr = GetRandomAlignedRegionWithGuard(map_size, map_align, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_KernelMisc, PageSize);
                     MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(map_virt_addr), map_size, KMemoryRegionType_KernelMiscMappedDevice));
                     largest->SetPairAddress(GetInteger(map_virt_addr) + largest->GetAddress() - GetInteger(map_phys_addr));
 
@@ -338,7 +392,7 @@ namespace ams::kern::init {
                     const size_t map_size  = util::AlignUp(largest->GetEndAddress(), PageSize) - GetInteger(map_phys_addr);
                     const size_t min_align = std::min<size_t>(util::GetAlignment(map_size), util::GetAlignment(GetInteger(map_phys_addr)));
                     const size_t map_align = min_align >= KernelAslrAlignment ? KernelAslrAlignment : PageSize;
-                    const KVirtualAddress map_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(map_size, map_align, KMemoryRegionType_KernelMisc, map_align);
+                    const KVirtualAddress map_virt_addr = GetRandomAlignedRegionWithGuard(map_size, map_align, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_KernelMisc, PageSize);
                     MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(map_virt_addr), map_size, KMemoryRegionType_KernelMiscUnknownDebug));
                     largest->SetPairAddress(GetInteger(map_virt_addr) + largest->GetAddress() - GetInteger(map_phys_addr));
 
@@ -388,7 +442,7 @@ namespace ams::kern::init {
         constexpr size_t LinearRegionAlign = 1_GB;
         const KPhysicalAddress aligned_linear_phys_start = util::AlignDown(linear_extents.GetAddress(), LinearRegionAlign);
         const size_t linear_region_size = util::AlignUp(linear_extents.GetEndAddress(), LinearRegionAlign) - GetInteger(aligned_linear_phys_start);
-        const KVirtualAddress linear_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(linear_region_size, LinearRegionAlign, KMemoryRegionType_None, LinearRegionAlign);
+        const KVirtualAddress linear_region_start = GetRandomAlignedRegionWithGuard(linear_region_size, LinearRegionAlign, init_pt, KMemoryLayout::GetVirtualMemoryRegionTree(), KMemoryRegionType_None, LinearRegionAlign);
 
         const uintptr_t linear_region_phys_to_virt_diff = GetInteger(linear_region_start) - GetInteger(aligned_linear_phys_start);
 
@@ -471,8 +525,28 @@ namespace ams::kern::init {
         /* Set the linear memory offsets, to enable conversion between physical and virtual addresses. */
         KMemoryLayout::InitializeLinearMemoryAddresses(aligned_linear_phys_start, linear_region_start);
 
+        /* Set the initial process binary physical address. */
+        /* NOTE: Nintendo does this after pool partition setup, but it's a requirement that we do it before */
+        /* to retain compatibility with < 5.0.0. */
+        const KPhysicalAddress ini_address = initial_process_binary_layout.address;
+        MESOSPHERE_INIT_ABORT_UNLESS(ini_address != Null<KPhysicalAddress>);
+        SetInitialProcessBinaryPhysicalAddress(ini_address);
+
         /* Setup all other memory regions needed to arrange the pool partitions. */
         SetupPoolPartitionMemoryRegions();
+
+        /* Validate the initial process binary address. */
+        {
+            const KMemoryRegion *ini_region = KMemoryLayout::Find(ini_address);
+
+            /* Check that the region is non-kernel dram. */
+            MESOSPHERE_INIT_ABORT_UNLESS(ini_region->IsDerivedFrom(KMemoryRegionType_DramUserPool));
+
+            /* Check that the region contains the ini. */
+            MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetAddress() <= GetInteger(ini_address));
+            MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(ini_address) + InitialProcessBinarySizeMax <= ini_region->GetEndAddress());
+            MESOSPHERE_INIT_ABORT_UNLESS(ini_region->GetEndAddress() != 0);
+        }
 
         /* Cache all linear regions in their own trees for faster access, later. */
         KMemoryLayout::InitializeLinearMemoryRegionTrees();

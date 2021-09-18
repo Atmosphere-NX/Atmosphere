@@ -124,10 +124,10 @@ core0_el1:
 
     /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */
     /* Next thing to do is to set up our memory management and slabheaps -- all the other core initialization. */
-    /* Call ams::kern::init::InitializeCore(uintptr_t, uintptr_t) */
-    mov x1, x0  /* Kernelldr returns a KInitialPageAllocator state for the kernel to re-use. */
+    /* Call ams::kern::init::InitializeCore(uintptr_t, void **) */
+    mov x1, x0  /* Kernelldr returns a state object for the kernel to re-use. */
     mov x0, xzr /* Official kernel always passes zero, when this is non-zero the address is mapped. */
-    bl _ZN3ams4kern4init14InitializeCoreEmm
+    bl _ZN3ams4kern4init14InitializeCoreEmPPv
 
     /* Get the init arguments for core 0. */
     mov x0, xzr
