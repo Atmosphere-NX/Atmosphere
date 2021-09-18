@@ -69,19 +69,6 @@ namespace ams::dd::impl {
         return ResultSuccess();
     }
 
-    Result DeviceAddressSpaceImplByHorizon::MapPartially(size_t *out_mapped_size, DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm) {
-        ams::svc::Size mapped_size = 0;
-        R_TRY_CATCH(svc::MapDeviceAddressSpace(std::addressof(mapped_size), svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address, static_cast<svc::MemoryPermission>(device_perm))) {
-            R_CONVERT(svc::ResultInvalidHandle,        dd::ResultInvalidHandle())
-            R_CONVERT(svc::ResultOutOfMemory,          dd::ResultOutOfMemory())
-            R_CONVERT(svc::ResultOutOfResource,        dd::ResultOutOfResource())
-            R_CONVERT(svc::ResultInvalidCurrentMemory, dd::ResultInvalidMemoryState())
-        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-        *out_mapped_size = mapped_size;
-        return ResultSuccess();
-    }
-
     void DeviceAddressSpaceImplByHorizon::Unmap(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address) {
         R_ABORT_UNLESS(svc::UnmapDeviceAddressSpace(svc::Handle(handle), svc::Handle(process_handle), process_address, process_size, device_address));
     }

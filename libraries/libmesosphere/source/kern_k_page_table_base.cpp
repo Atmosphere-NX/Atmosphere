@@ -2702,7 +2702,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
+    Result KPageTableBase::UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
@@ -2710,71 +2710,21 @@ namespace ams::kern {
         /* Lock the table. */
         KScopedLightLock lk(m_general_lock);
 
-        /* Determine useful extents. */
-        const KProcessAddress mapped_end_address = address + mapped_size;
-        const size_t unmapped_size = size - mapped_size;
-
         /* Check memory state. */
-        size_t allocator_num_blocks = 0, unmapped_allocator_num_blocks = 0;
-        if (unmapped_size) {
-            if (m_enable_device_address_space_merge) {
-                R_TRY(this->CheckMemoryStateContiguous(std::addressof(allocator_num_blocks),
-                                                       address, size,
-                                                       KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                                       KMemoryPermission_None, KMemoryPermission_None,
-                                                       KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
-            }
-            R_TRY(this->CheckMemoryStateContiguous(std::addressof(unmapped_allocator_num_blocks),
-                                                   mapped_end_address, unmapped_size,
-                                                   KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                                   KMemoryPermission_None, KMemoryPermission_None,
-                                                   KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
-        } else {
-            R_TRY(this->CheckMemoryStateContiguous(std::addressof(allocator_num_blocks),
-                                                   address, size,
-                                                   KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                                   KMemoryPermission_None, KMemoryPermission_None,
-                                                   KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
-        }
+        size_t allocator_num_blocks = 0;
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(allocator_num_blocks),
+                                               address, size,
+                                               KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                               KMemoryPermission_None, KMemoryPermission_None,
+                                               KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
         /* Create an update allocator for the region. */
         Result allocator_result;
         KMemoryBlockManagerUpdateAllocator allocator(std::addressof(allocator_result), m_memory_block_slab_manager, allocator_num_blocks);
         R_TRY(allocator_result);
 
-        /* Create an update allocator for the unmapped region. */
-        Result unmapped_allocator_result;
-        KMemoryBlockManagerUpdateAllocator unmapped_allocator(std::addressof(unmapped_allocator_result), m_memory_block_slab_manager, unmapped_allocator_num_blocks);
-        R_TRY(unmapped_allocator_result);
-
-        /* Determine parameters for the update lock call. */
-        KMemoryBlockManagerUpdateAllocator *lock_allocator;
-        KProcessAddress lock_address;
-        size_t lock_num_pages;
-        KMemoryBlockManager::MemoryBlockLockFunction lock_func;
-        if (unmapped_size) {
-            /* If device address space merge is enabled, update tracking appropriately. */
-            if (m_enable_device_address_space_merge) {
-                m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareLeft, KMemoryPermission_None);
-            }
-
-            lock_allocator = std::addressof(unmapped_allocator);
-            lock_address   = mapped_end_address;
-            lock_num_pages = unmapped_size / PageSize;
-            lock_func      = &KMemoryBlock::UnshareToDeviceRight;
-        } else {
-            lock_allocator = std::addressof(allocator);
-            lock_address   = address;
-            lock_num_pages = num_pages;
-            if (m_enable_device_address_space_merge) {
-                lock_func = &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshare;
-            } else {
-                lock_func = &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareRight;
-            }
-        }
-
         /* Update the memory blocks. */
-        m_memory_block_manager.UpdateLock(lock_allocator, lock_address, lock_num_pages, lock_func, KMemoryPermission_None);
+        m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, m_enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshare : &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareRight, KMemoryPermission_None);
 
         return ResultSuccess();
     }

@@ -64,7 +64,7 @@ namespace ams::kern {
         return m_table.Detach(device_name);
     }
 
-    Result KDeviceAddressSpace::Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings) {
+    Result KDeviceAddressSpace::Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
         /* Check that the address falls within the space. */
         R_UNLESS((m_space_address <= device_address && device_address + size - 1 <= m_space_address + m_space_size - 1), svc::ResultInvalidCurrentMemory());
 
@@ -82,22 +82,18 @@ namespace ams::kern {
 
         /* Map the pages. */
         {
-            /* Clear the output size to zero on failure. */
-            auto mapped_size_guard = SCOPE_GUARD { *out_mapped_size = 0; };
-
             /* Perform the mapping. */
-            R_TRY(m_table.Map(out_mapped_size, page_table, process_address, size, device_address, device_perm, is_aligned, refresh_mappings));
+            R_TRY(m_table.Map(page_table, process_address, size, device_address, device_perm, is_aligned));
 
             /* Ensure that we unmap the pages if we fail to update the protections. */
             /* NOTE: Nintendo does not check the result of this unmap call. */
-            auto map_guard = SCOPE_GUARD { m_table.Unmap(device_address, *out_mapped_size); };
+            auto map_guard = SCOPE_GUARD { m_table.Unmap(device_address, size); };
 
             /* Update the protections in accordance with how much we mapped. */
-            R_TRY(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, *out_mapped_size));
+            R_TRY(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size));
 
-            /* We succeeded, so cancel our guards. */
+            /* We succeeded, so cancel our guard. */
             map_guard.Cancel();
-            mapped_size_guard.Cancel();
         }
 
         /* We succeeded, so we don't need to unlock our pages. */
@@ -120,7 +116,7 @@ namespace ams::kern {
 
         /* If we fail to unmap, we want to do a partial unlock. */
         {
-            auto unlock_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, size)); };
+            auto unlock_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size)); };
 
             /* Unmap. */
             R_TRY(m_table.Unmap(page_table, process_address, size, device_address));

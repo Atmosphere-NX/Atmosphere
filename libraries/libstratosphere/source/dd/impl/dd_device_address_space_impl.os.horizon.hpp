@@ -25,7 +25,6 @@ namespace ams::dd::impl {
 
             static Result MapAligned(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm);
             static Result MapNotAligned(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm);
-            static Result MapPartially(size_t *out_mapped_size, DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm);
             static void   Unmap(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address);
 
             static Result Attach(DeviceAddressSpaceType *das, DeviceName device_name);
