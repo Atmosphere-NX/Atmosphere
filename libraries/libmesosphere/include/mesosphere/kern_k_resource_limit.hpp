@@ -47,6 +47,8 @@ namespace ams::kern {
 
             Result SetLimitValue(ams::svc::LimitableResource which, s64 value);
 
+            void Add(ams::svc::LimitableResource which, s64 value);
+
             bool Reserve(ams::svc::LimitableResource which, s64 value);
             bool Reserve(ams::svc::LimitableResource which, s64 value, s64 timeout);
             void Release(ams::svc::LimitableResource which, s64 value);

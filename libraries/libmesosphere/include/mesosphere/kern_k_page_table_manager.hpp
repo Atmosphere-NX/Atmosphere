@@ -15,58 +15,27 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_slab_helpers.hpp>
-#include <mesosphere/kern_k_dynamic_slab_heap.hpp>
+#include <mesosphere/kern_k_page_table_slab_heap.hpp>
+#include <mesosphere/kern_k_dynamic_resource_manager.hpp>
 
 namespace ams::kern {
 
-    namespace impl {
-
-        class PageTablePage {
-            private:
-                u8 m_buffer[PageSize];
-            public:
-                ALWAYS_INLINE PageTablePage() { /* Do not initialize anything. */ }
-        };
-        static_assert(sizeof(PageTablePage) == PageSize);
-
-    }
-
-    class KPageTableManager : public KDynamicSlabHeap<impl::PageTablePage, true> {
+    class KPageTableManager : public KDynamicResourceManager<impl::PageTablePage, true> {
         public:
-            using RefCount = u16;
-            static constexpr size_t PageTableSize = sizeof(impl::PageTablePage);
-            static_assert(PageTableSize == PageSize);
+            using RefCount = KPageTableSlabHeap::RefCount;
+            static constexpr size_t PageTableSize = KPageTableSlabHeap::PageTableSize;
         private:
-            using BaseHeap = KDynamicSlabHeap<impl::PageTablePage, true>;
+            using BaseHeap = KDynamicResourceManager<impl::PageTablePage, true>;
         private:
-            RefCount *m_ref_counts;
+            KPageTableSlabHeap *m_pt_heap{};
         public:
-            static constexpr size_t CalculateReferenceCountSize(size_t size) {
-                return (size / PageSize) * sizeof(RefCount);
-            }
-        public:
-            constexpr KPageTableManager() : BaseHeap(), m_ref_counts() { /* ... */ }
-        private:
-            void Initialize(RefCount *rc) {
-                m_ref_counts = rc;
-                for (size_t i = 0; i < this->GetSize() / PageSize; i++) {
-                    m_ref_counts[i] = 0;
-                }
-            }
+            constexpr KPageTableManager() = default;
 
-            constexpr RefCount *GetRefCountPointer(KVirtualAddress addr) const {
-                return std::addressof(m_ref_counts[(addr - this->GetAddress()) / PageSize]);
-            }
-        public:
-            void Initialize(KDynamicPageManager *page_allocator, RefCount *rc) {
-                BaseHeap::Initialize(page_allocator);
-                this->Initialize(rc);
-            }
+            ALWAYS_INLINE void Initialize(KDynamicPageManager *page_allocator, KPageTableSlabHeap *pt_heap) {
+                m_pt_heap = pt_heap;
 
-            void Initialize(KDynamicPageManager *page_allocator, size_t object_count, RefCount *rc) {
-                BaseHeap::Initialize(page_allocator, object_count);
-                this->Initialize(rc);
+                static_assert(std::derived_from<KPageTableSlabHeap, DynamicSlabType>);
+                BaseHeap::Initialize(page_allocator, pt_heap);
             }
 
             KVirtualAddress Allocate() {
@@ -74,33 +43,23 @@ namespace ams::kern {
             }
 
             void Free(KVirtualAddress addr) {
-                /* Free the page. */
-                BaseHeap::Free(GetPointer<impl::PageTablePage>(addr));
+                return BaseHeap::Free(GetPointer<impl::PageTablePage>(addr));
             }
 
-            RefCount GetRefCount(KVirtualAddress addr) const {
-                MESOSPHERE_ASSERT(this->IsInRange(addr));
-                return *this->GetRefCountPointer(addr);
+            ALWAYS_INLINE RefCount GetRefCount(KVirtualAddress addr) const {
+                return m_pt_heap->GetRefCount(addr);
             }
 
-            void Open(KVirtualAddress addr, int count) {
-                MESOSPHERE_ASSERT(this->IsInRange(addr));
-
-                *this->GetRefCountPointer(addr) += count;
-
-                MESOSPHERE_ABORT_UNLESS(this->GetRefCount(addr) > 0);
+            ALWAYS_INLINE void Open(KVirtualAddress addr, int count) {
+                return m_pt_heap->Open(addr, count);
             }
 
-            bool Close(KVirtualAddress addr, int count) {
-                MESOSPHERE_ASSERT(this->IsInRange(addr));
-                MESOSPHERE_ABORT_UNLESS(this->GetRefCount(addr) >= count);
-
-                *this->GetRefCountPointer(addr) -= count;
-                return this->GetRefCount(addr) == 0;
+            ALWAYS_INLINE bool Close(KVirtualAddress addr, int count) {
+                return m_pt_heap->Close(addr, count);
             }
 
-            constexpr bool IsInPageTableHeap(KVirtualAddress addr) const {
-                return this->IsInRange(addr);
+            constexpr ALWAYS_INLINE bool IsInPageTableHeap(KVirtualAddress addr) const {
+                return m_pt_heap->IsInRange(addr);
             }
     };
 

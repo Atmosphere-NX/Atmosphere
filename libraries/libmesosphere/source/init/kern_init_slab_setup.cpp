@@ -173,8 +173,9 @@ namespace ams::kern::init {
     }
 
     void InitializeSlabHeaps() {
-        /* Get the start of the slab region, since that's where we'll be working. */
-        KVirtualAddress address = KMemoryLayout::GetSlabRegionAddress();
+        /* Get the slab region, since that's where we'll be working. */
+        const KMemoryRegion &slab_region = KMemoryLayout::GetSlabRegion();
+        KVirtualAddress address = slab_region.GetAddress();
 
         /* Initialize slab type array to be in sorted order. */
         KSlabType slab_types[KSlabType_Count];
@@ -202,13 +203,21 @@ namespace ams::kern::init {
             }
         }
 
+        /* Track the gaps, so that we can free them to the unused slab tree. */
+        KVirtualAddress gap_start = address;
+        size_t gap_size = 0;
+
         for (size_t i = 0; i < util::size(slab_types); i++) {
             /* Add the random gap to the address. */
-            address += (i == 0) ? slab_gaps[0] : slab_gaps[i] - slab_gaps[i - 1];
+            const auto cur_gap = (i == 0) ? slab_gaps[0] : slab_gaps[i] - slab_gaps[i - 1];
+            address  += cur_gap;
+            gap_size += cur_gap;
 
-            #define INITIALIZE_SLAB_HEAP(NAME, COUNT, ...)              \
-                case KSlabType_##NAME:                                  \
-                    address = InitializeSlabHeap<NAME>(address, COUNT); \
+            #define INITIALIZE_SLAB_HEAP(NAME, COUNT, ...)                  \
+                case KSlabType_##NAME:                                      \
+                    if (COUNT > 0) {                                        \
+                        address = InitializeSlabHeap<NAME>(address, COUNT); \
+                    }                                                       \
                     break;
 
             /* Initialize the slabheap. */
@@ -218,7 +227,17 @@ namespace ams::kern::init {
                 /* If we somehow get an invalid type, abort. */
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
+
+            /* If we've hit the end of a gap, free it. */
+            if (gap_start + gap_size != address) {
+                FreeUnusedSlabMemory(gap_start, gap_size);
+                gap_start = address;
+                gap_size  = 0;
+            }
         }
+
+        /* Free the end of the slab region. */
+        FreeUnusedSlabMemory(gap_start, gap_size + (slab_region.GetEndAddress() - GetInteger(address)));
     }
 
 }

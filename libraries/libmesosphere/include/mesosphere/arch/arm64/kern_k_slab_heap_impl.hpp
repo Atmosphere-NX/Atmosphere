@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
+#include <mesosphere/kern_select_interrupt_manager.hpp>
 
 namespace ams::kern::arch::arm64 {
 
@@ -23,6 +24,32 @@ namespace ams::kern::arch::arm64 {
     concept SlabHeapNode = requires (T &t) {
         { t.next } -> std::convertible_to<T *>;
     };
+
+    ALWAYS_INLINE bool IsSlabAtomicValid() {
+        /* Without careful consideration, slab heaps atomics are vulnerable to */
+        /* the ABA problem, when doing compare and swap of node pointers. */
+        /* We resolve this by using the ARM exclusive monitor; we bundle the */
+        /* load and store of the relevant values into a single exclusive monitor */
+        /* hold, preventing the ABA problem. */
+        /* However, our assembly must do both a load and a store under a single */
+        /* hold, at different memory addresses. Considering the case where the */
+        /* addresses are distinct but resolve to the same cache set (by chance), */
+        /* we can note that under a 1-way associative (direct-mapped) cache */
+        /* we would have as a guarantee that the second access would evict the */
+        /* cache line from the first access, invalidating our exclusive monitor */
+        /* hold. Thus, we require that the cache is not 1-way associative, for */
+        /* our implementation to be correct. */
+        {
+            /* Disable interrupts. */
+            KScopedInterruptDisable di;
+
+            /* Select L1 cache. */
+            cpu::SetCsselrEl1(0);
+
+            /* Check that the L1 cache is not direct-mapped. */
+            return cpu::CacheSizeIdRegisterAccessor().GetAssociativity() != 0;
+        }
+    }
 
     template<typename T> requires SlabHeapNode<T>
     ALWAYS_INLINE T *AllocateFromSlabAtomic(T **head) {
@@ -36,10 +63,7 @@ namespace ams::kern::arch::arm64 {
             "    ldr    %[next], [%[node]]\n"
             "    stlxr  %w[tmp], %[next], [%[head]]\n"
             "    cbnz   %w[tmp], 1b\n"
-            "    b      3f\n"
             "2:\n"
-            "    clrex\n"
-            "3:\n"
             : [tmp]"=&r"(tmp), [node]"=&r"(node), [next]"=&r"(next), [head]"+&r"(head)
             :
             : "cc", "memory"
@@ -59,7 +83,6 @@ namespace ams::kern::arch::arm64 {
             "    str    %[next], [%[node]]\n"
             "    stlxr  %w[tmp], %[node], [%[head]]\n"
             "    cbnz   %w[tmp], 1b\n"
-            "2:\n"
             : [tmp]"=&r"(tmp), [node]"+&r"(node), [next]"=&r"(next), [head]"+&r"(head)
             :
             : "cc", "memory"

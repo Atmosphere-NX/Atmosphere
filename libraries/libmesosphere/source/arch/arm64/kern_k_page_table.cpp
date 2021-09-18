@@ -166,7 +166,7 @@ namespace ams::kern::arch::arm64 {
     Result KPageTable::InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize basic fields. */
         m_asid = 0;
-        m_manager = std::addressof(Kernel::GetPageTableManager());
+        m_manager = std::addressof(Kernel::GetSystemPageTableManager());
 
         /* Allocate a page for ttbr. */
         const u64 asid_tag = (static_cast<u64>(m_asid) << 48ul);

@@ -260,8 +260,8 @@ namespace ams::kern {
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
             const bool is_app           = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
             auto *mem_block_manager     = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
-            auto *block_info_manager    = std::addressof(Kernel::GetBlockInfoManager());
-            auto *pt_manager            = std::addressof(Kernel::GetPageTableManager());
+            auto *block_info_manager    = std::addressof(is_app ? Kernel::GetApplicationBlockInfoManager() : Kernel::GetSystemBlockInfoManager());
+            auto *pt_manager            = std::addressof(is_app ? Kernel::GetApplicationPageTableManager() : Kernel::GetSystemPageTableManager());
             R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
         auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
@@ -326,12 +326,17 @@ namespace ams::kern {
             MESOSPHERE_ASSERT(m_system_resource_address != Null<KVirtualAddress>);
             m_system_resource_num_pages = system_resource_num_pages;
 
-            /* Initialize managers. */
-            const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(system_resource_size), PageSize);
+            /* Initialize slab heaps. */
+            const size_t rc_size = util::AlignUp(KPageTableSlabHeap::CalculateReferenceCountSize(system_resource_size), PageSize);
             m_dynamic_page_manager.Initialize(m_system_resource_address + rc_size, system_resource_size - rc_size);
-            m_page_table_manager.Initialize(std::addressof(m_dynamic_page_manager), GetPointer<KPageTableManager::RefCount>(m_system_resource_address));
-            m_memory_block_slab_manager.Initialize(std::addressof(m_dynamic_page_manager));
-            m_block_info_manager.Initialize(std::addressof(m_dynamic_page_manager));
+            m_page_table_heap.Initialize(std::addressof(m_dynamic_page_manager), 0, GetPointer<KPageTableManager::RefCount>(m_system_resource_address));
+            m_memory_block_heap.Initialize(std::addressof(m_dynamic_page_manager), 0);
+            m_block_info_heap.Initialize(std::addressof(m_dynamic_page_manager), 0);
+
+            /* Initialize managers. */
+            m_page_table_manager.Initialize(std::addressof(m_dynamic_page_manager), std::addressof(m_page_table_heap));
+            m_memory_block_slab_manager.Initialize(std::addressof(m_dynamic_page_manager), std::addressof(m_memory_block_heap));
+            m_block_info_manager.Initialize(std::addressof(m_dynamic_page_manager), std::addressof(m_block_info_heap));
 
             mem_block_manager  = std::addressof(m_memory_block_slab_manager);
             block_info_manager = std::addressof(m_block_info_manager);
@@ -339,8 +344,8 @@ namespace ams::kern {
         } else {
             const bool is_app  = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
             mem_block_manager  = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
-            block_info_manager = std::addressof(Kernel::GetBlockInfoManager());
-            pt_manager         = std::addressof(Kernel::GetPageTableManager());
+            block_info_manager = std::addressof(is_app ? Kernel::GetApplicationBlockInfoManager() : Kernel::GetSystemBlockInfoManager());
+            pt_manager         = std::addressof(is_app ? Kernel::GetApplicationPageTableManager() : Kernel::GetSystemPageTableManager());
         }
 
         /* Ensure we don't leak any secure memory we allocated. */

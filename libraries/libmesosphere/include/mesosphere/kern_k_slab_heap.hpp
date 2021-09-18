@@ -16,11 +16,13 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
+#include <mesosphere/kern_k_memory_layout.hpp>
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
     #include <mesosphere/arch/arm64/kern_k_slab_heap_impl.hpp>
     namespace ams::kern {
+        using ams::kern::arch::arm64::IsSlabAtomicValid;
         using ams::kern::arch::arm64::AllocateFromSlabAtomic;
         using ams::kern::arch::arm64::FreeToSlabAtomic;
     }
@@ -44,78 +46,73 @@ namespace ams::kern {
                     Node *next;
                 };
             private:
-                Node * m_head;
-                size_t m_obj_size;
+                Node *m_head{nullptr};
             public:
-                constexpr KSlabHeapImpl() : m_head(nullptr), m_obj_size(0) { MESOSPHERE_ASSERT_THIS(); }
+                constexpr KSlabHeapImpl() = default;
 
-                void Initialize(size_t size) {
-                    MESOSPHERE_INIT_ABORT_UNLESS(m_head == nullptr);
-                    m_obj_size = size;
+                void Initialize() {
+                    MESOSPHERE_ABORT_UNLESS(m_head == nullptr);
+                    MESOSPHERE_ABORT_UNLESS(IsSlabAtomicValid());
                 }
 
-                Node *GetHead() const {
+                ALWAYS_INLINE Node *GetHead() const {
                     return m_head;
                 }
 
-                size_t GetObjectSize() const {
-                    return m_obj_size;
-                }
-
-                void *Allocate() {
-                    MESOSPHERE_ASSERT_THIS();
-
+                ALWAYS_INLINE void *Allocate() {
                     return AllocateFromSlabAtomic(std::addressof(m_head));
                 }
 
-                void Free(void *obj) {
-                    MESOSPHERE_ASSERT_THIS();
-
-                    Node *node = reinterpret_cast<Node *>(obj);
-
-                    return FreeToSlabAtomic(std::addressof(m_head), node);
+                ALWAYS_INLINE void Free(void *obj) {
+                    return FreeToSlabAtomic(std::addressof(m_head), static_cast<Node *>(obj));
                 }
         };
 
     }
 
-    class KSlabHeapBase {
+    template<bool SupportDynamicExpansion>
+    class KSlabHeapBase : protected impl::KSlabHeapImpl {
         NON_COPYABLE(KSlabHeapBase);
         NON_MOVEABLE(KSlabHeapBase);
         private:
-            using Impl = impl::KSlabHeapImpl;
+            size_t m_obj_size{};
+            uintptr_t m_peak{};
+            uintptr_t m_start{};
+            uintptr_t m_end{};
         private:
-            Impl m_impl;
-            uintptr_t m_peak;
-            uintptr_t m_start;
-            uintptr_t m_end;
-        private:
-            ALWAYS_INLINE Impl *GetImpl() {
-                return std::addressof(m_impl);
-            }
-            ALWAYS_INLINE const Impl *GetImpl() const {
-                return std::addressof(m_impl);
+            ALWAYS_INLINE void UpdatePeakImpl(uintptr_t obj) {
+                static_assert(std::atomic_ref<uintptr_t>::is_always_lock_free);
+                std::atomic_ref<uintptr_t> peak_ref(m_peak);
+
+                const uintptr_t alloc_peak = obj + this->GetObjectSize();
+                uintptr_t cur_peak = m_peak;
+                do {
+                    if (alloc_peak <= cur_peak) {
+                        break;
+                    }
+                } while (!peak_ref.compare_exchange_strong(cur_peak, alloc_peak));
             }
         public:
-            constexpr KSlabHeapBase() : m_impl(), m_peak(0), m_start(0), m_end(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr KSlabHeapBase() = default;
 
             ALWAYS_INLINE bool Contains(uintptr_t address) const {
                 return m_start <= address && address < m_end;
             }
 
-            void InitializeImpl(size_t obj_size, void *memory, size_t memory_size) {
-                MESOSPHERE_ASSERT_THIS();
-
+            void Initialize(size_t obj_size, void *memory, size_t memory_size) {
                 /* Ensure we don't initialize a slab using null memory. */
                 MESOSPHERE_ABORT_UNLESS(memory != nullptr);
 
+                /* Set our object size. */
+                m_obj_size = obj_size;
+
                 /* Initialize the base allocator. */
-                this->GetImpl()->Initialize(obj_size);
+                KSlabHeapImpl::Initialize();
 
                 /* Set our tracking variables. */
                 const size_t num_obj = (memory_size / obj_size);
                 m_start = reinterpret_cast<uintptr_t>(memory);
-                m_end = m_start + num_obj * obj_size;
+                m_end  = m_start + num_obj * obj_size;
                 m_peak = m_start;
 
                 /* Free the objects. */
@@ -123,75 +120,91 @@ namespace ams::kern {
 
                 for (size_t i = 0; i < num_obj; i++) {
                     cur -= obj_size;
-                    this->GetImpl()->Free(cur);
+                    KSlabHeapImpl::Free(cur);
                 }
             }
 
-            size_t GetSlabHeapSize() const {
+            ALWAYS_INLINE size_t GetSlabHeapSize() const {
                 return (m_end - m_start) / this->GetObjectSize();
             }
 
-            size_t GetObjectSize() const {
-                return this->GetImpl()->GetObjectSize();
+            ALWAYS_INLINE size_t GetObjectSize() const {
+                return m_obj_size;
             }
 
-            void *AllocateImpl() {
-                MESOSPHERE_ASSERT_THIS();
-
-                void *obj = this->GetImpl()->Allocate();
+            ALWAYS_INLINE void *Allocate() {
+                void *obj = KSlabHeapImpl::Allocate();
 
                 /* Track the allocated peak. */
                 #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
                 if (AMS_LIKELY(obj != nullptr)) {
-                    static_assert(std::atomic_ref<uintptr_t>::is_always_lock_free);
-                    std::atomic_ref<uintptr_t> peak_ref(m_peak);
-
-                    const uintptr_t alloc_peak = reinterpret_cast<uintptr_t>(obj) + this->GetObjectSize();
-                    uintptr_t cur_peak = m_peak;
-                    do {
-                        if (alloc_peak <= cur_peak) {
-                            break;
+                    if constexpr (SupportDynamicExpansion) {
+                        if (this->Contains(reinterpret_cast<uintptr_t>(obj))) {
+                            this->UpdatePeakImpl(reinterpret_cast<uintptr_t>(obj));
+                        } else {
+                            this->UpdatePeakImpl(reinterpret_cast<uintptr_t>(m_end) - this->GetObjectSize());
                         }
-                    } while (!peak_ref.compare_exchange_strong(cur_peak, alloc_peak));
+                    } else {
+                        this->UpdatePeakImpl(reinterpret_cast<uintptr_t>(obj));
+                    }
                 }
                 #endif
 
                 return obj;
             }
 
-            void FreeImpl(void *obj) {
-                MESOSPHERE_ASSERT_THIS();
-
+            ALWAYS_INLINE void Free(void *obj) {
                 /* Don't allow freeing an object that wasn't allocated from this heap. */
-                MESOSPHERE_ABORT_UNLESS(this->Contains(reinterpret_cast<uintptr_t>(obj)));
+                const bool contained = this->Contains(reinterpret_cast<uintptr_t>(obj));
+                if constexpr (SupportDynamicExpansion) {
+                    const bool is_slab = KMemoryLayout::GetSlabRegion().Contains(reinterpret_cast<uintptr_t>(obj));
+                    MESOSPHERE_ABORT_UNLESS(contained || is_slab);
+                } else {
+                    MESOSPHERE_ABORT_UNLESS(contained);
+                }
 
-                this->GetImpl()->Free(obj);
+                KSlabHeapImpl::Free(obj);
             }
 
-            size_t GetObjectIndexImpl(const void *obj) const {
+            ALWAYS_INLINE size_t GetObjectIndex(const void *obj) const {
+                if constexpr (SupportDynamicExpansion) {
+                    if (!this->Contains(reinterpret_cast<uintptr_t>(obj))) {
+                        return std::numeric_limits<size_t>::max();
+                    }
+                }
+
                 return (reinterpret_cast<uintptr_t>(obj) - m_start) / this->GetObjectSize();
             }
 
-            size_t GetPeakIndex() const {
-                return this->GetObjectIndexImpl(reinterpret_cast<const void *>(m_peak));
+            ALWAYS_INLINE size_t GetPeakIndex() const {
+                return this->GetObjectIndex(reinterpret_cast<const void *>(m_peak));
             }
 
-            uintptr_t GetSlabHeapAddress() const {
+            ALWAYS_INLINE uintptr_t GetSlabHeapAddress() const {
                 return m_start;
             }
 
-            size_t GetNumRemaining() const {
+            ALWAYS_INLINE size_t GetNumRemaining() const {
                 size_t remaining = 0;
 
                 /* Only calculate the number of remaining objects under debug configuration. */
                 #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
                 while (true) {
-                    auto *cur = this->GetImpl()->GetHead();
+                    auto *cur = this->GetHead();
                     remaining = 0;
 
-                    while (this->Contains(reinterpret_cast<uintptr_t>(cur))) {
-                        ++remaining;
-                        cur = cur->next;
+                    if constexpr (SupportDynamicExpansion) {
+                        const auto &slab_region = KMemoryLayout::GetSlabRegion();
+
+                        while (this->Contains(reinterpret_cast<uintptr_t>(cur)) || slab_region.Contains(reinterpret_cast<uintptr_t>(cur))) {
+                            ++remaining;
+                            cur = cur->next;
+                        }
+                    } else {
+                        while (this->Contains(reinterpret_cast<uintptr_t>(cur))) {
+                            ++remaining;
+                            cur = cur->next;
+                        }
                     }
 
                     if (cur == nullptr) {
@@ -204,29 +217,31 @@ namespace ams::kern {
             }
     };
 
-    template<typename T>
-    class KSlabHeap : public KSlabHeapBase {
+    template<typename T, bool SupportDynamicExpansion>
+    class KSlabHeap : public KSlabHeapBase<SupportDynamicExpansion> {
+        private:
+            using BaseHeap = KSlabHeapBase<SupportDynamicExpansion>;
         public:
-            constexpr KSlabHeap() : KSlabHeapBase() { /* ... */ }
+            constexpr KSlabHeap() = default;
 
             void Initialize(void *memory, size_t memory_size) {
-                this->InitializeImpl(sizeof(T), memory, memory_size);
+                BaseHeap::Initialize(sizeof(T), memory, memory_size);
             }
 
-            T *Allocate() {
-                T *obj = reinterpret_cast<T *>(this->AllocateImpl());
+            ALWAYS_INLINE T *Allocate() {
+                T *obj = static_cast<T *>(BaseHeap::Allocate());
                 if (AMS_LIKELY(obj != nullptr)) {
                     std::construct_at(obj);
                 }
                 return obj;
             }
 
-            void Free(T *obj) {
-                this->FreeImpl(obj);
+            ALWAYS_INLINE void Free(T *obj) {
+                BaseHeap::Free(obj);
             }
 
-            size_t GetObjectIndex(const T *obj) const {
-                return this->GetObjectIndexImpl(obj);
+            ALWAYS_INLINE size_t GetObjectIndex(const T *obj) const {
+                return BaseHeap::GetObjectIndex(obj);
             }
     };
 

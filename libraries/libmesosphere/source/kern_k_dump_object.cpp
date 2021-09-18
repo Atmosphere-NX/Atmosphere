@@ -369,14 +369,14 @@ namespace ams::kern::KDumpObject {
                 /* KBlockInfo slab. */
                 {
                     MESOSPHERE_RELEASE_LOG("KBlockInfo\n");
-                    auto &manager = Kernel::GetBlockInfoManager();
+                    auto &manager = Kernel::GetSystemBlockInfoManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
                 }
 
                 /* Page Table slab. */
                 {
                     MESOSPHERE_RELEASE_LOG("Page Table\n");
-                    auto &manager = Kernel::GetPageTableManager();
+                    auto &manager = Kernel::GetSystemPageTableManager();
                     MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
                 }
             }

@@ -650,11 +650,11 @@ namespace ams::kern::board::nintendo::nx {
         g_memory_controller_address = KMemoryLayout::GetDevicePhysicalAddress(KMemoryRegionType_MemoryController);
 
         /* Allocate a page to use as a reserved/no device table. */
-        const KVirtualAddress table_virt_addr = Kernel::GetPageTableManager().Allocate();
+        const KVirtualAddress table_virt_addr = Kernel::GetSystemPageTableManager().Allocate();
         MESOSPHERE_ABORT_UNLESS(table_virt_addr != Null<KVirtualAddress>);
         const KPhysicalAddress table_phys_addr = GetPageTablePhysicalAddress(table_virt_addr);
         MESOSPHERE_ASSERT(IsValidPhysicalAddress(table_phys_addr));
-        Kernel::GetPageTableManager().Open(table_virt_addr, 1);
+        Kernel::GetSystemPageTableManager().Open(table_virt_addr, 1);
 
         /* Clear the page and save it. */
         /* NOTE: Nintendo does not check the result of StoreDataCache. */
@@ -779,7 +779,7 @@ namespace ams::kern::board::nintendo::nx {
         const size_t end_index   = (space_address + space_size - 1) / DeviceRegionSize;
 
         /* Get the page table manager. */
-        auto &ptm = Kernel::GetPageTableManager();
+        auto &ptm = Kernel::GetSystemPageTableManager();
 
         /* Clear the tables. */
         static_assert(TableCount == (1ul << DeviceVirtualAddressBits) / DeviceRegionSize);
@@ -840,7 +840,7 @@ namespace ams::kern::board::nintendo::nx {
 
     void KDevicePageTable::Finalize() {
         /* Get the page table manager. */
-        auto &ptm = Kernel::GetPageTableManager();
+        auto &ptm = Kernel::GetSystemPageTableManager();
 
         /* Detach from all devices. */
         {
@@ -1017,7 +1017,7 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Get the memory manager and page table manager. */
         KMemoryManager &mm     = Kernel::GetMemoryManager();
-        KPageTableManager &ptm = Kernel::GetPageTableManager();
+        KPageTableManager &ptm = Kernel::GetSystemPageTableManager();
 
         /* Cache permissions. */
         const bool read  = (device_perm & ams::svc::MemoryPermission_Read)  != 0;
@@ -1181,10 +1181,10 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Get the memory manager and page table manager. */
         KMemoryManager &mm     = Kernel::GetMemoryManager();
-        KPageTableManager &ptm = Kernel::GetPageTableManager();
+        KPageTableManager &ptm = Kernel::GetSystemPageTableManager();
 
         /* Make a page group for the pages we're closing. */
-        KPageGroup pg(std::addressof(Kernel::GetBlockInfoManager()));
+        KPageGroup pg(std::addressof(Kernel::GetSystemBlockInfoManager()));
 
         /* Walk the directory. */
         u64 remaining = size;

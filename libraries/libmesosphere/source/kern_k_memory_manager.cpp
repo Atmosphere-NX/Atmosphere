@@ -37,6 +37,7 @@ namespace ams::kern {
 
     void KMemoryManager::Initialize(KVirtualAddress management_region, size_t management_region_size) {
         /* Clear the management region to zero. */
+
         const KVirtualAddress management_region_end = management_region + management_region_size;
         std::memset(GetVoidPointer(management_region), 0, management_region_size);
 

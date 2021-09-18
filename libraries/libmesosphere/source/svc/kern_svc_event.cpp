@@ -60,12 +60,28 @@ namespace ams::kern::svc {
             auto &process      = GetCurrentProcess();
             auto &handle_table = process.GetHandleTable();
 
+            /* Declare the event we're going to allocate. */
+            KEvent *event;
+
             /* Reserve a new event from the process resource limit. */
             KScopedResourceReservation event_reservation(std::addressof(process), ams::svc::LimitableResource_EventCountMax);
-            R_UNLESS(event_reservation.Succeeded(), svc::ResultLimitReached());
+            if (event_reservation.Succeeded()) {
+                /* Allocate an event normally. */
+                event = KEvent::Create();
+            } else {
+                /* We couldn't reserve an event. Check that we support dynamically expanding the resource limit. */
+                R_UNLESS(process.GetResourceLimit() == std::addressof(Kernel::GetSystemResourceLimit()), svc::ResultLimitReached());
+                R_UNLESS(KTargetSystem::IsDynamicResourceLimitsEnabled(),                                svc::ResultLimitReached());
 
-            /* Create a new event. */
-            KEvent *event = KEvent::Create();
+                /* Try to allocate an event from unused slab memory. */
+                event = KEvent::CreateFromUnusedSlabMemory();
+                R_UNLESS(event != nullptr, svc::ResultLimitReached());
+
+                /* We successfully allocated an event, so add the object we allocated to the resource limit. */
+                Kernel::GetSystemResourceLimit().Add(ams::svc::LimitableResource_EventCountMax, 1);
+            }
+
+            /* Check that we successfully created an event. */
             R_UNLESS(event != nullptr, svc::ResultOutOfResource());
 
             /* Initialize the event. */

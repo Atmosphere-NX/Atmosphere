@@ -29,7 +29,7 @@
 #include <mesosphere/kern_k_address_arbiter.hpp>
 #include <mesosphere/kern_k_capabilities.hpp>
 #include <mesosphere/kern_k_wait_object.hpp>
-#include <mesosphere/kern_k_dynamic_slab_heap.hpp>
+#include <mesosphere/kern_k_dynamic_resource_manager.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
 
 namespace ams::kern {
@@ -121,6 +121,9 @@ namespace ams::kern {
             KMemoryBlockSlabManager     m_memory_block_slab_manager{};
             KBlockInfoManager           m_block_info_manager{};
             KPageTableManager           m_page_table_manager{};
+            KMemoryBlockSlabHeap        m_memory_block_heap{};
+            KBlockInfoSlabHeap          m_block_info_heap{};
+            KPageTableSlabHeap          m_page_table_heap{};
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
 

@@ -66,15 +66,11 @@ namespace ams::kern {
 
     void Kernel::InitializeResourceManagers(KVirtualAddress address, size_t size) {
         /* Ensure that the buffer is suitable for our use. */
-        //const size_t app_size   = ApplicationMemoryBlockSlabHeapSize * sizeof(KMemoryBlock);
-        //const size_t sys_size   = SystemMemoryBlockSlabHeapSize      * sizeof(KMemoryBlock);
-        //const size_t info_size  = BlockInfoSlabHeapSize              * sizeof(KBlockInfo);
-        //const size_t fixed_size = util::AlignUp(app_size + sys_size + info_size, PageSize);
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(address), PageSize));
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, PageSize));
 
         /* Ensure that we have space for our reference counts. */
-        const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(size), PageSize);
+        const size_t rc_size = util::AlignUp(KPageTableSlabHeap::CalculateReferenceCountSize(size), PageSize);
         MESOSPHERE_ABORT_UNLESS(rc_size < size);
         size -= rc_size;
 
@@ -82,13 +78,28 @@ namespace ams::kern {
         g_resource_manager_page_manager.Initialize(address, size);
 
         /* Initialize the fixed-size slabheaps. */
-        s_app_memory_block_manager.Initialize(std::addressof(g_resource_manager_page_manager), ApplicationMemoryBlockSlabHeapSize);
-        s_sys_memory_block_manager.Initialize(std::addressof(g_resource_manager_page_manager), SystemMemoryBlockSlabHeapSize);
-        s_block_info_manager.Initialize(std::addressof(g_resource_manager_page_manager), BlockInfoSlabHeapSize);
+        s_app_memory_block_heap.Initialize(std::addressof(g_resource_manager_page_manager), ApplicationMemoryBlockSlabHeapSize);
+        s_sys_memory_block_heap.Initialize(std::addressof(g_resource_manager_page_manager), SystemMemoryBlockSlabHeapSize);
+        s_block_info_heap.Initialize(std::addressof(g_resource_manager_page_manager), BlockInfoSlabHeapSize);
 
-        /* Reserve all remaining pages for the page table manager. */
-        const size_t num_pt_pages = g_resource_manager_page_manager.GetCount() - g_resource_manager_page_manager.GetUsed();
-        s_page_table_manager.Initialize(std::addressof(g_resource_manager_page_manager), num_pt_pages, GetPointer<KPageTableManager::RefCount>(address + size));
+        /* Reserve all but a fixed number of remaining pages for the page table heap. */
+        const size_t num_pt_pages = g_resource_manager_page_manager.GetCount() - g_resource_manager_page_manager.GetUsed() - ReservedDynamicPageCount;
+        s_page_table_heap.Initialize(std::addressof(g_resource_manager_page_manager), num_pt_pages, GetPointer<KPageTableManager::RefCount>(address + size));
+
+        /* Setup the slab managers. */
+        KDynamicPageManager * const app_dynamic_page_manager = nullptr;
+        KDynamicPageManager * const sys_dynamic_page_manager = KTargetSystem::IsDynamicResourceLimitsEnabled() ? std::addressof(g_resource_manager_page_manager) : nullptr;
+        s_app_memory_block_manager.Initialize(app_dynamic_page_manager, std::addressof(s_app_memory_block_heap));
+        s_sys_memory_block_manager.Initialize(sys_dynamic_page_manager, std::addressof(s_sys_memory_block_heap));
+
+        s_app_block_info_manager.Initialize(app_dynamic_page_manager, std::addressof(s_block_info_heap));
+        s_sys_block_info_manager.Initialize(sys_dynamic_page_manager, std::addressof(s_block_info_heap));
+
+        s_app_page_table_manager.Initialize(app_dynamic_page_manager, std::addressof(s_page_table_heap));
+        s_sys_page_table_manager.Initialize(sys_dynamic_page_manager, std::addressof(s_page_table_heap));
+
+        /* Check that we have the correct number of dynamic pages available. */
+        MESOSPHERE_ABORT_UNLESS(g_resource_manager_page_manager.GetCount() - g_resource_manager_page_manager.GetUsed() == ReservedDynamicPageCount);
     }
 
     void Kernel::PrintLayout() {
