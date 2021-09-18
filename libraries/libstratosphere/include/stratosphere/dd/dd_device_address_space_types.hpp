@@ -34,16 +34,4 @@ namespace ams::dd {
     };
     static_assert(std::is_trivial<DeviceAddressSpaceType>::value);
 
-    struct DeviceAddressSpaceMapInfo {
-        size_t last_mapped_size;
-        size_t size;
-        u64 process_address;
-        DeviceVirtualAddress device_start_address;
-        DeviceVirtualAddress device_end_address;
-        ProcessHandle process_handle;
-        MemoryPermission device_permission;
-        DeviceAddressSpaceType *device_address_space;
-    };
-    static_assert(std::is_trivial<DeviceAddressSpaceMapInfo>::value);
-
 }

@@ -33,15 +33,6 @@ namespace ams::dd {
     Result MapDeviceAddressSpaceNotAligned(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address, MemoryPermission device_perm);
     void UnmapDeviceAddressSpace(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address);
 
-    void InitializeDeviceAddressSpaceMapInfo(DeviceAddressSpaceMapInfo *info, DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address, MemoryPermission device_perm);
-
-    Result MapNextDeviceAddressSpaceRegion(size_t *out_mapped_size, DeviceAddressSpaceMapInfo *info);
-    void UnmapDeviceAddressSpaceRegion(DeviceAddressSpaceMapInfo *info);
-
-    u64 GetMappedProcessAddress(DeviceAddressSpaceMapInfo *info);
-    DeviceVirtualAddress GetMappedDeviceVirtualAddress(DeviceAddressSpaceMapInfo *info);
-    size_t GetMappedSize(DeviceAddressSpaceMapInfo *info);
-
     Result AttachDeviceAddressSpace(DeviceAddressSpaceType *das, DeviceName device_name);
     void DetachDeviceAddressSpace(DeviceAddressSpaceType *das, DeviceName device_name);
 

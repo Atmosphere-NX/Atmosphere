@@ -69,16 +69,16 @@ namespace ams::kern::board::nintendo::nx {
             Result Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size);
             Result Detach(ams::svc::DeviceName device_name);
 
-            Result Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings);
+            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
             Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address);
 
             void Unmap(KDeviceVirtualAddress device_address, size_t size) {
                 return this->UnmapImpl(device_address, size, false);
             }
         private:
-            Result MapDevicePage(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
+            Result MapDevicePage(KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
 
-            Result MapImpl(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
+            Result MapImpl(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
             void UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force);
 
             bool IsFree(KDeviceVirtualAddress address, u64 size) const;

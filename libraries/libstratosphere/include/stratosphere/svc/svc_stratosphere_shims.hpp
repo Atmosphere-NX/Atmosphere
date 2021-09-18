@@ -354,10 +354,6 @@
                     return ::svcMapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm));
                 }
 
-                ALWAYS_INLINE Result MapDeviceAddressSpace(::ams::svc::Size *out_mapped_size, ::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, ::ams::svc::MemoryPermission device_perm) {
-                    return ::svcMapDeviceAddressSpace(reinterpret_cast<u64 *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm));
-                }
-
                 ALWAYS_INLINE Result UnmapDeviceAddressSpace(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address) {
                     return ::svcUnmapDeviceAddressSpace(das_handle, process_handle, process_address, size, device_address);
                 }

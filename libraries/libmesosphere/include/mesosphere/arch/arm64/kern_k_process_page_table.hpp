@@ -164,8 +164,8 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.UnlockForDeviceAddressSpace(address, size);
             }
 
-            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
-                return m_page_table.UnlockForDeviceAddressSpacePartialMap(address, size, mapped_size);
+            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size) {
+                return m_page_table.UnlockForDeviceAddressSpacePartialMap(address, size);
             }
 
             Result OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {

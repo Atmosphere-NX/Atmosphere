@@ -80,7 +80,7 @@ namespace ams::kern::svc {
             }
         }
 
-        Result MapDeviceAddressSpace(size_t *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+        Result MapDeviceAddressSpaceByForce(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
             /* Validate input. */
             R_UNLESS(util::IsAligned(process_address, PageSize),                   svc::ResultInvalidAddress());
             R_UNLESS(util::IsAligned(device_address, PageSize),                    svc::ResultInvalidAddress());
@@ -104,7 +104,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.Contains(process_address, size), svc::ResultInvalidCurrentMemory());
 
             /* Map. */
-            return das->Map(out_mapped_size, std::addressof(page_table), KProcessAddress(process_address), size, device_address, device_perm, refresh_mappings);
+            return das->MapByForce(std::addressof(page_table), KProcessAddress(process_address), size, device_address, device_perm);
         }
 
         Result MapDeviceAddressSpaceAligned(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
@@ -177,17 +177,11 @@ namespace ams::kern::svc {
     }
 
     Result MapDeviceAddressSpaceByForce64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        size_t dummy_map_size;
-        return MapDeviceAddressSpace(std::addressof(dummy_map_size), das_handle, process_handle, process_address, size, device_address, device_perm, false);
+        return MapDeviceAddressSpaceByForce(das_handle, process_handle, process_address, size, device_address, device_perm);
     }
 
     Result MapDeviceAddressSpaceAligned64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
         return MapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, device_perm);
-    }
-
-    Result MapDeviceAddressSpace64(ams::svc::Size *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        static_assert(sizeof(*out_mapped_size) == sizeof(size_t));
-        return MapDeviceAddressSpace(reinterpret_cast<size_t *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, device_perm, true);
     }
 
     Result UnmapDeviceAddressSpace64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address) {
@@ -209,17 +203,11 @@ namespace ams::kern::svc {
     }
 
     Result MapDeviceAddressSpaceByForce64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        size_t dummy_map_size;
-        return MapDeviceAddressSpace(std::addressof(dummy_map_size), das_handle, process_handle, process_address, size, device_address, device_perm, false);
+        return MapDeviceAddressSpaceByForce(das_handle, process_handle, process_address, size, device_address, device_perm);
     }
 
     Result MapDeviceAddressSpaceAligned64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
         return MapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, device_perm);
-    }
-
-    Result MapDeviceAddressSpace64From32(ams::svc::Size *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        static_assert(sizeof(*out_mapped_size) == sizeof(size_t));
-        return MapDeviceAddressSpace(reinterpret_cast<size_t *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, device_perm, true);
     }
 
     Result UnmapDeviceAddressSpace64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address) {

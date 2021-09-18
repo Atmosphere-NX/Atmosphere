@@ -375,7 +375,7 @@ namespace ams::kern {
             Result LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size);
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
-            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size);
+            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size);
 
             Result OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
             Result OpenMemoryRangeForUnmapDeviceAddressSpace(MemoryRange *out, KProcessAddress address, size_t size);
