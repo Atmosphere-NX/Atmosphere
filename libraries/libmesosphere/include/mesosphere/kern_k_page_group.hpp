@@ -22,78 +22,121 @@ namespace ams::kern {
 
     class KBlockInfoManager;
 
-    class KBlockInfo : public util::IntrusiveListBaseNode<KBlockInfo> {
+    class KPageGroup;
+
+    class KBlockInfo {
         private:
-            KVirtualAddress m_address;
-            size_t m_num_pages;
+            friend class KPageGroup;
+        private:
+            KBlockInfo *m_next{};
+            u32 m_page_index{};
+            u32 m_num_pages{};
         public:
-            constexpr KBlockInfo() : util::IntrusiveListBaseNode<KBlockInfo>(), m_address(), m_num_pages() { /* ... */ }
+            constexpr KBlockInfo() = default;
 
-            constexpr void Initialize(KVirtualAddress addr, size_t np) {
-                m_address = addr;
-                m_num_pages = np;
+            constexpr ALWAYS_INLINE void Initialize(KPhysicalAddress addr, size_t np) {
+                MESOSPHERE_ASSERT(util::IsAligned(GetInteger(addr), PageSize));
+                MESOSPHERE_ASSERT(static_cast<u32>(np) == np);
+
+                m_page_index = GetInteger(addr) / PageSize;
+                m_num_pages  = np;
             }
 
-            constexpr KVirtualAddress GetAddress() const { return m_address; }
-            constexpr size_t GetNumPages() const { return m_num_pages; }
-            constexpr size_t GetSize() const { return this->GetNumPages() * PageSize; }
-            constexpr KVirtualAddress GetEndAddress() const { return this->GetAddress() + this->GetSize(); }
-            constexpr KVirtualAddress GetLastAddress() const { return this->GetEndAddress() - 1; }
+            constexpr ALWAYS_INLINE KPhysicalAddress GetAddress() const { return m_page_index * PageSize; }
+            constexpr ALWAYS_INLINE size_t GetNumPages() const { return m_num_pages; }
+            constexpr ALWAYS_INLINE size_t GetSize() const { return this->GetNumPages() * PageSize; }
+            constexpr ALWAYS_INLINE KPhysicalAddress GetEndAddress() const { return (m_page_index + m_num_pages) * PageSize; }
+            constexpr ALWAYS_INLINE KPhysicalAddress GetLastAddress() const { return this->GetEndAddress() - 1; }
 
-            constexpr bool IsEquivalentTo(const KBlockInfo &rhs) const {
-                return m_address == rhs.m_address && m_num_pages == rhs.m_num_pages;
+            constexpr ALWAYS_INLINE KBlockInfo *GetNext() const { return m_next; }
+
+            constexpr ALWAYS_INLINE bool IsEquivalentTo(const KBlockInfo &rhs) const {
+                return m_page_index == rhs.m_page_index && m_num_pages == rhs.m_num_pages;
             }
 
-            constexpr bool operator==(const KBlockInfo &rhs) const {
+            constexpr ALWAYS_INLINE bool operator==(const KBlockInfo &rhs) const {
                 return this->IsEquivalentTo(rhs);
             }
 
-            constexpr bool operator!=(const KBlockInfo &rhs) const {
+            constexpr ALWAYS_INLINE bool operator!=(const KBlockInfo &rhs) const {
                 return !(*this == rhs);
             }
 
-            constexpr bool IsStrictlyBefore(KVirtualAddress addr) const {
-                const KVirtualAddress end = this->GetEndAddress();
+            constexpr ALWAYS_INLINE bool IsStrictlyBefore(KPhysicalAddress addr) const {
+                const KPhysicalAddress end = this->GetEndAddress();
 
-                if (m_address != Null<KVirtualAddress> && end == Null<KVirtualAddress>) {
+                if (m_page_index != 0 && end == Null<KPhysicalAddress>) {
                     return false;
                 }
 
                 return end < addr;
             }
 
-            constexpr bool operator<(KVirtualAddress addr) const {
+            constexpr ALWAYS_INLINE bool operator<(KPhysicalAddress addr) const {
                 return this->IsStrictlyBefore(addr);
             }
 
-            constexpr bool TryConcatenate(KVirtualAddress addr, size_t np) {
-                if (addr != Null<KVirtualAddress> && addr == this->GetEndAddress()) {
+            constexpr ALWAYS_INLINE bool TryConcatenate(KPhysicalAddress addr, size_t np) {
+                if (addr != Null<KPhysicalAddress> && addr == this->GetEndAddress()) {
                     m_num_pages += np;
                     return true;
                 }
                 return false;
             }
+        private:
+            constexpr ALWAYS_INLINE void SetNext(KBlockInfo *next) {
+                m_next = next;
+            }
     };
+    static_assert(sizeof(KBlockInfo) <= 0x10);
 
     class KPageGroup {
         public:
-            using BlockInfoList = util::IntrusiveListBaseTraits<KBlockInfo>::ListType;
-            using iterator = BlockInfoList::const_iterator;
+            class Iterator {
+                public:
+                    using iterator_category = std::forward_iterator_tag;
+                    using value_type        = const KBlockInfo;
+                    using difference_type   = std::ptrdiff_t;
+                    using pointer           = value_type *;
+                    using reference         = value_type &;
+                private:
+                    pointer m_node;
+                public:
+                    constexpr explicit ALWAYS_INLINE Iterator(pointer n) : m_node(n) { /* ... */ }
+
+                    constexpr ALWAYS_INLINE bool operator==(const Iterator &rhs) const { return m_node == rhs.m_node; }
+                    constexpr ALWAYS_INLINE bool operator!=(const Iterator &rhs) const { return !(*this == rhs); }
+
+                    constexpr ALWAYS_INLINE pointer operator->() const { return m_node; }
+                    constexpr ALWAYS_INLINE reference operator*() const { return *m_node; }
+
+                    constexpr ALWAYS_INLINE Iterator &operator++() {
+                        m_node = m_node->GetNext();
+                        return *this;
+                    }
+
+                    constexpr ALWAYS_INLINE Iterator operator++(int) {
+                        const Iterator it{*this};
+                        ++(*this);
+                        return it;
+                    }
+            };
         private:
-            BlockInfoList m_block_list;
+            KBlockInfo *m_first_block;
+            KBlockInfo *m_last_block;
             KBlockInfoManager *m_manager;
         public:
-            explicit KPageGroup(KBlockInfoManager *m) : m_block_list(), m_manager(m) { /* ... */ }
+            explicit KPageGroup(KBlockInfoManager *m) : m_first_block(), m_last_block(), m_manager(m) { /* ... */ }
             ~KPageGroup() { this->Finalize(); }
 
             void CloseAndReset();
             void Finalize();
 
-            iterator begin() const { return m_block_list.begin(); }
-            iterator end() const { return m_block_list.end(); }
-            bool empty() const { return m_block_list.empty(); }
+            ALWAYS_INLINE Iterator begin() const { return Iterator{m_first_block}; }
+            ALWAYS_INLINE Iterator end() const { return Iterator{nullptr}; }
+            ALWAYS_INLINE bool empty() const { return m_first_block == nullptr; }
 
-            Result AddBlock(KVirtualAddress addr, size_t num_pages);
+            Result AddBlock(KPhysicalAddress addr, size_t num_pages);
             void Open() const;
             void Close() const;
 
@@ -101,11 +144,11 @@ namespace ams::kern {
 
             bool IsEquivalentTo(const KPageGroup &rhs) const;
 
-            bool operator==(const KPageGroup &rhs) const {
+            ALWAYS_INLINE bool operator==(const KPageGroup &rhs) const {
                 return this->IsEquivalentTo(rhs);
             }
 
-            bool operator!=(const KPageGroup &rhs) const {
+            ALWAYS_INLINE bool operator!=(const KPageGroup &rhs) const {
                 return !(*this == rhs);
             }
     };

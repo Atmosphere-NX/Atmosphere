@@ -17,7 +17,7 @@
 
 namespace ams::kern {
 
-    void KPageHeap::Initialize(KVirtualAddress address, size_t size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts) {
+    void KPageHeap::Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts) {
         /* Check our assumptions. */
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(address), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(size, PageSize));
@@ -51,11 +51,11 @@ namespace ams::kern {
         return num_free;
     }
 
-    KVirtualAddress KPageHeap::AllocateBlock(s32 index, bool random) {
+    KPhysicalAddress KPageHeap::AllocateBlock(s32 index, bool random) {
         const size_t needed_size = m_blocks[index].GetSize();
 
         for (s32 i = index; i < static_cast<s32>(m_num_blocks); i++) {
-            if (const KVirtualAddress addr = m_blocks[i].PopBlock(random); addr != Null<KVirtualAddress>) {
+            if (const KPhysicalAddress addr = m_blocks[i].PopBlock(random); addr != Null<KPhysicalAddress>) {
                 if (const size_t allocated_size = m_blocks[i].GetSize(); allocated_size > needed_size) {
                     this->Free(addr + needed_size, (allocated_size - needed_size) / PageSize);
                 }
@@ -63,16 +63,16 @@ namespace ams::kern {
             }
         }
 
-        return Null<KVirtualAddress>;
+        return Null<KPhysicalAddress>;
     }
 
-    void KPageHeap::FreeBlock(KVirtualAddress block, s32 index) {
+    void KPageHeap::FreeBlock(KPhysicalAddress block, s32 index) {
         do {
             block = m_blocks[index++].PushBlock(block);
-        } while (block != Null<KVirtualAddress>);
+        } while (block != Null<KPhysicalAddress>);
     }
 
-    void KPageHeap::Free(KVirtualAddress addr, size_t num_pages) {
+    void KPageHeap::Free(KPhysicalAddress addr, size_t num_pages) {
         /* Freeing no pages is a no-op. */
         if (num_pages == 0) {
             return;
@@ -80,16 +80,16 @@ namespace ams::kern {
 
         /* Find the largest block size that we can free, and free as many as possible. */
         s32 big_index = static_cast<s32>(m_num_blocks) - 1;
-        const KVirtualAddress start  = addr;
-        const KVirtualAddress end    = addr + num_pages * PageSize;
-        KVirtualAddress before_start = start;
-        KVirtualAddress before_end   = start;
-        KVirtualAddress after_start  = end;
-        KVirtualAddress after_end    = end;
+        const KPhysicalAddress start  = addr;
+        const KPhysicalAddress end    = addr + num_pages * PageSize;
+        KPhysicalAddress before_start = start;
+        KPhysicalAddress before_end   = start;
+        KPhysicalAddress after_start  = end;
+        KPhysicalAddress after_end    = end;
         while (big_index >= 0) {
             const size_t block_size = m_blocks[big_index].GetSize();
-            const KVirtualAddress big_start = util::AlignUp(GetInteger(start), block_size);
-            const KVirtualAddress big_end   = util::AlignDown(GetInteger(end), block_size);
+            const KPhysicalAddress big_start = util::AlignUp(GetInteger(start), block_size);
+            const KPhysicalAddress big_end   = util::AlignDown(GetInteger(end), block_size);
             if (big_start < big_end) {
                 /* Free as many big blocks as we can. */
                 for (auto block = big_start; block < big_end; block += block_size) {

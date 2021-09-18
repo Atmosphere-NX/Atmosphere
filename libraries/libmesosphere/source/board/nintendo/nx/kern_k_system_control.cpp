@@ -511,8 +511,10 @@ namespace ams::kern::board::nintendo::nx {
             MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
             constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
-            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
+            const KPhysicalAddress secure_applet_memory_phys_addr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
+            MESOSPHERE_ABORT_UNLESS(secure_applet_memory_phys_addr != Null<KPhysicalAddress>);
+
+            g_secure_applet_memory_address = KMemoryLayout::GetLinearVirtualAddress(secure_applet_memory_phys_addr);
         }
 
         /* Initialize KTrace. */
@@ -690,9 +692,7 @@ namespace ams::kern::board::nintendo::nx {
                     MESOSPHERE_ASSERT(it != page_groups[i].end());
                     MESOSPHERE_ASSERT(it->GetNumPages() == 1);
 
-                    KPhysicalAddress phys_addr = page_table.GetHeapPhysicalAddress(it->GetAddress());
-
-                    args->r[reg_id] = GetInteger(phys_addr) | (GetInteger(virt_addr) & (PageSize - 1));
+                    args->r[reg_id] = GetInteger(it->GetAddress()) | (GetInteger(virt_addr) & (PageSize - 1));
                 } else {
                     /* If we couldn't map, we should clear the address. */
                     args->r[reg_id] = 0;
@@ -729,25 +729,21 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Allocate the memory. */
         const size_t num_pages = size / PageSize;
-        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
-        R_UNLESS(vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+        const KPhysicalAddress paddr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
+        R_UNLESS(paddr != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
 
         /* Ensure we don't leak references to the memory on error. */
-        auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(vaddr, num_pages); };
+        auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(paddr, num_pages); };
 
         /* If the memory isn't already secure, set it as secure. */
         if (pool != KMemoryManager::Pool_System) {
-            /* Get the physical address. */
-            const KPhysicalAddress paddr = KPageTable::GetHeapPhysicalAddress(vaddr);
-            MESOSPHERE_ABORT_UNLESS(paddr != Null<KPhysicalAddress>);
-
             /* Set the secure region. */
             R_UNLESS(SetSecureRegion(paddr, size), svc::ResultOutOfMemory());
         }
 
         /* We succeeded. */
         mem_guard.Cancel();
-        *out = vaddr;
+        *out = KPageTable::GetHeapVirtualAddress(paddr);
         return ResultSuccess();
     }
 
@@ -779,7 +775,7 @@ namespace ams::kern::board::nintendo::nx {
         }
 
         /* Close the secure region's pages. */
-        Kernel::GetMemoryManager().Close(address, size / PageSize);
+        Kernel::GetMemoryManager().Close(KPageTable::GetHeapPhysicalAddress(address), size / PageSize);
     }
 
 }

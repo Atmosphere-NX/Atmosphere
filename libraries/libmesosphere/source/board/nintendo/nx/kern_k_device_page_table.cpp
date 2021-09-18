@@ -1051,7 +1051,7 @@ namespace ams::kern::board::nintendo::nx {
                     SmmuSynchronizationBarrier();
 
                     /* Open references to the pages. */
-                    mm.Open(GetHeapVirtualAddress(phys_addr), DeviceLargePageSize / PageSize);
+                    mm.Open(phys_addr, DeviceLargePageSize / PageSize);
 
                     /* Advance. */
                     phys_addr        += DeviceLargePageSize;
@@ -1112,7 +1112,7 @@ namespace ams::kern::board::nintendo::nx {
                 SmmuSynchronizationBarrier();
 
                 /* Open references to the pages. */
-                mm.Open(GetHeapVirtualAddress(phys_addr), (map_count * DevicePageSize) / PageSize);
+                mm.Open(phys_addr, (map_count * DevicePageSize) / PageSize);
 
                 /* Advance. */
                 phys_addr        += map_count * DevicePageSize;
@@ -1151,7 +1151,7 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Map the device page. */
             size_t mapped_size = 0;
-            R_TRY(this->MapDevicePage(std::addressof(mapped_size), num_pt, max_pt, GetHeapPhysicalAddress(contig_range.address), contig_range.size, cur_addr, device_perm));
+            R_TRY(this->MapDevicePage(std::addressof(mapped_size), num_pt, max_pt, contig_range.address, contig_range.size, cur_addr, device_perm));
 
             /* Advance. */
             cur_addr         += contig_range.size;
@@ -1245,7 +1245,7 @@ namespace ams::kern::board::nintendo::nx {
                             contig_count     = contig_phys_addr != Null<KPhysicalAddress> ? 1 : 0;
                         } else if (phys_addr == Null<KPhysicalAddress> || phys_addr != (contig_phys_addr + (contig_count * DevicePageSize))) {
                             /* If we're no longer contiguous, close the range we've been building. */
-                            mm.Close(GetHeapVirtualAddress(contig_phys_addr), (contig_count * DevicePageSize) / PageSize);
+                            mm.Close(contig_phys_addr, (contig_count * DevicePageSize) / PageSize);
 
                             contig_phys_addr = phys_addr;
                             contig_count     = contig_phys_addr != Null<KPhysicalAddress> ? 1 : 0;
@@ -1255,7 +1255,7 @@ namespace ams::kern::board::nintendo::nx {
                     }
 
                     if (contig_count > 0) {
-                        mm.Close(GetHeapVirtualAddress(contig_phys_addr), (contig_count * DevicePageSize) / PageSize);
+                        mm.Close(contig_phys_addr, (contig_count * DevicePageSize) / PageSize);
                     }
                 }
 
@@ -1294,7 +1294,7 @@ namespace ams::kern::board::nintendo::nx {
                 SmmuSynchronizationBarrier();
 
                 /* Close references. */
-                mm.Close(GetHeapVirtualAddress(phys_addr), DeviceLargePageSize / PageSize);
+                mm.Close(phys_addr, DeviceLargePageSize / PageSize);
 
                 /* Advance. */
                 address   += DeviceLargePageSize;
@@ -1320,7 +1320,7 @@ namespace ams::kern::board::nintendo::nx {
         /* Walk the directory. */
         KProcessAddress cur_process_address = process_address;
         size_t remaining_size               = size;
-        KPhysicalAddress cur_phys_address   = GetHeapPhysicalAddress(contig_range.address);
+        KPhysicalAddress cur_phys_address   = contig_range.address;
         size_t remaining_in_range           = contig_range.size;
         bool first                          = true;
         u32  first_attr                     = 0;
@@ -1367,7 +1367,7 @@ namespace ams::kern::board::nintendo::nx {
                         }
                         range_open = true;
 
-                        cur_phys_address   = GetHeapPhysicalAddress(contig_range.address);
+                        cur_phys_address   = contig_range.address;
                         remaining_in_range = contig_range.size;
                     }
 
@@ -1410,7 +1410,7 @@ namespace ams::kern::board::nintendo::nx {
                     }
                     range_open = true;
 
-                    cur_phys_address   = GetHeapPhysicalAddress(contig_range.address);
+                    cur_phys_address   = contig_range.address;
                     remaining_in_range = contig_range.size;
                 }
 

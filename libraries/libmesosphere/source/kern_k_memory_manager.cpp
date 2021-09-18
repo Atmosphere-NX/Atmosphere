@@ -20,13 +20,13 @@ namespace ams::kern {
     namespace {
 
         constexpr KMemoryManager::Pool GetPoolFromMemoryRegionType(u32 type) {
-            if ((type | KMemoryRegionType_VirtualDramApplicationPool) == type) {
+            if ((type | KMemoryRegionType_DramApplicationPool) == type) {
                 return KMemoryManager::Pool_Application;
-            } else if ((type | KMemoryRegionType_VirtualDramAppletPool) == type) {
+            } else if ((type | KMemoryRegionType_DramAppletPool) == type) {
                 return KMemoryManager::Pool_Applet;
-            } else if ((type | KMemoryRegionType_VirtualDramSystemPool) == type) {
+            } else if ((type | KMemoryRegionType_DramSystemPool) == type) {
                 return KMemoryManager::Pool_System;
-            } else if ((type | KMemoryRegionType_VirtualDramSystemNonSecurePool) == type) {
+            } else if ((type | KMemoryRegionType_DramSystemNonSecurePool) == type) {
                 return KMemoryManager::Pool_SystemNonSecure;
             } else {
                 MESOSPHERE_PANIC("InvalidMemoryRegionType for conversion to Pool");
@@ -37,19 +37,21 @@ namespace ams::kern {
 
     void KMemoryManager::Initialize(KVirtualAddress management_region, size_t management_region_size) {
         /* Clear the management region to zero. */
-
         const KVirtualAddress management_region_end = management_region + management_region_size;
         std::memset(GetVoidPointer(management_region), 0, management_region_size);
+
+        /* Reset our manager count. */
+        m_num_managers = 0;
 
         /* Traverse the virtual memory layout tree, initializing each manager as appropriate. */
         while (m_num_managers != MaxManagerCount) {
             /* Locate the region that should initialize the current manager. */
-            uintptr_t region_address = 0;
+            KPhysicalAddress region_address = Null<KPhysicalAddress>;
             size_t region_size = 0;
             Pool region_pool = Pool_Count;
-            for (const auto &it : KMemoryLayout::GetVirtualMemoryRegionTree()) {
+            for (const auto &it : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
                 /* We only care about regions that we need to create managers for. */
-                if (!it.IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool)) {
+                if (!it.IsDerivedFrom(KMemoryRegionType_DramUserPool)) {
                     continue;
                 }
 
@@ -58,21 +60,24 @@ namespace ams::kern {
                     continue;
                 }
 
+                const KPhysicalAddress cur_start = it.GetAddress();
+                const KPhysicalAddress cur_end   = it.GetEndAddress();
+
                 /* Validate the region. */
-                MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
-                MESOSPHERE_ASSERT(it.GetAddress() != Null<decltype(it.GetAddress())>);
-                MESOSPHERE_ASSERT(it.GetSize()    > 0);
+                MESOSPHERE_ABORT_UNLESS(cur_end != Null<KPhysicalAddress>);
+                MESOSPHERE_ASSERT(cur_start != Null<KPhysicalAddress>);
+                MESOSPHERE_ASSERT(it.GetSize() > 0);
 
                 /* Update the region's extents. */
-                if (region_address == 0) {
-                    region_address = it.GetAddress();
+                if (region_address == Null<KPhysicalAddress>) {
+                    region_address = cur_start;
                     region_size    = it.GetSize();
                     region_pool    = GetPoolFromMemoryRegionType(it.GetType());
                 } else {
-                    MESOSPHERE_ASSERT(it.GetAddress() == region_address + region_size);
+                    MESOSPHERE_ASSERT(cur_start == region_address + region_size);
 
                     /* Update the size. */
-                    region_size = it.GetEndAddress() - region_address;
+                    region_size = cur_end - region_address;
                     MESOSPHERE_ABORT_UNLESS(GetPoolFromMemoryRegionType(it.GetType()) == region_pool);
                 }
             }
@@ -102,18 +107,22 @@ namespace ams::kern {
 
         /* Free each region to its corresponding heap. */
         size_t reserved_sizes[MaxManagerCount] = {};
-        const uintptr_t ini_start = GetInteger(GetInitialProcessBinaryAddress());
-        const uintptr_t ini_end   = ini_start + InitialProcessBinarySizeMax;
-        const uintptr_t ini_last  = ini_end - 1;
-        for (const auto &it : KMemoryLayout::GetVirtualMemoryRegionTree()) {
-            if (it.IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool)) {
+        const KPhysicalAddress ini_start = KMemoryLayout::GetLinearPhysicalAddress(GetInitialProcessBinaryAddress());
+        const KPhysicalAddress ini_end   = ini_start + InitialProcessBinarySizeMax;
+        const KPhysicalAddress ini_last  = ini_end - 1;
+        for (const auto &it : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
+            if (it.IsDerivedFrom(KMemoryRegionType_DramUserPool)) {
                 /* Get the manager for the region. */
                 auto &manager = m_managers[it.GetAttributes()];
 
-                if (it.GetAddress() <= ini_start && ini_last <= it.GetLastAddress()) {
+                const KPhysicalAddress cur_start = it.GetAddress();
+                const KPhysicalAddress cur_last  = it.GetLastAddress();
+                const KPhysicalAddress cur_end   = it.GetEndAddress();
+
+                if (cur_start <= ini_start && ini_last <= cur_last) {
                     /* Free memory before the ini to the heap. */
-                    if (it.GetAddress() != ini_start) {
-                        manager.Free(it.GetAddress(), (ini_start - it.GetAddress()) / PageSize);
+                    if (cur_start != ini_start) {
+                        manager.Free(cur_start, (ini_start - cur_start) / PageSize);
                     }
 
                     /* Open/reserve the ini memory. */
@@ -121,21 +130,21 @@ namespace ams::kern {
                     reserved_sizes[it.GetAttributes()] += InitialProcessBinarySizeMax;
 
                     /* Free memory after the ini to the heap. */
-                    if (ini_last != it.GetLastAddress()) {
-                        MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
-                        manager.Free(ini_end, it.GetEndAddress() - ini_end);
+                    if (ini_last != cur_last) {
+                        MESOSPHERE_ABORT_UNLESS(cur_end != Null<KPhysicalAddress>);
+                        manager.Free(ini_end, cur_end - ini_end);
                     }
                 } else {
                     /* Ensure there's no partial overlap with the ini image. */
-                    if (it.GetAddress() <= ini_last) {
-                        MESOSPHERE_ABORT_UNLESS(it.GetLastAddress() < ini_start);
+                    if (cur_start <= ini_last) {
+                        MESOSPHERE_ABORT_UNLESS(cur_last < ini_start);
                     } else {
                         /* Otherwise, check the region for general validity. */
-                        MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
+                        MESOSPHERE_ABORT_UNLESS(cur_end != Null<KPhysicalAddress>);
                     }
 
                     /* Free the memory to the heap. */
-                    manager.Free(it.GetAddress(), it.GetSize() / PageSize);
+                    manager.Free(cur_start, it.GetSize() / PageSize);
                 }
             }
         }
@@ -176,10 +185,10 @@ namespace ams::kern {
     }
 
 
-    KVirtualAddress KMemoryManager::AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option) {
+    KPhysicalAddress KMemoryManager::AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option) {
         /* Early return if we're allocating no pages. */
         if (num_pages == 0) {
-            return Null<KVirtualAddress>;
+            return Null<KPhysicalAddress>;
         }
 
         /* Lock the pool that we're allocating from. */
@@ -191,17 +200,17 @@ namespace ams::kern {
 
         /* Loop, trying to iterate from each block. */
         Impl *chosen_manager = nullptr;
-        KVirtualAddress allocated_block = Null<KVirtualAddress>;
+        KPhysicalAddress allocated_block = Null<KPhysicalAddress>;
         for (chosen_manager = this->GetFirstManager(pool, dir); chosen_manager != nullptr; chosen_manager = this->GetNextManager(chosen_manager, dir)) {
             allocated_block = chosen_manager->AllocateBlock(heap_index, true);
-            if (allocated_block != Null<KVirtualAddress>) {
+            if (allocated_block != Null<KPhysicalAddress>) {
                 break;
             }
         }
 
         /* If we failed to allocate, quit now. */
-        if (allocated_block == Null<KVirtualAddress>) {
-            return Null<KVirtualAddress>;
+        if (allocated_block == Null<KPhysicalAddress>) {
+            return Null<KPhysicalAddress>;
         }
 
         /* If we allocated more than we need, free some. */
@@ -242,8 +251,8 @@ namespace ams::kern {
             for (Impl *cur_manager = this->GetFirstManager(pool, dir); cur_manager != nullptr; cur_manager = this->GetNextManager(cur_manager, dir)) {
                 while (num_pages >= pages_per_alloc) {
                     /* Allocate a block. */
-                    KVirtualAddress allocated_block = cur_manager->AllocateBlock(index, random);
-                    if (allocated_block == Null<KVirtualAddress>) {
+                    KPhysicalAddress allocated_block = cur_manager->AllocateBlock(index, random);
+                    if (allocated_block == Null<KPhysicalAddress>) {
                         break;
                     }
 
@@ -288,8 +297,8 @@ namespace ams::kern {
 
         /* Open the first reference to the pages. */
         for (const auto &block : *out) {
-            KVirtualAddress cur_address = block.GetAddress();
-            size_t remaining_pages      = block.GetNumPages();
+            KPhysicalAddress cur_address = block.GetAddress();
+            size_t remaining_pages       = block.GetNumPages();
             while (remaining_pages > 0) {
                 /* Get the manager for the current address. */
                 auto &manager = this->GetManager(cur_address);
@@ -332,8 +341,8 @@ namespace ams::kern {
 
             /* Open the first reference to the pages. */
             for (const auto &block : *out) {
-                KVirtualAddress cur_address = block.GetAddress();
-                size_t remaining_pages      = block.GetNumPages();
+                KPhysicalAddress cur_address = block.GetAddress();
+                size_t remaining_pages       = block.GetNumPages();
                 while (remaining_pages > 0) {
                     /* Get the manager for the current address. */
                     auto &manager = this->GetManager(cur_address);
@@ -354,8 +363,8 @@ namespace ams::kern {
             /* Iterate over the allocated blocks. */
             for (const auto &block : *out) {
                 /* Get the block extents. */
-                const KVirtualAddress block_address = block.GetAddress();
-                const size_t block_pages            = block.GetNumPages();
+                const KPhysicalAddress block_address = block.GetAddress();
+                const size_t block_pages             = block.GetNumPages();
 
                 /* If it has no pages, we don't need to do anything. */
                 if (block_pages == 0) {
@@ -365,8 +374,8 @@ namespace ams::kern {
                 /* Fill all the pages that we need to fill. */
                 bool any_new = false;
                 {
-                    KVirtualAddress cur_address = block_address;
-                    size_t remaining_pages      = block_pages;
+                    KPhysicalAddress cur_address = block_address;
+                    size_t remaining_pages       = block_pages;
                     while (remaining_pages > 0) {
                         /* Get the manager for the current address. */
                         auto &manager = this->GetManager(cur_address);
@@ -384,8 +393,8 @@ namespace ams::kern {
                 /* If there are new pages, update tracking for the allocation. */
                 if (any_new) {
                     /* Update tracking for the allocation. */
-                    KVirtualAddress cur_address = block_address;
-                    size_t remaining_pages      = block_pages;
+                    KPhysicalAddress cur_address = block_address;
+                    size_t remaining_pages       = block_pages;
                     while (remaining_pages > 0) {
                         /* Get the manager for the current address. */
                         auto &manager = this->GetManager(cur_address);
@@ -406,14 +415,14 @@ namespace ams::kern {
         } else {
             /* Set all the allocated memory. */
             for (const auto &block : *out) {
-                std::memset(GetVoidPointer(block.GetAddress()), fill_pattern, block.GetSize());
+                std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress())), fill_pattern, block.GetSize());
             }
         }
 
         return ResultSuccess();
     }
 
-    size_t KMemoryManager::Impl::Initialize(uintptr_t address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p) {
+    size_t KMemoryManager::Impl::Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p) {
         /* Calculate management sizes. */
         const size_t ref_count_size      = (size / PageSize) * sizeof(u16);
         const size_t optimize_map_size   = CalculateOptimizedProcessOverheadSize(size);
@@ -436,7 +445,7 @@ namespace ams::kern {
         return total_management_size;
     }
 
-    void KMemoryManager::Impl::TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages) {
+    void KMemoryManager::Impl::TrackUnoptimizedAllocation(KPhysicalAddress block, size_t num_pages) {
         /* Get the range we're tracking. */
         size_t offset = this->GetPageOffset(block);
         const size_t last = offset + num_pages - 1;
@@ -451,7 +460,7 @@ namespace ams::kern {
         }
     }
 
-    void KMemoryManager::Impl::TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages) {
+    void KMemoryManager::Impl::TrackOptimizedAllocation(KPhysicalAddress block, size_t num_pages) {
         /* Get the range we're tracking. */
         size_t offset = this->GetPageOffset(block);
         const size_t last = offset + num_pages - 1;
@@ -466,7 +475,7 @@ namespace ams::kern {
         }
     }
 
-    bool KMemoryManager::Impl::ProcessOptimizedAllocation(KVirtualAddress block, size_t num_pages, u8 fill_pattern) {
+    bool KMemoryManager::Impl::ProcessOptimizedAllocation(KPhysicalAddress block, size_t num_pages, u8 fill_pattern) {
         /* We want to return whether any pages were newly allocated. */
         bool any_new = false;
 
@@ -483,7 +492,7 @@ namespace ams::kern {
                 any_new = true;
 
                 /* Fill the page. */
-                std::memset(GetVoidPointer(m_heap.GetAddress() + offset * PageSize), fill_pattern, PageSize);
+                std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(m_heap.GetAddress()) + offset * PageSize), fill_pattern, PageSize);
             }
 
             offset++;
