@@ -26,13 +26,30 @@ namespace ams::kern {
         protected:
             using DebugEventList = util::IntrusiveListBaseTraits<KEventInfo>::ListType;
         private:
+            class ProcessHolder {
+                private:
+                    friend class KDebugBase;
+                private:
+                    KProcess *m_process;
+                    std::atomic<u32> m_ref_count;
+                private:
+                    explicit ProcessHolder() : m_process(nullptr) { /* ... */ }
+
+                    void Attach(KProcess *process);
+                    void Detach();
+
+                    bool Open();
+                    void Close();
+            };
+        private:
             DebugEventList m_event_info_list;
             u32 m_continue_flags;
-            KProcess *m_process;
+            ProcessHolder m_process_holder;
             KLightLock m_lock;
             KProcess::State m_old_process_state;
+            bool m_is_attached;
         public:
-            explicit KDebugBase() { /* ... */ }
+            explicit KDebugBase() : m_event_info_list(), m_process_holder(), m_lock() { /* ... */ }
         protected:
             bool Is64Bit() const;
         public:
@@ -59,7 +76,21 @@ namespace ams::kern {
             Result GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out);
             Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);
 
-            KScopedAutoObject<KProcess> GetProcess();
+            ALWAYS_INLINE bool IsAttached() const {
+                return m_is_attached;
+            }
+
+            ALWAYS_INLINE bool OpenProcess() {
+                return m_process_holder.Open();
+            }
+
+            ALWAYS_INLINE void CloseProcess() {
+                return m_process_holder.Close();
+            }
+
+            ALWAYS_INLINE KProcess *GetProcessUnsafe() const {
+                return m_process_holder.m_process;
+            }
         private:
             void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
             void EnqueueDebugEventInfo(KEventInfo *info);

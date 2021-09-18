@@ -313,11 +313,17 @@ namespace ams::kern::svc {
             ON_SCOPE_EXIT { thread->Close(); };
 
             /* Get the process from the debug object. */
-            KScopedAutoObject process = debug->GetProcess();
-            R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+            R_UNLESS(debug->IsAttached(),  svc::ResultProcessTerminated());
+            R_UNLESS(debug->OpenProcess(), svc::ResultProcessTerminated());
+
+            /* Close the process when we're done. */
+            ON_SCOPE_EXIT { debug->CloseProcess(); };
+
+            /* Get the proces. */
+            KProcess * const process = debug->GetProcessUnsafe();
 
             /* Verify that the process is the thread's parent. */
-            R_UNLESS(process.GetPointerUnsafe() == thread->GetOwnerProcess(), svc::ResultInvalidThreadId());
+            R_UNLESS(process == thread->GetOwnerProcess(), svc::ResultInvalidThreadId());
 
             /* Get the parameter. */
             switch (param) {

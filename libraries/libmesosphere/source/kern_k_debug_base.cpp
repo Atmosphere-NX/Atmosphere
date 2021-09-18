@@ -25,47 +25,103 @@ namespace ams::kern {
 
     }
 
+    void KDebugBase::ProcessHolder::Attach(KProcess *process) {
+        MESOSPHERE_ASSERT(m_process == nullptr);
+
+        /* Set our process. */
+        m_process = process;
+
+        /* Open reference to our process. */
+        m_process->Open();
+
+        /* Set our reference count. */
+        m_ref_count = 1;
+    }
+
+    void KDebugBase::ProcessHolder::Detach() {
+        /* Close our process, if we have one. */
+        KProcess * const process = m_process;
+        if (AMS_LIKELY(process != nullptr)) {
+            /* Set our process to a debug sentinel value, which will cause crash if accessed. */
+            m_process = reinterpret_cast<KProcess *>(1);
+
+            /* Close reference to our process. */
+            process->Close();
+        }
+    }
+
     void KDebugBase::Initialize() {
-        /* Clear the process and continue flags. */
-        m_process        = nullptr;
+        /* Clear the continue flags. */
         m_continue_flags = 0;
     }
 
     bool KDebugBase::Is64Bit() const {
         MESOSPHERE_ASSERT(m_lock.IsLockedByCurrentThread());
-        MESOSPHERE_ASSERT(m_process != nullptr);
-        return m_process->Is64Bit();
+        MESOSPHERE_ASSERT(m_is_attached);
+
+        KProcess * const process = this->GetProcessUnsafe();
+        MESOSPHERE_ASSERT(process != nullptr);
+        return process->Is64Bit();
     }
 
 
     Result KDebugBase::QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address) {
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
 
-        /* Check that we have a valid process. */
-        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
+
+        /* Check that the process isn't terminated. */
+        R_UNLESS(!process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Query the mapping's info. */
         KMemoryInfo info;
-        R_TRY(m_process->GetPageTable().QueryInfo(std::addressof(info), out_page_info, address));
+        R_TRY(process->GetPageTable().QueryInfo(std::addressof(info), out_page_info, address));
 
         /* Write output. */
         *out_memory_info = info.GetSvcMemoryInfo();
+
         return ResultSuccess();
     }
 
     Result KDebugBase::ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
 
-        /* Check that we have a valid process. */
-        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
+
+        /* Check that the process isn't terminated. */
+        R_UNLESS(!process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Get the page tables. */
         KProcessPageTable &debugger_pt = GetCurrentProcess().GetPageTable();
-        KProcessPageTable &target_pt   = m_process->GetPageTable();
+        KProcessPageTable &target_pt   = process->GetPageTable();
 
         /* Verify that the regions are in range. */
         R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
@@ -105,16 +161,30 @@ namespace ams::kern {
     }
 
     Result KDebugBase::WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
 
-        /* Check that we have a valid process. */
-        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
+
+        /* Check that the process isn't terminated. */
+        R_UNLESS(!process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Get the page tables. */
         KProcessPageTable &debugger_pt = GetCurrentProcess().GetPageTable();
-        KProcessPageTable &target_pt   = m_process->GetPageTable();
+        KProcessPageTable &target_pt   = process->GetPageTable();
 
         /* Verify that the regions are in range. */
         R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
@@ -154,9 +224,17 @@ namespace ams::kern {
     }
 
     Result KDebugBase::GetRunningThreadInfo(ams::svc::LastThreadContext *out_context, u64 *out_thread_id) {
-        /* Get the attached process. */
-        KScopedAutoObject process = this->GetProcess();
-        R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
 
         /* Get the thread info. */
         {
@@ -187,6 +265,9 @@ namespace ams::kern {
         /* Check that the process isn't null. */
         MESOSPHERE_ASSERT(target != nullptr);
 
+        /* Clear ourselves as unattached. */
+        m_is_attached = false;
+
         /* Attach to the process. */
         {
             /* Lock both ourselves, the target process, and the scheduler. */
@@ -216,20 +297,20 @@ namespace ams::kern {
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
 
-                /* Set our process member, and open a reference to the target. */
-                m_process = target;
-                m_process->Open();
+                /* Attach to the target. */
+                m_process_holder.Attach(target);
+                m_is_attached = true;
 
                 /* Set ourselves as the process's attached object. */
-                m_old_process_state = m_process->SetDebugObject(this);
+                m_old_process_state = target->SetDebugObject(this);
 
                 /* Send an event for our attaching to the process. */
                 this->PushDebugEvent(ams::svc::DebugEvent_CreateProcess);
 
                 /* Send events for attaching to each thread in the process. */
                 {
-                    auto end = m_process->GetThreadList().end();
-                    for (auto it = m_process->GetThreadList().begin(); it != end; ++it) {
+                    auto end = target->GetThreadList().end();
+                    for (auto it = target->GetThreadList().begin(); it != end; ++it) {
                         /* Request that we suspend the thread. */
                         it->RequestSuspend(KThread::SuspendType_Debug);
 
@@ -245,7 +326,7 @@ namespace ams::kern {
                 }
 
                 /* Send the process's jit debug info, if relevant. */
-                if (KEventInfo *jit_info = m_process->GetJitDebugInfo(); jit_info != nullptr) {
+                if (KEventInfo *jit_info = target->GetJitDebugInfo(); jit_info != nullptr) {
                     this->EnqueueDebugEventInfo(jit_info);
                 }
 
@@ -261,9 +342,17 @@ namespace ams::kern {
     }
 
     Result KDebugBase::BreakProcess() {
-        /* Get the attached process. */
-        KScopedAutoObject target = this->GetProcess();
-        R_UNLESS(target.IsNotNull(), svc::ResultProcessTerminated());
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
+        /* Get the process pointer. */
+        KProcess * const target = this->GetProcessUnsafe();
 
         /* Lock both ourselves, the target process, and the scheduler. */
         KScopedLightLock state_lk(target->GetStateLock());
@@ -271,10 +360,11 @@ namespace ams::kern {
         KScopedLightLock this_lk(m_lock);
         KScopedSchedulerLock sl;
 
-        /* Check that we're still attached to the process, and that it's not terminated. */
-        /* NOTE: Here Nintendo only checks that this->process is not nullptr. */
-        R_UNLESS(m_process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
-        R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Check that the process isn't terminated. */
+        R_UNLESS(!target->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Get the currently active threads. */
         constexpr u64 ThreadIdNoThread      = -1ll;
@@ -324,9 +414,17 @@ namespace ams::kern {
     }
 
     Result KDebugBase::TerminateProcess() {
-        /* Get the attached process. If we don't have one, we have nothing to do. */
-        KScopedAutoObject target = this->GetProcess();
-        R_SUCCEED_IF(target.IsNull());
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), ResultSuccess());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), ResultSuccess());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
+        /* Get the process pointer. */
+        KProcess * const target = this->GetProcessUnsafe();
 
         /* Detach from the process. */
         {
@@ -335,11 +433,8 @@ namespace ams::kern {
             KScopedLightLock list_lk(target->GetListLock());
             KScopedLightLock this_lk(m_lock);
 
-            /* Check that we still have our process. */
-            if (m_process != nullptr) {
-                /* Check that our process is the one we got earlier. */
-                MESOSPHERE_ASSERT(m_process == target.GetPointerUnsafe());
-
+            /* Check that we're still attached. */
+            if (this->IsAttached()) {
                 /* Lock the scheduler. */
                 KScopedSchedulerLock sl;
 
@@ -384,15 +479,15 @@ namespace ams::kern {
 
                 /* Detach from the process. */
                 target->ClearDebugObject(new_state);
-                m_process = nullptr;
+                m_is_attached = false;
+
+                /* Close the initial reference opened to our process. */
+                this->CloseProcess();
 
                 /* Clear our continue flags. */
                 m_continue_flags = 0;
             }
         }
-
-        /* Close the reference we held to the process while we were attached to it. */
-        target->Close();
 
         /* Terminate the process. */
         target->Terminate();
@@ -401,8 +496,23 @@ namespace ams::kern {
     }
 
     Result KDebugBase::GetThreadContext(ams::svc::ThreadContext *out, u64 thread_id, u32 context_flags) {
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
+
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
 
         /* Get the thread from its id. */
         KThread *thread = KThread::GetThreadFromId(thread_id);
@@ -410,7 +520,7 @@ namespace ams::kern {
         ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
-        R_UNLESS(m_process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+        R_UNLESS(process == thread->GetOwnerProcess(), svc::ResultInvalidId());
 
         /* Verify that the thread isn't terminated. */
         R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
@@ -448,8 +558,23 @@ namespace ams::kern {
     }
 
     Result KDebugBase::SetThreadContext(const ams::svc::ThreadContext &ctx, u64 thread_id, u32 context_flags) {
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
         /* Lock ourselves. */
         KScopedLightLock lk(m_lock);
+
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
 
         /* Get the thread from its id. */
         KThread *thread = KThread::GetThreadFromId(thread_id);
@@ -457,7 +582,7 @@ namespace ams::kern {
         ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
-        R_UNLESS(m_process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+        R_UNLESS(process == thread->GetOwnerProcess(), svc::ResultInvalidId());
 
         /* Verify that the thread isn't terminated. */
         R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
@@ -525,9 +650,17 @@ namespace ams::kern {
 
 
     Result KDebugBase::ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids) {
-        /* Get the attached process. */
-        KScopedAutoObject target = this->GetProcess();
-        R_UNLESS(target.IsNotNull(), svc::ResultProcessTerminated());
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
+        /* Get the process pointer. */
+        KProcess * const target = this->GetProcessUnsafe();
 
         /* Lock both ourselves, the target process, and the scheduler. */
         KScopedLightLock state_lk(target->GetStateLock());
@@ -535,9 +668,11 @@ namespace ams::kern {
         KScopedLightLock this_lk(m_lock);
         KScopedSchedulerLock sl;
 
-        /* Check that we're still attached to the process, and that it's not terminated. */
-        R_UNLESS(m_process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
-        R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
+        /* Check that we're still attached now that we're locked. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Check that the process isn't terminated. */
+        R_UNLESS(!target->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Check that we have no pending events. */
         R_UNLESS(m_event_info_list.empty(), svc::ResultBusy());
@@ -747,18 +882,19 @@ namespace ams::kern {
     }
 
 
-    KScopedAutoObject<KProcess> KDebugBase::GetProcess() {
-        /* Lock ourselves. */
-        KScopedLightLock lk(m_lock);
-
-        return m_process;
-    }
-
     template<typename T> requires (std::same_as<T, ams::svc::lp64::DebugEventInfo> || std::same_as<T, ams::svc::ilp32::DebugEventInfo>)
     Result KDebugBase::GetDebugEventInfoImpl(T *out) {
-        /* Get the attached process. */
-        KScopedAutoObject process = this->GetProcess();
-        R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+        /* Check that we're attached. */
+        R_UNLESS(this->IsAttached(), svc::ResultProcessTerminated());
+
+        /* Open a reference to our process. */
+        R_UNLESS(this->OpenProcess(), svc::ResultProcessTerminated());
+
+        /* Close our reference to our process when we're done. */
+        ON_SCOPE_EXIT { this->CloseProcess(); };
+
+        /* Get the process pointer. */
+        KProcess * const process = this->GetProcessUnsafe();
 
         /* Pop an event info from our queue. */
         KEventInfo *info = nullptr;
@@ -875,56 +1011,50 @@ namespace ams::kern {
 
     void KDebugBase::OnFinalizeSynchronizationObject() {
         /* Detach from our process, if we have one. */
-        {
-            /* Get the attached process. */
-            KScopedAutoObject process = this->GetProcess();
+        if (this->IsAttached() && this->OpenProcess()) {
+            /* Close the process when we're done with it. */
+            ON_SCOPE_EXIT { this->CloseProcess(); };
 
-            /* If the process isn't null, detach. */
-            if (process.IsNotNull()) {
-                /* Detach. */
+            /* Get the process pointer. */
+            KProcess * const process = this->GetProcessUnsafe();
+
+            /* Lock both ourselves and the target process. */
+            KScopedLightLock state_lk(process->GetStateLock());
+            KScopedLightLock list_lk(process->GetListLock());
+            KScopedLightLock this_lk(m_lock);
+
+            /* Check that we're still attached. */
+            if (m_is_attached) {
+                KScopedSchedulerLock sl;
+
+                /* Detach ourselves from the process. */
+                process->ClearDebugObject(m_old_process_state);
+
+                /* Release all threads. */
+                const bool resume = (process->GetState() != KProcess::State_Crashed);
                 {
-                    /* Lock both ourselves and the target process. */
-                    KScopedLightLock state_lk(process->GetStateLock());
-                    KScopedLightLock list_lk(process->GetListLock());
-                    KScopedLightLock this_lk(m_lock);
+                    auto end = process->GetThreadList().end();
+                    for (auto it = process->GetThreadList().begin(); it != end; ++it) {
+                        #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+                        /* Clear the thread's single-step state. */
+                        it->ClearSingleStep();
+                        #endif
 
-                    /* Ensure we finalize exactly once. */
-                    if (m_process != nullptr) {
-                        MESOSPHERE_ASSERT(m_process == process.GetPointerUnsafe());
-                        {
-                            KScopedSchedulerLock sl;
-
-                            /* Detach ourselves from the process. */
-                            process->ClearDebugObject(m_old_process_state);
-
-                            /* Release all threads. */
-                            const bool resume = (process->GetState() != KProcess::State_Crashed);
-                            {
-                                auto end = process->GetThreadList().end();
-                                for (auto it = process->GetThreadList().begin(); it != end; ++it) {
-                                    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-                                    /* Clear the thread's single-step state. */
-                                    it->ClearSingleStep();
-                                    #endif
-
-                                    if (resume) {
-                                        /* If the process isn't crashed, resume threads. */
-                                        it->Resume(KThread::SuspendType_Debug);
-                                    } else {
-                                        /* Otherwise, suspend them. */
-                                        it->RequestSuspend(KThread::SuspendType_Debug);
-                                    }
-                                }
-                            }
-
-                            /* Clear our process. */
-                            m_process = nullptr;
+                        if (resume) {
+                            /* If the process isn't crashed, resume threads. */
+                            it->Resume(KThread::SuspendType_Debug);
+                        } else {
+                            /* Otherwise, suspend them. */
+                            it->RequestSuspend(KThread::SuspendType_Debug);
                         }
-
-                        /* We're done detaching, so clear the reference we opened when we attached. */
-                        process->Close();
                     }
                 }
+
+                /* Note we're now unattached. */
+                m_is_attached = false;
+
+                /* Close the initial reference opened to our process. */
+                this->CloseProcess();
             }
         }
 
@@ -941,9 +1071,14 @@ namespace ams::kern {
     }
 
     bool KDebugBase::IsSignaled() const {
-        KScopedSchedulerLock sl;
+        bool empty;
+        {
+            KScopedSchedulerLock sl;
 
-        return (!m_event_info_list.empty()) || m_process == nullptr || m_process->IsTerminated();
+            empty = m_event_info_list.empty();
+        }
+
+        return !empty || !m_is_attached || this->GetProcessUnsafe()->IsTerminated();
     }
 
     Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {

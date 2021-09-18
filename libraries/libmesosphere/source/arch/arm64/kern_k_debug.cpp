@@ -307,8 +307,14 @@ namespace ams::kern::arch::arm64 {
                     R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
 
                     /* Get the process from the debug object. */
-                    process = debug->GetProcess();
-                    R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+                    R_UNLESS(debug->IsAttached(),  svc::ResultProcessTerminated());
+                    R_UNLESS(debug->OpenProcess(), svc::ResultProcessTerminated());
+
+                    /* Close the process when we're done. */
+                    ON_SCOPE_EXIT { debug->CloseProcess(); };
+
+                    /* Get the proces. */
+                    KProcess * const process = debug->GetProcessUnsafe();
 
                     /* Set the value to be the context id. */
                     value = process->GetId() & 0xFFFFFFFF;

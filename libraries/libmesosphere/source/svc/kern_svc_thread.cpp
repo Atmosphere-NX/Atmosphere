@@ -235,12 +235,13 @@ namespace ams::kern::svc {
                 /* Try to get as a debug object. */
                 KScopedAutoObject debug = handle_table.GetObject<KDebug>(debug_handle);
                 if (debug.IsNotNull()) {
-                    /* Get the debug object's process. */
-                    KScopedAutoObject process = debug->GetProcess();
-                    R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+                    /* Check that the debug object has a process. */
+                    R_UNLESS(debug->IsAttached(),  svc::ResultProcessTerminated());
+                    R_UNLESS(debug->OpenProcess(), svc::ResultProcessTerminated());
+                    ON_SCOPE_EXIT { debug->CloseProcess(); };
 
                     /* Get the thread list. */
-                    R_TRY(process->GetThreadList(out_num_threads, out_thread_ids, max_out_count));
+                    R_TRY(debug->GetProcessUnsafe()->GetThreadList(out_num_threads, out_thread_ids, max_out_count));
                 } else {
                     /* Try to get as a process. */
                     KScopedAutoObject process = handle_table.GetObjectWithoutPseudoHandle<KProcess>(debug_handle);
