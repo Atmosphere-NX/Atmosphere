@@ -36,27 +36,35 @@ namespace ams::kern::svc {
             R_UNLESS(obj.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Get the process from the object. */
-            KProcess *process = nullptr;
-            if (KProcess *p = obj->DynamicCast<KProcess *>(); p != nullptr) {
+            if (KProcess *process = obj->DynamicCast<KProcess *>(); process != nullptr) {
                 /* The object is a process, so we can use it directly. */
-                process = p;
+
+                /* Make sure the target process exists. */
+                R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+                /* Get the process id. */
+                *out_process_id = process->GetId();
             } else if (KThread *t = obj->DynamicCast<KThread *>(); t != nullptr) {
                 /* The object is a thread, so we want to use its parent. */
-                process = reinterpret_cast<KThread *>(obj.GetPointerUnsafe())->GetOwnerProcess();
+                KProcess *process = t->GetOwnerProcess();
+
+                /* Make sure the target process exists. */
+                R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+                /* Get the process id. */
+                *out_process_id = process->GetId();
             } else if (KDebug *d = obj->DynamicCast<KDebug *>(); d != nullptr) {
                 /* The object is a debug, so we want to use the process it's attached to. */
-                obj = d->GetProcess();
 
-                if (obj.IsNotNull()) {
-                    process = static_cast<KProcess *>(obj.GetPointerUnsafe());
-                }
+                /* Make sure the target process exists. */
+                R_UNLESS(d->IsAttached(),  svc::ResultInvalidHandle());
+                R_UNLESS(d->OpenProcess(), svc::ResultInvalidHandle());
+                ON_SCOPE_EXIT { d->CloseProcess(); };
+
+                /* Get the process id. */
+                *out_process_id = d->GetProcessUnsafe()->GetProcessId();
             }
 
-            /* Make sure the target process exists. */
-            R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
-
-            /* Get the process id. */
-            *out_process_id = process->GetId();
             return ResultSuccess();
         }
 

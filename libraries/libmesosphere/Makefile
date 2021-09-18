@@ -142,7 +142,7 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 
 kern_libc_generic.o: CFLAGS += -fno-builtin
 
-kern_k_auto_object.o: CXXFLAGS += -fno-lto
+kern_k_auto_object.o kern_k_debug_base_process_holder.o: CXXFLAGS += -fno-lto
 
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin
