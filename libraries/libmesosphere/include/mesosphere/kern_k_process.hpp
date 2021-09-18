@@ -22,7 +22,7 @@
 #include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_k_thread_local_page.hpp>
 #include <mesosphere/kern_k_shared_memory_info.hpp>
-#include <mesosphere/kern_k_beta.hpp>
+#include <mesosphere/kern_k_io_region.hpp>
 #include <mesosphere/kern_k_worker_task.hpp>
 #include <mesosphere/kern_select_page_table.hpp>
 #include <mesosphere/kern_k_condition_variable.hpp>
@@ -53,7 +53,7 @@ namespace ams::kern {
             static constexpr size_t AslrAlignment = KernelAslrAlignment;
         private:
             using SharedMemoryInfoList = util::IntrusiveListBaseTraits<KSharedMemoryInfo>::ListType;
-            using BetaList = util::IntrusiveListMemberTraits<&KBeta::m_process_list_node>::ListType;
+            using IoRegionList = util::IntrusiveListMemberTraits<&KIoRegion::m_process_list_node>::ListType;
             using TLPTree = util::IntrusiveRedBlackTreeBaseTraits<KThreadLocalPage>::TreeType<KThreadLocalPage>;
             using TLPIterator = TLPTree::iterator;
         private:
@@ -96,7 +96,7 @@ namespace ams::kern {
             KThread                    *m_exception_thread{};
             ThreadList                  m_thread_list{};
             SharedMemoryInfoList        m_shared_memory_list{};
-            BetaList                    m_beta_list{};
+            IoRegionList                m_io_region_list{};
             bool                        m_is_suspended{};
             bool                        m_is_immortal{};
             bool                        m_is_jit_debug{};
@@ -274,6 +274,9 @@ namespace ams::kern {
 
             Result AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
             void RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
+
+            void AddIoRegion(KIoRegion *io_region);
+            void RemoveIoRegion(KIoRegion *io_region);
 
             Result CreateThreadLocalRegion(KProcessAddress *out);
             Result DeleteThreadLocalRegion(KProcessAddress addr);

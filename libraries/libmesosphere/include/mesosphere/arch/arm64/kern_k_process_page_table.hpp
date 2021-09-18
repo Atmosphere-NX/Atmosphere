@@ -96,6 +96,14 @@ namespace ams::kern::arch::arm64 {
                 return m_page_table.MapIo(phys_addr, size, perm);
             }
 
+            Result MapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm) {
+                return m_page_table.MapIoRegion(dst_address, phys_addr, size, mapping, perm);
+            }
+
+            Result UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size) {
+                return m_page_table.UnmapIoRegion(dst_address, phys_addr, size);
+            }
+
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return m_page_table.MapStatic(phys_addr, size, perm);
             }

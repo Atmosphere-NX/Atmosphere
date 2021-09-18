@@ -117,6 +117,12 @@ namespace ams::svc {
         MemoryAttribute_Uncached     = (1 << 3),
     };
 
+    enum MemoryMapping : u32 {
+        MemoryMapping_IoRegister = 0,
+        MemoryMapping_Uncached   = 1,
+        MemoryMapping_Memory     = 2,
+    };
+
     constexpr inline size_t HeapSizeAlignment = 2_MB;
 
     struct PageInfo {

@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include <vapours/svc/svc_common.hpp>
-#include <vapours/svc/svc_tick.hpp>
-#include <vapours/svc/svc_select_thread_local_region.hpp>
-#include <vapours/svc/svc_types_common.hpp>
-#include <vapours/svc/svc_types_base.hpp>
-#include <vapours/svc/svc_types_dd.hpp>
-#include <vapours/svc/svc_types_dmnt.hpp>
-#include <vapours/svc/svc_types_priv.hpp>
-#include <vapours/svc/svc_select_io_pool_type.hpp>
+constexpr IoRegionExtents g_io_region_extents[4] = {
+    { KPhysicalAddress(0x12000000), 224_MB }, /* PCIE_A2 */
+    { Null<KPhysicalAddress>, 0 },
+    { Null<KPhysicalAddress>, 0 },
+    { Null<KPhysicalAddress>, 0 },
+};
+
+constexpr bool IsValidIoPoolTypeImpl(ams::svc::IoPoolType pool_type) {
+    return pool_type == ams::svc::IoPoolType_PcieA2;
+}

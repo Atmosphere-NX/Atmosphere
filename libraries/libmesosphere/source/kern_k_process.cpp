@@ -141,14 +141,14 @@ namespace ams::kern {
             }
         }
 
-        /* Close all references to our betas. */
+        /* Close all references to our io regions. */
         {
-            auto it = m_beta_list.begin();
-            while (it != m_beta_list.end()) {
-                KBeta *beta = std::addressof(*it);
-                it = m_beta_list.erase(it);
+            auto it = m_io_region_list.begin();
+            while (it != m_io_region_list.end()) {
+                KIoRegion *io_region = std::addressof(*it);
+                it = m_io_region_list.erase(it);
 
-                beta->Close();
+                io_region->Close();
             }
         }
 
@@ -595,6 +595,32 @@ namespace ams::kern {
         }
 
         shmem->Close();
+    }
+
+    void KProcess::AddIoRegion(KIoRegion *io_region) {
+        /* Lock ourselves, to prevent concurrent access. */
+        KScopedLightLock lk(m_state_lock);
+
+        /* Open a reference to the region. */
+        io_region->Open();
+
+        /* Add the region to our list. */
+        m_io_region_list.push_back(*io_region);
+
+    }
+
+    void KProcess::RemoveIoRegion(KIoRegion *io_region) {
+        /* Remove the region from our list. */
+        {
+            /* Lock ourselves, to prevent concurrent access. */
+            KScopedLightLock lk(m_state_lock);
+
+            /* Remove the region from our list. */
+            m_io_region_list.erase(m_io_region_list.iterator_to(*io_region));
+        }
+
+        /* Close our reference to the io region. */
+        io_region->Close();
     }
 
     Result KProcess::CreateThreadLocalRegion(KProcessAddress *out) {

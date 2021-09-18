@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
+ * under the terms and conditions of the GNU General Public License
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -14,13 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
-#include <vapours/svc/svc_common.hpp>
-#include <vapours/svc/svc_tick.hpp>
-#include <vapours/svc/svc_select_thread_local_region.hpp>
 #include <vapours/svc/svc_types_common.hpp>
-#include <vapours/svc/svc_types_base.hpp>
-#include <vapours/svc/svc_types_dd.hpp>
-#include <vapours/svc/svc_types_dmnt.hpp>
-#include <vapours/svc/svc_types_priv.hpp>
-#include <vapours/svc/svc_select_io_pool_type.hpp>
+
+namespace ams::svc::board::nintendo::nx {
+
+    enum IoPoolType : u32 {
+        IoPoolType_PcieA2 = 0, /* NOTE: Name is not official. */
+
+        IoPoolType_Count  = 1,
+    };
+
+}
