@@ -140,7 +140,7 @@ def main(argc, argv):
     # Parse arguments
     ams_dir   = argv[1]
     target    = '' if argv[2] == 'release' else ('_%s' % argv[2])
-    revision  = int(argv[3], 16)
+    revision  = int(argv[3][:8], 16)
     major     = int(argv[4])
     minor     = int(argv[5])
     micro     = int(argv[6])
