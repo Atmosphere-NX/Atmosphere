@@ -17,22 +17,46 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        class ThreadQueueImplForKWorkerTaskManager final : public KThreadQueue {
+            private:
+                KThread **m_waiting_thread;
+            public:
+                constexpr ThreadQueueImplForKWorkerTaskManager(KThread **t) : KThreadQueue(), m_waiting_thread(t) { /* ... */ }
+
+                virtual void EndWait(KThread *waiting_thread, Result wait_result) override {
+                    /* Clear our waiting thread. */
+                    *m_waiting_thread = nullptr;
+
+                    /* Invoke the base end wait handler. */
+                    KThreadQueue::EndWait(waiting_thread, wait_result);
+                }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    MESOSPHERE_UNUSED(waiting_thread, wait_result, cancel_timer_task);
+                    MESOSPHERE_PANIC("ThreadQueueImplForKWorkerTaskManager::CancelWait\n");
+                }
+        };
+
+    }
+
     void KWorkerTaskManager::Initialize(s32 priority) {
         /* Reserve a thread from the system limit. */
         MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));
 
         /* Create a new thread. */
-        m_thread = KThread::Create();
-        MESOSPHERE_ABORT_UNLESS(m_thread != nullptr);
+        KThread *thread = KThread::Create();
+        MESOSPHERE_ABORT_UNLESS(thread != nullptr);
 
         /* Launch the new thread. */
-        MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(m_thread, ThreadFunction, reinterpret_cast<uintptr_t>(this), priority, cpu::NumCores - 1));
+        MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(thread, ThreadFunction, reinterpret_cast<uintptr_t>(this), priority, cpu::NumCores - 1));
 
         /* Register the new thread. */
-        KThread::Register(m_thread);
+        KThread::Register(thread);
 
         /* Run the thread. */
-        m_thread->Run();
+        thread->Run();
     }
 
     void KWorkerTaskManager::AddTask(WorkerType type, KWorkerTask *task) {
@@ -45,36 +69,40 @@ namespace ams::kern {
     }
 
     void KWorkerTaskManager::ThreadFunctionImpl() {
+        /* Create wait queue. */
+        ThreadQueueImplForKWorkerTaskManager wait_queue(std::addressof(m_waiting_thread));
+
         while (true) {
-            KWorkerTask *task = nullptr;
+            KWorkerTask *task;
 
             /* Get a worker task. */
             {
                 KScopedSchedulerLock sl;
+
                 task = this->GetTask();
 
                 if (task == nullptr) {
-                    /* If there's nothing to do, set ourselves as waiting. */
-                    m_active = false;
-                    m_thread->SetState(KThread::ThreadState_Waiting);
+                    /* Wait to have a task. */
+                    m_waiting_thread = GetCurrentThreadPointer();
+                    GetCurrentThread().BeginWait(std::addressof(wait_queue));
                     continue;
                 }
-
-                m_active = true;
             }
 
             /* Do the task. */
             task->DoWorkerTask();
 
             /* Destroy any objects we may need to close. */
-            m_thread->DestroyClosedObjects();
+            GetCurrentThread().DestroyClosedObjects();
         }
     }
 
     KWorkerTask *KWorkerTaskManager::GetTask() {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
         KWorkerTask *next = m_head_task;
-        if (next) {
+
+        if (next != nullptr) {
             /* Advance the list. */
             if (m_head_task == m_tail_task) {
                 m_head_task = nullptr;
@@ -86,6 +114,7 @@ namespace ams::kern {
             /* Clear the next task's next. */
             next->SetNextTask(nullptr);
         }
+
         return next;
     }
 
@@ -102,8 +131,8 @@ namespace ams::kern {
             m_tail_task = task;
 
             /* Make ourselves active if we need to. */
-            if (!m_active) {
-                m_thread->SetState(KThread::ThreadState_Runnable);
+            if (m_waiting_thread != nullptr) {
+                m_waiting_thread->EndWait(ResultSuccess());
             }
         }
     }

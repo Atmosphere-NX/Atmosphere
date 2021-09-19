@@ -16,69 +16,28 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_thread.hpp>
+#include <mesosphere/kern_select_hardware_timer.hpp>
 
 namespace ams::kern {
 
     class KThreadQueue {
         private:
-            KThread::WaiterList m_wait_list;
+            KHardwareTimer *m_hardware_timer;
         public:
-            constexpr ALWAYS_INLINE KThreadQueue() : m_wait_list() { /* ... */ }
+            constexpr ALWAYS_INLINE KThreadQueue() : m_hardware_timer(nullptr) { /* ... */ }
 
-            bool IsEmpty() const { return m_wait_list.empty(); }
+            constexpr void SetHardwareTimer(KHardwareTimer *timer) { m_hardware_timer = timer; }
 
-            KThread::WaiterList::iterator begin() { return m_wait_list.begin(); }
-            KThread::WaiterList::iterator end() { return m_wait_list.end(); }
+            virtual void NotifyAvailable(KThread *waiting_thread, KSynchronizationObject *signaled_object, Result wait_result);
+            virtual void EndWait(KThread *waiting_thread, Result wait_result);
+            virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task);
+    };
 
-            bool SleepThread(KThread *t) {
-                KScopedSchedulerLock sl;
+    class KThreadQueueWithoutEndWait : public KThreadQueue {
+        public:
+            constexpr ALWAYS_INLINE KThreadQueueWithoutEndWait() : KThreadQueue() { /* ... */ }
 
-                /* If the thread needs terminating, don't enqueue it. */
-                if (t->IsTerminationRequested()) {
-                    return false;
-                }
-
-                /* Set the thread's queue and mark it as waiting. */
-                t->SetSleepingQueue(this);
-                t->SetState(KThread::ThreadState_Waiting);
-
-                /* Add the thread to the queue. */
-                m_wait_list.push_back(*t);
-
-                return true;
-            }
-
-            void WakeupThread(KThread *t) {
-                KScopedSchedulerLock sl;
-
-                /* Remove the thread from the queue. */
-                m_wait_list.erase(m_wait_list.iterator_to(*t));
-
-                /* Mark the thread as no longer sleeping. */
-                t->SetState(KThread::ThreadState_Runnable);
-                t->SetSleepingQueue(nullptr);
-            }
-
-            KThread *WakeupFrontThread() {
-                KScopedSchedulerLock sl;
-
-                if (m_wait_list.empty()) {
-                    return nullptr;
-                } else {
-                    /* Remove the thread from the queue. */
-                    auto it = m_wait_list.begin();
-                    KThread *thread = std::addressof(*it);
-                    m_wait_list.erase(it);
-
-                    MESOSPHERE_ASSERT(thread->GetState() == KThread::ThreadState_Waiting);
-
-                    /* Mark the thread as no longer sleeping. */
-                    thread->SetState(KThread::ThreadState_Runnable);
-                    thread->SetSleepingQueue(nullptr);
-
-                    return thread;
-                }
-            }
+            virtual void EndWait(KThread *waiting_thread, Result wait_result) override final;
     };
 
 }

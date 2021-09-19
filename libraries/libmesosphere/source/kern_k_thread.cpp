@@ -47,6 +47,23 @@ namespace ams::kern {
             KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(stack_paddr));
         }
 
+        class ThreadQueueImplForKThreadSleep final : public KThreadQueueWithoutEndWait { /* ... */ };
+
+        class ThreadQueueImplForKThreadSetProperty final : public KThreadQueue {
+            private:
+                KThread::WaiterList *m_wait_list;
+            public:
+                constexpr ThreadQueueImplForKThreadSetProperty(KThread::WaiterList *wl) : m_wait_list(wl) { /* ... */ }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Remove the thread from the wait list. */
+                    m_wait_list->erase(m_wait_list->iterator_to(*waiting_thread));
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
     }
 
     Result KThread::Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type) {
@@ -131,12 +148,12 @@ namespace ams::kern {
         m_priority                      = prio;
         m_base_priority                 = prio;
 
-        /* Set sync object and waiting lock to null. */
-        m_synced_object                 = nullptr;
+        /* Set waiting lock to null. */
         m_waiting_lock                  = nullptr;
 
-        /* Initialize sleeping queue. */
-        m_sleeping_queue                = nullptr;
+        /* Initialize wait queue/sync index. */
+        m_synced_index                  = -1;
+        m_wait_queue                    = nullptr;
 
         /* Set suspend flags. */
         m_suspend_request_flags         = 0;
@@ -295,12 +312,20 @@ namespace ams::kern {
 
             auto it = m_waiter_list.begin();
             while (it != m_waiter_list.end()) {
+                /* Get the thread. */
+                KThread * const waiter = std::addressof(*it);
+
                 /* The thread shouldn't be a kernel waiter. */
-                MESOSPHERE_ASSERT(!IsKernelAddressKey(it->GetAddressKey()));
-                it->SetLockOwner(nullptr);
-                it->SetSyncedObject(nullptr, svc::ResultInvalidState());
-                it->Wakeup();
+                MESOSPHERE_ASSERT(!IsKernelAddressKey(waiter->GetAddressKey()));
+
+                /* Clear the lock owner. */
+                waiter->SetLockOwner(nullptr);
+
+                /* Erase the waiter from our list. */
                 it = m_waiter_list.erase(it);
+
+                /* Cancel the thread's wait. */
+                waiter->CancelWait(svc::ResultInvalidState(), true);
             }
         }
 
@@ -320,24 +345,14 @@ namespace ams::kern {
         return m_signaled;
     }
 
-    void KThread::Wakeup() {
-        MESOSPHERE_ASSERT_THIS();
-        KScopedSchedulerLock sl;
-
-        if (this->GetState() == ThreadState_Waiting) {
-            if (m_sleeping_queue != nullptr) {
-                m_sleeping_queue->WakeupThread(this);
-            } else {
-                this->SetState(ThreadState_Runnable);
-            }
-        }
-    }
-
     void KThread::OnTimer() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
-        this->Wakeup();
+        /* If we're waiting, cancel the wait. */
+        if (this->GetState() == ThreadState_Waiting) {
+            m_wait_queue->CancelWait(this, svc::ResultTimedOut(), false);
+        }
     }
 
     void KThread::StartTermination() {
@@ -362,7 +377,7 @@ namespace ams::kern {
 
         /* Signal. */
         m_signaled = true;
-        this->NotifyAvailable();
+        KSynchronizationObject::NotifyAvailable();
 
         /* Call the on thread termination handler. */
         KThreadContext::OnThreadTerminating(this);
@@ -496,10 +511,8 @@ namespace ams::kern {
         }
 
         /* Resume any threads that began waiting on us while we were pinned. */
-        for (auto it = m_pinned_waiter_list.begin(); it != m_pinned_waiter_list.end(); ++it) {
-            if (it->GetState() == ThreadState_Waiting) {
-                it->SetState(ThreadState_Runnable);
-            }
+        for (auto it = m_pinned_waiter_list.begin(); it != m_pinned_waiter_list.end(); it = m_pinned_waiter_list.erase(it)) {
+            it->EndWait(ResultSuccess());
         }
     }
 
@@ -646,9 +659,9 @@ namespace ams::kern {
         }
 
         /* Update the pinned waiter list. */
+        ThreadQueueImplForKThreadSetProperty wait_queue(std::addressof(m_pinned_waiter_list));
         {
             bool retry_update;
-            bool thread_is_pinned = false;
             do {
                 /* Lock the scheduler. */
                 KScopedSchedulerLock sl;
@@ -676,27 +689,15 @@ namespace ams::kern {
                         /* Verify that the current thread isn't terminating. */
                         R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
 
-                        /* Note that the thread was pinned. */
-                        thread_is_pinned = true;
-
                         /* Wait until the thread isn't pinned any more. */
                         m_pinned_waiter_list.push_back(GetCurrentThread());
-                        GetCurrentThread().SetState(ThreadState_Waiting);
+                        GetCurrentThread().BeginWait(std::addressof(wait_queue));
                     } else {
                         /* If the thread isn't pinned, release the scheduler lock and retry until it's not current. */
                         retry_update = true;
                     }
                 }
             } while (retry_update);
-
-            /* If the thread was pinned, it no longer is, and we should remove the current thread from our waiter list. */
-            if (thread_is_pinned) {
-                /* Lock the scheduler. */
-                KScopedSchedulerLock sl;
-
-                /* Remove from the list. */
-                m_pinned_waiter_list.erase(m_pinned_waiter_list.iterator_to(GetCurrentThread()));
-            }
         }
 
         return ResultSuccess();
@@ -785,14 +786,8 @@ namespace ams::kern {
 
         /* Check if we're waiting and cancellable. */
         if (this->GetState() == ThreadState_Waiting && m_cancellable) {
-            if (m_sleeping_queue != nullptr) {
-                m_sleeping_queue->WakeupThread(this);
-                m_wait_cancelled = true;
-            } else {
-                this->SetSyncedObject(nullptr, svc::ResultCancelled());
-                this->SetState(ThreadState_Runnable);
-                m_wait_cancelled = false;
-            }
+            m_wait_cancelled = false;
+            m_wait_queue->CancelWait(this, svc::ResultCancelled(), true);
         } else {
             /* Otherwise, note that we cancelled a wait. */
             m_wait_cancelled = true;
@@ -894,7 +889,8 @@ namespace ams::kern {
 
         /* If the thread is now paused, update the pinned waiter list. */
         if (activity == ams::svc::ThreadActivity_Paused) {
-            bool thread_is_pinned = false;
+            ThreadQueueImplForKThreadSetProperty wait_queue(std::addressof(m_pinned_waiter_list));
+
             bool thread_is_current;
             do {
                 /* Lock the scheduler. */
@@ -903,23 +899,20 @@ namespace ams::kern {
                 /* Don't do any further management if our termination has been requested. */
                 R_SUCCEED_IF(this->IsTerminationRequested());
 
+                /* By default, treat the thread as not current. */
+                thread_is_current = false;
+
                 /* Check whether the thread is pinned. */
                 if (this->GetStackParameters().is_pinned) {
                     /* Verify that the current thread isn't terminating. */
                     R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
 
-                    /* Note that the thread was pinned and not current. */
-                    thread_is_pinned  = true;
-                    thread_is_current = false;
-
                     /* Wait until the thread isn't pinned any more. */
                     m_pinned_waiter_list.push_back(GetCurrentThread());
-                    GetCurrentThread().SetState(ThreadState_Waiting);
+                    GetCurrentThread().BeginWait(std::addressof(wait_queue));
                 } else {
                     /* Check if the thread is currently running. */
                     /* If it is, we'll need to retry. */
-                    thread_is_current = false;
-
                     for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
                         if (Kernel::GetScheduler(i).GetSchedulerCurrentThread() == this) {
                             thread_is_current = true;
@@ -928,15 +921,6 @@ namespace ams::kern {
                     }
                 }
             } while (thread_is_current);
-
-            /* If the thread was pinned, it no longer is, and we should remove the current thread from our waiter list. */
-            if (thread_is_pinned) {
-                /* Lock the scheduler. */
-                KScopedSchedulerLock sl;
-
-                /* Remove from the list. */
-                m_pinned_waiter_list.erase(m_pinned_waiter_list.iterator_to(GetCurrentThread()));
-            }
         }
 
         return ResultSuccess();
@@ -1241,8 +1225,9 @@ namespace ams::kern {
             }
 
             /* Wake up the thread. */
-            this->SetSyncedObject(nullptr, svc::ResultTerminationRequested());
-            this->Wakeup();
+            if (this->GetState() == ThreadState_Waiting) {
+                m_wait_queue->CancelWait(this, svc::ResultTerminationRequested(), true);
+            }
         }
 
         return this->GetState();
@@ -1254,6 +1239,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
         MESOSPHERE_ASSERT(timeout > 0);
 
+        ThreadQueueImplForKThreadSleep wait_queue;
         KHardwareTimer *timer;
         {
             /* Setup the scheduling lock and sleep. */
@@ -1265,16 +1251,56 @@ namespace ams::kern {
                 return svc::ResultTerminationRequested();
             }
 
-            /* Mark the thread as waiting. */
-            this->SetState(KThread::ThreadState_Waiting);
+            /* Wait for the sleep to end. */
+            wait_queue.SetHardwareTimer(timer);
+            this->BeginWait(std::addressof(wait_queue));
         }
 
-        /* The lock/sleep is done. */
-
-        /* Cancel the timer. */
-        timer->CancelTask(this);
-
         return ResultSuccess();
+    }
+
+    void KThread::BeginWait(KThreadQueue *queue) {
+        /* Set our state as waiting. */
+        this->SetState(ThreadState_Waiting);
+
+        /* Set our wait queue. */
+        m_wait_queue = queue;
+    }
+
+    void KThread::NotifyAvailable(KSynchronizationObject *signaled_object, Result wait_result) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
+
+        /* If we're waiting, notify our queue that we're available. */
+        if (this->GetState() == ThreadState_Waiting) {
+            m_wait_queue->NotifyAvailable(this, signaled_object, wait_result);
+        }
+    }
+
+    void KThread::EndWait(Result wait_result) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
+
+        /* If we're waiting, notify our queue that we're available. */
+        if (this->GetState() == ThreadState_Waiting) {
+            m_wait_queue->EndWait(this, wait_result);
+        }
+    }
+
+    void KThread::CancelWait(Result wait_result, bool cancel_timer_task) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock the scheduler. */
+        KScopedSchedulerLock sl;
+
+        /* If we're waiting, notify our queue that we're available. */
+        if (this->GetState() == ThreadState_Waiting) {
+            m_wait_queue->CancelWait(this, wait_result, cancel_timer_task);
+        }
     }
 
     void KThread::SetState(ThreadState state) {

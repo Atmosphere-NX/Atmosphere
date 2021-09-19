@@ -45,7 +45,39 @@ namespace ams::kern {
         public:
             virtual void Finalize() override;
             virtual bool IsSignaled() const { AMS_INFINITE_LOOP(); }
-            virtual void DumpWaiters();
+
+            void DumpWaiters();
+
+            ALWAYS_INLINE void LinkNode(ThreadListNode *node) {
+                /* Link the node to the list. */
+                if (m_thread_list_tail == nullptr) {
+                    m_thread_list_head = node;
+                } else {
+                    m_thread_list_tail->next = node;
+                }
+
+                m_thread_list_tail = node;
+            }
+
+            ALWAYS_INLINE void UnlinkNode(ThreadListNode *node) {
+                /* Unlink the node from the list. */
+                ThreadListNode *prev_ptr = reinterpret_cast<ThreadListNode *>(std::addressof(m_thread_list_head));
+                ThreadListNode *prev_val = nullptr;
+                ThreadListNode *prev, *tail_prev;
+
+                do {
+                    prev      = prev_ptr;
+                    prev_ptr  = prev_ptr->next;
+                    tail_prev = prev_val;
+                    prev_val  = prev_ptr;
+                } while (prev_ptr != node);
+
+                if (m_thread_list_tail == node) {
+                    m_thread_list_tail = tail_prev;
+                }
+
+                prev->next = node->next;
+            }
     };
 
 }

@@ -43,6 +43,24 @@ namespace ams::kern {
             return UserspaceAccess::UpdateIfEqualAtomic(out, GetPointer<s32>(address), value, new_value);
         }
 
+        class ThreadQueueImplForKAddressArbiter final : public KThreadQueue {
+            private:
+                KAddressArbiter::ThreadTree *m_tree;
+            public:
+                constexpr ThreadQueueImplForKAddressArbiter(KAddressArbiter::ThreadTree *t) : KThreadQueue(), m_tree(t) { /* ... */ }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* If the thread is waiting on an address arbiter, remove it from the tree. */
+                    if (waiting_thread->IsWaitingForAddressArbiter()) {
+                        m_tree->erase(m_tree->iterator_to(*waiting_thread));
+                        waiting_thread->ClearAddressArbiter();
+                    }
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
     }
 
     Result KAddressArbiter::Signal(uintptr_t addr, s32 count) {
@@ -53,14 +71,14 @@ namespace ams::kern {
 
             auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+                /* End the thread's wait. */
                 KThread *target_thread = std::addressof(*it);
-                target_thread->SetSyncedObject(nullptr, ResultSuccess());
+                target_thread->EndWait(ResultSuccess());
 
-                AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
-                target_thread->Wakeup();
+                MESOSPHERE_ASSERT(target_thread->IsWaitingForAddressArbiter());
+                target_thread->ClearAddressArbiter();
 
                 it = m_tree.erase(it);
-                target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
         }
@@ -80,14 +98,14 @@ namespace ams::kern {
 
             auto it = m_tree.nfind_key({ addr, -1 });
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+                /* End the thread's wait. */
                 KThread *target_thread = std::addressof(*it);
-                target_thread->SetSyncedObject(nullptr, ResultSuccess());
+                target_thread->EndWait(ResultSuccess());
 
-                AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
-                target_thread->Wakeup();
+                MESOSPHERE_ASSERT(target_thread->IsWaitingForAddressArbiter());
+                target_thread->ClearAddressArbiter();
 
                 it = m_tree.erase(it);
-                target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
         }
@@ -142,14 +160,14 @@ namespace ams::kern {
             R_UNLESS(user_value == value, svc::ResultInvalidState());
 
             while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+                /* End the thread's wait. */
                 KThread *target_thread = std::addressof(*it);
-                target_thread->SetSyncedObject(nullptr, ResultSuccess());
+                target_thread->EndWait(ResultSuccess());
 
-                AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
-                target_thread->Wakeup();
+                MESOSPHERE_ASSERT(target_thread->IsWaitingForAddressArbiter());
+                target_thread->ClearAddressArbiter();
 
                 it = m_tree.erase(it);
-                target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
         }
@@ -160,6 +178,7 @@ namespace ams::kern {
         /* Prepare to wait. */
         KThread *cur_thread = GetCurrentThreadPointer();
         KHardwareTimer *timer;
+        ThreadQueueImplForKAddressArbiter wait_queue(std::addressof(m_tree));
 
         {
             KScopedSchedulerLockAndSleep slp(std::addressof(timer), cur_thread, timeout);
@@ -169,9 +188,6 @@ namespace ams::kern {
                 slp.CancelSleep();
                 return svc::ResultTerminationRequested();
             }
-
-            /* Set the synced object. */
-            cur_thread->SetSyncedObject(nullptr, ams::svc::ResultTimedOut());
 
             /* Read the value from userspace. */
             s32 user_value;
@@ -202,33 +218,21 @@ namespace ams::kern {
             /* Set the arbiter. */
             cur_thread->SetAddressArbiter(std::addressof(m_tree), addr);
             m_tree.insert(*cur_thread);
-            cur_thread->SetState(KThread::ThreadState_Waiting);
+
+            /* Wait for the thread to finish. */
+            wait_queue.SetHardwareTimer(timer);
+            cur_thread->BeginWait(std::addressof(wait_queue));
         }
 
-        /* Cancel the timer wait. */
-        if (timer != nullptr) {
-            timer->CancelTask(cur_thread);
-        }
-
-        /* Remove from the address arbiter. */
-        {
-            KScopedSchedulerLock sl;
-
-            if (cur_thread->IsWaitingForAddressArbiter()) {
-                m_tree.erase(m_tree.iterator_to(*cur_thread));
-                cur_thread->ClearAddressArbiter();
-            }
-        }
-
-        /* Get the result. */
-        KSynchronizationObject *dummy;
-        return cur_thread->GetWaitResult(std::addressof(dummy));
+        /* Get the wait result. */
+        return cur_thread->GetWaitResult();
     }
 
     Result KAddressArbiter::WaitIfEqual(uintptr_t addr, s32 value, s64 timeout) {
         /* Prepare to wait. */
         KThread *cur_thread = GetCurrentThreadPointer();
         KHardwareTimer *timer;
+        ThreadQueueImplForKAddressArbiter wait_queue(std::addressof(m_tree));
 
         {
             KScopedSchedulerLockAndSleep slp(std::addressof(timer), cur_thread, timeout);
@@ -238,9 +242,6 @@ namespace ams::kern {
                 slp.CancelSleep();
                 return svc::ResultTerminationRequested();
             }
-
-            /* Set the synced object. */
-            cur_thread->SetSyncedObject(nullptr, ams::svc::ResultTimedOut());
 
             /* Read the value from userspace. */
             s32 user_value;
@@ -264,27 +265,14 @@ namespace ams::kern {
             /* Set the arbiter. */
             cur_thread->SetAddressArbiter(std::addressof(m_tree), addr);
             m_tree.insert(*cur_thread);
-            cur_thread->SetState(KThread::ThreadState_Waiting);
+
+            /* Wait for the thread to finish. */
+            wait_queue.SetHardwareTimer(timer);
+            cur_thread->BeginWait(std::addressof(wait_queue));
         }
 
-        /* Cancel the timer wait. */
-        if (timer != nullptr) {
-            timer->CancelTask(cur_thread);
-        }
-
-        /* Remove from the address arbiter. */
-        {
-            KScopedSchedulerLock sl;
-
-            if (cur_thread->IsWaitingForAddressArbiter()) {
-                m_tree.erase(m_tree.iterator_to(*cur_thread));
-                cur_thread->ClearAddressArbiter();
-            }
-        }
-
-        /* Get the result. */
-        KSynchronizationObject *dummy;
-        return cur_thread->GetWaitResult(std::addressof(dummy));
+        /* Get the wait result. */
+        return cur_thread->GetWaitResult();
     }
 
 }

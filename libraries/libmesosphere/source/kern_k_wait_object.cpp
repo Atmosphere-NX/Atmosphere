@@ -17,73 +17,83 @@
 
 namespace ams::kern {
 
-    void KWaitObject::OnTimer() {
-        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+    namespace {
 
-        /* Wake up all the waiting threads. */
-        for (KThread &thread : m_wait_list) {
-            thread.Wakeup();
-        }
+        class ThreadQueueImplForKWaitObjectSynchronize final : public KThreadQueueWithoutEndWait {
+            private:
+                KThread::WaiterList *m_wait_list;
+                KThread **m_thread;
+            public:
+                constexpr ThreadQueueImplForKWaitObjectSynchronize(KThread::WaiterList *wl, KThread **t) : KThreadQueueWithoutEndWait(), m_wait_list(wl), m_thread(t) { /* ... */ }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Remove the thread from the wait list. */
+                    m_wait_list->erase(m_wait_list->iterator_to(*waiting_thread));
+
+                    /* If the result was a timeout and the thread is our wait object thread, cancel recursively. */
+                    if (svc::ResultTimedOut::Includes(wait_result) && waiting_thread == *m_thread) {
+                        for (auto &thread : *m_wait_list) {
+                            thread.CancelWait(svc::ResultTimedOut(), false);
+                        }
+                    }
+
+                    /* If the thread is our wait object thread, clear it. */
+                    if (*m_thread == waiting_thread) {
+                        *m_thread = nullptr;
+                    }
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
     }
 
     Result KWaitObject::Synchronize(s64 timeout) {
         /* Perform the wait. */
-        KHardwareTimer *timer = nullptr;
-        KThread *cur_thread   = GetCurrentThreadPointer();
+        KHardwareTimer *timer;
+        KThread *cur_thread = GetCurrentThreadPointer();
+        ThreadQueueImplForKWaitObjectSynchronize wait_queue(std::addressof(m_wait_list), std::addressof(m_next_thread));
+
         {
-            KScopedSchedulerLock sl;
+            KScopedSchedulerLockAndSleep slp(std::addressof(timer), cur_thread, timeout);
 
             /* Check that the thread isn't terminating. */
-            R_UNLESS(!cur_thread->IsTerminationRequested(), svc::ResultTerminationRequested());
-
-            /* Verify that nothing else is already waiting on the object. */
-            if (timeout > 0) {
-                R_UNLESS(!m_timer_used, svc::ResultBusy());
+            if (cur_thread->IsTerminationRequested()) {
+                slp.CancelSleep();
+                return svc::ResultTerminationRequested();
             }
 
-            /* Check that we're not already in use. */
+            /* Handle the case where timeout is non-negative/infinite. */
             if (timeout >= 0) {
-                /* Verify the timer isn't already in use. */
-                R_UNLESS(!m_timer_used, svc::ResultBusy());
+                /* Check if we're already waiting. */
+                if (m_next_thread != nullptr) {
+                    slp.CancelSleep();
+                    return svc::ResultBusy();
+                }
+
+                /* If timeout is zero, handle the special case by canceling all waiting threads. */
+                if (timeout == 0) {
+                    for (auto &thread : m_wait_list) {
+                        thread.CancelWait(svc::ResultTimedOut(), false);
+                    }
+
+                    slp.CancelSleep();
+                    return ResultSuccess();
+                }
             }
 
-            /* If we need to, register our timeout. */
+            /* If the timeout isn't infinite, register it as our next timeout. */
             if (timeout > 0) {
-                /* Mark that we're using the timer. */
-                m_timer_used = true;
-
-                /* Use the timer. */
-                timer = std::addressof(Kernel::GetHardwareTimer());
-                timer->RegisterAbsoluteTask(this, timeout);
+                wait_queue.SetHardwareTimer(timer);
+                m_next_thread = cur_thread;
             }
 
-            if (timeout == 0) {
-                /* If we're timed out immediately, just wake up the thread. */
-                this->OnTimer();
-            } else {
-                /* Otherwise, sleep until the timeout occurs. */
-                m_wait_list.push_back(GetCurrentThread());
-                cur_thread->SetState(KThread::ThreadState_Waiting);
-                cur_thread->SetSyncedObject(nullptr, svc::ResultTimedOut());
-            }
-        }
+            /* Add the current thread to our wait list. */
+            m_wait_list.push_back(*cur_thread);
 
-        /* Cleanup as necessary. */
-        {
-            KScopedSchedulerLock sl;
-
-            /* Remove from the timer. */
-            if (timeout > 0) {
-                MESOSPHERE_ASSERT(m_timer_used);
-                MESOSPHERE_ASSERT(timer != nullptr);
-                timer->CancelTask(this);
-                m_timer_used = false;
-            }
-
-            /* Remove the thread from our queue. */
-            if (timeout != 0) {
-                m_wait_list.erase(m_wait_list.iterator_to(GetCurrentThread()));
-            }
+            /* Wait until the timeout occurs. */
+            cur_thread->BeginWait(std::addressof(wait_queue));
         }
 
         return ResultSuccess();

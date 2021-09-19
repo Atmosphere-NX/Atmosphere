@@ -17,6 +17,64 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        constexpr u64 InvalidThreadId = -1ull;
+
+        class ThreadQueueImplForKLightServerSessionRequest final : public KThreadQueue {
+            private:
+                KThread::WaiterList *m_wait_list;
+            public:
+                constexpr ThreadQueueImplForKLightServerSessionRequest(KThread::WaiterList *wl) : KThreadQueue(), m_wait_list(wl) { /* ... */ }
+
+                virtual void EndWait(KThread *waiting_thread, Result wait_result) override {
+                    /* Remove the thread from our wait list. */
+                    m_wait_list->erase(m_wait_list->iterator_to(*waiting_thread));
+
+                    /* Invoke the base end wait handler. */
+                    KThreadQueue::EndWait(waiting_thread, wait_result);
+                }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Remove the thread from our wait list. */
+                    m_wait_list->erase(m_wait_list->iterator_to(*waiting_thread));
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
+        class ThreadQueueImplForKLightServerSessionReceive final : public KThreadQueue {
+            private:
+                KThread **m_server_thread;
+            public:
+                constexpr ThreadQueueImplForKLightServerSessionReceive(KThread **st) : KThreadQueue(), m_server_thread(st) { /* ... */ }
+
+                virtual void EndWait(KThread *waiting_thread, Result wait_result) override {
+                    /* Clear the server thread. */
+                    *m_server_thread = nullptr;
+
+                    /* Set the waiting thread as not cancelable. */
+                    waiting_thread->ClearCancellable();
+
+                    /* Invoke the base end wait handler. */
+                    KThreadQueue::EndWait(waiting_thread, wait_result);
+                }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Clear the server thread. */
+                    *m_server_thread = nullptr;
+
+                    /* Set the waiting thread as not cancelable. */
+                    waiting_thread->ClearCancellable();
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
+    }
+
     void KLightServerSession::Destroy() {
         MESOSPHERE_ASSERT_THIS();
 
@@ -33,31 +91,45 @@ namespace ams::kern {
 
     Result KLightServerSession::OnRequest(KThread *request_thread) {
         MESOSPHERE_ASSERT_THIS();
-        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
-        /* Check that the server isn't closed. */
-        R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
+        ThreadQueueImplForKLightServerSessionRequest wait_queue(std::addressof(m_request_list));
 
-        /* Try to sleep the thread. */
-        R_UNLESS(m_request_queue.SleepThread(request_thread), svc::ResultTerminationRequested());
+        /* Send the request. */
+        {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
 
-        /* If we don't have a current request, wake up a server thread to handle it. */
-        if (m_current_request == nullptr) {
-            m_server_queue.WakeupFrontThread();
+            /* Check that the server isn't closed. */
+            R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
+
+            /* Check that the request thread isn't terminating. */
+            R_UNLESS(!request_thread->IsTerminationRequested(), svc::ResultTerminationRequested());
+
+            /* Add the request thread to our list. */
+            m_request_list.push_back(*request_thread);
+
+            /* Begin waiting on the request. */
+            request_thread->BeginWait(std::addressof(wait_queue));
+
+            /* If we have a server thread, end its wait. */
+            if (m_server_thread != nullptr) {
+                m_server_thread->EndWait(ResultSuccess());
+            }
         }
 
-        return ResultSuccess();
+        /* NOTE: Nintendo returns GetCurrentThread().GetWaitResult() here. */
+        /* This is technically incorrect, although it doesn't cause problems in practice */
+        /* because this is only ever called with request_thread = GetCurrentThreadPointer(). */
+        return request_thread->GetWaitResult();
     }
 
     Result KLightServerSession::ReplyAndReceive(u32 *data) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set the server context. */
-        KThread *server_thread = GetCurrentThreadPointer();
-        server_thread->SetLightSessionData(data);
+        GetCurrentThread().SetLightSessionData(data);
 
         /* Reply, if we need to. */
-        KThread *cur_request = nullptr;
         if (data[0] & KLightSession::ReplyFlag) {
             KScopedSchedulerLock sl;
 
@@ -68,78 +140,85 @@ namespace ams::kern {
             /* Check that we have a request to reply to. */
             R_UNLESS(m_current_request != nullptr, svc::ResultInvalidState());
 
-            /* Check that the server thread is correct. */
-            R_UNLESS(m_server_thread == server_thread, svc::ResultInvalidState());
+            /* Check that the server thread id is correct. */
+            R_UNLESS(m_server_thread_id == GetCurrentThread().GetId(), svc::ResultInvalidState());
 
             /* If we can reply, do so. */
             if (!m_current_request->IsTerminationRequested()) {
-                MESOSPHERE_ASSERT(m_current_request->GetState() == KThread::ThreadState_Waiting);
-                MESOSPHERE_ASSERT(m_request_queue.begin() != m_request_queue.end() && m_current_request == std::addressof(*m_request_queue.begin()));
-                std::memcpy(m_current_request->GetLightSessionData(), server_thread->GetLightSessionData(), KLightSession::DataSize);
-                m_request_queue.WakeupThread(m_current_request);
+                std::memcpy(m_current_request->GetLightSessionData(), GetCurrentThread().GetLightSessionData(), KLightSession::DataSize);
+                m_current_request->EndWait(ResultSuccess());
             }
+
+            /* Close our current request. */
+            m_current_request->Close();
 
             /* Clear our current request. */
-            cur_request = m_current_request;
-            m_current_request = nullptr;
-            m_server_thread   = nullptr;
+            m_current_request  = nullptr;
+            m_server_thread_id = InvalidThreadId;
         }
 
-        /* Close the current request, if we had one. */
-        if (cur_request != nullptr) {
-            cur_request->Close();
-        }
+        /* Close any pending objects before we wait. */
+        GetCurrentThread().DestroyClosedObjects();
+
+        /* Create the wait queue for our receive. */
+        ThreadQueueImplForKLightServerSessionReceive wait_queue(std::addressof(m_server_thread));
 
         /* Receive. */
-        bool set_cancellable = false;
         while (true) {
-            KScopedSchedulerLock sl;
+            /* Try to receive a request. */
+            {
+                KScopedSchedulerLock sl;
 
-            /* Check that we aren't already receiving. */
-            R_UNLESS(m_server_queue.IsEmpty(),   svc::ResultInvalidState());
-            R_UNLESS(m_server_thread == nullptr, svc::ResultInvalidState());
+                /* Check that we aren't already receiving. */
+                R_UNLESS(m_server_thread == nullptr,            svc::ResultInvalidState());
+                R_UNLESS(m_server_thread_id == InvalidThreadId, svc::ResultInvalidState());
 
-            /* If we cancelled in a previous loop, clear cancel state. */
-            if (set_cancellable) {
-                server_thread->ClearCancellable();
-                set_cancellable = false;
-            }
+                /* Check that we're open. */
+                R_UNLESS(!m_parent->IsClientClosed(), svc::ResultSessionClosed());
+                R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
 
-            /* Check that we're open. */
-            R_UNLESS(!m_parent->IsClientClosed(), svc::ResultSessionClosed());
-            R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
+                /* Check that we're not terminating. */
+                R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
 
-            /* If we have a request available, use it. */
-            if (m_current_request == nullptr && !m_request_queue.IsEmpty()) {
-                m_current_request = std::addressof(*m_request_queue.begin());
-                m_current_request->Open();
-                m_server_thread   = server_thread;
-                break;
-            } else {
-                /* Otherwise, wait for a request to come in. */
-                R_UNLESS(m_server_queue.SleepThread(server_thread), svc::ResultTerminationRequested());
+                /* If we have a request available, use it. */
+                if (auto head = m_request_list.begin(); head != m_request_list.end()) {
+                    /* Set our current request. */
+                    m_current_request = std::addressof(*head);
+                    m_current_request->Open();
+
+                    /* Set our server thread id. */
+                    m_server_thread_id = GetCurrentThread().GetId();
+
+                    /* Copy the client request data. */
+                    std::memcpy(GetCurrentThread().GetLightSessionData(), m_current_request->GetLightSessionData(), KLightSession::DataSize);
+
+                    /* We successfully received. */
+                    return ResultSuccess();
+                }
+
+                /* We need to wait for a request to come in. */
 
                 /* Check if we were cancelled. */
-                if (server_thread->IsWaitCancelled()) {
-                    m_server_queue.WakeupThread(server_thread);
-                    server_thread->ClearWaitCancelled();
+                if (GetCurrentThread().IsWaitCancelled()) {
+                    GetCurrentThread().ClearWaitCancelled();
                     return svc::ResultCancelled();
                 }
 
-                /* Otherwise, mark as cancellable. */
-                server_thread->SetCancellable();
-                set_cancellable = true;
-            }
-        }
+                /* Mark ourselves as cancellable. */
+                GetCurrentThread().SetCancellable();
 
-        /* Copy the client data. */
-        std::memcpy(server_thread->GetLightSessionData(), m_current_request->GetLightSessionData(), KLightSession::DataSize);
-        return ResultSuccess();
+                /* Wait for a request to come in. */
+                m_server_thread = GetCurrentThreadPointer();
+                GetCurrentThread().BeginWait(std::addressof(wait_queue));
+            }
+
+            /* We waited to receive a request; if our wait failed, return the failing result. */
+            R_TRY(GetCurrentThread().GetWaitResult());
+        }
     }
 
     void KLightServerSession::CleanupRequests() {
         /* Cleanup all pending requests. */
-        KThread *cur_request = nullptr;
         {
             KScopedSchedulerLock sl;
 
@@ -147,33 +226,24 @@ namespace ams::kern {
             if (m_current_request != nullptr) {
                 /* Reply to the current request. */
                 if (!m_current_request->IsTerminationRequested()) {
-                    MESOSPHERE_ASSERT(m_current_request->GetState() == KThread::ThreadState_Waiting);
-                    MESOSPHERE_ASSERT(m_request_queue.begin() != m_request_queue.end() && m_current_request == std::addressof(*m_request_queue.begin()));
-                    m_request_queue.WakeupThread(m_current_request);
-                    m_current_request->SetSyncedObject(nullptr, svc::ResultSessionClosed());
+                    m_current_request->EndWait(svc::ResultSessionClosed());
                 }
 
                 /* Clear our current request. */
-                cur_request = m_current_request;
-                m_current_request = nullptr;
-                m_server_thread   = nullptr;
+                m_current_request->Close();
+                m_current_request  = nullptr;
+                m_server_thread_id = InvalidThreadId;
             }
 
             /* Reply to all other requests. */
-            while (!m_request_queue.IsEmpty()) {
-                KThread *client_thread = m_request_queue.WakeupFrontThread();
-                client_thread->SetSyncedObject(nullptr, svc::ResultSessionClosed());
+            for (auto &thread : m_request_list) {
+                thread.EndWait(svc::ResultSessionClosed());
             }
 
-            /* Wake up all server threads. */
-            while (!m_server_queue.IsEmpty()) {
-                m_server_queue.WakeupFrontThread();
+            /* Wait up our server thread, if we have one. */
+            if (m_server_thread != nullptr) {
+                m_server_thread->EndWait(svc::ResultSessionClosed());
             }
-        }
-
-        /* Close the current request, if we had one. */
-        if (cur_request != nullptr) {
-            cur_request->Close();
         }
     }
 
