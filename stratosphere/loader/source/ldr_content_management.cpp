@@ -85,6 +85,11 @@ namespace ams::ldr {
     Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc) {
         lr::Path path;
 
+        /* Check that path registration is allowable. */
+        if (loc.storage_id == ncm::StorageId::Host) {
+            AMS_ABORT_UNLESS(spl::IsDevelopment());
+        }
+
         /* Try to get the path from the registered resolver. */
         lr::RegisteredLocationResolver reg;
         R_TRY(lr::OpenRegisteredLocationResolver(std::addressof(reg)));
