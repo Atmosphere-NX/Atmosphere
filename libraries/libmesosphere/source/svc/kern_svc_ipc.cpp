@@ -229,11 +229,14 @@ namespace ams::kern::svc {
 
             /* Send the request. */
             MESOSPHERE_ASSERT(message != 0);
-            R_TRY(SendAsyncRequestWithUserBufferImpl(out_event_handle, message, buffer_size, session_handle));
+            const Result result = SendAsyncRequestWithUserBufferImpl(out_event_handle, message, buffer_size, session_handle);
 
-            /* We sent the request successfully. */
-            unlock_guard.Cancel();
-            return ResultSuccess();
+            /* If the request succeeds (or the thread is terminating), don't unlock the user buffer. */
+            if (R_SUCCEEDED(result) || svc::ResultTerminationRequested::Includes(result)) {
+                unlock_guard.Cancel();
+            }
+
+            return result;
         }
 
         ALWAYS_INLINE Result ReplyAndReceive(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {

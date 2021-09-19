@@ -40,17 +40,7 @@ namespace ams::kern {
         request->Initialize(nullptr, address, size);
 
         /* Send the request. */
-        {
-            KScopedSchedulerLock sl;
-
-            GetCurrentThread().SetSyncedObject(nullptr, ResultSuccess());
-
-            R_TRY(m_parent->OnRequest(request));
-        }
-
-        /* Get the result. */
-        KSynchronizationObject *dummy;
-        return GetCurrentThread().GetWaitResult(std::addressof(dummy));
+        return m_parent->OnRequest(request);
     }
 
     Result KClientSession::SendAsyncRequest(KEvent *event, uintptr_t address, size_t size) {
@@ -65,13 +55,7 @@ namespace ams::kern {
         request->Initialize(event, address, size);
 
         /* Send the request. */
-        {
-            KScopedSchedulerLock sl;
-
-            R_TRY(m_parent->OnRequest(request));
-        }
-
-        return ResultSuccess();
+        return m_parent->OnRequest(request);
     }
 
 }

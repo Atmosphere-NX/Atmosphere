@@ -37,17 +37,7 @@ namespace ams::kern {
         cur_thread->SetLightSessionData(data);
 
         /* Send the request. */
-        {
-            KScopedSchedulerLock sl;
-
-            cur_thread->SetSyncedObject(nullptr, ResultSuccess());
-
-            R_TRY(m_parent->OnRequest(cur_thread));
-        }
-
-        /* Get the result. */
-        KSynchronizationObject *dummy;
-        return cur_thread->GetWaitResult(std::addressof(dummy));
+        return m_parent->OnRequest(cur_thread);
     }
 
 }

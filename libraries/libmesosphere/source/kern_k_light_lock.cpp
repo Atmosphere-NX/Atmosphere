@@ -17,8 +17,23 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        class ThreadQueueImplForKLightLock final : public KThreadQueue {
+            public:
+                constexpr ThreadQueueImplForKLightLock() : KThreadQueue() { /* ... */ }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Do nothing, waiting to acquire a light lock cannot be canceled. */
+                    MESOSPHERE_UNUSED(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
+    }
+
     void KLightLock::LockSlowPath(uintptr_t _owner, uintptr_t _cur_thread) {
         KThread *cur_thread = reinterpret_cast<KThread *>(_cur_thread);
+        ThreadQueueImplForKLightLock wait_queue;
 
         /* Pend the current thread waiting on the owner thread. */
         {
@@ -34,20 +49,11 @@ namespace ams::kern {
             cur_thread->SetAddressKey(reinterpret_cast<uintptr_t>(std::addressof(m_tag)));
             owner_thread->AddWaiter(cur_thread);
 
-            /* Set thread states. */
-            cur_thread->SetState(KThread::ThreadState_Waiting);
+            /* Begin waiting to hold the lock. */
+            cur_thread->BeginWait(std::addressof(wait_queue));
 
             if (owner_thread->IsSuspended()) {
                 owner_thread->ContinueIfHasKernelWaiters();
-            }
-        }
-
-        /* We're no longer waiting on the lock owner. */
-        {
-            KScopedSchedulerLock sl;
-
-            if (KThread *owner_thread = cur_thread->GetLockOwner(); AMS_UNLIKELY(owner_thread != nullptr)) {
-                owner_thread->RemoveWaiter(cur_thread);
             }
         }
     }
@@ -71,7 +77,7 @@ namespace ams::kern {
                     next_tag |= 0x1;
                 }
 
-                next_owner->SetState(KThread::ThreadState_Runnable);
+                next_owner->EndWait(ResultSuccess());
 
                 if (next_owner->IsSuspended()) {
                     next_owner->ContinueIfHasKernelWaiters();

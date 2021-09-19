@@ -37,6 +37,7 @@ namespace ams::kern {
             friend class KProcess;
             friend class KConditionVariable;
             friend class KAddressArbiter;
+            friend class KThreadQueue;
         public:
             static constexpr s32 MainThreadPriority = 1;
             static constexpr s32 IdleThreadPriority = 64;
@@ -191,7 +192,6 @@ namespace ams::kern {
             KAffinityMask                   m_physical_affinity_mask{};
             u64                             m_thread_id{};
             std::atomic<s64>                m_cpu_time{};
-            KSynchronizationObject         *m_synced_object{};
             KProcessAddress                 m_address_key{};
             KProcess                       *m_parent{};
             void                           *m_kernel_stack_top{};
@@ -204,9 +204,7 @@ namespace ams::kern {
             s64                             m_last_scheduled_tick{};
             QueueEntry                      m_per_core_priority_queue_entry[cpu::NumCores]{};
             KLightLock                     *m_waiting_lock{};
-
-            KThreadQueue                   *m_sleeping_queue{};
-
+            KThreadQueue                   *m_wait_queue{};
             WaiterList                      m_waiter_list{};
             WaiterList                      m_pinned_waiter_list{};
             KThread                        *m_lock_owner{};
@@ -215,6 +213,7 @@ namespace ams::kern {
             u32                             m_address_key_value{};
             u32                             m_suspend_request_flags{};
             u32                             m_suspend_allowed_flags{};
+            s32                             m_synced_index{};
             Result                          m_wait_result;
             Result                          m_debug_exception_result;
             s32                             m_base_priority{};
@@ -374,6 +373,8 @@ namespace ams::kern {
             void FinishTermination();
 
             void IncreaseBasePriority(s32 priority);
+
+            NOINLINE void SetState(ThreadState state);
         public:
             constexpr u64 GetThreadId() const { return m_thread_id; }
 
@@ -390,7 +391,6 @@ namespace ams::kern {
 
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(m_thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return m_thread_state; }
-            NOINLINE void SetState(ThreadState state);
 
             NOINLINE KThreadContext *GetContextForSchedulerLoop();
 
@@ -442,8 +442,6 @@ namespace ams::kern {
             constexpr QueueEntry &GetPriorityQueueEntry(s32 core) { return m_per_core_priority_queue_entry[core]; }
             constexpr const QueueEntry &GetPriorityQueueEntry(s32 core) const { return m_per_core_priority_queue_entry[core]; }
 
-            constexpr void SetSleepingQueue(KThreadQueue *q) { m_sleeping_queue = q; }
-
             constexpr ConditionVariableThreadTree *GetConditionVariableTree() const { return m_condvar_tree; }
 
             constexpr s32 GetNumKernelWaiters() const { return m_num_kernel_waiters; }
@@ -460,29 +458,22 @@ namespace ams::kern {
             constexpr void SetLockOwner(KThread *owner) { m_lock_owner = owner; }
             constexpr KThread *GetLockOwner() const { return m_lock_owner; }
 
-            constexpr void SetSyncedObject(KSynchronizationObject *obj, Result wait_res) {
-                MESOSPHERE_ASSERT_THIS();
+            constexpr void ClearWaitQueue() { m_wait_queue = nullptr; }
 
-                m_synced_object = obj;
-                m_wait_result = wait_res;
-            }
+            void BeginWait(KThreadQueue *queue);
+            void NotifyAvailable(KSynchronizationObject *signaled_object, Result wait_result);
+            void EndWait(Result wait_result);
+            void CancelWait(Result wait_result, bool cancel_timer_task);
 
-            constexpr Result GetWaitResult(KSynchronizationObject **out) const {
-                MESOSPHERE_ASSERT_THIS();
+            constexpr void SetSyncedIndex(s32 index) { m_synced_index = index; }
+            constexpr s32 GetSyncedIndex() const { return m_synced_index; }
 
-                *out = m_synced_object;
-                return m_wait_result;
-            }
+            constexpr void SetWaitResult(Result wait_res) { m_wait_result = wait_res; }
+            constexpr Result GetWaitResult() const { return m_wait_result; }
 
-            constexpr void SetDebugExceptionResult(Result result) {
-                MESOSPHERE_ASSERT_THIS();
-                m_debug_exception_result = result;
-            }
+            constexpr void SetDebugExceptionResult(Result result) { m_debug_exception_result = result; }
 
-            constexpr Result GetDebugExceptionResult() const {
-                MESOSPHERE_ASSERT_THIS();
-                return m_debug_exception_result;
-            }
+            constexpr Result GetDebugExceptionResult() const { return m_debug_exception_result; }
 
             void WaitCancel();
 
@@ -584,8 +575,6 @@ namespace ams::kern {
                     this->Continue();
                 }
             }
-
-            void Wakeup();
 
             void SetBasePriority(s32 priority);
             Result SetPriorityToIdle();

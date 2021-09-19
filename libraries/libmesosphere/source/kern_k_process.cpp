@@ -87,6 +87,29 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
+        class ThreadQueueImplForKProcessEnterUserException final : public KThreadQueue {
+            private:
+                KThread **m_exception_thread;
+            public:
+                constexpr ThreadQueueImplForKProcessEnterUserException(KThread **t) : KThreadQueue(), m_exception_thread(t) { /* ... */ }
+
+                virtual void EndWait(KThread *waiting_thread, Result wait_result) override {
+                    /* Set the exception thread. */
+                    *m_exception_thread = waiting_thread;
+
+                    /* Invoke the base end wait handler. */
+                    KThreadQueue::EndWait(waiting_thread, wait_result);
+                }
+
+                virtual void CancelWait(KThread *waiting_thread, Result wait_result, bool cancel_timer_task) override {
+                    /* Remove the thread as a waiter on its mutex owner. */
+                    waiting_thread->GetLockOwner()->RemoveWaiter(waiting_thread);
+
+                    /* Invoke the base cancel wait handler. */
+                    KThreadQueue::CancelWait(waiting_thread, wait_result, cancel_timer_task);
+                }
+        };
+
     }
 
     void KProcess::Finalize() {
@@ -784,43 +807,43 @@ namespace ams::kern {
         KThread *cur_thread = GetCurrentThreadPointer();
         MESOSPHERE_ASSERT(this == cur_thread->GetOwnerProcess());
 
-        /* Try to claim the exception thread. */
-        if (m_exception_thread != cur_thread) {
-            const uintptr_t address_key = reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread));
-            while (true) {
-                {
-                    KScopedSchedulerLock sl;
-
-                    /* If the thread is terminating, it can't enter. */
-                    if (cur_thread->IsTerminationRequested()) {
-                        return false;
-                    }
-
-                    /* If we have no exception thread, we succeeded. */
-                    if (m_exception_thread == nullptr) {
-                        m_exception_thread = cur_thread;
-                        KScheduler::SetSchedulerUpdateNeeded();
-                        return true;
-                    }
-
-                    /* Otherwise, wait for us to not have an exception thread. */
-                    cur_thread->SetAddressKey(address_key | 1);
-                    m_exception_thread->AddWaiter(cur_thread);
-                    cur_thread->SetState(KThread::ThreadState_Waiting);
-                }
-
-                /* Remove the thread as a waiter from the lock owner. */
-                {
-                    KScopedSchedulerLock sl;
-
-                    if (KThread *owner_thread = cur_thread->GetLockOwner(); owner_thread != nullptr) {
-                        owner_thread->RemoveWaiter(cur_thread);
-                    }
-                }
-            }
-        } else {
+        /* Check that we haven't already claimed the exception thread. */
+        if (m_exception_thread == cur_thread) {
             return false;
         }
+
+        /* Create the wait queue we'll be using. */
+        ThreadQueueImplForKProcessEnterUserException wait_queue(std::addressof(m_exception_thread));
+
+        /* Claim the exception thread. */
+        {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
+
+            /* Check that we're not terminating. */
+            if (cur_thread->IsTerminationRequested()) {
+                return false;
+            }
+
+            /* If we don't have an exception thread, we can just claim it directly. */
+            if (m_exception_thread == nullptr) {
+                m_exception_thread = cur_thread;
+                KScheduler::SetSchedulerUpdateNeeded();
+                return true;
+            }
+
+            /* Otherwise, we need to wait until we don't have an exception thread. */
+
+            /* Add the current thread as a waiter on the current exception thread. */
+            cur_thread->SetAddressKey(reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1);
+            m_exception_thread->AddWaiter(cur_thread);
+
+            /* Wait to claim the exception thread. */
+            cur_thread->BeginWait(std::addressof(wait_queue));
+        }
+
+        /* If our wait didn't end due to thread termination, we succeeded. */
+        return !svc::ResultTerminationRequested::Includes(cur_thread->GetWaitResult());
     }
 
     bool KProcess::LeaveUserException() {
@@ -836,7 +859,7 @@ namespace ams::kern {
             /* Remove waiter thread. */
             s32 num_waiters;
             if (KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_exception_thread)) | 1); next != nullptr) {
-                next->SetState(KThread::ThreadState_Runnable);
+                next->EndWait(ResultSuccess());
             }
 
             KScheduler::SetSchedulerUpdateNeeded();

@@ -30,6 +30,8 @@ namespace ams::kern {
 
         constexpr inline size_t PointerTransferBufferAlignment = 0x10;
 
+        class ThreadQueueImplForKServerSessionRequest final : public KThreadQueue { /* ... */ };
+
         class ReceiveList {
             private:
                 u32 m_data[ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountMax * ipc::MessageBuffer::ReceiveListEntry::GetDataSize() / sizeof(u32)];
@@ -1042,11 +1044,11 @@ namespace ams::kern {
                     /* Signal the event. */
                     event->Signal();
                 } else {
-                    /* Set the thread as runnable. */
+                    /* End the client thread's wait. */
                     KScopedSchedulerLock sl;
-                    if (client_thread->GetState() == KThread::ThreadState_Waiting) {
-                        client_thread->SetSyncedObject(nullptr, result_for_client);
-                        client_thread->SetState(KThread::ThreadState_Runnable);
+
+                    if (!client_thread->IsTerminationRequested()) {
+                        client_thread->EndWait(result_for_client);
                     }
                 }
             }
@@ -1146,11 +1148,11 @@ namespace ams::kern {
                 /* Signal the event. */
                 event->Signal();
             } else {
-                /* Set the thread as runnable. */
+                /* End the client thread's wait. */
                 KScopedSchedulerLock sl;
-                if (client_thread->GetState() == KThread::ThreadState_Waiting) {
-                    client_thread->SetSyncedObject(nullptr, client_result);
-                    client_thread->SetState(KThread::ThreadState_Runnable);
+
+                if (!client_thread->IsTerminationRequested()) {
+                    client_thread->EndWait(client_result);
                 }
             }
         }
@@ -1160,31 +1162,41 @@ namespace ams::kern {
 
     Result KServerSession::OnRequest(KSessionRequest *request) {
         MESOSPHERE_ASSERT_THIS();
-        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
-        /* Ensure that we can handle new requests. */
-        R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
+        /* Create the wait queue. */
+        ThreadQueueImplForKServerSessionRequest wait_queue;
 
-        /* If there's no event, this is synchronous, so we should check for thread termination. */
-        if (request->GetEvent() == nullptr) {
-            KThread *thread = request->GetThread();
-            R_UNLESS(!thread->IsTerminationRequested(), svc::ResultTerminationRequested());
-            thread->SetState(KThread::ThreadState_Waiting);
+        /* Handle the request. */
+        {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
+
+            /* Ensure that we can handle new requests. */
+            R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
+
+            /* Check that we're not terminating. */
+            R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
+
+            /* Get whether we're empty. */
+            const bool was_empty = m_request_list.empty();
+
+            /* Add the request to the list. */
+            request->Open();
+            m_request_list.push_back(*request);
+
+            /* If we were empty, signal. */
+            if (was_empty) {
+                this->NotifyAvailable();
+            }
+
+            /* If we have a request, this is asynchronous, and we don't need to wait. */
+            R_SUCCEED_IF(request->GetEvent() != nullptr);
+
+            /* This is a synchronous request, so we should wait for our request to complete. */
+            GetCurrentThread().BeginWait(std::addressof(wait_queue));
         }
 
-        /* Get whether we're empty. */
-        const bool was_empty = m_request_list.empty();
-
-        /* Add the request to the list. */
-        request->Open();
-        m_request_list.push_back(*request);
-
-        /* If we were empty, signal. */
-        if (was_empty) {
-            this->NotifyAvailable();
-        }
-
-        return ResultSuccess();
+        return GetCurrentThread().GetWaitResult();
     }
 
     bool KServerSession::IsSignaledImpl() const {
@@ -1264,11 +1276,11 @@ namespace ams::kern {
                     /* Signal the event. */
                     event->Signal();
                 } else {
-                    /* Set the thread as runnable. */
+                    /* End the client thread's wait. */
                     KScopedSchedulerLock sl;
-                    if (client_thread->GetState() == KThread::ThreadState_Waiting) {
-                        client_thread->SetSyncedObject(nullptr, (R_SUCCEEDED(result) ? svc::ResultSessionClosed() : result));
-                        client_thread->SetState(KThread::ThreadState_Runnable);
+
+                    if (!client_thread->IsTerminationRequested()) {
+                        client_thread->EndWait(R_SUCCEEDED(result) ? svc::ResultSessionClosed() : result);
                     }
                 }
             }
@@ -1310,6 +1322,7 @@ namespace ams::kern {
                         request->ClearEvent();
                         terminate = true;
                     }
+
                     prev_request = request;
                 } else if (!m_request_list.empty()) {
                     /* Pop the request from the front of the list. */
