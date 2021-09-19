@@ -40,7 +40,6 @@ namespace ams::ncm {
             }
         public:
             HostContentStorageImpl(RegisteredHostContent *registered_content) : registered_content(registered_content), disabled(false) { /* ... */ }
-            ~HostContentStorageImpl();
         public:
             /* Actual commands. */
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);

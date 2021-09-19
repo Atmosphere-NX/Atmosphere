@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 
 namespace ams::ncm {
-    
+
     class RegisteredHostContent::RegisteredPath : public util::IntrusiveListBaseNode<RegisteredPath> {
         NON_COPYABLE(RegisteredPath);
         NON_MOVEABLE(RegisteredPath);
@@ -24,8 +24,8 @@ namespace ams::ncm {
             ContentId content_id;
             Path path;
         public:
-            RegisteredPath(const ncm::ContentId &content_id, const Path &p) : content_id(content_id), path(p) { 
-                /* ... */ 
+            RegisteredPath(const ncm::ContentId &content_id, const Path &p) : content_id(content_id), path(p) {
+                /* ... */
             }
 
             ncm::ContentId GetContentId() const {
@@ -40,6 +40,10 @@ namespace ams::ncm {
                 this->path = path;
             }
     };
+
+    RegisteredHostContent::~RegisteredHostContent() {
+        /* ... */
+    }
 
     Result RegisteredHostContent::RegisterPath(const ncm::ContentId &content_id, const ncm::Path &path) {
         std::scoped_lock lk(this->mutex);
