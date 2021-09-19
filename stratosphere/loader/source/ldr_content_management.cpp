@@ -86,7 +86,7 @@ namespace ams::ldr {
         lr::Path path;
 
         /* Check that path registration is allowable. */
-        if (loc.storage_id == ncm::StorageId::Host) {
+        if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::Host) {
             AMS_ABORT_UNLESS(spl::IsDevelopment());
         }
 
