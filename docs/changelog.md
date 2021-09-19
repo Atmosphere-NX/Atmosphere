@@ -1,4 +1,20 @@
 # Changelog
+## 1.1.0
++ Support was implemented for 13.0.0.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `ncm` was updated to reflect the latest official behaviors.
+  + `erpt` was  updated to reflect the latest official behaviors.
+    + Two new services ("sprofile") were added to `erpt`, and have been fully reimplemented.
+    + **Please Note**: These services provide a way for settings to be pushed to consoles over the internet without system update.
+      + Because there appear to be no settings pushed out yet, this implementation fundamentally cannot be fully tested right now, but hopefully there are no issues once settings begin being distributed.
++ The `LogManager` system module was reimplemented.
+  + This system module provides services that some games use for logging.
+  + Atmosphere's reimplementation supports logging to the SD card (if `lm!enable_sd_card_logging` is true) and to ams.TMA.
+    + To control the directory where logs are saved, modify the `lm!sd_card_log_output_directory` setting.
+  + Atmosphere's reimplementation is disabled by default (in order to save memory), but can be enabled by setting `lm!enable_log_manager` to true.
+    + This will allow reading over logs from games which use the services (or potentially logging from homebrew in the future), which can be useful to developers.
+    + Please note that when TMA is fully implemented in the future, enabling TMA will forcibly enable `LogManager`.
++ General system stability improvements to enhance the user's experience.
 ## 1.0.0
 + `fusee` was completely re-written in C++ to use the same atmosphere-libs APIs as the rest of atmosphere's code.
   + The rewrite was performed with a big emphasis on ensuring a good boot speed, and generally boot should be much faster than it was previously.
