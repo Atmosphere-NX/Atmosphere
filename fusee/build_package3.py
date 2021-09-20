@@ -15,12 +15,12 @@ def read_file(fn):
 
 def pad(data, size):
     assert len(data) <= size
-    return (data + '\x00' * size)[:size]
+    return (data + b'\x00' * size)[:size]
 
 def get_overlay(program, i):
     return program[0x2B000 + 0x14000 * i:0x2B000 + 0x14000 * (i+1)]
 
-KIP_NAMES = ['Loader', 'NCM', 'ProcessManager', 'sm', 'boot', 'spl', 'ams_mitm']
+KIP_NAMES = [b'Loader', b'NCM', b'ProcessManager', b'sm', b'boot', b'spl', b'ams_mitm']
 
 def get_kips(ams_dir):
     emummc   = read_file(os.path.join(ams_dir, 'emummc/emummc_unpacked.kip'))
@@ -32,13 +32,13 @@ def get_kips(ams_dir):
     spl      = read_file(os.path.join(ams_dir, 'stratosphere/spl/spl.kip'))
     ams_mitm = read_file(os.path.join(ams_dir, 'stratosphere/ams_mitm/ams_mitm.kip'))
     return (emummc, {
-        'Loader' : loader,
-        'NCM' : ncm,
-        'ProcessManager' : pm,
-        'sm' : sm,
-        'boot' : boot,
-        'spl' : spl,
-        'ams_mitm' : ams_mitm,
+        b'Loader' : loader,
+        b'NCM' : ncm,
+        b'ProcessManager' : pm,
+        b'sm' : sm,
+        b'boot' : boot,
+        b'spl' : spl,
+        b'ams_mitm' : ams_mitm,
     })
 
 def write_kip_meta(f, kip, ofs):
@@ -81,14 +81,14 @@ def write_header(f, all_kips, wb_size, tk_size, xf_size, ex_size, ms_size, fs_si
     # Write git_revision;
     f.write(pk('<I', git_revision))
     # Write content metas
-    f.write(pk('<IIBBBBI16s', 0x000800, wb_size,  2, 0, 0, 0, 0xCCCCCCCC, 'warmboot'))
-    f.write(pk('<IIBBBBI16s', 0x002000, tk_size, 12, 0, 0, 0, 0xCCCCCCCC, 'tsec_keygen'))
-    f.write(pk('<IIBBBBI16s', 0x004000, xf_size, 11, 0, 0, 0, 0xCCCCCCCC, 'exosphere_fatal'))
-    f.write(pk('<IIBBBBI16s', 0x048000, ex_size,  1, 0, 0, 0, 0xCCCCCCCC, 'exosphere'))
-    f.write(pk('<IIBBBBI16s', 0x056000, ms_size, 10, 0, 0, 0, 0xCCCCCCCC, 'mesosphere'))
-    f.write(pk('<IIBBBBI16s', 0x7C0000, fs_size,  0, 0, 0, 0, 0xCCCCCCCC, 'fusee'))
-    f.write(pk('<IIBBBBI16s', 0x7E0000, rb_size,  3, 0, 0, 0, 0xCCCCCCCC, 'rebootstub'))
-    f.write(pk('<IIBBBBI16s', 0x100000, len(emummc),  8, 0, 0, 0, 0xCCCCCCCC, 'emummc'))
+    f.write(pk('<IIBBBBI16s', 0x000800, wb_size,  2, 0, 0, 0, 0xCCCCCCCC, b'warmboot'))
+    f.write(pk('<IIBBBBI16s', 0x002000, tk_size, 12, 0, 0, 0, 0xCCCCCCCC, b'tsec_keygen'))
+    f.write(pk('<IIBBBBI16s', 0x004000, xf_size, 11, 0, 0, 0, 0xCCCCCCCC, b'exosphere_fatal'))
+    f.write(pk('<IIBBBBI16s', 0x048000, ex_size,  1, 0, 0, 0, 0xCCCCCCCC, b'exosphere'))
+    f.write(pk('<IIBBBBI16s', 0x056000, ms_size, 10, 0, 0, 0, 0xCCCCCCCC, b'mesosphere'))
+    f.write(pk('<IIBBBBI16s', 0x7C0000, fs_size,  0, 0, 0, 0, 0xCCCCCCCC, b'fusee'))
+    f.write(pk('<IIBBBBI16s', 0x7E0000, rb_size,  3, 0, 0, 0, 0xCCCCCCCC, b'rebootstub'))
+    f.write(pk('<IIBBBBI16s', 0x100000, len(emummc),  8, 0, 0, 0, 0xCCCCCCCC, b'emummc'))
     ofs = (0x100000 + len(emummc) + 0xF) & ~0xF
     for kip_name in KIP_NAMES:
         kip_data = kips[kip_name]
@@ -119,7 +119,7 @@ def write_kips(f, all_kips):
     # Write kips
     tot = len(emummc)
     if (tot & 0xF):
-        f.write('\xCC' * (0x10 - (tot & 0xF)))
+        f.write(b'\xCC' * (0x10 - (tot & 0xF)))
         tot += 0xF
         tot &= ~0xF
     for kip_name in KIP_NAMES:
@@ -127,7 +127,7 @@ def write_kips(f, all_kips):
         f.write(kip_data)
         tot += len(kip_data)
         if (tot & 0xF):
-            f.write('\xCC' * (0x10 - (tot & 0xF)))
+            f.write(b'\xCC' * (0x10 - (tot & 0xF)))
             tot += 0xF
             tot &= ~0xF
     # Pad to 3 MB
