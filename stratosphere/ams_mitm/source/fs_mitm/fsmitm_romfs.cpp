@@ -197,6 +197,7 @@ namespace ams::mitm::fs {
 
                     ~TableWriter() {
                         this->Flush();
+                        std::free(this->cache);
                     }
 
                     Entry *GetEntry(u32 entry_offset, u32 name_len) {
