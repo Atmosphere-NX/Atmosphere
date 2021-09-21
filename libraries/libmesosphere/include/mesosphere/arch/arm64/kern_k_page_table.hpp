@@ -22,9 +22,11 @@
 
 namespace ams::kern::arch::arm64 {
 
-    class KPageTable : public KPageTableBase {
+    class KPageTable final : public KPageTableBase {
         NON_COPYABLE(KPageTable);
         NON_MOVEABLE(KPageTable);
+        private:
+            friend class KPageTableBase;
         public:
             using TraversalEntry   = KPageTableImpl::TraversalEntry;
             using TraversalContext = KPageTableImpl::TraversalContext;
@@ -96,9 +98,9 @@ namespace ams::kern::arch::arm64 {
             u64 m_ttbr;
             u8 m_asid;
         protected:
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
-            virtual void   FinalizeUpdate(PageLinkedList *page_list) override;
+            Result OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            Result OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            void FinalizeUpdateImpl(PageLinkedList *page_list);
 
             KPageTableManager &GetPageTableManager() const { return *m_manager; }
         private:

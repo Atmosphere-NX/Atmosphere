@@ -319,7 +319,7 @@ namespace ams::kern::arch::arm64 {
         return ResultSuccess();
     }
 
-    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+    Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
         /* Check validity of parameters. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(num_pages > 0);
@@ -350,7 +350,7 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+    Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
         /* Check validity of parameters. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
@@ -1429,7 +1429,7 @@ namespace ams::kern::arch::arm64 {
         return ResultSuccess();
     }
 
-    void KPageTable::FinalizeUpdate(PageLinkedList *page_list) {
+    void KPageTable::FinalizeUpdateImpl(PageLinkedList *page_list) {
         while (page_list->Peek()) {
             KVirtualAddress page = KVirtualAddress(page_list->Pop());
             MESOSPHERE_ASSERT(this->GetPageTableManager().IsInPageTableHeap(page));

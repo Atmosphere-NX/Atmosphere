@@ -217,9 +217,13 @@ namespace ams::kern {
             size_t GetRegionSize(KMemoryState state) const;
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;
         protected:
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
-            virtual void   FinalizeUpdate(PageLinkedList *page_list) = 0;
+            /* NOTE: These three functions (Operate, Operate, FinalizeUpdate) are virtual functions */
+            /* in Nintendo's kernel. We devirtualize them, since KPageTable is the only derived */
+            /* class, and this avoids unnecessary virtual function calls. See "kern_select_page_table.hpp" */
+            /* for definition of these functions. */
+            Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            void FinalizeUpdate(PageLinkedList *page_list);
 
             ALWAYS_INLINE KPageTableImpl &GetImpl() { return m_impl; }
             ALWAYS_INLINE const KPageTableImpl &GetImpl() const { return m_impl; }

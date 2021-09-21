@@ -32,3 +32,24 @@
     #error "Unknown architecture for KPageTable"
 
 #endif
+
+namespace ams::kern {
+
+    /* NOTE: These three functions (Operate, Operate, FinalizeUpdate) are virtual functions */
+    /* in Nintendo's kernel. We devirtualize them, since KPageTable is the only derived */
+    /* class, and this avoids unnecessary virtual function calls. */
+    static_assert(std::derived_from<KPageTable, KPageTableBase>);
+
+    ALWAYS_INLINE Result KPageTableBase::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+        return static_cast<KPageTable *>(this)->OperateImpl(page_list, virt_addr, num_pages, phys_addr, is_pa_valid, properties, operation, reuse_ll);
+    }
+
+    ALWAYS_INLINE Result KPageTableBase::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+        return static_cast<KPageTable *>(this)->OperateImpl(page_list, virt_addr, num_pages, page_group, properties, operation, reuse_ll);
+    }
+
+    ALWAYS_INLINE void KPageTableBase::FinalizeUpdate(PageLinkedList *page_list) {
+        return static_cast<KPageTable *>(this)->FinalizeUpdateImpl(page_list);
+    }
+
+}
