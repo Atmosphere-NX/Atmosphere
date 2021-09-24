@@ -1,4 +1,7 @@
 # Changelog
+## 1.1.1
++ A bug was fixed which caused some memory to leak when launching a game with mods enabled, eventually causing a crash after enough game launches without rebooting.
++ General system stability improvements to enhance the user's experience.
 ## 1.1.0
 + Support was implemented for 13.0.0.
   + `mesosphère` was updated to reflect the latest official kernel behavior.
