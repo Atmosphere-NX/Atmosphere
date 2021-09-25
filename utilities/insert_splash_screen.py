@@ -16,7 +16,7 @@ def convert_image(image_fn):
     assert w == 720
     assert h == 1280
     splash = splash.convert('RGBA')
-    splash_bin = b''
+    splash_bin = bytearray()
     for row in range(SPLASH_SCREEN_WIDTH):
         for col in range(SPLASH_SCREEN_HEIGHT):
             r, g, b, a = splash.getpixel((col, row))
