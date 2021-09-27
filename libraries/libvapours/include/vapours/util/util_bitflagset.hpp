@@ -25,35 +25,35 @@ namespace ams::util {
     namespace impl {
 
         template<size_t Count, typename Storage>
-        constexpr void NegateImpl(Storage arr[]) {
+        constexpr ALWAYS_INLINE void NegateImpl(Storage arr[]) {
             for (size_t i = 0; i < Count; i++) {
                 arr[i] = ~arr[i];
             }
         }
 
         template<size_t Count, typename Storage>
-        constexpr void AndImpl(Storage dst[], const Storage src[]) {
+        constexpr ALWAYS_INLINE void AndImpl(Storage dst[], const Storage src[]) {
             for (size_t i = 0; i < Count; i++) {
                 dst[i] &= src[i];
             }
         }
 
         template<size_t Count, typename Storage>
-        constexpr void OrImpl(Storage dst[], const Storage src[]) {
+        constexpr ALWAYS_INLINE void OrImpl(Storage dst[], const Storage src[]) {
             for (size_t i = 0; i < Count; i++) {
                 dst[i] |= src[i];
             }
         }
 
         template<size_t Count, typename Storage>
-        constexpr void XorImpl(Storage dst[], const Storage src[]) {
+        constexpr ALWAYS_INLINE void XorImpl(Storage dst[], const Storage src[]) {
             for (size_t i = 0; i < Count; i++) {
                 dst[i] ^= src[i];
             }
         }
 
         template<size_t Count, typename Storage>
-        constexpr bool IsEqual(const Storage lhs[], const Storage rhs[]) {
+        constexpr ALWAYS_INLINE bool IsEqual(const Storage lhs[], const Storage rhs[]) {
             for (size_t i = 0; i < Count; i++) {
                 if (lhs[i] != rhs[i]) {
                     return false;
@@ -63,7 +63,7 @@ namespace ams::util {
         }
 
         template<size_t Count, typename Storage>
-        constexpr bool IsAnySet(const Storage arr[]) {
+        constexpr ALWAYS_INLINE bool IsAnySet(const Storage arr[]) {
             for (size_t i = 0; i < Count; i++) {
                 if (arr[i]) {
                     return true;
@@ -73,7 +73,7 @@ namespace ams::util {
         }
 
         template<size_t Count, typename Storage>
-        constexpr int PopCount(const Storage arr[]) {
+        constexpr ALWAYS_INLINE int PopCount(const Storage arr[]) {
             int count = 0;
             for (size_t i = 0; i < Count; i++) {
                 count += ::ams::util::PopCount(arr[i]);
@@ -91,7 +91,7 @@ namespace ams::util {
         static constexpr size_t StorageCount    = util::AlignUp(N, StorageBitCount) / StorageBitCount;
         Storage _storage[StorageCount];
         private:
-            constexpr BitFlagSet<N, T> &SetImpl(s32 idx, Storage mask, bool en) {
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &SetImpl(s32 idx, Storage mask, bool en) {
                 if (en) {
                     this->_storage[idx] |= mask;
                 } else {
@@ -100,13 +100,13 @@ namespace ams::util {
                 return *this;
             }
 
-            constexpr bool TestImpl(s32 idx, Storage mask) const { return (this->_storage[idx] & mask) != 0; }
-            constexpr void Truncate() { TruncateIf(std::integral_constant<bool, N % StorageBitCount != 0>{}); }
-            constexpr void TruncateIf(std::true_type) { this->_storage[StorageCount - 1] &= MakeStorageMask(N) - 1; }
-            constexpr void TruncateIf(std::false_type) { /* ... */ }
+            constexpr ALWAYS_INLINE bool TestImpl(s32 idx, Storage mask) const { return (this->_storage[idx] & mask) != 0; }
+            constexpr ALWAYS_INLINE void Truncate() { TruncateIf(std::integral_constant<bool, N % StorageBitCount != 0>{}); }
+            constexpr ALWAYS_INLINE void TruncateIf(std::true_type) { this->_storage[StorageCount - 1] &= MakeStorageMask(N) - 1; }
+            constexpr ALWAYS_INLINE void TruncateIf(std::false_type) { /* ... */ }
 
-            static constexpr s32 GetStorageIndex(s32 idx) { return idx / StorageBitCount; }
-            static constexpr Storage MakeStorageMask(s32 idx) { return static_cast<Storage>(1) << (idx % StorageBitCount); }
+            static constexpr ALWAYS_INLINE s32 GetStorageIndex(s32 idx) { return idx / StorageBitCount; }
+            static constexpr ALWAYS_INLINE Storage MakeStorageMask(s32 idx) { return static_cast<Storage>(1) << (idx % StorageBitCount); }
         public:
             class Reference {
                 friend struct BitFlagSet<N, T>;
@@ -114,14 +114,14 @@ namespace ams::util {
                     BitFlagSet<N, T> *set;
                     s32 idx;
                 private:
-                    constexpr Reference() : set(nullptr), idx(0) { /* ... */ }
-                    constexpr Reference(BitFlagSet<N, T> &s, s32 i) : set(std::addressof(s)), idx(i) { /* ... */ }
+                    constexpr ALWAYS_INLINE Reference() : set(nullptr), idx(0) { /* ... */ }
+                    constexpr ALWAYS_INLINE Reference(BitFlagSet<N, T> &s, s32 i) : set(std::addressof(s)), idx(i) { /* ... */ }
                 public:
-                    constexpr Reference &operator=(bool en) { this->set->Set(this->idx, en); return *this; }
-                    constexpr Reference &operator=(const Reference &r) { this->set->Set(this->idx, r); return *this; }
-                    constexpr Reference &Negate() { this->set->Negate(this->idx); return *this; }
-                    constexpr operator bool() const { return this->set->Test(this->idx); }
-                    constexpr bool operator~() const { return !this->set->Test(this->idx); }
+                    constexpr ALWAYS_INLINE Reference &operator=(bool en) { this->set->Set(this->idx, en); return *this; }
+                    constexpr ALWAYS_INLINE Reference &operator=(const Reference &r) { this->set->Set(this->idx, r); return *this; }
+                    constexpr ALWAYS_INLINE Reference &Negate() { this->set->Negate(this->idx); return *this; }
+                    constexpr ALWAYS_INLINE operator bool() const { return this->set->Test(this->idx); }
+                    constexpr ALWAYS_INLINE bool operator~() const { return !this->set->Test(this->idx); }
             };
 
             template<s32 _Index>
@@ -142,45 +142,46 @@ namespace ams::util {
             };
 
             template<typename FlagType>
-            constexpr bool Test()       const { return this->TestImpl(FlagType::StorageIndex, FlagType::StorageMask); }
-            constexpr bool Test(s32 idx) const { return this->TestImpl(GetStorageIndex(idx), MakeStorageMask(idx)); }
+            constexpr ALWAYS_INLINE bool Test()       const { return this->TestImpl(FlagType::StorageIndex, FlagType::StorageMask); }
+            constexpr ALWAYS_INLINE bool Test(s32 idx) const { return this->TestImpl(GetStorageIndex(idx), MakeStorageMask(idx)); }
 
             template<typename FlagType>
-            constexpr BitFlagSet<N, T> &Set(bool en = true) { return this->SetImpl(FlagType::StorageIndex, FlagType::StorageMask, en); }
-            constexpr BitFlagSet<N, T> &Set(s32 idx, bool en = true) { return this->SetImpl(GetStorageIndex(idx), MakeStorageMask(idx), en); }
-            constexpr BitFlagSet<N, T> &Set() { std::memset(this->_storage, ~0, sizeof(this->_storage)); this->Truncate(); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Set(bool en = true) { return this->SetImpl(FlagType::StorageIndex, FlagType::StorageMask, en); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Set(s32 idx, bool en = true) { return this->SetImpl(GetStorageIndex(idx), MakeStorageMask(idx), en); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Set() { std::memset(this->_storage, ~0, sizeof(this->_storage)); this->Truncate(); return *this; }
 
             template<typename FlagType>
-            constexpr BitFlagSet<N, T> &Reset() { return this->Set<FlagType>(false); }
-            constexpr BitFlagSet<N, T> &Reset(s32 idx) { return this->Set(idx, false); }
-            constexpr BitFlagSet<N, T> &Reset() { std::memset(this->_storage, 0, sizeof(this->_storage)); this->Truncate(); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Reset() { return this->Set<FlagType>(false); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Reset(s32 idx) { return this->Set(idx, false); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Reset() { std::memset(this->_storage, 0, sizeof(this->_storage)); this->Truncate(); return *this; }
 
             template<typename FlagType>
-            constexpr BitFlagSet<N, T> &Negate() { return this->Set<FlagType>(!this->Test<FlagType>()); }
-            constexpr BitFlagSet<N, T> &Negate(s32 idx) { return this->Set(idx, !this->Test(idx)); }
-            constexpr BitFlagSet<N, T> &Negate() { ams::util::impl::NegateImpl<StorageCount>(this->_storage); this->Truncate(); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Negate() { return this->Set<FlagType>(!this->Test<FlagType>()); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Negate(s32 idx) { return this->Set(idx, !this->Test(idx)); }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &Negate() { ams::util::impl::NegateImpl<StorageCount>(this->_storage); this->Truncate(); return *this; }
 
-            constexpr int GetCount()  const { return static_cast<int>(N); }
-            constexpr bool IsAnySet() const { return ams::util::impl::IsAnySet<StorageCount>(this->_storage); }
-            constexpr int  PopCount() const { return ams::util::impl::PopCount<StorageCount>(this->_storage); }
-            constexpr bool IsAllSet() const { return this->PopCount() == this->GetCount(); }
-            constexpr bool IsAllOff() const { return !this->IsAnySet(); }
+            consteval static int GetCount() { return static_cast<int>(N); }
 
-            constexpr bool operator[](s32 idx) const { return this->Test(idx); }
-            constexpr Reference operator[](s32 idx) { return Reference(*this, idx); }
+            constexpr ALWAYS_INLINE bool IsAnySet() const { return ams::util::impl::IsAnySet<StorageCount>(this->_storage); }
+            constexpr ALWAYS_INLINE int  PopCount() const { return ams::util::impl::PopCount<StorageCount>(this->_storage); }
+            constexpr ALWAYS_INLINE bool IsAllSet() const { return this->PopCount() == this->GetCount(); }
+            constexpr ALWAYS_INLINE bool IsAllOff() const { return !this->IsAnySet(); }
 
-            constexpr bool operator==(const BitFlagSet<N, T> &rhs) const { return ams::util::impl::IsEqual<StorageCount>(this->_storage, rhs._storage); }
-            constexpr bool operator!=(const BitFlagSet<N, T> &rhs) const { return !(*this == rhs); }
+            constexpr ALWAYS_INLINE bool operator[](s32 idx) const { return this->Test(idx); }
+            constexpr ALWAYS_INLINE Reference operator[](s32 idx) { return Reference(*this, idx); }
 
-            constexpr BitFlagSet<N, T> operator~() const { BitFlagSet<N, T> tmp = *this; return tmp.Negate(); }
+            constexpr ALWAYS_INLINE bool operator==(const BitFlagSet<N, T> &rhs) const { return ams::util::impl::IsEqual<StorageCount>(this->_storage, rhs._storage); }
+            constexpr ALWAYS_INLINE bool operator!=(const BitFlagSet<N, T> &rhs) const { return !(*this == rhs); }
 
-            constexpr BitFlagSet<N, T> operator&(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v &= rhs; return v; }
-            constexpr BitFlagSet<N, T> operator^(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v ^= rhs; return v; }
-            constexpr BitFlagSet<N, T> operator|(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v |= rhs; return v; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> operator~() const { BitFlagSet<N, T> tmp = *this; return tmp.Negate(); }
 
-            constexpr BitFlagSet<N, T> &operator&=(const BitFlagSet<N, T> &rhs) { ams::util::impl::AndImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
-            constexpr BitFlagSet<N, T> &operator^=(const BitFlagSet<N, T> &rhs) { ams::util::impl::XorImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
-            constexpr BitFlagSet<N, T> &operator|=(const BitFlagSet<N, T> &rhs) { ams::util::impl::OrImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> operator&(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v &= rhs; return v; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> operator^(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v ^= rhs; return v; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> operator|(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v |= rhs; return v; }
+
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &operator&=(const BitFlagSet<N, T> &rhs) { ams::util::impl::AndImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &operator^=(const BitFlagSet<N, T> &rhs) { ams::util::impl::XorImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr ALWAYS_INLINE BitFlagSet<N, T> &operator|=(const BitFlagSet<N, T> &rhs) { ams::util::impl::OrImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
     };
 
     template<size_t N, typename T>

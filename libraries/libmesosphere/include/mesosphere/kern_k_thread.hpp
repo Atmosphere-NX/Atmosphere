@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_svc.hpp>
 #include <mesosphere/kern_slab_helpers.hpp>
 #include <mesosphere/kern_k_synchronization_object.hpp>
 #include <mesosphere/kern_k_affinity_mask.hpp>
@@ -84,7 +85,7 @@ namespace ams::kern {
             };
 
             struct StackParameters {
-                alignas(0x10) u8 svc_permission[0x18];
+                alignas(0x10) svc::SvcAccessFlagSet svc_access_flags;
                 KThreadContext *context;
                 KThread *cur_thread;
                 s16 disable_count;
@@ -100,7 +101,7 @@ namespace ams::kern {
             static_assert(alignof(StackParameters) == 0x10);
             static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
 
-            static_assert(__builtin_offsetof(StackParameters, svc_permission)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
+            static_assert(__builtin_offsetof(StackParameters, svc_access_flags)        == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
             static_assert(__builtin_offsetof(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
             static_assert(__builtin_offsetof(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
             static_assert(__builtin_offsetof(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);

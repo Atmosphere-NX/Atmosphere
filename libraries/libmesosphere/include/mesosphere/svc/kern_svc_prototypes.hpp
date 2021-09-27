@@ -45,5 +45,8 @@ namespace ams::kern::svc {
     #undef AMS_KERN_SVC_DECLARE_PROTOTYPE_64
     #undef AMS_KERN_SVC_DECLARE_PROTOTYPE_64_FROM_32
 
+    struct SvcAccessFlagSetTag{};
+
+    using SvcAccessFlagSet = util::BitFlagSet<NumSupervisorCalls, SvcAccessFlagSetTag>;
 
 }
