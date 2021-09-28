@@ -38,7 +38,7 @@ namespace ams::os::impl {
             constexpr InternalCriticalSectionImpl() : thread_handle(svc::InvalidHandle) { /* ... */ }
 
             constexpr void Initialize() { this->thread_handle = svc::InvalidHandle; }
-            constexpr void Finalize() { /* ... */}
+            constexpr void Finalize() { /* ... */ }
 
             void Enter();
             bool TryEnter();
