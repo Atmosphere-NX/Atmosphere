@@ -45,6 +45,6 @@
 #include <stratosphere/os/os_thread.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
 #include <stratosphere/os/os_light_event.hpp>
-//#include <stratosphere/os/os_light_message_queue.hpp>
+#include <stratosphere/os/os_light_message_queue.hpp>
 //#include <stratosphere/os/os_light_semaphore.hpp>
 #include <stratosphere/os/os_waitable.hpp>
