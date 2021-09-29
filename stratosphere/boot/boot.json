@@ -58,6 +58,7 @@
                 "svcGetInfo": "0x29",
                 "svcWaitForAddress": "0x34",
                 "svcSignalToAddress": "0x35",
+                "svcSynchronizePreemptionState": "0x36",
                 "svcReadWriteRegister": "0x4E",
                 "svcCreateInterruptEvent": "0x53",
                 "svcQueryIoMapping": "0x55",

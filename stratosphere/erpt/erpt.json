@@ -72,6 +72,7 @@
 				"svcWaitForAddress":	"0x34",
 				"svcGetResourceLimitLimitValue":	"0x30",
 				"svcSignalToAddress":	"0x35",
+                "svcSynchronizePreemptionState": "0x36",
 				"svcGetResourceLimitPeakValue":	"0x37",
 				"svcCreateSession":	"0x40",
 				"svcAcceptSession":	"0x41",

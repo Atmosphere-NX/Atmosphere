@@ -60,6 +60,7 @@
                 "svcGetResourceLimitCurrentValue":	"0x31",
                 "svcWaitForAddress":	"0x34",
                 "svcSignalToAddress":	"0x35",
+                "svcSynchronizePreemptionState": "0x36",
                 "svcCreateSession":	"0x40",
                 "svcAcceptSession":	"0x41",
                 "svcReplyAndReceiveLight":	"0x42",

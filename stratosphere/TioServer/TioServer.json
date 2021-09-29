@@ -71,6 +71,7 @@
 				"svcGetInfo":	"0x29",
 				"svcWaitForAddress":	"0x34",
 				"svcSignalToAddress":	"0x35",
+                "svcSynchronizePreemptionState": "0x36",
                 "svcCallSecureMonitor":	"0x7f"
 			}
 		}, {
