@@ -46,17 +46,17 @@ namespace ams::os {
                 return TimedSendMessageQueue(std::addressof(this->mq), data, timeout);
             }
 
-            /* Sending (LIFO functionality) */
-            void SendNext(uintptr_t data) {
-                return SendNextMessageQueue(std::addressof(this->mq), data);
+            /* Jamming (LIFO functionality) */
+            void Jam(uintptr_t data) {
+                return JamMessageQueue(std::addressof(this->mq), data);
             }
 
-            bool TrySendNext(uintptr_t data) {
-                return TrySendNextMessageQueue(std::addressof(this->mq), data);
+            bool TryJam(uintptr_t data) {
+                return TryJamMessageQueue(std::addressof(this->mq), data);
             }
 
-            bool TimedSendNext(uintptr_t data, TimeSpan timeout) {
-                return TimedSendNextMessageQueue(std::addressof(this->mq), data, timeout);
+            bool TimedJam(uintptr_t data, TimeSpan timeout) {
+                return TimedJamMessageQueue(std::addressof(this->mq), data, timeout);
             }
 
             /* Receive functionality */

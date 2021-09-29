@@ -31,10 +31,10 @@ namespace ams::os {
     bool TrySendMessageQueue(MessageQueueType *mq, uintptr_t data);
     bool TimedSendMessageQueue(MessageQueueType *mq, uintptr_t data, TimeSpan timeout);
 
-    /* Sending (LIFO functionality) */
-    void SendNextMessageQueue(MessageQueueType *mq, uintptr_t data);
-    bool TrySendNextMessageQueue(MessageQueueType *mq, uintptr_t data);
-    bool TimedSendNextMessageQueue(MessageQueueType *mq, uintptr_t data, TimeSpan timeout);
+    /* Jamming (LIFO functionality) */
+    void JamMessageQueue(MessageQueueType *mq, uintptr_t data);
+    bool TryJamMessageQueue(MessageQueueType *mq, uintptr_t data);
+    bool TimedJamMessageQueue(MessageQueueType *mq, uintptr_t data, TimeSpan timeout);
 
     /* Receive functionality */
     void ReceiveMessageQueue(uintptr_t *out, MessageQueueType *mq);
