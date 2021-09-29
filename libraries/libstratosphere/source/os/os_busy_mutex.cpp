@@ -24,7 +24,6 @@
 
 namespace ams::os {
 
-
     void InitializeBusyMutex(BusyMutexType *mutex) {
         /* Create object. */
         util::ConstructAt(mutex->_storage);

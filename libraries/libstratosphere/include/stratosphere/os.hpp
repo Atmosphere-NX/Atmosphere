@@ -31,7 +31,7 @@
 #include <stratosphere/os/os_sdk_mutex.hpp>
 #include <stratosphere/os/os_sdk_condition_variable.hpp>
 #include <stratosphere/os/os_busy_mutex.hpp>
-//#include <stratosphere/os/os_rw_busy_mutex.hpp>
+#include <stratosphere/os/os_rw_busy_mutex.hpp>
 #include <stratosphere/os/os_rw_lock.hpp>
 #include <stratosphere/os/os_transfer_memory.hpp>
 #include <stratosphere/os/os_semaphore.hpp>
