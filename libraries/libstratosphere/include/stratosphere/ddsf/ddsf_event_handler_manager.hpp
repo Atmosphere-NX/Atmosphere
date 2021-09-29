@@ -36,7 +36,7 @@ namespace ams::ddsf {
             os::Event loop_control_event;
             os::WaitableHolderType loop_control_event_holder;
             LoopControlCommandParameters *loop_control_command_params;
-            os::Event loop_control_command_done_event; /* TODO: os::LightEvent, requires mesosphere for < 4.0.0 compat. */
+            os::LightEvent loop_control_command_done_event;
             os::SdkMutex loop_control_lock;
         private:
             void ProcessControlCommand(LoopControlCommandParameters *params);
