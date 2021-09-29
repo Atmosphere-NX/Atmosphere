@@ -16,31 +16,21 @@
 
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/os/impl/os_internal_critical_section.hpp>
-#include <stratosphere/os/impl/os_internal_condition_variable.hpp>
 
 namespace ams::os {
 
-    namespace impl {
+    struct LightSemaphoreType;
 
-        class WaitableObjectList;
+    void InitializeLightSemaphore(LightSemaphoreType *sema, s32 count, s32 max_count);
+    void FinalizeLightSemaphore(LightSemaphoreType *sema);
 
-    }
+    void AcquireLightSemaphore(LightSemaphoreType *sema);
+    bool TryAcquireLightSemaphore(LightSemaphoreType *sema);
+    bool TimedAcquireLightSemaphore(LightSemaphoreType *sema, TimeSpan timeout);
 
-    struct SemaphoreType {
-        enum State {
-            State_NotInitialized = 0,
-            State_Initialized    = 1,
-        };
+    void ReleaseLightSemaphore(LightSemaphoreType *sema);
+    void ReleaseLightSemaphore(LightSemaphoreType *sema, s32 count);
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
-        u8 state;
-        s32 count;
-        s32 max_count;
-
-        impl::InternalCriticalSectionStorage cs_sema;
-        impl::InternalConditionVariableStorage cv_not_zero;
-    };
-    static_assert(std::is_trivial<SemaphoreType>::value);
+    s32 GetCurrentLightSemaphoreCount(const LightSemaphoreType *sema);
 
 }

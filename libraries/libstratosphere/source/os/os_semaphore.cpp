@@ -15,13 +15,14 @@
  */
 #include <stratosphere.hpp>
 #include "impl/os_waitable_object_list.hpp"
+#include "impl/os_waitable_holder_impl.hpp"
 #include "impl/os_timeout_helper.hpp"
 
 namespace ams::os {
 
     void InitializeSemaphore(SemaphoreType *sema, s32 count, s32 max_count) {
         AMS_ASSERT(max_count >= 1);
-        AMS_ASSERT(count     >= 0);
+        AMS_ASSERT(0 <= count && count <= max_count);
 
         /* Setup objects. */
         util::ConstructAt(sema->cs_sema);
@@ -141,6 +142,12 @@ namespace ams::os {
         return sema->count;
     }
 
-    // void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SemaphoreType *sema);
+    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SemaphoreType *sema) {
+        AMS_ASSERT(sema->state == SemaphoreType::State_Initialized);
+
+        util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_semaphore_storage, sema);
+
+        waitable_holder->user_data = 0;
+    }
 
 }

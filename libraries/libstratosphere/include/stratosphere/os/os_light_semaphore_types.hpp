@@ -17,30 +17,31 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/impl/os_internal_critical_section.hpp>
-#include <stratosphere/os/impl/os_internal_condition_variable.hpp>
+#include <stratosphere/os/impl/os_internal_busy_mutex.hpp>
+#include <stratosphere/os/impl/os_internal_light_event.hpp>
 
 namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        using LightSemaphoreMutex        = InternalBusyMutex;
+        using LightSemaphoreMutexStorage = InternalBusyMutexStorage;
 
     }
 
-    struct SemaphoreType {
+    struct LightSemaphoreType {
         enum State {
             State_NotInitialized = 0,
             State_Initialized    = 1,
         };
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
         u8 state;
         s32 count;
         s32 max_count;
 
-        impl::InternalCriticalSectionStorage cs_sema;
-        impl::InternalConditionVariableStorage cv_not_zero;
+        mutable impl::LightSemaphoreMutexStorage mutex;
+        impl::InternalLightEventStorage ev_not_zero;
     };
-    static_assert(std::is_trivial<SemaphoreType>::value);
+    static_assert(std::is_trivial<LightSemaphoreType>::value);
 
 }
