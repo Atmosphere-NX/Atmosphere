@@ -19,6 +19,7 @@
 #include "os_waitable_holder_base.hpp"
 #include "os_waitable_holder_impl.hpp"
 #include "os_waitable_object_list.hpp"
+#include "os_utility.hpp"
 
 namespace ams::os::impl {
 
@@ -223,7 +224,8 @@ namespace ams::os::impl {
             constexpr size_t ThreadNamePrefixSize = sizeof(ThreadNamePrefix) - 1;
             const u64 func = reinterpret_cast<u64>(thread->function);
             static_assert(ThreadNamePrefixSize + sizeof(func) * 2 + 1 <= sizeof(thread->name_buffer));
-            util::SNPrintf(thread->name_buffer, sizeof(thread->name_buffer), "%s%016lX", ThreadNamePrefix, func);
+            std::memcpy(thread->name_buffer, ThreadNamePrefix, ThreadNamePrefixSize);
+            os::impl::ExpandUnsignedValueToAscii(thread->name_buffer + ThreadNamePrefixSize, func);
         }
 
         thread->name_pointer = thread->name_buffer;
