@@ -72,8 +72,36 @@ namespace ams::os::impl {
             return true;
         }
 
+        ALWAYS_INLINE s32 LoadAcquireExclusiveForLightEvent(s32 *p) {
+            s32 v;
+            __asm__ __volatile__("ldaxr %w[v], %[p]" : [v]"=&r"(v) : [p]"Q"(*p) : "memory");
+            return v;
+        }
+
+        ALWAYS_INLINE bool StoreReleaseExclusiveForLightEvent(s32 *p, s32 v) {
+            int result;
+            __asm__ __volatile__("stlxr %w[result], %w[v], %[p]" : [result]"=&r"(result) : [v]"r"(v), [p]"Q"(*p) : "memory");
+            return result == 0;
+        }
+
+        ALWAYS_INLINE void ClearExclusiveForLightEvent() {
+            __asm__ __volatile__("clrex" ::: "memory");
+        }
+
         ALWAYS_INLINE bool CompareAndSwap(std::atomic<s32> *state, s32 expected, s32 desired) {
-            return state->compare_exchange_strong(expected, desired);
+            /* NOTE: This works around gcc not emitting clrex on ldaxr fail. */
+            s32 * const state_ptr = reinterpret_cast<s32 *>(GetAddressOfAtomicInteger(state));
+
+            while (true) {
+                if (AMS_UNLIKELY(LoadAcquireExclusiveForLightEvent(state_ptr) != expected)) {
+                    ClearExclusiveForLightEvent();
+                    return false;
+                }
+
+                if (AMS_LIKELY(StoreReleaseExclusiveForLightEvent(state_ptr, desired))) {
+                    return true;
+                }
+            }
         }
 
     }
