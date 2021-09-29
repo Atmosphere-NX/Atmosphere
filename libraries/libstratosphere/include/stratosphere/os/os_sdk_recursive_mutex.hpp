@@ -22,35 +22,36 @@ namespace ams::os {
 
     class SdkConditionVariable;
 
-    struct SdkMutexType {
+    struct SdkRecursiveMutexType {
         union {
             s32 _arr[sizeof(impl::InternalCriticalSectionStorage) / sizeof(s32)];
             impl::InternalCriticalSectionStorage _storage;
         };
+        u32 recursive_count;
     };
-    static_assert(std::is_trivial<SdkMutexType>::value);
+    static_assert(std::is_trivial<SdkRecursiveMutexType>::value);
 
-    void InitializeSdkMutex(SdkMutexType *mutex);
+    void InitializeSdkRecursiveMutex(SdkRecursiveMutexType *rmutex);
 
-    void LockSdkMutex(SdkMutexType *mutex);
-    bool TryLockSdkMutex(SdkMutexType *mutex);
-    void UnlockSdkMutex(SdkMutexType *mutex);
+    void LockSdkRecursiveMutex(SdkRecursiveMutexType *rmutex);
+    bool TryLockSdkRecursiveMutex(SdkRecursiveMutexType *rmutex);
+    void UnlockSdkRecursiveMutex(SdkRecursiveMutexType *rmutex);
 
-    bool IsSdkMutexLockedByCurrentThread(const SdkMutexType *mutex);
+    bool IsSdkRecursiveMutexLockedByCurrentThread(const SdkRecursiveMutexType *rmutex);
 
-    class SdkMutex {
+    class SdkRecursiveMutex {
         private:
             friend class SdkConditionVariable;
         private:
-            SdkMutexType m_mutex;
+            SdkRecursiveMutexType m_mutex;
         public:
-            constexpr SdkMutex() : m_mutex{{0}} { /* ... */ }
+            constexpr SdkRecursiveMutex() : m_mutex{{0}, 0} { /* ... */ }
 
-            ALWAYS_INLINE void Lock()    { return os::LockSdkMutex(std::addressof(m_mutex)); }
-            ALWAYS_INLINE bool TryLock() { return os::TryLockSdkMutex(std::addressof(m_mutex)); }
-            ALWAYS_INLINE void Unlock()  { return os::UnlockSdkMutex(std::addressof(m_mutex)); }
+            ALWAYS_INLINE void Lock()    { return os::LockSdkRecursiveMutex(std::addressof(m_mutex)); }
+            ALWAYS_INLINE bool TryLock() { return os::TryLockSdkRecursiveMutex(std::addressof(m_mutex)); }
+            ALWAYS_INLINE void Unlock()  { return os::UnlockSdkRecursiveMutex(std::addressof(m_mutex)); }
 
-            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return os::IsSdkMutexLockedByCurrentThread(std::addressof(m_mutex)); }
+            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return os::IsSdkRecursiveMutexLockedByCurrentThread(std::addressof(m_mutex)); }
 
             ALWAYS_INLINE void lock()     { return this->Lock(); }
             ALWAYS_INLINE bool try_lock() { return this->TryLock(); }

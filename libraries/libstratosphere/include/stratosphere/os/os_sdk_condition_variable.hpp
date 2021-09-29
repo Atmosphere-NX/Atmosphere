@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_sdk_mutex.hpp>
+#include <stratosphere/os/os_sdk_recursive_mutex.hpp>
 #include <stratosphere/os/impl/os_internal_condition_variable.hpp>
 
 namespace ams::os {
@@ -27,20 +28,21 @@ namespace ams::os {
             impl::InternalConditionVariableStorage _storage;
         };
 
-        void Initialize() {
+        ALWAYS_INLINE void Initialize() {
             GetReference(this->_storage).Initialize();
         }
 
         void Wait(SdkMutexType &mutex);
         bool TimedWait(SdkMutexType &mutex, TimeSpan timeout);
 
-        /* TODO: SdkRecursiveMutexType */
+        void Wait(SdkRecursiveMutexType &mutex);
+        bool TimedWait(SdkRecursiveMutexType &mutex, TimeSpan timeout);
 
-        void Signal() {
+        ALWAYS_INLINE void Signal() {
             GetReference(this->_storage).Signal();
         }
 
-        void Broadcast() {
+        ALWAYS_INLINE void Broadcast() {
             GetReference(this->_storage).Broadcast();
         }
     };
@@ -48,26 +50,32 @@ namespace ams::os {
 
     class SdkConditionVariable {
         private:
-            SdkConditionVariableType cv;
+            SdkConditionVariableType m_cv;
         public:
-            constexpr SdkConditionVariable() : cv{{0}} { /* ... */ }
+            constexpr SdkConditionVariable() : m_cv{{0}} { /* ... */ }
 
-            void Wait(SdkMutex &m) {
-                return this->cv.Wait(m.mutex);
+            ALWAYS_INLINE void Wait(SdkMutex &m) {
+                return m_cv.Wait(m.m_mutex);
             }
 
-            bool TimedWait(SdkMutex &m, TimeSpan timeout) {
-                return this->cv.TimedWait(m.mutex, timeout);
+            ALWAYS_INLINE bool TimedWait(SdkMutex &m, TimeSpan timeout) {
+                return m_cv.TimedWait(m.m_mutex, timeout);
             }
 
-            /* TODO: SdkRecursiveMutexType */
-
-            void Signal() {
-                return this->cv.Signal();
+            ALWAYS_INLINE void Wait(SdkRecursiveMutex &m) {
+                return m_cv.Wait(m.m_mutex);
             }
 
-            void Broadcast() {
-                return this->cv.Broadcast();
+            ALWAYS_INLINE bool TimedWait(SdkRecursiveMutex &m, TimeSpan timeout) {
+                return m_cv.TimedWait(m.m_mutex, timeout);
+            }
+
+            ALWAYS_INLINE void Signal() {
+                return m_cv.Signal();
+            }
+
+            ALWAYS_INLINE void Broadcast() {
+                return m_cv.Broadcast();
             }
     };
 

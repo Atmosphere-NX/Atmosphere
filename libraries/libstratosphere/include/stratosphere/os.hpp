@@ -29,6 +29,7 @@
 #include <stratosphere/os/os_mutex.hpp>
 #include <stratosphere/os/os_condition_variable.hpp>
 #include <stratosphere/os/os_sdk_mutex.hpp>
+#include <stratosphere/os/os_sdk_recursive_mutex.hpp>
 #include <stratosphere/os/os_sdk_condition_variable.hpp>
 #include <stratosphere/os/os_busy_mutex.hpp>
 #include <stratosphere/os/os_rw_busy_mutex.hpp>
