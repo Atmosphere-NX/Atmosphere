@@ -462,7 +462,11 @@ namespace ams::lmem::impl {
         /* Erase the heap from the used list, and coalesce it with adjacent blocks. */
         GetMemoryBlockRegion(&region, block);
         exp_heap_head->used_list.erase(exp_heap_head->used_list.iterator_to(*block));
-        AMS_ASSERT(CoalesceFreedRegion(exp_heap_head, &region));
+
+        /* Coalesce with adjacent blocks. */
+        const bool coalesced = CoalesceFreedRegion(exp_heap_head, &region);
+        AMS_ASSERT(coalesced);
+        AMS_UNUSED(coalesced);
     }
 
     size_t ResizeExpHeapMemoryBlock(HeapHandle handle, void *mem_block, size_t size) {
