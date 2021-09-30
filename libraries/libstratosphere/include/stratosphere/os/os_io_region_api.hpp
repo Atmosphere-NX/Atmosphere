@@ -13,24 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/os_memory_permission.hpp>
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
+    struct IoRegionType;
 
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
+    Result CreateIoRegion(IoRegionType *io_region, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission);
 
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
+    void AttachIoRegion(IoRegionType *io_region, size_t size, Handle handle, bool managed);
 
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+    void DestroyIoRegion(IoRegionType *io_region);
 
-    using MemoryMapping = svc::MemoryMapping;
-    using enum svc::MemoryMapping;
+    Handle GetIoRegionHandle(const IoRegionType *io_region);
+
+    Result MapIoRegion(void **out, IoRegionType *io_region, MemoryPermission perm);
+    void UnmapIoRegion(IoRegionType *io_region);
 
 }

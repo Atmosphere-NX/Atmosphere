@@ -13,24 +13,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/impl/os_internal_critical_section.hpp>
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
+    struct IoRegionType {
+        enum State {
+            State_NotInitialized = 0,
+            State_Initialized    = 1,
+            State_Mapped         = 2,
+        };
 
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
+        Handle handle;
+        u8 state;
+        size_t size;
+        void *mapped_address;
+        bool handle_managed;
 
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
+        mutable impl::InternalCriticalSectionStorage cs_io_region;
     };
-
-    using MemoryMapping = svc::MemoryMapping;
-    using enum svc::MemoryMapping;
+    static_assert(std::is_trivial<IoRegionType>::value);
 
 }

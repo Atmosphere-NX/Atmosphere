@@ -49,4 +49,5 @@
 #include <stratosphere/os/os_light_message_queue.hpp>
 #include <stratosphere/os/os_light_semaphore.hpp>
 #include <stratosphere/os/os_barrier.hpp>
+#include <stratosphere/os/os_io_region.hpp>
 #include <stratosphere/os/os_waitable.hpp>
