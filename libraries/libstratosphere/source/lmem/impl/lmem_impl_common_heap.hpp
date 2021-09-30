@@ -68,8 +68,8 @@ namespace ams::lmem::impl {
 
     inline void FillMemory(void *dst, u32 fill_value, size_t size) {
         /* All heap blocks must be at least 32-bit aligned. */
-        /* AMS_ASSERT(util::IsAligned(dst, 4)); */
-        /* AMS_ASSERT(util::IsAligned(size, 4)); */
+        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(dst), alignof(u32)));
+        AMS_ASSERT(util::IsAligned(size, sizeof(u32)));
         for (size_t i = 0; i < size / sizeof(fill_value); i++) {
             reinterpret_cast<u32 *>(dst)[i] = fill_value;
         }

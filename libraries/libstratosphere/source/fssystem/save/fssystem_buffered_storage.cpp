@@ -675,7 +675,7 @@ namespace ams::fssystem::save {
                     R_TRY(cache.Flush());
                     cache.Invalidate();
                 }
-                /* AMS_ASSERT(!cache.AcquireNextOverlappedCache(invalidate_offset, invalidate_size)); */
+                AMS_ASSERT(!cache.AcquireNextOverlappedCache(invalidate_offset, invalidate_size));
             }
         } else if (size < prev_size) {
             /* Prepare to do a shrink. */
