@@ -21,6 +21,63 @@
 
 namespace ams::os {
 
-    /* TODO: class IoRegion ? */
+    class IoRegion {
+        NON_COPYABLE(IoRegion);
+        NON_MOVEABLE(IoRegion);
+        private:
+            IoRegionType m_io_region;
+        public:
+            constexpr IoRegion() : m_io_region{ .state = IoRegionType::State_NotInitialized } {
+                /* ... */
+            }
+
+            IoRegion(Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
+                R_ABORT_UNLESS(CreateIoRegion(std::addressof(m_io_region), io_pool_handle, address, size, mapping, permission));
+            }
+
+            IoRegion(size_t size, Handle handle, bool managed) {
+                this->Attach(size, handle, managed);
+            }
+
+            ~IoRegion() {
+                if (m_io_region.state == IoRegionType::State_NotInitialized) {
+                    return;
+                }
+
+                if (m_io_region.state == IoRegionType::State_Mapped) {
+                    this->Unmap();
+                }
+
+                DestroyIoRegion(std::addressof(m_io_region));
+            }
+
+            void Attach(size_t size, Handle handle, bool managed) {
+                AttachIoRegion(std::addressof(m_io_region), size, handle, managed);
+            }
+
+            Handle GetHandle() const {
+                return GetIoRegionHandle(std::addressof(m_io_region));
+            }
+
+            Result Map(void **out, MemoryPermission perm) {
+                return MapIoRegion(out, std::addressof(m_io_region), perm);
+            }
+
+            void Unmap() {
+                UnmapIoRegion(std::addressof(m_io_region));
+            }
+
+            operator IoRegionType &() {
+                return m_io_region;
+            }
+
+            operator const IoRegionType &() const {
+                return m_io_region;
+            }
+
+            IoRegionType *GetBase() {
+                return std::addressof(m_io_region);
+            }
+    };
 
 }
