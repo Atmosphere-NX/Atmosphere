@@ -49,8 +49,11 @@ namespace ams::os::impl {
 
             WaitableHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout) {
                 WaitableHolderBase *holder = nullptr;
+
                 const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, svc::InvalidHandle);
-                AMS_ASSERT(R_SUCCEEDED(wait_result));
+                R_ASSERT(wait_result);
+                AMS_UNUSED(wait_result);
+
                 return holder;
             }
         public:

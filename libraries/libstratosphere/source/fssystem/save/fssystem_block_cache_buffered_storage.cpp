@@ -786,6 +786,7 @@ namespace ams::fssystem::save {
 
             /* Get the entry to invalidate. */
             const CacheEntry *entry_to_invalidate = std::addressof(this->entries[this->invalidate_index]);
+            AMS_UNUSED(entry_to_invalidate);
 
             /* Ensure that the entry can be invalidated. */
             AMS_ASSERT(entry_to_invalidate->is_valid);

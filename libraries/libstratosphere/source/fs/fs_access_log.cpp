@@ -82,6 +82,7 @@ namespace ams::fs::impl {
     const char *IdString::ToValueString(int id) {
         const int len = util::SNPrintf(this->buffer, sizeof(this->buffer), "%d", id);
         AMS_ASSERT(static_cast<size_t>(len) < sizeof(this->buffer));
+        AMS_UNUSED(len);
         return this->buffer;
     }
 

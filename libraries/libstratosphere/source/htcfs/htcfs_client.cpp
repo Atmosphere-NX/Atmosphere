@@ -21,7 +21,7 @@ namespace ams::htcfs {
     namespace {
 
         constinit util::TypedStorage<Client> g_client_storage;
-        constinit bool g_initialized;
+        [[maybe_unused]] constinit bool g_initialized;
 
     }
 

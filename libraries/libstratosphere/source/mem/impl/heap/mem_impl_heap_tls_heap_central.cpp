@@ -1151,8 +1151,9 @@ namespace ams::mem::impl::heap {
                 }
 
                 if (start_alignup < end_aligndown) {
-                    auto err = this->FreePhysical(reinterpret_cast<void *>(start_alignup), end_aligndown - start_alignup);
+                    const auto err = this->FreePhysical(reinterpret_cast<void *>(start_alignup), end_aligndown - start_alignup);
                     AMS_ASSERT(err == 0);
+                    AMS_UNUSED(err);
                 }
             } else {
                 this->MergeIntoFreeList(span);

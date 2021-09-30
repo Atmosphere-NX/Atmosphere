@@ -45,6 +45,7 @@ namespace ams::os {
 
         AMS_ASSERT(manager->state == WaitableManagerType::State_Initialized);
         AMS_ASSERT(impl.IsEmpty());
+        AMS_UNUSED(impl);
 
         /* Mark not initialized. */
         manager->state = WaitableManagerType::State_NotInitialized;

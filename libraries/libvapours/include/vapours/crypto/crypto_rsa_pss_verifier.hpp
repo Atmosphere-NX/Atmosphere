@@ -65,6 +65,7 @@ namespace ams::crypto {
             bool Verify(const void *signature, size_t size) {
                 AMS_ASSERT(this->state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
+                AMS_UNUSED(size);
                 ON_SCOPE_EXIT { this->state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
@@ -85,6 +86,7 @@ namespace ams::crypto {
             bool Verify(const void *signature, size_t size, void *work_buf, size_t work_buf_size) {
                 AMS_ASSERT(this->state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
+                AMS_UNUSED(size);
                 ON_SCOPE_EXIT { this->state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
@@ -105,6 +107,7 @@ namespace ams::crypto {
             bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size) {
                 AMS_ASSERT(this->state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
+                AMS_UNUSED(size);
                 ON_SCOPE_EXIT { this->state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
@@ -121,6 +124,7 @@ namespace ams::crypto {
             bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
                 AMS_ASSERT(this->state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
+                AMS_UNUSED(size);
                 ON_SCOPE_EXIT { this->state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;

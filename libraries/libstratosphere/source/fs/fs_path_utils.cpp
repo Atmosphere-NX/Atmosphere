@@ -29,8 +29,11 @@ namespace ams::fs {
                     u32 *dst_invalid = this->invalid_chars;
                     for (const char *cur = ":*?<>|"; *cur != '\x00'; ++cur) {
                         AMS_ASSERT(dst_invalid < std::end(this->invalid_chars));
+
                         const auto result = util::ConvertCharacterUtf8ToUtf32(dst_invalid, cur);
                         AMS_ASSERT(result == util::CharacterEncodingResult_Success);
+                        AMS_UNUSED(result);
+
                         ++dst_invalid;
                     }
                     AMS_ASSERT(dst_invalid == std::end(this->invalid_chars));
@@ -39,8 +42,11 @@ namespace ams::fs {
                     u32 *dst_sep = this->separators;
                     for (const char *cur = "/\\"; *cur != '\x00'; ++cur) {
                         AMS_ASSERT(dst_sep < std::end(this->separators));
+
                         const auto result = util::ConvertCharacterUtf8ToUtf32(dst_sep, cur);
                         AMS_ASSERT(result == util::CharacterEncodingResult_Success);
+                        AMS_UNUSED(result);
+
                         ++dst_sep;
                     }
                     AMS_ASSERT(dst_sep == std::end(this->separators));

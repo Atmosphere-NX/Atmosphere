@@ -42,8 +42,10 @@ namespace ams::diag {
             AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                                 \
         }                                                                                                     \
     })
-#else
+#elif defined(AMS_PRESERVE_ASSERTION_EXPRESSIONS)
 #define AMS_ASSERT_IMPL(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
+#else
+#define AMS_ASSERT_IMPL(expr, ...) static_cast<void>(0)
 #endif
 
 #define AMS_ASSERT(expr, ...) AMS_ASSERT_IMPL(expr, ## __VA_ARGS__)
@@ -52,8 +54,10 @@ namespace ams::diag {
 
 #ifdef AMS_BUILD_FOR_AUDITING
 #define AMS_AUDIT(expr, ...) AMS_ASSERT(expr, ## __VA_ARGS__)
-#else
+#elif defined(AMS_PRESERVE_AUDIT_EXPRESSIONS)
 #define AMS_AUDIT(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
+#else
+#define AMS_AUDIT(expr, ...) static_cast<void>(0)
 #endif
 
 #define AMS_ABORT(...) AMS_CALL_ABORT_IMPL("", ## __VA_ARGS__)

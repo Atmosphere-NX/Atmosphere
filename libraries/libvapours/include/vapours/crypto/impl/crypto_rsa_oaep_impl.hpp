@@ -85,6 +85,7 @@ namespace ams::crypto::impl {
                 AMS_ASSERT(salt_size > 0);
                 AMS_ASSERT(salt_size == HashSize);
                 AMS_ASSERT(label_digest_size == HashSize);
+                AMS_UNUSED(salt_size, label_digest_size);
 
                 u8 *buf = static_cast<u8 *>(dst);
                 buf[0] = HeadMagic;
@@ -109,6 +110,7 @@ namespace ams::crypto::impl {
                 AMS_ABORT_UNLESS(dst_size > 0);
                 AMS_ABORT_UNLESS(buf_size >= 2 * HashSize + 3);
                 AMS_ABORT_UNLESS(label_digest_size == HashSize);
+                AMS_UNUSED(label_digest_size);
 
                 /* Validate sanity byte. */
                 bool is_valid = buf[0] == HeadMagic;

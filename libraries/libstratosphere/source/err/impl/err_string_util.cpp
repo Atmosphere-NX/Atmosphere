@@ -21,6 +21,7 @@ namespace ams::err::impl {
     void MakeErrorCodeString(char *dst, size_t dst_size, ErrorCode error_code) {
         const auto len = util::TSNPrintf(dst, dst_size, "%04d-%04d", error_code.category, error_code.number);
         AMS_ASSERT(static_cast<size_t>(len) < dst_size);
+        AMS_UNUSED(len);
     }
 
 }

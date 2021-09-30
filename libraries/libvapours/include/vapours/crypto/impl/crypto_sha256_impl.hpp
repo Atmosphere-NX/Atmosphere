@@ -61,6 +61,7 @@ namespace ams::crypto::impl {
 
             void GetBufferedData(void *dst, size_t dst_size) const {
                 AMS_ASSERT(dst_size >= this->GetBufferedDataSize());
+                AMS_UNUSED(dst_size);
 
                 std::memcpy(dst, this->state.buffer, this->GetBufferedDataSize());
             }

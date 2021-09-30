@@ -96,6 +96,7 @@ namespace ams::crypto::impl {
             size_t Update(void *_dst, size_t dst_size, const void *_src, size_t src_size) {
                 AMS_ASSERT(this->state == State_Initialized);
                 AMS_ASSERT(dst_size >= src_size);
+                AMS_UNUSED(dst_size);
 
                 u8 *dst = static_cast<u8 *>(_dst);
                 const u8 *src = static_cast<const u8 *>(_src);

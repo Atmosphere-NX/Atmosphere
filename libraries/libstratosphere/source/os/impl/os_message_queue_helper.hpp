@@ -109,6 +109,7 @@ namespace ams::os::impl {
                 const auto count    = mq->count;
                 const auto offset   = mq->offset;
                 AMS_ASSERT(count > 0);
+                AMS_UNUSED(count);
 
                 return mq->buffer[offset];
             }

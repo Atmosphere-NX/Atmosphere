@@ -65,6 +65,7 @@ namespace ams::crypto::impl {
             template<typename BlockCipher>
             void Initialize(const BlockCipher *cipher, const void *tweak, size_t tweak_size) {
                 AMS_ASSERT(tweak_size == IvSize);
+                AMS_UNUSED(tweak_size);
 
                 cipher->EncryptBlock(this->tweak, IvSize, tweak, IvSize);
 

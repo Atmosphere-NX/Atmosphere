@@ -34,7 +34,7 @@ namespace ams::crypto::impl {
     void AesImpl<KeySize>::Initialize(const void *key, size_t key_size, bool is_encrypt) {
         static_assert(IsSupportedKeySize(KeySize));
         AMS_ASSERT(key_size == sizeof(int));
-        AMS_UNUSED(is_encrypt);
+        AMS_UNUSED(key_size, is_encrypt);
 
         /* Set the security engine keyslot. */
         this->slot = *static_cast<const int *>(key);

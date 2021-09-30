@@ -38,8 +38,9 @@ namespace ams::os::impl {
             const s64 frac    = tick_val % tick_freq;
             const TimeSpan ts = TimeSpan::FromSeconds(seconds) + TimeSpan::FromNanoSeconds(frac * NanoSecondsPerSecond / tick_freq);
 
-            constexpr TimeSpan ZeroTS    = TimeSpan::FromNanoSeconds(0);
+            constexpr TimeSpan ZeroTS = TimeSpan::FromNanoSeconds(0);
             AMS_ASSERT(!((tick_val > 0 && ts < ZeroTS) || (tick_val < 0 && ts > ZeroTS)));
+            AMS_UNUSED(ZeroTS);
 
             return ts;
         }

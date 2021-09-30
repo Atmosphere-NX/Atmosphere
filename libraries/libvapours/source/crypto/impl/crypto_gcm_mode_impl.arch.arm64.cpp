@@ -239,6 +239,7 @@ namespace ams::crypto::impl {
         AMS_ASSERT(dst_size >= MacSize);
         AMS_ASSERT(this->aad_remaining == 0);
         AMS_ASSERT(this->msg_remaining == 0);
+        AMS_UNUSED(dst_size);
 
         /* If we haven't already done so, compute the final mac. */
         if (this->state != State_Done) {

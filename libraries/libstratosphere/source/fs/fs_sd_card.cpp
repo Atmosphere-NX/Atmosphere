@@ -35,8 +35,9 @@ namespace ams::fs {
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
-                    auto size = util::SNPrintf(dst, dst_size, "%s:", impl::SdCardFileSystemMountName);
+                    const auto size = util::SNPrintf(dst, dst_size, "%s:", impl::SdCardFileSystemMountName);
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
+                    AMS_UNUSED(size);
 
                     return ResultSuccess();
                 }

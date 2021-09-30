@@ -49,6 +49,7 @@ namespace ams::htcs::impl::rpc {
         AMS_ASSERT(0 <= write_handle_count && write_handle_count < SocketCountMax);
         AMS_ASSERT(0 <= exception_handle_count && exception_handle_count < SocketCountMax);
         AMS_ASSERT(handle_count * static_cast<s64>(sizeof(s32)) == body_size);
+        AMS_UNUSED(handle_count);
 
         /* Set our results. */
         m_err                        = err;

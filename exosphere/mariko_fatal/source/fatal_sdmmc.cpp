@@ -58,6 +58,7 @@ namespace ams::secmon::fatal {
     Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {
         /* Validate that our buffer is valid. */
         AMS_ASSERT(size >= sector_count * sdmmc::SectorSize);
+        AMS_UNUSED(size);
 
         /* Repeatedly read sectors. */
         u8 *dst_u8 = static_cast<u8 *>(dst);
@@ -83,6 +84,7 @@ namespace ams::secmon::fatal {
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size) {
         /* Validate that our buffer is valid. */
         AMS_ASSERT(size >= sector_count * sdmmc::SectorSize);
+        AMS_UNUSED(size);
 
         /* Repeatedly read sectors. */
         const u8 *src_u8 = static_cast<const u8 *>(src);

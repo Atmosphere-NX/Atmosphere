@@ -123,8 +123,9 @@ namespace ams::os {
 
             const s32 prev_prio = thread->base_priority;
 
-            bool success = impl::GetThreadManager().ChangePriority(thread, priority);
+            const bool success = impl::GetThreadManager().ChangePriority(thread, priority);
             AMS_ASSERT(success);
+            AMS_UNUSED(success);
 
             thread->base_priority = priority;
 

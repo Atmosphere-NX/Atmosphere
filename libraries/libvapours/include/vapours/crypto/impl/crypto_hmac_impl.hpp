@@ -99,6 +99,7 @@ namespace ams::crypto::impl {
     inline void HmacImpl<Hash>::GetMac(void *dst, size_t dst_size) {
         AMS_ASSERT(this->state == State_Initialized || this->state == State_Done);
         AMS_ASSERT(dst_size >= MacSize);
+        AMS_UNUSED(dst_size);
 
         /* If we're not already finalized, get the final mac. */
         if (this->state == State_Initialized) {

@@ -215,9 +215,12 @@ namespace ams::fssystem {
         AMS_ASSERT(entry != nullptr);
 
         /* Ensure the entry is valid. */
-        const auto entry_buffer = this->external_entry_buffer != nullptr ? this->external_entry_buffer : this->internal_entry_buffer.get();
-        AMS_ASSERT(static_cast<void *>(entry_buffer) <= static_cast<void *>(entry));
-        AMS_ASSERT(static_cast<void *>(entry) < static_cast<void *>(entry_buffer + this->entry_buffer_size));
+        {
+            const auto entry_buffer = this->external_entry_buffer != nullptr ? this->external_entry_buffer : this->internal_entry_buffer.get();
+            AMS_ASSERT(static_cast<void *>(entry_buffer) <= static_cast<void *>(entry));
+            AMS_ASSERT(static_cast<void *>(entry) < static_cast<void *>(entry_buffer + this->entry_buffer_size));
+            AMS_UNUSED(entry_buffer);
+        }
 
         /* Copy the entries back by one. */
         std::memmove(entry, entry + 1, sizeof(Entry) * (this->entry_count - ((entry + 1) - this->entries)));

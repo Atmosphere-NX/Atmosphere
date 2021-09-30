@@ -173,6 +173,7 @@ int main(int argc, char **argv)
         char os_private[0x60];
         const auto os_priv_len = util::SNPrintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
         AMS_ASSERT(static_cast<size_t>(os_priv_len) < sizeof(os_private));
+        AMS_UNUSED(os_priv_len);
 
         R_ABORT_UNLESS(erpt::srv::SetSerialNumberAndOsVersion(serial_number.str,
                                                               strnlen(serial_number.str, sizeof(serial_number.str) - 1) + 1,
@@ -187,6 +188,8 @@ int main(int argc, char **argv)
         char product_model[0x10];
         const auto pm_len = erpt::MakeProductModelString(product_model, sizeof(product_model), settings::system::GetProductModel());
         AMS_ASSERT(static_cast<size_t>(pm_len) < sizeof(product_model));
+        AMS_UNUSED(pm_len);
+
         R_ABORT_UNLESS(erpt::srv::SetProductModel(product_model, static_cast<u32>(std::strlen(product_model))));
     }
 

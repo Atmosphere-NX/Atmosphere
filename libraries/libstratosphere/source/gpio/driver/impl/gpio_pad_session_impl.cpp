@@ -141,6 +141,7 @@ namespace ams::gpio::driver::impl {
         auto &pad = this->GetDevice().SafeCastTo<Pad>();
         auto &driver = pad.GetDriver().SafeCastTo<IGpioDriver>();
         AMS_ASSERT(driver.GetInterruptControlMutex(pad).IsLockedByCurrentThread());
+        AMS_UNUSED(pad, driver);
 
         if (auto *event = this->event_holder.GetSystemEvent(); event != nullptr) {
             os::SignalSystemEvent(event);

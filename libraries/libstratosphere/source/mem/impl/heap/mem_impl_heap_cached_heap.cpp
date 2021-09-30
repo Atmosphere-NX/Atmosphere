@@ -63,8 +63,11 @@ namespace ams::mem::impl::heap {
 
     bool CachedHeap::CheckCache() {
         bool cache = false;
-        auto err = this->Query(AllocQuery_CheckCache, std::addressof(cache));
-        AMS_ASSERT(err != 0);
+
+        const auto err = this->Query(AllocQuery_CheckCache, std::addressof(cache));
+        AMS_ASSERT(err == 0);
+        AMS_UNUSED(err);
+
         return cache;
     }
 

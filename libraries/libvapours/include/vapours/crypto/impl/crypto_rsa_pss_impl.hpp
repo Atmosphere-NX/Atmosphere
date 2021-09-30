@@ -33,6 +33,7 @@ namespace ams::crypto::impl {
         private:
             static void ComputeHashWithPadding(void *dst, const u8 *user_hash, size_t user_hash_size, const void *salt, size_t salt_size) {
                 AMS_ASSERT(user_hash_size == HashSize);
+                AMS_UNUSED(user_hash_size);
 
                 /* Initialize our buffer. */
                 u8 buf[8 + HashSize];

@@ -29,6 +29,7 @@ namespace ams::ddsf {
         for (const auto &holder : this->entry_list) {
             AMS_ASSERT(holder.IsConstructed());
             AMS_ASSERT(holder.Get().GetDeviceCode() != device_code);
+            AMS_UNUSED(holder);
         }
 
         /* Allocate memory for a new device code entry holder. */

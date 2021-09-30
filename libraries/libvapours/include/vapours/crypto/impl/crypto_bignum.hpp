@@ -71,6 +71,7 @@ namespace ams::crypto::impl {
                         this->count  += num;
 
                         AMS_ASSERT(words == this->buffer);
+                        AMS_UNUSED(words);
                     }
                 public:
                     constexpr ALWAYS_INLINE WordAllocator(Word *buf, size_t c) : buffer(buf), count(c), max_count(c), min_count(c) { /* ... */ }

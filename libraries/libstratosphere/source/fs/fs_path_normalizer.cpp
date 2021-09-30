@@ -426,8 +426,9 @@ namespace ams::fs {
         {
             bool normalized = false;
             const auto is_norm_result = IsNormalized(std::addressof(normalized), out, unc_preserved, has_mount_name);
-            AMS_ASSERT(R_SUCCEEDED(is_norm_result));
+            R_ASSERT(is_norm_result);
             AMS_ASSERT(normalized);
+            AMS_UNUSED(is_norm_result, normalized);
         }
 
         return ResultSuccess();

@@ -23,7 +23,8 @@ namespace ams::os::impl {
         svc::MemoryInfo memory_info;
         svc::PageInfo page_info;
         const auto result = svc::QueryMemory(std::addressof(memory_info), std::addressof(page_info), address);
-        AMS_ASSERT(R_SUCCEEDED(result));
+        R_ASSERT(result);
+        AMS_UNUSED(result);
 
         return memory_info.state == svc::MemoryState_Free && address + size <= memory_info.addr + memory_info.size;
     }

@@ -167,8 +167,9 @@ namespace ams::mem {
             }
         }
 
-        auto err = GetCentral(this->central_heap_storage)->Free(ptr);
+        const auto err = GetCentral(this->central_heap_storage)->Free(ptr);
         AMS_ASSERT(err == 0);
+        AMS_UNUSED(err);
     }
 
     void *StandardAllocator::Reallocate(void *ptr, size_t new_size) {
@@ -248,8 +249,9 @@ namespace ams::mem {
     void StandardAllocator::CleanUpManagementArea() const {
         AMS_ASSERT(this->initialized);
 
-        auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_UnifyFreeList);
+        const auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_UnifyFreeList);
         AMS_ASSERT(err == 0);
+        AMS_UNUSED(err);
     }
 
     size_t StandardAllocator::GetSizeOf(const void *ptr) const {

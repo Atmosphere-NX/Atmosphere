@@ -44,9 +44,10 @@ namespace ams::fssystem::save {
         {
             s64 hash_size = 0;
             s64 data_size = 0;
-            AMS_ASSERT(R_SUCCEEDED(hash_storage.GetSize(std::addressof(hash_size))));
-            AMS_ASSERT(R_SUCCEEDED(data_storage.GetSize(std::addressof(hash_size))));
+            R_ASSERT(hash_storage.GetSize(std::addressof(hash_size)));
+            R_ASSERT(data_storage.GetSize(std::addressof(hash_size)));
             AMS_ASSERT(((hash_size / HashSize) * this->verification_block_size) >= data_size);
+            AMS_UNUSED(hash_size, data_size);
         }
 
         /* Set salt. */
