@@ -34,7 +34,7 @@ namespace ams::fssystem {
 
             virtual ~DirectoryRedirectionFileSystem();
         protected:
-            inline util::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+            inline util::optional<std::scoped_lock<os::SdkMutex>> GetAccessorLock() const {
                 /* No accessor lock is needed. */
                 return util::nullopt;
             }

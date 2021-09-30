@@ -23,7 +23,7 @@ namespace ams::ldr {
         NON_COPYABLE(ScopedCodeMount);
         NON_MOVEABLE(ScopedCodeMount);
         private:
-            std::scoped_lock<os::Mutex> lk;
+            std::scoped_lock<os::SdkMutex> lk;
             cfg::OverrideStatus override_status;
             fs::CodeVerificationData ams_code_verification_data;
             fs::CodeVerificationData sd_or_base_code_verification_data;

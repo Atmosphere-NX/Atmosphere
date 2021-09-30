@@ -25,7 +25,7 @@ namespace ams::fssystem {
             static constexpr s32 LayerCount  = 3;
             static constexpr size_t HashSize = crypto::Sha256Generator::HashSize;
         private:
-            os::Mutex mutex;
+            os::SdkMutex mutex;
             IStorage *base_storage;
             s64 base_storage_size;
             char *hash_buffer;
@@ -33,7 +33,7 @@ namespace ams::fssystem {
             s32 hash_target_block_size;
             s32 log_size_ratio;
         public:
-            HierarchicalSha256Storage() : mutex(false) { /* ... */ }
+            HierarchicalSha256Storage() : mutex() { /* ... */ }
 
             Result Initialize(IStorage **base_storages, s32 layer_count, size_t htbs, void *hash_buf, size_t hash_buf_size);
 

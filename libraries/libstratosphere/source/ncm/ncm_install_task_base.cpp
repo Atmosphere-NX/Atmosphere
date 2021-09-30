@@ -635,7 +635,7 @@ namespace ams::ncm {
         for (s32 i = 0; i < count; i++) {
             R_UNLESS(!this->IsCancelRequested(), ncm::ResultCreatePlaceHolderCancelled());
 
-            static os::Mutex s_placeholder_mutex(false);
+            static constinit os::SdkMutex s_placeholder_mutex;
             std::scoped_lock lk(s_placeholder_mutex);
 
             InstallContentMeta content_meta;

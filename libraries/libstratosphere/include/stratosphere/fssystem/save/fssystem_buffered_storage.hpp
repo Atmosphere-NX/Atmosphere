@@ -38,7 +38,7 @@ namespace ams::fssystem::save {
             s32 cache_count;
             Cache *next_acquire_cache;
             Cache *next_fetch_cache;
-            os::Mutex mutex;
+            os::SdkMutex mutex;
             bool bulk_read_enabled;
         public:
             BufferedStorage();

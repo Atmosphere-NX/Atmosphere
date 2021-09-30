@@ -86,13 +86,13 @@ namespace ams::ncm {
             StorageId install_storage;
             InstallTaskDataBase *data;
             InstallProgress progress;
-            os::Mutex progress_mutex;
+            os::SdkMutex progress_mutex;
             u32 config;
-            os::Mutex cancel_mutex;
+            os::SdkMutex cancel_mutex;
             bool cancel_requested;
             InstallThroughput throughput;
             TimeSpan throughput_start_time;
-            os::Mutex throughput_mutex;
+            os::SdkMutex throughput_mutex;
             FirmwareVariationId firmware_variation_id;
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
@@ -102,7 +102,7 @@ namespace ams::ncm {
                 return result;
             }
         public:
-            InstallTaskBase() : data(), progress(), progress_mutex(false), cancel_mutex(false), cancel_requested(), throughput_mutex(false) { /* ... */ }
+            InstallTaskBase() : data(), progress(), progress_mutex(), cancel_mutex(), cancel_requested(), throughput_mutex() { /* ... */ }
             virtual ~InstallTaskBase() { /* ... */ };
         public:
             virtual void Cancel();

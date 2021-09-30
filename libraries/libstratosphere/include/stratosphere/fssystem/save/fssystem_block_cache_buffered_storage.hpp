@@ -62,7 +62,7 @@ namespace ams::fssystem::save {
             };
         private:
             IBufferManager *buffer_manager;
-            os::Mutex *mutex;
+            os::SdkRecursiveMutex *mutex;
             std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> entries;
             IStorage *data_storage;
             Result last_result;
@@ -78,7 +78,7 @@ namespace ams::fssystem::save {
             BlockCacheBufferedStorage();
             virtual ~BlockCacheBufferedStorage() override;
 
-            Result Initialize(IBufferManager *bm, os::Mutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
+            Result Initialize(IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;

@@ -24,7 +24,7 @@ namespace ams::fssystem {
             using PathResolutionFileSystem = impl::IPathResolutionFileSystem<DirectorySaveDataFileSystem>;
             friend class impl::IPathResolutionFileSystem<DirectorySaveDataFileSystem>;
         private:
-            os::Mutex accessor_mutex;
+            os::SdkMutex accessor_mutex;
             s32 open_writable_files;
         public:
             DirectorySaveDataFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs);
@@ -33,9 +33,9 @@ namespace ams::fssystem {
 
             virtual ~DirectorySaveDataFileSystem();
         protected:
-            inline util::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() {
+            inline util::optional<std::scoped_lock<os::SdkMutex>> GetAccessorLock() {
                 /* We have a real accessor lock that we want to use. */
-                return util::make_optional<std::scoped_lock<os::Mutex>>(this->accessor_mutex);
+                return util::make_optional<std::scoped_lock<os::SdkMutex>>(this->accessor_mutex);
             }
         private:
             Result AllocateWorkBuffer(std::unique_ptr<u8[]> *out, size_t *out_size, size_t ideal_size);

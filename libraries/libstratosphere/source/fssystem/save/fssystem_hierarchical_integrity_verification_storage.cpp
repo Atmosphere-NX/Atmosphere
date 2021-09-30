@@ -150,7 +150,7 @@ namespace ams::fssystem::save {
         this->storage = fs::SubStorage();
     }
 
-    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::Mutex *mtx, fs::StorageType storage_type) {
+    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type) {
         /* Validate preconditions. */
         AMS_ASSERT(bufs != nullptr);
         AMS_ASSERT(IntegrityMinLayerCount <= info.max_layers && info.max_layers <= IntegrityMaxLayerCount);

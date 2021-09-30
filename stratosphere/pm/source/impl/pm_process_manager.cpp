@@ -78,18 +78,15 @@ namespace ams::pm::impl {
             NON_MOVEABLE(ProcessInfoAllocator);
             static_assert(MaxProcessInfos >= 0x40, "MaxProcessInfos is too small.");
             private:
-                util::TypedStorage<ProcessInfo> process_info_storages[MaxProcessInfos];
-                bool process_info_allocated[MaxProcessInfos];
-                os::Mutex lock;
+                util::TypedStorage<ProcessInfo> process_info_storages[MaxProcessInfos]{};
+                bool process_info_allocated[MaxProcessInfos]{};
+                os::SdkMutex lock{};
             private:
                 constexpr inline size_t GetProcessInfoIndex(ProcessInfo *process_info) const {
                     return process_info - GetPointer(this->process_info_storages[0]);
                 }
             public:
-                constexpr ProcessInfoAllocator() : lock(false) {
-                    std::memset(this->process_info_storages, 0, sizeof(this->process_info_storages));
-                    std::memset(this->process_info_allocated, 0, sizeof(this->process_info_allocated));
-                }
+                constexpr ProcessInfoAllocator() = default;
 
                 template<typename... Args>
                 ProcessInfo *AllocateProcessInfo(Args &&... args) {
@@ -123,34 +120,34 @@ namespace ams::pm::impl {
         /* Process Tracking globals. */
         void ProcessTrackingMain(void *arg);
 
-        os::ThreadType g_process_track_thread;
-        alignas(os::ThreadStackAlignment) u8 g_process_track_thread_stack[16_KB];
+        constinit os::ThreadType g_process_track_thread;
+        alignas(os::ThreadStackAlignment) constinit u8 g_process_track_thread_stack[16_KB];
 
         /* Process lists. */
-        ProcessList g_process_list;
-        ProcessList g_dead_process_list;
+        constinit ProcessList g_process_list;
+        constinit ProcessList g_dead_process_list;
 
         /* Process Info Allocation. */
         /* Note: The kernel slabheap is size 0x50 -- we allow slightly larger to account for the dead process list. */
         constexpr size_t MaxProcessCount = 0x60;
-        ProcessInfoAllocator<MaxProcessCount> g_process_info_allocator;
+        constinit ProcessInfoAllocator<MaxProcessCount> g_process_info_allocator;
 
         /* Global events. */
-        os::SystemEventType g_process_event;
-        os::SystemEventType g_hook_to_create_process_event;
-        os::SystemEventType g_hook_to_create_application_process_event;
-        os::SystemEventType g_boot_finished_event;
+        constinit os::SystemEventType g_process_event;
+        constinit os::SystemEventType g_hook_to_create_process_event;
+        constinit os::SystemEventType g_hook_to_create_application_process_event;
+        constinit os::SystemEventType g_boot_finished_event;
 
         /* Process Launch synchronization globals. */
-        os::Mutex g_launch_program_lock(false);
+        constinit os::SdkMutex g_launch_program_lock;
         os::Event g_process_launch_start_event(os::EventClearMode_AutoClear);
         os::Event g_process_launch_finish_event(os::EventClearMode_AutoClear);
-        Result g_process_launch_result = ResultSuccess();
-        LaunchProcessArgs g_process_launch_args = {};
+        constinit Result g_process_launch_result = ResultSuccess();
+        constinit LaunchProcessArgs g_process_launch_args = {};
 
         /* Hook globals. */
-        std::atomic<ncm::ProgramId> g_program_id_hook;
-        std::atomic<bool> g_application_hook;
+        constinit std::atomic<ncm::ProgramId> g_program_id_hook;
+        constinit std::atomic<bool> g_application_hook;
 
         /* Forward declarations. */
         Result LaunchProcess(os::WaitableManagerType &waitable_manager, const LaunchProcessArgs &args);

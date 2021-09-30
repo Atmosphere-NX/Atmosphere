@@ -21,8 +21,8 @@
 namespace ams::sm::impl {
 
     /* Utilities. */
-    os::Mutex &GetMitmAcknowledgementSessionMutex();
-    os::Mutex &GetPerThreadSessionMutex();
+    os::SdkRecursiveMutex &GetMitmAcknowledgementSessionMutex();
+    os::SdkRecursiveMutex &GetPerThreadSessionMutex();
 
     template<typename F>
     Result DoWithMitmAcknowledgementSession(F f) {

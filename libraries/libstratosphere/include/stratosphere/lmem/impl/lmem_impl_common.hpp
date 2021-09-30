@@ -85,7 +85,7 @@ namespace ams::lmem::impl {
 
         void *heap_start;
         void *heap_end;
-        os::MutexType mutex;
+        os::SdkMutexType mutex;
         u8 option;
         ImplementationHeapHead impl_head;
     };

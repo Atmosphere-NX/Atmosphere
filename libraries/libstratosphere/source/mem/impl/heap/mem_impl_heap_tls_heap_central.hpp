@@ -201,14 +201,14 @@ namespace ams::mem::impl::heap {
             s32 static_thread_quota;
             s32 dynamic_thread_quota;
             bool use_virtual_memory;
-            os::Mutex lock;
+            os::SdkRecursiveMutex lock;
             ListHeader<SpanPage> spanpage_list;
             ListHeader<SpanPage> full_spanpage_list;
             ListHeader<Span> freelists[FreeListCount];
             FreeListAvailableWord freelists_bitmap[NumFreeListBitmaps];
             ListHeader<Span> smallmem_lists[TlsHeapStatic::NumClassInfo];
         public:
-            TlsHeapCentral() : lock(true) {
+            TlsHeapCentral() : lock() {
                 this->span_table.total_pages = 0;
             }
 

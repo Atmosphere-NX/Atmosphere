@@ -41,8 +41,8 @@ namespace ams::spl::impl {
         constexpr s32 MaxVirtualAesKeySlots = 9;
 
         /* KeySlot management. */
-        KeySlotCache g_keyslot_cache;
-        util::optional<KeySlotCacheEntry> g_keyslot_cache_entry[MaxPhysicalAesKeySlots];
+        constinit KeySlotCache g_keyslot_cache;
+        constinit util::optional<KeySlotCacheEntry> g_keyslot_cache_entry[MaxPhysicalAesKeySlots];
 
         inline s32 GetMaxPhysicalKeySlots() {
             return (hos::GetVersion() >= hos::Version_6_0_0) ? MaxPhysicalAesKeySlots : MaxPhysicalAesKeySlotsDeprecated;
@@ -96,9 +96,9 @@ namespace ams::spl::impl {
             };
         };
 
-        const void *g_keyslot_owners[MaxVirtualAesKeySlots];
-        KeySlotContents g_keyslot_contents[MaxVirtualAesKeySlots];
-        KeySlotContents g_physical_keyslot_contents_for_backwards_compatibility[MaxPhysicalAesKeySlots];
+        constinit const void *g_keyslot_owners[MaxVirtualAesKeySlots];
+        constinit KeySlotContents g_keyslot_contents[MaxVirtualAesKeySlots];
+        constinit KeySlotContents g_physical_keyslot_contents_for_backwards_compatibility[MaxPhysicalAesKeySlots];
 
         void ClearPhysicalKeySlot(s32 keyslot) {
             AMS_ASSERT(IsPhysicalKeySlot(keyslot));
@@ -237,18 +237,18 @@ namespace ams::spl::impl {
         };
 
         /* Global variables. */
-        CtrDrbg g_drbg;
-        os::InterruptEventType g_se_event;
-        os::SystemEventType g_se_keyslot_available_event;
+        constinit CtrDrbg g_drbg;
+        constinit os::InterruptEventType g_se_event;
+        constinit os::SystemEventType g_se_keyslot_available_event;
 
-        Handle g_se_das_hnd;
-        u32 g_se_mapped_work_buffer_addr;
-        alignas(os::MemoryPageSize) u8 g_work_buffer[2 * WorkBufferSizeMax];
+        constinit Handle g_se_das_hnd;
+        constinit u32 g_se_mapped_work_buffer_addr;
+        alignas(os::MemoryPageSize) constinit u8 g_work_buffer[2 * WorkBufferSizeMax];
 
-        os::Mutex g_async_op_lock(false);
+        constinit os::SdkMutex g_async_op_lock;
 
-        BootReasonValue g_boot_reason;
-        bool g_boot_reason_set;
+        constinit BootReasonValue g_boot_reason;
+        constinit bool g_boot_reason_set;
 
         /* Boot Reason accessors. */
         BootReasonValue GetBootReason() {
@@ -505,10 +505,13 @@ namespace ams::spl::impl {
     void Initialize() {
         /* Initialize the Drbg. */
         InitializeCtrDrbg();
+
         /* Initialize SE interrupt + keyslot events. */
         InitializeSeEvents();
+
         /* Initialize DAS for the SE. */
         InitializeDeviceAddressSpace();
+
         /* Initialize the keyslot cache. */
         InitializeKeySlotCache();
     }

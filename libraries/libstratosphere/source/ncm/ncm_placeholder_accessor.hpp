@@ -32,7 +32,7 @@ namespace ams::ncm {
             std::array<CacheEntry, MaxCacheEntries> caches;
             PathString *root_path;
             u64 cur_counter;
-            os::Mutex cache_mutex;
+            os::SdkMutex cache_mutex;
             MakePlaceHolderPathFunction make_placeholder_path_func;
             bool delay_flush;
         private:
@@ -43,7 +43,7 @@ namespace ams::ncm {
             CacheEntry *FindInCache(PlaceHolderId placeholder_id);
             CacheEntry *GetFreeEntry();;
         public:
-            PlaceHolderAccessor() : cur_counter(0), cache_mutex(false), delay_flush(false) {
+            PlaceHolderAccessor() : cur_counter(0), cache_mutex(), delay_flush(false) {
                 for (size_t i = 0; i < MaxCacheEntries; i++) {
                     caches[i].id = InvalidPlaceHolderId;
                 }

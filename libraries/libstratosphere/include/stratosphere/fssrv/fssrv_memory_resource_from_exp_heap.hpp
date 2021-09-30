@@ -42,11 +42,11 @@ namespace ams::fssrv {
     class PeakCheckableMemoryResourceFromExpHeap : public ams::MemoryResource {
         private:
             lmem::HeapHandle heap_handle;
-            os::Mutex mutex;
+            os::SdkMutex mutex;
             size_t peak_free_size;
             size_t current_free_size;
         public:
-            constexpr explicit PeakCheckableMemoryResourceFromExpHeap(size_t heap_size) : heap_handle(nullptr), mutex(false), peak_free_size(heap_size), current_free_size(heap_size) { /* ... */ }
+            constexpr explicit PeakCheckableMemoryResourceFromExpHeap(size_t heap_size) : heap_handle(nullptr), mutex(), peak_free_size(heap_size), current_free_size(heap_size) { /* ... */ }
 
             void SetHeapHandle(lmem::HeapHandle handle) {
                 this->heap_handle = handle;
@@ -57,7 +57,7 @@ namespace ams::fssrv {
 
             void ClearPeak() { this->peak_free_size = this->current_free_size; }
 
-            std::scoped_lock<os::Mutex> GetScopedLock() {
+            std::scoped_lock<os::SdkMutex> GetScopedLock() {
                 return std::scoped_lock(this->mutex);
             }
 

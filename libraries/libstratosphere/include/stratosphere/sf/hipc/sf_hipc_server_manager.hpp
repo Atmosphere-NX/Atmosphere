@@ -80,9 +80,9 @@ namespace ams::sf::hipc {
             os::Event notify_event;
             os::WaitableHolderType notify_event_holder;
 
-            os::Mutex waitable_selection_mutex;
+            os::SdkMutex waitable_selection_mutex;
 
-            os::Mutex waitlist_mutex;
+            os::SdkMutex waitlist_mutex;
             os::WaitableManagerType waitlist;
         private:
             virtual void RegisterSessionToWaitList(ServerSession *session) override final;
@@ -192,7 +192,7 @@ namespace ams::sf::hipc {
             ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count) :
                 ServerDomainSessionManager(entry_storage, entry_count),
                 request_stop_event(os::EventClearMode_ManualClear), notify_event(os::EventClearMode_ManualClear),
-                waitable_selection_mutex(false), waitlist_mutex(false)
+                waitable_selection_mutex(), waitlist_mutex()
             {
                 /* Link waitables. */
                 os::InitializeWaitableManager(std::addressof(this->waitable_manager));
@@ -259,7 +259,7 @@ namespace ams::sf::hipc {
             using ServerManagerBase::DomainStorage;
         private:
             /* Resource storage. */
-            os::Mutex resource_mutex;
+            os::SdkMutex resource_mutex;
             util::TypedStorage<Server> server_storages[MaxServers];
             bool server_allocated[MaxServers];
             util::TypedStorage<ServerSession> session_storages[MaxSessions];
@@ -370,7 +370,7 @@ namespace ams::sf::hipc {
                 return this->GetObjectBySessionIndex(session, this->saved_messages_start, hipc::TlsMessageBufferSize);
             }
         public:
-            ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects), resource_mutex(false) {
+            ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects), resource_mutex() {
                 /* Clear storages. */
                 #define SF_SM_MEMCLEAR(obj) if constexpr (sizeof(obj) > 0) { std::memset(obj, 0, sizeof(obj)); }
                 SF_SM_MEMCLEAR(this->server_storages);

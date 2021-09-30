@@ -26,9 +26,9 @@ namespace ams::fs::impl {
             using FileSystemList = util::IntrusiveListBaseTraits<FileSystemAccessor>::ListType;
         private:
             FileSystemList fs_list;
-            os::Mutex mutex;
+            os::SdkMutex mutex;
         public:
-            constexpr MountTable() : fs_list(), mutex(false) { /* ... */ }
+            constexpr MountTable() : fs_list(), mutex() { /* ... */ }
         private:
             bool CanAcceptMountName(const char *name);
         public:

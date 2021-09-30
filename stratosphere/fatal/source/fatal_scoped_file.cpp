@@ -23,8 +23,8 @@ namespace ams::fatal::srv {
         /* Convenience definitions. */
         constexpr size_t MaximumLineLength = 0x20;
 
-        os::Mutex g_format_lock(false);
-        char g_format_buffer[2 * os::MemoryPageSize];
+        constinit os::SdkMutex g_format_lock;
+        constinit char g_format_buffer[2 * os::MemoryPageSize];
 
     }
 

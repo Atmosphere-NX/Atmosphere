@@ -147,7 +147,7 @@ namespace ams::fssystem::save {
             }
         private:
             FileSystemBufferManagerSet *buffers;
-            os::Mutex *mutex;
+            os::SdkRecursiveMutex *mutex;
             IntegrityVerificationStorage verify_storages[MaxLayers - 1];
             BlockCacheBufferedStorage    buffer_storages[MaxLayers - 1];
             s64 data_size;
@@ -157,7 +157,7 @@ namespace ams::fssystem::save {
             HierarchicalIntegrityVerificationStorage() : buffers(nullptr), mutex(nullptr), data_size(-1), is_written_for_rollback(false) { /* ... */ }
             virtual ~HierarchicalIntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::Mutex *mtx, fs::StorageType storage_type);
+            Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;

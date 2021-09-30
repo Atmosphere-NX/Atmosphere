@@ -582,7 +582,7 @@ namespace ams::fssystem::save {
             }
     };
 
-    BufferedStorage::BufferedStorage() : base_storage(), buffer_manager(), block_size(), base_storage_size(), caches(), cache_count(), next_acquire_cache(), next_fetch_cache(), mutex(false), bulk_read_enabled() {
+    BufferedStorage::BufferedStorage() : base_storage(), buffer_manager(), block_size(), base_storage_size(), caches(), cache_count(), next_acquire_cache(), next_fetch_cache(), mutex(), bulk_read_enabled() {
         /* ... */
     }
 

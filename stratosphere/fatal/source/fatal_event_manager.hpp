@@ -24,7 +24,7 @@ namespace ams::fatal::srv {
         public:
             static constexpr size_t NumFatalEvents = 3;
         private:
-            os::Mutex lock;
+            os::SdkMutex lock;
             size_t num_events_gotten = 0;
             os::SystemEventType events[NumFatalEvents];
         public:

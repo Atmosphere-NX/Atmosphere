@@ -44,13 +44,13 @@ namespace ams::pm::resource {
         constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33_MB; /* Applet pool is 0x20100000 */
 
         /* Globals. */
-        os::Mutex g_resource_limit_lock(false);
-        Handle g_resource_limit_handles[ResourceLimitGroup_Count];
-        spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
-        u64 g_system_memory_boost_size = 0;
-        u64 g_extra_application_threads_available = 0;
+        constinit os::SdkMutex g_resource_limit_lock;
+        constinit Handle g_resource_limit_handles[ResourceLimitGroup_Count];
+        constinit spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
+        constinit u64 g_system_memory_boost_size = 0;
+        constinit u64 g_extra_application_threads_available = 0;
 
-        u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
+        constinit u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
             [ResourceLimitGroup_System] = {
                 [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized by more complicated logic later. */
                 [svc::LimitableResource_ThreadCountMax]         = 508,
@@ -74,7 +74,7 @@ namespace ams::pm::resource {
             },
         };
 
-        u64 g_memory_resource_limits[spl::MemoryArrangement_Count][ResourceLimitGroup_Count] = {
+        constinit u64 g_memory_resource_limits[spl::MemoryArrangement_Count][ResourceLimitGroup_Count] = {
             [spl::MemoryArrangement_Standard] = {
                 [ResourceLimitGroup_System]      =  269_MB,
                 [ResourceLimitGroup_Application] = 3285_MB,

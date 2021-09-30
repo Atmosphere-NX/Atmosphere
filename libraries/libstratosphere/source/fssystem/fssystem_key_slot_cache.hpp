@@ -22,10 +22,10 @@ namespace ams::fssystem {
         NON_COPYABLE(KeySlotCacheAccessor);
         NON_MOVEABLE(KeySlotCacheAccessor);
         private:
-            util::unique_lock<os::Mutex> lk;
+            util::unique_lock<os::SdkMutex> lk;
             const s32 slot_index;
         public:
-            KeySlotCacheAccessor(s32 idx, util::unique_lock<os::Mutex> &&l) : lk(std::move(l)), slot_index(idx) { /* ... */ }
+            KeySlotCacheAccessor(s32 idx, util::unique_lock<os::SdkMutex> &&l) : lk(std::move(l)), slot_index(idx) { /* ... */ }
 
             s32 GetKeySlotIndex() const { return this->slot_index; }
     };
@@ -64,11 +64,11 @@ namespace ams::fssystem {
         private:
             using KeySlotCacheEntryList = util::IntrusiveListBaseTraits<KeySlotCacheEntry>::ListType;
         private:
-            os::Mutex mutex;
+            os::SdkMutex mutex;
             KeySlotCacheEntryList high_priority_mru_list;
             KeySlotCacheEntryList low_priority_mru_list;
         public:
-            constexpr KeySlotCache() : mutex(false), high_priority_mru_list(), low_priority_mru_list() { /* ... */ }
+            constexpr KeySlotCache() : mutex(), high_priority_mru_list(), low_priority_mru_list() { /* ... */ }
 
             Result AllocateHighPriority(std::unique_ptr<KeySlotCacheAccessor> *out, const void *key, size_t key_size, s32 key2) {
                 return this->AllocateFromLru(out, this->high_priority_mru_list, key, key_size, key2);

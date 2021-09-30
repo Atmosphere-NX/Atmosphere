@@ -84,7 +84,7 @@ namespace ams::sf::cmif {
                 private:
                     using EntryList = typename util::IntrusiveListMemberTraits<&Entry::free_list_node>::ListType;
                 private:
-                    os::Mutex lock;
+                    os::SdkMutex lock;
                     EntryList free_list;
                     Entry *entries;
                     size_t num_entries;
@@ -114,13 +114,13 @@ namespace ams::sf::cmif {
                     }
             };
         private:
-            os::Mutex entry_owner_lock;
+            os::SdkMutex entry_owner_lock;
             EntryManager entry_manager;
         private:
             virtual void *AllocateDomain()   = 0;
             virtual void  FreeDomain(void *) = 0;
         protected:
-            ServerDomainManager(DomainEntryStorage *entry_storage, size_t entry_count) : entry_owner_lock(false), entry_manager(entry_storage, entry_count) { /* ... */ }
+            ServerDomainManager(DomainEntryStorage *entry_storage, size_t entry_count) : entry_owner_lock(), entry_manager(entry_storage, entry_count) { /* ... */ }
 
             inline DomainServiceObject *AllocateDomainServiceObject() {
                 void *storage = this->AllocateDomain();

@@ -63,14 +63,14 @@ namespace ams::kvdb {
                     bool Contains(const void *key, size_t key_size);
             };
         private:
-            os::Mutex lock;
+            os::SdkMutex lock;
             Path dir_path;
             Cache cache;
         private:
             Path GetPath(const void *key, size_t key_size);
             Result GetKey(size_t *out_size, void *out_key, size_t max_out_size, const FileName &file_name);
         public:
-            FileKeyValueStore() : lock(false) { /* ... */ }
+            FileKeyValueStore() : lock() { /* ... */ }
 
             /* Basic accessors. */
             Result Initialize(const char *dir);

@@ -31,8 +31,8 @@ namespace ams::patcher {
         constexpr size_t ModuleIpsPatchLength = 2 * sizeof(ro::ModuleId) + IpsFileExtensionLength;
 
         /* Global data. */
-        os::Mutex apply_patch_lock(false);
-        u8 g_patch_read_buffer[os::MemoryPageSize];
+        constinit os::SdkMutex g_apply_patch_lock;
+        constinit u8 g_patch_read_buffer[os::MemoryPageSize];
 
         /* Helpers. */
         inline u8 ConvertHexNybble(const char nybble) {
@@ -213,7 +213,7 @@ namespace ams::patcher {
 
     void LocateAndApplyIpsPatchesToModule(const char *mount_name, const char *patch_dir_name, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size) {
         /* Ensure only one thread tries to apply patches at a time. */
-        std::scoped_lock lk(apply_patch_lock);
+        std::scoped_lock lk(g_apply_patch_lock);
 
         /* Inspect all patches from /atmosphere/<patch_dir>/<*>/<*>.ips */
         char path[fs::EntryNameLengthMax + 1];

@@ -33,7 +33,7 @@ namespace ams::fssystem {
             char key[2][KeySize];
             char iv[IvSize];
             const size_t block_size;
-            os::Mutex mutex;
+            os::SdkMutex mutex;
         public:
             AesXtsStorage(IStorage *base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size);
 

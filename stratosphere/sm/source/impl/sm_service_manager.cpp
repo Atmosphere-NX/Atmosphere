@@ -145,7 +145,7 @@ namespace ams::sm::impl {
         /* any kind of mutual exclusivity when accessing (and modifying) global state. Previously, this was */
         /* not a problem, because sm was strictly single-threaded, and so two threads could not race eachother. */
         /* We will add a mutex (and perform locking) in order to prevent simultaneous access to global state. */
-        constinit os::Mutex g_mutex{true};
+        constinit os::SdkRecursiveMutex g_mutex;
 
         constinit std::array<ProcessInfo, ProcessCountMax> g_process_list = [] {
             std::array<ProcessInfo, ProcessCountMax> list = {};

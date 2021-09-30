@@ -30,11 +30,11 @@ namespace ams::fssystem {
         private:
             save::HierarchicalIntegrityVerificationStorage integrity_storage;
             save::FileSystemBufferManagerSet buffers;
-            os::Mutex mutex;
+            os::SdkRecursiveMutex mutex;
             Hash master_hash;
             std::unique_ptr<fs::MemoryStorage> master_hash_storage;
         public:
-            IntegrityRomFsStorage() : mutex(true) { /* ... */ }
+            IntegrityRomFsStorage() : mutex() { /* ... */ }
             virtual ~IntegrityRomFsStorage() override { this->Finalize(); }
 
             Result Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm);

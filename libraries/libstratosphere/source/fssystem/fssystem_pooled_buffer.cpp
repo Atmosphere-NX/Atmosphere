@@ -21,13 +21,12 @@ namespace ams::fssystem {
 
         class AdditionalDeviceAddressEntry {
             private:
-                /* TODO: SdkMutex */
-                os::Mutex mutex;
+                os::SdkMutex mutex;
                 bool is_registered;
                 uintptr_t address;
                 size_t size;
             public:
-                constexpr AdditionalDeviceAddressEntry() : mutex(false), is_registered(), address(), size() { /* ... */ }
+                constexpr AdditionalDeviceAddressEntry() : mutex(), is_registered(), address(), size() { /* ... */ }
 
                 void Register(uintptr_t addr, size_t sz) {
                     std::scoped_lock lk(this->mutex);
@@ -77,18 +76,17 @@ namespace ams::fssystem {
         constexpr size_t HeapAllocatableSizeMax         = HeapBlockSize * (static_cast<size_t>(1) << HeapOrderMax);
         constexpr size_t HeapAllocatableSizeMaxForLarge = HeapBlockSize * (static_cast<size_t>(1) << HeapOrderMaxForLarge);
 
-        /* TODO: SdkMutex */
-        os::Mutex g_heap_mutex(false);
-        FileSystemBuddyHeap g_heap;
+        constinit os::SdkMutex g_heap_mutex;
+        constinit FileSystemBuddyHeap g_heap;
 
-        std::atomic<size_t> g_retry_count;
-        std::atomic<size_t> g_reduce_allocation_count;
+        constinit std::atomic<size_t> g_retry_count;
+        constinit std::atomic<size_t> g_reduce_allocation_count;
 
-        void *g_heap_buffer;
-        size_t g_heap_size;
-        size_t g_heap_free_size_peak;
+        constinit void *g_heap_buffer;
+        constinit size_t g_heap_size;
+        constinit size_t g_heap_free_size_peak;
 
-        AdditionalDeviceAddressEntry g_additional_device_address_entry;
+        constinit AdditionalDeviceAddressEntry g_additional_device_address_entry;
 
     }
 

@@ -355,7 +355,7 @@ namespace ams::tipc {
 
             using PortAllocatorTuple = std::tuple<typename PortInfos::Allocator...>;
         private:
-            os::Mutex m_mutex;
+            os::SdkRecursiveMutex m_mutex;
             os::TlsSlot m_tls_slot;
             PortManagerTuple m_port_managers;
             PortAllocatorTuple m_port_allocators;
@@ -390,11 +390,11 @@ namespace ams::tipc {
                 os::StartThread(m_port_threads + Ix);
             }
         public:
-            ServerManagerImpl() : m_mutex(true), m_tls_slot(), m_port_managers(), m_port_allocators() { /* ... */ }
+            ServerManagerImpl() : m_mutex(), m_tls_slot(), m_port_managers(), m_port_allocators() { /* ... */ }
 
             os::TlsSlot GetTlsSlot() const { return m_tls_slot; }
 
-            os::Mutex &GetMutex() { return m_mutex; }
+            os::SdkRecursiveMutex &GetMutex() { return m_mutex; }
 
             void Initialize() {
                 /* Initialize our tls slot. */

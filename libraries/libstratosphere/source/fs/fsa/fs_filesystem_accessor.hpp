@@ -35,7 +35,7 @@ namespace ams::fs::impl {
             std::unique_ptr<fsa::IFileSystem> impl;
             FileList open_file_list;
             DirList open_dir_list;
-            os::Mutex open_list_lock;
+            os::SdkMutex open_list_lock;
             std::unique_ptr<fsa::ICommonMountNameGenerator> mount_name_generator;
             bool access_log_enabled;
             bool data_cache_attachable;

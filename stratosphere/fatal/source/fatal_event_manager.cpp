@@ -18,7 +18,7 @@
 
 namespace ams::fatal::srv {
 
-    FatalEventManager::FatalEventManager() : lock(false) {
+    FatalEventManager::FatalEventManager() : lock() {
         /* Just create all the events. */
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
             R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(this->events[i]), os::EventClearMode_AutoClear, true));

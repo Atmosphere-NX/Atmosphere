@@ -20,8 +20,8 @@ namespace ams::hid {
     namespace {
 
         /* Global lock. */
-        os::Mutex g_hid_lock(false);
-        bool g_initialized_hid = false;
+        constinit os::SdkMutex g_hid_lock;
+        constinit bool g_initialized_hid = false;
 
         /* Set of supported NpadIds (we want to read from any connected controllers). */
         constexpr const HidNpadIdType NpadIdTypes[] = {

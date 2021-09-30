@@ -25,12 +25,12 @@ namespace ams::fssystem {
         private:
             using BlockCache = LruListCache<s64, char *>;
         private:
-            os::Mutex mutex;
+            os::SdkMutex mutex;
             BlockCache block_cache;
             fs::IStorage * const base_storage;
             s32 block_size;
         public:
-            ReadOnlyBlockCacheStorage(IStorage *bs, s32 bsz, char *buf, size_t buf_size, s32 cache_block_count) : mutex(false), base_storage(bs), block_size(bsz) {
+            ReadOnlyBlockCacheStorage(IStorage *bs, s32 bsz, char *buf, size_t buf_size, s32 cache_block_count) : mutex(), base_storage(bs), block_size(bsz) {
                 /* Validate preconditions. */
                 AMS_ASSERT(buf_size >= static_cast<size_t>(this->block_size));
                 AMS_ASSERT(util::IsPowerOfTwo(this->block_size));

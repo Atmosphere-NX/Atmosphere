@@ -21,7 +21,7 @@ namespace ams::lmem {
     HeapHandle CreateUnitHeap(void *address, size_t size, size_t unit_size, u32 option) {
         HeapHandle handle = impl::CreateUnitHeap(address, size, unit_size, DefaultAlignment, static_cast<u16>(option), InfoPlacement_Head, nullptr);
         if (option & CreateOption_ThreadSafe) {
-            os::InitializeMutex(std::addressof(handle->mutex), false, 0);
+            os::InitializeSdkMutex(std::addressof(handle->mutex));
         }
         return handle;
     }
@@ -29,7 +29,7 @@ namespace ams::lmem {
     HeapHandle CreateUnitHeap(void *address, size_t size, size_t unit_size, u32 option, s32 alignment, InfoPlacement info_placement) {
         HeapHandle handle = impl::CreateUnitHeap(address, size, unit_size, alignment, static_cast<u16>(option), info_placement, nullptr);
         if (option & CreateOption_ThreadSafe) {
-            os::InitializeMutex(std::addressof(handle->mutex), false, 0);
+            os::InitializeSdkMutex(std::addressof(handle->mutex));
         }
         return handle;
     }
@@ -37,15 +37,12 @@ namespace ams::lmem {
     HeapHandle CreateUnitHeap(void *address, size_t size, size_t unit_size, u32 option, s32 alignment, HeapCommonHead *heap_head) {
         HeapHandle handle = impl::CreateUnitHeap(address, size, unit_size, alignment, static_cast<u16>(option), InfoPlacement_Head, heap_head);
         if (option & CreateOption_ThreadSafe) {
-            os::InitializeMutex(std::addressof(handle->mutex), false, 0);
+            os::InitializeSdkMutex(std::addressof(handle->mutex));
         }
         return handle;
     }
 
     void DestroyUnitHeap(HeapHandle handle) {
-        if (handle->option & CreateOption_ThreadSafe) {
-            os::FinalizeMutex(std::addressof(handle->mutex));
-        }
         impl::DestroyUnitHeap(handle);
     }
 

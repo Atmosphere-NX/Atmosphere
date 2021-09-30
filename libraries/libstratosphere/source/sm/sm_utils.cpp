@@ -21,17 +21,17 @@ namespace ams::sm::impl {
     namespace {
 
         /* Globals. */
-        constinit os::Mutex g_mitm_ack_session_mutex(true);
-        constinit os::Mutex g_per_thread_session_mutex(true);
+        constinit os::SdkRecursiveMutex g_mitm_ack_session_mutex;
+        constinit os::SdkRecursiveMutex g_per_thread_session_mutex;
 
     }
 
     /* Utilities. */
-    os::Mutex &GetMitmAcknowledgementSessionMutex() {
+    os::SdkRecursiveMutex &GetMitmAcknowledgementSessionMutex() {
         return g_mitm_ack_session_mutex;
     }
 
-    os::Mutex &GetPerThreadSessionMutex() {
+    os::SdkRecursiveMutex &GetPerThreadSessionMutex() {
         return g_per_thread_session_mutex;
     }
 

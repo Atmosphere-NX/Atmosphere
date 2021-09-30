@@ -22,9 +22,9 @@ namespace ams::mitm::fs {
 
     namespace {
 
-        os::Mutex g_mq_lock(false);
-        bool g_started_req_thread;
-        uintptr_t g_mq_storage[2];
+        constinit os::SdkMutex g_mq_lock;
+        constinit bool g_started_req_thread;
+        constinit uintptr_t g_mq_storage[2];
         os::MessageQueue g_req_mq(g_mq_storage + 0, 1);
         os::MessageQueue g_ack_mq(g_mq_storage + 1, 1);
 

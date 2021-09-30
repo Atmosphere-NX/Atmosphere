@@ -20,9 +20,9 @@ namespace ams::mitm::sysupdater {
 
     class SystemUpdateApplyManager {
         private:
-            os::Mutex apply_mutex;
+            os::SdkMutex apply_mutex;
         public:
-            constexpr SystemUpdateApplyManager() : apply_mutex(false) { /* ... */ }
+            constexpr SystemUpdateApplyManager() : apply_mutex() { /* ... */ }
 
             Result ApplyPackageTask(ncm::PackageSystemDowngradeTask *task);
     };

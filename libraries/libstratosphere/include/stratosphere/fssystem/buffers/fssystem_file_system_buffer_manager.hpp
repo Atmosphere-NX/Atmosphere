@@ -192,7 +192,7 @@ namespace ams::fssystem {
             size_t peak_free_size;
             size_t peak_total_allocatable_size;
             size_t retried_count;
-            mutable os::Mutex mutex;
+            mutable os::SdkRecursiveMutex mutex;
         public:
             static constexpr size_t QueryWorkBufferSize(s32 max_cache_count, s32 max_order) {
                 const auto buddy_size = FileSystemBuddyHeap::QueryWorkBufferSize(max_order);
@@ -200,7 +200,7 @@ namespace ams::fssystem {
                 return buddy_size + table_size;
             }
         public:
-            FileSystemBufferManager() : total_size(), peak_free_size(), peak_total_allocatable_size(), retried_count(), mutex(true) { /* ... */ }
+            FileSystemBufferManager() : total_size(), peak_free_size(), peak_total_allocatable_size(), retried_count(), mutex() { /* ... */ }
 
             virtual ~FileSystemBufferManager() { /* ... */ }
 

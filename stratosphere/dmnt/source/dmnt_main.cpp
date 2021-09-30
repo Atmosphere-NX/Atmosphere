@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "dmnt_service.hpp"
 #include "cheat/dmnt_cheat_service.hpp"
 #include "cheat/impl/dmnt_cheat_api.hpp"
 
@@ -189,8 +188,6 @@ int main(int argc, char **argv)
     ams::dmnt::cheat::impl::InitializeCheatManager();
 
     /* Create services. */
-    /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
-    /* TODO: register debug service */
     R_ABORT_UNLESS(g_server_manager.RegisterObjectForServer(g_cheat_service.GetShared(), CheatServiceName, CheatMaxSessions));
 
     /* Loop forever, servicing our services. */

@@ -167,9 +167,9 @@ namespace ams::pm::impl {
 
     class ProcessList final : public util::IntrusiveListMemberTraits<&ProcessInfo::list_node>::ListType {
         private:
-            os::Mutex lock;
+            os::SdkMutex lock;
         public:
-            constexpr ProcessList() : lock(false) { /* ... */ }
+            constexpr ProcessList() : lock() { /* ... */ }
 
             void Lock() {
                 this->lock.Lock();

@@ -30,13 +30,13 @@ namespace ams::lmem::impl {
         public:
             explicit ScopedHeapLock(HeapHandle h) : handle(h) {
                 if (this->handle->option & CreateOption_ThreadSafe) {
-                    os::LockMutex(std::addressof(this->handle->mutex));
+                    os::LockSdkMutex(std::addressof(this->handle->mutex));
                 }
             }
 
             ~ScopedHeapLock() {
                 if (this->handle->option & CreateOption_ThreadSafe) {
-                    os::UnlockMutex(std::addressof(this->handle->mutex));
+                    os::UnlockSdkMutex(std::addressof(this->handle->mutex));
                 }
             }
     };

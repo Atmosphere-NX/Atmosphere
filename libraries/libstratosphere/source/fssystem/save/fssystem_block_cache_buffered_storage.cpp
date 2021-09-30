@@ -27,7 +27,7 @@ namespace ams::fssystem::save {
         this->Finalize();
     }
 
-    Result BlockCacheBufferedStorage::Initialize(IBufferManager *bm, os::Mutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type) {
+    Result BlockCacheBufferedStorage::Initialize(IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type) {
         /* Validate preconditions. */
         AMS_ASSERT(data != nullptr);
         AMS_ASSERT(bm   != nullptr);

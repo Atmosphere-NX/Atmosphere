@@ -28,7 +28,7 @@ namespace ams::lr {
             sf::SharedPointer<IRegisteredLocationResolver> registered_location_resolver = nullptr;
             sf::SharedPointer<IAddOnContentLocationResolver> add_on_content_location_resolver = nullptr;
 
-            os::Mutex mutex{false};
+            os::SdkMutex mutex{};
         public:
             /* Actual commands. */
             Result OpenLocationResolver(sf::Out<sf::SharedPointer<ILocationResolver>> out, ncm::StorageId storage_id);

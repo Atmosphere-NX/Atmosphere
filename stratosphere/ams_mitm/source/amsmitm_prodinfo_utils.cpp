@@ -501,18 +501,18 @@ namespace ams::mitm {
             crypto::EncryptAes128Ctr(dst, dst_size, entropy.data, crypto::Aes128CtrEncryptor::KeySize, entropy.data + crypto::Aes128CtrEncryptor::KeySize, crypto::Aes128CtrEncryptor::IvSize, dst, dst_size);
         }
 
-        alignas(os::MemoryPageSize) CalibrationInfo g_calibration_info = {};
-        alignas(os::MemoryPageSize) CalibrationInfo g_blank_calibration_info = {};
-        alignas(os::MemoryPageSize) SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
+        alignas(os::MemoryPageSize) constinit CalibrationInfo g_calibration_info = {};
+        alignas(os::MemoryPageSize) constinit CalibrationInfo g_blank_calibration_info = {};
+        alignas(os::MemoryPageSize) constinit SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
 
-        util::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
-        util::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
-        util::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
+        constinit util::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
+        constinit util::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
+        constinit util::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
 
-        bool g_allow_writes     = false;
-        bool g_has_secure_backup = false;
+        constinit bool g_allow_writes     = false;
+        constinit bool g_has_secure_backup = false;
 
-        os::Mutex g_prodinfo_management_lock(false);
+        constinit os::SdkMutex g_prodinfo_management_lock;
 
     }
 

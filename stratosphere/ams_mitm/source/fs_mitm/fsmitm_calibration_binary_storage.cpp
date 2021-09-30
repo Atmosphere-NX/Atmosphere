@@ -22,7 +22,7 @@ namespace ams::mitm::fs {
 
     namespace {
 
-        os::Mutex g_cal0_access_mutex(false);
+        constinit os::SdkMutex g_cal0_access_mutex;
 
     }
     Result CalibrationBinaryStorage::Read(s64 offset, void *_buffer, size_t size) {

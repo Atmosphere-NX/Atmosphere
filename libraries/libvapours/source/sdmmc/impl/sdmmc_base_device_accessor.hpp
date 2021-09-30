@@ -214,9 +214,9 @@ namespace ams::sdmmc::impl {
             bool is_awake;
         public:
         #if defined(AMS_SDMMC_THREAD_SAFE)
-            mutable os::Mutex device_mutex;
+            mutable os::SdkRecursiveMutex device_mutex;
         public:
-            BaseDevice() : device_mutex(true)
+            BaseDevice() : device_mutex()
         #else
             BaseDevice()
         #endif

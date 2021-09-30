@@ -83,7 +83,7 @@ namespace ams::dmnt::cheat::impl {
             private:
                 static constexpr size_t ThreadStackSize = 0x4000;
             private:
-                os::Mutex cheat_lock;
+                os::SdkMutex cheat_lock;
                 os::Event unsafe_break_event;
                 os::Event debug_events_event; /* Autoclear. */
                 os::ThreadType detect_thread, debug_events_thread;
@@ -250,7 +250,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
             public:
-                CheatProcessManager() : cheat_lock(false), unsafe_break_event(os::EventClearMode_ManualClear), debug_events_event(os::EventClearMode_AutoClear), cheat_process_event(os::EventClearMode_AutoClear, true) {
+                CheatProcessManager() : cheat_lock(), unsafe_break_event(os::EventClearMode_ManualClear), debug_events_event(os::EventClearMode_AutoClear), cheat_process_event(os::EventClearMode_AutoClear, true) {
                     /* Learn whether we should enable cheats by default. */
                     {
                         u8 en = 0;

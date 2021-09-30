@@ -427,6 +427,7 @@ namespace ams::lmem::impl {
         const s32 abs_alignment = std::abs(alignment);
         AMS_ASSERT((abs_alignment & (abs_alignment - 1)) == 0);
         AMS_ASSERT(MinimumAlignment <= static_cast<size_t>(abs_alignment));
+        AMS_UNUSED(abs_alignment);
 
         /* Fix size to be correctly aligned. */
         if (size == 0) {

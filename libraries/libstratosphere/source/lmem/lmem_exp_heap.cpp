@@ -21,15 +21,12 @@ namespace ams::lmem {
     HeapHandle CreateExpHeap(void *address, size_t size, u32 option) {
         HeapHandle handle = impl::CreateExpHeap(address, size, option);
         if (option & CreateOption_ThreadSafe) {
-            os::InitializeMutex(std::addressof(handle->mutex), false, 0);
+            os::InitializeSdkMutex(std::addressof(handle->mutex));
         }
         return handle;
     }
 
     void DestroyExpHeap(HeapHandle handle) {
-        if (handle->option & CreateOption_ThreadSafe) {
-            os::FinalizeMutex(std::addressof(handle->mutex));
-        }
         impl::DestroyExpHeap(handle);
     }
 
