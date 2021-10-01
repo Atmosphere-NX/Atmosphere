@@ -89,24 +89,26 @@ namespace ams {
         public:
             using Base = typename result::impl::ResultBase<Result>;
         private:
-            typename Base::BaseType value;
+            typename Base::BaseType m_value;
         private:
             /* TODO: Maybe one-day, the result constructor. */
         public:
             Result() { /* ... */ }
 
             /* TODO: It sure would be nice to make this private. */
-            constexpr Result(typename Base::BaseType v) : value(v) { static_assert(std::is_same<typename Base::BaseType, ::Result>::value); }
+            constexpr ALWAYS_INLINE Result(typename Base::BaseType v) : m_value(v) { static_assert(std::is_same<typename Base::BaseType, ::Result>::value); }
 
             constexpr ALWAYS_INLINE operator ResultSuccess() const;
-            NX_CONSTEXPR bool CanAccept(Result) { return true; }
+            static constexpr ALWAYS_INLINE bool CanAccept(Result) { return true; }
 
-            constexpr ALWAYS_INLINE bool IsSuccess() const { return this->GetValue() == Base::SuccessValue; }
+            constexpr ALWAYS_INLINE bool IsSuccess() const { return m_value == Base::SuccessValue; }
             constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
             constexpr ALWAYS_INLINE typename Base::BaseType GetModule() const { return Base::GetModule(); }
             constexpr ALWAYS_INLINE typename Base::BaseType GetDescription() const { return Base::GetDescription(); }
 
-            constexpr ALWAYS_INLINE typename Base::BaseType GetValue() const { return this->value; }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetInnerValue() const { return ::ams::result::impl::ResultTraits::MaskReservedFromValue(m_value); }
+
+            constexpr ALWAYS_INLINE typename Base::BaseType GetValue() const { return m_value; }
     };
     static_assert(sizeof(Result) == sizeof(Result::Base::BaseType), "sizeof(Result) == sizeof(Result::Base::BaseType)");
     static_assert(std::is_trivially_destructible<Result>::value, "std::is_trivially_destructible<Result>::value");
@@ -120,11 +122,11 @@ namespace ams {
                 }
 
                 static constexpr ALWAYS_INLINE ResultTraits::BaseType GetReserved(Result result) {
-                    return ResultTraits::GetReservedFromValue(result.value);
+                    return ResultTraits::GetReservedFromValue(result.m_value);
                 }
 
                 static constexpr ALWAYS_INLINE Result MergeReserved(Result result, ResultTraits::BaseType reserved) {
-                    return Result(ResultTraits::MergeValueWithReserved(ResultTraits::MaskReservedFromValue(result.value), reserved));
+                    return Result(ResultTraits::MergeValueWithReserved(ResultTraits::MaskReservedFromValue(result.m_value), reserved));
                 }
         };
 
@@ -138,8 +140,8 @@ namespace ams {
         public:
             using Base = typename result::impl::ResultBase<ResultSuccess>;
         public:
-            constexpr operator Result() const { return result::impl::MakeResult(Base::SuccessValue); }
-            NX_CONSTEXPR bool CanAccept(Result result) { return result.IsSuccess(); }
+            constexpr ALWAYS_INLINE operator Result() const { return result::impl::MakeResult(Base::SuccessValue); }
+            static constexpr ALWAYS_INLINE bool CanAccept(Result result) { return result.IsSuccess(); }
 
             constexpr ALWAYS_INLINE bool IsSuccess() const { return true; }
             constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
@@ -174,8 +176,8 @@ namespace ams {
                 static constexpr typename Base::BaseType Value = ResultTraits::MakeStaticValue<Module, Description>::value;
                 static_assert(Value != Base::SuccessValue, "Value != Base::SuccessValue");
             public:
-                constexpr operator Result() const { return MakeResult(Value); }
-                constexpr operator ResultSuccess() const { OnResultAbort(Value); }
+                constexpr ALWAYS_INLINE operator Result() const { return MakeResult(Value); }
+                constexpr ALWAYS_INLINE operator ResultSuccess() const { OnResultAbort(Value); }
 
                 constexpr ALWAYS_INLINE bool IsSuccess() const { return false; }
                 constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
@@ -185,6 +187,10 @@ namespace ams {
 
         template<ResultTraits::BaseType _Module, ResultTraits::BaseType DescStart, ResultTraits::BaseType DescEnd>
         class ResultErrorRangeBase {
+            private:
+                /* NOTE: GCC does not optimize the module/description comparisons into one check (as of 10/1/2021) */
+                /*       and so this optimizes result comparisons to get the same codegen as Nintendo does. */
+                static constexpr bool UseDirectValueComparison = true;
             public:
                 static constexpr ResultTraits::BaseType Module = _Module;
                 static constexpr ResultTraits::BaseType DescriptionStart = DescStart;
@@ -193,8 +199,17 @@ namespace ams {
                 static constexpr typename ResultTraits::BaseType StartValue = ResultTraits::MakeStaticValue<Module, DescriptionStart>::value;
                 static constexpr typename ResultTraits::BaseType EndValue = ResultTraits::MakeStaticValue<Module, DescriptionEnd>::value;
             public:
-                static constexpr bool Includes(Result result) {
-                    return result.GetModule() == Module && DescriptionStart <= result.GetDescription() && result.GetDescription() <= DescriptionEnd;
+                static constexpr ALWAYS_INLINE bool Includes(Result result) {
+                    if constexpr (UseDirectValueComparison) {
+                        const auto inner_value = result.GetInnerValue();
+                        if constexpr (StartValue == EndValue) {
+                            return inner_value == StartValue;
+                        } else {
+                            return StartValue <= inner_value && inner_value <= EndValue;
+                        }
+                    } else {
+                        return result.GetModule() == Module && DescriptionStart <= result.GetDescription() && result.GetDescription() <= DescriptionEnd;
+                    }
                 }
         };
 
