@@ -25,7 +25,7 @@ namespace ams::os::impl {
     class OsResourceManager {
         private:
             RngManager  rng_manager{};
-            AslrSpaceManager aslr_space_manager;
+            AslrSpaceManager aslr_space_manager{};
             /* TODO */
             ThreadManager thread_manager{};
             /* TODO */

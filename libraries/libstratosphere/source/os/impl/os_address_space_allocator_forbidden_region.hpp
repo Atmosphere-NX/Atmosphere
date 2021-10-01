@@ -18,13 +18,9 @@
 
 namespace ams::os::impl {
 
-    class TransferMemoryImpl {
-        public:
-            static Result Create(Handle *out, void *address, size_t size, MemoryPermission perm);
-            static void Close(Handle handle);
-
-            static Result Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm);
-            static void Unmap(Handle handle, void *address, size_t size);
+    struct AddressSpaceAllocatorForbiddenRegion {
+        u64 address;
+        u64 size;
     };
 
 }

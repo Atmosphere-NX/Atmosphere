@@ -13,18 +13,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/os/impl/os_internal_critical_section.hpp>
 
-namespace ams::os::impl {
+namespace ams::os {
 
-    class TransferMemoryImpl {
-        public:
-            static Result Create(Handle *out, void *address, size_t size, MemoryPermission perm);
-            static void Close(Handle handle);
+    struct SharedMemoryType {
+        enum State {
+            State_NotInitialized = 0,
+            State_Initialized    = 1,
+            State_Mapped         = 2,
+        };
 
-            static Result Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm);
-            static void Unmap(Handle handle, void *address, size_t size);
+        u8 state;
+        bool handle_managed;
+        bool allocated;
+
+        void *address;
+        size_t size;
+        Handle handle;
+
+        mutable impl::InternalCriticalSectionStorage cs_shared_memory;
     };
+    static_assert(std::is_trivial<SharedMemoryType>::value);
 
 }

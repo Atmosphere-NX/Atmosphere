@@ -18,12 +18,12 @@
 
 namespace ams::os::impl {
 
-    class TransferMemoryImpl {
+    class SharedMemoryImpl {
         public:
-            static Result Create(Handle *out, void *address, size_t size, MemoryPermission perm);
+            static Result Create(Handle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm);
             static void Close(Handle handle);
 
-            static Result Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm);
+            static Result Map(void **out, Handle handle, size_t size, MemoryPermission perm);
             static void Unmap(Handle handle, void *address, size_t size);
     };
 

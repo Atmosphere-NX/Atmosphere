@@ -170,7 +170,7 @@ namespace ams::htcs::server {
 
         /* Attach the transfer memory. */
         os::TransferMemoryType tmem;
-        R_ABORT_UNLESS(os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true));
+        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true);
         ON_SCOPE_EXIT { os::DestroyTransferMemory(std::addressof(tmem)); };
 
         /* Map the transfer memory. */
@@ -201,7 +201,7 @@ namespace ams::htcs::server {
 
         /* Attach the transfer memory. */
         os::TransferMemoryType tmem;
-        R_ABORT_UNLESS(os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true));
+        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true);
         ON_SCOPE_EXIT { os::DestroyTransferMemory(std::addressof(tmem)); };
 
         /* Map the transfer memory. */

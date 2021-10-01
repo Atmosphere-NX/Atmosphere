@@ -14,15 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "os_io_region_impl.hpp"
-#include "os_aslr_space_manager_types.hpp"
+#include "os_shared_memory_impl.hpp"
 #include "os_aslr_space_manager.hpp"
 
 namespace ams::os::impl {
 
     namespace {
 
-        constexpr svc::MemoryPermission ConvertToSvcMemoryPermission(os::MemoryPermission perm) {
+        svc::MemoryPermission ConvertToSvcMemoryPermission(os::MemoryPermission perm) {
             switch (perm) {
                 case os::MemoryPermission_None:      return svc::MemoryPermission_None;
                 case os::MemoryPermission_ReadOnly:  return svc::MemoryPermission_Read;
@@ -32,47 +31,44 @@ namespace ams::os::impl {
             }
         }
 
-        constexpr svc::MemoryMapping ConvertToSvcMemoryMapping(os::MemoryMapping mapping) {
-            static_assert(std::same_as<svc::MemoryMapping, os::MemoryMapping>);
-            return mapping;
-        }
-
     }
 
-    Result IoRegionImpl::CreateIoRegion(Handle *out, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
-        /* Convert mapping/permission. */
-        const auto svc_mapping = ConvertToSvcMemoryMapping(mapping);
-        const auto svc_perm    = ConvertToSvcMemoryPermission(permission);
+    Result SharedMemoryImpl::Create(Handle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm) {
+        /* Convert memory permissions. */
+        const auto svc_my_perm    = ConvertToSvcMemoryPermission(my_perm);
+        const auto svc_other_perm = ConvertToSvcMemoryPermission(other_perm);
 
-        /* Create the io region. */
-        /* TODO: Result conversion/abort on unexpected result? */
+        /* Create the memory. */
         svc::Handle handle;
-        R_TRY(svc::CreateIoRegion(std::addressof(handle), io_pool_handle, address, size, svc_mapping, svc_perm));
+        R_TRY_CATCH(svc::CreateSharedMemory(std::addressof(handle), size, svc_my_perm, svc_other_perm)) {
+            R_CONVERT(svc::ResultOutOfHandles,  os::ResultOutOfHandles())
+            R_CONVERT(svc::ResultOutOfResource, os::ResultOutOfResource())
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out = handle;
         return ResultSuccess();
     }
 
-    Result IoRegionImpl::MapIoRegion(void **out, Handle handle, size_t size, MemoryPermission perm) {
-        /* Convert permission. */
+    void SharedMemoryImpl::Close(Handle handle) {
+        R_ABORT_UNLESS(svc::CloseHandle(handle));
+    }
+
+    Result SharedMemoryImpl::Map(void **out, Handle handle, size_t size, MemoryPermission perm) {
+        /* Convert memory permission. */
         const auto svc_perm = ConvertToSvcMemoryPermission(perm);
 
         /* Map at a random address. */
         uintptr_t mapped_address;
         R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddress(std::addressof(mapped_address), size,
             [handle, svc_perm](uintptr_t map_address, size_t map_size) -> Result {
-                R_TRY_CATCH(svc::MapIoRegion(handle, map_address, map_size, svc_perm)) {
-                    /* TODO: What's the correct result for these? */
-                    // R_CONVERT(svc::ResultInvalidHandle,        os::ResultInvalidHandle())
-                    // R_CONVERT(svc::ResultInvalidSize,          os::Result???())
-                    // R_CONVERT(svc::ResultInvalidState,         os::Result???())
+                R_TRY_CATCH(svc::MapSharedMemory(handle, map_address, map_size, svc_perm)) {
                     R_CONVERT(svc::ResultInvalidCurrentMemory, os::ResultInvalidCurrentMemoryState())
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
                 return ResultSuccess();
             },
             [handle](uintptr_t map_address, size_t map_size) -> void {
-                return IoRegionImpl::UnmapIoRegion(handle, reinterpret_cast<void *>(map_address), map_size);
+                return SharedMemoryImpl::Unmap(handle, reinterpret_cast<void *>(map_address), map_size);
             }
         ));
 
@@ -81,8 +77,8 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void IoRegionImpl::UnmapIoRegion(Handle handle, void *address, size_t size) {
-        R_ABORT_UNLESS(svc::UnmapIoRegion(handle, reinterpret_cast<uintptr_t>(address), size));
+    void SharedMemoryImpl::Unmap(Handle handle, void *address, size_t size) {
+        R_ABORT_UNLESS(svc::UnmapSharedMemory(handle, reinterpret_cast<uintptr_t>(address), size));
     }
 
 }

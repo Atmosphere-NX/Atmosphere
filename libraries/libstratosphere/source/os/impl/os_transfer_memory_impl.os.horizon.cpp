@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "os_transfer_memory_impl.hpp"
+#include "os_aslr_space_manager.hpp"
 
 namespace ams::os::impl {
 
@@ -34,7 +35,7 @@ namespace ams::os::impl {
 
     Result TransferMemoryImpl::Create(Handle *out, void *address, size_t size, MemoryPermission perm) {
         /* Convert memory permission. */
-        auto svc_perm = ConvertToSvcMemoryPermission(perm);
+        const auto svc_perm = ConvertToSvcMemoryPermission(perm);
 
         /* Create the memory. */
         svc::Handle handle;
@@ -51,22 +52,30 @@ namespace ams::os::impl {
         R_ABORT_UNLESS(svc::CloseHandle(handle));
     }
 
-    Result TransferMemoryImpl::Map(void **out, Handle handle, void *address, size_t size, MemoryPermission owner_perm) {
-        AMS_ASSERT(address != nullptr);
-
+    Result TransferMemoryImpl::Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm) {
         /* Convert memory permission. */
-        auto svc_owner_perm = ConvertToSvcMemoryPermission(owner_perm);
+        const auto svc_owner_perm = ConvertToSvcMemoryPermission(owner_perm);
 
-        /* Map the memory. */
-        R_TRY_CATCH(svc::MapTransferMemory(handle, reinterpret_cast<uintptr_t>(address), size, svc_owner_perm)) {
-            R_CONVERT(svc::ResultInvalidHandle,        os::ResultInvalidHandle())
-            R_CONVERT(svc::ResultInvalidSize,          os::ResultInvalidTransferMemorySize())
-            R_CONVERT(svc::ResultInvalidState,         os::ResultInvalidTransferMemoryState())
-            R_CONVERT(svc::ResultInvalidCurrentMemory, os::ResultInvalidCurrentMemoryState())
-            R_CONVERT(svc::ResultInvalidMemoryRegion,  os::ResultInvalidCurrentMemoryState())
-        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+        /* Map at a random address. */
+        uintptr_t mapped_address;
+        R_TRY(impl::GetAslrSpaceManager().MapAtRandomAddress(std::addressof(mapped_address), size,
+            [handle, svc_owner_perm](uintptr_t map_address, size_t map_size) -> Result {
+                R_TRY_CATCH(svc::MapTransferMemory(handle, map_address, map_size, svc_owner_perm)) {
+                    R_CONVERT(svc::ResultInvalidHandle,        os::ResultInvalidHandle())
+                    R_CONVERT(svc::ResultInvalidSize,          os::ResultInvalidTransferMemorySize())
+                    R_CONVERT(svc::ResultInvalidState,         os::ResultInvalidTransferMemoryState())
+                    R_CONVERT(svc::ResultInvalidCurrentMemory, os::ResultInvalidCurrentMemoryState())
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-        *out = address;
+                return ResultSuccess();
+            },
+            [handle](uintptr_t map_address, size_t map_size) -> void {
+                return TransferMemoryImpl::Unmap(handle, reinterpret_cast<void *>(map_address), map_size);
+            }
+        ));
+
+        /* Return the address we mapped at. */
+        *out = reinterpret_cast<void *>(mapped_address);
         return ResultSuccess();
     }
 

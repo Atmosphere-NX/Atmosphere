@@ -16,24 +16,10 @@
 #include <stratosphere.hpp>
 #include "impl/os_thread_manager.hpp"
 #include "impl/os_transfer_memory_impl.hpp"
-#include "impl/os_aslr_space_manager_types.hpp"
-#include "impl/os_aslr_space_manager.hpp"
 
 namespace ams::os {
 
     namespace {
-
-        Result MapTransferMemoryWithAddressUnsafe(TransferMemoryType *tmem, void *address, os::MemoryPermission owner_perm) {
-            /* Map the transfer memory. */
-            void *mapped_address = nullptr;
-            R_TRY(impl::TransferMemoryImpl::Map(std::addressof(mapped_address), tmem->handle, address, tmem->size, owner_perm));
-
-            /* Set fields now that we've mapped. */
-            tmem->address = mapped_address;
-            tmem->state   = TransferMemoryType::State_Mapped;
-
-            return ResultSuccess();
-        }
 
         inline void SetupTransferMemoryType(TransferMemoryType *tmem, size_t size, Handle handle, bool managed) {
             /* Set members. */
@@ -127,41 +113,16 @@ namespace ams::os {
         /* Ensure we're in a mappable state. */
         AMS_ASSERT(tmem->state == TransferMemoryType::State_Created);
 
-        /* Try to map up to 64 times. */
-        for (int i = 0; i < 64; ++i) {
-            /* Reserve space to map the memory. */
-            void *map_address = impl::GetAslrSpaceManager().AllocateSpace(tmem->size);
-            R_UNLESS(map_address != nullptr, os::ResultOutOfAddressSpace());
+        /* Map. */
+        void *mapped_address;
+        R_TRY(impl::TransferMemoryImpl::Map(std::addressof(mapped_address), tmem->handle, tmem->size, owner_perm));
 
-            /* Mark allocated. */
-            tmem->allocated = true;
-            auto alloc_guard = SCOPE_GUARD { tmem->allocated = false; };
+        /* Set fields now that we've mapped. */
+        tmem->allocated = true;
+        tmem->address   = mapped_address;
+        tmem->state     = TransferMemoryType::State_Mapped;
 
-            /* Try to map. */
-            R_TRY_CATCH(MapTransferMemoryWithAddressUnsafe(tmem, map_address, owner_perm)) {
-                /* If we failed to map at the address, retry. */
-                R_CATCH(os::ResultInvalidCurrentMemoryState) { continue; }
-            } R_END_TRY_CATCH;
-
-            /* Check guard space via aslr manager. */
-            if (!impl::GetAslrSpaceManager().CheckGuardSpace(reinterpret_cast<uintptr_t>(tmem->address), tmem->size)) {
-                /* NOTE: Nintendo bug here. If this case occurs, they will return ResultSuccess() without actually mapping the transfer memory. */
-                /* This is because they basically do if (!os::ResultInvalidCurrentMemoryState::Includes(result)) { return result; }, and */
-                /* ResultSuccess() is not included by ResultInvalidCurrentMemoryState. */
-
-                /* We will do better than them, and will not falsely return ResultSuccess(). */
-                impl::TransferMemoryImpl::Unmap(tmem->handle, tmem->address, tmem->size);
-                continue;
-            }
-
-            /* We mapped successfully. */
-            alloc_guard.Cancel();
-            *out = tmem->address;
-            return ResultSuccess();
-        }
-
-        /* We failed to map. */
-        return os::ResultOutOfAddressSpace();
+        return ResultSuccess();
     }
 
     void UnmapTransferMemory(TransferMemoryType *tmem) {

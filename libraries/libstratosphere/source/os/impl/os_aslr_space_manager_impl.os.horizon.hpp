@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "os_address_space_allocator_forbidden_region.hpp"
 
 namespace ams::os::impl {
 
@@ -28,22 +29,39 @@ namespace ams::os::impl {
             static constexpr u64 AslrSize64BitDeprecated = 0x0078000000ul;
             static constexpr u64 AslrBase64Bit           = 0x0008000000ul;
             static constexpr u64 AslrSize64Bit           = 0x7FF8000000ul;
+
+            static constexpr size_t ForbiddenRegionCount = 2;
         private:
             static u64 GetAslrInfo(svc::InfoType type) {
                 u64 value;
                 R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), type, svc::PseudoHandle::CurrentProcess, 0));
+
                 static_assert(std::same_as<size_t, uintptr_t>);
                 AMS_ASSERT(value <= std::numeric_limits<size_t>::max());
+
                 return static_cast<u64>(value & std::numeric_limits<size_t>::max());
             }
+        private:
+            AddressSpaceAllocatorForbiddenRegion m_forbidden_regions[ForbiddenRegionCount];
         public:
-            constexpr AslrSpaceManagerHorizonImpl() = default;
+            AslrSpaceManagerHorizonImpl() {
+                m_forbidden_regions[0] = { .address = GetHeapSpaceBeginAddress(),  .size = GetHeapSpaceSize()  };
+                m_forbidden_regions[1] = { .address = GetAliasSpaceBeginAddress(), .size = GetAliasSpaceSize() };
+            }
+
+            const AddressSpaceAllocatorForbiddenRegion *GetForbiddenRegions() const {
+                return m_forbidden_regions;
+            }
+
+            static size_t GetForbiddenRegionCount() {
+                return ForbiddenRegionCount;
+            }
 
             static u64 GetHeapSpaceBeginAddress() {
                 return GetAslrInfo(svc::InfoType_HeapRegionAddress);
             }
 
-            static u64 GetHeapSpaceBeginSize() {
+            static u64 GetHeapSpaceSize() {
                 return GetAslrInfo(svc::InfoType_HeapRegionSize);
             }
 
@@ -51,7 +69,7 @@ namespace ams::os::impl {
                 return GetAslrInfo(svc::InfoType_AliasRegionAddress);
             }
 
-            static u64 GetAliasSpaceBeginSize() {
+            static u64 GetAliasSpaceSize() {
                 return GetAslrInfo(svc::InfoType_AliasRegionSize);
             }
 
