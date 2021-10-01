@@ -25,7 +25,7 @@ namespace ams::diag::impl {
         private:
             Holder *m_observer_list_head;
             Holder **m_observer_list_tail;
-            os::ReadWriteLock m_lock;
+            os::ReaderWriterLock m_lock;
         public:
             constexpr ObserverManager() : m_observer_list_head(nullptr), m_observer_list_tail(std::addressof(m_observer_list_head)), m_lock() {
                 /* ... */

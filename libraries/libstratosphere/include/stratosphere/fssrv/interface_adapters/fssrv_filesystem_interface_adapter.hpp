@@ -81,7 +81,7 @@ namespace ams::fssrv::impl {
         private:
             std::shared_ptr<fs::fsa::IFileSystem> base_fs;
             util::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
-            os::ReadWriteLock invalidation_lock;
+            os::ReaderWriterLock invalidation_lock;
             bool open_count_limited;
             bool deep_retry_enabled = false;
         public:
@@ -92,8 +92,8 @@ namespace ams::fssrv::impl {
         public:
             bool IsDeepRetryEnabled() const;
             bool IsAccessFailureDetectionObserved() const;
-            util::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
-            os::ReadWriteLock &GetReadWriteLockForCacheInvalidation();
+            util::optional<std::shared_lock<os::ReaderWriterLock>> AcquireCacheInvalidationReadLock();
+            os::ReaderWriterLock &GetReaderWriterLockForCacheInvalidation();
         public:
             /* Command API. */
             Result CreateFile(const fssrv::sf::Path &path, s64 size, s32 option);

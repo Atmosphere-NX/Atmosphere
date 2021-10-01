@@ -20,16 +20,16 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/os/impl/os_internal_rw_busy_mutex_impl.os.horizon.hpp>
 #else
-    #error "Unknown OS for ams::os::impl::InternalReadWriteBusyMutexImpl"
+    #error "Unknown OS for ams::os::impl::InternalReaderWriterBusyMutexImpl"
 #endif
 
 namespace ams::os::impl {
 
-    class InternalReadWriteBusyMutex {
+    class InternalReaderWriterBusyMutex {
         private:
-            InternalReadWriteBusyMutexImpl m_impl;
+            InternalReaderWriterBusyMutexImpl m_impl;
         public:
-            constexpr InternalReadWriteBusyMutex() : m_impl() { /* ... */ }
+            constexpr InternalReaderWriterBusyMutex() : m_impl() { /* ... */ }
 
             ALWAYS_INLINE void AcquireReadLock() { return m_impl.AcquireReadLock(); }
             ALWAYS_INLINE void ReleaseReadLock() { return m_impl.ReleaseReadLock(); }
@@ -38,6 +38,6 @@ namespace ams::os::impl {
             ALWAYS_INLINE void ReleaseWriteLock() { return m_impl.ReleaseWriteLock(); }
     };
 
-    using InternalReadWriteBusyMutexStorage = util::TypedStorage<InternalReadWriteBusyMutex>;
+    using InternalReaderWriterBusyMutexStorage = util::TypedStorage<InternalReaderWriterBusyMutex>;
 
 }

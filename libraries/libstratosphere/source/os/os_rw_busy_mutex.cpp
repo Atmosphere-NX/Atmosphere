@@ -19,32 +19,32 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "impl/os_internal_rw_busy_mutex_impl.os.horizon.hpp"
 #else
-    #error "Unknown OS for ams::os::impl::InternalReadWriteBusyMutexImpl"
+    #error "Unknown OS for ams::os::impl::InternalReaderWriterBusyMutexImpl"
 #endif
 
 namespace ams::os {
 
-    void InitalizeReadWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex) {
+    void InitalizeReaderWriterLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex) {
         /* Create object. */
         util::ConstructAt(rw_mutex->_storage);
     }
 
-    void AcquireReadLockBusyMutex(ReadWriteBusyMutexType *rw_mutex) {
+    void AcquireReadLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex) {
         /* Acquire read lock. */
         util::GetReference(rw_mutex->_storage).AcquireReadLock();
     }
 
-    void ReleaseReadLockBusyMutex(ReadWriteBusyMutexType *rw_mutex) {
+    void ReleaseReadLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex) {
         /* Release read lock. */
         util::GetReference(rw_mutex->_storage).ReleaseReadLock();
     }
 
-    void AcquireWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex) {
+    void AcquireWriteLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex) {
         /* Acquire write lock. */
         util::GetReference(rw_mutex->_storage).AcquireWriteLock();
     }
 
-    void ReleaseWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex) {
+    void ReleaseWriteLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex) {
         /* Release write lock. */
         util::GetReference(rw_mutex->_storage).ReleaseWriteLock();
     }

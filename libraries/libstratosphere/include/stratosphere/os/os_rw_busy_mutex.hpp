@@ -20,13 +20,13 @@
 
 namespace ams::os {
 
-    class ReadWriteBusyMutex {
-        NON_COPYABLE(ReadWriteBusyMutex);
-        NON_MOVEABLE(ReadWriteBusyMutex);
+    class ReaderWriterBusyMutex {
+        NON_COPYABLE(ReaderWriterBusyMutex);
+        NON_MOVEABLE(ReaderWriterBusyMutex);
         private:
-            ReadWriteBusyMutexType m_rw_mutex;
+            ReaderWriterBusyMutexType m_rw_mutex;
         public:
-            constexpr explicit ReadWriteBusyMutex() : m_rw_mutex{{0}} { /* ... */ }
+            constexpr explicit ReaderWriterBusyMutex() : m_rw_mutex{{0}} { /* ... */ }
 
             void AcquireReadLock() {
                 return os::AcquireReadLockBusyMutex(std::addressof(m_rw_mutex));
@@ -60,15 +60,15 @@ namespace ams::os {
                 return this->ReleaseWriteLock();
             }
 
-            operator ReadWriteBusyMutexType &() {
+            operator ReaderWriterBusyMutexType &() {
                 return m_rw_mutex;
             }
 
-            operator const ReadWriteBusyMutexType &() const {
+            operator const ReaderWriterBusyMutexType &() const {
                 return m_rw_mutex;
             }
 
-            ReadWriteBusyMutexType *GetBase() {
+            ReaderWriterBusyMutexType *GetBase() {
                 return std::addressof(m_rw_mutex);
             }
     };

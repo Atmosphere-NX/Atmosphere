@@ -33,7 +33,7 @@ namespace ams::fssrv::impl {
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
             std::shared_ptr<fs::IStorage> base_storage;
             util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
-            os::ReadWriteLock invalidation_lock;
+            os::ReaderWriterLock invalidation_lock;
             /* TODO: DataStorageContext. */
             bool deep_retry_enabled = false;
         public:
@@ -44,7 +44,7 @@ namespace ams::fssrv::impl {
 
             ~StorageInterfaceAdapter();
         private:
-            util::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
+            util::optional<std::shared_lock<os::ReaderWriterLock>> AcquireCacheInvalidationReadLock();
         public:
             /* Command API. */
             Result Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size);

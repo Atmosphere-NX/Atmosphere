@@ -19,7 +19,7 @@
 
 namespace ams::os {
 
-    void InitalizeReadWriteLock(ReadWriteLockType *rw_lock) {
+    void InitalizeReaderWriterLock(ReaderWriterLockType *rw_lock) {
         /* Create objects. */
         util::ConstructAt(impl::GetLockCount(rw_lock).cs_storage);
         util::ConstructAt(rw_lock->cv_read_lock._storage);
@@ -34,18 +34,18 @@ namespace ams::os {
         rw_lock->owner_thread = nullptr;
 
         /* Mark initialized. */
-        rw_lock->state = ReadWriteLockType::State_Initialized;
+        rw_lock->state = ReaderWriterLockType::State_Initialized;
     }
 
-    void FinalizeReadWriteLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
+    void FinalizeReaderWriterLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
 
         /* Don't allow finalizing a locked lock. */
         AMS_ASSERT(impl::GetReadLockCount(impl::GetLockCount(rw_lock)) == 0);
         AMS_ASSERT(impl::GetWriteLocked(impl::GetLockCount(rw_lock))   == 0);
 
         /* Mark not initialized. */
-        rw_lock->state = ReadWriteLockType::State_NotInitialized;
+        rw_lock->state = ReaderWriterLockType::State_NotInitialized;
 
         /* Destroy objects. */
         util::DestroyAt(rw_lock->cv_write_lock._storage);
@@ -53,49 +53,49 @@ namespace ams::os {
         util::DestroyAt(impl::GetLockCount(rw_lock).cs_storage);
     }
 
-    void AcquireReadLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
-        return impl::ReadWriteLockImpl::AcquireReadLock(rw_lock);
+    void AcquireReadLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
+        return impl::ReaderWriterLockImpl::AcquireReadLock(rw_lock);
     }
 
-    bool TryAcquireReadLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
-        return impl::ReadWriteLockImpl::TryAcquireReadLock(rw_lock);
+    bool TryAcquireReadLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
+        return impl::ReaderWriterLockImpl::TryAcquireReadLock(rw_lock);
     }
 
-    void ReleaseReadLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
-        return impl::ReadWriteLockImpl::ReleaseReadLock(rw_lock);
+    void ReleaseReadLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
+        return impl::ReaderWriterLockImpl::ReleaseReadLock(rw_lock);
     }
 
-    void AcquireWriteLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
-        return impl::ReadWriteLockImpl::AcquireWriteLock(rw_lock);
+    void AcquireWriteLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
+        return impl::ReaderWriterLockImpl::AcquireWriteLock(rw_lock);
     }
 
-    bool TryAcquireWriteLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
-        return impl::ReadWriteLockImpl::TryAcquireWriteLock(rw_lock);
+    bool TryAcquireWriteLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
+        return impl::ReaderWriterLockImpl::TryAcquireWriteLock(rw_lock);
     }
 
-    void ReleaseWriteLock(ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
+    void ReleaseWriteLock(ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
         AMS_ABORT_UNLESS(rw_lock->owner_thread == impl::GetCurrentThread());
-        return impl::ReadWriteLockImpl::ReleaseWriteLock(rw_lock);
+        return impl::ReaderWriterLockImpl::ReleaseWriteLock(rw_lock);
     }
 
-    bool IsReadLockHeld(const ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
+    bool IsReadLockHeld(const ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
         return impl::GetReadLockCount(impl::GetLockCount(rw_lock)) != 0;
     }
 
-    bool IsWriteLockHeldByCurrentThread(const ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
+    bool IsWriteLockHeldByCurrentThread(const ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
         return rw_lock->owner_thread == impl::GetCurrentThread() && impl::GetWriteLockCount(*rw_lock) != 0;
     }
 
-    bool IsReadWriteLockOwnerThread(const ReadWriteLockType *rw_lock) {
-        AMS_ASSERT(rw_lock->state == ReadWriteLockType::State_Initialized);
+    bool IsReaderWriterLockOwnerThread(const ReaderWriterLockType *rw_lock) {
+        AMS_ASSERT(rw_lock->state == ReaderWriterLockType::State_Initialized);
         return rw_lock->owner_thread == impl::GetCurrentThread();
     }
 

@@ -20,21 +20,21 @@
 
 namespace ams::os {
 
-    struct ReadWriteLockType;
+    struct ReaderWriterLockType;
 
-    void InitalizeReadWriteLock(ReadWriteLockType *rw_lock);
-    void FinalizeReadWriteLock(ReadWriteLockType *rw_lock);
+    void InitalizeReaderWriterLock(ReaderWriterLockType *rw_lock);
+    void FinalizeReaderWriterLock(ReaderWriterLockType *rw_lock);
 
-    void AcquireReadLock(ReadWriteLockType *rw_lock);
-    bool TryAcquireReadLock(ReadWriteLockType *rw_lock);
-    void ReleaseReadLock(ReadWriteLockType *rw_lock);
+    void AcquireReadLock(ReaderWriterLockType *rw_lock);
+    bool TryAcquireReadLock(ReaderWriterLockType *rw_lock);
+    void ReleaseReadLock(ReaderWriterLockType *rw_lock);
 
-    void AcquireWriteLock(ReadWriteLockType *rw_lock);
-    bool TryAcquireWriteLock(ReadWriteLockType *rw_lock);
-    void ReleaseWriteLock(ReadWriteLockType *rw_lock);
+    void AcquireWriteLock(ReaderWriterLockType *rw_lock);
+    bool TryAcquireWriteLock(ReaderWriterLockType *rw_lock);
+    void ReleaseWriteLock(ReaderWriterLockType *rw_lock);
 
-    bool IsReadLockHeld(const ReadWriteLockType *rw_lock);
-    bool IsWriteLockHeldByCurrentThread(const ReadWriteLockType *rw_lock);
-    bool IsReadWriteLockOwnerThread(const ReadWriteLockType *rw_lock);
+    bool IsReadLockHeld(const ReaderWriterLockType *rw_lock);
+    bool IsWriteLockHeldByCurrentThread(const ReaderWriterLockType *rw_lock);
+    bool IsReaderWriterLockOwnerThread(const ReaderWriterLockType *rw_lock);
 
 }

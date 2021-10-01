@@ -18,9 +18,9 @@
 
 namespace ams::os::impl {
 
-    class ReadWriteLockHorizonImpl {
+    class ReaderWriterLockHorizonImpl {
         private:
-            using LockCount = os::ReadWriteLockType::LockCount;
+            using LockCount = os::ReaderWriterLockType::LockCount;
         private:
             static ALWAYS_INLINE u32 GetThreadHandle(const LockCount &lc) {
                 return GetReference(lc.cs_storage).Get()->thread_handle;
@@ -34,19 +34,19 @@ namespace ams::os::impl {
                 GetReference(lc.cs_storage).Get()->thread_handle = handle;
             }
 
-            static void AcquireReadLockWriteLocked(os::ReadWriteLockType *rw_lock);
-            static void ReleaseReadLockWriteLocked(os::ReadWriteLockType *rw_lock);
-            static void ReleaseWriteLockImpl(os::ReadWriteLockType *rw_lock);
+            static void AcquireReadLockWriteLocked(os::ReaderWriterLockType *rw_lock);
+            static void ReleaseReadLockWriteLocked(os::ReaderWriterLockType *rw_lock);
+            static void ReleaseWriteLockImpl(os::ReaderWriterLockType *rw_lock);
         public:
-            static void AcquireReadLock(os::ReadWriteLockType *rw_lock);
-            static bool TryAcquireReadLock(os::ReadWriteLockType *rw_lock);
-            static void ReleaseReadLock(os::ReadWriteLockType *rw_lock);
+            static void AcquireReadLock(os::ReaderWriterLockType *rw_lock);
+            static bool TryAcquireReadLock(os::ReaderWriterLockType *rw_lock);
+            static void ReleaseReadLock(os::ReaderWriterLockType *rw_lock);
 
-            static void AcquireWriteLock(os::ReadWriteLockType *rw_lock);
-            static bool TryAcquireWriteLock(os::ReadWriteLockType *rw_lock);
-            static void ReleaseWriteLock(os::ReadWriteLockType *rw_lock);
+            static void AcquireWriteLock(os::ReaderWriterLockType *rw_lock);
+            static bool TryAcquireWriteLock(os::ReaderWriterLockType *rw_lock);
+            static void ReleaseWriteLock(os::ReaderWriterLockType *rw_lock);
     };
 
-    using ReadWriteLockTargetImpl = ReadWriteLockHorizonImpl;
+    using ReaderWriterLockTargetImpl = ReaderWriterLockHorizonImpl;
 
 }

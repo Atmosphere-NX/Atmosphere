@@ -19,14 +19,14 @@
 
 namespace ams::os {
 
-    struct ReadWriteBusyMutexType;
+    struct ReaderWriterBusyMutexType;
 
-    void InitalizeReadWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex);
+    void InitalizeReaderWriterLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex);
 
-    void AcquireReadLockBusyMutex(ReadWriteBusyMutexType *rw_mutex);
-    void ReleaseReadLockBusyMutex(ReadWriteBusyMutexType *rw_mutex);
+    void AcquireReadLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex);
+    void ReleaseReadLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex);
 
-    void AcquireWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex);
-    void ReleaseWriteLockBusyMutex(ReadWriteBusyMutexType *rw_mutex);
+    void AcquireWriteLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex);
+    void ReleaseWriteLockBusyMutex(ReaderWriterBusyMutexType *rw_mutex);
 
 }

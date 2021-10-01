@@ -20,7 +20,7 @@
 namespace ams::os::impl {
 
     #if defined(ATMOSPHERE_OS_HORIZON)
-        class ReadWriteLockHorizonImpl;
+        class ReaderWriterLockHorizonImpl;
     #endif
 
     class InternalConditionVariableImpl;
@@ -28,7 +28,7 @@ namespace ams::os::impl {
     class InternalCriticalSectionImpl {
         private:
             #if defined(ATMOSPHERE_OS_HORIZON)
-                friend class ReadWriteLockHorizonImpl;
+                friend class ReaderWriterLockHorizonImpl;
             #endif
 
             friend class InternalConditionVariableImpl;

@@ -23,7 +23,7 @@ namespace ams::os::impl {
         (__atomic_compare_exchange(reinterpret_cast<u64 *>(&dst_ref), reinterpret_cast<u64 *>(&expected_ref), reinterpret_cast<u64 *>(&desired_ref), true, success, fail))
 
 
-    void ReadWriteLockHorizonImpl::AcquireReadLockWriteLocked(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::AcquireReadLockWriteLocked(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(GetWriteLocked(GetLockCount(rw_lock)) == 1);
         AMS_ASSERT((GetThreadHandle(GetLockCount(rw_lock)) | svc::HandleWaitMask) == (impl::GetCurrentThreadHandle() | svc::HandleWaitMask));
         alignas(alignof(u64)) LockCount expected   = GetLockCount(rw_lock);
@@ -34,7 +34,7 @@ namespace ams::os::impl {
         } while (!ATOMIC_COMPARE_EXCHANGE_LOCK_COUNT(GetLockCount(rw_lock), expected, lock_count, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
     }
 
-    void ReadWriteLockHorizonImpl::ReleaseReadLockWriteLocked(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::ReleaseReadLockWriteLocked(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(GetWriteLocked(GetLockCount(rw_lock)) == 1);
         AMS_ASSERT((GetThreadHandle(GetLockCount(rw_lock)) | svc::HandleWaitMask) == (impl::GetCurrentThreadHandle() | svc::HandleWaitMask));
         alignas(alignof(u64)) LockCount expected   = GetLockCount(rw_lock);
@@ -46,7 +46,7 @@ namespace ams::os::impl {
         return ReleaseWriteLockImpl(rw_lock);
     }
 
-    void ReadWriteLockHorizonImpl::ReleaseWriteLockImpl(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::ReleaseWriteLockImpl(os::ReaderWriterLockType *rw_lock) {
         alignas(alignof(u64)) LockCount expected   = GetLockCount(rw_lock);
         alignas(alignof(u64)) LockCount lock_count = expected;
         AMS_ASSERT(GetWriteLocked(lock_count) == 1);
@@ -70,7 +70,7 @@ namespace ams::os::impl {
         }
     }
 
-    void ReadWriteLockHorizonImpl::AcquireReadLock(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::AcquireReadLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         auto *cur_thread = impl::GetCurrentThread();
@@ -143,7 +143,7 @@ namespace ams::os::impl {
         }
     }
 
-    bool ReadWriteLockHorizonImpl::TryAcquireReadLock(os::ReadWriteLockType *rw_lock) {
+    bool ReaderWriterLockHorizonImpl::TryAcquireReadLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         auto *cur_thread = impl::GetCurrentThread();
@@ -168,7 +168,7 @@ namespace ams::os::impl {
         }
     }
 
-    void ReadWriteLockHorizonImpl::ReleaseReadLock(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::ReleaseReadLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         AMS_ASSERT(GetReadLockCount(GetLockCount(rw_lock)) > 0);
@@ -226,7 +226,7 @@ namespace ams::os::impl {
         }
     }
 
-    void ReadWriteLockHorizonImpl::AcquireWriteLock(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::AcquireWriteLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         auto *cur_thread = impl::GetCurrentThread();
@@ -301,7 +301,7 @@ namespace ams::os::impl {
         }
     }
 
-    bool ReadWriteLockHorizonImpl::TryAcquireWriteLock(os::ReadWriteLockType *rw_lock) {
+    bool ReaderWriterLockHorizonImpl::TryAcquireWriteLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         auto *cur_thread = impl::GetCurrentThread();
@@ -334,7 +334,7 @@ namespace ams::os::impl {
         }
     }
 
-    void ReadWriteLockHorizonImpl::ReleaseWriteLock(os::ReadWriteLockType *rw_lock) {
+    void ReaderWriterLockHorizonImpl::ReleaseWriteLock(os::ReaderWriterLockType *rw_lock) {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         AMS_ASSERT(GetWriteLockCount(*rw_lock) > 0);
