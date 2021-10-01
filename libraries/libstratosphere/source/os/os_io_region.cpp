@@ -59,7 +59,7 @@ namespace ams::os {
         return ResultSuccess();
     }
 
-    void AttachIoRegion(IoRegionType *io_region, size_t size, Handle handle, bool managed) {
+    void AttachIoRegionHandle(IoRegionType *io_region, size_t size, Handle handle, bool managed) {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region != nullptr);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));

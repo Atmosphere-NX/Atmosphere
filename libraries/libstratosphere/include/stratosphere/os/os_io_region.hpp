@@ -51,8 +51,8 @@ namespace ams::os {
                 DestroyIoRegion(std::addressof(m_io_region));
             }
 
-            void Attach(size_t size, Handle handle, bool managed) {
-                AttachIoRegion(std::addressof(m_io_region), size, handle, managed);
+            void AttachHandle(size_t size, Handle handle, bool managed) {
+                AttachIoRegionHandle(std::addressof(m_io_region), size, handle, managed);
             }
 
             Handle GetHandle() const {

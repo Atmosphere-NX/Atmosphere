@@ -24,7 +24,7 @@ namespace ams::os {
 
     Result CreateIoRegion(IoRegionType *io_region, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission);
 
-    void AttachIoRegion(IoRegionType *io_region, size_t size, Handle handle, bool managed);
+    void AttachIoRegionHandle(IoRegionType *io_region, size_t size, Handle handle, bool managed);
 
     void DestroyIoRegion(IoRegionType *io_region);
 
