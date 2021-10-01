@@ -213,14 +213,19 @@ namespace ams::os::impl {
 
     /* TODO void ThreadManager::GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
 
+    namespace {
+
+        constexpr inline const char MainThreadName[] = "MainThread";
+        constexpr inline const char ThreadNamePrefix[] = "Thread_0x";
+
+    }
+
     void ThreadManager::SetInitialThreadNameUnsafe(ThreadType *thread) {
         if (thread == std::addressof(this->main_thread)) {
-            constexpr const char MainThreadName[] = "MainThread";
             static_assert(sizeof(thread->name_buffer) >= sizeof(MainThreadName));
             static_assert(MainThreadName[sizeof(MainThreadName) - 1] == '\x00');
             std::memcpy(thread->name_buffer, MainThreadName, sizeof(MainThreadName));
         } else {
-            constexpr const char ThreadNamePrefix[] = "Thread_0x";
             constexpr size_t ThreadNamePrefixSize = sizeof(ThreadNamePrefix) - 1;
             const u64 func = reinterpret_cast<u64>(thread->function);
             static_assert(ThreadNamePrefixSize + sizeof(func) * 2 + 1 <= sizeof(thread->name_buffer));
