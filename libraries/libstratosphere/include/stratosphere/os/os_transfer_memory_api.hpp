@@ -24,7 +24,7 @@ namespace ams::os {
 
     Result CreateTransferMemory(TransferMemoryType *tmem, void *address, size_t size, MemoryPermission perm);
 
-    Result AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed);
+    void AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed);
     Handle DetachTransferMemory(TransferMemoryType *tmem);
 
     void DestroyTransferMemory(TransferMemoryType *tmem);

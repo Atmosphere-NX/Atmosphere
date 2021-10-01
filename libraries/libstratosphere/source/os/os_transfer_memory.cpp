@@ -68,15 +68,13 @@ namespace ams::os {
         return ResultSuccess();
     }
 
-    Result AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed) {
+    void AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed) {
         AMS_ASSERT(size > 0);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
         AMS_ASSERT(handle != svc::InvalidHandle);
 
         /* Setup the object. */
         SetupTransferMemoryType(tmem, size, handle, managed);
-
-        return ResultSuccess();
     }
 
     Handle DetachTransferMemory(TransferMemoryType *tmem) {
