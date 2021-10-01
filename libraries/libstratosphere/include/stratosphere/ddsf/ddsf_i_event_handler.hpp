@@ -26,27 +26,27 @@ namespace ams::ddsf {
         NON_MOVEABLE(IEventHandler);
         friend class EventHandlerManager;
         private:
-            os::WaitableHolderType holder;
+            os::MultiWaitHolderType holder;
             uintptr_t user_data;
             bool is_initialized;
             bool is_registered;
         private:
-            void Link(os::WaitableManagerType *manager) {
+            void Link(os::MultiWaitType *multi_wait) {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(!this->IsRegistered());
-                AMS_ASSERT(manager != nullptr);
-                os::LinkWaitableHolder(manager, std::addressof(this->holder));
+                AMS_ASSERT(multi_wait != nullptr);
+                os::LinkMultiWaitHolder(multi_wait, std::addressof(this->holder));
             }
 
             void Unlink() {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(this->IsRegistered());
-                os::UnlinkWaitableHolder(std::addressof(this->holder));
+                os::UnlinkMultiWaitHolder(std::addressof(this->holder));
             }
 
-            static IEventHandler &ToEventHandler(os::WaitableHolderType *holder) {
+            static IEventHandler &ToEventHandler(os::MultiWaitHolderType *holder) {
                 AMS_ASSERT(holder != nullptr);
-                auto &event_handler = *reinterpret_cast<IEventHandler *>(os::GetWaitableHolderUserData(holder));
+                auto &event_handler = *reinterpret_cast<IEventHandler *>(os::GetMultiWaitHolderUserData(holder));
                 AMS_ASSERT(event_handler.IsInitialized());
                 return event_handler;
             }
@@ -72,8 +72,8 @@ namespace ams::ddsf {
             void Initialize(T *object) {
                 AMS_ASSERT(object != nullptr);
                 AMS_ASSERT(!this->IsInitialized());
-                os::InitializeWaitableHolder(std::addressof(this->holder), object);
-                os::SetWaitableHolderUserData(std::addressof(this->holder), reinterpret_cast<uintptr_t>(this));
+                os::InitializeMultiWaitHolder(std::addressof(this->holder), object);
+                os::SetMultiWaitHolderUserData(std::addressof(this->holder), reinterpret_cast<uintptr_t>(this));
                 this->is_initialized = true;
                 this->is_registered  = false;
             }
@@ -81,7 +81,7 @@ namespace ams::ddsf {
             void Finalize() {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(!this->IsRegistered());
-                os::FinalizeWaitableHolder(std::addressof(this->holder));
+                os::FinalizeMultiWaitHolder(std::addressof(this->holder));
                 this->is_initialized = false;
                 this->is_registered  = false;
             }

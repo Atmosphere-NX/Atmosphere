@@ -97,13 +97,13 @@ namespace ams::erpt::srv {
             psc::PmModule  pm_module;
             psc::PmState   pm_state;
             psc::PmFlagSet pm_flags;
-            os::WaitableHolderType module_event_holder;
+            os::MultiWaitHolderType module_event_holder;
 
             R_ABORT_UNLESS(pm_module.Initialize(psc::PmModuleId_Erpt, dependencies, util::size(dependencies), os::EventClearMode_ManualClear));
 
-            os::InitializeWaitableHolder(std::addressof(module_event_holder), pm_module.GetEventPointer()->GetBase());
-            os::SetWaitableHolderUserData(std::addressof(module_event_holder), static_cast<uintptr_t>(psc::PmModuleId_Erpt));
-            this->AddUserWaitableHolder(std::addressof(module_event_holder));
+            os::InitializeMultiWaitHolder(std::addressof(module_event_holder), pm_module.GetEventPointer()->GetBase());
+            os::SetMultiWaitHolderUserData(std::addressof(module_event_holder), static_cast<uintptr_t>(psc::PmModuleId_Erpt));
+            this->AddUserMultiWaitHolder(std::addressof(module_event_holder));
 
             while (true) {
                 /* NOTE: Nintendo checks the user holder data to determine what's signaled, we will prefer to just check the address. */
@@ -131,7 +131,7 @@ namespace ams::erpt::srv {
                     } else {
                         AMS_ASSERT(false);
                     }
-                    this->AddUserWaitableHolder(signaled_holder);
+                    this->AddUserMultiWaitHolder(signaled_holder);
                 }
             }
         }

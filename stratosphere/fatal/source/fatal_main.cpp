@@ -218,8 +218,8 @@ int main(int argc, char **argv)
     R_ABORT_UNLESS(g_server_manager.RegisterObjectForServer(g_private_service_object.GetShared(), PrivateServiceName, PrivateMaxSessions));
 
     /* Add dirty event holder. */
-    auto *dirty_event_holder = ams::fatal::srv::GetFatalDirtyWaitableHolder();
-    g_server_manager.AddUserWaitableHolder(dirty_event_holder);
+    auto *dirty_event_holder = ams::fatal::srv::GetFatalDirtyMultiWaitHolder();
+    g_server_manager.AddUserMultiWaitHolder(dirty_event_holder);
 
     /* Loop forever, servicing our services. */
     /* Because fatal has a user wait holder, we need to specify how to process manually. */
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
         if (signaled_holder == dirty_event_holder) {
             /* Dirty event holder was signaled. */
             fatal::srv::OnFatalDirtyEvent();
-            g_server_manager.AddUserWaitableHolder(signaled_holder);
+            g_server_manager.AddUserMultiWaitHolder(signaled_holder);
         } else {
             /* A server/session was signaled. Have the manager handle it. */
             R_ABORT_UNLESS(g_server_manager.Process(signaled_holder));

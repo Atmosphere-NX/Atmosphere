@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <stratosphere/tipc/tipc_common.hpp>
 #include <stratosphere/tipc/tipc_service_object.hpp>
-#include <stratosphere/tipc/tipc_waitable_object.hpp>
+#include <stratosphere/tipc/tipc_object_holder.hpp>
 
 namespace ams::tipc {
 
@@ -28,14 +28,14 @@ namespace ams::tipc {
     class ObjectManagerBase {
         protected:
             struct Entry {
-                util::TypedStorage<WaitableObject> object;
-                os::WaitableHolderType waitable_holder;
+                util::TypedStorage<ObjectHolder> object;
+                os::MultiWaitHolderType multi_wait_holder;
             };
         private:
             os::SdkMutex m_mutex{};
             Entry *m_entries_start{};
             Entry *m_entries_end{};
-            os::WaitableManagerType *m_waitable_manager{};
+            os::MultiWaitType *m_multi_wait{};
         private:
             Entry *FindEntry(svc::Handle handle) {
                 for (Entry *cur = m_entries_start; cur != m_entries_end; ++cur) {
@@ -46,9 +46,9 @@ namespace ams::tipc {
                 return nullptr;
             }
 
-            Entry *FindEntry(os::WaitableHolderType *holder) {
+            Entry *FindEntry(os::MultiWaitHolderType *holder) {
                 for (Entry *cur = m_entries_start; cur != m_entries_end; ++cur) {
-                    if (std::addressof(cur->waitable_holder) == holder) {
+                    if (std::addressof(cur->multi_wait_holder) == holder) {
                         return cur;
                     }
                 }
@@ -57,9 +57,9 @@ namespace ams::tipc {
         public:
             constexpr ObjectManagerBase() = default;
 
-            void InitializeImpl(os::WaitableManagerType *manager, Entry *entries, size_t max_objects) {
-                /* Set our waitable manager. */
-                m_waitable_manager = manager;
+            void InitializeImpl(os::MultiWaitType *multi_wait, Entry *entries, size_t max_objects) {
+                /* Set our multi wait. */
+                m_multi_wait = multi_wait;
 
                 /* Setup entry pointers. */
                 m_entries_start = entries;
@@ -71,7 +71,7 @@ namespace ams::tipc {
                 }
             }
 
-            void AddObject(WaitableObject &object) {
+            void AddObject(ObjectHolder &object) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -83,8 +83,8 @@ namespace ams::tipc {
                 GetReference(entry->object) = object;
 
                 /* Setup the entry's holder. */
-                os::InitializeWaitableHolder(std::addressof(entry->waitable_holder), object.GetHandle());
-                os::LinkWaitableHolder(m_waitable_manager, std::addressof(entry->waitable_holder));
+                os::InitializeMultiWaitHolder(std::addressof(entry->multi_wait_holder), object.GetHandle());
+                os::LinkMultiWaitHolder(m_multi_wait, std::addressof(entry->multi_wait_holder));
             }
 
             void CloseObject(svc::Handle handle) {
@@ -96,21 +96,21 @@ namespace ams::tipc {
                 AMS_ABORT_UNLESS(entry != nullptr);
 
                 /* Finalize the entry's holder. */
-                os::UnlinkWaitableHolder(std::addressof(entry->waitable_holder));
-                os::FinalizeWaitableHolder(std::addressof(entry->waitable_holder));
+                os::UnlinkMultiWaitHolder(std::addressof(entry->multi_wait_holder));
+                os::FinalizeMultiWaitHolder(std::addressof(entry->multi_wait_holder));
 
                 /* Destroy the object. */
                 GetReference(entry->object).Destroy();
             }
 
-            Result ReplyAndReceive(os::WaitableHolderType **out_holder, WaitableObject *out_object, svc::Handle reply_target, os::WaitableManagerType *manager) {
+            Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, svc::Handle reply_target, os::MultiWaitType *multi_wait) {
                 /* Declare signaled holder for processing ahead of time. */
-                os::WaitableHolderType *signaled_holder;
+                os::MultiWaitHolderType *signaled_holder;
 
                 /* Reply and receive until we get a newly signaled target. */
-                Result result = os::SdkReplyAndReceive(out_holder, reply_target, manager);
+                Result result = os::SdkReplyAndReceive(out_holder, reply_target, multi_wait);
                 for (signaled_holder = *out_holder; signaled_holder == nullptr; signaled_holder = *out_holder) {
-                    result = os::SdkReplyAndReceive(out_holder, svc::InvalidHandle, manager);
+                    result = os::SdkReplyAndReceive(out_holder, svc::InvalidHandle, multi_wait);
                 }
 
                 /* Find the entry matching the signaled holder. */
@@ -140,7 +140,7 @@ namespace ams::tipc {
                 return ResultSuccess();
             }
 
-            Result ProcessRequest(WaitableObject &object) {
+            Result ProcessRequest(ObjectHolder &object) {
                 /* Get the method id. */
                 const auto method_id = svc::ipc::MessageBuffer::MessageHeader(svc::ipc::MessageBuffer(svc::ipc::GetMessageBuffer())).GetTag();
 
@@ -176,8 +176,8 @@ namespace ams::tipc {
         public:
             constexpr ObjectManager() = default;
 
-            void Initialize(os::WaitableManagerType *manager) {
-                this->InitializeImpl(manager, m_entries_storage, MaxObjects);
+            void Initialize(os::MultiWaitType *multi_wait) {
+                this->InitializeImpl(multi_wait, m_entries_storage, MaxObjects);
             }
     };
 

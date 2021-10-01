@@ -20,7 +20,7 @@
 namespace ams::os {
 
     struct SemaphoreType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     void InitializeSemaphore(SemaphoreType *sema, s32 count, s32 max_count);
     void FinalizeSemaphore(SemaphoreType *sema);
@@ -34,6 +34,6 @@ namespace ams::os {
 
     s32 GetCurrentSemaphoreCount(const SemaphoreType *sema);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SemaphoreType *sema);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SemaphoreType *sema);
 
 }

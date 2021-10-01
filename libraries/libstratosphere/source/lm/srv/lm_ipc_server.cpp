@@ -42,7 +42,7 @@ namespace ams::lm::srv {
 
         constinit util::TypedStorage<psc::PmModule> g_pm_module_storage;
         constinit psc::PmModule *g_pm_module;
-        constinit os::WaitableHolderType g_pm_module_holder;
+        constinit os::MultiWaitHolderType g_pm_module_holder;
 
         constexpr const psc::PmModuleId PmModuleDependencies[] = { psc::PmModuleId_TmaHostIo, psc::PmModuleId_Fs };
 
@@ -67,15 +67,15 @@ namespace ams::lm::srv {
         g_pm_module = util::ConstructAt(g_pm_module_storage);
         R_ABORT_UNLESS(g_pm_module->Initialize(psc::PmModuleId_Lm, PmModuleDependencies, util::size(PmModuleDependencies), os::EventClearMode_ManualClear));
 
-        /* Create the psc module waitable holder. */
-        os::InitializeWaitableHolder(std::addressof(g_pm_module_holder), g_pm_module->GetEventPointer()->GetBase());
-        os::SetWaitableHolderUserData(std::addressof(g_pm_module_holder), psc::PmModuleId_Lm);
+        /* Create the psc module multi wait holder. */
+        os::InitializeMultiWaitHolder(std::addressof(g_pm_module_holder), g_pm_module->GetEventPointer()->GetBase());
+        os::SetMultiWaitHolderUserData(std::addressof(g_pm_module_holder), psc::PmModuleId_Lm);
 
         /* Create the server manager. */
         g_server_manager = util::ConstructAt(g_server_manager_storage);
 
         /* Add the pm module holder. */
-        g_server_manager->AddUserWaitableHolder(std::addressof(g_pm_module_holder));
+        g_server_manager->AddUserMultiWaitHolder(std::addressof(g_pm_module_holder));
 
         /* Create services. */
         R_ABORT_UNLESS(g_server_manager->RegisterObjectForServer(g_log_service_object.GetShared(),        LogServiceName, LogSessionCountMax));
@@ -100,7 +100,7 @@ namespace ams::lm::srv {
             } else {
                 /* If pm module, clear the event. */
                 g_pm_module->GetEventPointer()->Clear();
-                g_server_manager->AddUserWaitableHolder(signaled_holder);
+                g_server_manager->AddUserMultiWaitHolder(signaled_holder);
 
                 /* Get the power state. */
                 psc::PmState   pm_state;

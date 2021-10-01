@@ -276,22 +276,22 @@ namespace ams::htclow::driver {
             /* Get the state change event. */
             os::SystemEventType *state_change_event = g_ds_client.GetStateChangeEvent();
 
-            /* Setup waitable manager. */
-            os::WaitableManagerType manager;
-            os::InitializeWaitableManager(std::addressof(manager));
+            /* Setup multi wait. */
+            os::MultiWaitType multi_wait;
+            os::InitializeMultiWait(std::addressof(multi_wait));
 
-            /* Link waitable holders. */
-            os::WaitableHolderType state_change_holder;
-            os::WaitableHolderType break_holder;
-            os::InitializeWaitableHolder(std::addressof(state_change_holder), state_change_event);
-            os::LinkWaitableHolder(std::addressof(manager), std::addressof(state_change_holder));
-            os::InitializeWaitableHolder(std::addressof(break_holder), g_usb_break_event.GetBase());
-            os::LinkWaitableHolder(std::addressof(manager), std::addressof(break_holder));
+            /* Link multi wait holders. */
+            os::MultiWaitHolderType state_change_holder;
+            os::MultiWaitHolderType break_holder;
+            os::InitializeMultiWaitHolder(std::addressof(state_change_holder), state_change_event);
+            os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(state_change_holder));
+            os::InitializeMultiWaitHolder(std::addressof(break_holder), g_usb_break_event.GetBase());
+            os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(break_holder));
 
             /* Loop forever. */
             while (true) {
                 /* If we should break, do so. */
-                if (os::WaitAny(std::addressof(manager)) == std::addressof(break_holder)) {
+                if (os::WaitAny(std::addressof(multi_wait)) == std::addressof(break_holder)) {
                     break;
                 }
 
@@ -320,12 +320,12 @@ namespace ams::htclow::driver {
             g_usb_break_event.Clear();
 
             /* Unlink all holders. */
-            os::UnlinkAllWaitableHolder(std::addressof(manager));
+            os::UnlinkAllMultiWaitHolder(std::addressof(multi_wait));
 
-            /* Finalize the waitable holders and manager. */
-            os::FinalizeWaitableHolder(std::addressof(break_holder));
-            os::FinalizeWaitableHolder(std::addressof(state_change_holder));
-            os::FinalizeWaitableManager(std::addressof(manager));
+            /* Finalize the multi wait/holders. */
+            os::FinalizeMultiWaitHolder(std::addressof(break_holder));
+            os::FinalizeMultiWaitHolder(std::addressof(state_change_holder));
+            os::FinalizeMultiWait(std::addressof(multi_wait));
         }
 
     }

@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_waitable_object_list.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 #include "impl/os_timeout_helper.hpp"
 
 namespace ams::os {
@@ -142,12 +142,12 @@ namespace ams::os {
         return sema->count;
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SemaphoreType *sema) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SemaphoreType *sema) {
         AMS_ASSERT(sema->state == SemaphoreType::State_Initialized);
 
-        util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_semaphore_storage, sema);
+        util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_semaphore_storage, sema);
 
-        waitable_holder->user_data = 0;
+        multi_wait_holder->user_data = 0;
     }
 
 }

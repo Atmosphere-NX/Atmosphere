@@ -14,8 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_manager_impl.hpp"
 
 namespace ams::os::impl {
 

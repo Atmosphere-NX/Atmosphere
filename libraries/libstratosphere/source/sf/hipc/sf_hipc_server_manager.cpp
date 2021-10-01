@@ -32,37 +32,37 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    void ServerManagerBase::RegisterSessionToWaitList(ServerSession *session) {
+    void ServerManagerBase::RegisterServerSessionToWait(ServerSession *session) {
         session->has_received = false;
 
         /* Set user data tag. */
-        os::SetWaitableHolderUserData(session, static_cast<uintptr_t>(UserDataTag::Session));
+        os::SetMultiWaitHolderUserData(session, static_cast<uintptr_t>(UserDataTag::Session));
 
-        this->RegisterToWaitList(session);
+        this->LinkToDeferredList(session);
     }
 
-    void ServerManagerBase::RegisterToWaitList(os::WaitableHolderType *holder) {
-        std::scoped_lock lk(this->waitlist_mutex);
-        os::LinkWaitableHolder(std::addressof(this->waitlist), holder);
+    void ServerManagerBase::LinkToDeferredList(os::MultiWaitHolderType *holder) {
+        std::scoped_lock lk(this->deferred_list_mutex);
+        os::LinkMultiWaitHolder(std::addressof(this->deferred_list), holder);
         this->notify_event.Signal();
     }
 
-    void ServerManagerBase::ProcessWaitList() {
-        std::scoped_lock lk(this->waitlist_mutex);
-        os::MoveAllWaitableHolder(std::addressof(this->waitable_manager), std::addressof(this->waitlist));
+    void ServerManagerBase::LinkDeferred() {
+        std::scoped_lock lk(this->deferred_list_mutex);
+        os::MoveAllMultiWaitHolder(std::addressof(this->multi_wait), std::addressof(this->deferred_list));
     }
 
-    os::WaitableHolderType *ServerManagerBase::WaitSignaled() {
-        std::scoped_lock lk(this->waitable_selection_mutex);
+    os::MultiWaitHolderType *ServerManagerBase::WaitSignaled() {
+        std::scoped_lock lk(this->selection_mutex);
         while (true) {
-            this->ProcessWaitList();
-            auto selected = os::WaitAny(std::addressof(this->waitable_manager));
+            this->LinkDeferred();
+            auto selected = os::WaitAny(std::addressof(this->multi_wait));
             if (selected == &this->request_stop_event_holder) {
                 return nullptr;
             } else if (selected == &this->notify_event_holder) {
                 this->notify_event.Clear();
             } else {
-                os::UnlinkWaitableHolder(selected);
+                os::UnlinkMultiWaitHolder(selected);
                 return selected;
             }
         }
@@ -76,19 +76,19 @@ namespace ams::sf::hipc {
         this->request_stop_event.Signal();
     }
 
-    void ServerManagerBase::AddUserWaitableHolder(os::WaitableHolderType *waitable) {
-        const auto user_data_tag = static_cast<UserDataTag>(os::GetWaitableHolderUserData(waitable));
+    void ServerManagerBase::AddUserMultiWaitHolder(os::MultiWaitHolderType *holder) {
+        const auto user_data_tag = static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder));
         AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Server);
         AMS_ABORT_UNLESS(user_data_tag != UserDataTag::MitmServer);
         AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Session);
-        this->RegisterToWaitList(waitable);
+        this->LinkToDeferredList(holder);
     }
 
-    Result ServerManagerBase::ProcessForServer(os::WaitableHolderType *holder) {
-        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::Server);
+    Result ServerManagerBase::ProcessForServer(os::MultiWaitHolderType *holder) {
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder)) == UserDataTag::Server);
 
         Server *server = static_cast<Server *>(holder);
-        ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
+        ON_SCOPE_EXIT { this->LinkToDeferredList(server); };
 
         /* Create new session. */
         if (server->static_object) {
@@ -98,18 +98,18 @@ namespace ams::sf::hipc {
         }
     }
 
-    Result ServerManagerBase::ProcessForMitmServer(os::WaitableHolderType *holder) {
-        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::MitmServer);
+    Result ServerManagerBase::ProcessForMitmServer(os::MultiWaitHolderType *holder) {
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder)) == UserDataTag::MitmServer);
 
         Server *server = static_cast<Server *>(holder);
-        ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
+        ON_SCOPE_EXIT { this->LinkToDeferredList(server); };
 
         /* Create resources for new session. */
         return this->OnNeedsToAccept(server->index, server);
     }
 
-    Result ServerManagerBase::ProcessForSession(os::WaitableHolderType *holder) {
-        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::Session);
+    Result ServerManagerBase::ProcessForSession(os::MultiWaitHolderType *holder) {
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder)) == UserDataTag::Session);
 
         ServerSession *session = static_cast<ServerSession *>(holder);
 
@@ -133,8 +133,8 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    Result ServerManagerBase::Process(os::WaitableHolderType *holder) {
-        switch (static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder))) {
+    Result ServerManagerBase::Process(os::MultiWaitHolderType *holder) {
+        switch (static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder))) {
             case UserDataTag::Server:
                 return this->ProcessForServer(holder);
             case UserDataTag::MitmServer:
@@ -146,12 +146,12 @@ namespace ams::sf::hipc {
     }
 
     bool ServerManagerBase::WaitAndProcessImpl() {
-        auto waitable = this->WaitSignaled();
-        if (!waitable) {
+        if (auto *signaled_holder = this->WaitSignaled(); signaled_holder != nullptr) {
+            R_ABORT_UNLESS(this->Process(signaled_holder));
+            return true;
+        } else {
             return false;
         }
-        R_ABORT_UNLESS(this->Process(waitable));
-        return true;
     }
 
     void ServerManagerBase::WaitAndProcess() {

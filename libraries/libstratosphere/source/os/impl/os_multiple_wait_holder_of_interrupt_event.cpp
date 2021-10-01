@@ -13,23 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include "os_waitable_holder_base.hpp"
+#include <stratosphere.hpp>
+#include "os_multiple_wait_holder_of_interrupt_event.hpp"
+#include "os_interrupt_event_impl.hpp"
 
 namespace ams::os::impl {
 
-    class WaitableHolderOfInterruptEvent : public WaitableHolderOfKernelObject {
-        private:
-            InterruptEventType *event;
-        public:
-            explicit WaitableHolderOfInterruptEvent(InterruptEventType *e) : event(e) { /* ... */ }
-
-            /* IsSignaled, GetHandle both implemented. */
-            virtual TriBool IsSignaled() const override {
-                return TriBool::Undefined;
-            }
-
-            virtual Handle GetHandle() const override;
-    };
+    Handle MultiWaitHolderOfInterruptEvent::GetHandle() const {
+        return GetReference(event->impl).GetHandle();
+    }
 
 }

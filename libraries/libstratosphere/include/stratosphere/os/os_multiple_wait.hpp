@@ -13,14 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "os_waitable_holder_of_interrupt_event.hpp"
-#include "os_interrupt_event_impl.hpp"
-
-namespace ams::os::impl {
-
-    Handle WaitableHolderOfInterruptEvent::GetHandle() const {
-        return GetReference(event->impl).GetHandle();
-    }
-
-}
+#pragma once
+#include <stratosphere/os/os_multiple_wait_types.hpp>
+#include <stratosphere/os/os_multiple_wait_api.hpp>
+#include <stratosphere/os/os_multiple_wait_utils.hpp>

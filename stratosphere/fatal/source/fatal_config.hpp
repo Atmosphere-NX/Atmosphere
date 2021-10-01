@@ -88,7 +88,7 @@ namespace ams::fatal::srv {
             }
     };
 
-    os::WaitableHolderType *GetFatalDirtyWaitableHolder();
+    os::MultiWaitHolderType *GetFatalDirtyMultiWaitHolder();
     void OnFatalDirtyEvent();
     const FatalConfig &GetFatalConfig();
 

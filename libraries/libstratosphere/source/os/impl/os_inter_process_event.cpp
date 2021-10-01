@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "os_inter_process_event.hpp"
 #include "os_inter_process_event_impl.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_object_list.hpp"
 
 namespace ams::os::impl {
 
@@ -33,7 +33,7 @@ namespace ams::os::impl {
             event->auto_clear = (clear_mode == EventClearMode_AutoClear);
 
             /* Create the waitlist node. */
-            util::ConstructAt(event->waitable_object_list_storage);
+            util::ConstructAt(event->multi_wait_object_list_storage);
 
             /* Set state. */
             event->state = InterProcessEventType::State_Initialized;
@@ -71,7 +71,7 @@ namespace ams::os::impl {
         }
 
         /* Destroy the waitlist. */
-        util::DestroyAt(event->waitable_object_list_storage);
+        util::DestroyAt(event->multi_wait_object_list_storage);
     }
 
     void AttachInterProcessEvent(InterProcessEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {

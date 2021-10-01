@@ -14,18 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_manager_impl.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_impl.hpp"
 
 namespace ams::os::impl {
 
-    Result WaitableManagerHorizonImpl::WaitSynchronizationN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns) {
+    Result MultiWaitHorizonImpl::WaitSynchronizationN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns) {
         AMS_ASSERT(!(num == 0 && ns == 0));
-        s32 index = WaitableManagerImpl::WaitInvalid;
+        s32 index = MultiWaitImpl::WaitInvalid;
 
         R_TRY_CATCH(svc::WaitSynchronization(std::addressof(index), static_cast<const svc::Handle *>(arr), num, ns)) {
-            R_CATCH(svc::ResultTimedOut)  { index = WaitableManagerImpl::WaitTimedOut; }
-            R_CATCH(svc::ResultCancelled) { index = WaitableManagerImpl::WaitCancelled; }
+            R_CATCH(svc::ResultTimedOut)  { index = MultiWaitImpl::WaitTimedOut; }
+            R_CATCH(svc::ResultCancelled) { index = MultiWaitImpl::WaitCancelled; }
             /* All other results are critical errors. */
             /* svc::ResultThreadTerminating */
             /* svc::ResultInvalidHandle. */
@@ -37,17 +37,17 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    Result WaitableManagerHorizonImpl::ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target) {
+    Result MultiWaitHorizonImpl::ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target) {
         /* NOTE: Nintendo does not initialize this value, which seems like it can cause incorrect behavior. */
-        s32 index = WaitableManagerImpl::WaitInvalid;
-        static_assert(WaitableManagerImpl::WaitInvalid != -1);
+        s32 index = MultiWaitImpl::WaitInvalid;
+        static_assert(MultiWaitImpl::WaitInvalid != -1);
 
         R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(index), arr, num, reply_target, ns)) {
-            R_CATCH(svc::ResultTimedOut)  { *out_index = WaitableManagerImpl::WaitTimedOut;  return R_CURRENT_RESULT; }
-            R_CATCH(svc::ResultCancelled) { *out_index = WaitableManagerImpl::WaitCancelled; return R_CURRENT_RESULT; }
+            R_CATCH(svc::ResultTimedOut)  { *out_index = MultiWaitImpl::WaitTimedOut;  return R_CURRENT_RESULT; }
+            R_CATCH(svc::ResultCancelled) { *out_index = MultiWaitImpl::WaitCancelled; return R_CURRENT_RESULT; }
             R_CATCH(svc::ResultSessionClosed)   {
                 if (index == -1) {
-                    *out_index = WaitableManagerImpl::WaitInvalid;
+                    *out_index = MultiWaitImpl::WaitInvalid;
                     return os::ResultSessionClosedForReply();
                 } else {
                     *out_index = index;
@@ -64,7 +64,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void WaitableManagerHorizonImpl::CancelWait() {
+    void MultiWaitHorizonImpl::CancelWait() {
         R_ABORT_UNLESS(svc::CancelSynchronization(this->handle));
     }
 

@@ -1,0 +1,113 @@
+/*
+ * Copyright (c) 2018-2020 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#pragma once
+#include "os_multiple_wait_holder_base.hpp"
+
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #include "os_multiple_wait_target_impl.os.horizon.hpp"
+#else
+    #error "Unknown OS for ams::os::MultiWaitTargetImpl"
+#endif
+
+namespace ams::os::impl {
+
+    class MultiWaitImpl {
+        public:
+            static constexpr size_t MaximumHandleCount = MultiWaitTargetImpl::MaximumHandleCount;
+            static constexpr s32 WaitInvalid   = -3;
+            static constexpr s32 WaitCancelled = -2;
+            static constexpr s32 WaitTimedOut  = -1;
+            using MultiWaitList = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::multi_wait_node>::ListType;
+        private:
+            MultiWaitList multi_wait_list;
+            MultiWaitHolderBase *signaled_holder;
+            TimeSpan current_time;
+            InternalCriticalSection cs_wait;
+            MultiWaitTargetImpl target_impl;
+        private:
+            Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
+            Result WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
+            s32                BuildHandleArray(Handle out_handles[], MultiWaitHolderBase *out_objects[], s32 num);
+
+            MultiWaitHolderBase *LinkHoldersToObjectList();
+            void                UnlinkHoldersFromObjectList();
+
+            MultiWaitHolderBase *RecalculateNextTimeout(TimeSpan *out_min_timeout, TimeSpan end_time);
+
+            MultiWaitHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout) {
+                MultiWaitHolderBase *holder = nullptr;
+
+                const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, svc::InvalidHandle);
+                R_ASSERT(wait_result);
+                AMS_UNUSED(wait_result);
+
+                return holder;
+            }
+        public:
+            /* Wait. */
+            MultiWaitHolderBase *WaitAny() {
+                return this->WaitAnyImpl(true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()));
+            }
+
+            MultiWaitHolderBase *TryWaitAny() {
+                return this->WaitAnyImpl(false, TimeSpan(0));
+            }
+
+            MultiWaitHolderBase *TimedWaitAny(TimeSpan ts) {
+                return this->WaitAnyImpl(false, ts);
+            }
+
+            Result ReplyAndReceive(MultiWaitHolderBase **out, Handle reply_target) {
+                return this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target);
+            }
+
+            /* List management. */
+            bool IsEmpty() const {
+                return this->multi_wait_list.empty();
+            }
+
+            void LinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+                this->multi_wait_list.push_back(holder_base);
+            }
+
+            void UnlinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
+                this->multi_wait_list.erase(this->multi_wait_list.iterator_to(holder_base));
+            }
+
+            void UnlinkAll() {
+                while (!this->IsEmpty()) {
+                    this->multi_wait_list.front().SetMultiWait(nullptr);
+                    this->multi_wait_list.pop_front();
+                }
+            }
+
+            void MoveAllFrom(MultiWaitImpl &other) {
+                /* Set ourselves as multi wait for all of the other's holders. */
+                for (auto &w : other.multi_wait_list) {
+                    w.SetMultiWait(this);
+                }
+                this->multi_wait_list.splice(this->multi_wait_list.end(), other.multi_wait_list);
+            }
+
+            /* Other. */
+            TimeSpan GetCurrentTime() const {
+                return this->current_time;
+            }
+
+            void SignalAndWakeupThread(MultiWaitHolderBase *holder_base);
+    };
+
+}

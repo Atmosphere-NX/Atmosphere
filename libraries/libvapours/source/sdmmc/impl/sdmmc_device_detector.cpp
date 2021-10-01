@@ -71,18 +71,18 @@ namespace ams::sdmmc::impl {
         os::SystemEventType gpio_event;
         R_ABORT_UNLESS(gpio::BindInterrupt(std::addressof(gpio_event), std::addressof(this->gpio_pad_session)));
 
-        /* Initialize and link waitable holders. */
-        os::WaitableManagerType wait_manager;
-        os::WaitableHolderType detector_thread_end_holder;
-        os::WaitableHolderType request_sleep_wake_event_holder;
-        os::WaitableHolderType gpio_event_holder;
-        os::InitializeWaitableManager(std::addressof(wait_manager));
-        os::InitializeWaitableHolder(std::addressof(detector_thread_end_holder), std::addressof(this->detector_thread_end_event));
-        os::LinkWaitableHolder(std::addressof(wait_manager), std::addressof(detector_thread_end_holder));
-        os::InitializeWaitableHolder(std::addressof(request_sleep_wake_event_holder), std::addressof(this->request_sleep_wake_event));
-        os::LinkWaitableHolder(std::addressof(wait_manager), std::addressof(request_sleep_wake_event_holder));
-        os::InitializeWaitableHolder(std::addressof(gpio_event_holder), std::addressof(gpio_event));
-        os::LinkWaitableHolder(std::addressof(wait_manager), std::addressof(gpio_event_holder));
+        /* Initialize and link multi wait/holders. */
+        os::MultiWaitType multi_wait;
+        os::MultiWaitHolderType detector_thread_end_holder;
+        os::MultiWaitHolderType request_sleep_wake_event_holder;
+        os::MultiWaitHolderType gpio_event_holder;
+        os::InitializeMultiWait(std::addressof(multi_wait));
+        os::InitializeMultiWaitHolder(std::addressof(detector_thread_end_holder), std::addressof(this->detector_thread_end_event));
+        os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(detector_thread_end_holder));
+        os::InitializeMultiWaitHolder(std::addressof(request_sleep_wake_event_holder), std::addressof(this->request_sleep_wake_event));
+        os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(request_sleep_wake_event_holder));
+        os::InitializeMultiWaitHolder(std::addressof(gpio_event_holder), std::addressof(gpio_event));
+        os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(gpio_event_holder));
 
         /* Wait before detecting the initial state of the card. */
         os::SleepThread(TimeSpan::FromMilliSeconds(this->gpio_debounce_ms));
@@ -99,7 +99,7 @@ namespace ams::sdmmc::impl {
         /* Wait, servicing our events. */
         while (true) {
             /* Get the signaled holder. */
-            os::WaitableHolderType *signaled_holder = os::WaitAny(std::addressof(wait_manager));
+            os::MultiWaitHolderType *signaled_holder = os::WaitAny(std::addressof(multi_wait));
 
             /* Process the holder. */
             bool insert_change = false;
@@ -115,13 +115,13 @@ namespace ams::sdmmc::impl {
                 os::SignalEvent(std::addressof(this->acknowledge_sleep_awake_event));
 
                 /* Temporarily unlink our interrupt event. */
-                os::UnlinkWaitableHolder(std::addressof(gpio_event_holder));
+                os::UnlinkMultiWaitHolder(std::addressof(gpio_event_holder));
 
                 /* Wait to be signaled. */
-                signaled_holder = os::WaitAny(std::addressof(wait_manager));
+                signaled_holder = os::WaitAny(std::addressof(multi_wait));
 
                 /* Link our interrupt event back in. */
-                os::LinkWaitableHolder(std::addressof(wait_manager), std::addressof(gpio_event_holder));
+                os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(gpio_event_holder));
 
                 /* We're awake again. Either because we should exit, or because we were asked to wake up. */
                 os::ClearEvent(std::addressof(this->request_sleep_wake_event));
@@ -170,14 +170,14 @@ namespace ams::sdmmc::impl {
         /* Disable interrupts to our gpio event. */
         gpio::SetInterruptEnable(std::addressof(this->gpio_pad_session), false);
 
-        /* Finalize and unlink waitable holders. */
-        os::UnlinkWaitableHolder(std::addressof(gpio_event_holder));
-        os::FinalizeWaitableHolder(std::addressof(gpio_event_holder));
-        os::UnlinkWaitableHolder(std::addressof(request_sleep_wake_event_holder));
-        os::FinalizeWaitableHolder(std::addressof(request_sleep_wake_event_holder));
-        os::UnlinkWaitableHolder(std::addressof(detector_thread_end_holder));
-        os::FinalizeWaitableHolder(std::addressof(detector_thread_end_holder));
-        os::FinalizeWaitableManager(std::addressof(wait_manager));
+        /* Finalize and unlink multi wait/holders. */
+        os::UnlinkMultiWaitHolder(std::addressof(gpio_event_holder));
+        os::FinalizeMultiWaitHolder(std::addressof(gpio_event_holder));
+        os::UnlinkMultiWaitHolder(std::addressof(request_sleep_wake_event_holder));
+        os::FinalizeMultiWaitHolder(std::addressof(request_sleep_wake_event_holder));
+        os::UnlinkMultiWaitHolder(std::addressof(detector_thread_end_holder));
+        os::FinalizeMultiWaitHolder(std::addressof(detector_thread_end_holder));
+        os::FinalizeMultiWait(std::addressof(multi_wait));
 
         /* Finalize the gpio session. */
         gpio::UnbindInterrupt(std::addressof(this->gpio_pad_session));

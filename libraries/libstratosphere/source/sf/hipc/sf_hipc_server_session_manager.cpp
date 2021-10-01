@@ -78,7 +78,7 @@ namespace ams::sf::hipc {
 
     void ServerSessionManager::CloseSessionImpl(ServerSession *session) {
         const Handle session_handle = session->session_handle;
-        os::FinalizeWaitableHolder(session);
+        os::FinalizeMultiWaitHolder(session);
         this->DestroySession(session);
         R_ABORT_UNLESS(svcCloseHandle(session_handle));
     }
@@ -92,7 +92,7 @@ namespace ams::sf::hipc {
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
 
         /* Register to wait list. */
-        this->RegisterSessionToWaitList(session_memory);
+        this->RegisterServerSessionToWait(session_memory);
         return ResultSuccess();
     }
 
@@ -123,7 +123,7 @@ namespace ams::sf::hipc {
         session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
 
         /* Register to wait list. */
-        this->RegisterSessionToWaitList(session_memory);
+        this->RegisterServerSessionToWait(session_memory);
         return ResultSuccess();
     }
 
@@ -233,7 +233,7 @@ namespace ams::sf::hipc {
                 } R_END_TRY_CATCH;
 
                 /* We succeeded, so we can process future messages on this session. */
-                this->RegisterSessionToWaitList(session);
+                this->RegisterServerSessionToWait(session);
                 return ResultSuccess();
             }
         }

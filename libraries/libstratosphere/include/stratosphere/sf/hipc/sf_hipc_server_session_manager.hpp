@@ -38,7 +38,7 @@ namespace ams::sf::hipc {
 
     }
 
-    class ServerSession : public os::WaitableHolderType {
+    class ServerSession : public os::MultiWaitHolderType {
         friend class ServerSessionManager;
         friend class ServerManagerBase;
         friend class impl::HipcManagerImpl;
@@ -54,7 +54,7 @@ namespace ams::sf::hipc {
             bool has_received;
         public:
             ServerSession(Handle h, cmif::ServiceObjectHolder &&obj) : srv_obj_holder(std::move(obj)), session_handle(h) {
-                hipc::AttachWaitableHolderForReply(this, h);
+                hipc::AttachMultiWaitHolderForReply(this, h);
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = nullptr;
@@ -62,7 +62,7 @@ namespace ams::sf::hipc {
             }
 
             ServerSession(Handle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : srv_obj_holder(std::move(obj)), session_handle(h) {
-                hipc::AttachWaitableHolderForReply(this, h);
+                hipc::AttachMultiWaitHolderForReply(this, h);
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = std::move(fsrv);
@@ -105,7 +105,7 @@ namespace ams::sf::hipc {
             void DestroySession(ServerSession *session);
 
             Result ProcessRequestImpl(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);
-            virtual void RegisterSessionToWaitList(ServerSession *session) = 0;
+            virtual void RegisterServerSessionToWait(ServerSession *session) = 0;
         protected:
             Result DispatchRequest(cmif::ServiceObjectHolder &&obj, ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);
             virtual Result DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message);

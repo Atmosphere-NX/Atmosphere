@@ -19,7 +19,7 @@
 
 namespace ams::os::impl {
 
-    class WaitableManagerHorizonImpl {
+    class MultiWaitHorizonImpl {
         public:
             static constexpr size_t MaximumHandleCount = static_cast<size_t>(ams::svc::ArgumentHandleCountMax);
         private:
@@ -63,6 +63,6 @@ namespace ams::os::impl {
             }
     };
 
-    using WaitableManagerTargetImpl = WaitableManagerHorizonImpl;
+    using MultiWaitTargetImpl = MultiWaitHorizonImpl;
 
 }

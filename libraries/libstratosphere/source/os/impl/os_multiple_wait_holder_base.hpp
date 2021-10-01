@@ -18,21 +18,21 @@
 
 namespace ams::os::impl {
 
-    class WaitableObjectList;
-    class WaitableManagerImpl;
+    class MultiWaitObjectList;
+    class MultiWaitImpl;
 
-    class WaitableHolderBase {
+    class MultiWaitHolderBase {
         private:
-            WaitableManagerImpl *manager = nullptr;
+            MultiWaitImpl *multi_wait = nullptr;
         public:
-            util::IntrusiveListNode manager_node;
+            util::IntrusiveListNode multi_wait_node;
             util::IntrusiveListNode object_list_node;
         public:
-            /* Gets whether the held waitable is currently signaled. */
+            /* Gets whether the held object is currently signaled. */
             virtual TriBool IsSignaled() const = 0;
-            /* Adds to manager's object list, returns is signaled. */
+            /* Adds to multi wait's object list, returns is signaled. */
             virtual TriBool LinkToObjectList() = 0;
-            /* Removes from the manager's object list. */
+            /* Removes from the multi wait's object list. */
             virtual void UnlinkFromObjectList() = 0;
             /* Gets handle to output, returns INVALID_HANDLE on failure. */
             virtual Handle GetHandle() const = 0;
@@ -41,21 +41,21 @@ namespace ams::os::impl {
                 return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
             }
 
-            /* Interface with manager. */
-            void SetManager(WaitableManagerImpl *m) {
-                this->manager = m;
+            /* Interface with multi wait. */
+            void SetMultiWait(MultiWaitImpl *m) {
+                this->multi_wait = m;
             }
 
-            WaitableManagerImpl *GetManager() const {
-                return this->manager;
+            MultiWaitImpl *GetMultiWait() const {
+                return this->multi_wait;
             }
 
-            bool IsLinkedToManager() const {
-                return this->manager != nullptr;
+            bool IsLinked() const {
+                return this->multi_wait != nullptr;
             }
     };
 
-    class WaitableHolderOfUserObject : public WaitableHolderBase {
+    class MultiWaitHolderOfUserObject : public MultiWaitHolderBase {
         public:
             /* All user objects have no handle to wait on. */
             virtual Handle GetHandle() const override final {
@@ -63,7 +63,7 @@ namespace ams::os::impl {
             }
     };
 
-    class WaitableHolderOfKernelObject : public WaitableHolderBase {
+    class MultiWaitHolderOfKernelObject : public MultiWaitHolderBase {
         public:
             /* All kernel objects have native handles, and thus don't have object list semantics. */
             virtual TriBool LinkToObjectList() override final {

@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct MessageQueueType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     void InitializeMessageQueue(MessageQueueType *mq, uintptr_t *buffer, size_t count);
     void FinalizeMessageQueue(MessageQueueType *mq);
@@ -46,6 +46,6 @@ namespace ams::os {
     bool TryPeekMessageQueue(uintptr_t *out, const MessageQueueType *mq);
     bool TimedPeekMessageQueue(uintptr_t *out, const MessageQueueType *mq, TimeSpan timeout);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, MessageQueueType *event, MessageQueueWaitType wait_type);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, MessageQueueType *event, MessageQueueWaitType wait_type);
 
 }

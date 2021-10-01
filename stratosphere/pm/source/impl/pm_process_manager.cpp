@@ -150,33 +150,33 @@ namespace ams::pm::impl {
         constinit std::atomic<bool> g_application_hook;
 
         /* Forward declarations. */
-        Result LaunchProcess(os::WaitableManagerType &waitable_manager, const LaunchProcessArgs &args);
+        Result LaunchProcess(os::MultiWaitType &multi_wait, const LaunchProcessArgs &args);
         void   OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info);
 
         /* Helpers. */
         void ProcessTrackingMain(void *arg) {
             /* This is the main loop of the process tracking thread. */
 
-            /* Setup waitable manager. */
-            os::WaitableManagerType process_waitable_manager;
-            os::WaitableHolderType start_event_holder;
-            os::InitializeWaitableManager(std::addressof(process_waitable_manager));
-            os::InitializeWaitableHolder(std::addressof(start_event_holder), g_process_launch_start_event.GetBase());
-            os::LinkWaitableHolder(std::addressof(process_waitable_manager), std::addressof(start_event_holder));
+            /* Setup multi wait/holders. */
+            os::MultiWaitType process_multi_wait;
+            os::MultiWaitHolderType start_event_holder;
+            os::InitializeMultiWait(std::addressof(process_multi_wait));
+            os::InitializeMultiWaitHolder(std::addressof(start_event_holder), g_process_launch_start_event.GetBase());
+            os::LinkMultiWaitHolder(std::addressof(process_multi_wait), std::addressof(start_event_holder));
 
             while (true) {
-                auto signaled_holder = os::WaitAny(std::addressof(process_waitable_manager));
+                auto signaled_holder = os::WaitAny(std::addressof(process_multi_wait));
                 if (signaled_holder == &start_event_holder) {
                     /* Launch start event signaled. */
                     /* TryWait will clear signaled, preventing duplicate notifications. */
                     if (g_process_launch_start_event.TryWait()) {
-                        g_process_launch_result = LaunchProcess(process_waitable_manager, g_process_launch_args);
+                        g_process_launch_result = LaunchProcess(process_multi_wait, g_process_launch_args);
                         g_process_launch_finish_event.Signal();
                     }
                 } else {
                     /* Some process was signaled. */
                     ProcessListAccessor list(g_process_list);
-                    OnProcessSignaled(list, reinterpret_cast<ProcessInfo *>(os::GetWaitableHolderUserData(signaled_holder)));
+                    OnProcessSignaled(list, reinterpret_cast<ProcessInfo *>(os::GetMultiWaitHolderUserData(signaled_holder)));
                 }
             }
         }
@@ -220,7 +220,7 @@ namespace ams::pm::impl {
             g_process_info_allocator.FreeProcessInfo(process_info);
         }
 
-        Result LaunchProcess(os::WaitableManagerType &waitable_manager, const LaunchProcessArgs &args) {
+        Result LaunchProcess(os::MultiWaitType &multi_wait, const LaunchProcessArgs &args) {
             /* Get Program Info. */
             ldr::ProgramInfo program_info;
             cfg::OverrideStatus override_status;
@@ -260,7 +260,7 @@ namespace ams::pm::impl {
             {
                 ProcessListAccessor list(g_process_list);
                 list->push_back(*process_info);
-                process_info->LinkToWaitableManager(waitable_manager);
+                process_info->LinkToMultiWait(multi_wait);
             }
 
             /* Prevent resource leakage if register fails. */
@@ -362,7 +362,7 @@ namespace ams::pm::impl {
                     process_info->ClearUnhandledException();
                     break;
                 case svc::ProcessState_Terminated:
-                    /* Free process resources, unlink from waitable manager. */
+                    /* Free process resources, unlink from multi wait. */
                     process_info->Cleanup();
 
                     if (hos::GetVersion() < hos::Version_5_0_0 && process_info->ShouldSignalOnExit()) {

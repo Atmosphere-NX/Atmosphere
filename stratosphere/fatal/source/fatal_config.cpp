@@ -32,19 +32,19 @@ namespace ams::fatal::srv {
 
         /* Global event. */
         os::SystemEventType g_fatal_dirty_event;
-        os::WaitableHolderType g_fatal_dirty_waitable_holder;
+        os::MultiWaitHolderType g_fatal_dirty_multi_wait_holder;
         bool g_initialized;
 
     }
 
-    os::WaitableHolderType *GetFatalDirtyWaitableHolder() {
+    os::MultiWaitHolderType *GetFatalDirtyMultiWaitHolder() {
         if (AMS_UNLIKELY(!g_initialized)) {
             os::AttachReadableHandleToSystemEvent(std::addressof(g_fatal_dirty_event), GetFatalDirtyEventReadableHandle(), true, os::EventClearMode_ManualClear);
-            os::InitializeWaitableHolder(std::addressof(g_fatal_dirty_waitable_holder), std::addressof(g_fatal_dirty_event));
-            os::SetWaitableHolderUserData(std::addressof(g_fatal_dirty_waitable_holder), reinterpret_cast<uintptr_t>(std::addressof(g_fatal_dirty_waitable_holder)));
+            os::InitializeMultiWaitHolder(std::addressof(g_fatal_dirty_multi_wait_holder), std::addressof(g_fatal_dirty_event));
+            os::SetMultiWaitHolderUserData(std::addressof(g_fatal_dirty_multi_wait_holder), reinterpret_cast<uintptr_t>(std::addressof(g_fatal_dirty_multi_wait_holder)));
             g_initialized = true;
         }
-        return std::addressof(g_fatal_dirty_waitable_holder);
+        return std::addressof(g_fatal_dirty_multi_wait_holder);
     }
 
     void OnFatalDirtyEvent() {

@@ -41,12 +41,12 @@ namespace ams::sf::hipc {
 
     }
 
-    void AttachWaitableHolderForAccept(os::WaitableHolderType *holder, Handle port) {
-        return os::InitializeWaitableHolder(holder, port);
+    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, Handle port) {
+        return os::InitializeMultiWaitHolder(holder, port);
     }
 
-    void AttachWaitableHolderForReply(os::WaitableHolderType *holder, Handle request) {
-        return os::InitializeWaitableHolder(holder, request);
+    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, Handle request) {
+        return os::InitializeMultiWaitHolder(holder, request);
     }
 
     Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer) {

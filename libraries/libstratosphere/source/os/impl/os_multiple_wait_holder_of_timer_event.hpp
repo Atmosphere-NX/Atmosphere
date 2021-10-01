@@ -16,22 +16,22 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "os_timer_event_helper.hpp"
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_object_list.hpp"
 
 namespace ams::os::impl {
 
-    class WaitableHolderOfTimerEvent : public WaitableHolderOfUserObject {
+    class MultiWaitHolderOfTimerEvent : public MultiWaitHolderOfUserObject {
         private:
             TimerEventType *event;
         private:
             TriBool IsSignaledImpl() const {
-                TimeSpan cur_time = this->GetManager()->GetCurrentTime();
+                TimeSpan cur_time = this->GetMultiWait()->GetCurrentTime();
                 UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(this->event, cur_time);
                 return this->event->signaled ? TriBool::True : TriBool::False;
             }
         public:
-            explicit WaitableHolderOfTimerEvent(TimerEventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfTimerEvent(TimerEventType *e) : event(e) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
@@ -42,14 +42,14 @@ namespace ams::os::impl {
             virtual TriBool LinkToObjectList() override {
                 std::scoped_lock lk(GetReference(this->event->cs_timer_event));
 
-                GetReference(this->event->waitable_object_list_storage).LinkWaitableHolder(*this);
+                GetReference(this->event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
                 std::scoped_lock lk(GetReference(this->event->cs_timer_event));
 
-                GetReference(this->event->waitable_object_list_storage).UnlinkWaitableHolder(*this);
+                GetReference(this->event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
             }
 
             /* Gets the amount of time remaining until this wakes up. */

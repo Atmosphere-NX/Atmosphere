@@ -14,17 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "os_waitable_manager_impl.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_impl.hpp"
+#include "os_multiple_wait_object_list.hpp"
 #include "os_tick_manager.hpp"
 
 namespace ams::os::impl {
 
-    Result WaitableManagerImpl::WaitAnyImpl(WaitableHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
+    Result MultiWaitImpl::WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
         /* Prepare for processing. */
         this->signaled_holder = nullptr;
         this->target_impl.SetCurrentThreadHandleForCancelWait();
-        WaitableHolderBase *holder = this->LinkHoldersToObjectList();
+        MultiWaitHolderBase *holder = this->LinkHoldersToObjectList();
 
         /* Check if we've been signaled. */
         {
@@ -59,9 +59,9 @@ namespace ams::os::impl {
         return wait_result;
     }
 
-    Result WaitableManagerImpl::WaitAnyHandleImpl(WaitableHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
+    Result MultiWaitImpl::WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
         Handle object_handles[MaximumHandleCount];
-        WaitableHolderBase *objects[MaximumHandleCount];
+        MultiWaitHolderBase *objects[MaximumHandleCount];
 
         const s32 count = this->BuildHandleArray(object_handles, objects, MaximumHandleCount);
         const TimeSpan end_time = infinite ? TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()) : GetCurrentTick().ToTimeSpan() + timeout;
@@ -70,7 +70,7 @@ namespace ams::os::impl {
             this->current_time = GetCurrentTick().ToTimeSpan();
 
             TimeSpan min_timeout = 0;
-            WaitableHolderBase *min_timeout_object = this->RecalculateNextTimeout(&min_timeout, end_time);
+            MultiWaitHolderBase *min_timeout_object = this->RecalculateNextTimeout(&min_timeout, end_time);
 
             s32 index = WaitInvalid;
             Result wait_result = ResultSuccess();
@@ -129,16 +129,17 @@ namespace ams::os::impl {
                         *out                  = objects[index];
                         return wait_result;
                     }
+                    break;
             }
 
             reply_target = svc::InvalidHandle;
         }
     }
 
-    s32 WaitableManagerImpl::BuildHandleArray(Handle out_handles[], WaitableHolderBase *out_objects[], s32 num) {
+    s32 MultiWaitImpl::BuildHandleArray(Handle out_handles[], MultiWaitHolderBase *out_objects[], s32 num) {
         s32 count = 0;
 
-        for (WaitableHolderBase &holder_base : this->waitable_list) {
+        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             if (Handle handle = holder_base.GetHandle(); handle != svc::InvalidHandle) {
                 AMS_ASSERT(count < num);
 
@@ -151,10 +152,10 @@ namespace ams::os::impl {
         return count;
     }
 
-    WaitableHolderBase *WaitableManagerImpl::LinkHoldersToObjectList() {
-        WaitableHolderBase *signaled_holder = nullptr;
+    MultiWaitHolderBase *MultiWaitImpl::LinkHoldersToObjectList() {
+        MultiWaitHolderBase *signaled_holder = nullptr;
 
-        for (WaitableHolderBase &holder_base : this->waitable_list) {
+        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             TriBool is_signaled = holder_base.LinkToObjectList();
 
             if (signaled_holder == nullptr && is_signaled == TriBool::True) {
@@ -165,17 +166,17 @@ namespace ams::os::impl {
         return signaled_holder;
     }
 
-    void WaitableManagerImpl::UnlinkHoldersFromObjectList() {
-        for (WaitableHolderBase &holder_base : this->waitable_list) {
+    void MultiWaitImpl::UnlinkHoldersFromObjectList() {
+        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             holder_base.UnlinkFromObjectList();
         }
     }
 
-    WaitableHolderBase *WaitableManagerImpl::RecalculateNextTimeout(TimeSpan *out_min_timeout, TimeSpan end_time) {
-        WaitableHolderBase *min_timeout_holder = nullptr;
+    MultiWaitHolderBase *MultiWaitImpl::RecalculateNextTimeout(TimeSpan *out_min_timeout, TimeSpan end_time) {
+        MultiWaitHolderBase *min_timeout_holder = nullptr;
         TimeSpan min_time = end_time;
 
-        for (WaitableHolderBase &holder_base : this->waitable_list) {
+        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             if (const TimeSpan cur_time = holder_base.GetAbsoluteWakeupTime(); cur_time < min_time) {
                 min_timeout_holder = &holder_base;
                 min_time = cur_time;
@@ -190,7 +191,7 @@ namespace ams::os::impl {
         return min_timeout_holder;
     }
 
-    void WaitableManagerImpl::SignalAndWakeupThread(WaitableHolderBase *holder_base) {
+    void MultiWaitImpl::SignalAndWakeupThread(MultiWaitHolderBase *holder_base) {
         std::scoped_lock lk(this->cs_wait);
 
         if (this->signaled_holder == nullptr) {

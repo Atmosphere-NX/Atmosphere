@@ -21,12 +21,12 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableManagerImpl;
-        struct WaitableHolderImpl;
+        class MultiWaitImpl;
+        struct MultiWaitHolderImpl;
 
     }
 
-    struct WaitableManagerType {
+    struct MultiWaitType {
         enum State {
             State_NotInitialized,
             State_Initialized,
@@ -34,14 +34,14 @@ namespace ams::os {
 
         u8 state;
         bool is_waiting;
-        util::TypedStorage<impl::WaitableManagerImpl, sizeof(util::IntrusiveListNode) + sizeof(impl::InternalCriticalSection) + 2 * sizeof(void *) + sizeof(Handle), alignof(void *)> impl_storage;
+        util::TypedStorage<impl::MultiWaitImpl, sizeof(util::IntrusiveListNode) + sizeof(impl::InternalCriticalSection) + 2 * sizeof(void *) + sizeof(Handle), alignof(void *)> impl_storage;
     };
-    static_assert(std::is_trivial<WaitableManagerType>::value);
+    static_assert(std::is_trivial<MultiWaitType>::value);
 
-    struct WaitableHolderType {
-        util::TypedStorage<impl::WaitableHolderImpl, 2 * sizeof(util::IntrusiveListNode) + 3 * sizeof(void *), alignof(void *)> impl_storage;
+    struct MultiWaitHolderType {
+        util::TypedStorage<impl::MultiWaitHolderImpl, 2 * sizeof(util::IntrusiveListNode) + 3 * sizeof(void *), alignof(void *)> impl_storage;
         uintptr_t user_data;
     };
-    static_assert(std::is_trivial<WaitableHolderType>::value);
+    static_assert(std::is_trivial<MultiWaitHolderType>::value);
 
 }

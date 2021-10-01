@@ -14,6 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/os/os_waitable_types.hpp>
-#include <stratosphere/os/os_waitable_api.hpp>
-#include <stratosphere/os/os_waitable_utils.hpp>
+#include "os_multiple_wait_holder_base.hpp"
+
+namespace ams::os::impl {
+
+    class MultiWaitHolderOfInterruptEvent : public MultiWaitHolderOfKernelObject {
+        private:
+            InterruptEventType *event;
+        public:
+            explicit MultiWaitHolderOfInterruptEvent(InterruptEventType *e) : event(e) { /* ... */ }
+
+            /* IsSignaled, GetHandle both implemented. */
+            virtual TriBool IsSignaled() const override {
+                return TriBool::Undefined;
+            }
+
+            virtual Handle GetHandle() const override;
+    };
+
+}

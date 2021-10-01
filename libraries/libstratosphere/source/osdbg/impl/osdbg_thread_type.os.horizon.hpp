@@ -26,7 +26,7 @@ namespace ams::osdbg::impl {
 
     struct ThreadTypeIlp32 {
         AlignedStorageIlp32<0, 2, alignof(u32)> _all_threads_node;
-        AlignedStorageIlp32<0, 2, alignof(u32)> _waitable_object_list;
+        AlignedStorageIlp32<0, 2, alignof(u32)> _multi_wait_object_list;
         u32 _padding[4];
         u8 _state;
         bool _stack_is_aliased;
@@ -55,7 +55,7 @@ namespace ams::osdbg::impl {
 
     struct ThreadTypeIlp32Version0 {
         AlignedStorageIlp32<0, 2, alignof(u32)> _all_threads_node;
-        AlignedStorageIlp32<0, 2, alignof(u32)> _waitable_object_list;
+        AlignedStorageIlp32<0, 2, alignof(u32)> _multi_wait_object_list;
         u32 _padding[4];
         u8 _state;
         bool _stack_is_aliased;
@@ -82,7 +82,7 @@ namespace ams::osdbg::impl {
 
     struct ThreadTypeLp64 {
         AlignedStorageLp64<0, 2, alignof(u64)> _all_threads_node;
-        AlignedStorageLp64<0, 2, alignof(u64)> _waitable_object_list;
+        AlignedStorageLp64<0, 2, alignof(u64)> _multi_wait_object_list;
         u64 _padding[4];
         u8 _state;
         bool _stack_is_aliased;
@@ -110,7 +110,7 @@ namespace ams::osdbg::impl {
 
     struct ThreadTypeLp64Version0 {
         AlignedStorageLp64<0, 2, alignof(u64)> _all_threads_node;
-        AlignedStorageLp64<0, 2, alignof(u64)> _waitable_object_list;
+        AlignedStorageLp64<0, 2, alignof(u64)> _multi_wait_object_list;
         u64 _padding[4];
         u8 _state;
         bool _stack_is_aliased;

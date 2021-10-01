@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct EventType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     void InitializeEvent(EventType *event, bool signaled, EventClearMode clear_mode);
     void FinalizeEvent(EventType *event);
@@ -32,6 +32,6 @@ namespace ams::os {
     bool TimedWaitEvent(EventType *event, TimeSpan timeout);
     void ClearEvent(EventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, EventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, EventType *event);
 
 }

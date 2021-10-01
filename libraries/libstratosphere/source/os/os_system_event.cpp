@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 #include "impl/os_inter_process_event.hpp"
 #include "impl/os_timeout_helper.hpp"
 
@@ -119,13 +119,13 @@ namespace ams::os {
         }
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SystemEventType *event) {
         switch (event->state) {
             case SystemEventType::State_InitializedAsInterProcessEvent:
-                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_inter_process_event_storage, std::addressof(event->inter_process_event));
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_inter_process_event_storage, std::addressof(event->inter_process_event));
                 break;
             case SystemEventType::State_InitializedAsEvent:
-                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_event_storage, std::addressof(event->event));
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_event_storage, std::addressof(event->event));
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

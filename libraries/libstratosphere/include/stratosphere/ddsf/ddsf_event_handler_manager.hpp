@@ -31,10 +31,10 @@ namespace ams::ddsf {
             bool is_initialized;
             bool is_looping;
             os::SdkConditionVariable is_looping_cv;
-            os::WaitableManagerType waitable_manager;
+            os::MultiWaitType multi_wait;
             os::ThreadType *loop_thread;
             os::Event loop_control_event;
-            os::WaitableHolderType loop_control_event_holder;
+            os::MultiWaitHolderType loop_control_event_holder;
             LoopControlCommandParameters *loop_control_command_params;
             os::LightEvent loop_control_command_done_event;
             os::SdkMutex loop_control_lock;
@@ -43,7 +43,7 @@ namespace ams::ddsf {
             void ProcessControlCommandImpl(LoopControlCommandParameters *params);
         public:
             EventHandlerManager()
-                : is_initialized(false), is_looping(false), is_looping_cv(), waitable_manager(),
+                : is_initialized(false), is_looping(false), is_looping_cv(), multi_wait(),
                   loop_thread(), loop_control_event(os::EventClearMode_AutoClear), loop_control_event_holder(),
                   loop_control_command_params(), loop_control_command_done_event(os::EventClearMode_AutoClear),
                   loop_control_lock()

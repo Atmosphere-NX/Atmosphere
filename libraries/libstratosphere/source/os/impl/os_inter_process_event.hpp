@@ -36,6 +36,6 @@ namespace ams::os::impl {
     Handle GetReadableHandleOfInterProcessEvent(const InterProcessEventType *event);
     Handle GetWritableHandleOfInterProcessEvent(const InterProcessEventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, InterProcessEventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterProcessEventType *event);
 
 }

@@ -18,9 +18,9 @@
 
 namespace ams::os {
 
-    struct WaitableHolderType;
-    struct WaitableManagerType;
+    struct MultiWaitHolderType;
+    struct MultiWaitType;
 
-    Result SdkReplyAndReceive(os::WaitableHolderType **out, Handle reply_target, WaitableManagerType *manager);
+    Result SdkReplyAndReceive(os::MultiWaitHolderType **out, Handle reply_target, MultiWaitType *multi_wait);
 
 }

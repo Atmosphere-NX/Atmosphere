@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct TimerEventType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     void InitializeTimerEvent(TimerEventType *event, EventClearMode clear_mode);
     void FinalizeTimerEvent(TimerEventType *event);
@@ -36,6 +36,6 @@ namespace ams::os {
     void SignalTimerEvent(TimerEventType *event);
     void ClearTimerEvent(TimerEventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, TimerEventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, TimerEventType *event);
 
 }

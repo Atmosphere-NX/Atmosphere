@@ -28,8 +28,8 @@ namespace ams::sf::hipc {
         NeedsRetry,
     };
 
-    void AttachWaitableHolderForAccept(os::WaitableHolderType *holder, Handle port);
-    void AttachWaitableHolderForReply(os::WaitableHolderType *holder, Handle request);
+    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, Handle port);
+    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, Handle request);
 
     Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer);
     Result Receive(bool *out_closed, Handle session_handle, const cmif::PointerAndSize &message_buffer);

@@ -14,16 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_waitable_holder_base.hpp"
-#include "os_inter_process_event.hpp"
+#include "os_multiple_wait_holder_base.hpp"
 
 namespace ams::os::impl {
 
-    class WaitableHolderOfInterProcessEvent : public WaitableHolderOfKernelObject {
+    class MultiWaitHolderOfHandle : public MultiWaitHolderOfKernelObject {
         private:
-            InterProcessEventType *event;
+            Handle handle;
         public:
-            explicit WaitableHolderOfInterProcessEvent(InterProcessEventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfHandle(Handle h) : handle(h) { /* ... */ }
 
             /* IsSignaled, GetHandle both implemented. */
             virtual TriBool IsSignaled() const override {
@@ -31,7 +30,7 @@ namespace ams::os::impl {
             }
 
             virtual Handle GetHandle() const override {
-                return this->event->readable_handle;
+                return this->handle;
             }
     };
 

@@ -23,7 +23,7 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        class MultiWaitObjectList;
 
     }
 
@@ -33,8 +33,8 @@ namespace ams::os {
             State_Initialized    = 1,
         };
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_full;
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_empty;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_full;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_empty;
         uintptr_t *buffer;
         s32 capacity;
         s32 count;

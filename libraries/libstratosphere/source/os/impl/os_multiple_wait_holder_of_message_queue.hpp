@@ -14,13 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_object_list.hpp"
 
 namespace ams::os::impl {
 
     template<MessageQueueWaitType WaitType>
-    class WaitableHolderOfMessageQueue : public WaitableHolderOfUserObject {
+    class MultiWaitHolderOfMessageQueue : public MultiWaitHolderOfUserObject {
         static_assert(WaitType == MessageQueueWaitType::ForNotEmpty || WaitType == MessageQueueWaitType::ForNotFull);
         private:
             MessageQueueType *mq;
@@ -37,7 +37,7 @@ namespace ams::os::impl {
                 }
             }
 
-            constexpr inline WaitableObjectList &GetObjectList() const {
+            constexpr inline MultiWaitObjectList &GetObjectList() const {
                 if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
                     return GetReference(this->mq->waitlist_not_empty);
                 } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
@@ -47,7 +47,7 @@ namespace ams::os::impl {
                 }
             }
         public:
-            explicit WaitableHolderOfMessageQueue(MessageQueueType *mq) : mq(mq) { /* ... */ }
+            explicit MultiWaitHolderOfMessageQueue(MessageQueueType *mq) : mq(mq) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
@@ -58,18 +58,18 @@ namespace ams::os::impl {
             virtual TriBool LinkToObjectList() override {
                 std::scoped_lock lk(GetReference(this->mq->cs_queue));
 
-                this->GetObjectList().LinkWaitableHolder(*this);
+                this->GetObjectList().LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
                 std::scoped_lock lk(GetReference(this->mq->cs_queue));
 
-                this->GetObjectList().UnlinkWaitableHolder(*this);
+                this->GetObjectList().UnlinkMultiWaitHolder(*this);
             }
     };
 
-    using WaitableHolderOfMessageQueueForNotEmpty = WaitableHolderOfMessageQueue<MessageQueueWaitType::ForNotEmpty>;
-    using WaitableHolderOfMessageQueueForNotFull  = WaitableHolderOfMessageQueue<MessageQueueWaitType::ForNotFull>;
+    using MultiWaitHolderOfMessageQueueForNotEmpty = MultiWaitHolderOfMessageQueue<MessageQueueWaitType::ForNotEmpty>;
+    using MultiWaitHolderOfMessageQueueForNotFull  = MultiWaitHolderOfMessageQueue<MessageQueueWaitType::ForNotFull>;
 
 }

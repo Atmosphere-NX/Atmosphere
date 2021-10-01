@@ -14,37 +14,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_waitable_holder_base.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_object_list.hpp"
 
 namespace ams::os::impl {
 
-    class WaitableHolderOfThread : public WaitableHolderOfUserObject {
+    class MultiWaitHolderOfEvent : public MultiWaitHolderOfUserObject {
         private:
-            ThreadType *thread;
+            EventType *event;
         private:
             TriBool IsSignaledImpl() const {
-                return this->thread->state == ThreadType::State_Terminated ? TriBool::True : TriBool::False;
+                return this->event->signaled ? TriBool::True : TriBool::False;
             }
         public:
-            explicit WaitableHolderOfThread(ThreadType *t) : thread(t) { /* ... */ }
+            explicit MultiWaitHolderOfEvent(EventType *e) : event(e) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(this->event->cs_event));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(this->event->cs_event));
 
-                GetReference(this->thread->waitlist).LinkWaitableHolder(*this);
+                GetReference(this->event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(this->event->cs_event));
 
-                GetReference(this->thread->waitlist).UnlinkWaitableHolder(*this);
+                GetReference(this->event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
             }
     };
 

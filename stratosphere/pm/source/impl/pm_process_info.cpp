@@ -19,8 +19,8 @@
 namespace ams::pm::impl {
 
     ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0) {
-        os::InitializeWaitableHolder(std::addressof(this->waitable_holder), this->handle);
-        os::SetWaitableHolderUserData(std::addressof(this->waitable_holder), reinterpret_cast<uintptr_t>(this));
+        os::InitializeMultiWaitHolder(std::addressof(this->multi_wait_holder), this->handle);
+        os::SetMultiWaitHolderUserData(std::addressof(this->multi_wait_holder), reinterpret_cast<uintptr_t>(this));
     }
 
     ProcessInfo::~ProcessInfo() {
@@ -38,8 +38,8 @@ namespace ams::pm::impl {
             svcCloseHandle(this->handle);
             this->handle = INVALID_HANDLE;
 
-            /* Unlink the process from its waitable manager. */
-            os::UnlinkWaitableHolder(std::addressof(this->waitable_holder));
+            /* Unlink the process from its multi wait. */
+            os::UnlinkMultiWaitHolder(std::addressof(this->multi_wait_holder));
         }
     }
 

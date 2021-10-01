@@ -24,7 +24,7 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        class MultiWaitObjectList;
 
     }
 
@@ -42,7 +42,7 @@ namespace ams::os {
             TimerState_Periodic = 2,
         };
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> multi_wait_object_list_storage;
 
         u8 state;
         u8 clear_mode;

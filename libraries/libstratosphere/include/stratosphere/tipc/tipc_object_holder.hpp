@@ -20,7 +20,7 @@
 
 namespace ams::tipc {
 
-    class WaitableObject {
+    class ObjectHolder {
         public:
             enum ObjectType : u8 {
                 ObjectType_Invalid = 0,
@@ -44,7 +44,7 @@ namespace ams::tipc {
                 m_object  = object;
             }
         public:
-            constexpr inline WaitableObject() : m_handle(svc::InvalidHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
+            constexpr inline ObjectHolder() : m_handle(svc::InvalidHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
 
             void InitializeAsPort(svc::Handle handle) {
                 /* NOTE: Nintendo sets ports as managed, but this will cause a nullptr-deref if one is ever closed. */

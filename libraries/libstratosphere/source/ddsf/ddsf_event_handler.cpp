@@ -42,10 +42,10 @@ namespace ams::ddsf {
             return;
         }
 
-        /* Initialize waitable manager/holder. */
-        os::InitializeWaitableManager(std::addressof(this->waitable_manager));
-        os::InitializeWaitableHolder(std::addressof(this->loop_control_event_holder), this->loop_control_event.GetBase());
-        os::LinkWaitableHolder(std::addressof(this->waitable_manager), std::addressof(this->loop_control_event_holder));
+        /* Initialize multi wait/holder. */
+        os::InitializeMultiWait(std::addressof(this->multi_wait));
+        os::InitializeMultiWaitHolder(std::addressof(this->loop_control_event_holder), this->loop_control_event.GetBase());
+        os::LinkMultiWaitHolder(std::addressof(this->multi_wait), std::addressof(this->loop_control_event_holder));
 
         this->is_initialized = true;
     }
@@ -58,10 +58,10 @@ namespace ams::ddsf {
             return;
         }
 
-        /* Finalize waitable manager/holder. */
-        os::UnlinkWaitableHolder(std::addressof(this->loop_control_event_holder));
-        os::FinalizeWaitableHolder(std::addressof(this->loop_control_event_holder));
-        os::FinalizeWaitableManager(std::addressof(this->waitable_manager));
+        /* Finalize multi wait/holder. */
+        os::UnlinkMultiWaitHolder(std::addressof(this->loop_control_event_holder));
+        os::FinalizeMultiWaitHolder(std::addressof(this->loop_control_event_holder));
+        os::FinalizeMultiWait(std::addressof(this->multi_wait));
 
         this->is_initialized = false;
     }
@@ -94,7 +94,7 @@ namespace ams::ddsf {
         /* Process the command. */
         switch (params->command) {
             case LoopControlCommand::Register:
-                params->target->Link(std::addressof(this->waitable_manager));
+                params->target->Link(std::addressof(this->multi_wait));
                 break;
             case LoopControlCommand::Unregister:
                 params->target->Unlink();
@@ -180,7 +180,7 @@ namespace ams::ddsf {
         bool should_terminate = false;
         while (!should_terminate) {
             /* Wait for a holder to be signaled. */
-            os::WaitableHolderType *event_holder = os::WaitAny(std::addressof(this->waitable_manager));
+            os::MultiWaitHolderType *event_holder = os::WaitAny(std::addressof(this->multi_wait));
             AMS_ASSERT(event_holder != nullptr);
 
             /* Check if we have a request to handle. */

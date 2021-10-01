@@ -14,38 +14,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_object_list.hpp"
 
 namespace ams::os::impl {
 
-    class WaitableHolderOfEvent : public WaitableHolderOfUserObject {
+    class MultiWaitHolderOfSemaphore : public MultiWaitHolderOfUserObject {
         private:
-            EventType *event;
+            SemaphoreType *semaphore;
         private:
             TriBool IsSignaledImpl() const {
-                return this->event->signaled ? TriBool::True : TriBool::False;
+                return this->semaphore->count > 0 ? TriBool::True : TriBool::False;
             }
         public:
-            explicit WaitableHolderOfEvent(EventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfSemaphore(SemaphoreType *s) : semaphore(s) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
 
-                GetReference(this->event->waitable_object_list_storage).LinkWaitableHolder(*this);
+                GetReference(this->semaphore->waitlist).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
 
-                GetReference(this->event->waitable_object_list_storage).UnlinkWaitableHolder(*this);
+                GetReference(this->semaphore->waitlist).UnlinkMultiWaitHolder(*this);
             }
     };
 

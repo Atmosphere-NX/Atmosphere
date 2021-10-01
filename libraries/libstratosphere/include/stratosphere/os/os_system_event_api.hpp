@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct SystemEventType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     Result CreateSystemEvent(SystemEventType *event, EventClearMode clear_mode, bool inter_process);
     void DestroySystemEvent(SystemEventType *event);
@@ -42,6 +42,6 @@ namespace ams::os {
     bool TimedWaitSystemEvent(SystemEventType *event, TimeSpan timeout);
     void ClearSystemEvent(SystemEventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SystemEventType *event);
 
 }

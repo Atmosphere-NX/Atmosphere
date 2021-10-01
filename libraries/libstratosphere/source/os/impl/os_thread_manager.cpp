@@ -15,10 +15,10 @@
  */
 #include <stratosphere.hpp>
 #include "os_thread_manager.hpp"
-#include "os_waitable_manager_impl.hpp"
-#include "os_waitable_holder_base.hpp"
-#include "os_waitable_holder_impl.hpp"
-#include "os_waitable_object_list.hpp"
+#include "os_multiple_wait_impl.hpp"
+#include "os_multiple_wait_holder_base.hpp"
+#include "os_multiple_wait_holder_impl.hpp"
+#include "os_multiple_wait_object_list.hpp"
 #include "os_utility.hpp"
 
 namespace ams::os::impl {

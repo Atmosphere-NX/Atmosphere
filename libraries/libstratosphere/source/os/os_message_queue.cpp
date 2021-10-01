@@ -15,8 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "impl/os_timeout_helper.hpp"
-#include "impl/os_waitable_object_list.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 #include "impl/os_message_queue_helper.hpp"
 
 namespace ams::os {
@@ -319,20 +319,20 @@ namespace ams::os {
         return true;
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, MessageQueueType *mq, MessageQueueWaitType type) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, MessageQueueType *mq, MessageQueueWaitType type) {
         AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
 
         switch (type) {
             case MessageQueueWaitType::ForNotFull:
-                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_mq_for_not_full_storage, mq);
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_for_not_full_storage, mq);
                 break;
             case MessageQueueWaitType::ForNotEmpty:
-                util::ConstructAt(GetReference(waitable_holder->impl_storage).holder_of_mq_for_not_empty_storage, mq);
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_mq_for_not_empty_storage, mq);
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        waitable_holder->user_data = 0;
+        multi_wait_holder->user_data = 0;
     }
 
 }

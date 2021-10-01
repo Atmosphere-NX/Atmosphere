@@ -47,7 +47,7 @@ namespace ams::sm {
             private:
                 struct Entry {
                     sm::ServiceName service_name{sm::InvalidServiceName};
-                    tipc::WaitableObject object{};
+                    tipc::ObjectHolder object{};
                     u8 message_buffer[svc::ipc::MessageBufferSize];
                 };
             private:
@@ -83,7 +83,7 @@ namespace ams::sm {
                     return tipc::ResultRequestDeferred();
                 }
 
-                void ProcessRegisterRetry(tipc::WaitableObject &object) {
+                void ProcessRegisterRetry(tipc::ObjectHolder &object) {
                     /* Verify that we have a processing entry. */
                     AMS_ABORT_UNLESS(m_processing_entry != nullptr);
 

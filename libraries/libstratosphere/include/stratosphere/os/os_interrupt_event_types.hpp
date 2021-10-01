@@ -23,7 +23,7 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        class MultiWaitObjectList;
         class InterruptEventImpl;
 
     }
@@ -34,7 +34,7 @@ namespace ams::os {
             State_Initialized    = 1,
         };
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> multi_wait_object_list_storage;
 
         u8 clear_mode;
         u8 state;

@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "impl/os_thread_manager.hpp"
 #include "impl/os_timeout_helper.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 
 namespace ams::os {
 

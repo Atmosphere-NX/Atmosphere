@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct ThreadType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority, s32 ideal_core);
     Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority);
@@ -62,6 +62,6 @@ namespace ams::os {
 
     ThreadId GetThreadId(const ThreadType *thread);
 
-    void InitializeWaitableHolder(WaitableHolderType *holder, ThreadType *thread);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *holder, ThreadType *thread);
 
 }
