@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "os_managed_handle.hpp"
+#include <stratosphere/os/os_managed_handle.hpp>
 
 namespace ams::os {
 

@@ -16,4 +16,4 @@
 
 #pragma once
 
-#include "patcher/patcher_api.hpp"
+#include <stratosphere/patcher/patcher_api.hpp>

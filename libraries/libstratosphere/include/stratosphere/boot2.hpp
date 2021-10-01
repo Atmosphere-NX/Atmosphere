@@ -16,4 +16,4 @@
 
 #pragma once
 
-#include "boot2/boot2_api.hpp"
+#include <stratosphere/boot2/boot2_api.hpp>

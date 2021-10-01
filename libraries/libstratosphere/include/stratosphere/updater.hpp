@@ -16,5 +16,5 @@
 
 #pragma once
 
-#include "updater/updater_types.hpp"
-#include "updater/updater_api.hpp"
+#include <stratosphere/updater/updater_types.hpp>
+#include <stratosphere/updater/updater_api.hpp>

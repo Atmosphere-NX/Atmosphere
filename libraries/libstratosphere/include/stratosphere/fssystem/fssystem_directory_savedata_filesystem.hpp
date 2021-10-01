@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "impl/fssystem_path_resolution_filesystem.hpp"
+#include <stratosphere/fssystem/impl/fssystem_path_resolution_filesystem.hpp>
 
 namespace ams::fssystem {
 

@@ -16,8 +16,8 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../sf/sf_buffer_tags.hpp"
-#include "../hos.hpp"
+#include <stratosphere/sf/sf_buffer_tags.hpp>
+#include <stratosphere/hos.hpp>
 
 namespace ams::exosphere {
 

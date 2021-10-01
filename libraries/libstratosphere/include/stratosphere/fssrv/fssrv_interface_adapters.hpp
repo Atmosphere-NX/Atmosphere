@@ -14,5 +14,5 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "interface_adapters/fssrv_storage_interface_adapter.hpp"
-#include "interface_adapters/fssrv_filesystem_interface_adapter.hpp"
+#include <stratosphere/fssrv/interface_adapters/fssrv_storage_interface_adapter.hpp>
+#include <stratosphere/fssrv/interface_adapters/fssrv_filesystem_interface_adapter.hpp>

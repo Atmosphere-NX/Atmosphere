@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "cfg_types.hpp"
-#include "../settings/settings_types.hpp"
+#include <stratosphere/cfg/cfg_types.hpp>
+#include <stratosphere/settings/settings_types.hpp>
 
 namespace ams::cfg {
 

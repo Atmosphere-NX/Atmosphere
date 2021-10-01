@@ -15,9 +15,9 @@
  */
 
 #pragma once
-#include "../fs_common.hpp"
-#include "../fs_filesystem.hpp"
-#include "../fs_filesystem_for_debug.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_filesystem_for_debug.hpp>
 
 namespace ams::fs::fsa {
 

@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "settings_fwdbg_types.hpp"
+#include <stratosphere/settings/settings_fwdbg_types.hpp>
 
 namespace ams::settings::fwdbg {
 

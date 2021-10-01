@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "os_common_types.hpp"
+#include <stratosphere/os/os_common_types.hpp>
 
 namespace ams::os {
 

@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../spl_types.hpp"
+#include <stratosphere/spl/spl_types.hpp>
 
 namespace ams::spl::smc {
 

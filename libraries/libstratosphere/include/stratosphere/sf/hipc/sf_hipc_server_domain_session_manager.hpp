@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "sf_hipc_server_session_manager.hpp"
-#include "../cmif/sf_cmif_domain_manager.hpp"
+#include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_manager.hpp>
 
 namespace ams::sf::hipc {
 

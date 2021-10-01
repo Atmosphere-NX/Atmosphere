@@ -15,9 +15,9 @@
  */
 
 #pragma once
-#include "../sf_service_object.hpp"
-#include "sf_cmif_pointer_and_size.hpp"
-#include "sf_cmif_server_message_processor.hpp"
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_server_message_processor.hpp>
 
 namespace ams::sf::hipc {
 

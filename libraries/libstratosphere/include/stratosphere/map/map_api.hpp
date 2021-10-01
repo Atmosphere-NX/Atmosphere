@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "map_types.hpp"
+#include <stratosphere/map/map_types.hpp>
 
 namespace ams::map {
 

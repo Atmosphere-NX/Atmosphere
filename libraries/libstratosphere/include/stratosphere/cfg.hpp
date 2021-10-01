@@ -16,4 +16,4 @@
 
 #pragma once
 
-#include "cfg/cfg_api.hpp"
+#include <stratosphere/cfg/cfg_api.hpp>

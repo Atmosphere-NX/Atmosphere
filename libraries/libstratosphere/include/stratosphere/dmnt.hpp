@@ -16,4 +16,4 @@
 
 #pragma once
 
-#include "dmnt/dmnt_cheat_types.hpp"
+#include <stratosphere/dmnt/dmnt_cheat_types.hpp>

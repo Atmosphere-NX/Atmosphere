@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "../cmif/sf_cmif_pointer_and_size.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 
 namespace ams::sf::hipc {
 

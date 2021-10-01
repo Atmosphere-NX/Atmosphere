@@ -15,11 +15,11 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "../sf_service_object.hpp"
-#include "../cmif/sf_cmif_pointer_and_size.hpp"
-#include "../cmif/sf_cmif_service_object_holder.hpp"
-#include "sf_hipc_api.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_api.hpp>
 
 namespace ams::sf::cmif {
 

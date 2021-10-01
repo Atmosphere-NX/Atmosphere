@@ -16,4 +16,4 @@
 
 #pragma once
 
-#include "hid/hid_api.hpp"
+#include <stratosphere/hid/hid_api.hpp>

@@ -15,17 +15,17 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "../sf_service_object.hpp"
-#include "../sf_out.hpp"
-#include "../sf_buffers.hpp"
-#include "../sf_handles.hpp"
-#include "../cmif/sf_cmif_pointer_and_size.hpp"
-#include "../cmif/sf_cmif_service_dispatch.hpp"
-#include "../cmif/sf_cmif_service_object_holder.hpp"
-#include "../cmif/sf_cmif_domain_api.hpp"
-#include "../hipc/sf_hipc_api.hpp"
-#include "../hipc/sf_hipc_server_session_manager.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/sf_out.hpp>
+#include <stratosphere/sf/sf_buffers.hpp>
+#include <stratosphere/sf/sf_handles.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_api.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_api.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
 
 /* Serialization classes. */
 namespace ams::sf {

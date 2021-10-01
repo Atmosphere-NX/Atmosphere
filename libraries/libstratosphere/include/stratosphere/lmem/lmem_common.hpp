@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "impl/lmem_impl_common.hpp"
+#include <stratosphere/lmem/impl/lmem_impl_common.hpp>
 
 namespace ams::lmem {
 

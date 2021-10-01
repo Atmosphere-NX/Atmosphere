@@ -16,5 +16,5 @@
 
 #pragma once
 
-#include "map/map_types.hpp"
-#include "map/map_api.hpp"
+#include <stratosphere/map/map_types.hpp>
+#include <stratosphere/map/map_api.hpp>

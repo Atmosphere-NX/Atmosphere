@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "pm_types.hpp"
+#include <stratosphere/pm/pm_types.hpp>
 
 namespace ams::pm::bm {
 

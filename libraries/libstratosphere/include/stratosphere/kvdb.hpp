@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "kvdb/kvdb_auto_buffer.hpp"
-#include "kvdb/kvdb_bounded_string.hpp"
-#include "kvdb/kvdb_archive.hpp"
-#include "kvdb/kvdb_memory_key_value_store.hpp"
-#include "kvdb/kvdb_file_key_value_store.hpp"
-#include "kvdb/kvdb_file_key_value_cache.hpp"
+#include <stratosphere/kvdb/kvdb_auto_buffer.hpp>
+#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
+#include <stratosphere/kvdb/kvdb_archive.hpp>
+#include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
+#include <stratosphere/kvdb/kvdb_file_key_value_store.hpp>
+#include <stratosphere/kvdb/kvdb_file_key_value_cache.hpp>

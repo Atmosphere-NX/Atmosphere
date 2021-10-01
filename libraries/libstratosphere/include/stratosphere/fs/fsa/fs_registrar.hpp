@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../fs_common.hpp"
+#include <stratosphere/fs/fs_common.hpp>
 
 namespace ams::fs::fsa {
 

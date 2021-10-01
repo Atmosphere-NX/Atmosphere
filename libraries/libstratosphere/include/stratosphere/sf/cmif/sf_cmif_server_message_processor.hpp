@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../sf_service_object.hpp"
-#include "sf_cmif_pointer_and_size.hpp"
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 
 namespace ams::sf::cmif {
 

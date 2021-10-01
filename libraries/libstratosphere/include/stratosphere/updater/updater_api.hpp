@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "updater_types.hpp"
-#include "../spl/spl_types.hpp"
+#include <stratosphere/updater/updater_types.hpp>
+#include <stratosphere/spl/spl_types.hpp>
 
 namespace ams::updater {
 

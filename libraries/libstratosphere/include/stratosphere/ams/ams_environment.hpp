@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "ams_types.hpp"
+#include <stratosphere/ams/ams_types.hpp>
 
 namespace ams {
 

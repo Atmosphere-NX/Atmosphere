@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "sf_hipc_server_domain_session_manager.hpp"
-#include "../../sm.hpp"
+#include <stratosphere/sf/hipc/sf_hipc_server_domain_session_manager.hpp>
+#include <stratosphere/sm.hpp>
 
 namespace ams::sf::hipc {
 

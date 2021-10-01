@@ -15,9 +15,9 @@
  */
 
 #pragma once
-#include "sf_cmif_service_dispatch.hpp"
-#include "sf_cmif_domain_api.hpp"
-#include "sf_cmif_server_message_processor.hpp"
+#include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_api.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_server_message_processor.hpp>
 
 namespace ams::sf::cmif {
 

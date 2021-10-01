@@ -15,10 +15,10 @@
  */
 
 #pragma once
-#include "sf_common.hpp"
-#include "sf_out.hpp"
-#include "cmif/sf_cmif_pointer_and_size.hpp"
-#include "sf_buffer_tags.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_out.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
 namespace ams::sf {
 

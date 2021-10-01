@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
+#include <stratosphere/sf/sf_common.hpp>
 
 namespace ams::sf::cmif {
 

@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../sf/sf_buffer_tags.hpp"
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
 namespace ams::settings::fwdbg {
 

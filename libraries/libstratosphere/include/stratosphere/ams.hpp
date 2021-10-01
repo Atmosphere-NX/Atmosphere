@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ams/ams_types.hpp"
-#include "ams/ams_exosphere_api.hpp"
-#include "ams/ams_emummc_api.hpp"
-#include "ams/ams_environment.hpp"
+#include <stratosphere/ams/ams_types.hpp>
+#include <stratosphere/ams/ams_exosphere_api.hpp>
+#include <stratosphere/ams/ams_emummc_api.hpp>
+#include <stratosphere/ams/ams_environment.hpp>

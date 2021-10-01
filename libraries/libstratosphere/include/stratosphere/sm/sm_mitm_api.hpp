@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "sm_types.hpp"
+#include <stratosphere/sm/sm_types.hpp>
 
 namespace ams::sm::mitm {
 

@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "cfg_types.hpp"
-#include "cfg_locale_types.hpp"
-#include "../sm/sm_types.hpp"
+#include <stratosphere/cfg/cfg_types.hpp>
+#include <stratosphere/cfg/cfg_locale_types.hpp>
+#include <stratosphere/sm/sm_types.hpp>
 
 namespace ams::cfg {
 
