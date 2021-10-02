@@ -84,18 +84,12 @@ namespace ams::ro::impl {
             ncm::ProgramId GetProgramId(Handle other_process_h) const {
                 /* Automatically select a handle, allowing for override. */
                 Handle process_h = this->process_handle;
-                if (other_process_h != INVALID_HANDLE) {
+                if (other_process_h != svc::InvalidHandle) {
                     process_h = other_process_h;
                 }
 
                 ncm::ProgramId program_id = ncm::InvalidProgramId;
-                if (hos::GetVersion() >= hos::Version_3_0_0) {
-                    /* 3.0.0+: Use svcGetInfo. */
-                    R_ABORT_UNLESS(svcGetInfo(&program_id.value, InfoType_ProgramId, process_h, 0));
-                } else {
-                    /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    R_ABORT_UNLESS(pm::info::GetProgramId(&program_id, os::GetProcessId(process_h)));
-                }
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(program_id.value), svc::InfoType_ProgramId, process_h, 0));
                 return program_id;
             }
 

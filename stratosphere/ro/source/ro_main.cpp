@@ -144,9 +144,6 @@ void __appInit(void) {
     R_ABORT_UNLESS(setsysInitialize());
     R_ABORT_UNLESS(fsInitialize());
     spl::Initialize();
-    if (hos::GetVersion() < hos::Version_3_0_0) {
-        R_ABORT_UNLESS(pminfoInitialize());
-    }
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 
@@ -155,9 +152,6 @@ void __appInit(void) {
 
 void __appExit(void) {
     fsExit();
-    if (hos::GetVersion() < hos::Version_3_0_0) {
-        pminfoExit();
-    }
 
     setsysExit();
 }

@@ -15,7 +15,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["fatal:u", "spl:", "set:sys", "fsp-srv", "pm:info"],
+	"service_access":	["fatal:u", "spl:", "set:sys", "fsp-srv"],
 	"service_host":	["ldr:ro", "ro:dmnt", "ro:1"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
