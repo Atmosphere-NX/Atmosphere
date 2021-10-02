@@ -71,21 +71,15 @@ namespace {
 
     /* This uses debugging SVCs to retrieve a process's program id. */
     ncm::ProgramId GetProcessProgramId(os::ProcessId process_id) {
-        /* Check if we should return our program id. */
-        /* Doing this here works around a bug fixed in 6.0.0. */
-        /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
-        if (process_id == os::GetCurrentProcessId()) {
-            return os::GetCurrentProgramId();
-        }
-
         /* Get a debug handle. */
-        os::ManagedHandle debug_handle;
-        R_ABORT_UNLESS(svcDebugActiveProcess(debug_handle.GetPointer(), static_cast<u64>(process_id)));
+        svc::Handle debug_handle;
+        R_ABORT_UNLESS(svc::DebugActiveProcess(std::addressof(debug_handle), process_id.value));
+        ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(debug_handle)); };
 
         /* Loop until we get the event that tells us about the process. */
         svc::DebugEventInfo d;
         while (true) {
-            R_ABORT_UNLESS(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
+            R_ABORT_UNLESS(svc::GetDebugEvent(std::addressof(d), debug_handle));
             if (d.type == svc::DebugEvent_CreateProcess) {
                 return ncm::ProgramId{d.info.create_process.program_id};
             }
@@ -95,11 +89,11 @@ namespace {
     /* This works around a bug fixed by FS in 4.0.0. */
     /* Not doing so will cause KIPs with higher process IDs than 7 to be unable to use filesystem services. */
     /* It also registers privileged processes with SM, so that their program ids can be known. */
-    void RegisterPrivilegedProcess(os::ProcessId process_id) {
-        fsprUnregisterProgram(static_cast<u64>(process_id));
-        fsprRegisterProgram(static_cast<u64>(process_id), static_cast<u64>(process_id), NcmStorageId_BuiltInSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
+    void RegisterPrivilegedProcess(os::ProcessId process_id, ncm::ProgramId program_id) {
+        fsprUnregisterProgram(process_id.value);
+        fsprRegisterProgram(process_id.value, process_id.value, NcmStorageId_BuiltInSystem, PrivilegedFileAccessHeader, sizeof(PrivilegedFileAccessHeader), PrivilegedFileAccessControl, sizeof(PrivilegedFileAccessControl));
         sm::manager::UnregisterProcess(process_id);
-        sm::manager::RegisterProcess(process_id, GetProcessProgramId(process_id), cfg::OverrideStatus{}, PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
+        sm::manager::RegisterProcess(process_id, program_id, cfg::OverrideStatus{}, PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl), PrivilegedServiceAccessControl, sizeof(PrivilegedServiceAccessControl));
     }
 
     void RegisterPrivilegedProcesses() {
@@ -107,13 +101,17 @@ namespace {
         os::ProcessId min_priv_process_id = os::InvalidProcessId, max_priv_process_id = os::InvalidProcessId;
         cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
 
+        /* Get current process id/program id. */
+        const auto cur_process_id = os::GetCurrentProcessId();
+        const auto cur_program_id = os::GetCurrentProgramId();
+
         /* Get list of processes, register all privileged ones. */
         s32 num_pids;
         os::ProcessId pids[ProcessCountMax];
         R_ABORT_UNLESS(svc::GetProcessList(&num_pids, reinterpret_cast<u64 *>(pids), ProcessCountMax));
         for (s32 i = 0; i < num_pids; i++) {
             if (min_priv_process_id <= pids[i] && pids[i] <= max_priv_process_id) {
-                RegisterPrivilegedProcess(pids[i]);
+                RegisterPrivilegedProcess(pids[i], pids[i] == cur_process_id ? cur_program_id : GetProcessProgramId(pids[i]));
             }
         }
     }

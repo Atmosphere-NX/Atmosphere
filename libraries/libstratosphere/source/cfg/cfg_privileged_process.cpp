@@ -19,66 +19,42 @@ namespace ams::cfg {
 
     namespace {
 
-        /* Convenience definitions. */
-        constexpr os::ProcessId InitialProcessIdMinDeprecated = {0x00};
-        constexpr os::ProcessId InitialProcessIdMaxDeprecated = {0x50};
-
-        /* Privileged process globals. */
         constinit os::SdkMutex g_lock;
         constinit bool g_got_privileged_process_status = false;
         constinit os::ProcessId g_min_initial_process_id = os::InvalidProcessId, g_max_initial_process_id = os::InvalidProcessId;
         constinit os::ProcessId g_cur_process_id = os::InvalidProcessId;
 
-        /* SD card helpers. */
-        void GetPrivilegedProcessIdRange(os::ProcessId *out_min, os::ProcessId *out_max) {
-            os::ProcessId min = os::InvalidProcessId, max = os::InvalidProcessId;
-            if (hos::GetVersion() >= hos::Version_5_0_0) {
-                /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
-                R_ABORT_UNLESS(svcGetSystemInfo(reinterpret_cast<u64 *>(&min), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ABORT_UNLESS(svcGetSystemInfo(reinterpret_cast<u64 *>(&max), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
-            } else if (hos::GetVersion() >= hos::Version_4_0_0) {
-                /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
-                R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&min), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&max), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
-            } else {
-                /* On < 4.0.0, we just use hardcoded extents. */
-                min = InitialProcessIdMinDeprecated;
-                max = InitialProcessIdMaxDeprecated;
+        ALWAYS_INLINE void EnsurePrivilegedProcessStatusCached() {
+            if (AMS_LIKELY(g_got_privileged_process_status)) {
+                return;
             }
 
-            *out_min = min;
-            *out_max = max;
-        }
+            std::scoped_lock lk(g_lock);
 
-        void GetPrivilegedProcessStatus() {
-            GetPrivilegedProcessIdRange(&g_min_initial_process_id, &g_max_initial_process_id);
-            g_cur_process_id = os::GetCurrentProcessId();
-            g_got_privileged_process_status = true;
+            if (AMS_LIKELY(!g_got_privileged_process_status)) {
+                R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_min_initial_process_id.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Minimum));
+                R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_max_initial_process_id.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Maximum));
+                g_cur_process_id = os::GetCurrentProcessId();
+
+                g_got_privileged_process_status = true;
+            }
         }
 
     }
 
-    /* Privileged Process utilities. */
     bool IsInitialProcess() {
-        std::scoped_lock lk(g_lock);
+        /* Cache initial process range and extents. */
+        EnsurePrivilegedProcessStatusCached();
 
-        /* If we've not detected, do detection. */
-        if (!g_got_privileged_process_status) {
-            GetPrivilegedProcessStatus();
-        }
-
-        /* Determine if we're privileged, and return. */
+        /* Determine if we're Initial. */
         return g_min_initial_process_id <= g_cur_process_id && g_cur_process_id <= g_max_initial_process_id;
     }
 
     void GetInitialProcessRange(os::ProcessId *out_min, os::ProcessId *out_max) {
-        std::scoped_lock lk(g_lock);
+        /* Cache initial process range and extents. */
+        EnsurePrivilegedProcessStatusCached();
 
-        /* If we've not detected, do detection. */
-        if (!g_got_privileged_process_status) {
-            GetPrivilegedProcessStatus();
-        }
-
+        /* Set output. */
         *out_min = g_min_initial_process_id;
         *out_max = g_max_initial_process_id;
     }
