@@ -45,8 +45,6 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::AtmosphereProgramId::Mitm;
-
     /* Override. */
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're bpc-mitm (or ams_mitm, anyway), so manually reboot to fatal error. */

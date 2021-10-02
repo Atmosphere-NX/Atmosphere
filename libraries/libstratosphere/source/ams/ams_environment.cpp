@@ -33,8 +33,6 @@ namespace ams {
 
     }
 
-    extern ncm::ProgramId CurrentProgramId;
-
     void InitializeForBoot() {
         R_ABORT_UNLESS(amsBpcInitialize());
     }
@@ -56,7 +54,7 @@ namespace ams {
         {
             ams_ctx.magic = FatalErrorContext::Magic;
             ams_ctx.error_desc = ctx->error_desc;
-            ams_ctx.program_id = static_cast<u64>(CurrentProgramId);
+            ams_ctx.program_id = os::GetCurrentProgramId().value;
             for (size_t i = 0; i < FatalErrorContext::NumGprs; i++) {
                 ams_ctx.gprs[i] = ctx->cpu_gprs[i].x;
             }

@@ -13,20 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#pragma once
-#include <stratosphere/os/os_managed_handle.hpp>
-#include <stratosphere/ncm/ncm_program_id.hpp>
+#include <stratosphere.hpp>
+#include "impl/os_program_id_impl.hpp"
 
 namespace ams::os {
 
-    ::Handle GetCurrentProcessHandle();
-
-    ALWAYS_INLINE ProcessId GetCurrentProcessId() {
-        return GetProcessId(GetCurrentProcessHandle());
+    ncm::ProgramId GetCurrentProgramId() {
+        return ::ams::os::impl::GetCurrentProgramId();
     }
 
-    /* TODO: Another header? */
-    ncm::ProgramId GetCurrentProgramId();
 
 }

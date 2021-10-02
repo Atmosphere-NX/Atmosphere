@@ -34,12 +34,6 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Htc;
-
-}
-
 using namespace ams;
 
 #define AMS_HTC_USE_FATAL_ERROR 1

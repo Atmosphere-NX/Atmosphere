@@ -44,12 +44,6 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Pm;
-
-}
-
 using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
@@ -81,7 +75,7 @@ namespace {
         /* Doing this here works around a bug fixed in 6.0.0. */
         /* Not doing so will cause svcDebugActiveProcess to deadlock on lower firmwares if called for it's own process. */
         if (process_id == os::GetCurrentProcessId()) {
-            return ams::CurrentProgramId;
+            return os::GetCurrentProgramId();
         }
 
         /* Get a debug handle. */

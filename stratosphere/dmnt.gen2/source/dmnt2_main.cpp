@@ -36,12 +36,6 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::DmntGen2;
-
-}
-
 using namespace ams;
 
 #define AMS_DMNT2_SERVER_USE_FATAL_ERROR 1

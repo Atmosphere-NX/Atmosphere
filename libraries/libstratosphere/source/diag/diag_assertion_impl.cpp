@@ -15,12 +15,6 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams {
-
-    extern ncm::ProgramId CurrentProgramId;
-
-}
-
 namespace ams::diag {
 
     namespace {
@@ -69,7 +63,7 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Assertion Failure\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -89,7 +83,7 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Assertion Failure\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -101,7 +95,7 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Abort Called\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -121,7 +115,7 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Abort Called\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);

@@ -39,12 +39,6 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Ncm;
-
-}
-
 using namespace ams;
 
 namespace {

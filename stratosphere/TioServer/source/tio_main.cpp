@@ -35,12 +35,6 @@ extern "C" {
     void __libnx_free(void *mem);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::DevServer;
-
-}
-
 using namespace ams;
 
 #define AMS_TIO_SERVER_USE_FATAL_ERROR 1

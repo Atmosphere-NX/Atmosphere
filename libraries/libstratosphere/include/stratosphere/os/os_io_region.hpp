@@ -36,7 +36,7 @@ namespace ams::os {
             }
 
             IoRegion(size_t size, Handle handle, bool managed) {
-                this->Attach(size, handle, managed);
+                this->AttachHandle(size, handle, managed);
             }
 
             ~IoRegion() {

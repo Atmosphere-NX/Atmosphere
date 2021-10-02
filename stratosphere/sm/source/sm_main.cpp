@@ -51,8 +51,6 @@ namespace {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Sm;
-
     void NORETURN Exit(int rc) {
         AMS_ABORT("Exit called by immortal process");
     }

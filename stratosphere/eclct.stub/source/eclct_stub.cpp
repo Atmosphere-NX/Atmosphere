@@ -34,12 +34,6 @@ extern "C" {
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 }
 
-namespace ams {
-
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Eclct;
-
-}
-
 using namespace ams;
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
