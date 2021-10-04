@@ -49,11 +49,11 @@ namespace ams::sf::hipc {
             cmif::PointerAndSize pointer_buffer;
             cmif::PointerAndSize saved_message;
             std::shared_ptr<::Service> forward_service;
-            Handle session_handle;
+            os::NativeHandle session_handle;
             bool is_closed;
             bool has_received;
         public:
-            ServerSession(Handle h, cmif::ServiceObjectHolder &&obj) : srv_obj_holder(std::move(obj)), session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj) : srv_obj_holder(std::move(obj)), session_handle(h) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 this->is_closed = false;
                 this->has_received = false;
@@ -61,7 +61,7 @@ namespace ams::sf::hipc {
                 AMS_ABORT_UNLESS(!this->IsMitmSession());
             }
 
-            ServerSession(Handle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : srv_obj_holder(std::move(obj)), session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : srv_obj_holder(std::move(obj)), session_handle(h) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 this->is_closed = false;
                 this->has_received = false;
@@ -117,55 +117,55 @@ namespace ams::sf::hipc {
 
             Result ReceiveRequestImpl(ServerSession *session, const cmif::PointerAndSize &message);
             void   CloseSessionImpl(ServerSession *session);
-            Result RegisterSessionImpl(ServerSession *session_memory, Handle session_handle, cmif::ServiceObjectHolder &&obj);
-            Result AcceptSessionImpl(ServerSession *session_memory, Handle port_handle, cmif::ServiceObjectHolder &&obj);
-            Result RegisterMitmSessionImpl(ServerSession *session_memory, Handle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
-            Result AcceptMitmSessionImpl(ServerSession *session_memory, Handle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            Result RegisterSessionImpl(ServerSession *session_memory, os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj);
+            Result AcceptSessionImpl(ServerSession *session_memory, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj);
+            Result RegisterMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            Result AcceptMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
 
             Result ReceiveRequest(ServerSession *session, const cmif::PointerAndSize &message) {
                 return this->ReceiveRequestImpl(session, message);
             }
 
-            Result RegisterSession(ServerSession **out, Handle session_handle, cmif::ServiceObjectHolder &&obj) {
+            Result RegisterSession(ServerSession **out, os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
                     return this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
 
-            Result AcceptSession(ServerSession **out, Handle port_handle, cmif::ServiceObjectHolder &&obj) {
+            Result AcceptSession(ServerSession **out, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
                     return this->AcceptSessionImpl(session_memory, port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
 
-            Result RegisterMitmSession(ServerSession **out, Handle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
+            Result RegisterMitmSession(ServerSession **out, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
                     return this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
 
-            Result AcceptMitmSession(ServerSession **out, Handle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
+            Result AcceptMitmSession(ServerSession **out, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
                     return this->AcceptMitmSessionImpl(session_memory, mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
         public:
-            Result RegisterSession(Handle session_handle, cmif::ServiceObjectHolder &&obj);
-            Result AcceptSession(Handle port_handle, cmif::ServiceObjectHolder &&obj);
-            Result RegisterMitmSession(Handle session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
-            Result AcceptMitmSession(Handle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            Result RegisterSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj);
+            Result AcceptSession(os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj);
+            Result RegisterMitmSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            Result AcceptMitmSession(os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
 
             template<typename Interface>
-            Result AcceptSession(Handle port_handle, SharedPointer<Interface> obj) {
+            Result AcceptSession(os::NativeHandle port_handle, SharedPointer<Interface> obj) {
                 return this->AcceptSession(port_handle, cmif::ServiceObjectHolder(std::move(obj)));
             }
 
             template<typename Interface>
-            Result AcceptMitmSession(Handle mitm_port_handle, SharedPointer<Interface> obj, std::shared_ptr<::Service> &&fsrv) {
+            Result AcceptMitmSession(os::NativeHandle mitm_port_handle, SharedPointer<Interface> obj, std::shared_ptr<::Service> &&fsrv) {
                 return this->AcceptMitmSession(mitm_port_handle, cmif::ServiceObjectHolder(std::move(obj)), std::forward<std::shared_ptr<::Service>>(fsrv));
             }
 

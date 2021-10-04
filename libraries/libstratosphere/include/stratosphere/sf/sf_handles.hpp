@@ -28,17 +28,17 @@ namespace ams::sf {
 
         template<u32 Attribute>
         struct InHandle : public InHandleTag {
-            ::Handle handle;
+            os::NativeHandle handle;
 
-            constexpr InHandle() : handle(INVALID_HANDLE) { /* ... */ }
-            constexpr InHandle(::Handle h) : handle(h) { /* ... */ }
+            constexpr InHandle() : handle(os::InvalidNativeHandle) { /* ... */ }
+            constexpr InHandle(os::NativeHandle h) : handle(h) { /* ... */ }
             constexpr InHandle(const InHandle &o) : handle(o.handle) { /* ... */ }
 
-            constexpr void operator=(const ::Handle &h) { this->handle = h; }
+            constexpr void operator=(const os::NativeHandle &h) { this->handle = h; }
             constexpr void operator=(const InHandle &o) { this->handle = o.handle; }
 
-            constexpr /* TODO: explicit? */ operator ::Handle() const { return this->handle; }
-            constexpr ::Handle GetValue() const { return this->handle; }
+            constexpr /* TODO: explicit? */ operator os::NativeHandle() const { return this->handle; }
+            constexpr os::NativeHandle GetValue() const { return this->handle; }
         };
 
         template<typename T>
@@ -49,7 +49,7 @@ namespace ams::sf {
             public:
                 constexpr OutHandleImpl(T *p) : ptr(p) { /* ... */ }
 
-                constexpr void SetValue(const Handle &value) {
+                constexpr void SetValue(const os::NativeHandle &value) {
                     *this->ptr = value;
                 }
 
@@ -65,7 +65,7 @@ namespace ams::sf {
                     return this->ptr;
                 }
 
-                constexpr Handle *GetHandlePointer() const {
+                constexpr os::NativeHandle *GetHandlePointer() const {
                     return &this->ptr->handle;
                 }
 
@@ -83,8 +83,8 @@ namespace ams::sf {
     using MoveHandle = typename impl::InHandle<SfOutHandleAttr_HipcMove>;
     using CopyHandle = typename impl::InHandle<SfOutHandleAttr_HipcCopy>;
 
-    static_assert(sizeof(MoveHandle) == sizeof(::Handle), "sizeof(MoveHandle)");
-    static_assert(sizeof(CopyHandle) == sizeof(::Handle), "sizeof(CopyHandle)");
+    static_assert(sizeof(MoveHandle) == sizeof(os::NativeHandle), "sizeof(MoveHandle)");
+    static_assert(sizeof(CopyHandle) == sizeof(os::NativeHandle), "sizeof(CopyHandle)");
 
     template<>
     class IsOutForceEnabled<MoveHandle> : public std::true_type{};
@@ -99,7 +99,7 @@ namespace ams::sf {
         public:
             constexpr Out<T>(T *p) : Base(p) { /* ... */ }
 
-            constexpr void SetValue(const Handle &value) {
+            constexpr void SetValue(const os::NativeHandle &value) {
                 Base::SetValue(value);
             }
 
@@ -115,7 +115,7 @@ namespace ams::sf {
                 return Base::GetPointer();
             }
 
-            constexpr Handle *GetHandlePointer() const {
+            constexpr os::NativeHandle *GetHandlePointer() const {
                 return Base::GetHandlePointer();
             }
 
@@ -139,7 +139,7 @@ namespace ams::sf {
             constexpr Out<T>(T *p) : Base(p), m_managed(nullptr) { /* ... */ }
             constexpr Out<T>(T *p, bool *m) : Base(p), m_managed(m) { /* ... */ }
 
-            constexpr void SetValue(const Handle &value) {
+            constexpr void SetValue(const os::NativeHandle &value) {
                 Base::SetValue(value);
             }
 
@@ -160,7 +160,7 @@ namespace ams::sf {
                 return Base::GetPointer();
             }
 
-            constexpr Handle *GetHandlePointer() const {
+            constexpr os::NativeHandle *GetHandlePointer() const {
                 return Base::GetHandlePointer();
             }
 

@@ -52,10 +52,10 @@ namespace ams::fssystem {
         return nullptr;
     }
 
-    Result CreateExternalCode(Handle *out, ncm::ProgramId program_id) {
+    Result CreateExternalCode(os::NativeHandle *out, ncm::ProgramId program_id) {
         /* Create a handle pair. */
-        Handle server, client;
-        R_TRY(svcCreateSession(std::addressof(server), std::addressof(client), false, 0));
+        os::NativeHandle server, client;
+        R_TRY(svc::CreateSession(std::addressof(server), std::addressof(client), false, 0));
 
         /* Insert the handle into the map. */
         g_hnd_map.Emplace(program_id, client);

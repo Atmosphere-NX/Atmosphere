@@ -63,40 +63,40 @@ namespace ams::fatal::srv {
 
         constinit ThreadTlsMap g_thread_id_to_tls_map;
 
-        bool IsThreadFatalCaller(Result result, u32 debug_handle, u64 thread_id, u64 thread_tls_addr, ThreadContext *thread_ctx) {
+        bool IsThreadFatalCaller(Result result, os::NativeHandle debug_handle, u64 thread_id, u64 thread_tls_addr, svc::ThreadContext *thread_ctx) {
             /* Verify that the thread is running or waiting. */
             {
                 u64 _;
                 u32 _thread_state;
-                if (R_FAILED(svcGetDebugThreadParam(&_, &_thread_state, debug_handle, thread_id, DebugThreadParam_State))) {
+                if (R_FAILED(svc::GetDebugThreadParam(&_, &_thread_state, debug_handle, thread_id, svc::DebugThreadParam_State))) {
                     return false;
                 }
 
-                const svc::ThreadState thread_state = static_cast<svc::ThreadState>(_thread_state);
+                const auto thread_state = static_cast<svc::ThreadState>(_thread_state);
                 if (thread_state != svc::ThreadState_Waiting && thread_state != svc::ThreadState_Running) {
                     return false;
                 }
             }
 
             /* Get the thread context. */
-            if (R_FAILED(svcGetDebugThreadContext(thread_ctx, debug_handle, thread_id, svc::ThreadContextFlag_All))) {
+            if (R_FAILED(svc::GetDebugThreadContext(thread_ctx, debug_handle, thread_id, svc::ThreadContextFlag_All))) {
                 return false;
             }
 
             /* Try to read the current instruction. */
             u32 insn;
-            if (R_FAILED(svcReadDebugProcessMemory(&insn, debug_handle, thread_ctx->pc.x, sizeof(insn)))) {
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(insn)), debug_handle, thread_ctx->pc, sizeof(insn)))) {
                 return false;
             }
 
-            /* If the instruction isn't svcSendSyncRequest, it's not the fatal caller. */
+            /* If the instruction isn't svc::SendSyncRequest, it's not the fatal caller. */
             if (insn != SvcSendSyncRequestInstruction) {
                 return false;
             }
 
             /* Read in the fatal caller's TLS. */
-            u8 thread_tls[0x100];
-            if (R_FAILED(svcReadDebugProcessMemory(thread_tls, debug_handle, thread_tls_addr, sizeof(thread_tls)))) {
+            u8 thread_tls[sizeof(svc::ThreadLocalRegion::message_buffer)];
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_tls), debug_handle, thread_tls_addr, sizeof(thread_tls)))) {
                 return false;
             }
 
@@ -156,20 +156,20 @@ namespace ams::fatal::srv {
             return true;
         }
 
-        bool TryGuessBaseAddress(u64 *out_base_address, u32 debug_handle, u64 guess) {
-            MemoryInfo mi;
-            u32 pi;
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != Perm_Rx) {
+        bool TryGuessBaseAddress(u64 *out_base_address, os::NativeHandle debug_handle, u64 guess) {
+            svc::MemoryInfo mi;
+            svc::PageInfo pi;
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != svc::MemoryPermission_ReadExecute) {
                 return false;
             }
 
             /* Iterate backwards until we find the memory before the code region. */
             while (mi.addr > 0) {
-                if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+                if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
                     return false;
                 }
 
-                if (mi.type == MemType_Unmapped) {
+                if (mi.state == svc::MemoryState_Free) {
                     /* Code region will be at the end of the unmapped region preceding it. */
                     *out_base_address = mi.addr + mi.size;
                     return true;
@@ -181,10 +181,10 @@ namespace ams::fatal::srv {
             return false;
         }
 
-        u64 GetBaseAddress(const ThrowContext *throw_ctx, const ThreadContext *thread_ctx, u32 debug_handle) {
+        u64 GetBaseAddress(const ThrowContext *throw_ctx, const svc::ThreadContext *thread_ctx, os::NativeHandle debug_handle) {
             u64 base_address = 0;
 
-            if (TryGuessBaseAddress(&base_address, debug_handle, thread_ctx->pc.x)) {
+            if (TryGuessBaseAddress(&base_address, debug_handle, thread_ctx->pc)) {
                 return base_address;
             }
 
@@ -205,18 +205,18 @@ namespace ams::fatal::srv {
 
     void TryCollectDebugInformation(ThrowContext *ctx, os::ProcessId process_id) {
         /* Try to debug the process. This may fail, if we called into ourself. */
-        Handle debug_handle;
-        if (R_FAILED(svcDebugActiveProcess(std::addressof(debug_handle), static_cast<u64>(process_id)))) {
+        os::NativeHandle debug_handle;
+        if (R_FAILED(svc::DebugActiveProcess(std::addressof(debug_handle), process_id.value))) {
             return;
         }
-        ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(debug_handle)); };
+        ON_SCOPE_EXIT { os::CloseNativeHandle(debug_handle); };
 
         /* First things first, check if process is 64 bits, and get list of thread infos. */
         g_thread_id_to_tls_map.ResetThreadTlsMap();
         {
             bool got_create_process = false;
             svc::DebugEventInfo d;
-            while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle))) {
+            while (R_SUCCEEDED(svc::GetDebugEvent(std::addressof(d), debug_handle))) {
                 switch (d.type) {
                     case svc::DebugEvent_CreateProcess:
                         ctx->cpu_ctx.architecture = (d.info.create_process.flags & 1) ? CpuContext::Architecture_Aarch64 : CpuContext::Architecture_Aarch32;
@@ -247,7 +247,7 @@ namespace ams::fatal::srv {
         bool found_fatal_caller = false;
         u64 thread_id = 0;
         u64 thread_tls = 0;
-        ThreadContext thread_ctx;
+        svc::ThreadContext thread_ctx;
         {
             /* We start by trying to get a list of threads. */
             s32 thread_count;
@@ -275,7 +275,7 @@ namespace ams::fatal::srv {
                 return;
             }
         }
-        if (R_FAILED(svcGetDebugThreadContext(&thread_ctx, debug_handle, thread_id, svc::ThreadContextFlag_All))) {
+        if (R_FAILED(svc::GetDebugThreadContext(&thread_ctx, debug_handle, thread_id, svc::ThreadContextFlag_All))) {
             return;
         }
 
@@ -283,7 +283,7 @@ namespace ams::fatal::srv {
         ctx->cpu_ctx.aarch64_ctx.SetRegisterValue(aarch64::RegisterName_FP, thread_ctx.fp);
         ctx->cpu_ctx.aarch64_ctx.SetRegisterValue(aarch64::RegisterName_LR, thread_ctx.lr);
         ctx->cpu_ctx.aarch64_ctx.SetRegisterValue(aarch64::RegisterName_SP, thread_ctx.sp);
-        ctx->cpu_ctx.aarch64_ctx.SetRegisterValue(aarch64::RegisterName_PC, thread_ctx.pc.x);
+        ctx->cpu_ctx.aarch64_ctx.SetRegisterValue(aarch64::RegisterName_PC, thread_ctx.pc);
 
         /* Parse a stack trace. */
         u64 cur_fp = thread_ctx.fp;
@@ -296,7 +296,7 @@ namespace ams::fatal::srv {
 
             /* Read a new frame. */
             StackFrame cur_frame = {};
-            if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(StackFrame)))) {
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(cur_frame)), debug_handle, cur_fp, sizeof(StackFrame)))) {
                 break;
             }
 
@@ -308,7 +308,7 @@ namespace ams::fatal::srv {
         /* Try to read up to 0x100 of stack. */
         ctx->stack_dump_base = 0;
         for (size_t sz = 0x100; sz > 0; sz -= 0x10) {
-            if (R_SUCCEEDED(svcReadDebugProcessMemory(ctx->stack_dump, debug_handle, thread_ctx.sp, sz))) {
+            if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(ctx->stack_dump), debug_handle, thread_ctx.sp, sz))) {
                 ctx->stack_dump_base = thread_ctx.sp;
                 ctx->stack_dump_size = sz;
                 break;
@@ -316,7 +316,7 @@ namespace ams::fatal::srv {
         }
 
         /* Try to read the first 0x100 of TLS. */
-        if (R_SUCCEEDED(svcReadDebugProcessMemory(ctx->tls_dump, debug_handle, thread_tls, sizeof(ctx->tls_dump)))) {
+        if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(ctx->tls_dump), debug_handle, thread_tls, sizeof(ctx->tls_dump)))) {
             ctx->tls_address = thread_tls;
         } else {
             ctx->tls_address = 0;

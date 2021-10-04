@@ -25,8 +25,8 @@ namespace ams::map {
 
         /* Deprecated/Modern implementations. */
         Result LocateMappableSpaceDeprecated(uintptr_t *out_address, size_t size) {
-            MemoryInfo mem_info = {};
-            u32 page_info = 0;
+            svc::MemoryInfo mem_info;
+            svc::PageInfo page_info;
             uintptr_t cur_base = 0;
 
             AddressSpaceInfo address_space;
@@ -34,15 +34,15 @@ namespace ams::map {
             cur_base = address_space.aslr_base;
 
             do {
-                R_TRY(svcQueryMemory(&mem_info, &page_info, cur_base));
+                R_TRY(svc::QueryMemory(&mem_info, &page_info, cur_base));
 
-                if (mem_info.type == MemType_Unmapped && mem_info.addr - cur_base + mem_info.size >= size) {
+                if (mem_info.state == svc::MemoryState_Free && mem_info.addr - cur_base + mem_info.size >= size) {
                     *out_address = cur_base;
                     return ResultSuccess();
                 }
 
                 const uintptr_t mem_end = mem_info.addr + mem_info.size;
-                R_UNLESS(mem_info.type != MemType_Reserved,                                  svc::ResultOutOfMemory());
+                R_UNLESS(mem_info.state != svc::MemoryState_Inaccessible,                    svc::ResultOutOfMemory());
                 R_UNLESS(cur_base <= mem_end,                                                svc::ResultOutOfMemory());
                 R_UNLESS(mem_end <= static_cast<uintptr_t>(std::numeric_limits<s32>::max()), svc::ResultOutOfMemory());
 
@@ -51,8 +51,8 @@ namespace ams::map {
         }
 
         Result LocateMappableSpaceModern(uintptr_t *out_address, size_t size) {
-            MemoryInfo mem_info = {};
-            u32 page_info = 0;
+            svc::MemoryInfo mem_info;
+            svc::PageInfo page_info;
             uintptr_t cur_base = 0, cur_end = 0;
 
             AddressSpaceInfo address_space;
@@ -72,8 +72,8 @@ namespace ams::map {
                     R_UNLESS(cur_base != address_space.alias_end, svc::ResultOutOfMemory());
                     cur_base = address_space.alias_end;
                 } else {
-                    R_ABORT_UNLESS(svcQueryMemory(&mem_info, &page_info, cur_base));
-                    if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= size) {
+                    R_ABORT_UNLESS(svc::QueryMemory(&mem_info, &page_info, cur_base));
+                    if (mem_info.state == svc::MemoryState_Free && mem_info.addr - cur_base + mem_info.size >= size) {
                         *out_address = cur_base;
                         return ResultSuccess();
                     }
@@ -87,7 +87,7 @@ namespace ams::map {
             }
         }
 
-        Result MapCodeMemoryInProcessDeprecated(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
+        Result MapCodeMemoryInProcessDeprecated(MappedCodeMemory &out_mcm, os::NativeHandle process_handle, uintptr_t base_address, size_t size) {
             AddressSpaceInfo address_space;
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
@@ -114,7 +114,7 @@ namespace ams::map {
             return ro::ResultOutOfAddressSpace();
         }
 
-        Result MapCodeMemoryInProcessModern(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
+        Result MapCodeMemoryInProcessModern(MappedCodeMemory &out_mcm, os::NativeHandle process_handle, uintptr_t base_address, size_t size) {
             AddressSpaceInfo address_space;
             R_TRY(GetProcessAddressSpaceInfo(&address_space, process_handle));
 
@@ -153,32 +153,21 @@ namespace ams::map {
     }
 
     /* Public API. */
-    Result GetProcessAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h) {
+    Result GetProcessAddressSpaceInfo(AddressSpaceInfo *out, os::NativeHandle process_h) {
         /* Clear output. */
         std::memset(out, 0, sizeof(*out));
 
         /* Retrieve info from kernel. */
-        R_TRY(svcGetInfo(&out->heap_base,  InfoType_HeapRegionAddress, process_h, 0));
-        R_TRY(svcGetInfo(&out->heap_size,  InfoType_HeapRegionSize, process_h, 0));
-        R_TRY(svcGetInfo(&out->alias_base, InfoType_AliasRegionAddress, process_h, 0));
-        R_TRY(svcGetInfo(&out->alias_size, InfoType_AliasRegionSize, process_h, 0));
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            R_TRY(svcGetInfo(&out->aslr_base, InfoType_AslrRegionAddress, process_h, 0));
-            R_TRY(svcGetInfo(&out->aslr_size, InfoType_AslrRegionSize, process_h, 0));
-        } else {
-            /* Auto-detect 32-bit vs 64-bit. */
-            if (out->heap_base < AslrBase64BitDeprecated || out->alias_base < AslrBase64BitDeprecated) {
-                out->aslr_base = AslrBase32Bit;
-                out->aslr_size = AslrSize32Bit;
-            } else {
-                out->aslr_base = AslrBase64BitDeprecated;
-                out->aslr_size = AslrSize64BitDeprecated;
-            }
-        }
+        R_TRY(svc::GetInfo(&out->heap_base,  svc::InfoType_HeapRegionAddress, process_h, 0));
+        R_TRY(svc::GetInfo(&out->heap_size,  svc::InfoType_HeapRegionSize, process_h, 0));
+        R_TRY(svc::GetInfo(&out->alias_base, svc::InfoType_AliasRegionAddress, process_h, 0));
+        R_TRY(svc::GetInfo(&out->alias_size, svc::InfoType_AliasRegionSize, process_h, 0));
+        R_TRY(svc::GetInfo(&out->aslr_base,  svc::InfoType_AslrRegionAddress, process_h, 0));
+        R_TRY(svc::GetInfo(&out->aslr_size,  svc::InfoType_AslrRegionSize, process_h, 0));
 
-        out->heap_end = out->heap_base + out->heap_size;
+        out->heap_end  = out->heap_base + out->heap_size;
         out->alias_end = out->alias_base + out->alias_size;
-        out->aslr_end = out->aslr_base + out->aslr_size;
+        out->aslr_end  = out->aslr_base + out->aslr_size;
         return ResultSuccess();
     }
 
@@ -190,7 +179,7 @@ namespace ams::map {
         }
     }
 
-    Result MapCodeMemoryInProcess(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size) {
+    Result MapCodeMemoryInProcess(MappedCodeMemory &out_mcm, os::NativeHandle process_handle, uintptr_t base_address, size_t size) {
         if (hos::GetVersion() >= hos::Version_2_0_0) {
             return MapCodeMemoryInProcessModern(out_mcm, process_handle, base_address, size);
         } else {
@@ -198,16 +187,16 @@ namespace ams::map {
         }
     }
 
-    bool CanAddGuardRegionsInProcess(Handle process_handle, uintptr_t address, size_t size) {
-        MemoryInfo mem_info;
-        u32 page_info;
+    bool CanAddGuardRegionsInProcess(os::NativeHandle process_handle, uintptr_t address, size_t size) {
+        svc::MemoryInfo mem_info;
+        svc::PageInfo page_info;
 
         /* Nintendo doesn't validate SVC return values at all. */
         /* TODO: Should we allow these to fail? */
-        R_ABORT_UNLESS(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1));
-        if (mem_info.type == MemType_Unmapped && address - GuardRegionSize >= mem_info.addr) {
-            R_ABORT_UNLESS(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size));
-            return mem_info.type == MemType_Unmapped && address + size + GuardRegionSize <= mem_info.addr + mem_info.size;
+        R_ABORT_UNLESS(svc::QueryProcessMemory(&mem_info, &page_info, process_handle, address - 1));
+        if (mem_info.state == svc::MemoryState_Free && address - GuardRegionSize >= mem_info.addr) {
+            R_ABORT_UNLESS(svc::QueryProcessMemory(&mem_info, &page_info, process_handle, address + size));
+            return mem_info.state == svc::MemoryState_Free && address + size + GuardRegionSize <= mem_info.addr + mem_info.size;
         }
 
         return false;

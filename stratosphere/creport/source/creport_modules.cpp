@@ -58,7 +58,7 @@ namespace ams::creport {
         }
     }
 
-    void ModuleList::FindModulesFromThreadInfo(Handle debug_handle, const ThreadInfo &thread) {
+    void ModuleList::FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread) {
         /* Set the debug handle, for access in other member functions. */
         this->debug_handle = debug_handle;
 
@@ -92,14 +92,14 @@ namespace ams::creport {
         uintptr_t cur_address = base_address;
         while (this->num_modules < ModuleCountMax) {
             /* Get the region extents. */
-            MemoryInfo mi;
-            u32 pi;
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, this->debug_handle, cur_address))) {
+            svc::MemoryInfo mi;
+            svc::PageInfo pi;
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, cur_address))) {
                 break;
             }
 
             /* Parse module. */
-            if (mi.perm == Perm_Rx) {
+            if (mi.perm == svc::MemoryPermission_ReadExecute) {
                 auto& module = this->modules[this->num_modules++];
                 module.start_address = mi.addr;
                 module.end_address   = mi.addr + mi.size;
@@ -112,7 +112,7 @@ namespace ams::creport {
             }
 
             /* If we're out of readable memory, we're done reading code. */
-            if (mi.type == MemType_Unmapped || mi.type == MemType_Reserved) {
+            if (mi.state == svc::MemoryState_Free || mi.state == svc::MemoryState_Inaccessible) {
                 break;
             }
 
@@ -127,39 +127,39 @@ namespace ams::creport {
 
     bool ModuleList::TryFindModule(uintptr_t *out_address, uintptr_t guess) {
         /* Query the memory region our guess falls in. */
-        MemoryInfo mi;
-        u32 pi;
-        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, this->debug_handle, guess))) {
+        svc::MemoryInfo mi;
+        svc::PageInfo pi;
+        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, guess))) {
             return false;
         }
 
         /* If we fall into a RW region, it may be rwdata. Query the region before it, which may be rodata or text. */
-        if (mi.perm == Perm_Rw) {
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+        if (mi.perm == svc::MemoryPermission_ReadWrite) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
                 return false;
             }
         }
 
         /* If we fall into an RO region, it may be rodata. Query the region before it, which should be text. */
-        if (mi.perm == Perm_R) {
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+        if (mi.perm == svc::MemoryPermission_Read) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
                 return false;
             }
         }
 
         /* We should, at this point, be looking at an executable region (text). */
-        if (mi.perm != Perm_Rx) {
+        if (mi.perm != svc::MemoryPermission_ReadExecute) {
             return false;
         }
 
         /* Modules are a series of contiguous (text/rodata/rwdata) regions. */
         /* Iterate backwards until we find unmapped memory, to find the start of the set of modules loaded here. */
         while (mi.addr > 0) {
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
                 return false;
             }
 
-            if (mi.type == MemType_Unmapped) {
+            if (mi.state == svc::MemoryState_Free) {
                 /* We've found unmapped memory, so output the mapped memory afterwards. */
                 *out_address = mi.addr + mi.size;
                 return true;
@@ -177,11 +177,11 @@ namespace ams::creport {
         /* Read module path from process memory. */
         RoDataStart rodata_start;
         {
-            MemoryInfo mi;
-            u32 pi;
+            svc::MemoryInfo mi;
+            svc::PageInfo pi;
 
             /* Verify .rodata is read-only. */
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != Perm_R) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != svc::MemoryPermission_Read) {
                 return;
             }
 
@@ -189,7 +189,7 @@ namespace ams::creport {
             const u64 rw_start_address = mi.addr + mi.size;
 
             /* Read start of .rodata. */
-            if (R_FAILED(svcReadDebugProcessMemory(&rodata_start, this->debug_handle, ro_start_address, sizeof(rodata_start)))) {
+            if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(rodata_start)), this->debug_handle, ro_start_address, sizeof(rodata_start)))) {
                 return;
             }
 
@@ -226,15 +226,15 @@ namespace ams::creport {
         std::memset(out_build_id, 0, ModuleBuildIdLength);
 
         /* Verify .rodata is read-only. */
-        MemoryInfo mi;
-        u32 pi;
-        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != Perm_R) {
+        svc::MemoryInfo mi;
+        svc::PageInfo pi;
+        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != svc::MemoryPermission_Read) {
             return;
         }
 
         /* We want to read the last two pages of .rodata. */
         const size_t read_size = mi.size >= sizeof(g_last_rodata_pages) ? sizeof(g_last_rodata_pages) : (sizeof(g_last_rodata_pages) / 2);
-        if (R_FAILED(svcReadDebugProcessMemory(g_last_rodata_pages, this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(g_last_rodata_pages), this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
             return;
         }
 

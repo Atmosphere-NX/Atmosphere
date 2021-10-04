@@ -28,13 +28,13 @@ namespace ams::sf::hipc {
         NeedsRetry,
     };
 
-    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, Handle port);
-    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, Handle request);
+    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, os::NativeHandle port);
+    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, os::NativeHandle request);
 
-    Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer);
-    Result Receive(bool *out_closed, Handle session_handle, const cmif::PointerAndSize &message_buffer);
-    Result Reply(Handle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Receive(ReceiveResult *out_recv_result, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Receive(bool *out_closed, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Reply(os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
 
-    Result CreateSession(Handle *out_server_handle, Handle *out_client_handle);
+    Result CreateSession(os::NativeHandle *out_server_handle, os::NativeHandle *out_client_handle);
 
 }

@@ -332,7 +332,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, Handle reslimit_h) {
+        Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, os::NativeHandle reslimit_h) {
             /* Clear output. */
             std::memset(out, 0, sizeof(*out));
 
@@ -456,7 +456,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info, u32 flags, Handle reslimit_h) {
+        Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info, u32 flags, os::NativeHandle reslimit_h) {
             /* Get CreateProcessParameter. */
             svc::CreateProcessParameter param;
             R_TRY(GetCreateProcessParameter(std::addressof(param), meta, flags, reslimit_h));
@@ -507,7 +507,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadNsoIntoProcessMemory(Handle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
+        Result LoadNsoIntoProcessMemory(os::NativeHandle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
             /* Map and read data from file. */
             {
                 map::AutoCloseMap mapper(map_address, process_handle, nso_address, nso_size);
@@ -542,13 +542,13 @@ namespace ams::ldr {
             const size_t ro_size = (static_cast<size_t>(nso_header->ro_size)   + size_t(0xFFFul)) & ~size_t(0xFFFul);
             const size_t rw_size = (static_cast<size_t>(nso_header->rw_size + nso_header->bss_size) + size_t(0xFFFul)) & ~size_t(0xFFFul);
             if (text_size) {
-                R_TRY(svcSetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, Perm_Rx));
+                R_TRY(svc::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, svc::MemoryPermission_ReadExecute));
             }
             if (ro_size) {
-                R_TRY(svcSetProcessMemoryPermission(process_handle, nso_address + nso_header->ro_dst_offset,   ro_size,   Perm_R));
+                R_TRY(svc::SetProcessMemoryPermission(process_handle, nso_address + nso_header->ro_dst_offset,   ro_size,   svc::MemoryPermission_Read));
             }
             if (rw_size) {
-                R_TRY(svcSetProcessMemoryPermission(process_handle, nso_address + nso_header->rw_dst_offset,   rw_size,   Perm_Rw));
+                R_TRY(svc::SetProcessMemoryPermission(process_handle, nso_address + nso_header->rw_dst_offset,   rw_size,   svc::MemoryPermission_ReadWrite));
             }
 
             return ResultSuccess();
@@ -587,7 +587,7 @@ namespace ams::ldr {
                 }
 
                 /* Set argument region permissions. */
-                R_TRY(svcSetProcessMemoryPermission(process_info->process_handle, process_info->args_address, process_info->args_size, Perm_Rw));
+                R_TRY(svc::SetProcessMemoryPermission(process_info->process_handle, process_info->args_address, process_info->args_size, svc::MemoryPermission_ReadWrite));
             }
 
             return ResultSuccess();
@@ -596,7 +596,7 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(Handle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, u32 flags, Handle reslimit_h) {
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, u32 flags, os::NativeHandle reslimit_h) {
         /* Use global storage for NSOs. */
         NsoHeader *nso_headers = g_nso_headers;
         bool *has_nso = g_has_nso;

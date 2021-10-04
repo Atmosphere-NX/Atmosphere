@@ -20,9 +20,9 @@
 namespace ams::map {
 
     /* Public API. */
-    Result GetProcessAddressSpaceInfo(AddressSpaceInfo *out, Handle process_h);
+    Result GetProcessAddressSpaceInfo(AddressSpaceInfo *out, os::NativeHandle process_h);
     Result LocateMappableSpace(uintptr_t *out_address, size_t size);
-    Result MapCodeMemoryInProcess(MappedCodeMemory &out_mcm, Handle process_handle, uintptr_t base_address, size_t size);
-    bool   CanAddGuardRegionsInProcess(Handle process_handle, uintptr_t address, size_t size);
+    Result MapCodeMemoryInProcess(MappedCodeMemory &out_mcm, os::NativeHandle process_handle, uintptr_t base_address, size_t size);
+    bool   CanAddGuardRegionsInProcess(os::NativeHandle process_handle, uintptr_t address, size_t size);
 
 }

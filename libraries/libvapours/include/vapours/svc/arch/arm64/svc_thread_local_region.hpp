@@ -31,7 +31,7 @@ namespace ams::svc::arch::arm64 {
 
     ALWAYS_INLINE ThreadLocalRegion *GetThreadLocalRegion() {
         ThreadLocalRegion *tlr;
-        __asm__ __volatile__("mrs %[tlr], tpidrro_el0" : [tlr]"=&r"(tlr) :: "memory");
+        __asm__ __volatile__("mrs %[tlr], tpidrro_el0" : [tlr]"=&r"(tlr));
         return tlr;
     }
 

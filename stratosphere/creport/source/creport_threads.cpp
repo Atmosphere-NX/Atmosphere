@@ -34,7 +34,7 @@ namespace ams::creport {
 
         /* Helpers. */
         template<typename T>
-        void ReadStackTrace(size_t *out_trace_size, u64 *out_trace, size_t max_out_trace_size, Handle debug_handle, u64 fp) {
+        void ReadStackTrace(size_t *out_trace_size, u64 *out_trace, size_t max_out_trace_size, os::NativeHandle debug_handle, u64 fp) {
             size_t trace_size = 0;
             u64 cur_fp = fp;
 
@@ -46,7 +46,7 @@ namespace ams::creport {
 
                 /* Read a new frame. */
                 StackFrame<T> cur_frame;
-                if (R_FAILED(svcReadDebugProcessMemory(&cur_frame, debug_handle, cur_fp, sizeof(cur_frame)))) {
+                if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(cur_frame)), debug_handle, cur_fp, sizeof(cur_frame)))) {
                     break;
                 }
 
@@ -79,12 +79,12 @@ namespace ams::creport {
         file.WriteFormat("    Registers:\n");
         {
             for (unsigned int i = 0; i <= 28; i++) {
-                file.WriteFormat("        X[%02u]:                   %s\n", i, this->module_list->GetFormattedAddressString(this->context.cpu_gprs[i].x));
+                file.WriteFormat("        X[%02u]:                   %s\n", i, this->module_list->GetFormattedAddressString(this->context.r[i]));
             }
             file.WriteFormat("        FP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.fp));
             file.WriteFormat("        LR:                      %s\n", this->module_list->GetFormattedAddressString(this->context.lr));
             file.WriteFormat("        SP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.sp));
-            file.WriteFormat("        PC:                      %s\n", this->module_list->GetFormattedAddressString(this->context.pc.x));
+            file.WriteFormat("        PC:                      %s\n", this->module_list->GetFormattedAddressString(this->context.pc));
         }
         if (this->stack_trace_size != 0) {
             file.WriteFormat("    Stack Trace:\n");
@@ -113,7 +113,7 @@ namespace ams::creport {
         }
     }
 
-    bool ThreadInfo::ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit) {
+    bool ThreadInfo::ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit) {
         /* Set thread id. */
         this->thread_id = thread_id;
 
@@ -121,7 +121,7 @@ namespace ams::creport {
         {
             u64 _;
             u32 _thread_state;
-            if (R_FAILED(svcGetDebugThreadParam(&_, &_thread_state, debug_handle, this->thread_id, DebugThreadParam_State))) {
+            if (R_FAILED(svc::GetDebugThreadParam(&_, &_thread_state, debug_handle, this->thread_id, svc::DebugThreadParam_State))) {
                 return false;
             }
 
@@ -132,29 +132,29 @@ namespace ams::creport {
         }
 
         /* Get the thread context. */
-        if (R_FAILED(svcGetDebugThreadContext(&this->context, debug_handle, this->thread_id, svc::ThreadContextFlag_All))) {
+        if (R_FAILED(svc::GetDebugThreadContext(&this->context, debug_handle, this->thread_id, svc::ThreadContextFlag_All))) {
             return false;
         }
 
-        /* In aarch32 mode svcGetDebugThreadContext does not set the LR, FP, and SP registers correctly. */
+        /* In aarch32 mode svc::GetDebugThreadContext does not set the LR, FP, and SP registers correctly. */
         if (!is_64_bit) {
-            this->context.fp = this->context.cpu_gprs[11].x;
-            this->context.sp = this->context.cpu_gprs[13].x;
-            this->context.lr = this->context.cpu_gprs[14].x;
+            this->context.fp = this->context.r[11];
+            this->context.sp = this->context.r[13];
+            this->context.lr = this->context.r[14];
         }
 
         /* Read TLS, if present. */
         /* TODO: struct definitions for nnSdk's ThreadType/TLS Layout? */
         this->tls_address = 0;
         if (tls_map.GetThreadTls(std::addressof(this->tls_address), thread_id)) {
-            u8 thread_tls[0x200];
-            if (R_SUCCEEDED(svcReadDebugProcessMemory(thread_tls, debug_handle, this->tls_address, sizeof(thread_tls)))) {
+            u8 thread_tls[sizeof(svc::ThreadLocalRegion)];
+            if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_tls), debug_handle, this->tls_address, sizeof(thread_tls)))) {
                 std::memcpy(this->tls, thread_tls, sizeof(this->tls));
                 /* Try to detect libnx threads, and skip name parsing then. */
                 if (*(reinterpret_cast<u32 *>(&thread_tls[0x1E0])) != LibnxThreadVarMagic) {
                     u8 thread_type[0x1C0];
                     const u64 thread_type_addr = *(reinterpret_cast<u64 *>(&thread_tls[0x1F8]));
-                    if (R_SUCCEEDED(svcReadDebugProcessMemory(thread_type, debug_handle, thread_type_addr, sizeof(thread_type)))) {
+                    if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_type), debug_handle, thread_type_addr, sizeof(thread_type)))) {
                         /* Get the thread version. */
                         const u16 thread_version = *reinterpret_cast<u16 *>(&thread_type[0x46]);
                         if (thread_version == 0 || thread_version == 0xFFFF) {
@@ -187,18 +187,18 @@ namespace ams::creport {
         return true;
     }
 
-    void ThreadInfo::TryGetStackInfo(Handle debug_handle) {
+    void ThreadInfo::TryGetStackInfo(os::NativeHandle debug_handle) {
         /* Query stack region. */
-        MemoryInfo mi;
-        u32 pi;
-        if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, this->context.sp))) {
+        svc::MemoryInfo mi;
+        svc::PageInfo pi;
+        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, this->context.sp))) {
             return;
         }
 
         /* Check if sp points into the stack. */
-        if (mi.type != MemType_MappedMemory) {
+        if (mi.state != svc::MemoryState_Stack) {
             /* It's possible that sp is below the stack... */
-            if (R_FAILED(svcQueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr + mi.size)) || mi.type != MemType_MappedMemory) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr + mi.size)) || mi.state != svc::MemoryState_Stack) {
                 return;
             }
         }
@@ -212,7 +212,7 @@ namespace ams::creport {
         this->stack_dump_base = std::min(std::max(this->context.sp & ~0xFul, this->stack_bottom), this->stack_top - sizeof(this->stack_dump));
 
         /* Try to read stack. */
-        if (R_FAILED(svcReadDebugProcessMemory(this->stack_dump, debug_handle, this->stack_dump_base, sizeof(this->stack_dump)))) {
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(this->stack_dump), debug_handle, this->stack_dump_base, sizeof(this->stack_dump)))) {
             this->stack_dump_base = 0;
         }
     }
@@ -252,7 +252,7 @@ namespace ams::creport {
         }
     }
 
-    void ThreadList::ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit) {
+    void ThreadList::ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit) {
         this->thread_count = 0;
 
         /* Get thread list. */

@@ -19,10 +19,10 @@ namespace ams::os {
 
     namespace {
 
-        /* TODO: Remove, add VammManager */
+        /* TODO: Remove, add VammManager/horizon-impl */
         size_t GetSystemResourceSize() {
             u64 v;
-            if (R_SUCCEEDED(svcGetInfo(std::addressof(v), InfoType_SystemResourceSizeTotal, CUR_PROCESS_HANDLE, 0))) {
+            if (R_SUCCEEDED(svc::GetInfo(std::addressof(v), svc::InfoType_SystemResourceSizeTotal, os::GetCurrentProcessHandle(), 0))) {
                 return v;
             } else {
                 return 0;

@@ -141,7 +141,7 @@ namespace ams {
             }
 
             /* Grab 0x100 of tls. */
-            std::memcpy(ams_ctx.tls, armGetTls(), sizeof(ams_ctx.tls));
+            std::memcpy(ams_ctx.tls, svc::GetThreadLocalRegion(), sizeof(ams_ctx.tls));
         }
 
         /* Just call the user exception handler. */

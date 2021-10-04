@@ -18,7 +18,7 @@
 
 namespace ams::pm::impl {
 
-    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0) {
+    ProcessInfo::ProcessInfo(os::NativeHandle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0) {
         os::InitializeMultiWaitHolder(std::addressof(this->multi_wait_holder), this->handle);
         os::SetMultiWaitHolderUserData(std::addressof(this->multi_wait_holder), reinterpret_cast<uintptr_t>(this));
     }
@@ -28,15 +28,15 @@ namespace ams::pm::impl {
     }
 
     void ProcessInfo::Cleanup() {
-        if (this->handle != INVALID_HANDLE) {
+        if (this->handle != os::InvalidNativeHandle) {
             /* Unregister the process. */
             fsprUnregisterProgram(static_cast<u64>(this->process_id));
             sm::manager::UnregisterProcess(this->process_id);
             ldr::pm::UnpinProgram(this->pin_id);
 
             /* Close the process's handle. */
-            svcCloseHandle(this->handle);
-            this->handle = INVALID_HANDLE;
+            os::CloseNativeHandle(this->handle);
+            this->handle = os::InvalidNativeHandle;
 
             /* Unlink the process from its multi wait. */
             os::UnlinkMultiWaitHolder(std::addressof(this->multi_wait_holder));

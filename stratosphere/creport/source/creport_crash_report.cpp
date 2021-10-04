@@ -165,7 +165,7 @@ namespace ams::creport {
     void CrashReport::ProcessExceptions() {
         /* Loop all debug events. */
         svc::DebugEventInfo d;
-        while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), this->debug_handle))) {
+        while (R_SUCCEEDED(svc::GetDebugEvent(std::addressof(d), this->debug_handle))) {
             switch (d.type) {
                 case svc::DebugEvent_CreateProcess:
                     this->HandleDebugEventInfoCreateProcess(d);
@@ -200,7 +200,7 @@ namespace ams::creport {
         u64 userdata_size = 0;
 
         /* Read userdata address. */
-        if (R_FAILED(svcReadDebugProcessMemory(&userdata_address, this->debug_handle, address, sizeof(userdata_address)))) {
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(userdata_address)), this->debug_handle, address, sizeof(userdata_address)))) {
             return;
         }
 
@@ -210,7 +210,7 @@ namespace ams::creport {
         }
 
         /* Read userdata size. */
-        if (R_FAILED(svcReadDebugProcessMemory(&userdata_size, this->debug_handle, address + sizeof(userdata_address), sizeof(userdata_size)))) {
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(userdata_size)), this->debug_handle, address + sizeof(userdata_address), sizeof(userdata_size)))) {
             return;
         }
 
@@ -244,7 +244,7 @@ namespace ams::creport {
                 this->result = ResultUserBreak();
                 /* Try to parse out the user break result. */
                 if (hos::GetVersion() >= hos::Version_5_0_0) {
-                    svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
+                    svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(this->result)), this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
             case svc::DebugException_UndefinedSystemCall:
@@ -289,7 +289,7 @@ namespace ams::creport {
         }
 
         /* Read the dying message. */
-        svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
+        svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(this->dying_message), this->debug_handle, this->dying_message_address, this->dying_message_size);
     }
 
     void CrashReport::SaveReport(bool enable_screenshot) {
@@ -299,7 +299,7 @@ namespace ams::creport {
         /* Get a timestamp. */
         u64 timestamp;
         if (!TryGetCurrentTimestamp(&timestamp)) {
-            timestamp = svcGetSystemTick();
+            timestamp = os::GetSystemTick().GetInt64Value();
         }
 
         /* Save files. */

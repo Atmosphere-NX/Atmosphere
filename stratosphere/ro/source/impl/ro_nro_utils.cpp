@@ -72,9 +72,9 @@ namespace ams::ro::impl {
         const u64 ro_offset = rx_offset + rx_size;
         const u64 rw_offset = ro_offset + ro_size;
 
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, Perm_Rx));
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, Perm_R ));
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, Perm_Rw));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, svc::MemoryPermission_ReadExecute));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, svc::MemoryPermission_Read));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, svc::MemoryPermission_ReadWrite));
 
         return ResultSuccess();
     }
@@ -82,16 +82,16 @@ namespace ams::ro::impl {
     Result UnmapNro(os::NativeHandle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
         /* First, unmap bss. */
         if (bss_heap_size > 0) {
-            R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size));
+            R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size));
         }
 
         /* Next, unmap .rwdata */
         if (rw_size > 0) {
-            R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size));
+            R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size));
         }
 
         /* Finally, unmap .text + .rodata. */
-        R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
+        R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
 
         return ResultSuccess();
     }

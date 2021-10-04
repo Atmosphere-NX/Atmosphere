@@ -319,7 +319,7 @@ namespace ams::ro::impl {
                             UnmapNrr(context->process_handle, context->nrr_infos[i].mapped_header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
                         }
                     }
-                    svcCloseHandle(context->process_handle);
+                    os::CloseNativeHandle(context->process_handle);
                 }
                 std::memset(context, 0, sizeof(*context));
                 context->in_use = false;

@@ -38,10 +38,10 @@ namespace ams::dmnt::cheat::impl {
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */
                     DebugEventsManager *this_ptr = reinterpret_cast<DebugEventsManager *>(_this);
-                    const size_t current_core = svcGetCurrentProcessorNumber();
+                    const size_t current_core = svc::GetCurrentProcessorNumber();
                     while (true) {
                         /* Receive handle. */
-                        Handle debug_handle = this_ptr->WaitReceiveHandle(current_core);
+                        os::NativeHandle debug_handle = this_ptr->WaitReceiveHandle(current_core);
 
                         /* Continue events on the correct core. */
                         Result result = this_ptr->ContinueDebugEvent(debug_handle);
@@ -51,7 +51,7 @@ namespace ams::dmnt::cheat::impl {
                     }
                 }
 
-                Result GetTargetCore(size_t *out, const svc::DebugEventInfo &dbg_event, Handle debug_handle) {
+                Result GetTargetCore(size_t *out, const svc::DebugEventInfo &dbg_event, os::NativeHandle debug_handle) {
                     /* If we don't need to continue on a specific core, use the system core. */
                     size_t target_core = NumCores - 1;
 
@@ -60,7 +60,7 @@ namespace ams::dmnt::cheat::impl {
                         u64 out64 = 0;
                         u32 out32 = 0;
 
-                        R_TRY_CATCH(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.create_thread.thread_id, DebugThreadParam_CurrentCore)) {
+                        R_TRY_CATCH(svc::GetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.create_thread.thread_id, svc::DebugThreadParam_CurrentCore)) {
                             R_CATCH_RETHROW(svc::ResultProcessTerminated)
                         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
@@ -72,21 +72,21 @@ namespace ams::dmnt::cheat::impl {
                     return ResultSuccess();
                 }
 
-                void SendHandle(size_t target_core, Handle debug_handle) {
+                void SendHandle(size_t target_core, os::NativeHandle debug_handle) {
                     this->handle_message_queues[target_core].Send(static_cast<uintptr_t>(debug_handle));
                 }
 
-                Handle WaitReceiveHandle(size_t core_id) {
+                os::NativeHandle WaitReceiveHandle(size_t core_id) {
                     uintptr_t x = 0;
                     this->handle_message_queues[core_id].Receive(&x);
-                    return static_cast<Handle>(x);
+                    return static_cast<os::NativeHandle>(x);
                 }
 
-                Result ContinueDebugEvent(Handle debug_handle) {
+                Result ContinueDebugEvent(os::NativeHandle debug_handle) {
                     if (hos::GetVersion() >= hos::Version_3_0_0) {
-                        return svcContinueDebugEvent(debug_handle, 5, nullptr, 0);
+                        return svc::ContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, nullptr, 0);
                     } else {
-                        return svcLegacyContinueDebugEvent(debug_handle, 5, 0);
+                        return svc::LegacyContinueDebugEvent(debug_handle, svc::ContinueFlag_ExceptionHandled | svc::ContinueFlag_ContinueAll, 0);
                     }
                 }
 

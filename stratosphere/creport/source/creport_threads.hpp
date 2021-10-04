@@ -60,7 +60,7 @@ namespace ams::creport {
             static constexpr size_t StackTraceSizeMax = 0x20;
             static constexpr size_t NameLengthMax = 0x20;
         private:
-            ThreadContext context = {};
+            svc::ThreadContext context = {};
             u64 thread_id = 0;
             u64 stack_top = 0;
             u64 stack_bottom = 0;
@@ -74,11 +74,11 @@ namespace ams::creport {
             ModuleList *module_list = nullptr;
         public:
             u64 GetGeneralPurposeRegister(size_t i) const {
-                return this->context.cpu_gprs[i].x;
+                return this->context.r[i];
             }
 
             u64 GetPC() const {
-                return this->context.pc.x;
+                return this->context.pc;
             }
 
             u64 GetLR() const {
@@ -109,11 +109,11 @@ namespace ams::creport {
                 this->module_list = ml;
             }
 
-            bool ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit);
+            bool ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit);
             void SaveToFile(ScopedFile &file);
             void DumpBinary(ScopedFile &file);
         private:
-            void TryGetStackInfo(Handle debug_handle);
+            void TryGetStackInfo(os::NativeHandle debug_handle);
     };
 
     class ThreadList {
@@ -135,7 +135,7 @@ namespace ams::creport {
                 }
             }
 
-            void ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit);
+            void ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit);
             void SaveToFile(ScopedFile &file);
             void DumpBinary(ScopedFile &file, u64 crashed_thread_id);
     };

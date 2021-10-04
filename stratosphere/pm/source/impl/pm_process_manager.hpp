@@ -26,7 +26,7 @@ namespace ams::pm::impl {
     Result StartProcess(os::ProcessId process_id);
     Result TerminateProcess(os::ProcessId process_id);
     Result TerminateProgram(ncm::ProgramId program_id);
-    Result GetProcessEventHandle(Handle *out);
+    Result GetProcessEventHandle(os::NativeHandle *out);
     Result GetProcessEventInfo(ProcessEventInfo *out);
     Result CleanupProcess(os::ProcessId process_id);
     Result ClearExceptionOccurred(os::ProcessId process_id);
@@ -37,16 +37,16 @@ namespace ams::pm::impl {
     Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id);
     Result GetProgramId(ncm::ProgramId *out, os::ProcessId process_id);
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
+    Result AtmosphereGetProcessInfo(os::NativeHandle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
 
     /* Hook API. */
-    Result HookToCreateProcess(Handle *out_hook, ncm::ProgramId program_id);
-    Result HookToCreateApplicationProcess(Handle *out_hook);
+    Result HookToCreateProcess(os::NativeHandle *out_hook, ncm::ProgramId program_id);
+    Result HookToCreateApplicationProcess(os::NativeHandle *out_hook);
     Result ClearHook(u32 which);
 
     /* Boot API. */
     Result NotifyBootFinished();
-    Result GetBootFinishedEventHandle(Handle *out);
+    Result GetBootFinishedEventHandle(os::NativeHandle *out);
 
     /* Resource Limit API. */
     Result BoostSystemMemoryResourceLimit(u64 boost_size);

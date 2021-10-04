@@ -113,7 +113,7 @@ namespace ams::sf::hipc {
 
         ServerSession *session = static_cast<ServerSession *>(holder);
 
-        cmif::PointerAndSize tls_message(armGetTls(), hipc::TlsMessageBufferSize);
+        cmif::PointerAndSize tls_message(svc::GetThreadLocalRegion()->message_buffer, hipc::TlsMessageBufferSize);
         const cmif::PointerAndSize &saved_message = session->saved_message;
         AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
         if (!session->has_received) {

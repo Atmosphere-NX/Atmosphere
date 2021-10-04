@@ -16,6 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::map {
 
@@ -41,19 +42,19 @@ namespace ams::map {
 
     class AutoCloseMap {
         private:
-            Handle process_handle;
+            os::NativeHandle process_handle;
             Result result;
-            void *mapped_address;
+            uintptr_t mapped_address;
             uintptr_t base_address;
             size_t size;
         public:
-            AutoCloseMap(uintptr_t mp, Handle p_h, uintptr_t ba, size_t sz) : process_handle(p_h), mapped_address(reinterpret_cast<void *>(mp)), base_address(ba), size(sz) {
-                this->result = svcMapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size);
+            AutoCloseMap(uintptr_t mp, os::NativeHandle p_h, uintptr_t ba, size_t sz) : process_handle(p_h), mapped_address(mp), base_address(ba), size(sz) {
+                this->result = svc::MapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size);
             }
 
             ~AutoCloseMap() {
-                if (this->process_handle != INVALID_HANDLE && R_SUCCEEDED(this->result)) {
-                    R_ABORT_UNLESS(svcUnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size));
+                if (this->process_handle != os::InvalidNativeHandle && R_SUCCEEDED(this->result)) {
+                    R_ABORT_UNLESS(svc::UnmapProcessMemory(this->mapped_address, this->process_handle, this->base_address, this->size));
                 }
             }
 
@@ -66,7 +67,7 @@ namespace ams::map {
             }
 
             void Invalidate() {
-                this->process_handle = INVALID_HANDLE;
+                this->process_handle = os::InvalidNativeHandle;
             }
     };
 
@@ -78,17 +79,17 @@ namespace ams::map {
             uintptr_t src_address;
             size_t size;
         public:
-            MappedCodeMemory(Result init_res) : process_handle(INVALID_HANDLE), result(init_res), dst_address(0), src_address(0), size(0) {
+            MappedCodeMemory(Result init_res) : process_handle(os::InvalidNativeHandle), result(init_res), dst_address(0), src_address(0), size(0) {
                 /* ... */
             }
 
             MappedCodeMemory(Handle p_h, uintptr_t dst, uintptr_t src, size_t sz) : process_handle(p_h), dst_address(dst), src_address(src), size(sz) {
-                this->result = svcMapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size);
+                this->result = svc::MapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size);
             }
 
             ~MappedCodeMemory() {
-                if (this->process_handle != INVALID_HANDLE && R_SUCCEEDED(this->result) && this->size > 0) {
-                    R_ABORT_UNLESS(svcUnmapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size));
+                if (this->process_handle != os::InvalidNativeHandle && R_SUCCEEDED(this->result) && this->size > 0) {
+                    R_ABORT_UNLESS(svc::UnmapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size));
                 }
             }
 
@@ -105,7 +106,7 @@ namespace ams::map {
             }
 
             void Invalidate() {
-                this->process_handle = INVALID_HANDLE;
+                this->process_handle = os::InvalidNativeHandle;
             }
 
             MappedCodeMemory &operator=(MappedCodeMemory &&o) {

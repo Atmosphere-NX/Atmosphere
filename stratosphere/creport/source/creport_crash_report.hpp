@@ -25,7 +25,7 @@ namespace ams::creport {
             static constexpr size_t MemoryHeapSize = 512_KB;
             static_assert(MemoryHeapSize >= DyingMessageSizeMax + sizeof(ModuleList) + sizeof(ThreadList) + os::MemoryPageSize);
         private:
-            Handle debug_handle = INVALID_HANDLE;
+            os::NativeHandle debug_handle = os::InvalidNativeHandle;
             bool has_extra_info = true;
             Result result = ResultIncompleteReport();
 
@@ -63,7 +63,7 @@ namespace ams::creport {
             }
 
             bool IsOpen() const {
-                return this->debug_handle != INVALID_HANDLE;
+                return this->debug_handle != os::InvalidNativeHandle;
             }
 
             bool IsApplication() const {
@@ -79,14 +79,12 @@ namespace ams::creport {
             }
 
             bool OpenProcess(os::ProcessId process_id) {
-                return R_SUCCEEDED(svcDebugActiveProcess(&this->debug_handle, static_cast<u64>(process_id)));
+                return R_SUCCEEDED(svc::DebugActiveProcess(std::addressof(this->debug_handle), process_id.value));
             }
 
             void Close() {
-                if (this->IsOpen()) {
-                    svcCloseHandle(this->debug_handle);
-                    this->debug_handle = INVALID_HANDLE;
-                }
+                os::CloseNativeHandle(this->debug_handle);
+                this->debug_handle = os::InvalidNativeHandle;
             }
 
             void Initialize();

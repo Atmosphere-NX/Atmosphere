@@ -74,7 +74,7 @@ namespace ams::fatal::srv {
             /* Get a timestamp. */
             u64 timestamp;
             if (!TryGetCurrentTimestamp(&timestamp)) {
-                timestamp = svcGetSystemTick();
+                timestamp = os::GetSystemTick().GetInt64Value();
             }
 
             /* Open report file. */

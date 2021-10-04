@@ -19,37 +19,37 @@ namespace ams::sf::hipc {
 
     namespace {
 
-        ALWAYS_INLINE Result ReceiveImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
+        ALWAYS_INLINE Result ReceiveImpl(os::NativeHandle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
-            if (message_buf == armGetTls()) {
+            if (message_buf == svc::GetThreadLocalRegion()->message_buffer) {
                 /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
-                return svcReplyAndReceive(&unused_index, &session_handle, 1, INVALID_HANDLE, std::numeric_limits<u64>::max());
+                return svc::ReplyAndReceive(&unused_index, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max());
             } else {
-                return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 1, INVALID_HANDLE, std::numeric_limits<u64>::max());
+                return svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 1, svc::InvalidHandle, std::numeric_limits<u64>::max());
             }
         }
 
-        ALWAYS_INLINE Result ReplyImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
+        ALWAYS_INLINE Result ReplyImpl(os::NativeHandle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
-            if (message_buf == armGetTls()) {
+            if (message_buf == svc::GetThreadLocalRegion()->message_buffer) {
                 /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
-                return svcReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0);
+                return svc::ReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0);
             } else {
-                return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 0, session_handle, 0);
+                return svc::ReplyAndReceiveWithUserBuffer(&unused_index, reinterpret_cast<uintptr_t>(message_buf), message_buf_size, &session_handle, 0, session_handle, 0);
             }
         }
 
     }
 
-    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, Handle port) {
+    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, os::NativeHandle port) {
         return os::InitializeMultiWaitHolder(holder, port);
     }
 
-    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, Handle request) {
+    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, os::NativeHandle request) {
         return os::InitializeMultiWaitHolder(holder, request);
     }
 
-    Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer) {
+    Result Receive(ReceiveResult *out_recv_result, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer) {
         R_TRY_CATCH(ReceiveImpl(session_handle, message_buffer.GetPointer(), message_buffer.GetSize())) {
             R_CATCH(svc::ResultSessionClosed) {
                 *out_recv_result = ReceiveResult::Closed;
@@ -64,7 +64,7 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    Result Receive(bool *out_closed, Handle session_handle, const cmif::PointerAndSize &message_buffer) {
+    Result Receive(bool *out_closed, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer) {
         R_TRY_CATCH(ReceiveImpl(session_handle, message_buffer.GetPointer(), message_buffer.GetSize())) {
             R_CATCH(svc::ResultSessionClosed) {
                 *out_closed = true;
@@ -75,7 +75,7 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    Result Reply(Handle session_handle, const cmif::PointerAndSize &message_buffer) {
+    Result Reply(os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer) {
         R_TRY_CATCH(ReplyImpl(session_handle, message_buffer.GetPointer(), message_buffer.GetSize())) {
             R_CONVERT(svc::ResultTimedOut,      ResultSuccess())
             R_CONVERT(svc::ResultSessionClosed, ResultSuccess())
@@ -84,8 +84,8 @@ namespace ams::sf::hipc {
         AMS_ABORT_UNLESS(false);
     }
 
-    Result CreateSession(Handle *out_server_handle, Handle *out_client_handle) {
-        R_TRY_CATCH(svcCreateSession(out_server_handle, out_client_handle, 0, 0)) {
+    Result CreateSession(os::NativeHandle *out_server_handle, os::NativeHandle *out_client_handle) {
+        R_TRY_CATCH(svc::CreateSession(out_server_handle, out_client_handle, 0, 0)) {
             R_CONVERT(svc::ResultOutOfResource, sf::hipc::ResultOutOfSessions());
         } R_END_TRY_CATCH;
         return ResultSuccess();

@@ -25,8 +25,8 @@ namespace ams::os::impl {
         /* Nintendo does not check the result of these invocations, but we will for safety. */
         /* Nintendo uses entropy values 0, 1 to seed the public TinyMT random, and values */
         /* 2, 3 to seed os::detail::RngManager's private TinyMT random. */
-        R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&seed[0]), InfoType_RandomEntropy, INVALID_HANDLE, 0));
-        R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&seed[2]), InfoType_RandomEntropy, INVALID_HANDLE, 1));
+        R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 0), svc::InfoType_RandomEntropy, svc::InvalidHandle, 0));
+        R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 2), svc::InfoType_RandomEntropy, svc::InvalidHandle, 1));
 
         mt->Initialize(seed, util::size(seed));
     }

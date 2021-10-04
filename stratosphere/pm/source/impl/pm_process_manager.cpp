@@ -207,7 +207,7 @@ namespace ams::pm::impl {
         }
 
         Result StartProcess(ProcessInfo *process_info, const ldr::ProgramInfo *program_info) {
-            R_TRY(svcStartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
+            R_TRY(svc::StartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
             process_info->SetState(svc::ProcessState_Running);
             return ResultSuccess();
         }
@@ -242,7 +242,7 @@ namespace ams::pm::impl {
             resource::WaitResourceAvailable(&program_info);
 
             /* Actually create the process. */
-            Handle process_handle;
+            os::NativeHandle process_handle;
             {
                 auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinProgram(pin_id); };
                 R_TRY(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)));
@@ -313,7 +313,7 @@ namespace ams::pm::impl {
 
         void OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info) {
             /* Reset the process's signal. */
-            svcResetSignal(process_info->GetHandle());
+            svc::ResetSignal(process_info->GetHandle());
 
             /* Update the process's state. */
             const svc::ProcessState old_state = process_info->GetState();
@@ -455,7 +455,7 @@ namespace ams::pm::impl {
         auto process_info = list->Find(process_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
-        return svcTerminateProcess(process_info->GetHandle());
+        return svc::TerminateProcess(process_info->GetHandle());
     }
 
     Result TerminateProgram(ncm::ProgramId program_id) {
@@ -464,10 +464,10 @@ namespace ams::pm::impl {
         auto process_info = list->Find(program_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
-        return svcTerminateProcess(process_info->GetHandle());
+        return svc::TerminateProcess(process_info->GetHandle());
     }
 
-    Result GetProcessEventHandle(Handle *out) {
+    Result GetProcessEventHandle(os::NativeHandle *out) {
         *out = os::GetReadableHandleOfSystemEvent(std::addressof(g_process_event));
         return ResultSuccess();
     }
@@ -602,7 +602,7 @@ namespace ams::pm::impl {
         return pm::ResultProcessNotFound();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
+    Result AtmosphereGetProcessInfo(os::NativeHandle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
@@ -615,8 +615,8 @@ namespace ams::pm::impl {
     }
 
     /* Hook API. */
-    Result HookToCreateProcess(Handle *out_hook, ncm::ProgramId program_id) {
-        *out_hook = INVALID_HANDLE;
+    Result HookToCreateProcess(os::NativeHandle *out_hook, ncm::ProgramId program_id) {
+        *out_hook = os::InvalidNativeHandle;
 
         {
             ncm::ProgramId old_value = ncm::InvalidProgramId;
@@ -627,8 +627,8 @@ namespace ams::pm::impl {
         return ResultSuccess();
     }
 
-    Result HookToCreateApplicationProcess(Handle *out_hook) {
-        *out_hook = INVALID_HANDLE;
+    Result HookToCreateApplicationProcess(os::NativeHandle *out_hook) {
+        *out_hook = os::InvalidNativeHandle;
 
         {
             bool old_value = false;
@@ -670,7 +670,7 @@ namespace ams::pm::impl {
         return ResultSuccess();
     }
 
-    Result GetBootFinishedEventHandle(Handle *out) {
+    Result GetBootFinishedEventHandle(os::NativeHandle *out) {
         /* In 8.0.0, Nintendo added this command, which signals that the boot sysmodule has finished. */
         /* Nintendo only signals it in safe mode FIRM, and this function aborts on normal FIRM. */
         /* We will signal it always, but only allow this function to succeed on safe mode. */

@@ -37,8 +37,8 @@ namespace ams::mitm::bpc_ams {
     void MitmModule::ThreadFunction(void *arg) {
         /* Create bpc:ams. */
         {
-            Handle bpcams_h;
-            R_ABORT_UNLESS(svcManageNamedPort(&bpcams_h, AtmosphereServiceName.name, AtmosphereMaxSessions));
+            os::NativeHandle bpcams_h;
+            R_ABORT_UNLESS(svc::ManageNamedPort(&bpcams_h, AtmosphereServiceName.name, AtmosphereMaxSessions));
             g_server_manager.RegisterObjectForServer(g_ams_service_object.GetShared(), bpcams_h);
         }
 

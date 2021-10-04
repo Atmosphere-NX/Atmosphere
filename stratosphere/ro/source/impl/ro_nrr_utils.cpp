@@ -224,8 +224,8 @@ namespace ams::ro::impl {
     }
 
     Result UnmapNrr(os::NativeHandle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {
-        R_TRY(svcUnmapProcessMemory(reinterpret_cast<void *>(const_cast<NrrHeader *>(header)), process_handle, mapped_code_address, nrr_heap_size));
-        R_TRY(svcUnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size));
+        R_TRY(svc::UnmapProcessMemory(reinterpret_cast<uintptr_t>(header), process_handle, mapped_code_address, nrr_heap_size));
+        R_TRY(svc::UnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size));
         return ResultSuccess();
     }
 

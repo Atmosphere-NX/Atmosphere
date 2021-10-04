@@ -152,7 +152,7 @@ namespace ams::fssystem {
     NX_INLINE Result RetryFinitelyForTargetLocked(F f) {
         /* Retry up to 10 times, 100ms between retries. */
         constexpr s32 MaxRetryCount = 10;
-        constexpr u64 RetryWaitTime = 100'000'000ul;
+        constexpr TimeSpan RetryWaitTime = TimeSpan::FromMilliSeconds(100);
 
         s32 remaining_retries = MaxRetryCount;
         while (true) {
@@ -161,7 +161,7 @@ namespace ams::fssystem {
                     R_UNLESS(remaining_retries > 0, fs::ResultTargetLocked());
 
                     remaining_retries--;
-                    svcSleepThread(RetryWaitTime);
+                    os::SleepThread(RetryWaitTime);
                     continue;
                 }
             } R_END_TRY_CATCH;

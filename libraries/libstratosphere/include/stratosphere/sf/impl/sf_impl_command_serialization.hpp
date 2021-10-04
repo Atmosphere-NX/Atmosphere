@@ -837,12 +837,12 @@ namespace ams::sf::impl {
         private:
             template<size_t Index>
             NX_CONSTEXPR void SetOutObjectImpl(const HipcRequest &response, hipc::ServerSessionManager *manager, cmif::ServiceObjectHolder &&object) {
-                /* If no object, write INVALID_HANDLE. This is what official software does. */
+                /* If no object, write os::InvalidNativeHandle. This is what official software does. */
                 if (!object) {
-                    response.move_handles[Index] = INVALID_HANDLE;
+                    response.move_handles[Index] = os::InvalidNativeHandle;
                     return;
                 }
-                Handle server_handle, client_handle;
+                os::NativeHandle server_handle, client_handle;
                 R_ABORT_UNLESS(sf::hipc::CreateSession(&server_handle, &client_handle));
                 R_ABORT_UNLESS(manager->RegisterSession(server_handle, std::move(object)));
                 response.move_handles[Index] = client_handle;

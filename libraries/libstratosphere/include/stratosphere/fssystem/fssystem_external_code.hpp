@@ -22,7 +22,7 @@ namespace ams::fssystem {
 
     fs::fsa::IFileSystem *GetExternalCodeFileSystem(ncm::ProgramId program_id);
 
-    Result CreateExternalCode(Handle *out, ncm::ProgramId program_id);
+    Result CreateExternalCode(os::NativeHandle *out, ncm::ProgramId program_id);
     void   DestroyExternalCode(ncm::ProgramId program_id);
 
 }

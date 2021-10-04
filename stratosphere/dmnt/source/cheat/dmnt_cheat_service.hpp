@@ -26,10 +26,10 @@
     AMS_SF_METHOD_INFO(C, H, 65005, Result, ResumeCheatProcess,          (),                                                                                                   ())                             \
     AMS_SF_METHOD_INFO(C, H, 65006, Result, ForceCloseCheatProcess,      (),                                                                                                   ())                             \
     AMS_SF_METHOD_INFO(C, H, 65100, Result, GetCheatProcessMappingCount, (sf::Out<u64> out_count),                                                                             (out_count))                    \
-    AMS_SF_METHOD_INFO(C, H, 65101, Result, GetCheatProcessMappings,     (const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset),                       (mappings, out_count, offset))  \
+    AMS_SF_METHOD_INFO(C, H, 65101, Result, GetCheatProcessMappings,     (const sf::OutArray<svc::MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset),                  (mappings, out_count, offset))  \
     AMS_SF_METHOD_INFO(C, H, 65102, Result, ReadCheatProcessMemory,      (const sf::OutBuffer &buffer, u64 address, u64 out_size),                                             (buffer, address, out_size))    \
     AMS_SF_METHOD_INFO(C, H, 65103, Result, WriteCheatProcessMemory,     (const sf::InBuffer &buffer, u64 address, u64 in_size),                                               (buffer, address, in_size))     \
-    AMS_SF_METHOD_INFO(C, H, 65104, Result, QueryCheatProcessMemory,     (sf::Out<MemoryInfo> mapping, u64 address),                                                           (mapping, address))             \
+    AMS_SF_METHOD_INFO(C, H, 65104, Result, QueryCheatProcessMemory,     (sf::Out<svc::MemoryInfo> mapping, u64 address),                                                      (mapping, address))             \
     AMS_SF_METHOD_INFO(C, H, 65200, Result, GetCheatCount,               (sf::Out<u64> out_count),                                                                             (out_count))                    \
     AMS_SF_METHOD_INFO(C, H, 65201, Result, GetCheats,                   (const sf::OutArray<dmnt::cheat::CheatEntry> &cheats, sf::Out<u64> out_count, u64 offset),            (cheats, out_count, offset))    \
     AMS_SF_METHOD_INFO(C, H, 65202, Result, GetCheatById,                (sf::Out<dmnt::cheat::CheatEntry> cheat, u32 cheat_id),                                               (cheat, cheat_id))              \
@@ -61,10 +61,10 @@ namespace ams::dmnt::cheat {
             Result ForceCloseCheatProcess();
 
             Result GetCheatProcessMappingCount(sf::Out<u64> out_count);
-            Result GetCheatProcessMappings(const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset);
+            Result GetCheatProcessMappings(const sf::OutArray<svc::MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset);
             Result ReadCheatProcessMemory(const sf::OutBuffer &buffer, u64 address, u64 out_size);
             Result WriteCheatProcessMemory(const sf::InBuffer &buffer, u64 address, u64 in_size);
-            Result QueryCheatProcessMemory(sf::Out<MemoryInfo> mapping, u64 address);
+            Result QueryCheatProcessMemory(sf::Out<svc::MemoryInfo> mapping, u64 address);
 
             Result GetCheatCount(sf::Out<u64> out_count);
             Result GetCheats(const sf::OutArray<CheatEntry> &cheats, sf::Out<u64> out_count, u64 offset);

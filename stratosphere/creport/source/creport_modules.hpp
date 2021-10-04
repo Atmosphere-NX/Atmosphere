@@ -32,14 +32,14 @@ namespace ams::creport {
                 u64  end_address;
             };
         private:
-            Handle debug_handle;
+            os::NativeHandle debug_handle;
             size_t num_modules;
             ModuleInfo modules[ModuleCountMax];
 
             /* For pretty-printing. */
             char address_str_buf[0x280];
         public:
-            ModuleList() : debug_handle(INVALID_HANDLE), num_modules(0) {
+            ModuleList() : debug_handle(os::InvalidNativeHandle), num_modules(0) {
                 std::memset(this->modules, 0, sizeof(this->modules));
             }
 
@@ -51,7 +51,7 @@ namespace ams::creport {
                 return this->modules[i].start_address;
             }
 
-            void FindModulesFromThreadInfo(Handle debug_handle, const ThreadInfo &thread);
+            void FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread);
             const char *GetFormattedAddressString(uintptr_t address);
             void SaveToFile(ScopedFile &file);
         private:

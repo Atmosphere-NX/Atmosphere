@@ -32,15 +32,15 @@ namespace ams::pm::dmnt {
         return pmdmntGetApplicationProcessId(reinterpret_cast<u64 *>(out_process_id));
     }
 
-    Result HookToCreateApplicationProcess(Handle *out_handle) {
+    Result HookToCreateApplicationProcess(os::NativeHandle *out_handle) {
         Event evt;
         R_TRY(pmdmntHookToCreateApplicationProcess(&evt));
         *out_handle = evt.revent;
         return ResultSuccess();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
-        *out_handle = INVALID_HANDLE;
+    Result AtmosphereGetProcessInfo(os::NativeHandle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
+        *out_handle = os::InvalidNativeHandle;
         *out_loc = {};
         *out_status = {};
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));

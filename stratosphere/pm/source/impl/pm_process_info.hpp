@@ -43,7 +43,7 @@ namespace ams::pm::impl {
             const ldr::PinId pin_id;
             const ncm::ProgramLocation loc;
             const cfg::OverrideStatus status;
-            Handle handle;
+            os::NativeHandle handle;
             svc::ProcessState state;
             u32 flags;
             os::MultiWaitHolderType multi_wait_holder;
@@ -60,7 +60,7 @@ namespace ams::pm::impl {
                 return (this->flags & flag);
             }
         public:
-            ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s);
+            ProcessInfo(os::NativeHandle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s);
             ~ProcessInfo();
             void Cleanup();
 
@@ -68,7 +68,7 @@ namespace ams::pm::impl {
                 os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(this->multi_wait_holder));
             }
 
-            Handle GetHandle() const {
+            os::NativeHandle GetHandle() const {
                 return this->handle;
             }
 
