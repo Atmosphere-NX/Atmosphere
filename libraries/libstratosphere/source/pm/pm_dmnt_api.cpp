@@ -47,7 +47,7 @@ namespace ams::pm::dmnt {
         return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
-    Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource) {
+    Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, svc::LimitableResource resource) {
         *out_current_value = 0;
         *out_limit_value   = 0;
         return pmdmntAtmosphereGetCurrentLimitInfo(out_current_value, out_limit_value, group, resource);
