@@ -141,8 +141,8 @@ namespace ams::os {
         return holder->user_data;
     }
 
-    void InitializeMultiWaitHolder(MultiWaitHolderType *holder, Handle handle) {
-        AMS_ASSERT(handle != svc::InvalidHandle);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *holder, NativeHandle handle) {
+        AMS_ASSERT(handle != os::InvalidNativeHandle);
 
         util::ConstructAt(GetReference(holder->impl_storage).holder_of_handle_storage, handle);
 

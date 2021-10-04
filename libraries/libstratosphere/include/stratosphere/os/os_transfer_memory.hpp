@@ -35,7 +35,7 @@ namespace ams::os {
                 R_ABORT_UNLESS(CreateTransferMemory(std::addressof(this->tmem), address, size, perm));
             }
 
-            TransferMemory(size_t size, Handle handle, bool managed) {
+            TransferMemory(size_t size, NativeHandle handle, bool managed) {
                 this->Attach(size, handle, managed);
             }
 
@@ -46,11 +46,11 @@ namespace ams::os {
                 DestroyTransferMemory(std::addressof(this->tmem));
             }
 
-            void Attach(size_t size, Handle handle, bool managed) {
+            void Attach(size_t size, NativeHandle handle, bool managed) {
                 AttachTransferMemory(std::addressof(this->tmem), size, handle, managed);
             }
 
-            Handle Detach() {
+            NativeHandle Detach() {
                 return DetachTransferMemory(std::addressof(this->tmem));
             }
 

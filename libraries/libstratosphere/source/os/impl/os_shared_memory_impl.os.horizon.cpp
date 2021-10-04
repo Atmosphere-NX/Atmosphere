@@ -33,7 +33,7 @@ namespace ams::os::impl {
 
     }
 
-    Result SharedMemoryImpl::Create(Handle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm) {
+    Result SharedMemoryImpl::Create(NativeHandle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm) {
         /* Convert memory permissions. */
         const auto svc_my_perm    = ConvertToSvcMemoryPermission(my_perm);
         const auto svc_other_perm = ConvertToSvcMemoryPermission(other_perm);
@@ -49,11 +49,11 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void SharedMemoryImpl::Close(Handle handle) {
+    void SharedMemoryImpl::Close(NativeHandle handle) {
         R_ABORT_UNLESS(svc::CloseHandle(handle));
     }
 
-    Result SharedMemoryImpl::Map(void **out, Handle handle, size_t size, MemoryPermission perm) {
+    Result SharedMemoryImpl::Map(void **out, NativeHandle handle, size_t size, MemoryPermission perm) {
         /* Convert memory permission. */
         const auto svc_perm = ConvertToSvcMemoryPermission(perm);
 
@@ -77,7 +77,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void SharedMemoryImpl::Unmap(Handle handle, void *address, size_t size) {
+    void SharedMemoryImpl::Unmap(NativeHandle handle, void *address, size_t size) {
         R_ABORT_UNLESS(svc::UnmapSharedMemory(handle, reinterpret_cast<uintptr_t>(address), size));
     }
 

@@ -20,7 +20,7 @@
 
 namespace ams::os::impl {
 
-    Result InterProcessEventImpl::Create(Handle *out_write, Handle *out_read) {
+    Result InterProcessEventImpl::Create(NativeHandle *out_write, NativeHandle *out_read) {
         /* Create the event handles. */
         svc::Handle wh, rh;
         R_TRY_CATCH(svc::CreateEvent(std::addressof(wh), std::addressof(rh))) {
@@ -32,29 +32,29 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void InterProcessEventImpl::Close(Handle handle) {
-        if (handle != svc::InvalidHandle) {
-            R_ABORT_UNLESS(svc::CloseHandle(svc::Handle(handle)));
+    void InterProcessEventImpl::Close(NativeHandle handle) {
+        if (handle != os::InvalidNativeHandle) {
+            R_ABORT_UNLESS(svc::CloseHandle(handle));
         }
     }
 
-    void InterProcessEventImpl::Signal(Handle handle) {
-        R_ABORT_UNLESS(svc::SignalEvent(svc::Handle(handle)));
+    void InterProcessEventImpl::Signal(NativeHandle handle) {
+        R_ABORT_UNLESS(svc::SignalEvent(handle));
     }
 
-    void InterProcessEventImpl::Clear(Handle handle) {
-        R_ABORT_UNLESS(svc::ClearEvent(svc::Handle(handle)));
+    void InterProcessEventImpl::Clear(NativeHandle handle) {
+        R_ABORT_UNLESS(svc::ClearEvent(handle));
     }
 
-    void InterProcessEventImpl::Wait(Handle handle, bool auto_clear) {
+    void InterProcessEventImpl::Wait(NativeHandle handle, bool auto_clear) {
         while (true) {
             /* Continuously wait, until success. */
             s32 index;
-            Result res = svc::WaitSynchronization(std::addressof(index), reinterpret_cast<svc::Handle *>(std::addressof(handle)), 1, svc::WaitInfinite);
+            Result res = svc::WaitSynchronization(std::addressof(index), static_cast<svc::Handle *>(std::addressof(handle)), 1, svc::WaitInfinite);
             if (R_SUCCEEDED(res)) {
                 /* Clear, if we must. */
                 if (auto_clear) {
-                    R_TRY_CATCH(svc::ResetSignal(svc::Handle(handle))) {
+                    R_TRY_CATCH(svc::ResetSignal(handle)) {
                         /* Some other thread might have caught this before we did. */
                         R_CATCH(svc::ResultInvalidState) { continue; }
                     } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
@@ -67,17 +67,17 @@ namespace ams::os::impl {
         }
     }
 
-    bool InterProcessEventImpl::TryWait(Handle handle, bool auto_clear) {
+    bool InterProcessEventImpl::TryWait(NativeHandle handle, bool auto_clear) {
         /* If we're auto clear, just try to reset. */
         if (auto_clear) {
-            return R_SUCCEEDED(svc::ResetSignal(svc::Handle(handle)));
+            return R_SUCCEEDED(svc::ResetSignal(handle));
         }
 
         /* Not auto-clear. */
         while (true) {
             /* Continuously wait, until success or timeout. */
             s32 index;
-            Result res = svc::WaitSynchronization(std::addressof(index), reinterpret_cast<svc::Handle *>(std::addressof(handle)), 1, 0);
+            Result res = svc::WaitSynchronization(std::addressof(index), static_cast<svc::Handle *>(std::addressof(handle)), 1, 0);
 
             /* If we succeeded, we're signaled. */
             if (R_SUCCEEDED(res)) {
@@ -93,17 +93,17 @@ namespace ams::os::impl {
         }
     }
 
-    bool InterProcessEventImpl::TimedWait(Handle handle, bool auto_clear, TimeSpan timeout) {
+    bool InterProcessEventImpl::TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout) {
         TimeoutHelper timeout_helper(timeout);
 
         while (true) {
             /* Continuously wait, until success. */
             s32 index;
-            Result res = svc::WaitSynchronization(std::addressof(index), reinterpret_cast<svc::Handle *>(std::addressof(handle)), 1, timeout_helper.GetTimeLeftOnTarget().GetNanoSeconds());
+            Result res = svc::WaitSynchronization(std::addressof(index), static_cast<svc::Handle *>(std::addressof(handle)), 1, timeout_helper.GetTimeLeftOnTarget().GetNanoSeconds());
             if (R_SUCCEEDED(res)) {
                 /* Clear, if we must. */
                 if (auto_clear) {
-                    R_TRY_CATCH(svc::ResetSignal(svc::Handle(handle))) {
+                    R_TRY_CATCH(svc::ResetSignal(handle)) {
                         /* Some other thread might have caught this before we did. */
                         R_CATCH(svc::ResultInvalidState) { continue; }
                     } R_END_TRY_CATCH_WITH_ABORT_UNLESS;

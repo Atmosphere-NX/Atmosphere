@@ -18,6 +18,7 @@
 #include <vapours.hpp>
 #include <stratosphere/os/impl/os_internal_critical_section.hpp>
 #include <stratosphere/os/impl/os_internal_condition_variable.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -39,7 +40,7 @@ namespace ams::os {
         u8 clear_mode;
         u8 state;
 
-        util::TypedStorage<impl::InterruptEventImpl, sizeof(svc::Handle) * 2, alignof(svc::Handle)> impl;
+        util::TypedStorage<impl::InterruptEventImpl, sizeof(NativeHandle) * 2, alignof(NativeHandle)> impl;
     };
     static_assert(std::is_trivial<InterruptEventType>::value);
 

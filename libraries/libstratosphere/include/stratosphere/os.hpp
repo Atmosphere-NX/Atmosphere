@@ -23,8 +23,8 @@
 #include <stratosphere/os/os_memory_permission.hpp>
 #include <stratosphere/os/os_memory_heap_api.hpp>
 #include <stratosphere/os/os_memory_virtual_address_api.hpp>
-#include <stratosphere/os/os_managed_handle.hpp>
-#include <stratosphere/os/os_process_handle.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
+#include <stratosphere/os/os_process_handle_api.hpp>
 #include <stratosphere/os/os_random.hpp>
 #include <stratosphere/os/os_mutex.hpp>
 #include <stratosphere/os/os_condition_variable.hpp>

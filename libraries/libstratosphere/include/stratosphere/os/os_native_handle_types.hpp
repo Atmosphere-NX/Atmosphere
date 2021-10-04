@@ -16,26 +16,16 @@
 
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/os/impl/os_internal_critical_section.hpp>
-#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
-    struct IoRegionType {
-        enum State {
-            State_NotInitialized = 0,
-            State_Initialized    = 1,
-            State_Mapped         = 2,
-        };
+    #if defined(ATMOSPHERE_OS_HORIZON)
+        using NativeHandle = svc::Handle;
+        static_assert(std::unsigned_integral<NativeHandle>);
 
-        NativeHandle handle;
-        u8 state;
-        size_t size;
-        void *mapped_address;
-        bool handle_managed;
-
-        mutable impl::InternalCriticalSectionStorage cs_io_region;
-    };
-    static_assert(std::is_trivial<IoRegionType>::value);
+        constexpr inline NativeHandle InvalidNativeHandle = svc::InvalidHandle;
+    #else
+        #error "Unknown OS for os::NativeHandle"
+    #endif
 
 }

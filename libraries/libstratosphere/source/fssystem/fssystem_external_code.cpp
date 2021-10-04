@@ -22,7 +22,7 @@ namespace ams::fssystem {
         constexpr inline size_t MaxExternalCodeFileSystem = 0x10;
 
         util::BoundedMap<ncm::ProgramId, fs::RemoteFileSystem, MaxExternalCodeFileSystem> g_ecs_map;
-        util::BoundedMap<ncm::ProgramId, os::ManagedHandle,    MaxExternalCodeFileSystem> g_hnd_map;
+        util::BoundedMap<ncm::ProgramId, os::NativeHandle,     MaxExternalCodeFileSystem> g_hnd_map;
 
     }
 
@@ -37,7 +37,7 @@ namespace ams::fssystem {
         if (auto *hnd = g_hnd_map.Find(program_id); hnd != nullptr) {
             /* Create a service using libnx bindings. */
             Service srv;
-            serviceCreate(std::addressof(srv), hnd->Move());
+            serviceCreate(std::addressof(srv), *hnd);
             g_hnd_map.Remove(program_id);
 
             /* Create a remote filesystem. */
@@ -66,7 +66,11 @@ namespace ams::fssystem {
 
     void DestroyExternalCode(ncm::ProgramId program_id) {
         g_ecs_map.Remove(program_id);
-        g_hnd_map.Remove(program_id);
+
+        if (auto *hnd = g_hnd_map.Find(program_id); hnd != nullptr) {
+            os::CloseNativeHandle(*hnd);
+            g_hnd_map.Remove(program_id);
+        }
     }
 
 }

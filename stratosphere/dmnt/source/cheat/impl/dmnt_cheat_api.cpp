@@ -219,7 +219,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Note: This function *MUST* be called only with the cheat lock held. */
                     os::ProcessId pid;
                     bool has_cheat_process = this->cheat_process_debug_handle != svc::InvalidHandle;
-                    has_cheat_process &= R_SUCCEEDED(os::TryGetProcessId(&pid, this->cheat_process_debug_handle));
+                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(&pid, this->cheat_process_debug_handle));
                     has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&pid));
                     has_cheat_process &= (pid == this->cheat_process_metadata.process_id);
 

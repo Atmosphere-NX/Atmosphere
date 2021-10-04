@@ -14,13 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_program_id_impl.hpp"
+#include "impl/os_native_handle_impl.hpp"
 
 namespace ams::os {
 
-    ncm::ProgramId GetCurrentProgramId() {
-        return ::ams::os::impl::GetCurrentProgramId();
+    void CloseNativeHandle(NativeHandle handle) {
+        if (handle != os::InvalidNativeHandle) {
+            impl::NativeHandleImpl::Close(handle);
+        }
     }
-
 
 }

@@ -32,7 +32,7 @@ namespace ams::os {
 
     }
 
-    Result SdkReplyAndReceive(os::MultiWaitHolderType **out, Handle reply_target, MultiWaitType *multi_wait) {
+    Result SdkReplyAndReceive(os::MultiWaitHolderType **out, NativeHandle reply_target, MultiWaitType *multi_wait) {
         auto &impl = GetMultiWaitImpl(multi_wait);
 
         AMS_ASSERT(multi_wait->state == MultiWaitType::State_Initialized);

@@ -13,32 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
 
-namespace ams {
+#pragma once
+#include <vapours.hpp>
+#include <stratosphere/os/os_native_handle_types.hpp>
 
-    namespace {
+namespace ams::os {
 
-        constexpr inline ::Handle GetCurrentProcessHandleImpl() {
-            return CUR_PROCESS_HANDLE;
-        }
+    void CloseNativeHandle(NativeHandle handle);
 
-    }
-
-    namespace os {
-
-        ::Handle __attribute__((const)) GetCurrentProcessHandle() {
-            return GetCurrentProcessHandleImpl();
-        }
-
-    }
-
-    namespace dd {
-
-        ::Handle __attribute__((const)) GetCurrentProcessHandle() {
-            return GetCurrentProcessHandleImpl();
-        }
-
-    }
+    NativeHandle GetCurrentProcessHandle();
 
 }

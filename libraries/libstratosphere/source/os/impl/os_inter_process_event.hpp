@@ -21,10 +21,10 @@ namespace ams::os::impl {
     Result CreateInterProcessEvent(InterProcessEventType *event, EventClearMode clear_mode);
     void DestroyInterProcessEvent(InterProcessEventType *event);
 
-    void AttachInterProcessEvent(InterProcessEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode);
+    void AttachInterProcessEvent(InterProcessEventType *event, NativeHandle read_handle, bool read_handle_managed, NativeHandle write_handle, bool write_handle_managed, EventClearMode clear_mode);
 
-    Handle DetachReadableHandleOfInterProcessEvent(InterProcessEventType *event);
-    Handle DetachWritableHandleOfInterProcessEvent(InterProcessEventType *event);
+    NativeHandle DetachReadableHandleOfInterProcessEvent(InterProcessEventType *event);
+    NativeHandle DetachWritableHandleOfInterProcessEvent(InterProcessEventType *event);
 
     void WaitInterProcessEvent(InterProcessEventType *event);
     bool TryWaitInterProcessEvent(InterProcessEventType *event);
@@ -33,8 +33,8 @@ namespace ams::os::impl {
     void SignalInterProcessEvent(InterProcessEventType *event);
     void ClearInterProcessEvent(InterProcessEventType *event);
 
-    Handle GetReadableHandleOfInterProcessEvent(const InterProcessEventType *event);
-    Handle GetWritableHandleOfInterProcessEvent(const InterProcessEventType *event);
+    NativeHandle GetReadableHandleOfInterProcessEvent(const InterProcessEventType *event);
+    NativeHandle GetWritableHandleOfInterProcessEvent(const InterProcessEventType *event);
 
     void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterProcessEventType *event);
 

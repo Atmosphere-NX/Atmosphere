@@ -20,11 +20,11 @@ namespace ams::os::impl {
 
     class TransferMemoryImpl {
         public:
-            static Result Create(Handle *out, void *address, size_t size, MemoryPermission perm);
-            static void Close(Handle handle);
+            static Result Create(NativeHandle *out, void *address, size_t size, MemoryPermission perm);
+            static void Close(NativeHandle handle);
 
-            static Result Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm);
-            static void Unmap(Handle handle, void *address, size_t size);
+            static Result Map(void **out, NativeHandle handle, size_t size, MemoryPermission owner_perm);
+            static void Unmap(NativeHandle handle, void *address, size_t size);
     };
 
 }

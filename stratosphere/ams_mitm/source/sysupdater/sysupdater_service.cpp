@@ -469,7 +469,10 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     }
 
-    Result SystemUpdateService::SetupUpdateImpl(os::ManagedHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+    Result SystemUpdateService::SetupUpdateImpl(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+        /* Ensure the transfer memory handle is closed, if we exit before creating the management object. */
+        auto handle_guard = SCOPE_GUARD { os::CloseNativeHandle(transfer_memory); };
+
         /* Ensure we don't already have an update set up. */
         R_UNLESS(!this->setup_update, ns::ResultCardUpdateAlreadySetup());
 
@@ -481,6 +484,7 @@ namespace ams::mitm::sysupdater {
         }
 
         /* Initialize the update task. */
+        handle_guard.Cancel();
         R_TRY(InitializeUpdateTask(transfer_memory, transfer_memory_size, path, exfat, firmware_variation_id));
 
         /* The update is now set up. */
@@ -488,10 +492,10 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     }
 
-    Result SystemUpdateService::InitializeUpdateTask(os::ManagedHandle &transfer_memory_handle, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+    Result SystemUpdateService::InitializeUpdateTask(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
         /* Map the transfer memory. */
         const size_t tmem_buffer_size = static_cast<size_t>(transfer_memory_size);
-        this->update_transfer_memory.emplace(tmem_buffer_size, transfer_memory_handle.Get(), true);
+        this->update_transfer_memory.emplace(tmem_buffer_size, transfer_memory, true);
 
         void *tmem_buffer;
         R_TRY(this->update_transfer_memory->Map(std::addressof(tmem_buffer), os::MemoryPermission_None));
@@ -499,9 +503,6 @@ namespace ams::mitm::sysupdater {
             this->update_transfer_memory->Unmap();
             this->update_transfer_memory = util::nullopt;
         };
-
-        /* Now that the memory is mapped, the input handle is managed and can be released. */
-        transfer_memory_handle.Detach();
 
         /* Adjust the package root. */
         ncm::Path package_root;

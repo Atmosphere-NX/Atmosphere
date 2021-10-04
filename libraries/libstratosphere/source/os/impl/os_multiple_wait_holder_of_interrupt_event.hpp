@@ -29,7 +29,7 @@ namespace ams::os::impl {
                 return TriBool::Undefined;
             }
 
-            virtual Handle GetHandle() const override;
+            virtual NativeHandle GetHandle() const override;
     };
 
 }

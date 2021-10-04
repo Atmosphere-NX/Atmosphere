@@ -15,10 +15,11 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os.hpp>
 
 namespace ams::dd {
 
-    using ProcessHandle = ::Handle;
+    using ProcessHandle = os::NativeHandle;
 
     using MemoryPermission = os::MemoryPermission;
     using enum os::MemoryPermission;

@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_memory_permission.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -24,7 +25,7 @@ namespace ams::os {
 
     Result CreateSharedMemory(SharedMemoryType *shared_memory, size_t size, MemoryPermission my_perm, MemoryPermission other_perm);
 
-    void AttachSharedMemory(SharedMemoryType *shared_memory, size_t size, Handle handle, bool managed);
+    void AttachSharedMemory(SharedMemoryType *shared_memory, size_t size, NativeHandle handle, bool managed);
 
     void DestroySharedMemory(SharedMemoryType *shared_memory);
 
@@ -33,6 +34,6 @@ namespace ams::os {
 
     void *GetSharedMemoryAddress(const SharedMemoryType *shared_memory);
     size_t GetSharedMemorySize(const SharedMemoryType *shared_memory);
-    Handle GetSharedMemoryHandle(const SharedMemoryType *shared_memory);
+    NativeHandle GetSharedMemoryHandle(const SharedMemoryType *shared_memory);
 
 }

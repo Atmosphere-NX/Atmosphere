@@ -33,7 +33,7 @@ namespace ams::os::impl {
 
     }
 
-    Result TransferMemoryImpl::Create(Handle *out, void *address, size_t size, MemoryPermission perm) {
+    Result TransferMemoryImpl::Create(NativeHandle *out, void *address, size_t size, MemoryPermission perm) {
         /* Convert memory permission. */
         const auto svc_perm = ConvertToSvcMemoryPermission(perm);
 
@@ -48,11 +48,11 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void TransferMemoryImpl::Close(Handle handle) {
+    void TransferMemoryImpl::Close(NativeHandle handle) {
         R_ABORT_UNLESS(svc::CloseHandle(handle));
     }
 
-    Result TransferMemoryImpl::Map(void **out, Handle handle, size_t size, MemoryPermission owner_perm) {
+    Result TransferMemoryImpl::Map(void **out, NativeHandle handle, size_t size, MemoryPermission owner_perm) {
         /* Convert memory permission. */
         const auto svc_owner_perm = ConvertToSvcMemoryPermission(owner_perm);
 
@@ -79,7 +79,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void TransferMemoryImpl::Unmap(Handle handle, void *address, size_t size) {
+    void TransferMemoryImpl::Unmap(NativeHandle handle, void *address, size_t size) {
         R_ABORT_UNLESS(svc::UnmapTransferMemory(handle, reinterpret_cast<uintptr_t>(address), size));
     }
 

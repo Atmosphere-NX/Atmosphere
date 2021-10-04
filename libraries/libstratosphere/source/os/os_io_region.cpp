@@ -20,7 +20,7 @@ namespace ams::os {
 
     namespace {
 
-        void InitializeIoRegion(IoRegionType *io_region, Handle handle, size_t size, bool managed) {
+        void InitializeIoRegion(IoRegionType *io_region, NativeHandle handle, size_t size, bool managed) {
             /* Set state. */
             io_region->state = IoRegionType::State_Initialized;
 
@@ -36,7 +36,7 @@ namespace ams::os {
 
     }
 
-    Result CreateIoRegion(IoRegionType *io_region, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
+    Result CreateIoRegion(IoRegionType *io_region, NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region != nullptr);
         AMS_ASSERT(io_pool_handle != svc::InvalidHandle);
@@ -49,7 +49,7 @@ namespace ams::os {
         auto state_guard = SCOPE_GUARD { io_region->state = IoRegionType::State_NotInitialized; };
 
         /* Create the io region. */
-        Handle handle;
+        NativeHandle handle;
         R_TRY(impl::IoRegionImpl::CreateIoRegion(std::addressof(handle), io_pool_handle, address, size, mapping, permission));
 
         /* Setup the object. */
@@ -59,7 +59,7 @@ namespace ams::os {
         return ResultSuccess();
     }
 
-    void AttachIoRegionHandle(IoRegionType *io_region, size_t size, Handle handle, bool managed) {
+    void AttachIoRegionHandle(IoRegionType *io_region, size_t size, NativeHandle handle, bool managed) {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region != nullptr);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
@@ -81,8 +81,7 @@ namespace ams::os {
 
         /* If managed, close the handle. */
         if (io_region->handle_managed) {
-            /* TODO: os::CloseNativeHandle */
-            R_ABORT_UNLESS(svc::CloseHandle(io_region->handle));
+            os::CloseNativeHandle(io_region->handle);
         }
 
         /* Clear members. */
@@ -95,7 +94,7 @@ namespace ams::os {
         io_region->state          = IoRegionType::State_NotInitialized;
     }
 
-    Handle GetIoRegionHandle(const IoRegionType *io_region) {
+    NativeHandle GetIoRegionHandle(const IoRegionType *io_region) {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region->state != IoRegionType::State_NotInitialized);
 

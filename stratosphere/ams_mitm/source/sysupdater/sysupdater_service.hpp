@@ -64,8 +64,8 @@ namespace ams::mitm::sysupdater {
         public:
             constexpr SystemUpdateService() : apply_manager(), update_task(), update_transfer_memory(), setup_update(false), requested_update(false) { /* ... */ }
         private:
-            Result SetupUpdateImpl(os::ManagedHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
-            Result InitializeUpdateTask(os::ManagedHandle &transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
+            Result SetupUpdateImpl(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
+            Result InitializeUpdateTask(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
         public:
             Result GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path);
             Result ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<Result> out_validate_exfat_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path);

@@ -38,9 +38,9 @@ namespace ams::os::impl {
             InternalCriticalSection cs_wait;
             MultiWaitTargetImpl target_impl;
         private:
-            Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
-            Result WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
-            s32                BuildHandleArray(Handle out_handles[], MultiWaitHolderBase *out_objects[], s32 num);
+            Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
+            Result WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
+            s32                BuildHandleArray(NativeHandle out_handles[], MultiWaitHolderBase *out_objects[], s32 num);
 
             MultiWaitHolderBase *LinkHoldersToObjectList();
             void                UnlinkHoldersFromObjectList();
@@ -50,7 +50,7 @@ namespace ams::os::impl {
             MultiWaitHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout) {
                 MultiWaitHolderBase *holder = nullptr;
 
-                const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, svc::InvalidHandle);
+                const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, os::InvalidNativeHandle);
                 R_ASSERT(wait_result);
                 AMS_UNUSED(wait_result);
 
@@ -70,7 +70,7 @@ namespace ams::os::impl {
                 return this->WaitAnyImpl(false, ts);
             }
 
-            Result ReplyAndReceive(MultiWaitHolderBase **out, Handle reply_target) {
+            Result ReplyAndReceive(MultiWaitHolderBase **out, NativeHandle reply_target) {
                 return this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target);
             }
 

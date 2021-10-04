@@ -21,7 +21,7 @@ namespace ams::os {
 
     namespace {
 
-        inline void SetupTransferMemoryType(TransferMemoryType *tmem, size_t size, Handle handle, bool managed) {
+        inline void SetupTransferMemoryType(TransferMemoryType *tmem, size_t size, NativeHandle handle, bool managed) {
             /* Set members. */
             tmem->handle    = handle;
             tmem->size      = size;
@@ -45,7 +45,7 @@ namespace ams::os {
         AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(address), os::MemoryPageSize));
 
         /* Create the memory. */
-        Handle handle;
+        NativeHandle handle;
         R_TRY(impl::TransferMemoryImpl::Create(std::addressof(handle), address, size, perm));
 
         /* Setup the object. */
@@ -54,7 +54,7 @@ namespace ams::os {
         return ResultSuccess();
     }
 
-    void AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed) {
+    void AttachTransferMemory(TransferMemoryType *tmem, size_t size, NativeHandle handle, bool managed) {
         AMS_ASSERT(size > 0);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
         AMS_ASSERT(handle != svc::InvalidHandle);
@@ -63,16 +63,16 @@ namespace ams::os {
         SetupTransferMemoryType(tmem, size, handle, managed);
     }
 
-    Handle DetachTransferMemory(TransferMemoryType *tmem) {
+    NativeHandle DetachTransferMemory(TransferMemoryType *tmem) {
         AMS_ASSERT(tmem->state == TransferMemoryType::State_Created);
 
         /* Set state to detached. */
         tmem->state = TransferMemoryType::State_Detached;
 
         /* Clear handle. */
-        Handle handle = tmem->handle;
+        const NativeHandle handle = tmem->handle;
 
-        tmem->handle         = svc::InvalidHandle;
+        tmem->handle         = os::InvalidNativeHandle;
         tmem->handle_managed = false;
 
         return handle;
@@ -99,7 +99,7 @@ namespace ams::os {
         /* Clear members. */
         tmem->address = nullptr;
         tmem->size    = 0;
-        tmem->handle  = svc::InvalidHandle;
+        tmem->handle  = os::InvalidNativeHandle;
 
         /* Destroy the critical section. */
         util::DestroyAt(tmem->cs_transfer_memory);

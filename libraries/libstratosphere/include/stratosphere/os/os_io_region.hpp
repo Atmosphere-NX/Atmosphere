@@ -31,11 +31,11 @@ namespace ams::os {
                 /* ... */
             }
 
-            IoRegion(Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
+            IoRegion(NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
                 R_ABORT_UNLESS(CreateIoRegion(std::addressof(m_io_region), io_pool_handle, address, size, mapping, permission));
             }
 
-            IoRegion(size_t size, Handle handle, bool managed) {
+            IoRegion(size_t size, NativeHandle handle, bool managed) {
                 this->AttachHandle(size, handle, managed);
             }
 
@@ -51,11 +51,11 @@ namespace ams::os {
                 DestroyIoRegion(std::addressof(m_io_region));
             }
 
-            void AttachHandle(size_t size, Handle handle, bool managed) {
+            void AttachHandle(size_t size, NativeHandle handle, bool managed) {
                 AttachIoRegionHandle(std::addressof(m_io_region), size, handle, managed);
             }
 
-            Handle GetHandle() const {
+            NativeHandle GetHandle() const {
                 return GetIoRegionHandle(std::addressof(m_io_region));
             }
 

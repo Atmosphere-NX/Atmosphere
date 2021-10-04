@@ -35,7 +35,7 @@ namespace ams::os {
                 R_ABORT_UNLESS(CreateSharedMemory(std::addressof(m_shared_memory), size, my_perm, other_perm));
             }
 
-            SharedMemory(size_t size, Handle handle, bool managed) {
+            SharedMemory(size_t size, NativeHandle handle, bool managed) {
                 this->Attach(size, handle, managed);
             }
 
@@ -46,7 +46,7 @@ namespace ams::os {
                 DestroySharedMemory(std::addressof(m_shared_memory));
             }
 
-            void Attach(size_t size, Handle handle, bool managed) {
+            void Attach(size_t size, NativeHandle handle, bool managed) {
                 return AttachSharedMemory(std::addressof(m_shared_memory), size, handle, managed);
             }
 
@@ -66,7 +66,7 @@ namespace ams::os {
                 return GetSharedMemorySize(std::addressof(m_shared_memory));
             }
 
-            Handle GetHandle() const {
+            NativeHandle GetHandle() const {
                 return GetSharedMemoryHandle(std::addressof(m_shared_memory));
             }
 

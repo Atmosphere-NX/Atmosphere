@@ -16,8 +16,8 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::os::impl {
-
-    ncm::ProgramId GetCurrentProgramId();
-
-}
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #include "os_native_handle_impl.os.horizon.hpp"
+#else
+    #error "Unknown OS for ams::os::NativeHandleImpl"
+#endif

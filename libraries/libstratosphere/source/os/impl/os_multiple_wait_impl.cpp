@@ -20,7 +20,7 @@
 
 namespace ams::os::impl {
 
-    Result MultiWaitImpl::WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
+    Result MultiWaitImpl::WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target) {
         /* Prepare for processing. */
         this->signaled_holder = nullptr;
         this->target_impl.SetCurrentThreadHandleForCancelWait();
@@ -37,7 +37,7 @@ namespace ams::os::impl {
         /* Process object array. */
         Result wait_result = ResultSuccess();
         if (holder != nullptr) {
-            if (reply && reply_target != svc::InvalidHandle) {
+            if (reply && reply_target != os::InvalidNativeHandle) {
                 s32 index;
                 wait_result = this->target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0));
                 if (R_FAILED(wait_result)) {
@@ -59,8 +59,8 @@ namespace ams::os::impl {
         return wait_result;
     }
 
-    Result MultiWaitImpl::WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target) {
-        Handle object_handles[MaximumHandleCount];
+    Result MultiWaitImpl::WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target) {
+        NativeHandle object_handles[MaximumHandleCount];
         MultiWaitHolderBase *objects[MaximumHandleCount];
 
         const s32 count = this->BuildHandleArray(object_handles, objects, MaximumHandleCount);
@@ -132,15 +132,15 @@ namespace ams::os::impl {
                     break;
             }
 
-            reply_target = svc::InvalidHandle;
+            reply_target = os::InvalidNativeHandle;
         }
     }
 
-    s32 MultiWaitImpl::BuildHandleArray(Handle out_handles[], MultiWaitHolderBase *out_objects[], s32 num) {
+    s32 MultiWaitImpl::BuildHandleArray(NativeHandle out_handles[], MultiWaitHolderBase *out_objects[], s32 num) {
         s32 count = 0;
 
         for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
-            if (Handle handle = holder_base.GetHandle(); handle != svc::InvalidHandle) {
+            if (auto handle = holder_base.GetHandle(); handle != os::InvalidNativeHandle) {
                 AMS_ASSERT(count < num);
 
                 out_handles[count] = handle;

@@ -50,7 +50,7 @@ namespace ams::os::impl {
                 return this->impl.IsSignaled();
             }
 
-            Handle GetHandle() const {
+            NativeHandle GetHandle() const {
                 return this->impl.GetHandle();
             }
     };

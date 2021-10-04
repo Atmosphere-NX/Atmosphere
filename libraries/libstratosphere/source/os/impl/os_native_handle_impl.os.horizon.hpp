@@ -13,29 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/os/impl/os_internal_critical_section.hpp>
-#include <stratosphere/os/os_native_handle.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::os {
+namespace ams::os::impl {
 
-    struct IoRegionType {
-        enum State {
-            State_NotInitialized = 0,
-            State_Initialized    = 1,
-            State_Mapped         = 2,
-        };
-
-        NativeHandle handle;
-        u8 state;
-        size_t size;
-        void *mapped_address;
-        bool handle_managed;
-
-        mutable impl::InternalCriticalSectionStorage cs_io_region;
+    class NativeHandleHorizonImpl {
+        public:
+            static ALWAYS_INLINE void Close(NativeHandle handle) {
+                R_ABORT_UNLESS(svc::CloseHandle(handle));
+            }
     };
-    static_assert(std::is_trivial<IoRegionType>::value);
+
+    using NativeHandleImpl = NativeHandleHorizonImpl;
 
 }

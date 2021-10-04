@@ -35,7 +35,7 @@ namespace ams::os {
                 R_ABORT_UNLESS(CreateSystemEvent(std::addressof(this->system_event), clear_mode, inter_process));
             }
 
-            explicit SystemEvent(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
+            explicit SystemEvent(NativeHandle read_handle, bool manage_read_handle, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
                 AttachSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
             }
 
@@ -46,26 +46,26 @@ namespace ams::os {
                 DestroySystemEvent(std::addressof(this->system_event));
             }
 
-            void Attach(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
+            void Attach(NativeHandle read_handle, bool manage_read_handle, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
                 AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
                 return AttachSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
             }
 
-            void AttachReadableHandle(Handle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
+            void AttachReadableHandle(NativeHandle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
                 AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
                 return AttachReadableHandleToSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, clear_mode);
             }
 
-            void AttachWritableHandle(Handle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
+            void AttachWritableHandle(NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
                 AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
                 return AttachWritableHandleToSystemEvent(std::addressof(this->system_event), write_handle, manage_write_handle, clear_mode);
             }
 
-            Handle DetachReadableHandle() {
+            NativeHandle DetachReadableHandle() {
                 return DetachReadableHandleOfSystemEvent(std::addressof(this->system_event));
             }
 
-            Handle DetachWritableHandle() {
+            NativeHandle DetachWritableHandle() {
                 return DetachWritableHandleOfSystemEvent(std::addressof(this->system_event));
             }
 
@@ -89,11 +89,11 @@ namespace ams::os {
                 return ClearSystemEvent(std::addressof(this->system_event));
             }
 
-            Handle GetReadableHandle() const {
+            NativeHandle GetReadableHandle() const {
                 return GetReadableHandleOfSystemEvent(std::addressof(this->system_event));
             }
 
-            Handle GetWritableHandle() const {
+            NativeHandle GetWritableHandle() const {
                 return GetWritableHandleOfSystemEvent(std::addressof(this->system_event));
             }
 

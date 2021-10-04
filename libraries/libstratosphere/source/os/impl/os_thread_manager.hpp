@@ -30,7 +30,7 @@ namespace ams::os::impl {
         return GetThreadManager().GetCurrentThread();
     }
 
-    ALWAYS_INLINE Handle GetCurrentThreadHandle() {
+    ALWAYS_INLINE NativeHandle GetCurrentThreadHandle() {
         /* return GetCurrentThread()->thread_impl->handle; */
         return ::threadGetCurHandle();
     }

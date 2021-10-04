@@ -18,15 +18,21 @@
 
 namespace ams::os::impl {
 
-    class InterProcessEventImpl {
+    class ProcessHandleHorizonImpl {
         public:
-            static Result Create(NativeHandle *out_write, NativeHandle *out_read);
-            static void Close(NativeHandle handle);
-            static void Signal(NativeHandle handle);
-            static void Clear(NativeHandle handle);
-            static void Wait(NativeHandle handle, bool auto_clear);
-            static bool TryWait(NativeHandle handle, bool auto_clear);
-            static bool TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout);
+            static consteval NativeHandle GetCurrentProcessHandle() {
+                return svc::PseudoHandle::CurrentProcess;
+            }
+
+            static ALWAYS_INLINE Result GetProcessId(ProcessId *out, NativeHandle handle) {
+                return svc::GetProcessId(std::addressof(out->value), handle);
+            }
+
+            static ALWAYS_INLINE Result GetProgramId(ncm::ProgramId *out, NativeHandle handle) {
+                return svc::GetInfo(std::addressof(out->value), svc::InfoType_ProgramId, svc::PseudoHandle::CurrentProcess, 0);
+            }
     };
+
+    using ProcessHandleImpl = ProcessHandleHorizonImpl;
 
 }

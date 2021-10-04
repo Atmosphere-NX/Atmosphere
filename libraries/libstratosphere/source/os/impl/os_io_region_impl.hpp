@@ -20,10 +20,10 @@ namespace ams::os::impl {
 
     class IoRegionImpl {
         public:
-            static Result CreateIoRegion(Handle *out, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission);
+            static Result CreateIoRegion(NativeHandle *out, NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission);
 
-            static Result MapIoRegion(void **out, Handle handle, size_t size, MemoryPermission perm);
-            static void UnmapIoRegion(Handle handle, void *address, size_t size);
+            static Result MapIoRegion(void **out, NativeHandle handle, size_t size, MemoryPermission perm);
+            static void UnmapIoRegion(NativeHandle handle, void *address, size_t size);
     };
 
 }

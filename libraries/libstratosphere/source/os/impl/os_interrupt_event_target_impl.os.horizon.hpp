@@ -35,7 +35,7 @@ namespace ams::os::impl {
                 return TriBool::Undefined;
             }
 
-            Handle GetHandle() const {
+            NativeHandle GetHandle() const {
                 return this->handle;
             }
     };

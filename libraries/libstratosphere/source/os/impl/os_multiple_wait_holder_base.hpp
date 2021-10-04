@@ -34,8 +34,8 @@ namespace ams::os::impl {
             virtual TriBool LinkToObjectList() = 0;
             /* Removes from the multi wait's object list. */
             virtual void UnlinkFromObjectList() = 0;
-            /* Gets handle to output, returns INVALID_HANDLE on failure. */
-            virtual Handle GetHandle() const = 0;
+            /* Gets handle to output, returns os::InvalidNativeHandle on failure. */
+            virtual NativeHandle GetHandle() const = 0;
             /* Gets the amount of time remaining until this wakes up. */
             virtual TimeSpan GetAbsoluteWakeupTime() const {
                 return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
@@ -58,8 +58,8 @@ namespace ams::os::impl {
     class MultiWaitHolderOfUserObject : public MultiWaitHolderBase {
         public:
             /* All user objects have no handle to wait on. */
-            virtual Handle GetHandle() const override final {
-                return svc::InvalidHandle;
+            virtual NativeHandle GetHandle() const override final {
+                return os::InvalidNativeHandle;
             }
     };
 

@@ -77,20 +77,17 @@ namespace ams::ro::impl {
             bool nrr_in_use[MaxNrrInfos];
             NroInfo nro_infos[MaxNroInfos];
             NrrInfo nrr_infos[MaxNrrInfos];
-            Handle process_handle;
+            os::NativeHandle process_handle;
             os::ProcessId process_id;
             bool in_use;
 
-            ncm::ProgramId GetProgramId(Handle other_process_h) const {
+            ncm::ProgramId GetProgramId(os::NativeHandle other_process_h) const {
                 /* Automatically select a handle, allowing for override. */
-                Handle process_h = this->process_handle;
-                if (other_process_h != svc::InvalidHandle) {
-                    process_h = other_process_h;
+                if (other_process_h != os::InvalidNativeHandle) {
+                    return os::GetProgramId(other_process_h);
+                } else {
+                    return os::GetProgramId(this->process_handle);
                 }
-
-                ncm::ProgramId program_id = ncm::InvalidProgramId;
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(program_id.value), svc::InfoType_ProgramId, process_h, 0));
-                return program_id;
             }
 
             Result GetNrrInfoByAddress(NrrInfo **out, u64 nrr_heap_address) {
@@ -296,7 +293,7 @@ namespace ams::ro::impl {
             return nullptr;
         }
 
-        size_t AllocateContext(Handle process_handle, os::ProcessId process_id) {
+        size_t AllocateContext(os::NativeHandle process_handle, os::ProcessId process_id) {
             /* Find a free process context. */
             for (size_t i = 0; i < MaxSessions; i++) {
                 ProcessContext *context = &g_process_contexts[i];
@@ -316,7 +313,7 @@ namespace ams::ro::impl {
         void FreeContext(size_t context_id) {
             ProcessContext *context = GetContextById(context_id);
             if (context != nullptr) {
-                if (context->process_handle != INVALID_HANDLE) {
+                if (context->process_handle != os::InvalidNativeHandle) {
                     for (size_t i = 0; i < MaxNrrInfos; i++) {
                         if (context->nrr_in_use[i]) {
                             UnmapNrr(context->process_handle, context->nrr_infos[i].mapped_header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
@@ -376,13 +373,16 @@ namespace ams::ro::impl {
     }
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, os::ManagedHandle process_handle, os::ProcessId process_id) {
+    Result RegisterProcess(size_t *out_context_id, os::NativeHandle process_handle, os::ProcessId process_id) {
+        /* Ensure we manage process handle correctly. */
+        auto handle_guard = SCOPE_GUARD { os::CloseNativeHandle(process_handle); };
+
         /* Validate process handle. */
         {
             os::ProcessId handle_pid = os::InvalidProcessId;
 
             /* Validate handle is a valid process handle. */
-            R_UNLESS(R_SUCCEEDED(os::TryGetProcessId(&handle_pid, process_handle.Get())), ResultInvalidProcess());
+            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle)), ResultInvalidProcess());
 
             /* Validate process id. */
             R_UNLESS(handle_pid == process_id, ResultInvalidProcess());
@@ -391,7 +391,10 @@ namespace ams::ro::impl {
         /* Check if a process context already exists. */
         R_UNLESS(GetContextByProcessId(process_id) == nullptr, ResultInvalidSession());
 
-        *out_context_id = AllocateContext(process_handle.Move(), process_id);
+        /* Allocate a context to manage the process handle. */
+        handle_guard.Cancel();
+        *out_context_id = AllocateContext(process_handle, process_id);
+
         return ResultSuccess();
     }
 
@@ -407,13 +410,16 @@ namespace ams::ro::impl {
     }
 
     /* Service implementations. */
-    Result RegisterModuleInfo(size_t context_id, os::ManagedHandle process_handle, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
+    Result RegisterModuleInfo(size_t context_id, os::NativeHandle process_handle, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
+        /* Ensure we close the process handle when we're done with it. */
+        ON_SCOPE_EXIT { os::CloseNativeHandle(process_handle); };
+
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
         AMS_ABORT_UNLESS(context != nullptr);
 
         /* Get program id. */
-        const ncm::ProgramId program_id = context->GetProgramId(process_handle.Get());
+        const ncm::ProgramId program_id = context->GetProgramId(process_handle);
 
         /* Validate address/size. */
         R_TRY(ValidateAddressAndNonZeroSize(nrr_address, nrr_size));

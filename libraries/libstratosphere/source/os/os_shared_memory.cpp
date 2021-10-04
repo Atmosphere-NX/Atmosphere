@@ -21,7 +21,7 @@ namespace ams::os {
 
     namespace {
 
-        void SetupSharedMemoryType(SharedMemoryType *shared_memory, size_t size, Handle handle, bool managed) {
+        void SetupSharedMemoryType(SharedMemoryType *shared_memory, size_t size, NativeHandle handle, bool managed) {
             /* Set members. */
             shared_memory->handle    = handle;
             shared_memory->size      = size;
@@ -43,7 +43,7 @@ namespace ams::os {
         AMS_ASSERT(util::IsAligned(size, MemoryPageSize));
 
         /* Create the memory. */
-        Handle handle;
+        NativeHandle handle;
         R_TRY(impl::SharedMemoryImpl::Create(std::addressof(handle), size, my_perm, other_perm));
 
         /* Setup the object. */
@@ -52,11 +52,11 @@ namespace ams::os {
         return ResultSuccess();
     }
 
-    void AttachSharedMemory(SharedMemoryType *shared_memory, size_t size, Handle handle, bool managed) {
+    void AttachSharedMemory(SharedMemoryType *shared_memory, size_t size, NativeHandle handle, bool managed) {
         /* Check pre-conditions. */
         AMS_ASSERT(size > 0);
         AMS_ASSERT(util::IsAligned(size, MemoryPageSize));
-        AMS_ASSERT(handle != svc::InvalidHandle);
+        AMS_ASSERT(handle != os::InvalidNativeHandle);
 
         /* Setup the object. */
         SetupSharedMemoryType(shared_memory, size, handle, managed);
@@ -83,7 +83,7 @@ namespace ams::os {
         /* Clear members. */
         shared_memory->address = nullptr;
         shared_memory->size    = 0;
-        shared_memory->handle  = svc::InvalidHandle;
+        shared_memory->handle  = os::InvalidNativeHandle;
 
         /* Destroy the critical section. */
         util::DestroyAt(shared_memory->cs_shared_memory);
@@ -147,7 +147,7 @@ namespace ams::os {
         return shared_memory->size;
     }
 
-    Handle GetSharedMemoryHandle(const SharedMemoryType *shared_memory) {
+    NativeHandle GetSharedMemoryHandle(const SharedMemoryType *shared_memory) {
         /* Check pre-conditions. */
         AMS_ASSERT(shared_memory->state == SharedMemoryType::State_Initialized || shared_memory->state == SharedMemoryType::State_Mapped);
 

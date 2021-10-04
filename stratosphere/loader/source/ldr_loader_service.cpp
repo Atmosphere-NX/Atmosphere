@@ -57,7 +57,9 @@ namespace ams::ldr {
 
     /* Official commands. */
     Result LoaderService::CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h) {
-        os::ManagedHandle reslimit_holder(reslimit_h.GetValue());
+        /* Ensure we close the input handle when we're done. */
+        ON_SCOPE_EXIT { os::CloseNativeHandle(reslimit_h.GetValue()); };
+
         ncm::ProgramLocation loc;
         cfg::OverrideStatus override_status;
         char path[FS_MAX_PATH];
@@ -69,7 +71,7 @@ namespace ams::ldr {
             R_TRY(ResolveContentPath(path, loc));
         }
 
-        return ldr::CreateProcess(proc_h.GetHandlePointer(), id, loc, override_status, path, flags, reslimit_holder.Get());
+        return ldr::CreateProcess(proc_h.GetHandlePointer(), id, loc, override_status, path, flags, reslimit_h.GetValue());
     }
 
     Result LoaderService::GetProgramInfo(sf::Out<ProgramInfo> out, const ncm::ProgramLocation &loc) {

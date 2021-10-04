@@ -70,7 +70,7 @@ namespace ams::ldr {
         }
 
         struct ProcessInfo {
-            os::ManagedHandle process_handle;
+            os::NativeHandle process_handle;
             uintptr_t args_address;
             size_t    args_size;
             uintptr_t nso_address[Nso_Count];
@@ -465,11 +465,12 @@ namespace ams::ldr {
             R_TRY(DecideAddressSpaceLayout(out, std::addressof(param), nso_headers, has_nso, arg_info));
 
             /* Actually create process. */
-            Handle process_handle;
+            svc::Handle process_handle;
             R_TRY(svc::CreateProcess(std::addressof(process_handle), std::addressof(param), static_cast<const u32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(u32)));
 
             /* Set the output handle. */
-            *out->process_handle.GetPointer() = process_handle;
+            out->process_handle = process_handle;
+
             return ResultSuccess();
         }
 
@@ -554,8 +555,6 @@ namespace ams::ldr {
         }
 
         Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
-            const Handle process_handle = process_info->process_handle.Get();
-
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
@@ -566,7 +565,7 @@ namespace ams::ldr {
                     uintptr_t map_address = 0;
                     R_TRY(map::LocateMappableSpace(&map_address, process_info->nso_size[i]));
 
-                    R_TRY(LoadNsoIntoProcessMemory(process_handle, file, map_address, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
+                    R_TRY(LoadNsoIntoProcessMemory(process_info->process_handle, file, map_address, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
                 }
             }
 
@@ -577,7 +576,7 @@ namespace ams::ldr {
                     uintptr_t map_address = 0;
                     R_TRY(map::LocateMappableSpace(&map_address, process_info->args_size));
 
-                    map::AutoCloseMap mapper(map_address, process_handle, process_info->args_address, process_info->args_size);
+                    map::AutoCloseMap mapper(map_address, process_info->process_handle, process_info->args_address, process_info->args_size);
                     R_TRY(mapper.GetResult());
 
                     ProgramArguments *args = reinterpret_cast<ProgramArguments *>(map_address);
@@ -588,7 +587,7 @@ namespace ams::ldr {
                 }
 
                 /* Set argument region permissions. */
-                R_TRY(svcSetProcessMemoryPermission(process_handle, process_info->args_address, process_info->args_size, Perm_Rw));
+                R_TRY(svcSetProcessMemoryPermission(process_info->process_handle, process_info->args_address, process_info->args_size, Perm_Rw));
             }
 
             return ResultSuccess();
@@ -623,13 +622,16 @@ namespace ams::ldr {
             ProcessInfo info;
             R_TRY(CreateProcessImpl(&info, &meta, nso_headers, has_nso, arg_info, flags, reslimit_h));
 
+            /* Ensure we close the process handle, if we fail. */
+            ON_SCOPE_EXIT { os::CloseNativeHandle(info.process_handle); };
+
             /* Load NSOs into process memory. */
             R_TRY(LoadNsosIntoProcessMemory(&info, nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
             {
                 /* Nintendo doesn't validate this get, but we do. */
-                os::ProcessId process_id = os::GetProcessId(info.process_handle.Get());
+                os::ProcessId process_id = os::GetProcessId(info.process_handle);
 
                 /* Register new process. */
                 ldr::ro::RegisterProcess(pin_id, process_id, loc.program_id);
@@ -655,7 +657,8 @@ namespace ams::ldr {
             SetLaunchedBootProgram(loc.program_id);
 
             /* Move the process handle to output. */
-            *out = info.process_handle.Move();
+            *out = info.process_handle;
+            info.process_handle = os::InvalidNativeHandle;
         }
 
         return ResultSuccess();

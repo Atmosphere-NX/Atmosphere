@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_message_queue_common.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -40,6 +41,6 @@ namespace ams::os {
     void SetMultiWaitHolderUserData(MultiWaitHolderType *holder, uintptr_t user_data);
     uintptr_t GetMultiWaitHolderUserData(const MultiWaitHolderType *holder);
 
-    void InitializeMultiWaitHolder(MultiWaitHolderType *holder, Handle handle);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *holder, NativeHandle handle);
 
 }

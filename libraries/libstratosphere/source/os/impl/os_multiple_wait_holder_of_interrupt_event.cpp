@@ -19,7 +19,7 @@
 
 namespace ams::os::impl {
 
-    Handle MultiWaitHolderOfInterruptEvent::GetHandle() const {
+    NativeHandle MultiWaitHolderOfInterruptEvent::GetHandle() const {
         return GetReference(event->impl).GetHandle();
     }
 

@@ -13,15 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "os_program_id_impl.hpp"
 
-namespace ams::os::impl {
-
-    ncm::ProgramId GetCurrentProgramId() {
-        u64 value;
-        R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_ProgramId, svc::PseudoHandle::CurrentProcess, 0));
-        return {value};
-    }
-
-}
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #include "os_process_handle_impl.os.horizon.hpp"
+#else
+    #error "Unknown OS for ams::os::ProcessHandleImpl"
+#endif

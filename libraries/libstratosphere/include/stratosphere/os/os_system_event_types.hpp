@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_event_types.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -34,8 +35,8 @@ namespace ams::os {
             u8   state;
             bool is_readable_handle_managed;
             bool is_writable_handle_managed;
-            Handle readable_handle;
-            Handle writable_handle;
+            NativeHandle readable_handle;
+            NativeHandle writable_handle;
         };
         static_assert(std::is_trivial<InterProcessEventType>::value);
 

@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/impl/os_internal_critical_section.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -33,7 +34,7 @@ namespace ams::os {
 
         void *address;
         size_t size;
-        Handle handle;
+        NativeHandle handle;
 
         mutable impl::InternalCriticalSectionStorage cs_shared_memory;
     };

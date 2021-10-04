@@ -44,16 +44,6 @@ namespace ams::os {
 
     inline constexpr const ProcessId InvalidProcessId = ProcessId::Invalid;
 
-    NX_INLINE Result TryGetProcessId(os::ProcessId *out, ::Handle process_handle) {
-        return svcGetProcessId(&out->value, process_handle);
-    }
-
-    NX_INLINE os::ProcessId GetProcessId(::Handle process_handle) {
-        os::ProcessId process_id;
-        R_ABORT_UNLESS(TryGetProcessId(&process_id, process_handle));
-        return process_id;
-    }
-
     inline constexpr bool operator==(const ProcessId &lhs, const ProcessId &rhs) {
         return lhs.value == rhs.value;
     }

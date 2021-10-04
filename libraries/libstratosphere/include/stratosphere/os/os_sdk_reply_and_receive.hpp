@@ -15,12 +15,13 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
     struct MultiWaitHolderType;
     struct MultiWaitType;
 
-    Result SdkReplyAndReceive(os::MultiWaitHolderType **out, Handle reply_target, MultiWaitType *multi_wait);
+    Result SdkReplyAndReceive(os::MultiWaitHolderType **out, NativeHandle reply_target, MultiWaitType *multi_wait);
 
 }

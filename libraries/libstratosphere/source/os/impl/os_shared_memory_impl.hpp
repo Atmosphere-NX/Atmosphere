@@ -20,11 +20,11 @@ namespace ams::os::impl {
 
     class SharedMemoryImpl {
         public:
-            static Result Create(Handle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm);
-            static void Close(Handle handle);
+            static Result Create(NativeHandle *out, size_t size, MemoryPermission my_perm, MemoryPermission other_perm);
+            static void Close(NativeHandle handle);
 
-            static Result Map(void **out, Handle handle, size_t size, MemoryPermission perm);
-            static void Unmap(Handle handle, void *address, size_t size);
+            static Result Map(void **out, NativeHandle handle, size_t size, MemoryPermission perm);
+            static void Unmap(NativeHandle handle, void *address, size_t size);
     };
 
 }

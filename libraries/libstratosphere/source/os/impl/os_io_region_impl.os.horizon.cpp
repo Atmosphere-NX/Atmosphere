@@ -39,7 +39,7 @@ namespace ams::os::impl {
 
     }
 
-    Result IoRegionImpl::CreateIoRegion(Handle *out, Handle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
+    Result IoRegionImpl::CreateIoRegion(NativeHandle *out, NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
         /* Convert mapping/permission. */
         const auto svc_mapping = ConvertToSvcMemoryMapping(mapping);
         const auto svc_perm    = ConvertToSvcMemoryPermission(permission);
@@ -53,7 +53,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    Result IoRegionImpl::MapIoRegion(void **out, Handle handle, size_t size, MemoryPermission perm) {
+    Result IoRegionImpl::MapIoRegion(void **out, NativeHandle handle, size_t size, MemoryPermission perm) {
         /* Convert permission. */
         const auto svc_perm = ConvertToSvcMemoryPermission(perm);
 
@@ -81,7 +81,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void IoRegionImpl::UnmapIoRegion(Handle handle, void *address, size_t size) {
+    void IoRegionImpl::UnmapIoRegion(NativeHandle handle, void *address, size_t size) {
         R_ABORT_UNLESS(svc::UnmapIoRegion(handle, reinterpret_cast<uintptr_t>(address), size));
     }
 
