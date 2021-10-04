@@ -60,7 +60,7 @@ def main(argc, argv):
     for soc in ('erista', 'mariko'):
         with open('source/mtc/fusee_mtc_tables_%s.inc' % soc, 'w') as f:
             f.write('%s\n' % "/*")
-            f.write('%s\n' % " * Copyright (c) 2018-2020 Atmosph\xc3re-NX")
+            f.write('%s\n' % " * Copyright (c) Atmosph\xc3\xa8re-NX")
             f.write('%s\n' % " *")
             f.write('%s\n' % " * This program is free software; you can redistribute it and/or modify it")
             f.write('%s\n' % " * under the terms and conditions of the GNU General Public License,")

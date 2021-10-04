@@ -57,7 +57,7 @@ def main(argc, argv):
                 write_file(os.path.join('sdram_params/lz', 'sdram_params_%s_%d_%d.lz4' % (soc, param_id_l, param_id_h)), compressed)
     with open('source/sdram/fusee_sdram_params.inc', 'w') as f:
         f.write('%s\n' % "/*")
-        f.write('%s\n' % " * Copyright (c) 2018-2020 Atmosph\xc3re-NX")
+        f.write('%s\n' % " * Copyright (c) Atmosph\xc3\xa8re-NX")
         f.write('%s\n' % " *")
         f.write('%s\n' % " * This program is free software; you can redistribute it and/or modify it")
         f.write('%s\n' % " * under the terms and conditions of the GNU General Public License,")
