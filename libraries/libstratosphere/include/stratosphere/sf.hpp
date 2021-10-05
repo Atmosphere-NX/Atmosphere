@@ -31,6 +31,7 @@
 #include <stratosphere/sf/sf_fs_inline_context.hpp>
 
 #include <stratosphere/sf/sf_out.hpp>
+#include <stratosphere/sf/sf_native_handle.hpp>
 #include <stratosphere/sf/sf_buffers.hpp>
 #include <stratosphere/sf/impl/sf_impl_command_serialization.hpp>
 #include <stratosphere/sf/impl/sf_impl_autogen_interface_macros.hpp>
