@@ -28,7 +28,7 @@ namespace ams::dmnt::cheat {
     }
 
     void CheatService::GetCheatProcessEvent(sf::OutCopyHandle out_event) {
-        out_event.SetValue(dmnt::cheat::impl::GetCheatProcessEventHandle());
+        out_event.SetValue(dmnt::cheat::impl::GetCheatProcessEventHandle(), false);
     }
 
     Result CheatService::GetCheatProcessMetadata(sf::Out<CheatProcessMetadata> out_metadata) {

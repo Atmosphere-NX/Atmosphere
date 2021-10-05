@@ -20,17 +20,17 @@
 #include <stratosphere/usb/usb_device_types.hpp>
 #include <stratosphere/usb/ds/usb_i_ds_interface.hpp>
 
-#define AMS_USB_I_DS_SERVICE_INTERFACE_INFO(C, H)                                                                                                                          \
-    AMS_SF_METHOD_INFO(C, H,  0, Result, Bind,                      (usb::ComplexId complex_id, sf::CopyHandle process_h),                        (complex_id, process_h)) \
-    AMS_SF_METHOD_INFO(C, H,  1, Result, RegisterInterface,         (sf::Out<sf::SharedPointer<usb::ds::IDsInterface>> out, u8 bInterfaceNumber), (out, bInterfaceNumber)) \
-    AMS_SF_METHOD_INFO(C, H,  2, Result, GetStateChangeEvent,       (sf::OutCopyHandle out),                                                      (out))                   \
-    AMS_SF_METHOD_INFO(C, H,  3, Result, GetState,                  (sf::Out<usb::UsbState> out),                                                 (out))                   \
-    AMS_SF_METHOD_INFO(C, H,  4, Result, ClearDeviceData,           (),                                                                           ())                      \
-    AMS_SF_METHOD_INFO(C, H,  5, Result, AddUsbStringDescriptor,    (sf::Out<u8> out, const sf::InBuffer &desc),                                  (out, desc))             \
-    AMS_SF_METHOD_INFO(C, H,  6, Result, DeleteUsbStringDescriptor, (u8 index),                                                                   (index))                 \
-    AMS_SF_METHOD_INFO(C, H,  7, Result, SetUsbDeviceDescriptor,    (const sf::InBuffer &desc, usb::UsbDeviceSpeed speed),                        (desc, speed))           \
-    AMS_SF_METHOD_INFO(C, H,  8, Result, SetBinaryObjectStore,      (const sf::InBuffer &bos),                                                    (bos))                   \
-    AMS_SF_METHOD_INFO(C, H,  9, Result, Enable,                    (),                                                                           ())                      \
+#define AMS_USB_I_DS_SERVICE_INTERFACE_INFO(C, H)                                                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, Bind,                      (usb::ComplexId complex_id, sf::CopyHandle &&process_h),                      (complex_id, std::move(process_h))) \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, RegisterInterface,         (sf::Out<sf::SharedPointer<usb::ds::IDsInterface>> out, u8 bInterfaceNumber), (out, bInterfaceNumber))            \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, GetStateChangeEvent,       (sf::OutCopyHandle out),                                                      (out))                              \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, GetState,                  (sf::Out<usb::UsbState> out),                                                 (out))                              \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, ClearDeviceData,           (),                                                                           ())                                 \
+    AMS_SF_METHOD_INFO(C, H,  5, Result, AddUsbStringDescriptor,    (sf::Out<u8> out, const sf::InBuffer &desc),                                  (out, desc))                        \
+    AMS_SF_METHOD_INFO(C, H,  6, Result, DeleteUsbStringDescriptor, (u8 index),                                                                   (index))                            \
+    AMS_SF_METHOD_INFO(C, H,  7, Result, SetUsbDeviceDescriptor,    (const sf::InBuffer &desc, usb::UsbDeviceSpeed speed),                        (desc, speed))                      \
+    AMS_SF_METHOD_INFO(C, H,  8, Result, SetBinaryObjectStore,      (const sf::InBuffer &bos),                                                    (bos))                              \
+    AMS_SF_METHOD_INFO(C, H,  9, Result, Enable,                    (),                                                                           ())                                 \
     AMS_SF_METHOD_INFO(C, H, 10, Result, Disable,                   (),                                                                           ())
 
 /* TODO: Deprecated interface? */

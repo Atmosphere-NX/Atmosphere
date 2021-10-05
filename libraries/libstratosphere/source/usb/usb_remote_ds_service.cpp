@@ -19,12 +19,12 @@
 
 namespace ams::usb {
 
-    Result RemoteDsService::Bind(usb::ComplexId complex_id, sf::CopyHandle process_h) {
+    Result RemoteDsService::Bind(usb::ComplexId complex_id, sf::CopyHandle &&process_h) {
         if (hos::GetVersion() >= hos::Version_11_0_0) {
             serviceAssumeDomain(std::addressof(m_srv));
             R_TRY(serviceDispatchIn(std::addressof(m_srv), 0, complex_id,
                 .in_num_handles = 1,
-                .in_handles = { process_h.GetValue() }
+                .in_handles = { process_h.GetOsHandle() }
             ));
         } else {
             serviceAssumeDomain(std::addressof(m_srv));
@@ -33,7 +33,7 @@ namespace ams::usb {
             serviceAssumeDomain(std::addressof(m_srv));
             R_TRY(serviceDispatch(std::addressof(m_srv), 1,
                 .in_num_handles = 1,
-                .in_handles = { process_h.GetValue() })
+                .in_handles = { process_h.GetOsHandle() })
             );
         }
 
@@ -56,10 +56,15 @@ namespace ams::usb {
 
     Result RemoteDsService::GetStateChangeEvent(sf::OutCopyHandle out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 2 : 3,
+
+        os::NativeHandle event_handle;
+        R_TRY((serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 2 : 3,
             .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
-            .out_handles = out.GetHandlePointer(),
-        );
+            .out_handles = std::addressof(event_handle),
+        )));
+
+        out.SetValue(event_handle, true);
+        return ResultSuccess();
     }
 
     Result RemoteDsService::GetState(sf::Out<usb::UsbState> out) {

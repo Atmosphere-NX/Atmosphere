@@ -46,9 +46,12 @@ namespace ams::pgl {
                 explicit EventObserverByCmif(ams::sf::SharedPointer<pgl::sf::IEventObserver> intf) : m_cmif_interface(intf) { /* ... */ }
             public:
                 virtual Result GetSystemEvent(os::SystemEventType *out) override {
-                    ams::sf::CopyHandle handle;
+                    ams::sf::NativeHandle handle;
                     R_TRY(m_cmif_interface->GetProcessEventHandle(std::addressof(handle)));
-                    os::AttachSystemEvent(out, handle.GetValue(), true, svc::InvalidHandle, false, os::EventClearMode_AutoClear);
+
+                    os::AttachReadableHandleToSystemEvent(out, handle.GetOsHandle(), handle.IsManaged(), os::EventClearMode_AutoClear);
+                    handle.Detach();
+
                     return ResultSuccess();
                 }
 
@@ -70,7 +73,7 @@ namespace ams::pgl {
                 virtual Result GetSystemEvent(os::SystemEventType *out) override {
                     ams::tipc::CopyHandle handle;
                     R_TRY(m_tipc_interface.GetProcessEventHandle(std::addressof(handle)));
-                    os::AttachSystemEvent(out, handle.GetValue(), true, svc::InvalidHandle, false, os::EventClearMode_AutoClear);
+                    os::AttachReadableHandleToSystemEvent(out, handle.GetValue(), true, os::EventClearMode_AutoClear);
                     return ResultSuccess();
                 }
 

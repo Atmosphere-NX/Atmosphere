@@ -55,21 +55,17 @@ namespace ams::ro {
         return impl::UnregisterModuleInfo(this->context_id, nrr_address);
     }
 
-    Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h) {
+    Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle &&process_h) {
         /* Register the process. */
-        return impl::RegisterProcess(std::addressof(this->context_id), process_h.GetValue(), client_pid.GetValue());
+        return impl::RegisterProcess(std::addressof(this->context_id), std::move(process_h), client_pid.GetValue());
     }
 
-    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
-        /* Validate the process, ensuring we manage the process handle correctly. */
-        {
-            auto handle_guard = SCOPE_GUARD { os::CloseNativeHandle(process_h.GetValue()); };
-            R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-            handle_guard.Cancel();
-        }
+    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h) {
+        /* Validate the process. */
+        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
 
         /* Register the module. */
-        return impl::RegisterModuleInfo(this->context_id, process_h.GetValue(), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
+        return impl::RegisterModuleInfo(this->context_id, process_h.GetOsHandle(), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
     }
 
 }

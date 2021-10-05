@@ -148,7 +148,7 @@ namespace ams::fatal::srv {
     Result Service::GetFatalEvent(sf::OutCopyHandle out_h) {
         const os::SystemEventType *event;
         R_TRY(g_context.GetEvent(std::addressof(event)));
-        out_h.SetValue(os::GetReadableHandleOfSystemEvent(event));
+        out_h.SetValue(os::GetReadableHandleOfSystemEvent(event), false);
         return ResultSuccess();
     }
 

@@ -74,7 +74,7 @@ namespace ams::gpio {
             Result BindInterrupt(ams::sf::OutCopyHandle out) {
                 ::Event ev;
                 R_TRY(::gpioPadBindInterrupt(std::addressof(this->srv), std::addressof(ev)));
-                out.SetValue(ev.revent);
+                out.SetValue(ev.revent, true);
                 return ResultSuccess();
             }
 

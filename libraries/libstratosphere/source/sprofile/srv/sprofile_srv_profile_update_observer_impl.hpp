@@ -65,7 +65,7 @@ namespace ams::sprofile::srv {
             }
 
             Result GetEventHandle(sf::OutCopyHandle out) {
-                out.SetValue(m_event.GetReadableHandle());
+                out.SetValue(m_event.GetReadableHandle(), false);
                 return ResultSuccess();
             }
         public:

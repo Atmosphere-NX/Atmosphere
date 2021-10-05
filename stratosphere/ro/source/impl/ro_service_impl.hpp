@@ -30,7 +30,7 @@ namespace ams::ro::impl {
     bool ShouldEaseNroRestriction();
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, os::NativeHandle process_handle, os::ProcessId process_id);
+    Result RegisterProcess(size_t *out_context_id, sf::NativeHandle &&process_handle, os::ProcessId process_id);
     Result ValidateProcess(size_t context_id, os::ProcessId process_id);
     void   UnregisterProcess(size_t context_id);
 

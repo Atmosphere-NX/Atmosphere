@@ -496,11 +496,12 @@ namespace ams::htcs {
             /* Begin the accept. */
             sf::SharedPointer<tma::ISocket> res = nullptr;
             u32 task_id = 0;
-            sf::CopyHandle event_handle;
+            sf::NativeHandle event_handle;
             if (R_SUCCEEDED(socket->AcceptStart(std::addressof(task_id), std::addressof(event_handle)))) {
                 /* Create system event. */
                 os::SystemEventType event;
-                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                event_handle.Detach();
 
                 /* When we're done, clean up the event. */
                 ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };
@@ -562,11 +563,12 @@ namespace ams::htcs {
             /* Begin the select. */
             s32 res = -1;
             u32 task_id = 0;
-            sf::CopyHandle event_handle;
+            sf::NativeHandle event_handle;
             if (R_SUCCEEDED(g_manager->StartSelect(std::addressof(task_id), std::addressof(event_handle), InArray(read, num_read), InArray(write, num_write), InArray(except, num_except), tv_sec, tv_usec))) {
                 /* Create system event. */
                 os::SystemEventType event;
-                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                event_handle.Detach();
 
                 /* When we're done, clean up the event. */
                 ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };
@@ -596,11 +598,12 @@ namespace ams::htcs {
 
                 /* Start the receive. */
                 u32 task_id = 0;
-                sf::CopyHandle event_handle;
+                sf::NativeHandle event_handle;
                 if (R_SUCCEEDED(socket->StartRecv(std::addressof(task_id), std::addressof(event_handle), static_cast<s64>(buffer_size), flags))) {
                     /* Create system event. */
                     os::SystemEventType event;
-                    os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                    os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                    event_handle.Detach();
 
                     /* When we're done, clean up the event. */
                     ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };
@@ -627,11 +630,12 @@ namespace ams::htcs {
                 /* Start the send. */
                 u32 task_id = 0;
                 s64 max_size = 0;
-                sf::CopyHandle event_handle;
+                sf::NativeHandle event_handle;
                 if (R_SUCCEEDED(socket->StartSend(std::addressof(task_id), std::addressof(event_handle), std::addressof(max_size), static_cast<s64>(buffer_size), flags))) {
                     /* Create system event. */
                     os::SystemEventType event;
-                    os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                    os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                    event_handle.Detach();
 
                     /* When we're done, clean up the event. */
                     ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };
@@ -697,11 +701,12 @@ namespace ams::htcs {
             /* Start the receive. */
             s64 res = -1;
             u32 task_id = 0;
-            sf::CopyHandle event_handle;
+            sf::NativeHandle event_handle;
             if (R_SUCCEEDED(socket->RecvStart(std::addressof(task_id), std::addressof(event_handle), static_cast<s32>(recv_size), flags))) {
                 /* Create system event. */
                 os::SystemEventType event;
-                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                event_handle.Detach();
 
                 /* When we're done, clean up the event. */
                 ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };
@@ -729,11 +734,12 @@ namespace ams::htcs {
             /* Start the send. */
             s64 res = -1;
             u32 task_id = 0;
-            sf::CopyHandle event_handle;
+            sf::NativeHandle event_handle;
             if (R_SUCCEEDED(socket->SendStart(std::addressof(task_id), std::addressof(event_handle), sf::InNonSecureAutoSelectBuffer(buffer, buffer_size), flags))) {
                 /* Create system event. */
                 os::SystemEventType event;
-                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+                event_handle.Detach();
 
                 /* When we're done, clean up the event. */
                 ON_SCOPE_EXIT { os::DestroySystemEvent(std::addressof(event)); };

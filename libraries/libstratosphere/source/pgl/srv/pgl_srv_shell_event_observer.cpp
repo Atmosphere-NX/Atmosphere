@@ -66,7 +66,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellEventObserverCmif::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
-        out.SetValue(this->GetEvent().GetReadableHandle());
+        out.SetValue(this->GetEvent().GetReadableHandle(), false);
         return ResultSuccess();
     }
 

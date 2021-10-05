@@ -56,10 +56,7 @@ namespace ams::ldr {
     }
 
     /* Official commands. */
-    Result LoaderService::CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h) {
-        /* Ensure we close the input handle when we're done. */
-        ON_SCOPE_EXIT { os::CloseNativeHandle(reslimit_h.GetValue()); };
-
+    Result LoaderService::CreateProcess(sf::OutMoveHandle out, PinId id, u32 flags, sf::CopyHandle &&reslimit_h) {
         ncm::ProgramLocation loc;
         cfg::OverrideStatus override_status;
         char path[FS_MAX_PATH];
@@ -71,7 +68,13 @@ namespace ams::ldr {
             R_TRY(ResolveContentPath(path, loc));
         }
 
-        return ldr::CreateProcess(proc_h.GetHandlePointer(), id, loc, override_status, path, flags, reslimit_h.GetValue());
+        /* Create the process. */
+        os::NativeHandle process_handle;
+        R_TRY(ldr::CreateProcess(std::addressof(process_handle), id, loc, override_status, path, flags, reslimit_h.GetOsHandle()));
+
+        /* Set output process handle. */
+        out.SetValue(process_handle, true);
+        return ResultSuccess();
     }
 
     Result LoaderService::GetProgramInfo(sf::Out<ProgramInfo> out, const ncm::ProgramLocation &loc) {
@@ -110,7 +113,11 @@ namespace ams::ldr {
 
     /* Atmosphere commands. */
     Result LoaderService::AtmosphereRegisterExternalCode(sf::OutMoveHandle out, ncm::ProgramId program_id) {
-        return fssystem::CreateExternalCode(out.GetHandlePointer(), program_id);
+        os::NativeHandle handle;
+        R_TRY(fssystem::CreateExternalCode(std::addressof(handle), program_id));
+
+        out.SetValue(handle, true);
+        return ResultSuccess();
     }
 
     void LoaderService::AtmosphereUnregisterExternalCode(ncm::ProgramId program_id) {

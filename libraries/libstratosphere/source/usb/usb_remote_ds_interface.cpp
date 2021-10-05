@@ -35,10 +35,15 @@ namespace ams::usb {
 
     Result RemoteDsInterface::GetSetupEvent(sf::OutCopyHandle out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), 1,
+
+        os::NativeHandle event_handle;
+        R_TRY((serviceDispatch(std::addressof(m_srv), 1,
             .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
-            .out_handles = out.GetHandlePointer(),
-        );
+            .out_handles = std::addressof(event_handle),
+        )));
+
+        out.SetValue(event_handle, true);
+        return ResultSuccess();
     }
 
     Result RemoteDsInterface::GetSetupPacket(const sf::OutBuffer &out) {
@@ -71,10 +76,15 @@ namespace ams::usb {
 
     Result RemoteDsInterface::GetCtrlInCompletionEvent(sf::OutCopyHandle out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 5 : 7,
+
+        os::NativeHandle event_handle;
+        R_TRY((serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 5 : 7,
             .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
-            .out_handles = out.GetHandlePointer(),
-        );
+            .out_handles = std::addressof(event_handle),
+        )));
+
+        out.SetValue(event_handle, true);
+        return ResultSuccess();
     }
 
     Result RemoteDsInterface::GetCtrlInUrbReport(sf::Out<usb::UrbReport> out) {
@@ -84,10 +94,15 @@ namespace ams::usb {
 
     Result RemoteDsInterface::GetCtrlOutCompletionEvent(sf::OutCopyHandle out) {
         serviceAssumeDomain(std::addressof(m_srv));
-        return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 7 : 9,
+
+        os::NativeHandle event_handle;
+        R_TRY((serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 7 : 9,
             .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
-            .out_handles = out.GetHandlePointer(),
-        );
+            .out_handles = std::addressof(event_handle),
+        )));
+
+        out.SetValue(event_handle, true);
+        return ResultSuccess();
     }
 
     Result RemoteDsInterface::GetCtrlOutUrbReport(sf::Out<usb::UrbReport> out) {

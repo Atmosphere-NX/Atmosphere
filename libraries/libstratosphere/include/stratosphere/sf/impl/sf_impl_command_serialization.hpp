@@ -19,7 +19,7 @@
 #include <stratosphere/sf/sf_service_object.hpp>
 #include <stratosphere/sf/sf_out.hpp>
 #include <stratosphere/sf/sf_buffers.hpp>
-#include <stratosphere/sf/sf_handles.hpp>
+#include <stratosphere/sf/sf_native_handle.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
@@ -199,15 +199,18 @@ namespace ams::sf::impl {
 
     template<typename T>
     constexpr inline ArgumentType GetArgumentType = [] {
+        static_assert(!std::same_as<T, sf::NativeHandle>);
+        static_assert(!std::same_as<T, sf::Out<sf::NativeHandle>>);
+
         if constexpr (sf::IsBuffer<T>) {
             return ArgumentType::Buffer;
         } else if constexpr (IsInObject<T>::value) {
             return ArgumentType::InObject;
         } else if constexpr (std::is_base_of<sf::impl::OutObjectTag, T>::value) {
             return ArgumentType::OutObject;
-        } else if constexpr (std::is_base_of<sf::impl::InHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, sf::CopyHandle> || std::same_as<T, sf::MoveHandle>) {
             return ArgumentType::InHandle;
-        } else if constexpr (std::is_base_of<sf::impl::OutHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, sf::OutCopyHandle> || std::same_as<T, sf::OutMoveHandle>) {
             return ArgumentType::OutHandle;
         } else if constexpr (std::is_base_of<sf::impl::OutBaseTag, T>::value) {
             return ArgumentType::OutData;
@@ -413,7 +416,7 @@ namespace ams::sf::impl {
     };
 
     template<typename T>
-    using DecayForCommandMetaArguments = typename std::conditional<sf::IsLargeData<typename std::decay<T>::type> && !std::is_base_of<impl::OutBaseTag, typename std::decay<T>::type>::value, T, typename std::decay<T>::type>::type;
+    using DecayForCommandMetaArguments = typename std::conditional<(sf::IsLargeData<typename std::decay<T>::type> && !std::is_base_of<impl::OutBaseTag, typename std::decay<T>::type>::value), T, typename std::conditional<(std::same_as<T, sf::MoveHandle &&> || std::same_as<T, sf::CopyHandle &&>), typename std::decay<T>::type &, typename std::decay<T>::type>::type>::type;
 
     template<typename... Arguments>
     struct CommandMetaInfo {
@@ -625,38 +628,57 @@ namespace ams::sf::impl {
     };
 
     template<size_t _NumMove, size_t _NumCopy>
-    class OutHandleHolder {
+    class InHandleHolder {
         public:
             static constexpr size_t NumMove = _NumMove;
             static constexpr size_t NumCopy = _NumCopy;
         private:
             MoveHandle move_handles[NumMove];
             CopyHandle copy_handles[NumCopy];
-            bool copy_managed[NumCopy];
         public:
-            constexpr OutHandleHolder() : move_handles(), copy_handles(), copy_managed() { /* ... */ }
+            constexpr InHandleHolder() : move_handles(), copy_handles() { /* ... */ }
 
             template<size_t Index>
-            constexpr inline MoveHandle *GetMoveHandlePointer() {
+            constexpr inline MoveHandle &SetMoveHandle(os::NativeHandle os_handle) {
+                static_assert(Index < NumMove);
+                move_handles[Index] = sf::NativeHandle(os_handle, true);
+                return move_handles[Index];
+            }
+
+            template<size_t Index>
+            constexpr inline CopyHandle &SetCopyHandle(os::NativeHandle os_handle) {
+                static_assert(Index < NumCopy);
+                copy_handles[Index] = sf::NativeHandle(os_handle, true);
+                return copy_handles[Index];
+            }
+    };
+
+    template<size_t _NumMove, size_t _NumCopy>
+    class OutHandleHolder {
+        public:
+            static constexpr size_t NumMove = _NumMove;
+            static constexpr size_t NumCopy = _NumCopy;
+        private:
+            NativeHandle move_handles[NumMove];
+            NativeHandle copy_handles[NumCopy];
+        public:
+            constexpr OutHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+
+            template<size_t Index>
+            constexpr inline NativeHandle *GetMoveHandlePointer() {
                 static_assert(Index < NumMove, "Index < NumMove");
-                return &move_handles[Index];
+                return move_handles + Index;
             }
 
             template<size_t Index>
-            constexpr inline CopyHandle *GetCopyHandlePointer() {
+            constexpr inline NativeHandle *GetCopyHandlePointer() {
                 static_assert(Index < NumCopy, "Index < NumCopy");
-                return &copy_handles[Index];
-            }
-
-            template<size_t Index>
-            constexpr inline bool *GetCopyHandleManagedPointer() {
-                static_assert(Index < NumCopy, "Index < NumCopy");
-                return &copy_managed[Index];
+                return copy_handles + Index;
             }
 
             constexpr inline void CopyTo(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, const size_t num_out_object_handles) {
                 ctx.handles_to_close->num_handles = 0;
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = copy_handles[n].GetValue(); response.copy_handles[n] = handle; if (copy_managed[n]) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } } } while (0)
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = copy_handles[n].GetOsHandle(); response.copy_handles[n] = handle; if (copy_handles[n].IsManaged()) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } copy_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(2);
@@ -666,7 +688,7 @@ namespace ams::sf::impl {
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(6);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(7);
                 #undef _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = move_handles[n].GetValue(); } } while (0)
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = move_handles[n].GetOsHandle(); move_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(2);
@@ -830,6 +852,7 @@ namespace ams::sf::impl {
         using ArgsType          = typename CommandMeta::ArgsType;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
+        using InHandleHolderType = InHandleHolder<CommandMeta::NumInMoveHandles, CommandMeta::NumInCopyHandles>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
 
@@ -1014,7 +1037,7 @@ namespace ams::sf::impl {
         /* Argument deserialization. */
         private:
             template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
-            NX_CONSTEXPR typename std::tuple_element<Index, ArgsTypeForInvoke>::type DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+            NX_CONSTEXPR typename std::tuple_element<Index, ArgsTypeForInvoke>::type DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
@@ -1031,19 +1054,22 @@ namespace ams::sf::impl {
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */
+                    using InvokeType = typename std::tuple_element<Index, ArgsTypeForInvoke>::type;
                     if constexpr (std::is_same<T, sf::MoveHandle>::value) {
-                        return T(ctx.request.data.move_handles[Info.in_move_handle_index]);
+                        static_assert(std::same_as<InvokeType, sf::MoveHandle &>);
+                        return in_handles_holder.template SetMoveHandle<Info.in_move_handle_index>(ctx.request.data.move_handles[Info.in_move_handle_index]);
                     } else if constexpr (std::is_same<T, sf::CopyHandle>::value) {
-                        return T(ctx.request.data.copy_handles[Info.in_copy_handle_index]);
+                        static_assert(std::same_as<InvokeType, sf::CopyHandle &>);
+                        return in_handles_holder.template SetCopyHandle<Info.in_copy_handle_index>(ctx.request.data.copy_handles[Info.in_copy_handle_index]);
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid InHandle kind");
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::OutHandle) {
                     /* New OutHandle. */
-                    if constexpr (std::is_same<T, sf::Out<sf::MoveHandle>>::value) {
+                    if constexpr (std::is_same<T, sf::OutMoveHandle>::value) {
                         return T(out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>());
-                    } else if constexpr (std::is_same<T, sf::Out<sf::CopyHandle>>::value) {
-                        return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>(), out_handles_holder.template GetCopyHandleManagedPointer<Info.out_copy_handle_index>());
+                    } else if constexpr (std::is_same<T, sf::OutCopyHandle>::value) {
+                        return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>());
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
                     }
@@ -1078,12 +1104,12 @@ namespace ams::sf::impl {
             }
 
             template<size_t... Is>
-            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
-                return ArgsTypeForInvoke { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder)..., };
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
+                return ArgsTypeForInvoke { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder)..., };
             }
         public:
-            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
-                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsTypeForInvoke>::value>{});
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsTypeForInvoke>::value>{});
             }
     };
 
@@ -1099,6 +1125,7 @@ namespace ams::sf::impl {
     constexpr Result InvokeServiceCommandImplCommon(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, Result (*invoke_impl)(sf::IServiceObject *, Arguments &&...)) {
         using ImplProcessorType = HipcCommandProcessor<CommandMeta>;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
+        using InHandleHolderType = InHandleHolder<CommandMeta::NumInMoveHandles, CommandMeta::NumInCopyHandles>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
@@ -1133,38 +1160,42 @@ namespace ams::sf::impl {
 
         /* Decoding/Invocation. */
         {
-            typename CommandMeta::ArgsTypeForInvoke args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
+            Result command_result;
+            {
+                InHandleHolderType in_handles_holder;
+                typename CommandMeta::ArgsTypeForInvoke args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder);
 
-            /* Handle in process ID holder if relevant. */
-            if constexpr (CommandMeta::HasInProcessIdHolder) {
-                /* TODO: More precise value than 32? */
-                static_assert(std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value <= 32, "Commands must have <= 32 arguments");
-                os::ProcessId process_id{ctx.request.pid};
-                #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
-                    using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;                        \
-                    if constexpr (n < std::tuple_size<ArgsTypeForInvoke>::value) {                            \
-                        if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
-                            R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
-                        }                                                                                     \
-                    }                                                                                         \
-                } while (0)
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x00); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x01); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x02); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x03);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x04); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x05); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x06); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x07);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x08); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x09); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0b);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0f);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x10); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x11); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x12); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x13);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x14); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x15); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x16); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x17);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x18); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x19); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1b);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1f);
-                #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
+                /* Handle in process ID holder if relevant. */
+                if constexpr (CommandMeta::HasInProcessIdHolder) {
+                    /* TODO: More precise value than 32? */
+                    static_assert(std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value <= 32, "Commands must have <= 32 arguments");
+                    const os::ProcessId process_id{ctx.request.pid};
+                    #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
+                        using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;                        \
+                        if constexpr (n < std::tuple_size<ArgsTypeForInvoke>::value) {                            \
+                            if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
+                                R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
+                            }                                                                                     \
+                        }                                                                                         \
+                    } while (0)
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x00); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x01); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x02); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x03);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x04); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x05); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x06); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x07);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x08); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x09); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0b);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0f);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x10); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x11); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x12); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x13);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x14); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x15); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x16); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x17);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x18); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x19); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1b);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1f);
+                    #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
+                }
+
+                using TrueArgumentsTuple = std::tuple<Arguments...>;
+
+                sf::IServiceObject * const this_ptr = ctx.srv_obj;
+                command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+                }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value>());
             }
-
-            using TrueArgumentsTuple = std::tuple<Arguments...>;
-
-            sf::IServiceObject * const this_ptr = ctx.srv_obj;
-            const auto command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-                return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
-            }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value>());
 
             if (R_FAILED(command_result)) {
                 cmif::PointerAndSize out_raw_data;

@@ -27,11 +27,12 @@ namespace ams::fs::impl {
         private:
             virtual Result DoBindEvent(os::SystemEventType *out, os::EventClearMode clear_mode) override {
                 /* Get the handle. */
-                sf::CopyHandle handle;
+                sf::NativeHandle handle;
                 AMS_FS_R_TRY(m_object->GetEventHandle(std::addressof(handle)));
 
                 /* Create the system event. */
-                os::AttachReadableHandleToSystemEvent(out, handle, true, clear_mode);
+                os::AttachReadableHandleToSystemEvent(out, handle.GetOsHandle(), handle.IsManaged(), clear_mode);
+                handle.Detach();
 
                 return ResultSuccess();
             }

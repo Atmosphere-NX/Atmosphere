@@ -53,7 +53,7 @@ namespace ams::erpt::srv {
     }
 
     Result ManagerImpl::GetEvent(ams::sf::OutCopyHandle out) {
-        out.SetValue(this->system_event.GetReadableHandle());
+        out.SetValue(this->system_event.GetReadableHandle(), false);
         return ResultSuccess();
     }
 

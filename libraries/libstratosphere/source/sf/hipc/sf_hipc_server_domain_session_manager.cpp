@@ -34,14 +34,14 @@ namespace ams::sf::hipc {
                 ServerSession *session;
                 bool is_mitm_session;
             private:
-                Result CloneCurrentObjectImpl(os::NativeHandle *out_client_handle, ServerSessionManager *tagged_manager) {
+                Result CloneCurrentObjectImpl(sf::OutMoveHandle &out_client_handle, ServerSessionManager *tagged_manager) {
                     /* Clone the object. */
                     cmif::ServiceObjectHolder &&clone = this->session->srv_obj_holder.Clone();
                     R_UNLESS(clone, sf::hipc::ResultDomainObjectNotFound());
 
                     /* Create new session handles. */
-                    os::NativeHandle server_handle;
-                    R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out_client_handle));
+                    os::NativeHandle server_handle, client_handle;
+                    R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                     /* Register with manager. */
                     if (!is_mitm_session) {
@@ -53,6 +53,8 @@ namespace ams::sf::hipc {
                         R_ABORT_UNLESS(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
 
+                    /* Set output client handle. */
+                    out_client_handle.SetValue(client_handle, false);
                     return ResultSuccess();
                 }
             public:
@@ -113,36 +115,47 @@ namespace ams::sf::hipc {
                     auto &&object = domain->GetObject(object_id);
                     if (!object) {
                         R_UNLESS(this->is_mitm_session, sf::hipc::ResultDomainObjectNotFound());
-                        return cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, out.GetHandlePointer());
+
+                        os::NativeHandle handle;
+                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, std::addressof(handle)));
+
+                        out.SetValue(handle, false);
+                        return ResultSuccess();
                     }
 
                     if (!this->is_mitm_session || object_id.value != serviceGetObjectId(this->session->forward_service.get())) {
                         /* Create new session handles. */
-                        os::NativeHandle server_handle;
-                        R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+                        os::NativeHandle server_handle, client_handle;
+                        R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                         /* Register. */
                         R_ABORT_UNLESS(this->manager->RegisterSession(server_handle, std::move(object)));
+
+                        /* Set output client handle. */
+                        out.SetValue(client_handle, false);
                     } else {
                         /* Copy from the target domain. */
                         os::NativeHandle new_forward_target;
                         R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, &new_forward_target));
 
                         /* Create new session handles. */
-                        os::NativeHandle server_handle;
-                        R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+                        os::NativeHandle server_handle, client_handle;
+                        R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                         /* Register. */
                         std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
                         serviceCreate(new_forward_service.get(), new_forward_target);
                         R_ABORT_UNLESS(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
+
+                        /* Set output client handle. */
+                        out.SetValue(client_handle, false);
                     }
 
                     return ResultSuccess();
                 }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {
-                    return this->CloneCurrentObjectImpl(out.GetHandlePointer(), this->manager);
+                    return this->CloneCurrentObjectImpl(out, this->manager);
                 }
 
                 void QueryPointerBufferSize(sf::Out<u16> out) {
@@ -150,7 +163,7 @@ namespace ams::sf::hipc {
                 }
 
                 Result CloneCurrentObjectEx(sf::OutMoveHandle out, u32 tag) {
-                    return this->CloneCurrentObjectImpl(out.GetHandlePointer(), this->manager->GetSessionManagerByTag(tag));
+                    return this->CloneCurrentObjectImpl(out, this->manager->GetSessionManagerByTag(tag));
                 }
         };
         static_assert(IsIHipcManager<HipcManagerImpl>);

@@ -20,7 +20,7 @@
 #include <stratosphere/sf.hpp>
 
 #define AMS_LDR_I_PROCESS_MANAGER_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                                \
-    AMS_SF_METHOD_INFO(C, H,     0, Result, CreateProcess,                    (sf::OutMoveHandle proc_h, ldr::PinId id, u32 flags, sf::CopyHandle reslimit_h),                                        (proc_h, id, flags, reslimit_h))                          \
+    AMS_SF_METHOD_INFO(C, H,     0, Result, CreateProcess,                    (sf::OutMoveHandle proc_h, ldr::PinId id, u32 flags, sf::CopyHandle &&reslimit_h),                                      (proc_h, id, flags, std::move(reslimit_h)))               \
     AMS_SF_METHOD_INFO(C, H,     1, Result, GetProgramInfo,                   (sf::Out<ldr::ProgramInfo> out_program_info, const ncm::ProgramLocation &loc),                                          (out_program_info, loc))                                  \
     AMS_SF_METHOD_INFO(C, H,     2, Result, PinProgram,                       (sf::Out<ldr::PinId> out_id, const ncm::ProgramLocation &loc),                                                          (out_id, loc))                                            \
     AMS_SF_METHOD_INFO(C, H,     3, Result, UnpinProgram,                     (ldr::PinId id),                                                                                                        (id))                                                     \

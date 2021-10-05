@@ -51,9 +51,9 @@ namespace ams::htcs::client {
                 Result Accept(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address) { AMS_ABORT("Not Implemented"); }
                 Result Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
                 Result Send(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle mem_handle, s32 flags) { AMS_ABORT("Not Implemented"); }
+                Result RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle &&mem_handle, s32 flags) { AMS_ABORT("Not Implemented"); }
                 Result SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle mem_handle, s64 aligned_size, s32 flags) { AMS_ABORT("Not Implemented"); }
+                Result SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle &&mem_handle, s64 aligned_size, s32 flags) { AMS_ABORT("Not Implemented"); }
                 Result ContinueSendOld(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InAutoSelectBuffer &buffer, u32 task_id) { AMS_ABORT("Not Implemented"); }
 
                 Result Close(sf::Out<s32> out_err, sf::Out<s32> out_res);
@@ -138,7 +138,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteManager::StartSelect(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InMapAliasArray<s32> &read_handles, const sf::InMapAliasArray<s32> &write_handles, const sf::InMapAliasArray<s32> &exception_handles, s64 tv_sec, s64 tv_usec) {
-            return ::htcsStartSelect(out_task_id.GetPointer(), out_event.GetHandlePointer(), read_handles.GetPointer(), read_handles.GetSize(), write_handles.GetPointer(), write_handles.GetSize(), exception_handles.GetPointer(), exception_handles.GetSize(), tv_sec, tv_usec);
+            os::NativeHandle event_handle;
+            R_TRY(::htcsStartSelect(out_task_id.GetPointer(), std::addressof(event_handle), read_handles.GetPointer(), read_handles.GetSize(), write_handles.GetPointer(), write_handles.GetSize(), exception_handles.GetPointer(), exception_handles.GetSize(), tv_sec, tv_usec));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteManager::EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_count, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id) {
@@ -172,7 +176,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::AcceptStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event) {
-            return ::htcsSocketAcceptStart(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer());
+            os::NativeHandle event_handle;
+            R_TRY(::htcsSocketAcceptStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle)));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteSocket::AcceptResults(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address, u32 task_id) {
@@ -187,7 +195,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::RecvStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 mem_size, s32 flags) {
-            return ::htcsSocketRecvStart(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer(), mem_size, flags);
+            os::NativeHandle event_handle;
+            R_TRY(::htcsSocketRecvStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), mem_size, flags));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteSocket::RecvResults(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -195,7 +207,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::SendStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InNonSecureAutoSelectBuffer &buffer, s32 flags) {
-            return ::htcsSocketSendStart(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer(), buffer.GetPointer(), buffer.GetSize(), flags);
+            os::NativeHandle event_handle;
+            R_TRY(::htcsSocketSendStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), buffer.GetPointer(), buffer.GetSize(), flags));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteSocket::SendResults(sf::Out<s32> out_err, sf::Out<s64> out_size, u32 task_id) {
@@ -203,7 +219,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::StartSend(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, sf::Out<s64> out_max_size, s64 size, s32 flags) {
-            return ::htcsSocketStartSend(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer(), out_max_size.GetPointer(), size, flags);
+            os::NativeHandle event_handle;
+            R_TRY(::htcsSocketStartSend(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), out_max_size.GetPointer(), size, flags));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteSocket::ContinueSend(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InNonSecureAutoSelectBuffer &buffer, u32 task_id) {
@@ -215,7 +235,11 @@ namespace ams::htcs::client {
         }
 
         Result RemoteSocket::StartRecv(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s64 size, s32 flags) {
-            return ::htcsSocketStartRecv(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer(), size, flags);
+            os::NativeHandle event_handle;
+            R_TRY(::htcsSocketStartRecv(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), size, flags));
+
+            out_event.SetValue(event_handle, true);
+            return ResultSuccess();
         }
 
         Result RemoteSocket::EndRecv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {

@@ -118,10 +118,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the accept. */
-        R_TRY(manager->AcceptStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), m_desc));
+        os::NativeHandle event_handle;
+        R_TRY(manager->AcceptStart(out_task_id.GetPointer(), std::addressof(event_handle), m_desc));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -147,10 +148,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the recv. */
-        R_TRY(manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), mem_size, m_desc, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->RecvStart(out_task_id.GetPointer(), std::addressof(event_handle), mem_size, m_desc, flags));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -164,13 +166,14 @@ namespace ams::htcs::server {
         return ResultSuccess();
     }
 
-    Result SocketServiceObject::RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle mem_handle, s32 flags) {
+    Result SocketServiceObject::RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle &&mem_handle, s32 flags) {
         /* Check that the transfer memory size is okay. */
         R_UNLESS(util::IsIntValueRepresentable<size_t>(aligned_size), htcs::ResultInvalidSize());
 
         /* Attach the transfer memory. */
         os::TransferMemoryType tmem;
-        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true);
+        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetOsHandle(), mem_handle.IsManaged());
+        mem_handle.Detach();
         ON_SCOPE_EXIT { os::DestroyTransferMemory(std::addressof(tmem)); };
 
         /* Map the transfer memory. */
@@ -182,10 +185,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the large receive. */
-        R_TRY(manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), unaligned_size_start + aligned_size + unaligned_size_end, m_desc, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->RecvStart(out_task_id.GetPointer(), std::addressof(event_handle), unaligned_size_start + aligned_size + unaligned_size_end, m_desc, flags));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -193,7 +197,7 @@ namespace ams::htcs::server {
         return this->SendStart(out_task_id, out_event, sf::InNonSecureAutoSelectBuffer(buffer.GetPointer(), buffer.GetSize()), flags);
     }
 
-    Result SocketServiceObject::SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle mem_handle, s64 aligned_size, s32 flags) {
+    Result SocketServiceObject::SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle &&mem_handle, s64 aligned_size, s32 flags) {
         /* Check that the sizes are okay. */
         R_UNLESS(util::IsIntValueRepresentable<s64>(start_buffer.GetSize()), htcs::ResultInvalidSize());
         R_UNLESS(util::IsIntValueRepresentable<s64>(end_buffer.GetSize()),   htcs::ResultInvalidSize());
@@ -201,7 +205,8 @@ namespace ams::htcs::server {
 
         /* Attach the transfer memory. */
         os::TransferMemoryType tmem;
-        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetValue(), true);
+        os::AttachTransferMemory(std::addressof(tmem), static_cast<size_t>(aligned_size), mem_handle.GetOsHandle(), mem_handle.IsManaged());
+        mem_handle.Detach();
         ON_SCOPE_EXIT { os::DestroyTransferMemory(std::addressof(tmem)); };
 
         /* Map the transfer memory. */
@@ -217,10 +222,11 @@ namespace ams::htcs::server {
         const char *pointers[NumBuffers] = { reinterpret_cast<const char *>(start_buffer.GetPointer()), static_cast<const char *>(address), reinterpret_cast<const char *>(end_buffer.GetPointer()) };
         s64 sizes[NumBuffers] = { static_cast<s64>(start_buffer.GetSize()), aligned_size, static_cast<s64>(end_buffer.GetSize()) };
 
-        R_TRY(manager->SendLargeStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), pointers, sizes, NumBuffers, m_desc, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->SendLargeStart(out_task_id.GetPointer(), std::addressof(event_handle), pointers, sizes, NumBuffers, m_desc, flags));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -239,13 +245,14 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the send. */
-        R_TRY(manager->StartSend(out_task_id.GetPointer(), out_event.GetHandlePointer(), m_desc, size, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->StartSend(out_task_id.GetPointer(), std::addressof(event_handle), m_desc, size, flags));
 
         /* Set the output max size to the size. */
         *out_max_size = size;
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -268,10 +275,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the recv. */
-        R_TRY(manager->StartRecv(out_task_id.GetPointer(), out_event.GetHandlePointer(), size, m_desc, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->StartRecv(out_task_id.GetPointer(), std::addressof(event_handle), size, m_desc, flags));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 
@@ -293,10 +301,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the send. */
-        R_TRY(manager->SendStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), reinterpret_cast<const char *>(buffer.GetPointer()), buffer.GetSize(), m_desc, flags));
+        os::NativeHandle event_handle;
+        R_TRY(manager->SendStart(out_task_id.GetPointer(), std::addressof(event_handle), reinterpret_cast<const char *>(buffer.GetPointer()), buffer.GetSize(), m_desc, flags));
 
-        /* Mark the output event as managed. */
-        out_event.SetManaged(true);
+        /* Set the output event handle. */
+        out_event.SetValue(event_handle, true);
         return ResultSuccess();
     }
 

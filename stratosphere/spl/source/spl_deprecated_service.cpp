@@ -121,7 +121,7 @@ namespace ams::spl {
     }
 
     Result DeprecatedService::GetAesKeySlotAvailableEvent(sf::OutCopyHandle out_hnd) {
-        out_hnd.SetValue(impl::GetAesKeySlotAvailableEventHandle());
+        out_hnd.SetValue(impl::GetAesKeySlotAvailableEventHandle(), false);
         return ResultSuccess();
     }
 

@@ -54,14 +54,15 @@ namespace ams::usb {
         }
 
         /* Bind the client process. */
-        R_TRY(m_ds_service->Bind(complex_id, dd::GetCurrentProcessHandle()));
+        R_TRY(m_ds_service->Bind(complex_id, sf::CopyHandle(dd::GetCurrentProcessHandle(), false)));
 
         /* Get the state change event. */
-        sf::CopyHandle event_handle;
+        sf::NativeHandle event_handle;
         R_TRY(m_ds_service->GetStateChangeEvent(std::addressof(event_handle)));
 
         /* Attach the state change event handle to our event. */
-        os::AttachReadableHandleToSystemEvent(std::addressof(m_state_change_event), event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+        os::AttachReadableHandleToSystemEvent(std::addressof(m_state_change_event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+        event_handle.Detach();
 
         /* Mark ourselves as initialized. */
         m_is_initialized = true;
@@ -250,17 +251,21 @@ namespace ams::usb {
         auto intf_guard = SCOPE_GUARD { m_client->DeleteInterface(m_interface_num); m_interface = nullptr; };
 
         /* Get events. */
-        sf::CopyHandle setup_event_handle;
-        sf::CopyHandle ctrl_in_event_handle;
-        sf::CopyHandle ctrl_out_event_handle;
+        sf::NativeHandle setup_event_handle;
+        sf::NativeHandle ctrl_in_event_handle;
+        sf::NativeHandle ctrl_out_event_handle;
         R_TRY(m_interface->GetSetupEvent(std::addressof(setup_event_handle)));
         R_TRY(m_interface->GetCtrlInCompletionEvent(std::addressof(ctrl_in_event_handle)));
         R_TRY(m_interface->GetCtrlOutCompletionEvent(std::addressof(ctrl_out_event_handle)));
 
         /* Attach events. */
-        os::AttachReadableHandleToSystemEvent(std::addressof(m_setup_event), setup_event_handle.GetValue(), true, os::EventClearMode_ManualClear);
-        os::AttachReadableHandleToSystemEvent(std::addressof(m_ctrl_in_completion_event), ctrl_in_event_handle.GetValue(), true, os::EventClearMode_ManualClear);
-        os::AttachReadableHandleToSystemEvent(std::addressof(m_ctrl_out_completion_event), ctrl_out_event_handle.GetValue(), true, os::EventClearMode_ManualClear);
+        os::AttachReadableHandleToSystemEvent(std::addressof(m_setup_event), setup_event_handle.GetOsHandle(), setup_event_handle.IsManaged(), os::EventClearMode_ManualClear);
+        os::AttachReadableHandleToSystemEvent(std::addressof(m_ctrl_in_completion_event), ctrl_in_event_handle.GetOsHandle(), ctrl_in_event_handle.IsManaged(), os::EventClearMode_ManualClear);
+        os::AttachReadableHandleToSystemEvent(std::addressof(m_ctrl_out_completion_event), ctrl_out_event_handle.GetOsHandle(), ctrl_out_event_handle.IsManaged(), os::EventClearMode_ManualClear);
+
+        setup_event_handle.Detach();
+        ctrl_in_event_handle.Detach();
+        ctrl_out_event_handle.Detach();
 
         /* Increment our client's reference count. */
         ++m_client->m_reference_count;
@@ -635,7 +640,7 @@ namespace ams::usb {
         auto ep_guard = SCOPE_GUARD { m_interface->DeleteEndpoint(m_address); m_endpoint = nullptr; };
 
         /* Get completion event. */
-        sf::CopyHandle event_handle;
+        sf::NativeHandle event_handle;
         R_TRY(m_endpoint->GetCompletionEvent(std::addressof(event_handle)));
 
         /* Increment our interface's reference count. */
@@ -643,7 +648,8 @@ namespace ams::usb {
         ++m_interface->m_client->m_reference_count;
 
         /* Attach our event. */
-        os::AttachReadableHandleToSystemEvent(std::addressof(m_completion_event), event_handle, true, os::EventClearMode_ManualClear);
+        os::AttachReadableHandleToSystemEvent(std::addressof(m_completion_event), event_handle.GetOsHandle(), event_handle.IsManaged(), os::EventClearMode_ManualClear);
+        event_handle.Detach();
 
         /* Mark initialized. */
         m_is_initialized = true;

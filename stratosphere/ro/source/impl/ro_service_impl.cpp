@@ -373,16 +373,12 @@ namespace ams::ro::impl {
     }
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, os::NativeHandle process_handle, os::ProcessId process_id) {
-        /* Ensure we manage process handle correctly. */
-        auto handle_guard = SCOPE_GUARD { os::CloseNativeHandle(process_handle); };
-
+    Result RegisterProcess(size_t *out_context_id, sf::NativeHandle &&process_handle, os::ProcessId process_id) {
         /* Validate process handle. */
         {
-            os::ProcessId handle_pid = os::InvalidProcessId;
-
             /* Validate handle is a valid process handle. */
-            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle)), ResultInvalidProcess());
+            os::ProcessId handle_pid;
+            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle.GetOsHandle())), ResultInvalidProcess());
 
             /* Validate process id. */
             R_UNLESS(handle_pid == process_id, ResultInvalidProcess());
@@ -392,8 +388,8 @@ namespace ams::ro::impl {
         R_UNLESS(GetContextByProcessId(process_id) == nullptr, ResultInvalidSession());
 
         /* Allocate a context to manage the process handle. */
-        handle_guard.Cancel();
-        *out_context_id = AllocateContext(process_handle, process_id);
+        *out_context_id = AllocateContext(process_handle.GetOsHandle(), process_id);
+        process_handle.Detach();
 
         return ResultSuccess();
     }
@@ -411,9 +407,6 @@ namespace ams::ro::impl {
 
     /* Service implementations. */
     Result RegisterModuleInfo(size_t context_id, os::NativeHandle process_handle, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
-        /* Ensure we close the process handle when we're done with it. */
-        ON_SCOPE_EXIT { os::CloseNativeHandle(process_handle); };
-
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
         AMS_ABORT_UNLESS(context != nullptr);

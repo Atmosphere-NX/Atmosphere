@@ -21,7 +21,8 @@
 namespace ams::sf {
 
     class NativeHandle {
-        NON_COPYABLE(NativeHandle);
+        protected:
+            NON_COPYABLE(NativeHandle);
         private:
             os::NativeHandle m_handle;
             bool m_managed;
@@ -77,12 +78,24 @@ namespace ams::sf {
             }
     };
 
-    ALWAYS_INLINE void swap(NativeHandle &lhs, NativeHandle &rhs) {
+    class CopyHandle : public NativeHandle {
+        public:
+            using NativeHandle::NativeHandle;
+            using NativeHandle::operator=;
+    };
+
+    class MoveHandle : public NativeHandle {
+        public:
+            using NativeHandle::NativeHandle;
+            using NativeHandle::operator=;
+    };
+
+    constexpr ALWAYS_INLINE void swap(NativeHandle &lhs, NativeHandle &rhs) {
         lhs.swap(rhs);
     }
 
     template<>
-    class Out<NativeHandle> {
+    class Out<CopyHandle> {
         private:
             NativeHandle *m_ptr;
         public:
@@ -92,9 +105,36 @@ namespace ams::sf {
                 *m_ptr = std::move(v);
             }
 
+            ALWAYS_INLINE void SetValue(os::NativeHandle os_handle, bool managed) const {
+                return this->SetValue(NativeHandle(os_handle, managed));
+            }
+
             NativeHandle &operator*() const {
                 return *m_ptr;
             }
     };
+
+    template<>
+    class Out<MoveHandle> {
+        private:
+            NativeHandle *m_ptr;
+        public:
+            Out(NativeHandle *p) : m_ptr(p) { /* ... */ }
+
+            void SetValue(NativeHandle v) const {
+                *m_ptr = std::move(v);
+            }
+
+            ALWAYS_INLINE void SetValue(os::NativeHandle os_handle, bool managed) const {
+                return this->SetValue(NativeHandle(os_handle, managed));
+            }
+
+            NativeHandle &operator*() const {
+                return *m_ptr;
+            }
+    };
+
+    using OutCopyHandle = Out<CopyHandle>;
+    using OutMoveHandle = Out<MoveHandle>;
 
 }

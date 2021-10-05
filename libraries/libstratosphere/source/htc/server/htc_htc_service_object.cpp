@@ -57,13 +57,13 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::GetHostConnectionEvent(sf::OutCopyHandle out) {
         /* Set the output handle. */
-        *out = m_observer.GetConnectEvent()->GetReadableHandle();
+        out.SetValue(m_observer.GetConnectEvent()->GetReadableHandle(), false);
         return ResultSuccess();
     }
 
     Result HtcServiceObject::GetHostDisconnectionEvent(sf::OutCopyHandle out) {
         /* Set the output handle. */
-        *out = m_observer.GetDisconnectEvent()->GetReadableHandle();
+        out.SetValue(m_observer.GetDisconnectEvent()->GetReadableHandle(), false);
         return ResultSuccess();
     }
 
@@ -87,7 +87,8 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::RunOnHostStart(sf::Out<u32> out_id, sf::OutCopyHandle out, const sf::InBuffer &args) {
         /* Begin the run on host task. */
-        R_TRY(m_misc_impl.RunOnHostBegin(out_id.GetPointer(), out.GetHandlePointer(), reinterpret_cast<const char *>(args.GetPointer()), args.GetSize()));
+        os::NativeHandle event_handle;
+        R_TRY(m_misc_impl.RunOnHostBegin(out_id.GetPointer(), std::addressof(event_handle), reinterpret_cast<const char *>(args.GetPointer()), args.GetSize()));
 
         /* Add the task id to our set. */
         {
@@ -95,8 +96,8 @@ namespace ams::htc::server {
             m_set.insert(*out_id);
         }
 
-        /* Mark the output event as managed. */
-        out.SetManaged(true);
+        /* Set the output event. */
+        out.SetValue(event_handle, true);
         return ResultSuccess();
     }
 

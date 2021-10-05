@@ -42,7 +42,10 @@ namespace ams::pm {
     }
 
     void ShellService::GetProcessEventHandle(sf::OutCopyHandle out) {
-        R_ABORT_UNLESS(impl::GetProcessEventHandle(out.GetHandlePointer()));
+        os::NativeHandle event_handle;
+        R_ABORT_UNLESS(impl::GetProcessEventHandle(std::addressof(event_handle)));
+
+        out.SetValue(event_handle, false);
     }
 
     void ShellService::GetProcessEventInfo(sf::Out<ProcessEventInfo> out) {
@@ -74,7 +77,10 @@ namespace ams::pm {
     }
 
     void ShellService::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
-        R_ABORT_UNLESS(impl::GetBootFinishedEventHandle(out.GetHandlePointer()));
+        os::NativeHandle event_handle;
+        R_ABORT_UNLESS(impl::GetBootFinishedEventHandle(std::addressof(event_handle)));
+
+        out.SetValue(event_handle, false);
     }
 
 }

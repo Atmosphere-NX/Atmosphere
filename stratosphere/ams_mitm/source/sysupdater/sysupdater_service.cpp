@@ -410,12 +410,12 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     };
 
-    Result SystemUpdateService::SetupUpdate(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
-        return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, GetFirmwareVariationId());
+    Result SystemUpdateService::SetupUpdate(sf::CopyHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
+        return this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, GetFirmwareVariationId());
     }
 
-    Result SystemUpdateService::SetupUpdateWithVariation(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
-        return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, firmware_variation_id);
+    Result SystemUpdateService::SetupUpdateWithVariation(sf::CopyHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+        return this->SetupUpdateImpl(std::move(transfer_memory), transfer_memory_size, path, exfat, firmware_variation_id);
     }
 
     Result SystemUpdateService::RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<sf::SharedPointer<ns::impl::IAsyncResult>> out_async) {
@@ -432,7 +432,7 @@ namespace ams::mitm::sysupdater {
 
         /* We prepared the task! */
         this->requested_update = true;
-        out_event_handle.SetValue(async_result.GetImpl().GetEvent().GetReadableHandle());
+        out_event_handle.SetValue(async_result.GetImpl().GetEvent().GetReadableHandle(), false);
         *out_async = std::move(async_result);
 
         return ResultSuccess();
@@ -469,10 +469,7 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     }
 
-    Result SystemUpdateService::SetupUpdateImpl(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
-        /* Ensure the transfer memory handle is closed, if we exit before creating the management object. */
-        auto handle_guard = SCOPE_GUARD { os::CloseNativeHandle(transfer_memory); };
-
+    Result SystemUpdateService::SetupUpdateImpl(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
         /* Ensure we don't already have an update set up. */
         R_UNLESS(!this->setup_update, ns::ResultCardUpdateAlreadySetup());
 
@@ -484,18 +481,18 @@ namespace ams::mitm::sysupdater {
         }
 
         /* Initialize the update task. */
-        handle_guard.Cancel();
-        R_TRY(InitializeUpdateTask(transfer_memory, transfer_memory_size, path, exfat, firmware_variation_id));
+        R_TRY(InitializeUpdateTask(std::move(transfer_memory), transfer_memory_size, path, exfat, firmware_variation_id));
 
         /* The update is now set up. */
         this->setup_update = true;
         return ResultSuccess();
     }
 
-    Result SystemUpdateService::InitializeUpdateTask(os::NativeHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+    Result SystemUpdateService::InitializeUpdateTask(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
         /* Map the transfer memory. */
         const size_t tmem_buffer_size = static_cast<size_t>(transfer_memory_size);
-        this->update_transfer_memory.emplace(tmem_buffer_size, transfer_memory, true);
+        this->update_transfer_memory.emplace(tmem_buffer_size, transfer_memory.GetOsHandle(), transfer_memory.IsManaged());
+        transfer_memory.Detach();
 
         void *tmem_buffer;
         R_TRY(this->update_transfer_memory->Map(std::addressof(tmem_buffer), os::MemoryPermission_None));
