@@ -62,6 +62,7 @@ namespace ams::ro::impl {
                         }
 
                         /* Return the address. */
+                        return address;
                     }
                 }
 
@@ -134,7 +135,7 @@ namespace ams::ro::impl {
                 /* ... */
             }
 
-            MappedCodeMemory(svc::Handle handle, u64 dst, u64 src, u64 size) : m_handle(handle), m_dst_address(dst), m_src_address(src), m_size(size) {
+            MappedCodeMemory(os::NativeHandle handle, u64 dst, u64 src, u64 size) : m_handle(handle), m_dst_address(dst), m_src_address(src), m_size(size) {
                 m_result = svc::MapProcessCodeMemory(m_handle, m_dst_address, m_src_address, m_size);
             }
 
