@@ -166,7 +166,7 @@ namespace ams::dmnt {
             svc::MemoryInfo memory_info;
             svc::PageInfo page_info;
             if (R_SUCCEEDED(svc::QueryDebugProcessMemory(std::addressof(memory_info), std::addressof(page_info), m_debug_handle, address))) {
-                if (memory_info.perm == svc::MemoryPermission_ReadExecute && (memory_info.state == svc::MemoryState_Code || memory_info.state == svc::MemoryState_AliasCode)) {
+                if (memory_info.permission == svc::MemoryPermission_ReadExecute && (memory_info.state == svc::MemoryState_Code || memory_info.state == svc::MemoryState_AliasCode)) {
                     /* Check that we can add the module. */
                     AMS_ABORT_UNLESS(m_module_count < ModuleCountMax);
 
@@ -174,7 +174,7 @@ namespace ams::dmnt {
                     auto &module = m_module_definitions[m_module_count++];
 
                     /* Set module address/size. */
-                    module.SetAddressSize(memory_info.addr, memory_info.size);
+                    module.SetAddressSize(memory_info.base_address, memory_info.size);
 
                     /* Get module name buffer. */
                     char *module_name = module.GetNameBuffer();
@@ -186,7 +186,7 @@ namespace ams::dmnt {
                         s32  path_length;
                         char path[ModuleDefinition::PathLengthMax];
                     } module_path;
-                    if (R_SUCCEEDED(this->ReadMemory(std::addressof(module_path), memory_info.addr + memory_info.size, sizeof(module_path)))) {
+                    if (R_SUCCEEDED(this->ReadMemory(std::addressof(module_path), memory_info.base_address + memory_info.size, sizeof(module_path)))) {
                         if (module_path.zero == 0 && module_path.path_length == util::Strnlen(module_path.path, sizeof(module_path.path))) {
                             std::memcpy(module_name, module_path.path, ModuleDefinition::PathLengthMax);
                         }
@@ -198,7 +198,7 @@ namespace ams::dmnt {
             }
 
             /* Check if we're done. */
-            const uintptr_t next_address = memory_info.addr + memory_info.size;
+            const uintptr_t next_address = memory_info.base_address + memory_info.size;
             if (memory_info.state == svc::MemoryState_Inaccessible) {
                 break;
             }

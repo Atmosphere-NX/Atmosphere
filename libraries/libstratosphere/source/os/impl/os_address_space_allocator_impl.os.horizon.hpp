@@ -32,7 +32,7 @@ namespace ams::os::impl {
                 R_ASSERT(result);
                 AMS_UNUSED(result);
 
-                return memory_info.state == svc::MemoryState_Free && address + size <= memory_info.addr + memory_info.size;
+                return memory_info.state == svc::MemoryState_Free && address + size <= memory_info.base_address + memory_info.size;
             }
     };
 

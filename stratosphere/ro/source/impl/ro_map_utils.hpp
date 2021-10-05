@@ -77,13 +77,13 @@ namespace ams::ro::impl {
 
                 /* Check for guard availability before the region. */
                 R_ABORT_UNLESS(svc::QueryProcessMemory(std::addressof(mem_info), std::addressof(page_info), process, address - 1));
-                if (!(mem_info.state == svc::MemoryState_Free && mem_info.addr <= address - StackGuardSize)) {
+                if (!(mem_info.state == svc::MemoryState_Free && mem_info.base_address <= address - StackGuardSize)) {
                     return false;
                 }
 
                 /* Check for guard availability after the region. */
                 R_ABORT_UNLESS(svc::QueryProcessMemory(std::addressof(mem_info), std::addressof(page_info), process, address + size));
-                if (!(mem_info.state == svc::MemoryState_Free && address + size + StackGuardSize <= mem_info.addr + mem_info.size)) {
+                if (!(mem_info.state == svc::MemoryState_Free && address + size + StackGuardSize <= mem_info.base_address + mem_info.size)) {
                     return false;
                 }
 

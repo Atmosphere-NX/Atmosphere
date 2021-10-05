@@ -159,23 +159,23 @@ namespace ams::fatal::srv {
         bool TryGuessBaseAddress(u64 *out_base_address, os::NativeHandle debug_handle, u64 guess) {
             svc::MemoryInfo mi;
             svc::PageInfo pi;
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.perm != svc::MemoryPermission_ReadExecute) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.permission != svc::MemoryPermission_ReadExecute) {
                 return false;
             }
 
             /* Iterate backwards until we find the memory before the code region. */
-            while (mi.addr > 0) {
+            while (mi.base_address > 0) {
                 if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
                     return false;
                 }
 
                 if (mi.state == svc::MemoryState_Free) {
                     /* Code region will be at the end of the unmapped region preceding it. */
-                    *out_base_address = mi.addr + mi.size;
+                    *out_base_address = mi.base_address + mi.size;
                     return true;
                 }
 
-                guess = mi.addr - 4;
+                guess = mi.base_address - 4;
             }
 
             return false;

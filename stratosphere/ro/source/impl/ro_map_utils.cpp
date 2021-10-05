@@ -66,17 +66,17 @@ namespace ams::ro::impl {
             R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), address));
 
             /* If the memory range is free and big enough, use it. */
-            if (mem_info.state == svc::MemoryState_Free && mapping_size <= ((mem_info.addr + mem_info.size) - address)) {
+            if (mem_info.state == svc::MemoryState_Free && mapping_size <= ((mem_info.base_address + mem_info.size) - address)) {
                 *out = address;
                 return ResultSuccess();
             }
 
             /* Check that we can advance. */
-            R_UNLESS(address < mem_info.addr + mem_info.size,                        ro::ResultOutOfAddressSpace());
-            R_UNLESS(mem_info.addr + mem_info.size - 1 < aslr_start + aslr_size - 1, ro::ResultOutOfAddressSpace());
+            R_UNLESS(address < mem_info.base_address + mem_info.size,                        ro::ResultOutOfAddressSpace());
+            R_UNLESS(mem_info.base_address + mem_info.size - 1 < aslr_start + aslr_size - 1, ro::ResultOutOfAddressSpace());
 
             /* Advance. */
-            address = mem_info.addr + mem_info.size;
+            address = mem_info.base_address + mem_info.size;
         }
     }
 

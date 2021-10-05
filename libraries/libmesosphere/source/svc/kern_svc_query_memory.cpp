@@ -47,16 +47,16 @@ namespace ams::kern::svc {
             } else {
                 /* Convert the info. */
                 T converted_info = {};
-                static_assert(std::same_as<decltype(T{}.addr), decltype(ams::svc::MemoryInfo{}.addr)>);
+                static_assert(std::same_as<decltype(T{}.base_address), decltype(ams::svc::MemoryInfo{}.base_address)>);
                 static_assert(std::same_as<decltype(T{}.size), decltype(ams::svc::MemoryInfo{}.size)>);
 
-                converted_info.addr             = info.addr;
-                converted_info.size             = info.size;
-                converted_info.state            = info.state;
-                converted_info.attr             = info.attr;
-                converted_info.perm             = info.perm;
-                converted_info.ipc_refcount     = info.ipc_refcount;
-                converted_info.device_refcount  = info.device_refcount;
+                converted_info.base_address = info.base_address;
+                converted_info.size         = info.size;
+                converted_info.state        = info.state;
+                converted_info.attribute    = info.attribute;
+                converted_info.permission   = info.permission;
+                converted_info.ipc_count    = info.ipc_count;
+                converted_info.device_count = info.device_count;
 
                 /* Copy it. */
                 R_TRY(out_memory_info.CopyFrom(std::addressof(converted_info)));

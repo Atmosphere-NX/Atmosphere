@@ -21,13 +21,13 @@ namespace ams::svc {
     namespace lp64 {
 
         struct MemoryInfo {
-            u64 addr;
+            u64 base_address;
             u64 size;
             MemoryState state;
-            MemoryAttribute attr;
-            MemoryPermission perm;
-            u32 ipc_refcount;
-            u32 device_refcount;
+            MemoryAttribute attribute;
+            MemoryPermission permission;
+            u32 ipc_count;
+            u32 device_count;
             u32 padding;
         };
 
@@ -43,13 +43,13 @@ namespace ams::svc {
     namespace ilp32 {
 
         struct MemoryInfo {
-            u64 addr;
+            u64 base_address;
             u64 size;
             MemoryState state;
-            MemoryAttribute attr;
-            MemoryPermission perm;
-            u32 ipc_refcount;
-            u32 device_refcount;
+            MemoryAttribute attribute;
+            MemoryPermission permission;
+            u32 ipc_count;
+            u32 device_count;
             u32 padding;
         };
 

@@ -24,14 +24,14 @@ namespace ams::ro::impl {
             svc::PageInfo page_info;
             bool success = false;
 
-            for (uintptr_t cur = target; cur <= target; cur = mem_info.addr - 1) {
+            for (uintptr_t cur = target; cur <= target; cur = mem_info.base_address - 1) {
                 R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur));
 
-                if (mem_info.state != state || mem_info.perm != svc::MemoryPermission_ReadExecute) {
+                if (mem_info.state != state || mem_info.permission != svc::MemoryPermission_ReadExecute) {
                     break;
                 }
 
-                *out = mem_info.addr;
+                *out = mem_info.base_address;
                 success = true;
             }
 
@@ -43,14 +43,14 @@ namespace ams::ro::impl {
             svc::PageInfo page_info;
             bool success = false;
 
-            for (uintptr_t cur = target; cur >= target; cur = mem_info.addr + mem_info.size) {
+            for (uintptr_t cur = target; cur >= target; cur = mem_info.base_address + mem_info.size) {
                 R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur));
 
                 if (mem_info.state != state) {
                     break;
                 }
 
-                *out = mem_info.addr + mem_info.size - 1;
+                *out = mem_info.base_address + mem_info.size - 1;
                 success = true;
             }
 
@@ -64,7 +64,7 @@ namespace ams::ro::impl {
             R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), pc));
 
             /* Check memory info. */
-            if (mem_info.perm != svc::MemoryPermission_ReadExecute) {
+            if (mem_info.permission != svc::MemoryPermission_ReadExecute) {
                 return false;
             }
 

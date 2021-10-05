@@ -200,21 +200,21 @@ namespace ams::kern {
         u16 m_ipc_lock_count;
         u16 m_device_use_count;
         u16 m_ipc_disable_merge_count;
-        KMemoryPermission m_perm;
+        KMemoryPermission m_permission;
         KMemoryAttribute  m_attribute;
-        KMemoryPermission m_original_perm;
+        KMemoryPermission m_original_permission;
         KMemoryBlockDisableMergeAttribute m_disable_merge_attribute;
 
         constexpr ams::svc::MemoryInfo GetSvcMemoryInfo() const {
             return {
-                .addr             = m_address,
-                .size             = m_size,
-                .state            = static_cast<ams::svc::MemoryState>(m_state & KMemoryState_Mask),
-                .attr             = static_cast<ams::svc::MemoryAttribute>(m_attribute & KMemoryAttribute_UserMask),
-                .perm             = static_cast<ams::svc::MemoryPermission>(m_perm & KMemoryPermission_UserMask),
-                .ipc_refcount     = m_ipc_lock_count,
-                .device_refcount  = m_device_use_count,
-                .padding          = {},
+                .base_address  = m_address,
+                .size          = m_size,
+                .state         = static_cast<ams::svc::MemoryState>(m_state & KMemoryState_Mask),
+                .attribute     = static_cast<ams::svc::MemoryAttribute>(m_attribute & KMemoryAttribute_UserMask),
+                .permission    = static_cast<ams::svc::MemoryPermission>(m_permission & KMemoryPermission_UserMask),
+                .ipc_count     = m_ipc_lock_count,
+                .device_count  = m_device_use_count,
+                .padding       = {},
             };
         }
 
@@ -251,11 +251,11 @@ namespace ams::kern {
         }
 
         constexpr KMemoryPermission GetPermission() const {
-            return m_perm;
+            return m_permission;
         }
 
         constexpr KMemoryPermission GetOriginalPermission() const {
-            return m_original_perm;
+            return m_original_permission;
         }
 
         constexpr KMemoryAttribute GetAttribute() const {
@@ -277,8 +277,8 @@ namespace ams::kern {
             u16 m_ipc_lock_count;
             u16 m_device_use_count;
             u16 m_ipc_disable_merge_count;
-            KMemoryPermission m_perm;
-            KMemoryPermission m_original_perm;
+            KMemoryPermission m_permission;
+            KMemoryPermission m_original_permission;
             KMemoryAttribute m_attribute;
             KMemoryBlockDisableMergeAttribute m_disable_merge_attribute;
         public:
@@ -321,11 +321,11 @@ namespace ams::kern {
             }
 
             constexpr KMemoryPermission GetPermission() const {
-                return m_perm;
+                return m_permission;
             }
 
             constexpr KMemoryPermission GetOriginalPermission() const {
-                return m_original_perm;
+                return m_original_permission;
             }
 
             constexpr KMemoryAttribute GetAttribute() const {
@@ -342,52 +342,52 @@ namespace ams::kern {
                     .m_ipc_lock_count                   = m_ipc_lock_count,
                     .m_device_use_count                 = m_device_use_count,
                     .m_ipc_disable_merge_count          = m_ipc_disable_merge_count,
-                    .m_perm                             = m_perm,
+                    .m_permission                       = m_permission,
                     .m_attribute                        = m_attribute,
-                    .m_original_perm                    = m_original_perm,
+                    .m_original_permission              = m_original_permission,
                     .m_disable_merge_attribute          = m_disable_merge_attribute,
                 };
             }
         public:
             constexpr KMemoryBlock()
-                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(), m_num_pages(), m_memory_state(KMemoryState_None), m_ipc_lock_count(), m_device_use_count(), m_ipc_disable_merge_count(), m_perm(), m_original_perm(), m_attribute(), m_disable_merge_attribute()
+                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(), m_num_pages(), m_memory_state(KMemoryState_None), m_ipc_lock_count(), m_device_use_count(), m_ipc_disable_merge_count(), m_permission(), m_original_permission(), m_attribute(), m_disable_merge_attribute()
             {
                 /* ... */
             }
 
             constexpr KMemoryBlock(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
-                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0), m_device_use_count(0), m_ipc_disable_merge_count(), m_perm(p), m_original_perm(KMemoryPermission_None), m_attribute(attr), m_disable_merge_attribute()
+                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0), m_device_use_count(0), m_ipc_disable_merge_count(), m_permission(p), m_original_permission(KMemoryPermission_None), m_attribute(attr), m_disable_merge_attribute()
             {
                 /* ... */
             }
 
             constexpr void Initialize(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr) {
                 MESOSPHERE_ASSERT_THIS();
-                m_address           = addr;
-                m_num_pages         = np;
-                m_memory_state      = ms;
-                m_ipc_lock_count    = 0;
-                m_device_use_count  = 0;
-                m_perm              = p;
-                m_original_perm     = KMemoryPermission_None;
-                m_attribute         = attr;
+                m_address             = addr;
+                m_num_pages           = np;
+                m_memory_state        = ms;
+                m_ipc_lock_count      = 0;
+                m_device_use_count    = 0;
+                m_permission          = p;
+                m_original_permission = KMemoryPermission_None;
+                m_attribute           = attr;
             }
 
             constexpr bool HasProperties(KMemoryState s, KMemoryPermission p, KMemoryAttribute a) const {
                 MESOSPHERE_ASSERT_THIS();
                 constexpr auto AttributeIgnoreMask = KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
-                return m_memory_state == s && m_perm == p && (m_attribute | AttributeIgnoreMask) == (a | AttributeIgnoreMask);
+                return m_memory_state == s && m_permission == p && (m_attribute | AttributeIgnoreMask) == (a | AttributeIgnoreMask);
             }
 
             constexpr bool HasSameProperties(const KMemoryBlock &rhs) const {
                 MESOSPHERE_ASSERT_THIS();
 
-                return m_memory_state     == rhs.m_memory_state   &&
-                       m_perm             == rhs.m_perm           &&
-                       m_original_perm    == rhs.m_original_perm  &&
-                       m_attribute        == rhs.m_attribute      &&
-                       m_ipc_lock_count   == rhs.m_ipc_lock_count &&
-                       m_device_use_count == rhs.m_device_use_count;
+                return m_memory_state        == rhs.m_memory_state        &&
+                       m_permission          == rhs.m_permission          &&
+                       m_original_permission == rhs.m_original_permission &&
+                       m_attribute           == rhs.m_attribute           &&
+                       m_ipc_lock_count      == rhs.m_ipc_lock_count      &&
+                       m_device_use_count    == rhs.m_device_use_count;
             }
 
             constexpr bool CanMergeWith(const KMemoryBlock &rhs) const {
@@ -414,11 +414,11 @@ namespace ams::kern {
 
             constexpr void Update(KMemoryState s, KMemoryPermission p, KMemoryAttribute a, bool set_disable_merge_attr, u8 set_mask, u8 clear_mask) {
                 MESOSPHERE_ASSERT_THIS();
-                MESOSPHERE_ASSERT(m_original_perm == KMemoryPermission_None);
+                MESOSPHERE_ASSERT(m_original_permission == KMemoryPermission_None);
                 MESOSPHERE_ASSERT((m_attribute & KMemoryAttribute_IpcLocked) == 0);
 
                 m_memory_state = s;
-                m_perm         = p;
+                m_permission   = p;
                 m_attribute    = static_cast<KMemoryAttribute>(a | (m_attribute & (KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared)));
 
                 if (set_disable_merge_attr && set_mask != 0) {
@@ -440,8 +440,8 @@ namespace ams::kern {
                 block->m_memory_state                     = m_memory_state;
                 block->m_ipc_lock_count                   = m_ipc_lock_count;
                 block->m_device_use_count                 = m_device_use_count;
-                block->m_perm                             = m_perm;
-                block->m_original_perm                    = m_original_perm;
+                block->m_permission                       = m_permission;
+                block->m_original_permission              = m_original_permission;
                 block->m_attribute                        = m_attribute;
                 block->m_disable_merge_attribute          = static_cast<KMemoryBlockDisableMergeAttribute>(m_disable_merge_attribute & KMemoryBlockDisableMergeAttribute_AllLeft);
                 block->m_ipc_disable_merge_count          = m_ipc_disable_merge_count;
@@ -581,11 +581,11 @@ namespace ams::kern {
 
                 /* If this is our first lock, update our permissions. */
                 if (new_lock_count == 1) {
-                    MESOSPHERE_ASSERT(m_original_perm == KMemoryPermission_None);
-                    MESOSPHERE_ASSERT((m_perm | new_perm | KMemoryPermission_NotMapped) == (m_perm | KMemoryPermission_NotMapped));
-                    MESOSPHERE_ASSERT((m_perm & KMemoryPermission_UserExecute) != KMemoryPermission_UserExecute || (new_perm == KMemoryPermission_UserRead));
-                    m_original_perm = m_perm;
-                    m_perm          = static_cast<KMemoryPermission>((new_perm & KMemoryPermission_IpcLockChangeMask) | (m_original_perm & ~KMemoryPermission_IpcLockChangeMask));
+                    MESOSPHERE_ASSERT(m_original_permission == KMemoryPermission_None);
+                    MESOSPHERE_ASSERT((m_permission | new_perm | KMemoryPermission_NotMapped) == (m_permission | KMemoryPermission_NotMapped));
+                    MESOSPHERE_ASSERT((m_permission & KMemoryPermission_UserExecute) != KMemoryPermission_UserExecute || (new_perm == KMemoryPermission_UserRead));
+                    m_original_permission = m_permission;
+                    m_permission          = static_cast<KMemoryPermission>((new_perm & KMemoryPermission_IpcLockChangeMask) | (m_original_permission & ~KMemoryPermission_IpcLockChangeMask));
                 }
                 m_attribute = static_cast<KMemoryAttribute>(m_attribute | KMemoryAttribute_IpcLocked);
 
@@ -610,9 +610,9 @@ namespace ams::kern {
 
                 /* If this is our last unlock, update our permissions. */
                 if (old_lock_count == 1) {
-                    MESOSPHERE_ASSERT(m_original_perm != KMemoryPermission_None);
-                    m_perm          = m_original_perm;
-                    m_original_perm = KMemoryPermission_None;
+                    MESOSPHERE_ASSERT(m_original_permission != KMemoryPermission_None);
+                    m_permission          = m_original_permission;
+                    m_original_permission = KMemoryPermission_None;
                     m_attribute = static_cast<KMemoryAttribute>(m_attribute & ~KMemoryAttribute_IpcLocked);
                 }
 

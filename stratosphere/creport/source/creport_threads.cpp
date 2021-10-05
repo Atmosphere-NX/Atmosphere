@@ -198,14 +198,14 @@ namespace ams::creport {
         /* Check if sp points into the stack. */
         if (mi.state != svc::MemoryState_Stack) {
             /* It's possible that sp is below the stack... */
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr + mi.size)) || mi.state != svc::MemoryState_Stack) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address + mi.size)) || mi.state != svc::MemoryState_Stack) {
                 return;
             }
         }
 
         /* Save stack extents. */
-        this->stack_bottom = mi.addr;
-        this->stack_top = mi.addr + mi.size;
+        this->stack_bottom = mi.base_address;
+        this->stack_top    = mi.base_address + mi.size;
 
         /* We always want to dump 0x100 of stack, starting from the lowest 0x10-byte aligned address below the stack pointer. */
         /* Note: if the stack pointer is below the stack bottom, we will start dumping from the stack bottom. */

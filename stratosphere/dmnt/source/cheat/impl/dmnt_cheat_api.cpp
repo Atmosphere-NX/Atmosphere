@@ -360,11 +360,11 @@ namespace ams::dmnt::cheat::impl {
                             break;
                         }
 
-                        if (mem_info.perm != svc::MemoryPermission_None) {
+                        if (mem_info.permission != svc::MemoryPermission_None) {
                             count++;
                         }
 
-                        address = mem_info.addr + mem_info.size;
+                        address = mem_info.base_address + mem_info.size;
                     } while (address != 0);
 
                     *out_count = count;
@@ -384,14 +384,14 @@ namespace ams::dmnt::cheat::impl {
                             break;
                         }
 
-                        if (mem_info.perm != svc::MemoryPermission_None) {
+                        if (mem_info.permission != svc::MemoryPermission_None) {
                             if (offset <= total_count && written_count < max_count) {
                                 mappings[written_count++] = mem_info;
                             }
                             total_count++;
                         }
 
-                        address = mem_info.addr + mem_info.size;
+                        address = mem_info.base_address + mem_info.size;
                     } while (address != 0 && written_count < max_count);
 
                     *out_count = written_count;

@@ -468,9 +468,9 @@ namespace ams::kern {
 
     Result KPageTableBase::CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
         /* Validate the states match expectation. */
-        R_UNLESS((info.m_state     & state_mask) == state, svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.m_perm      & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.m_attribute & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.m_state      & state_mask) == state, svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.m_permission & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.m_attribute  & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
 
         return ResultSuccess();
     }
@@ -524,12 +524,12 @@ namespace ams::kern {
 
         /* Validate all blocks in the range have correct state. */
         const KMemoryState      first_state = info.m_state;
-        const KMemoryPermission first_perm  = info.m_perm;
+        const KMemoryPermission first_perm  = info.m_permission;
         const KMemoryAttribute  first_attr  = info.m_attribute;
         while (true) {
             /* Validate the current block. */
             R_UNLESS(info.m_state == first_state,                                    svc::ResultInvalidCurrentMemory());
-            R_UNLESS(info.m_perm  == first_perm,                                     svc::ResultInvalidCurrentMemory());
+            R_UNLESS(info.m_permission == first_perm,                                svc::ResultInvalidCurrentMemory());
             R_UNLESS((info.m_attribute | ignore_attr) == (first_attr | ignore_attr), svc::ResultInvalidCurrentMemory());
 
             /* Validate against the provided masks. */
@@ -1720,9 +1720,9 @@ namespace ams::kern {
                 .m_ipc_lock_count                   = 0,
                 .m_device_use_count                 = 0,
                 .m_ipc_disable_merge_count          = 0,
-                .m_perm                             = KMemoryPermission_None,
+                .m_permission                       = KMemoryPermission_None,
                 .m_attribute                        = KMemoryAttribute_None,
-                .m_original_perm                    = KMemoryPermission_None,
+                .m_original_permission              = KMemoryPermission_None,
                 .m_disable_merge_attribute          = KMemoryBlockDisableMergeAttribute_None,
             };
             out_page_info->flags = 0;

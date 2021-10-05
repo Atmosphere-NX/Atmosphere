@@ -27,9 +27,9 @@ namespace ams::os::impl {
                 svc::PageInfo page_info;
                 R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur_address));
 
-                size_t cur_size = std::min(mem_info.addr + mem_info.size - cur_address, remaining_size);
+                size_t cur_size = std::min(mem_info.base_address + mem_info.size - cur_address, remaining_size);
 
-                if (mem_info.perm != perm) {
+                if (mem_info.permission != perm) {
                     R_ABORT_UNLESS(svc::SetMemoryPermission(cur_address, cur_size, perm));
                 }
 

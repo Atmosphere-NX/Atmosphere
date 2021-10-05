@@ -24,7 +24,7 @@ namespace ams::kern {
         m_physical_address = phys_addr;
         m_size             = size;
         m_mapping          = mapping;
-        m_perm             = perm;
+        m_permission       = perm;
         m_pool             = pool;
         m_is_mapped        = false;
 
@@ -52,7 +52,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Check that the desired perm is allowable. */
-        R_UNLESS((m_perm | map_perm) == m_perm, svc::ResultInvalidNewMemoryPermission());
+        R_UNLESS((m_permission | map_perm) == m_permission, svc::ResultInvalidNewMemoryPermission());
 
         /* Check that the size is correct. */
         R_UNLESS(size == m_size, svc::ResultInvalidSize());

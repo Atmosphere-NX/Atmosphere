@@ -99,10 +99,10 @@ namespace ams::creport {
             }
 
             /* Parse module. */
-            if (mi.perm == svc::MemoryPermission_ReadExecute) {
+            if (mi.permission == svc::MemoryPermission_ReadExecute) {
                 auto& module = this->modules[this->num_modules++];
-                module.start_address = mi.addr;
-                module.end_address   = mi.addr + mi.size;
+                module.start_address = mi.base_address;
+                module.end_address   = mi.base_address + mi.size;
                 GetModuleName(module.name, module.start_address, module.end_address);
                 GetModuleBuildId(module.build_id, module.end_address);
                 /* Some homebrew won't have a name. Add a fake one for readability. */
@@ -134,34 +134,34 @@ namespace ams::creport {
         }
 
         /* If we fall into a RW region, it may be rwdata. Query the region before it, which may be rodata or text. */
-        if (mi.perm == svc::MemoryPermission_ReadWrite) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+        if (mi.permission == svc::MemoryPermission_ReadWrite) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
                 return false;
             }
         }
 
         /* If we fall into an RO region, it may be rodata. Query the region before it, which should be text. */
-        if (mi.perm == svc::MemoryPermission_Read) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+        if (mi.permission == svc::MemoryPermission_Read) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
                 return false;
             }
         }
 
         /* We should, at this point, be looking at an executable region (text). */
-        if (mi.perm != svc::MemoryPermission_ReadExecute) {
+        if (mi.permission != svc::MemoryPermission_ReadExecute) {
             return false;
         }
 
         /* Modules are a series of contiguous (text/rodata/rwdata) regions. */
         /* Iterate backwards until we find unmapped memory, to find the start of the set of modules loaded here. */
-        while (mi.addr > 0) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.addr - 4))) {
+        while (mi.base_address > 0) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
                 return false;
             }
 
             if (mi.state == svc::MemoryState_Free) {
                 /* We've found unmapped memory, so output the mapped memory afterwards. */
-                *out_address = mi.addr + mi.size;
+                *out_address = mi.base_address + mi.size;
                 return true;
             }
         }
@@ -181,12 +181,12 @@ namespace ams::creport {
             svc::PageInfo pi;
 
             /* Verify .rodata is read-only. */
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != svc::MemoryPermission_Read) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
                 return;
             }
 
             /* Calculate start of rwdata. */
-            const u64 rw_start_address = mi.addr + mi.size;
+            const u64 rw_start_address = mi.base_address + mi.size;
 
             /* Read start of .rodata. */
             if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(rodata_start)), this->debug_handle, ro_start_address, sizeof(rodata_start)))) {
@@ -228,13 +228,13 @@ namespace ams::creport {
         /* Verify .rodata is read-only. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
-        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.perm != svc::MemoryPermission_Read) {
+        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
             return;
         }
 
         /* We want to read the last two pages of .rodata. */
         const size_t read_size = mi.size >= sizeof(g_last_rodata_pages) ? sizeof(g_last_rodata_pages) : (sizeof(g_last_rodata_pages) / 2);
-        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(g_last_rodata_pages), this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(g_last_rodata_pages), this->debug_handle, mi.base_address + mi.size - read_size, read_size))) {
             return;
         }
 
