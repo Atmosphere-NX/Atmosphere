@@ -34,13 +34,13 @@ namespace ams::sf::hipc {
                 ServerSession *session;
                 bool is_mitm_session;
             private:
-                Result CloneCurrentObjectImpl(Handle *out_client_handle, ServerSessionManager *tagged_manager) {
+                Result CloneCurrentObjectImpl(os::NativeHandle *out_client_handle, ServerSessionManager *tagged_manager) {
                     /* Clone the object. */
                     cmif::ServiceObjectHolder &&clone = this->session->srv_obj_holder.Clone();
                     R_UNLESS(clone, sf::hipc::ResultDomainObjectNotFound());
 
                     /* Create new session handles. */
-                    Handle server_handle;
+                    os::NativeHandle server_handle;
                     R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out_client_handle));
 
                     /* Register with manager. */
@@ -118,18 +118,18 @@ namespace ams::sf::hipc {
 
                     if (!this->is_mitm_session || object_id.value != serviceGetObjectId(this->session->forward_service.get())) {
                         /* Create new session handles. */
-                        Handle server_handle;
+                        os::NativeHandle server_handle;
                         R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
 
                         /* Register. */
                         R_ABORT_UNLESS(this->manager->RegisterSession(server_handle, std::move(object)));
                     } else {
                         /* Copy from the target domain. */
-                        Handle new_forward_target;
+                        os::NativeHandle new_forward_target;
                         R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, &new_forward_target));
 
                         /* Create new session handles. */
-                        Handle server_handle;
+                        os::NativeHandle server_handle;
                         R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
 
                         /* Register. */

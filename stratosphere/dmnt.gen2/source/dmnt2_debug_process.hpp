@@ -40,7 +40,7 @@ namespace ams::dmnt {
                 ContinueMode_Step,
             };
         private:
-            svc::Handle m_debug_handle{svc::InvalidHandle};
+            os::NativeHandle m_debug_handle{os::InvalidNativeHandle};
             s32 m_thread_count{0};
             bool m_is_valid{false};
             bool m_is_64_bit{false};
@@ -73,7 +73,7 @@ namespace ams::dmnt {
             }
             ~DebugProcess() { this->Detach(); }
 
-            svc::Handle GetHandle() const { return m_debug_handle; }
+            os::NativeHandle GetHandle() const { return m_debug_handle; }
             bool IsValid() const { return m_is_valid; }
             bool Is64Bit() const { return m_is_64_bit; }
             bool Is64BitAddressSpace() const { return m_is_64_bit_address_space; }

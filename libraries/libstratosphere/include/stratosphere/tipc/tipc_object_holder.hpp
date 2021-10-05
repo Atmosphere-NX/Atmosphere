@@ -28,12 +28,12 @@ namespace ams::tipc {
                 ObjectType_Session = 2,
             };
         private:
-            svc::Handle m_handle;
+            os::NativeHandle m_handle;
             ObjectType m_type;
             bool m_managed;
             tipc::ServiceObjectBase *m_object;
         private:
-            void InitializeImpl(ObjectType type, svc::Handle handle, bool managed, tipc::ServiceObjectBase *object) {
+            void InitializeImpl(ObjectType type, os::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
                 /* Validate that the object isn't already constructed. */
                 AMS_ASSERT(m_type == ObjectType_Invalid);
 
@@ -44,16 +44,16 @@ namespace ams::tipc {
                 m_object  = object;
             }
         public:
-            constexpr inline ObjectHolder() : m_handle(svc::InvalidHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
+            constexpr inline ObjectHolder() : m_handle(os::InvalidNativeHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
 
-            void InitializeAsPort(svc::Handle handle) {
+            void InitializeAsPort(os::NativeHandle handle) {
                 /* NOTE: Nintendo sets ports as managed, but this will cause a nullptr-deref if one is ever closed. */
                 /* This is theoretically a non-issue, as ports can't be closed, but we will set ours as unmanaged, */
                 /* just in case. */
                 this->InitializeImpl(ObjectType_Port, handle, false, nullptr);
             }
 
-            void InitializeAsSession(svc::Handle handle, bool managed, tipc::ServiceObjectBase *object) {
+            void InitializeAsSession(os::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
                 this->InitializeImpl(ObjectType_Session, handle, managed, object);
             }
 
@@ -69,13 +69,13 @@ namespace ams::tipc {
                 }
 
                 /* Reset all fields. */
-                m_handle  = svc::InvalidHandle;
+                m_handle  = os::InvalidNativeHandle;
                 m_type    = ObjectType_Invalid;
                 m_managed = false;
                 m_object  = nullptr;
             }
 
-            constexpr svc::Handle GetHandle() const {
+            constexpr os::NativeHandle GetHandle() const {
                 return m_handle;
             }
 

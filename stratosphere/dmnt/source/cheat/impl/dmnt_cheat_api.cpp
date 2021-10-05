@@ -88,7 +88,7 @@ namespace ams::dmnt::cheat::impl {
                 os::Event debug_events_event; /* Autoclear. */
                 os::ThreadType detect_thread, debug_events_thread;
                 os::SystemEvent cheat_process_event;
-                Handle cheat_process_debug_handle = svc::InvalidHandle;
+                os::NativeHandle cheat_process_debug_handle = os::InvalidNativeHandle;
                 CheatProcessMetadata cheat_process_metadata = {};
 
                 os::ThreadType vm_thread;
@@ -175,7 +175,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 void CloseActiveCheatProcess() {
-                    if (this->cheat_process_debug_handle != svc::InvalidHandle) {
+                    if (this->cheat_process_debug_handle != os::InvalidNativeHandle) {
                         /* We don't need to do any unsafe brekaing. */
                         this->broken_unsafe = false;
                         this->unsafe_break_event.Signal();
@@ -185,7 +185,7 @@ namespace ams::dmnt::cheat::impl {
 
                         /* Close resources. */
                         R_ABORT_UNLESS(svc::CloseHandle(this->cheat_process_debug_handle));
-                        this->cheat_process_debug_handle = svc::InvalidHandle;
+                        this->cheat_process_debug_handle = os::InvalidNativeHandle;
 
                         /* Save cheat toggles. */
                         if (this->always_save_cheat_toggles || this->should_save_cheat_toggles) {
@@ -218,7 +218,7 @@ namespace ams::dmnt::cheat::impl {
                 bool HasActiveCheatProcess() {
                     /* Note: This function *MUST* be called only with the cheat lock held. */
                     os::ProcessId pid;
-                    bool has_cheat_process = this->cheat_process_debug_handle != svc::InvalidHandle;
+                    bool has_cheat_process = this->cheat_process_debug_handle != os::InvalidNativeHandle;
                     has_cheat_process &= R_SUCCEEDED(os::GetProcessId(&pid, this->cheat_process_debug_handle));
                     has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&pid));
                     has_cheat_process &= (pid == this->cheat_process_metadata.process_id);
@@ -235,12 +235,12 @@ namespace ams::dmnt::cheat::impl {
                     return ResultSuccess();
                 }
 
-                Handle GetCheatProcessHandle() const {
+                os::NativeHandle GetCheatProcessHandle() const {
                     return this->cheat_process_debug_handle;
                 }
 
-                Handle HookToCreateApplicationProcess() const {
-                    Handle h = svc::InvalidHandle;
+                os::NativeHandle HookToCreateApplicationProcess() const {
+                    os::NativeHandle h;
                     R_ABORT_UNLESS(pm::dmnt::HookToCreateApplicationProcess(&h));
                     return h;
                 }
@@ -284,7 +284,7 @@ namespace ams::dmnt::cheat::impl {
                     return this->HasActiveCheatProcess();
                 }
 
-                Handle GetCheatProcessEventHandle() const {
+                os::NativeHandle GetCheatProcessEventHandle() const {
                     return this->cheat_process_event.GetReadableHandle();
                 }
 
@@ -704,7 +704,7 @@ namespace ams::dmnt::cheat::impl {
                                 this_ptr->cheat_lock.Unlock();
                                 this_ptr->unsafe_break_event.Wait();
                                 this_ptr->cheat_lock.Lock();
-                                if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
+                                if (this_ptr->GetCheatProcessHandle() != os::InvalidNativeHandle) {
                                     continue;
                                 } else {
                                     break;
@@ -1193,7 +1193,7 @@ namespace ams::dmnt::cheat::impl {
         return GetReference(g_cheat_process_manager).GetHasActiveCheatProcess();
     }
 
-    Handle GetCheatProcessEventHandle() {
+    os::NativeHandle GetCheatProcessEventHandle() {
         return GetReference(g_cheat_process_manager).GetCheatProcessEventHandle();
     }
 

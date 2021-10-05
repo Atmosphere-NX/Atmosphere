@@ -68,6 +68,6 @@ namespace ams::spl::impl {
 
     /* Helper. */
     Result DeallocateAllAesKeySlots(const void *owner);
-    Handle GetAesKeySlotAvailableEventHandle();
+    os::NativeHandle GetAesKeySlotAvailableEventHandle();
 
 }

@@ -172,7 +172,7 @@ namespace ams::pgl::srv {
         LoopProcessServer();
     }
 
-    Result AllocateShellEventObserverForTipc(svc::Handle *out) {
+    Result AllocateShellEventObserverForTipc(os::NativeHandle *out) {
         /* Get the shell event observer allocator. */
         auto &allocator = GetGlobalsForTipc().observer_allocator;
 

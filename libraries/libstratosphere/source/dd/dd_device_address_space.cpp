@@ -59,16 +59,16 @@ namespace ams::dd {
         das->state             = DeviceAddressSpaceType::State_NotInitialized;
     }
 
-    void AttachDeviceAddressSpaceHandle(DeviceAddressSpaceType *das, Handle handle, bool managed) {
+    void AttachDeviceAddressSpaceHandle(DeviceAddressSpaceType *das, DeviceAddressSpaceHandle handle, bool managed) {
         /* Check pre-conditions. */
-        AMS_ASSERT(handle != svc::InvalidHandle);
+        AMS_ASSERT(handle != os::InvalidNativeHandle);
 
         das->device_handle     = handle;
         das->is_handle_managed = managed;
         das->state             = DeviceAddressSpaceType::State_Initialized;
     }
 
-    Handle GetDeviceAddressSpaceHandle(DeviceAddressSpaceType *das) {
+    DeviceAddressSpaceHandle GetDeviceAddressSpaceHandle(DeviceAddressSpaceType *das) {
         /* Check pre-conditions. */
         AMS_ASSERT(das->state == DeviceAddressSpaceType::State_Initialized);
 

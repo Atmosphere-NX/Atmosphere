@@ -18,6 +18,6 @@
 
 namespace ams::pgl::srv {
 
-    Result AllocateShellEventObserverForTipc(svc::Handle *out);
+    Result AllocateShellEventObserverForTipc(os::NativeHandle *out);
 
 }

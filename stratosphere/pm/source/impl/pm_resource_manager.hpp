@@ -22,9 +22,11 @@ namespace ams::pm::resource {
     Result InitializeResourceManager();
     Result BoostSystemMemoryResourceLimit(u64 boost_size);
     Result BoostApplicationThreadResourceLimit();
-    Handle GetResourceLimitHandle(ResourceLimitGroup group);
-    Handle GetResourceLimitHandle(const ldr::ProgramInfo *info);
-    void   WaitResourceAvailable(const ldr::ProgramInfo *info);
+
+    os::NativeHandle GetResourceLimitHandle(ResourceLimitGroup group);
+    os::NativeHandle GetResourceLimitHandle(const ldr::ProgramInfo *info);
+
+    void WaitResourceAvailable(const ldr::ProgramInfo *info);
 
     Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource);
 

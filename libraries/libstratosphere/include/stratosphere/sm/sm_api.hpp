@@ -26,7 +26,7 @@ namespace ams::sm {
 
     /* Ordinary SM API. */
     Result GetService(Service *out, ServiceName name);
-    Result RegisterService(Handle *out, ServiceName name, size_t max_sessions, bool is_light);
+    Result RegisterService(os::NativeHandle *out, ServiceName name, size_t max_sessions, bool is_light);
     Result UnregisterService(ServiceName name);
 
     /* Atmosphere extensions. */

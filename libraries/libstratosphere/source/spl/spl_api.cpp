@@ -41,7 +41,7 @@ namespace ams::spl {
             return serviceDispatchIn(splCryptoGetServiceSession(), 22, slot);
         }
 
-        Result GetAesKeySlotAvailableEventImpl(Handle *out) {
+        Result GetAesKeySlotAvailableEventImpl(os::NativeHandle *out) {
             return serviceDispatch(splCryptoGetServiceSession(), 23,
                 .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
                 .out_handles = out,
@@ -49,8 +49,8 @@ namespace ams::spl {
         }
 
         void GetAesKeySlotAvailableEvent(os::SystemEvent *out) {
-            /* Get libnx event. */
-            Handle handle = svc::InvalidHandle;
+            /* Get event handle. */
+            os::NativeHandle handle;
             R_ABORT_UNLESS(GetAesKeySlotAvailableEventImpl(std::addressof(handle)));
 
             /* Attach to event. */

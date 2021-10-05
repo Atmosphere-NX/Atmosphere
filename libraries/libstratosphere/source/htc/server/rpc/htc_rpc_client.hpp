@@ -199,7 +199,7 @@ namespace ams::htc::server::rpc {
                 os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
             }
 
-            Handle DetachReadableHandle(u32 task_id) {
+            os::NativeHandle DetachReadableHandle(u32 task_id) {
                 return os::DetachReadableHandleOfSystemEvent(m_task_table.Get<Task>(task_id)->GetSystemEvent());
             }
 

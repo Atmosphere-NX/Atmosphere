@@ -37,7 +37,7 @@ namespace ams::tipc {
             Entry *m_entries_end{};
             os::MultiWaitType *m_multi_wait{};
         private:
-            Entry *FindEntry(svc::Handle handle) {
+            Entry *FindEntry(os::NativeHandle handle) {
                 for (Entry *cur = m_entries_start; cur != m_entries_end; ++cur) {
                     if (GetReference(cur->object).GetHandle() == handle) {
                         return cur;
@@ -76,7 +76,7 @@ namespace ams::tipc {
                 std::scoped_lock lk(m_mutex);
 
                 /* Find an empty entry. */
-                auto *entry = this->FindEntry(svc::InvalidHandle);
+                auto *entry = this->FindEntry(os::InvalidNativeHandle);
                 AMS_ABORT_UNLESS(entry != nullptr);
 
                 /* Set the entry's object. */
@@ -87,7 +87,7 @@ namespace ams::tipc {
                 os::LinkMultiWaitHolder(m_multi_wait, std::addressof(entry->multi_wait_holder));
             }
 
-            void CloseObject(svc::Handle handle) {
+            void CloseObject(os::NativeHandle handle) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -103,14 +103,14 @@ namespace ams::tipc {
                 GetReference(entry->object).Destroy();
             }
 
-            Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, svc::Handle reply_target, os::MultiWaitType *multi_wait) {
+            Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, os::NativeHandle reply_target, os::MultiWaitType *multi_wait) {
                 /* Declare signaled holder for processing ahead of time. */
                 os::MultiWaitHolderType *signaled_holder;
 
                 /* Reply and receive until we get a newly signaled target. */
                 Result result = os::SdkReplyAndReceive(out_holder, reply_target, multi_wait);
                 for (signaled_holder = *out_holder; signaled_holder == nullptr; signaled_holder = *out_holder) {
-                    result = os::SdkReplyAndReceive(out_holder, svc::InvalidHandle, multi_wait);
+                    result = os::SdkReplyAndReceive(out_holder, os::InvalidNativeHandle, multi_wait);
                 }
 
                 /* Find the entry matching the signaled holder. */
@@ -125,7 +125,7 @@ namespace ams::tipc {
                 }
             }
 
-            Result Reply(svc::Handle reply_target) {
+            Result Reply(os::NativeHandle reply_target) {
                 /* Perform the reply. */
                 s32 dummy;
                 R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(dummy), nullptr, 0, reply_target, 0)) {

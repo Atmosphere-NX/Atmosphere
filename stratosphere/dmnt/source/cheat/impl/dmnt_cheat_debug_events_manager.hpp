@@ -20,6 +20,6 @@ namespace ams::dmnt::cheat::impl {
 
     void InitializeDebugEventsManager();
 
-    Result ContinueCheatProcess(Handle cheat_dbg_hnd);
+    Result ContinueCheatProcess(os::NativeHandle cheat_dbg_hnd);
 
 }

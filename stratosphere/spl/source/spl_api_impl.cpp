@@ -222,13 +222,13 @@ namespace ams::spl::impl {
 
         class DeviceAddressSpaceMapHelper {
             private:
-                Handle das_hnd;
+                os::NativeHandle das_hnd;
                 u64 dst_addr;
                 u64 src_addr;
                 size_t size;
                 svc::MemoryPermission perm;
             public:
-                DeviceAddressSpaceMapHelper(Handle h, u64 dst, u64 src, size_t sz, svc::MemoryPermission p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
+                DeviceAddressSpaceMapHelper(os::NativeHandle h, u64 dst, u64 src, size_t sz, svc::MemoryPermission p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
                     R_ABORT_UNLESS(svc::MapDeviceAddressSpaceAligned(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr, this->perm));
                 }
                 ~DeviceAddressSpaceMapHelper() {
@@ -241,7 +241,7 @@ namespace ams::spl::impl {
         constinit os::InterruptEventType g_se_event;
         constinit os::SystemEventType g_se_keyslot_available_event;
 
-        constinit Handle g_se_das_hnd;
+        constinit os::NativeHandle g_se_das_hnd = os::InvalidNativeHandle;
         constinit u32 g_se_mapped_work_buffer_addr;
         alignas(os::MemoryPageSize) constinit u8 g_work_buffer[2 * WorkBufferSizeMax];
 
@@ -937,7 +937,7 @@ namespace ams::spl::impl {
         return ResultSuccess();
     }
 
-    Handle GetAesKeySlotAvailableEventHandle() {
+    os::NativeHandle GetAesKeySlotAvailableEventHandle() {
         return os::GetReadableHandleOfSystemEvent(std::addressof(g_se_keyslot_available_event));
     }
 

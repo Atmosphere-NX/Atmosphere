@@ -63,7 +63,7 @@ namespace ams::htc::server {
             Result GetEnvironmentVariable(size_t *out_size, char *dst, size_t dst_size, const char *name, size_t name_size);
             Result GetEnvironmentVariableLength(size_t *out_size, const char *name, size_t name_size);
 
-            Result RunOnHostBegin(u32 *out_task_id, Handle *out_event, const char *args, size_t args_size);
+            Result RunOnHostBegin(u32 *out_task_id, os::NativeHandle *out_event, const char *args, size_t args_size);
             Result RunOnHostEnd(s32 *out_result, u32 task_id);
     };
 

@@ -40,7 +40,7 @@ namespace ams::osdbg {
         uintptr_t _function;
         uintptr_t _name_pointer;
         impl::ThreadTypeCommon *_thread_type;
-        svc::Handle _debug_handle;
+        os::NativeHandle _debug_handle;
         ThreadTypeType _thread_type_type;
         svc::DebugInfoCreateProcess _debug_info_create_process;
         svc::DebugInfoCreateThread _debug_info_create_thread;

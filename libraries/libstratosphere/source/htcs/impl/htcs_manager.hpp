@@ -43,24 +43,24 @@ namespace ams::htcs::impl {
             void Shutdown(s32 *out_err, s32 *out_res, s32 how, s32 desc);
             void Fcntl(s32 *out_err, s32 *out_res, s32 command, s32 value, s32 desc);
 
-            Result AcceptStart(u32 *out_task_id, Handle *out_handle, s32 desc);
+            Result AcceptStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc);
             void AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc);
 
-            Result RecvStart(u32 *out_task_id, Handle *out_handle, s64 size, s32 desc, s32 flags);
+            Result RecvStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags);
             void RecvResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc);
 
-            Result SendStart(u32 *out_task_id, Handle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags);
-            Result SendLargeStart(u32 *out_task_id, Handle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags);
+            Result SendStart(u32 *out_task_id, os::NativeHandle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags);
+            Result SendLargeStart(u32 *out_task_id, os::NativeHandle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags);
             void SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc);
 
-            Result StartSend(u32 *out_task_id, Handle *out_handle, s32 desc, s64 size, s32 flags);
+            Result StartSend(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags);
             Result ContinueSend(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc);
             void EndSend(s32 *out_err, s64 *out_size, u32 task_id, s32 desc);
 
-            Result StartRecv(u32 *out_task_id, Handle *out_handle, s64 size, s32 desc, s32 flags);
+            Result StartRecv(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags);
             void EndRecv(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc);
 
-            Result StartSelect(u32 *out_task_id, Handle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec);
+            Result StartSelect(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec);
             Result EndSelect(s32 *out_err, s32 *out_count, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id);
     };
 

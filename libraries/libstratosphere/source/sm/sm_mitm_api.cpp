@@ -19,7 +19,7 @@
 namespace ams::sm::mitm {
 
     /* Mitm API. */
-    Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name) {
+    Result InstallMitm(os::NativeHandle *out_port, os::NativeHandle *out_query, ServiceName name) {
         return impl::DoWithPerThreadSession([&](TipcService *fwd) {
             return smAtmosphereMitmInstall(fwd, out_port, out_query, impl::ConvertName(name));
         });

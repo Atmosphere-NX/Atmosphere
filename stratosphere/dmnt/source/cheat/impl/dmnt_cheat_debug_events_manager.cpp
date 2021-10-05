@@ -126,7 +126,7 @@ namespace ams::dmnt::cheat::impl {
                     }
                 }
 
-                Result ContinueCheatProcess(Handle cheat_dbg_hnd) {
+                Result ContinueCheatProcess(os::NativeHandle cheat_dbg_hnd) {
                     /* Loop getting all debug events. */
                     svc::DebugEventInfo d;
                     size_t target_core = NumCores - 1;
@@ -151,7 +151,7 @@ namespace ams::dmnt::cheat::impl {
         util::ConstructAt(g_events_manager);
     }
 
-    Result ContinueCheatProcess(Handle cheat_dbg_hnd) {
+    Result ContinueCheatProcess(os::NativeHandle cheat_dbg_hnd) {
         return GetReference(g_events_manager).ContinueCheatProcess(cheat_dbg_hnd);
     }
 

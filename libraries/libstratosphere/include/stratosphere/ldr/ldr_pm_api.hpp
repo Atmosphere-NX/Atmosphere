@@ -20,7 +20,7 @@
 namespace ams::ldr::pm {
 
     /* Process Manager API. */
-    Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit);
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle reslimit);
     Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc);
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc);
     Result UnpinProgram(PinId pin_id);

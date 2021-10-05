@@ -21,7 +21,7 @@ namespace ams::dmnt::cheat::impl {
     void InitializeCheatManager();
 
     bool GetHasActiveCheatProcess();
-    Handle GetCheatProcessEventHandle();
+    os::NativeHandle GetCheatProcessEventHandle();
     Result GetCheatProcessMetadata(CheatProcessMetadata *out);
     Result ForceOpenCheatProcess();
     Result PauseCheatProcess();

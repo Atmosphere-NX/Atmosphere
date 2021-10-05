@@ -29,19 +29,19 @@ namespace ams::sm::impl {
     /* Service management. */
     Result HasService(bool *out, ServiceName service);
     Result WaitService(ServiceName service);
-    Result GetServiceHandle(svc::Handle *out, os::ProcessId process_id, ServiceName service);
-    Result RegisterService(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light);
-    Result RegisterServiceForSelf(svc::Handle *out, ServiceName service, size_t max_sessions);
+    Result GetServiceHandle(os::NativeHandle *out, os::ProcessId process_id, ServiceName service);
+    Result RegisterService(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light);
+    Result RegisterServiceForSelf(os::NativeHandle *out, ServiceName service, size_t max_sessions);
     Result UnregisterService(os::ProcessId process_id, ServiceName service);
 
     /* Mitm extensions. */
     Result HasMitm(bool *out, ServiceName service);
     Result WaitMitm(ServiceName service);
-    Result InstallMitm(svc::Handle *out, svc::Handle *out_query, os::ProcessId process_id, ServiceName service);
+    Result InstallMitm(os::NativeHandle *out, os::NativeHandle *out_query, os::ProcessId process_id, ServiceName service);
     Result UninstallMitm(os::ProcessId process_id, ServiceName service);
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service);
     Result ClearFutureMitm(os::ProcessId process_id, ServiceName service);
-    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, svc::Handle *out_hnd, os::ProcessId process_id, ServiceName service);
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, os::NativeHandle *out_hnd, os::ProcessId process_id, ServiceName service);
 
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers();

@@ -143,7 +143,7 @@ namespace ams::sm {
         g_server_manager.Initialize();
 
         /* Create the handles for our ports. */
-        svc::Handle user_port_handle = svc::InvalidHandle, manager_port_handle = svc::InvalidHandle;
+        os::NativeHandle user_port_handle, manager_port_handle;
         {
             /* Create the user port handle. */
             R_ABORT_UNLESS(svc::ManageNamedPort(std::addressof(user_port_handle), "sm:", MaxSessionsUser));

@@ -53,10 +53,10 @@ namespace ams::sm::impl {
             os::ProcessId owner_process_id;
             os::ProcessId mitm_process_id;
             os::ProcessId mitm_waiting_ack_process_id;
-            svc::Handle mitm_port_h;
-            svc::Handle mitm_query_h;
-            svc::Handle port_h;
-            svc::Handle mitm_fwd_sess_h;
+            os::NativeHandle mitm_port_h;
+            os::NativeHandle mitm_query_h;
+            os::NativeHandle port_h;
+            os::NativeHandle mitm_fwd_sess_h;
             s32 max_sessions;
             bool is_light;
             bool mitm_waiting_ack;
@@ -67,10 +67,10 @@ namespace ams::sm::impl {
             .owner_process_id            = os::InvalidProcessId,
             .mitm_process_id             = os::InvalidProcessId,
             .mitm_waiting_ack_process_id = os::InvalidProcessId,
-            .mitm_port_h                 = svc::InvalidHandle,
-            .mitm_query_h                = svc::InvalidHandle,
-            .port_h                      = svc::InvalidHandle,
-            .mitm_fwd_sess_h             = svc::InvalidHandle,
+            .mitm_port_h                 = os::InvalidNativeHandle,
+            .mitm_query_h                = os::InvalidNativeHandle,
+            .port_h                      = os::InvalidNativeHandle,
+            .mitm_fwd_sess_h             = os::InvalidNativeHandle,
             .max_sessions                = 0,
             .is_light                    = false,
             .mitm_waiting_ack            = false,
@@ -361,7 +361,7 @@ namespace ams::sm::impl {
                    program_id == ncm::SystemProgramId::Creport;
         }
 
-        Result GetMitmServiceHandleImpl(svc::Handle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
+        Result GetMitmServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
             /* Send command to query if we should mitm. */
             bool should_mitm;
             {
@@ -376,15 +376,15 @@ namespace ams::sm::impl {
             /* Create both handles. */
             {
                 /* Get the forward handle. */
-                svc::Handle fwd_hnd;
+                os::NativeHandle fwd_hnd;
                 R_TRY(svc::ConnectToPort(std::addressof(fwd_hnd), service_info->port_h));
 
                 /* Ensure that the forward handle is closed, if we fail to get the mitm handle. */
-                auto fwd_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(fwd_hnd)); };
+                auto fwd_guard = SCOPE_GUARD { os::CloseNativeHandle(fwd_hnd); };
 
                 /* Get the mitm handle. */
                 /* This should be guaranteed to succeed, since we got a forward handle. */
-                svc::Handle hnd;
+                os::NativeHandle hnd;
                 R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), service_info->mitm_port_h));
 
                 /* We got both handles, so we no longer need to clean up the forward handle. */
@@ -401,9 +401,9 @@ namespace ams::sm::impl {
             return ResultSuccess();
         }
 
-        Result GetServiceHandleImpl(svc::Handle *out, ServiceInfo *service_info, os::ProcessId process_id) {
+        Result GetServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, os::ProcessId process_id) {
             /* Clear handle output. */
-            *out = svc::InvalidHandle;
+            *out = os::InvalidNativeHandle;
 
             /* Check if we should return a mitm handle. */
             if (IsValidProcessId(service_info->mitm_process_id) && service_info->mitm_process_id != process_id) {
@@ -420,7 +420,7 @@ namespace ams::sm::impl {
             return svc::ConnectToPort(out, service_info->port_h);
         }
 
-        Result RegisterServiceImpl(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
+        Result RegisterServiceImpl(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
             /* Validate service name. */
             R_TRY(ValidateServiceName(service));
 
@@ -432,8 +432,8 @@ namespace ams::sm::impl {
             R_UNLESS(free_service != nullptr, sm::ResultOutOfServices());
 
             /* Create the new service. */
-            *out                   = svc::InvalidHandle;
-            svc::Handle server_hnd = svc::InvalidHandle;
+            *out                        = os::InvalidNativeHandle;
+            os::NativeHandle server_hnd = os::InvalidNativeHandle;
             R_TRY(svc::CreatePort(out, std::addressof(server_hnd), max_sessions, is_light, reinterpret_cast<uintptr_t>(free_service->name.name)));
 
             /* Save info. */
@@ -451,10 +451,10 @@ namespace ams::sm::impl {
 
         void UnregisterServiceImpl(ServiceInfo *service_info) {
             /* Close all valid handles. */
-            if (service_info->port_h != svc::InvalidHandle)          { R_ABORT_UNLESS(svc::CloseHandle(service_info->port_h)); }
-            if (service_info->mitm_port_h != svc::InvalidHandle)     { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_port_h)); }
-            if (service_info->mitm_query_h != svc::InvalidHandle)    { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_query_h)); }
-            if (service_info->mitm_fwd_sess_h != svc::InvalidHandle) { R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_fwd_sess_h)); }
+            os::CloseNativeHandle(service_info->port_h);
+            os::CloseNativeHandle(service_info->mitm_port_h);
+            os::CloseNativeHandle(service_info->mitm_query_h);
+            os::CloseNativeHandle(service_info->mitm_fwd_sess_h);
 
             /* Reset the info's state. */
             *service_info = InvalidServiceInfo;
@@ -547,7 +547,7 @@ namespace ams::sm::impl {
         return StartRegisterRetry(service);
     }
 
-    Result GetServiceHandle(svc::Handle *out, os::ProcessId process_id, ServiceName service) {
+    Result GetServiceHandle(os::NativeHandle *out, os::ProcessId process_id, ServiceName service) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
@@ -583,7 +583,7 @@ namespace ams::sm::impl {
         return ResultSuccess();
     }
 
-    Result RegisterService(svc::Handle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
+    Result RegisterService(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
@@ -604,7 +604,7 @@ namespace ams::sm::impl {
         return RegisterServiceImpl(out, process_id, service, max_sessions, is_light);
     }
 
-    Result RegisterServiceForSelf(svc::Handle *out, ServiceName service, size_t max_sessions) {
+    Result RegisterServiceForSelf(os::NativeHandle *out, ServiceName service, size_t max_sessions) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
@@ -665,7 +665,7 @@ namespace ams::sm::impl {
         return StartRegisterRetry(service);
     }
 
-    Result InstallMitm(svc::Handle *out, svc::Handle *out_query, os::ProcessId process_id, ServiceName service) {
+    Result InstallMitm(os::NativeHandle *out, os::NativeHandle *out_query, os::ProcessId process_id, ServiceName service) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
@@ -689,8 +689,8 @@ namespace ams::sm::impl {
         R_UNLESS(!IsValidProcessId(service_info->mitm_process_id), sm::ResultAlreadyRegistered());
 
         /* Always clear output. */
-        *out       = svc::InvalidHandle;
-        *out_query = svc::InvalidHandle;
+        *out       = os::InvalidNativeHandle;
+        *out_query = os::InvalidNativeHandle;
 
         /* If we don't have a future mitm declaration, add one. */
         /* Client will clear this when ready to process. */
@@ -704,14 +704,14 @@ namespace ams::sm::impl {
         /* Create mitm handles. */
         {
             /* Get the port handles. */
-            svc::Handle hnd, port_hnd;
+            os::NativeHandle hnd, port_hnd;
             R_TRY(svc::CreatePort(std::addressof(hnd), std::addressof(port_hnd), service_info->max_sessions, service_info->is_light, reinterpret_cast<uintptr_t>(service_info->name.name)));
 
             /* Ensure that we clean up the port handles, if something goes wrong creating the query sessions. */
-            auto port_guard = SCOPE_GUARD { R_ABORT_UNLESS(svc::CloseHandle(hnd)); R_ABORT_UNLESS(svc::CloseHandle(port_hnd)); };
+            auto port_guard = SCOPE_GUARD { os::CloseNativeHandle(hnd); os::CloseNativeHandle(port_hnd); };
 
             /* Create the session for our query service. */
-            svc::Handle qry_hnd, mitm_qry_hnd;
+            os::NativeHandle qry_hnd, mitm_qry_hnd;
             R_TRY(svc::CreateSession(std::addressof(qry_hnd), std::addressof(mitm_qry_hnd), false, 0));
 
             /* We created the query service session, so we no longer need to clean up the port handles. */
@@ -755,12 +755,12 @@ namespace ams::sm::impl {
         /* Uninstall the mitm. */
         {
             /* Close mitm handles. */
-            R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_port_h));
-            R_ABORT_UNLESS(svc::CloseHandle(service_info->mitm_query_h));
+            os::CloseNativeHandle(service_info->mitm_port_h);
+            os::CloseNativeHandle(service_info->mitm_query_h);
 
             /* Reset mitm members. */
-            service_info->mitm_port_h     = svc::InvalidHandle;
-            service_info->mitm_query_h    = svc::InvalidHandle;
+            service_info->mitm_port_h     = os::InvalidNativeHandle;
+            service_info->mitm_query_h    = os::InvalidNativeHandle;
             service_info->mitm_process_id = os::InvalidProcessId;
 
         }
@@ -824,7 +824,7 @@ namespace ams::sm::impl {
         return ResultSuccess();
     }
 
-    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, svc::Handle *out_hnd, os::ProcessId process_id, ServiceName service) {
+    Result AcknowledgeMitmSession(MitmProcessInfo *out_info, os::NativeHandle *out_hnd, os::ProcessId process_id, ServiceName service) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
@@ -852,7 +852,7 @@ namespace ams::sm::impl {
 
             /* Set the output handle. */
             *out_hnd                      = service_info->mitm_fwd_sess_h;
-            service_info->mitm_fwd_sess_h = svc::InvalidHandle;
+            service_info->mitm_fwd_sess_h = os::InvalidNativeHandle;
 
             /* Clear acknowledgement-related fields. */
             service_info->mitm_waiting_ack            = false;

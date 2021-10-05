@@ -37,7 +37,7 @@ namespace ams::pm::resource {
 
         /* Globals. */
         constinit os::SdkMutex g_resource_limit_lock;
-        constinit Handle g_resource_limit_handles[ResourceLimitGroup_Count];
+        constinit os::NativeHandle g_resource_limit_handles[ResourceLimitGroup_Count];
         constinit spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
         constinit u64 g_system_memory_boost_size = 0;
         constinit u64 g_extra_application_threads_available = 0;
@@ -136,7 +136,7 @@ namespace ams::pm::resource {
         }
 
         void WaitResourceAvailable(ResourceLimitGroup group) {
-            const Handle reslimit_hnd = GetResourceLimitHandle(group);
+            const auto reslimit_hnd = GetResourceLimitHandle(group);
             for (size_t i = 0; i < svc::LimitableResource_Count; i++) {
                 const auto resource = LimitableResources[i];
 
@@ -336,11 +336,11 @@ namespace ams::pm::resource {
         return ResultSuccess();
     }
 
-    Handle GetResourceLimitHandle(ResourceLimitGroup group) {
+    os::NativeHandle GetResourceLimitHandle(ResourceLimitGroup group) {
         return g_resource_limit_handles[group];
     }
 
-    Handle GetResourceLimitHandle(const ldr::ProgramInfo *info) {
+    os::NativeHandle GetResourceLimitHandle(const ldr::ProgramInfo *info) {
         return GetResourceLimitHandle(GetResourceLimitGroup(info));
     }
 
@@ -358,7 +358,7 @@ namespace ams::pm::resource {
         AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
         AMS_ABORT_UNLESS(resource < svc::LimitableResource_Count);
 
-        const Handle reslimit_hnd = GetResourceLimitHandle(group);
+        const auto reslimit_hnd = GetResourceLimitHandle(group);
         R_TRY(svc::GetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));
         R_TRY(svc::GetResourceLimitLimitValue(out_lim, reslimit_hnd, resource));
 

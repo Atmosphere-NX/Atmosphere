@@ -25,9 +25,9 @@ namespace ams::dd {
     Result CreateDeviceAddressSpace(DeviceAddressSpaceType *das, u64 size);
     void DestroyDeviceAddressSpace(DeviceAddressSpaceType *das);
 
-    void AttachDeviceAddressSpaceHandle(DeviceAddressSpaceType *das, Handle handle, bool managed);
+    void AttachDeviceAddressSpaceHandle(DeviceAddressSpaceType *das, DeviceAddressSpaceHandle handle, bool managed);
 
-    Handle GetDeviceAddressSpaceHandle(DeviceAddressSpaceType *das);
+    DeviceAddressSpaceHandle GetDeviceAddressSpaceHandle(DeviceAddressSpaceType *das);
 
     Result MapDeviceAddressSpaceAligned(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address, MemoryPermission device_perm);
     Result MapDeviceAddressSpaceNotAligned(DeviceAddressSpaceType *das, ProcessHandle process_handle, u64 process_address, size_t size, DeviceVirtualAddress device_address, MemoryPermission device_perm);

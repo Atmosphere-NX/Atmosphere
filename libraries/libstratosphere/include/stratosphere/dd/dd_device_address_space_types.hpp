@@ -21,7 +21,7 @@ namespace ams::dd {
 
     using DeviceVirtualAddress = u64;
 
-    using DeviceAddressSpaceHandle = ::Handle;
+    using DeviceAddressSpaceHandle = os::NativeHandle;
 
     struct DeviceAddressSpaceType {
         enum State {

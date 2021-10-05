@@ -22,10 +22,9 @@
 namespace ams::svc {
 
     /* TODO: C++ style handle? */
-#ifdef ATMOSPHERE_IS_STRATOSPHERE
-    using Handle = ::Handle;
-#else
     using Handle = u32;
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+    static_assert(std::same_as<::ams::svc::Handle, ::Handle>);
 #endif
 
     enum {

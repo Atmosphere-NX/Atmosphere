@@ -18,9 +18,9 @@
 
 namespace ams::sf::hipc {
 
-    Result ServerManagerBase::InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
+    Result ServerManagerBase::InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
-        Handle query_handle;
+        os::NativeHandle query_handle;
         R_TRY(sm::mitm::InstallMitm(out_port_handle, &query_handle, service_name));
 
         /* Register the query handle. */

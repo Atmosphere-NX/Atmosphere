@@ -43,7 +43,8 @@ namespace ams::pm {
     }
 
     Result InformationService::AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
-        Handle dummy_handle;
+        /* NOTE: We don't need to worry about closing this handle, because it's an in-process copy, not a newly allocated handle. */
+        os::NativeHandle dummy_handle;
         return impl::AtmosphereGetProcessInfo(&dummy_handle, out_loc.GetPointer(), out_status.GetPointer(), process_id);
     }
 

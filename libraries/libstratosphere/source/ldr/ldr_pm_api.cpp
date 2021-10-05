@@ -19,7 +19,7 @@
 namespace ams::ldr::pm {
 
     /* Information API. */
-    Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit) {
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, Handle reslimit) {
         return ldrPmCreateProcess(pin_id.value, flags, reslimit, out);
     }
 

@@ -73,7 +73,7 @@ namespace ams::map {
 
     class MappedCodeMemory {
         private:
-            Handle process_handle;
+            os::NativeHandle process_handle;
             Result result;
             uintptr_t dst_address;
             uintptr_t src_address;
@@ -83,7 +83,7 @@ namespace ams::map {
                 /* ... */
             }
 
-            MappedCodeMemory(Handle p_h, uintptr_t dst, uintptr_t src, size_t sz) : process_handle(p_h), dst_address(dst), src_address(src), size(sz) {
+            MappedCodeMemory(os::NativeHandle p_h, uintptr_t dst, uintptr_t src, size_t sz) : process_handle(p_h), dst_address(dst), src_address(src), size(sz) {
                 this->result = svc::MapProcessCodeMemory(this->process_handle, this->dst_address, this->src_address, this->size);
             }
 

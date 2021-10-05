@@ -31,7 +31,7 @@ namespace ams::sf::cmif {
     class ServerMessageProcessor;
 
     struct HandlesToClose {
-        Handle handles[8];
+        os::NativeHandle handles[8];
         size_t num_handles;
     };
 

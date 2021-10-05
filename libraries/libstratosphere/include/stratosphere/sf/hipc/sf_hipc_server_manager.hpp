@@ -55,7 +55,7 @@ namespace ams::sf::hipc {
                 NON_MOVEABLE(Server);
                 private:
                     cmif::ServiceObjectHolder static_object;
-                    ::Handle port_handle;
+                    os::NativeHandle port_handle;
                     sm::ServiceName service_name;
                     int index;
                     bool service_managed;
@@ -95,7 +95,7 @@ namespace ams::sf::hipc {
             Result ProcessForMitmServer(os::MultiWaitHolderType *holder);
             Result ProcessForSession(os::MultiWaitHolderType *holder);
 
-            void RegisterServerImpl(Server *server, Handle port_handle, bool is_mitm_server) {
+            void RegisterServerImpl(Server *server, os::NativeHandle port_handle, bool is_mitm_server) {
                 server->port_handle = port_handle;
                 hipc::AttachMultiWaitHolderForAccept(server, port_handle);
 
@@ -111,7 +111,7 @@ namespace ams::sf::hipc {
                 os::LinkMultiWaitHolder(std::addressof(this->multi_wait), server);
             }
 
-            void RegisterServerImpl(int index, cmif::ServiceObjectHolder &&static_holder, Handle port_handle, bool is_mitm_server) {
+            void RegisterServerImpl(int index, cmif::ServiceObjectHolder &&static_holder, os::NativeHandle port_handle, bool is_mitm_server) {
                 /* Allocate server memory. */
                 auto *server = this->AllocateServer();
                 AMS_ABORT_UNLESS(server != nullptr);
@@ -128,7 +128,7 @@ namespace ams::sf::hipc {
 
             Result RegisterServerImpl(int index, cmif::ServiceObjectHolder &&static_holder, sm::ServiceName service_name, size_t max_sessions) {
                 /* Register service. */
-                Handle port_handle;
+                os::NativeHandle port_handle;
                 R_TRY(sm::RegisterService(&port_handle, service_name, max_sessions, false));
 
                 /* Allocate server memory. */
@@ -151,7 +151,7 @@ namespace ams::sf::hipc {
             template<typename Interface>
             Result RegisterMitmServerImpl(int index, cmif::ServiceObjectHolder &&static_holder, sm::ServiceName service_name) {
                 /* Install mitm service. */
-                Handle port_handle;
+                os::NativeHandle port_handle;
                 R_TRY(this->InstallMitmServerImpl(&port_handle, service_name, &Interface::ShouldMitm));
 
                 /* Allocate server memory. */
@@ -171,7 +171,7 @@ namespace ams::sf::hipc {
                 return ResultSuccess();
             }
 
-            Result InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
+            Result InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
         protected:
             virtual Server *AllocateServer() = 0;
             virtual void DestroyServer(Server *server)  = 0;
@@ -205,7 +205,7 @@ namespace ams::sf::hipc {
             }
 
             template<typename Interface>
-            void RegisterObjectForServer(SharedPointer<Interface> static_object, Handle port_handle) {
+            void RegisterObjectForServer(SharedPointer<Interface> static_object, os::NativeHandle port_handle) {
                 this->RegisterServerImpl(0, cmif::ServiceObjectHolder(std::move(static_object)), port_handle, false);
             }
 
@@ -214,7 +214,7 @@ namespace ams::sf::hipc {
                 return this->RegisterServerImpl(0, cmif::ServiceObjectHolder(std::move(static_object)), service_name, max_sessions);
             }
 
-            void RegisterServer(int port_index, Handle port_handle) {
+            void RegisterServer(int port_index, os::NativeHandle port_handle) {
                 this->RegisterServerImpl(port_index, cmif::ServiceObjectHolder(), port_handle, false);
             }
 

@@ -108,7 +108,7 @@ namespace ams::htc::server {
         return ResultSuccess();
     }
 
-    Result HtcmiscImpl::RunOnHostBegin(u32 *out_task_id, Handle *out_event, const char *args, size_t args_size) {
+    Result HtcmiscImpl::RunOnHostBegin(u32 *out_task_id, os::NativeHandle *out_event, const char *args, size_t args_size) {
         /* Begin the task. */
         u32 task_id;
         R_TRY(m_rpc_client.Begin<rpc::RunOnHostTask>(std::addressof(task_id), args, args_size));
