@@ -36,12 +36,12 @@ namespace ams::ro::impl {
             u64 m_aslr_size;
         public:
             ProcessRegionInfo(os::NativeHandle process) {
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_heap_start),  svc::InfoType_HeapRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_heap_size),   svc::InfoType_HeapRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_alias_start), svc::InfoType_AliasRegionAddress, svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_alias_size),  svc::InfoType_AliasRegionSize,    svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_aslr_start),  svc::InfoType_AslrRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_aslr_size),   svc::InfoType_AslrRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_heap_start),  svc::InfoType_HeapRegionAddress,  process, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_heap_size),   svc::InfoType_HeapRegionSize,     process, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_alias_start), svc::InfoType_AliasRegionAddress, process, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_alias_size),  svc::InfoType_AliasRegionSize,    process, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_aslr_start),  svc::InfoType_AslrRegionAddress,  process, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_aslr_size),   svc::InfoType_AslrRegionSize,     process, 0));
             }
 
             u64 GetAslrRegion(u64 mapping_size) const {

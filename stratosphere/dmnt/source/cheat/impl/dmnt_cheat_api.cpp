@@ -805,17 +805,18 @@ namespace ams::dmnt::cheat::impl {
                 os::NativeHandle proc_h = os::InvalidNativeHandle;
                 ncm::ProgramLocation loc = {};
                 cfg::OverrideStatus status = {};
-                ON_SCOPE_EXIT { os::CloseNativeHandle(proc_h); };
 
                 R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, &status, this->cheat_process_metadata.process_id));
+                ON_SCOPE_EXIT { os::CloseNativeHandle(proc_h); };
+
                 this->cheat_process_metadata.program_id = loc.program_id;
 
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.base),  svc::InfoType_HeapRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.size),  svc::InfoType_HeapRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.base), svc::InfoType_AliasRegionAddress, svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.size), svc::InfoType_AliasRegionSize,    svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.base),  svc::InfoType_AslrRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.size),  svc::InfoType_AslrRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.base),  svc::InfoType_HeapRegionAddress,  proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.size),  svc::InfoType_HeapRegionSize,     proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.base), svc::InfoType_AliasRegionAddress, proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.size), svc::InfoType_AliasRegionSize,    proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.base),  svc::InfoType_AslrRegionAddress,  proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.size),  svc::InfoType_AslrRegionSize,     proc_h, 0));
 
                 /* If new process launch, we may not want to actually attach. */
                 if (on_process_launch) {
