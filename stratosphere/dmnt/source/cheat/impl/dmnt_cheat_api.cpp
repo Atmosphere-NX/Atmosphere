@@ -810,16 +810,12 @@ namespace ams::dmnt::cheat::impl {
                 R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, &status, this->cheat_process_metadata.process_id));
                 this->cheat_process_metadata.program_id = loc.program_id;
 
-                {
-                    map::AddressSpaceInfo as_info;
-                    R_ABORT_UNLESS(map::GetProcessAddressSpaceInfo(&as_info, proc_h));
-                    this->cheat_process_metadata.heap_extents.base  = as_info.heap_base;
-                    this->cheat_process_metadata.heap_extents.size  = as_info.heap_size;
-                    this->cheat_process_metadata.alias_extents.base = as_info.alias_base;
-                    this->cheat_process_metadata.alias_extents.size = as_info.alias_size;
-                    this->cheat_process_metadata.aslr_extents.base  = as_info.aslr_base;
-                    this->cheat_process_metadata.aslr_extents.size  = as_info.aslr_size;
-                }
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.base),  svc::InfoType_HeapRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.size),  svc::InfoType_HeapRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.base), svc::InfoType_AliasRegionAddress, svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.size), svc::InfoType_AliasRegionSize,    svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.base),  svc::InfoType_AslrRegionAddress,  svc::PseudoHandle::CurrentProcess, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.size),  svc::InfoType_AslrRegionSize,     svc::PseudoHandle::CurrentProcess, 0));
 
                 /* If new process launch, we may not want to actually attach. */
                 if (on_process_launch) {

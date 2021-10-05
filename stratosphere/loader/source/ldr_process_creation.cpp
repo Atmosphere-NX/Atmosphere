@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "ldr_auto_close.hpp"
 #include "ldr_capabilities.hpp"
 #include "ldr_content_management.hpp"
 #include "ldr_development_manager.hpp"
@@ -367,6 +368,63 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
+        ALWAYS_INLINE u64 GetCurrentProcessInfo(svc::InfoType info_type) {
+            u64 value;
+            R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), info_type, svc::PseudoHandle::CurrentProcess, 0));
+            return value;
+        }
+
+        Result SearchFreeRegion(uintptr_t *out, size_t mapping_size) {
+            /* Get address space extents. */
+            const uintptr_t heap_start  = GetCurrentProcessInfo(svc::InfoType_HeapRegionAddress);
+            const size_t    heap_size   = GetCurrentProcessInfo(svc::InfoType_HeapRegionSize);
+            const uintptr_t alias_start = GetCurrentProcessInfo(svc::InfoType_AliasRegionAddress);
+            const size_t    alias_size  = GetCurrentProcessInfo(svc::InfoType_AliasRegionSize);
+            const uintptr_t aslr_start  = GetCurrentProcessInfo(svc::InfoType_AslrRegionAddress);
+            const size_t    aslr_size   = GetCurrentProcessInfo(svc::InfoType_AslrRegionSize);
+
+            /* Iterate upwards to find a free region. */
+            uintptr_t address = aslr_start;
+            while (true) {
+                /* Declare variables for memory querying. */
+                svc::MemoryInfo mem_info;
+                svc::PageInfo page_info;
+
+                /* Check that we're still within bounds. */
+                R_UNLESS(address < address + mapping_size, svc::ResultOutOfMemory());
+
+                /* If we're within the heap region, skip to the end of the heap region. */
+                if (heap_size != 0 && !(address + mapping_size - 1 < heap_start || heap_start + heap_size - 1 < address)) {
+                    R_UNLESS(address < heap_start + heap_size, svc::ResultOutOfMemory());
+                    address = heap_start + heap_size;
+                    continue;
+                }
+
+                /* If we're within the alias region, skip to the end of the alias region. */
+                if (alias_size != 0 && !(address + mapping_size - 1 < alias_start || alias_start + alias_size - 1 < address)) {
+                    R_UNLESS(address < alias_start + alias_size, svc::ResultOutOfMemory());
+                    address = alias_start + alias_size;
+                    continue;
+                }
+
+                /* Get the current memory range. */
+                R_ABORT_UNLESS(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), address));
+
+                /* If the memory range is free and big enough, use it. */
+                if (mem_info.state == svc::MemoryState_Free && mapping_size <= ((mem_info.addr + mem_info.size) - address)) {
+                    *out = address;
+                    return ResultSuccess();
+                }
+
+                /* Check that we can advance. */
+                R_UNLESS(address < mem_info.addr + mem_info.size,                        svc::ResultOutOfMemory());
+                R_UNLESS(mem_info.addr + mem_info.size - 1 < aslr_start + aslr_size - 1, svc::ResultOutOfMemory());
+
+                /* Advance. */
+                address = mem_info.addr + mem_info.size;
+            }
+        }
+
         Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
             /* Clear output. */
             out->args_address = 0;
@@ -401,39 +459,39 @@ namespace ams::ldr {
 
             /* Calculate ASLR. */
             uintptr_t aslr_start = 0;
-            uintptr_t aslr_size  = 0;
+            size_t aslr_size     = 0;
             if (hos::GetVersion() >= hos::Version_2_0_0) {
                 switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
                     case svc::CreateProcessFlag_AddressSpace32Bit:
                     case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
-                        aslr_start = map::AslrBase32Bit;
-                        aslr_size  = map::AslrSize32Bit;
+                        aslr_start = svc::AddressSmallMap32Start;
+                        aslr_size  = svc::AddressSmallMap32Size;
                         break;
                     case svc::CreateProcessFlag_AddressSpace64BitDeprecated:
-                        aslr_start = map::AslrBase64BitDeprecated;
-                        aslr_size  = map::AslrSize64BitDeprecated;
+                        aslr_start = svc::AddressSmallMap36Start;
+                        aslr_size  = svc::AddressSmallMap36Size;
                         break;
                     case svc::CreateProcessFlag_AddressSpace64Bit:
-                        aslr_start = map::AslrBase64Bit;
-                        aslr_size  = map::AslrSize64Bit;
+                        aslr_start = svc::AddressMap39Start;
+                        aslr_size  = svc::AddressMap39Size;
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             } else {
                 /* On 1.0.0, only 2 address space types existed. */
                 if (out_param->flags & svc::CreateProcessFlag_AddressSpace64BitDeprecated) {
-                    aslr_start = map::AslrBase64BitDeprecated;
-                    aslr_size  = map::AslrSize64BitDeprecated;
+                    aslr_start = svc::AddressSmallMap36Start;
+                    aslr_size  = svc::AddressSmallMap36Size;
                 } else {
-                    aslr_start = map::AslrBase32Bit;
-                    aslr_size  = map::AslrSize32Bit;
+                    aslr_start = svc::AddressSmallMap32Start;
+                    aslr_size  = svc::AddressSmallMap32Size;
                 }
             }
             R_UNLESS(total_size <= aslr_size, svc::ResultOutOfMemory());
 
             /* Set Create Process output. */
             uintptr_t aslr_slide = 0;
-            uintptr_t free_size = (aslr_size - total_size);
+            size_t free_size     = (aslr_size - total_size);
             if (out_param->flags & svc::CreateProcessFlag_EnableAslr) {
                 /* Nintendo uses MT19937 (not os::GenerateRandomBytes), but we'll just use TinyMT for now. */
                 aslr_slide = os::GenerateRandomU64(free_size / os::MemoryBlockUnitSize) * os::MemoryBlockUnitSize;
@@ -450,7 +508,7 @@ namespace ams::ldr {
                 out->args_address += aslr_start;
             }
 
-            out_param->code_address = aslr_start;
+            out_param->code_address   = aslr_start;
             out_param->code_num_pages = total_size >> 12;
 
             return ResultSuccess();
@@ -510,8 +568,8 @@ namespace ams::ldr {
         Result LoadNsoIntoProcessMemory(os::NativeHandle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
             /* Map and read data from file. */
             {
-                map::AutoCloseMap mapper(map_address, process_handle, nso_address, nso_size);
-                R_TRY(mapper.GetResult());
+                AutoCloseMap map(map_address, process_handle, nso_address, nso_size);
+                R_TRY(map.GetResult());
 
                 /* Load NSO segments. */
                 R_TRY(LoadNsoSegment(file, &nso_header->segments[NsoHeader::Segment_Text], nso_header->text_compressed_size, nso_header->text_hash, (nso_header->flags & NsoHeader::Flag_CompressedText) != 0,
@@ -562,8 +620,8 @@ namespace ams::ldr {
                     R_TRY(fs::OpenFile(std::addressof(file), GetNsoPath(i), fs::OpenMode_Read));
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-                    uintptr_t map_address = 0;
-                    R_TRY(map::LocateMappableSpace(&map_address, process_info->nso_size[i]));
+                    uintptr_t map_address;
+                    R_TRY(SearchFreeRegion(std::addressof(map_address), process_info->nso_size[i]));
 
                     R_TRY(LoadNsoIntoProcessMemory(process_info->process_handle, file, map_address, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
                 }
@@ -573,11 +631,11 @@ namespace ams::ldr {
             if (arg_info != nullptr) {
                 /* Write argument data into memory. */
                 {
-                    uintptr_t map_address = 0;
-                    R_TRY(map::LocateMappableSpace(&map_address, process_info->args_size));
+                    uintptr_t map_address;
+                    R_TRY(SearchFreeRegion(std::addressof(map_address), process_info->args_size));
 
-                    map::AutoCloseMap mapper(map_address, process_info->process_handle, process_info->args_address, process_info->args_size);
-                    R_TRY(mapper.GetResult());
+                    AutoCloseMap map(map_address, process_info->process_handle, process_info->args_address, process_info->args_size);
+                    R_TRY(map.GetResult());
 
                     ProgramArguments *args = reinterpret_cast<ProgramArguments *>(map_address);
                     std::memset(args, 0, sizeof(*args));

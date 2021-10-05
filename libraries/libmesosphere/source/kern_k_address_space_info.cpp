@@ -22,19 +22,19 @@ namespace ams::kern {
         constexpr uintptr_t Invalid = std::numeric_limits<uintptr_t>::max();
 
         constexpr KAddressSpaceInfo AddressSpaceInfos[] = {
-            { 32, 2_MB,    1_GB   - 2_MB,   KAddressSpaceInfo::Type_MapSmall, },
-            { 32, 1_GB,    4_GB   - 1_GB,   KAddressSpaceInfo::Type_MapLarge, },
-            { 32, Invalid, 1_GB,            KAddressSpaceInfo::Type_Heap,     },
-            { 32, Invalid, 1_GB,            KAddressSpaceInfo::Type_Alias,    },
-            { 36, 128_MB,  2_GB   - 128_MB, KAddressSpaceInfo::Type_MapSmall, },
-            { 36, 2_GB,    64_GB  - 2_GB,   KAddressSpaceInfo::Type_MapLarge, },
-            { 36, Invalid, 6_GB,            KAddressSpaceInfo::Type_Heap,     },
-            { 36, Invalid, 6_GB,            KAddressSpaceInfo::Type_Alias,    },
-            { 39, 128_MB,  512_GB - 128_MB, KAddressSpaceInfo::Type_Map39Bit, },
-            { 39, Invalid, 64_GB,           KAddressSpaceInfo::Type_MapSmall, },
-            { 39, Invalid, 6_GB,            KAddressSpaceInfo::Type_Heap,     },
-            { 39, Invalid, 64_GB,           KAddressSpaceInfo::Type_Alias,    },
-            { 39, Invalid, 2_GB,            KAddressSpaceInfo::Type_Stack,    },
+            { 32, ams::svc::AddressSmallMap32Start, ams::svc::AddressSmallMap32Size,          KAddressSpaceInfo::Type_MapSmall, },
+            { 32, ams::svc::AddressLargeMap32Start, ams::svc::AddressLargeMap32Size,          KAddressSpaceInfo::Type_MapLarge, },
+            { 32, Invalid,                          ams::svc::AddressMemoryRegionHeap32Size,  KAddressSpaceInfo::Type_Heap,     },
+            { 32, Invalid,                          ams::svc::AddressMemoryRegionAlias32Size, KAddressSpaceInfo::Type_Alias,    },
+            { 36, ams::svc::AddressSmallMap36Start, ams::svc::AddressSmallMap36Size,          KAddressSpaceInfo::Type_MapSmall, },
+            { 36, ams::svc::AddressLargeMap36Start, ams::svc::AddressLargeMap36Size,          KAddressSpaceInfo::Type_MapLarge, },
+            { 36, Invalid,                          ams::svc::AddressMemoryRegionHeap36Size,  KAddressSpaceInfo::Type_Heap,     },
+            { 36, Invalid,                          ams::svc::AddressMemoryRegionAlias36Size, KAddressSpaceInfo::Type_Alias,    },
+            { 39, ams::svc::AddressMap39Start,      ams::svc::AddressMap39Size,               KAddressSpaceInfo::Type_Map39Bit, },
+            { 39, Invalid,                          ams::svc::AddressMemoryRegionSmall39Size, KAddressSpaceInfo::Type_MapSmall, },
+            { 39, Invalid,                          ams::svc::AddressMemoryRegionHeap39Size,  KAddressSpaceInfo::Type_Heap,     },
+            { 39, Invalid,                          ams::svc::AddressMemoryRegionAlias39Size, KAddressSpaceInfo::Type_Alias,    },
+            { 39, Invalid,                          ams::svc::AddressMemoryRegionStack39Size, KAddressSpaceInfo::Type_Stack,    },
         };
 
         constexpr bool IsAllowedIndexForAddress(size_t index) {

@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "ro_nrr_utils.hpp"
+#include "ro_map_utils.hpp"
 #include "ro_service_impl.hpp"
 
 namespace ams::ro::impl {
@@ -135,7 +136,7 @@ namespace ams::ro::impl {
             R_UNLESS(crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size), ro::ResultNotAuthorized());
 
             /* Check ProgramId pattern is valid. */
-            R_UNLESS(header->IsProgramIdValid(), ResultNotAuthorized());
+            R_UNLESS(header->IsProgramIdValid(), ro::ResultNotAuthorized());
 
             return ResultSuccess();
         }
@@ -159,10 +160,10 @@ namespace ams::ro::impl {
 
         Result ValidateNrr(const NrrHeader *header, u64 size, ncm::ProgramId program_id, NrrKind nrr_kind, bool enforce_nrr_kind) {
             /* Check magic. */
-            R_UNLESS(header->IsMagicValid(), ResultInvalidNrr());
+            R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNrr());
 
             /* Check size. */
-            R_UNLESS(header->GetSize() == size, ResultInvalidSize());
+            R_UNLESS(header->GetSize() == size, ro::ResultInvalidSize());
 
             /* Only perform checks if we must. */
             const bool ease_nro_restriction = ShouldEaseNroRestriction();
@@ -180,11 +181,11 @@ namespace ams::ro::impl {
                 R_TRY(ValidateNrrSignature(header));
 
                 /* Check program id. */
-                R_UNLESS(header->GetProgramId() == program_id, ResultInvalidNrr());
+                R_UNLESS(header->GetProgramId() == program_id, ro::ResultInvalidNrr());
 
                 /* Check nrr kind. */
                 if (hos::GetVersion() >= hos::Version_7_0_0 && enforce_nrr_kind) {
-                    R_UNLESS(header->GetNrrKind() == nrr_kind, ResultInvalidNrrKind());
+                    R_UNLESS(header->GetNrrKind() == nrr_kind, ro::ResultInvalidNrrKind());
                 }
             }
 
@@ -195,30 +196,55 @@ namespace ams::ro::impl {
 
     /* Utilities for working with NRRs. */
     Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, os::NativeHandle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
-        map::MappedCodeMemory nrr_mcm(ResultInternalError{});
+        /* Re-map the NRR as code memory in the destination process. */
+        MappedCodeMemory nrr_mcm;
+        ProcessRegionInfo region_info(process_handle);
+        u64 code_address;
+        {
+            int i;
+            for (i = 0; i < RetrySearchCount; ++i) {
+                /* Get a random address for the nrr. */
+                code_address = region_info.GetAslrRegion(nrr_heap_size);
+                R_UNLESS(code_address != 0, ro::ResultOutOfAddressSpace());
 
-        /* First, map the NRR. */
-        R_TRY(map::MapCodeMemoryInProcess(nrr_mcm, process_handle, nrr_heap_address, nrr_heap_size));
+                /* Map the code memory, retrying if the random address was invalid. */
+                MappedCodeMemory tmp_mcm(process_handle, code_address, nrr_heap_address, nrr_heap_size);
+                R_TRY_CATCH(tmp_mcm.GetResult()) {
+                    R_CATCH(svc::ResultInvalidCurrentMemory) { continue; }
+                } R_END_TRY_CATCH;
 
-        const u64 code_address = nrr_mcm.GetDstAddress();
+                /* Check that we can have guard spaces. */
+                if (!region_info.CanEmplaceGuardSpaces(process_handle, code_address, nrr_heap_size)) {
+                    continue;
+                }
+
+                /* We succeeded, so save the code memory. */
+                nrr_mcm = std::move(tmp_mcm);
+                break;
+            }
+
+            R_UNLESS(i != RetrySearchCount, ro::ResultOutOfAddressSpace());
+        }
+
+        /* Decide where to map the NRR in our process. */
         uintptr_t map_address;
-        R_UNLESS(R_SUCCEEDED(map::LocateMappableSpace(&map_address, nrr_heap_size)), ResultOutOfAddressSpace());
+        R_UNLESS(R_SUCCEEDED(SearchFreeRegion(std::addressof(map_address), nrr_heap_size)), ro::ResultOutOfAddressSpace());
 
-        /* Nintendo...does not check the return value of this map. We will check, instead of aborting if it fails. */
-        map::AutoCloseMap nrr_map(map_address, process_handle, code_address, nrr_heap_size);
+        /* NOTE: Nintendo does not check the return value of this map. We will check, instead of aborting if it fails. */
+        AutoCloseMap nrr_map(map_address, process_handle, code_address, nrr_heap_size);
         R_TRY(nrr_map.GetResult());
 
         NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
         R_TRY(ValidateNrr(nrr_header, nrr_heap_size, program_id, nrr_kind, enforce_nrr_kind));
 
-        /* Invalidation here actually prevents them from unmapping at scope exit. */
-        nrr_map.Invalidate();
-        nrr_mcm.Invalidate();
+        /* Cancel the automatic closing of our mappings. */
+        nrr_map.Cancel();
+        nrr_mcm.Cancel();
 
         /* Save a copy of the hash that we verified. */
         crypto::GenerateSha256Hash(out_hash, out_hash_size, nrr_header->GetSignedArea(), nrr_header->GetSignedAreaSize());
 
-        *out_header = nrr_header;
+        *out_header              = nrr_header;
         *out_mapped_code_address = code_address;
         return ResultSuccess();
     }

@@ -21,5 +21,6 @@
 
 #include <vapours/svc/svc_types.hpp>
 #include <vapours/svc/svc_definitions.hpp>
+#include <vapours/svc/svc_memory_map.hpp>
 #include <vapours/svc/svc_version.hpp>
 #include <vapours/svc/ipc/svc_message_buffer.hpp>

@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "ro_map_utils.hpp"
 #include "ro_nrr_utils.hpp"
 #include "ro_nro_utils.hpp"
 #include "ro_patcher.hpp"
@@ -99,7 +100,7 @@ namespace ams::ro::impl {
                         return ResultSuccess();
                     }
                 }
-                return ResultNotRegistered();
+                return ro::ResultNotRegistered();
             }
 
             Result GetFreeNrrInfo(NrrInfo **out) {
@@ -111,7 +112,7 @@ namespace ams::ro::impl {
                         return ResultSuccess();
                     }
                 }
-                return ResultTooManyNrr();
+                return ro::ResultTooManyNrr();
             }
 
             Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
@@ -123,7 +124,7 @@ namespace ams::ro::impl {
                         return ResultSuccess();
                     }
                 }
-                return ResultNotLoaded();
+                return ro::ResultNotLoaded();
             }
 
             Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
@@ -135,7 +136,7 @@ namespace ams::ro::impl {
                         return ResultSuccess();
                     }
                 }
-                return ResultNotLoaded();
+                return ro::ResultNotLoaded();
             }
 
             Result GetFreeNroInfo(NroInfo **out) {
@@ -147,7 +148,7 @@ namespace ams::ro::impl {
                         return ResultSuccess();
                     }
                 }
-                return ResultTooManyNro();
+                return ro::ResultTooManyNro();
             }
 
             Result ValidateHasNroHash(const NroHeader *nro_header) const {
@@ -192,21 +193,21 @@ namespace ams::ro::impl {
                     return ResultSuccess();
                 }
 
-                return ResultNotAuthorized();
+                return ro::ResultNotAuthorized();
             }
 
             Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
                 /* Find space to map the NRO. */
                 uintptr_t map_address;
-                R_UNLESS(R_SUCCEEDED(map::LocateMappableSpace(&map_address, expected_nro_size)), ResultOutOfAddressSpace());
+                R_UNLESS(R_SUCCEEDED(SearchFreeRegion(std::addressof(map_address), expected_nro_size)), ro::ResultOutOfAddressSpace());
 
                 /* Actually map the NRO. */
-                map::AutoCloseMap nro_map(map_address, this->process_handle, base_address, expected_nro_size);
+                AutoCloseMap nro_map(map_address, this->process_handle, base_address, expected_nro_size);
                 R_TRY(nro_map.GetResult());
 
                 /* Validate header. */
                 const NroHeader *header = reinterpret_cast<const NroHeader *>(map_address);
-                R_UNLESS(header->IsMagicValid(), ResultInvalidNro());
+                R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
 
                 /* Read sizes from header. */
                 const u64 nro_size = header->GetSize();
@@ -219,31 +220,31 @@ namespace ams::ro::impl {
                 const u64 bss_size = header->GetBssSize();
 
                 /* Validate sizes meet expected. */
-                R_UNLESS(nro_size == expected_nro_size, ResultInvalidNro());
-                R_UNLESS(bss_size == expected_bss_size, ResultInvalidNro());
+                R_UNLESS(nro_size == expected_nro_size, ro::ResultInvalidNro());
+                R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidNro());
 
                 /* Validate all sizes are aligned. */
-                R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ResultInvalidNro());
-                R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ResultInvalidNro());
+                R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ro::ResultInvalidNro());
+                R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ro::ResultInvalidNro());
+                R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ro::ResultInvalidNro());
+                R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ro::ResultInvalidNro());
 
                 /* Validate sections are in order. */
-                R_UNLESS(text_ofs <= ro_ofs, ResultInvalidNro());
-                R_UNLESS(ro_ofs   <= rw_ofs, ResultInvalidNro());
+                R_UNLESS(text_ofs <= ro_ofs, ro::ResultInvalidNro());
+                R_UNLESS(ro_ofs   <= rw_ofs, ro::ResultInvalidNro());
 
                 /* Validate sections are sequential and contiguous. */
-                R_UNLESS(text_ofs == 0,                    ResultInvalidNro());
-                R_UNLESS(text_ofs + text_size == ro_ofs,   ResultInvalidNro());
-                R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ResultInvalidNro());
-                R_UNLESS(rw_ofs + rw_size     == nro_size, ResultInvalidNro());
+                R_UNLESS(text_ofs == 0,                    ro::ResultInvalidNro());
+                R_UNLESS(text_ofs + text_size == ro_ofs,   ro::ResultInvalidNro());
+                R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ro::ResultInvalidNro());
+                R_UNLESS(rw_ofs + rw_size     == nro_size, ro::ResultInvalidNro());
 
                 /* Verify NRO hash. */
                 R_TRY(this->ValidateHasNroHash(header));
 
                 /* Check if NRO has already been loaded. */
                 const ModuleId *module_id = header->GetModuleId();
-                R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ResultAlreadyLoaded());
+                R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ro::ResultAlreadyLoaded());
 
                 /* Apply patches to NRO. */
                 LocateAndApplyIpsPatchesToModule(module_id, reinterpret_cast<u8 *>(map_address), nro_size);
@@ -327,17 +328,17 @@ namespace ams::ro::impl {
         }
 
         constexpr inline Result ValidateAddressAndNonZeroSize(u64 address, u64 size) {
-            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ResultInvalidAddress());
-            R_UNLESS(size != 0,                                    ResultInvalidSize());
-            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ResultInvalidSize());
-            R_UNLESS(address < address + size,                     ResultInvalidSize());
+            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ro::ResultInvalidAddress());
+            R_UNLESS(size != 0,                                    ro::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ro::ResultInvalidSize());
+            R_UNLESS(address < address + size,                     ro::ResultInvalidSize());
             return ResultSuccess();
         }
 
         constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
-            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ResultInvalidAddress());
-            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ResultInvalidSize());
-            R_UNLESS(size == 0 || address < address + size,        ResultInvalidSize());
+            R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ro::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ro::ResultInvalidSize());
+            R_UNLESS(size == 0 || address < address + size,        ro::ResultInvalidSize());
             return ResultSuccess();
         }
 
@@ -378,14 +379,14 @@ namespace ams::ro::impl {
         {
             /* Validate handle is a valid process handle. */
             os::ProcessId handle_pid;
-            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle.GetOsHandle())), ResultInvalidProcess());
+            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle.GetOsHandle())), ro::ResultInvalidProcess());
 
             /* Validate process id. */
-            R_UNLESS(handle_pid == process_id, ResultInvalidProcess());
+            R_UNLESS(handle_pid == process_id, ro::ResultInvalidProcess());
         }
 
         /* Check if a process context already exists. */
-        R_UNLESS(GetContextByProcessId(process_id) == nullptr, ResultInvalidSession());
+        R_UNLESS(GetContextByProcessId(process_id) == nullptr, ro::ResultInvalidSession());
 
         /* Allocate a context to manage the process handle. */
         *out_context_id = AllocateContext(process_handle.GetOsHandle(), process_id);
@@ -396,8 +397,8 @@ namespace ams::ro::impl {
 
     Result ValidateProcess(size_t context_id, os::ProcessId process_id) {
         const ProcessContext *ctx = GetContextById(context_id);
-        R_UNLESS(ctx != nullptr,                ResultInvalidProcess());
-        R_UNLESS(ctx->process_id == process_id, ResultInvalidProcess());
+        R_UNLESS(ctx != nullptr,                ro::ResultInvalidProcess());
+        R_UNLESS(ctx->process_id == process_id, ro::ResultInvalidProcess());
         return ResultSuccess();
     }
 
@@ -453,7 +454,7 @@ namespace ams::ro::impl {
         AMS_ABORT_UNLESS(context != nullptr);
 
         /* Validate address. */
-        R_UNLESS(util::IsAligned(nrr_address, os::MemoryPageSize), ResultInvalidAddress());
+        R_UNLESS(util::IsAligned(nrr_address, os::MemoryPageSize), ro::ResultInvalidAddress());
 
         /* Check the NRR is loaded. */
         NrrInfo *nrr_info = nullptr;
@@ -479,8 +480,8 @@ namespace ams::ro::impl {
         R_TRY(ValidateAddressAndSize(bss_address, bss_size));
 
         const u64 total_size = nro_size + bss_size;
-        R_UNLESS(total_size >= nro_size, ResultInvalidSize());
-        R_UNLESS(total_size >= bss_size, ResultInvalidSize());
+        R_UNLESS(total_size >= nro_size, ro::ResultInvalidSize());
+        R_UNLESS(total_size >= bss_size, ro::ResultInvalidSize());
 
         /* Check we have space for a new NRO. */
         NroInfo *nro_info = nullptr;
@@ -521,7 +522,7 @@ namespace ams::ro::impl {
         AMS_ABORT_UNLESS(context != nullptr);
 
         /* Validate address. */
-        R_UNLESS(util::IsAligned(nro_address, os::MemoryPageSize), ResultInvalidAddress());
+        R_UNLESS(util::IsAligned(nro_address, os::MemoryPageSize), ro::ResultInvalidAddress());
 
         /* Check the NRO is loaded. */
         NroInfo *nro_info = nullptr;

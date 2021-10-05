@@ -13,8 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/map/map_types.hpp>
-#include <stratosphere/map/map_api.hpp>
+namespace ams::ro::impl {
+
+}

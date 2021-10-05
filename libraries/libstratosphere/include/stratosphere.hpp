@@ -66,7 +66,6 @@
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/lr.hpp>
 #include <stratosphere/lm.hpp>
-#include <stratosphere/map.hpp>
 #include <stratosphere/ncm.hpp>
 #include <stratosphere/nim.hpp>
 #include <stratosphere/ns.hpp>
