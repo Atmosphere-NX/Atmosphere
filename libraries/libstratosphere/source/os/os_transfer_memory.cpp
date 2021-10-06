@@ -122,6 +122,9 @@ namespace ams::os {
         tmem->address   = mapped_address;
         tmem->state     = TransferMemoryType::State_Mapped;
 
+        /* Set output address. */
+        *out = mapped_address;
+
         return ResultSuccess();
     }
 
