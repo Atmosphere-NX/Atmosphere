@@ -53,6 +53,7 @@ namespace ams::fs {
 
         void LogResultErrorMessage(Result result) {
             /* TODO: log specific results */
+            AMS_UNUSED(result);
         }
 
         void LogErrorMessage(Result result, const char *function) {
@@ -62,6 +63,7 @@ namespace ams::fs {
             }
 
             /* TODO: Actually log stuff. */
+            AMS_UNUSED(function);
         }
 
     }

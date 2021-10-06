@@ -135,6 +135,7 @@ namespace ams::htc::server::rpc {
     Result HtcmiscRpcServer::ProcessSetTargetNameRequest(const char *name, size_t size, u32 task_id) {
         /* TODO: we need to use settings::fwdbg::SetSettingsItemValue here, but this will require ams support for set:fd re-enable? */
         /* Needs some thought. */
+        AMS_UNUSED(name, size, task_id);
         AMS_ABORT("HtcmiscRpcServer::ProcessSetTargetNameRequest");
     }
 

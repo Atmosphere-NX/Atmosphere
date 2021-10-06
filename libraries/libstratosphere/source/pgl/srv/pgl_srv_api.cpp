@@ -150,6 +150,7 @@ namespace ams::pgl::srv {
     }
 
     void Deallocate(void *p, size_t size) {
+        AMS_UNUSED(size);
         return lmem::FreeToExpHeap(GetHeapHandle(), p);
     }
 
@@ -168,7 +169,7 @@ namespace ams::pgl::srv {
         /* Start the Process Tracking thread. */
         pgl::srv::InitializeProcessControlTask();
 
-        /* TODO: Loop process. */
+        /* Loop process. */
         LoopProcessServer();
     }
 

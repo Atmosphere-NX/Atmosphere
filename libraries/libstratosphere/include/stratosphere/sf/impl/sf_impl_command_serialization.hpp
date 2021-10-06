@@ -835,6 +835,8 @@ namespace ams::sf::impl {
             }
 
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, cmif::ServiceObjectHolder *out_objects, cmif::DomainObjectId *ids) override final {
+                AMS_UNUSED(ids);
+
                 #define _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(n) do { if constexpr (CommandMeta::NumOutObjects > n) { SetOutObjectImpl<n>(response, ctx.manager, std::move(out_objects[n])); } } while (0)
                 _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(0);
                 _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(1);

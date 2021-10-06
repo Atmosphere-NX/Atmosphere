@@ -19,30 +19,37 @@
 namespace ams::ncm {
 
     Result HostContentStorageImpl::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
+        AMS_UNUSED(out);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
+        AMS_UNUSED(placeholder_id, content_id, size);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::DeletePlaceHolder(PlaceHolderId placeholder_id) {
+        AMS_UNUSED(placeholder_id);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
+        AMS_UNUSED(out, placeholder_id);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) {
+        AMS_UNUSED(placeholder_id, offset, data);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::Register(PlaceHolderId placeholder_id, ContentId content_id) {
+        AMS_UNUSED(placeholder_id, content_id);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::Delete(ContentId content_id) {
+        AMS_UNUSED(content_id);
         return ncm::ResultNotSupported();
     }
 
@@ -69,6 +76,7 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
+        AMS_UNUSED(out, placeholder_id);
         return ncm::ResultNotSupported();
     }
 
@@ -77,18 +85,22 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
+        AMS_UNUSED(out_count, out_buf);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::GetContentCount(sf::Out<s32> out_count) {
+        AMS_UNUSED(out_count);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
+        AMS_UNUSED(out_count, out_buf, offset);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
+        AMS_UNUSED(out_size, content_id);
         return ncm::ResultInvalidOperation();
     }
 
@@ -98,22 +110,27 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
+        AMS_UNUSED(placeholder_id, old_content_id, new_content_id);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
+        AMS_UNUSED(placeholder_id, size);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) {
+        AMS_UNUSED(buf, content_id, offset);
         return ncm::ResultInvalidOperation();
     }
 
     Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+        AMS_UNUSED(out_rights_id, placeholder_id);
         return ncm::ResultNotSupported();
     }
 
     Result HostContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+        AMS_UNUSED(out_rights_id, placeholder_id);
         return ncm::ResultNotSupported();
     }
 
@@ -133,7 +150,7 @@ namespace ams::ncm {
         /* Get the content path. */
         Path path;
         R_TRY(this->registered_content->GetPath(std::addressof(path), content_id));
-        
+
         /* Acquire the rights id for the content. */
         RightsId rights_id;
         R_TRY_CATCH(GetRightsId(std::addressof(rights_id), path)) {
@@ -150,6 +167,7 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {
+        AMS_UNUSED(content_id, offset, data);
         return ncm::ResultNotSupported();
     }
 
@@ -168,6 +186,7 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) {
+        AMS_UNUSED(out, placeholder_id);
         return ncm::ResultNotSupported();
     }
 
@@ -176,6 +195,7 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+        AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id);
         return ncm::ResultNotSupported();
     }
 

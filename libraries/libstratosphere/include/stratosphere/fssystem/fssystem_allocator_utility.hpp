@@ -29,10 +29,10 @@ namespace ams::fssystem {
     template<typename T>
     class StdAllocator : public std::allocator<T> {
         public:
-            StdAllocator() { /* ... */ }
-            StdAllocator(const StdAllocator &) { /* ... */ }
+            StdAllocator() = default;
+            StdAllocator(const StdAllocator &) = default;
             template<class U>
-            StdAllocator(const StdAllocator<U> &) { /* ... */ }
+            StdAllocator(const StdAllocator<U> &) : std::allocator<T>() { /* ... */ };
 
             template<typename U>
             struct rebind {
@@ -40,6 +40,7 @@ namespace ams::fssystem {
             };
 
             T *Allocate(size_t size, const T *hint = nullptr) {
+                AMS_UNUSED(hint);
                 return static_cast<T *>(::ams::fssystem::Allocate(sizeof(T) * size));
             }
 

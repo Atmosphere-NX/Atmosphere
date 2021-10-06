@@ -50,7 +50,8 @@ namespace ams::fs {
             R_TRY(impl::CheckMountNameAllowingReserved(name));
 
             /* Open the partition. This uses libnx bindings. */
-            /* Note: Nintendo ignores the root_path here. */
+            /* NOTE: Nintendo ignores the root_path here. */
+            AMS_UNUSED(root_path);
             FsFileSystem fs;
             R_TRY(fsOpenBisFileSystem(std::addressof(fs), static_cast<::FsBisPartitionId>(id), ""));
 
@@ -80,6 +81,7 @@ namespace ams::fs {
             }
 
             /* TODO: Libnx binding for fsSetBisRootForHost */
+            AMS_UNUSED(id);
             AMS_ABORT();
         }
 

@@ -68,11 +68,13 @@ namespace ams::lr {
 
     Result OpenAddOnContentLocationResolver(AddOnContentLocationResolver *out) {
         /* TODO: libnx binding */
+        AMS_UNUSED(out);
         AMS_ABORT();
     }
 
     Result RefreshLocationResolver(ncm::StorageId storage_id) {
         /* TODO: libnx binding */
+        AMS_UNUSED(storage_id);
         AMS_ABORT();
     }
 }

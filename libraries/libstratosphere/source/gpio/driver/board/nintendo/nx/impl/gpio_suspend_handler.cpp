@@ -28,21 +28,25 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     void SuspendHandler::SetValueForSleepState(TegraPad *pad, GpioValue value) {
         /* TODO */
+        AMS_UNUSED(pad, value);
         AMS_ABORT();
     }
 
     Result SuspendHandler::IsWakeEventActive(bool *out, TegraPad *pad) const {
         /* TODO */
+        AMS_UNUSED(out, pad);
         AMS_ABORT();
     }
 
     Result SuspendHandler::SetWakeEventActiveFlagSetForDebug(TegraPad *pad, bool en) {
         /* TODO */
+        AMS_UNUSED(pad, en);
         AMS_ABORT();
     }
 
     void SuspendHandler::SetWakePinDebugMode(WakePinDebugMode mode) {
         /* TODO */
+        AMS_UNUSED(mode);
         AMS_ABORT();
     }
 

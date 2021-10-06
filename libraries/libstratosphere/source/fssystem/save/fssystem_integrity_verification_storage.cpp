@@ -390,6 +390,7 @@ namespace ams::fssystem::save {
         const s64 sign_offset = (offset >> this->verification_block_order) * HashSize;
         const auto sign_size  = static_cast<size_t>((size >> this->verification_block_order) * HashSize);
         AMS_ASSERT(dst_size >= sign_size);
+        AMS_UNUSED(dst_size);
 
         /* Create a guard in the event of failure. */
         auto clear_guard = SCOPE_GUARD { std::memset(dst, 0, sign_size); };
@@ -418,6 +419,7 @@ namespace ams::fssystem::save {
         const s64 sign_offset = (offset >> this->verification_block_order) * HashSize;
         const auto sign_size  = static_cast<size_t>((size >> this->verification_block_order) * HashSize);
         AMS_ASSERT(src_size >= sign_size);
+        AMS_UNUSED(src_size);
 
         /* Write the signature. */
         R_TRY(this->hash_storage.Write(sign_offset, src, sign_size));

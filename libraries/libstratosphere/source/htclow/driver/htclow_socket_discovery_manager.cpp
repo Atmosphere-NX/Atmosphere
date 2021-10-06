@@ -59,7 +59,7 @@ namespace ams::htclow::driver {
     }
 
     void SocketDiscoveryManager::OnSocketAcceptBegin(u16 port) {
-        /* ... */
+        AMS_UNUSED(port);
     }
 
     void SocketDiscoveryManager::OnSocketAcceptEnd() {

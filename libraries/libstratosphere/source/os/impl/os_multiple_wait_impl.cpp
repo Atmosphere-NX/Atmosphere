@@ -142,6 +142,7 @@ namespace ams::os::impl {
         for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             if (auto handle = holder_base.GetHandle(); handle != os::InvalidNativeHandle) {
                 AMS_ASSERT(count < num);
+                AMS_UNUSED(num);
 
                 out_handles[count] = handle;
                 out_objects[count] = &holder_base;

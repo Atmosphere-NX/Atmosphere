@@ -92,6 +92,7 @@ namespace ams::fs {
             .dir  = InvalidPosition,
             .file = InvalidPosition,
         };
+        AMS_UNUSED(info);
 
         Position new_pos = 0;
         R_TRY_CATCH(this->dir_table.Add(std::addressof(new_pos), new_key, new_entry)) {
@@ -221,6 +222,8 @@ namespace ams::fs {
         RomDirectoryEntry entry = {};
         R_TRY(this->GetDirectoryEntry(std::addressof(entry), id));
 
+        AMS_UNUSED(out);
+
         return ResultSuccess();
     }
 
@@ -275,6 +278,7 @@ namespace ams::fs {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(find != nullptr);
         AMS_ASSERT(length > RomPathTool::MaxPathLength);
+        AMS_UNUSED(length);
 
         R_UNLESS(find->next_dir != InvalidPosition, fs::ResultDbmFindFinished());
 
@@ -294,6 +298,7 @@ namespace ams::fs {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(find != nullptr);
         AMS_ASSERT(length > RomPathTool::MaxPathLength);
+        AMS_UNUSED(length);
 
         R_UNLESS(find->next_file != InvalidPosition, fs::ResultDbmFindFinished());
 
@@ -543,6 +548,8 @@ namespace ams::fs {
         Position pos = 0;
         RomDirectoryEntry entry = {};
         R_TRY(this->GetDirectoryEntry(std::addressof(pos), std::addressof(entry), key));
+
+        AMS_UNUSED(out);
 
         return ResultSuccess();
     }

@@ -831,7 +831,7 @@ namespace ams::sdmmc::impl {
     void SdHostStandardController::UnregisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) {
         /* Find and clear the buffer info. */
         for (auto &info : this->buffer_infos) {
-            if (info.buffer_address == 0) {
+            if (info.buffer_address == buffer) {
                 AMS_ABORT_UNLESS(info.buffer_size == buffer_size);
                 AMS_ABORT_UNLESS(info.buffer_device_virtual_address == buffer_device_virtual_address);
 

@@ -128,6 +128,7 @@ namespace ams::htcs::impl {
 
     Result HtcsManagerImpl::SendLargeStart(u32 *out_task_id, os::NativeHandle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags) {
         /* NOTE: Nintendo aborts here, too. */
+        AMS_UNUSED(out_task_id, out_handle, buffers, sizes, count, desc, flags);
         AMS_ABORT("HtcsManagerImpl::SendLargeStart is not implemented");
     }
 

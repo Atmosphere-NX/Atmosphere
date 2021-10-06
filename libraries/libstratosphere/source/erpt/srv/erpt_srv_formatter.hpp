@@ -132,6 +132,7 @@ namespace ams::erpt::srv {
             }
 
             static Result End(Report *report) {
+                AMS_UNUSED(report);
                 return ResultSuccess();
             }
 

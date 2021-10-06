@@ -113,11 +113,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     Result ChargerDriver::GetDeviceErrorStatus(u32 *out, IDevice *device) {
         /* TODO */
+        AMS_UNUSED(out, device);
         AMS_ABORT();
     }
 
     Result ChargerDriver::SetDeviceErrorStatus(IDevice *device, u32 status) {
         /* TODO */
+        AMS_UNUSED(device, status);
         AMS_ABORT();
     }
 

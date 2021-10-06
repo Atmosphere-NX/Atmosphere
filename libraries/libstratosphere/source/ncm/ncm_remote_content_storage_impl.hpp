@@ -45,6 +45,16 @@ namespace ams::ncm {
                 static_assert(sizeof(ContentId)     == sizeof(::NcmContentId));
                 return reinterpret_cast<::NcmContentId *>(std::addressof(c));
             }
+
+            ALWAYS_INLINE const ::NcmContentId *Convert(const ContentId *c) {
+                static_assert(sizeof(ContentId)     == sizeof(::NcmContentId));
+                return reinterpret_cast<const ::NcmContentId *>(c);
+            }
+
+            ALWAYS_INLINE const ::NcmContentId *Convert(const ContentId &c) {
+                static_assert(sizeof(ContentId)     == sizeof(::NcmContentId));
+                return reinterpret_cast<const ::NcmContentId *>(std::addressof(c));
+            }
         public:
             Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
                 return ncmContentStorageGeneratePlaceHolderId(std::addressof(this->srv), Convert(out.GetPointer()));
@@ -191,11 +201,11 @@ namespace ams::ncm {
             }
 
             Result RegisterPath(const ContentId &content_id, const Path &path) {
-                AMS_ABORT("TODO");
+                return ncmContentStorageRegisterPath(std::addressof(this->srv), Convert(content_id), path.str);
             }
 
             Result ClearRegisteredPath() {
-                AMS_ABORT("TODO");
+                return ncmContentStorageClearRegisteredPath(std::addressof(this->srv));
             }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);

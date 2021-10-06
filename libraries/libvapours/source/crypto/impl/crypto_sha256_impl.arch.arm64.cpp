@@ -32,6 +32,8 @@ namespace ams::crypto::impl {
     void Sha256Impl::GetHash(void *dst, size_t size) {
         static_assert(sizeof(this->state) == sizeof(::Sha256Context));
         AMS_ASSERT(size >= HashSize);
+        AMS_UNUSED(size);
+
         ::sha256ContextGetHash(reinterpret_cast<::Sha256Context *>(std::addressof(this->state)), dst);
     }
 

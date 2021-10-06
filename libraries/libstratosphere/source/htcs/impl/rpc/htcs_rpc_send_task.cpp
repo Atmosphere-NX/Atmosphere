@@ -81,6 +81,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SendTask::ProcessResponse(const char *data, size_t size) {
+        AMS_UNUSED(size);
+
         /* Convert the input to a packet. */
         auto *packet = reinterpret_cast<const HtcsRpcPacket *>(data);
 
@@ -91,6 +93,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SendTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
+        AMS_UNUSED(size);
+
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcsRpcPacket *>(data);
         *packet = {
@@ -115,11 +119,15 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SendTask::ProcessNotification(const char *data, size_t size) {
+        AMS_UNUSED(data, size);
+
         this->NotifyDataChannelReady();
         return ResultSuccess();
     }
 
     Result SendTask::CreateNotification(size_t *out, char *data, size_t size, u32 task_id) {
+        AMS_UNUSED(size);
+
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcsRpcPacket *>(data);
         *packet = {

@@ -45,6 +45,7 @@ namespace ams::lmem::impl {
 
     void FinalizeHeap(HeapHead *heap) {
         /* Nothing actually needs to be done here. */
+        AMS_UNUSED(heap);
     }
 
     bool ContainsAddress(HeapHandle handle, const void *address) {

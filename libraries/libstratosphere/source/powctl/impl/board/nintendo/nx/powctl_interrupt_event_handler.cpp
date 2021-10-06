@@ -20,11 +20,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     void ChargerInterruptEventHandler::SignalEvent(IDevice *device) {
         /* TODO */
+        AMS_UNUSED(device);
         AMS_ABORT();
     }
 
     void BatteryInterruptEventHandler::SignalEvent(IDevice *device) {
         /* TODO */
+        AMS_UNUSED(device);
         AMS_ABORT();
     }
 

@@ -127,6 +127,8 @@ namespace ams::fssystem {
     }
 
     bool FileSystemBufferManager::CacheHandleTable::UnregisterOldest(uintptr_t *out_address, size_t *out_size, const BufferAttribute &attr, size_t required_size) {
+        AMS_UNUSED(attr, required_size);
+
         /* Validate pre-conditions. */
         AMS_ASSERT(this->entries != nullptr);
         AMS_ASSERT(out_address != nullptr);

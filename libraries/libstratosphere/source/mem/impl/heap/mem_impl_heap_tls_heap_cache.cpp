@@ -289,14 +289,14 @@ namespace ams::mem::impl::heap {
 
     template<>
     errno_t TlsHeapCache::FreeImpl<false>(TlsHeapCache *_this, void *ptr) {
-        const size_t cls = _this->central->GetClassFromPointer(ptr);
+        const auto cls = _this->central->GetClassFromPointer(ptr);
         if (cls == 0) {
             return _this->central->UncacheLargeMemory(ptr);
         }
 
         AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
 
-        if (static_cast<s32>(cls) >= 0) {
+        if (cls >= 0) {
             return _this->central->UncacheSmallMemory(ptr);
         } else if (ptr == nullptr) {
             return 0;
@@ -307,14 +307,14 @@ namespace ams::mem::impl::heap {
 
     template<>
     errno_t TlsHeapCache::FreeImpl<true>(TlsHeapCache *_this, void *ptr) {
-        const size_t cls = _this->central->GetClassFromPointer(ptr);
+        const auto cls = _this->central->GetClassFromPointer(ptr);
         if (cls == 0) {
             return _this->central->UncacheLargeMemory(ptr);
         }
 
         AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
 
-        if (static_cast<s32>(cls) >= 0) {
+        if (cls >= 0) {
             *reinterpret_cast<void **>(ptr) = _this->small_mem_lists[cls];
             _this->small_mem_lists[cls] = _this->ManglePointer(ptr);
 

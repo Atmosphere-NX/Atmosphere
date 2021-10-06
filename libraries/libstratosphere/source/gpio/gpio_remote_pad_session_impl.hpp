@@ -100,11 +100,13 @@ namespace ams::gpio {
 
             Result SetValueForSleepState(gpio::GpioValue value) {
                 /* TODO: libnx bindings. */
+                AMS_UNUSED(value);
                 AMS_ABORT();
             }
 
             Result GetValueForSleepState(ams::sf::Out<gpio::GpioValue> out) {
                 /* TODO: libnx bindings. */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
     };

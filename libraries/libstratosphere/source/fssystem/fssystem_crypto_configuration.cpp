@@ -130,6 +130,8 @@ namespace ams::fssystem {
         }
 
         void GenerateNcaKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 key_type, const NcaCryptoConfiguration &cfg) {
+            AMS_UNUSED(cfg);
+
             R_ABORT_UNLESS(spl::GenerateAesKey(dst, dst_size, GetNcaKekAccessKey(key_type), src, src_size));
         }
 

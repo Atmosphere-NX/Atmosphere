@@ -232,7 +232,8 @@ namespace ams::ncm {
         auto fragment_count = CountContentExceptForMeta(reader, index);
 
         /* Recalculate. */
-        return CalculateSizeImpl<InstallContentMetaHeader, InstallContentInfo>(this->GetExtendedHeaderSize(), fragment_count + 1, 0, this->GetExtendedDataSize(), false);
+        *out_size = CalculateSizeImpl<InstallContentMetaHeader, InstallContentInfo>(this->GetExtendedHeaderSize(), fragment_count + 1, 0, this->GetExtendedDataSize(), false);
+        return ResultSuccess();
     }
 
     void PackagedContentMetaReader::ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta) {

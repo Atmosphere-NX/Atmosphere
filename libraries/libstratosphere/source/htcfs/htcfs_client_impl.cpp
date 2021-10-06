@@ -1170,6 +1170,8 @@ namespace ams::htcfs {
     }
 
     Result ClientImpl::ReadFile(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
+        AMS_UNUSED(option);
+
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
@@ -1229,6 +1231,8 @@ namespace ams::htcfs {
     }
 
     Result ClientImpl::ReadFileLarge(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
+        AMS_UNUSED(option);
+
         /* Check our buffer size. */
         R_UNLESS(util::IsIntValueRepresentable<size_t>(buffer_size), htcfs::ResultInvalidArgument());
 

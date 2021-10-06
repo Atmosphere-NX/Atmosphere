@@ -31,6 +31,7 @@ namespace ams::psc {
 
             Result Initialize(ams::sf::OutCopyHandle out, psc::PmModuleId module_id, const ams::sf::InBuffer &child_list) {
                 /* NOTE: This functionality is already implemented by the libnx command we use to instantiate the PscPmModule. */
+                AMS_UNUSED(out, module_id, child_list);
                 AMS_ABORT();
             }
 

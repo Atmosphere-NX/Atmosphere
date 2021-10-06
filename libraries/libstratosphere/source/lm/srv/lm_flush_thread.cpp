@@ -44,6 +44,7 @@ namespace ams::lm::srv {
         }
 
         void DeallocateForFs(void *ptr, size_t size) {
+            AMS_UNUSED(size);
             return lmem::FreeToExpHeap(g_fs_heap_handle, ptr);
         }
 

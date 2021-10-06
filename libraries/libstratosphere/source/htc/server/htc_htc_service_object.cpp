@@ -69,11 +69,13 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::GetHostConnectionEventForSystem(sf::OutCopyHandle out) {
         /* NOTE: Nintendo presumably reserved this command in case they need it, but they haven't implemented it yet. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostEventForSystem not implemented.");
     }
 
     Result HtcServiceObject::GetHostDisconnectionEventForSystem(sf::OutCopyHandle out) {
         /* NOTE: Nintendo presumably reserved this command in case they need it, but they haven't implemented it yet. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostEventForSystem not implemented.");
     }
 
@@ -114,41 +116,49 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::GetBridgeIpAddress(const sf::OutBuffer &out) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::GetBridgePort(const sf::OutBuffer &out) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetCradleAttached(bool attached) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(attached);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::GetBridgeSubnetMask(const sf::OutBuffer &out) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::GetBridgeMacAddress(const sf::OutBuffer &out) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(out);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgeIpAddress(const sf::InBuffer &arg) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(arg);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgeSubnetMask(const sf::InBuffer &arg) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(arg);
         AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgePort(const sf::InBuffer &arg) {
         /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_UNUSED(arg);
         AMS_ABORT("HostBridge currently not supported.");
     }
 

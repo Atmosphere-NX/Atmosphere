@@ -29,6 +29,7 @@ namespace ams::i2c::server {
 
     Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode) {
         /* TODO */
+        AMS_UNUSED(out, bus_idx, slave_address, addressing_mode, speed_mode);
         AMS_ABORT();
     }
 
@@ -38,11 +39,13 @@ namespace ams::i2c::server {
 
     Result ManagerImpl::HasDevice(ams::sf::Out<bool> out, i2c::I2cDevice device) {
         /* TODO */
+        AMS_UNUSED(out, device);
         AMS_ABORT();
     }
 
     Result ManagerImpl::HasDeviceForDev(ams::sf::Out<bool> out, i2c::I2cDevice device) {
         /* TODO */
+        AMS_UNUSED(out, device);
         AMS_ABORT();
     }
 

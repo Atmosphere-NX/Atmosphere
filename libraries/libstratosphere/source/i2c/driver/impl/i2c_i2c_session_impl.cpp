@@ -22,7 +22,7 @@ namespace ams::i2c::driver::impl {
     namespace {
 
         constexpr TransactionOption EncodeTransactionOption(bool start, bool stop) {
-            return static_cast<TransactionOption>((start ? TransactionOption_StartCondition : 0) | (stop ? TransactionOption_StopCondition : 0));
+            return static_cast<TransactionOption>((start ? util::ToUnderlying(TransactionOption_StartCondition) : 0) | (stop ? util::ToUnderlying(TransactionOption_StopCondition) : 0));
         }
 
     }
@@ -66,6 +66,8 @@ namespace ams::i2c::driver::impl {
     }
 
     Result I2cSessionImpl::SendHandler(const u8 **cur_cmd, u8 **cur_dst) {
+        AMS_UNUSED(cur_dst);
+
         /* Read the header bytes. */
         const util::BitPack8 hdr0{*((*cur_cmd)++)};
         const util::BitPack8 hdr1{*((*cur_cmd)++)};
@@ -104,6 +106,8 @@ namespace ams::i2c::driver::impl {
     }
 
     Result I2cSessionImpl::ExtensionHandler(const u8 **cur_cmd, u8 **cur_dst) {
+        AMS_UNUSED(cur_dst);
+
         /* Read the header bytes. */
         const util::BitPack8 hdr0{*((*cur_cmd)++)};
 
@@ -167,6 +171,8 @@ namespace ams::i2c::driver::impl {
     }
 
     Result I2cSessionImpl::ExecuteCommandList(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        AMS_UNUSED(dst_size);
+
         /* Acquire exclusive access to the device. */
         std::scoped_lock lk(this->GetDevice().SafeCastTo<I2cDeviceProperty>().GetDriver().SafeCastTo<II2cDriver>().GetTransactionOrderMutex());
 

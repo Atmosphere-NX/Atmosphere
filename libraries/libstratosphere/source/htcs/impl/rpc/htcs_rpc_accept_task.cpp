@@ -52,6 +52,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result AcceptTask::ProcessResponse(const char *data, size_t size) {
+        AMS_UNUSED(size);
+
         /* Convert the input to a packet. */
         auto *packet = reinterpret_cast<const HtcsRpcPacket *>(data);
 
@@ -62,6 +64,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result AcceptTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
+        AMS_UNUSED(size);
+
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcsRpcPacket *>(data);
         *packet = {

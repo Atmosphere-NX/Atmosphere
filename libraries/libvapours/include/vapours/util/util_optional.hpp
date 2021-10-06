@@ -97,8 +97,8 @@ namespace ams::util {
             template<typename U, typename... Args>
             constexpr OptionalPayloadBase(std::initializer_list<U> il, Args &&... args) : m_payload(il, std::forward<Args>(args)...), m_engaged(true) { /* ... */ }
 
-            constexpr OptionalPayloadBase(bool engaged, const OptionalPayloadBase &rhs) { if (rhs.m_engaged) { this->Construct(rhs.Get()); } }
-            constexpr OptionalPayloadBase(bool engaged, OptionalPayloadBase &&rhs) { if (rhs.m_engaged) { this->Construct(std::move(rhs.Get())); } }
+            constexpr OptionalPayloadBase(bool engaged, const OptionalPayloadBase &rhs) { AMS_UNUSED(engaged); if (rhs.m_engaged) { this->Construct(rhs.Get()); } }
+            constexpr OptionalPayloadBase(bool engaged, OptionalPayloadBase &&rhs) { AMS_UNUSED(engaged); if (rhs.m_engaged) { this->Construct(std::move(rhs.Get())); } }
 
             constexpr OptionalPayloadBase(const OptionalPayloadBase &) = default;
             constexpr OptionalPayloadBase(OptionalPayloadBase &&) = default;

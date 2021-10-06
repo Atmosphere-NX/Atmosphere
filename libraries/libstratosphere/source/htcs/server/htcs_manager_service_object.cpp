@@ -66,11 +66,13 @@ namespace ams::htcs::server {
 
     Result ManagerServiceObject::RegisterProcessId(const sf::ClientProcessId &client_pid) {
         /* NOTE: Nintendo does nothing here. */
+        AMS_UNUSED(client_pid);
         return ResultSuccess();
     }
 
     Result ManagerServiceObject::MonitorManager(const sf::ClientProcessId &client_pid) {
         /* NOTE: Nintendo does nothing here. */
+        AMS_UNUSED(client_pid);
         return ResultSuccess();
     }
 

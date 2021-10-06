@@ -133,6 +133,8 @@ namespace ams::scs {
     }
 
     void CommandProcessor::OnProcessJitDebug(u64 id, s32 socket, os::ProcessId process_id) {
+        AMS_UNUSED(process_id);
+
         SendJitDebug(socket, id);
     }
 
@@ -142,6 +144,8 @@ namespace ams::scs {
     }
 
     bool CommandProcessor::ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket) {
+        AMS_UNUSED(body);
+
         switch (header.command) {
             /* TODO: Support commands. */
             default:

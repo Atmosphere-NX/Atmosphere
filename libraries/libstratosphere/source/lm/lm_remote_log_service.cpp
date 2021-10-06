@@ -35,11 +35,16 @@ namespace ams::lm {
     }
 
     Result RemoteLogService::OpenLogger(sf::Out<sf::SharedPointer<::ams::lm::ILogger>> out, const sf::ClientProcessId &client_process_id) {
+        AMS_UNUSED(client_process_id);
+
         /* Send libnx command. */
         ::Service logger_srv;
         {
+            u64 pid_placeholder;
+
             #define NX_SERVICE_ASSUME_NON_DOMAIN
-            R_TRY(serviceDispatch(&m_srv, 0,
+            R_TRY(serviceDispatchIn(&m_srv, 0, pid_placeholder,
+                .in_send_pid = true,
                 .out_num_objects = 1,
                 .out_objects = &logger_srv,
             ));

@@ -72,6 +72,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(mode);
                 AMS_ABORT();
             }
 
@@ -80,6 +81,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -88,6 +90,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(enable);
                 AMS_ABORT();
             }
 
@@ -96,6 +99,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -104,6 +108,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -143,6 +148,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -159,6 +165,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(enable);
                 AMS_ABORT();
             }
 
@@ -167,6 +174,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -175,6 +183,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(ms);
                 AMS_ABORT();
             }
 
@@ -183,6 +192,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
 
@@ -191,6 +201,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(value);
                 AMS_ABORT();
             }
 
@@ -199,6 +210,7 @@ namespace ams::gpio::server {
                 AMS_ASSERT(this->has_session);
 
                 /* TODO */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
     };

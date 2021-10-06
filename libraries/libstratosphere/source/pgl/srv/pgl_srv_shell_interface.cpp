@@ -30,10 +30,12 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceCommon::LaunchProgramFromHostImpl(os::ProcessId *out, const void *content_path, size_t content_path_size, u32 pm_flags) {
+        AMS_UNUSED(content_path_size);
         return pgl::srv::LaunchProgramFromHost(out, static_cast<const char *>(content_path), pm_flags);
     }
 
     Result ShellInterfaceCommon::GetHostContentMetaInfoImpl(pgl::ContentMetaInfo *out, const void *content_path, size_t content_path_size) {
+        AMS_UNUSED(content_path_size);
         return pgl::srv::GetHostContentMetaInfo(out, static_cast<const char *>(content_path));
     }
 
@@ -66,6 +68,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceCommon::TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
+        AMS_UNUSED(arg_size);
         return pgl::srv::TriggerApplicationSnapShotDumper(dump_type, static_cast<const char *>(arg));
     }
 
@@ -123,6 +126,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceCmif::Command21NotImplemented(ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2) {
+        AMS_UNUSED(out, in, buf1, buf2);
         return pgl::ResultNotImplemented();
     }
 

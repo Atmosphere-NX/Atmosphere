@@ -34,56 +34,67 @@ namespace ams::lr {
 
             Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
             Result UnregisterProgramPath(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
 
             Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
             Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out, id);
                 AMS_ABORT();
             }
 
             Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
             Result UnregisterHtmlDocumentPath(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
 
             Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
@@ -94,6 +105,7 @@ namespace ams::lr {
 
             Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(ids);
                 AMS_ABORT();
             }
     };

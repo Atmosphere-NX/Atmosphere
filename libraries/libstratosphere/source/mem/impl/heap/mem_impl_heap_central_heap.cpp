@@ -185,7 +185,7 @@ namespace ams::mem::impl::heap {
         if (cls_from_ptr) {
             if (cls_from_ptr <= 0) {
                 return EFAULT;
-            } else if (cls_from_size && cls_from_size <= cls_from_ptr) {
+            } else if (cls_from_size && static_cast<s32>(cls_from_size) <= cls_from_ptr) {
                 *p = ptr;
                 return 0;
             } else {
@@ -225,7 +225,7 @@ namespace ams::mem::impl::heap {
         if (cls_from_ptr) {
             if (cls_from_ptr <= 0) {
                 return EFAULT;
-            } else if (cls_from_size && cls_from_size <= cls_from_ptr) {
+            } else if (cls_from_size && static_cast<s32>(cls_from_size) <= cls_from_ptr) {
                 return 0;
             } else {
                 return EINVAL;

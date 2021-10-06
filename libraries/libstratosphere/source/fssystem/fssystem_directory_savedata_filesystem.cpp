@@ -240,6 +240,7 @@ namespace ams::fssystem {
     /* Overridden from IPathResolutionFileSystem but not commands. */
     Result DirectorySaveDataFileSystem::DoCommitProvisionally(s64 counter) {
         /* Nintendo does nothing here. */
+        AMS_UNUSED(counter);
         return ResultSuccess();
     }
 
@@ -250,18 +251,22 @@ namespace ams::fssystem {
 
     /* Explicitly overridden to be not implemented. */
     Result DirectorySaveDataFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
+        AMS_UNUSED(out, path);
         return fs::ResultNotImplemented();
     }
 
     Result DirectorySaveDataFileSystem::DoGetTotalSpaceSize(s64 *out, const char *path) {
+        AMS_UNUSED(out, path);
         return fs::ResultNotImplemented();
     }
 
     Result DirectorySaveDataFileSystem::DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) {
+        AMS_UNUSED(out, path);
         return fs::ResultNotImplemented();
     }
 
     Result DirectorySaveDataFileSystem::DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
+        AMS_UNUSED(dst, dst_size, src, src_size, query, path);
         return fs::ResultNotImplemented();
     }
 

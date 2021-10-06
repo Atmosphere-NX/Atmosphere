@@ -186,6 +186,8 @@ namespace ams::pgl::srv {
                 }
 
                 Result GetContentPathInNspd(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
+                    AMS_UNUSED(index);
+
                     /* Get the content name. */
                     const char *content_name = nullptr;
                     switch (type) {

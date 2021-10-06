@@ -123,7 +123,7 @@ namespace ams::fssrv::impl {
     Result DirectoryInterfaceAdapter::Read(ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries) {
         auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
 
-        const size_t max_num_entries = out_entries.GetSize() / sizeof(fs::DirectoryEntry);
+        const s64 max_num_entries = out_entries.GetSize() / sizeof(fs::DirectoryEntry);
         R_UNLESS(max_num_entries >= 0, fs::ResultInvalidSize());
 
         /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */

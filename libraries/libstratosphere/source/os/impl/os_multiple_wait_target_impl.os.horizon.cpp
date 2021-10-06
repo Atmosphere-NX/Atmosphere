@@ -20,6 +20,8 @@
 namespace ams::os::impl {
 
     Result MultiWaitHorizonImpl::WaitSynchronizationN(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns) {
+        AMS_UNUSED(array_size);
+
         AMS_ASSERT(!(num == 0 && ns == 0));
         s32 index = MultiWaitImpl::WaitInvalid;
 
@@ -38,6 +40,8 @@ namespace ams::os::impl {
     }
 
     Result MultiWaitHorizonImpl::ReplyAndReceiveN(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns, NativeHandle reply_target) {
+        AMS_UNUSED(array_size);
+
         /* NOTE: Nintendo does not initialize this value, which seems like it can cause incorrect behavior. */
         s32 index = MultiWaitImpl::WaitInvalid;
         static_assert(MultiWaitImpl::WaitInvalid != -1);

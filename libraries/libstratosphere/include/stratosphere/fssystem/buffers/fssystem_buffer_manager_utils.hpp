@@ -34,6 +34,7 @@ namespace ams::fssystem::buffers {
                 R_CATCH(fs::ResultBufferAllocationFailed) {
                     if ((1 <= count && count <= BufferAllocationRetryLogCountMax) || ((count % BufferAllocationRetryLogInterval) == 0)) {
                         /* TODO: Log */
+                        AMS_UNUSED(function_name);
                     }
                     R_TRY(on_failure());
 

@@ -157,6 +157,8 @@ namespace ams::htclow::mux {
     }
 
     bool Mux::IsSendable(PacketType packet_type) const {
+        AMS_UNUSED(packet_type);
+
         switch (m_state) {
             case MuxState::Normal:
                 return true;

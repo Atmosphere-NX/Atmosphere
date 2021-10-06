@@ -22,6 +22,7 @@ namespace ams::fssystem {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size == IvSize);
         AMS_ASSERT(offset >= 0);
+        AMS_UNUSED(dst_size);
 
         const uintptr_t out_addr = reinterpret_cast<uintptr_t>(dst);
 
@@ -35,6 +36,7 @@ namespace ams::fssystem {
         AMS_ASSERT(iv   != nullptr);
         AMS_ASSERT(key_size == KeySize);
         AMS_ASSERT(iv_size  == IvSize);
+        AMS_UNUSED(key_size, iv_size);
 
         std::memcpy(this->key, key, KeySize);
         std::memcpy(this->iv, iv, IvSize);
@@ -127,6 +129,7 @@ namespace ams::fssystem {
     }
 
     Result AesCtrStorage::SetSize(s64 size) {
+        AMS_UNUSED(size);
         return fs::ResultUnsupportedOperationInAesCtrStorageA();
     }
 

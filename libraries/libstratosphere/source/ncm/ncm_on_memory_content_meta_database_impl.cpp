@@ -88,6 +88,7 @@ namespace ams::ncm {
     }
 
     Result OnMemoryContentMetaDatabaseImpl::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
+        AMS_UNUSED(out_orphaned, content_ids);
         return ResultInvalidContentMetaDatabase();
     }
 

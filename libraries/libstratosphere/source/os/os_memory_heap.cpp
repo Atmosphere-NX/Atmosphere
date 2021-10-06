@@ -18,10 +18,12 @@
 namespace ams::os {
 
     Result AllocateMemoryBlock(uintptr_t *out_address, size_t size) {
+        AMS_UNUSED(out_address, size);
         AMS_ABORT("Not implemented yet");
     }
 
     void FreeMemoryBlock(uintptr_t address, size_t size) {
+        AMS_UNUSED(address, size);
         AMS_ABORT("Not implemented yet");
     }
 

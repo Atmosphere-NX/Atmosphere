@@ -49,7 +49,7 @@ namespace ams::htcs::impl::rpc {
         AMS_ASSERT(0 <= write_handle_count && write_handle_count < SocketCountMax);
         AMS_ASSERT(0 <= exception_handle_count && exception_handle_count < SocketCountMax);
         AMS_ASSERT(handle_count * static_cast<s64>(sizeof(s32)) == body_size);
-        AMS_UNUSED(handle_count);
+        AMS_UNUSED(handle_count, body_size);
 
         /* Set our results. */
         m_err                        = err;
@@ -106,6 +106,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SelectTask::ProcessResponse(const char *data, size_t size) {
+        AMS_UNUSED(size);
+
         /* Convert the input to a packet. */
         auto *packet = reinterpret_cast<const HtcsRpcPacket *>(data);
 
@@ -116,6 +118,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SelectTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
+        AMS_UNUSED(size);
+
         /* Determine the body size. */
         const auto handle_count = m_read_handle_count + m_write_handle_count + m_exception_handle_count;
         const s64 body_size     = static_cast<s64>(handle_count * sizeof(s32));

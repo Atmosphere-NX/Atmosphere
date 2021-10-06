@@ -50,6 +50,8 @@ namespace ams::crypto::impl {
 
     template<typename Cipher, typename Self>
     size_t UpdateImpl(Self *self, void *dst, size_t dst_size, const void *src, size_t src_size) {
+        AMS_UNUSED(dst_size);
+
         const size_t BlockSize = self->GetBlockSize();
 
         const u8 *src_u8 = static_cast<const u8 *>(src);

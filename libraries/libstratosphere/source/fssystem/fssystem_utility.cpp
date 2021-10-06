@@ -108,12 +108,16 @@ namespace ams::fssystem {
 
         return IterateDirectoryRecursively(src_fs, src_path,
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Enter Directory */
+                AMS_UNUSED(path);
+
                 /* Update path, create new dir. */
                 std::strncat(dst_path_buf, entry.name, sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
                 std::strncat(dst_path_buf, "/",        sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
                 return dst_fs->CreateDirectory(dst_path_buf);
             },
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Exit Directory */
+                AMS_UNUSED(path, entry);
+
                 /* Check we have a parent directory. */
                 const size_t len = strnlen(dst_path_buf, sizeof(dst_path_buf));
                 R_UNLESS(len >= 2, fs::ResultInvalidPathFormat());

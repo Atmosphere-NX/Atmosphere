@@ -357,6 +357,8 @@ namespace ams::htcs {
     }
 
     s32 Select(s32 count, FdSet *read, FdSet *write, FdSet *exception, TimeVal *timeout) {
+        AMS_UNUSED(count);
+
         /* Check that we have a manager. */
         AMS_ASSERT(g_manager != nullptr);
 

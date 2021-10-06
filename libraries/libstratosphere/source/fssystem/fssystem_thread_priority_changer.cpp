@@ -19,6 +19,7 @@ namespace ams::fssystem {
 
     s32 ScopedThreadPriorityChangerByAccessPriority::GetThreadPriorityByAccessPriority(AccessMode mode) {
         /* TODO: Actually implement this for real. */
+        AMS_UNUSED(mode);
         return os::GetThreadPriority(os::GetCurrentThread());
     }
 

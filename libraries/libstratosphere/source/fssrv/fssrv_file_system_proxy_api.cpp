@@ -19,6 +19,7 @@ namespace ams::fssrv {
 
     void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled) {
         /* TODO FS-REIMPL */
+        AMS_UNUSED(fs_creator_interfaces, buffer_manager, is_development_function_enabled);
     }
 
 }

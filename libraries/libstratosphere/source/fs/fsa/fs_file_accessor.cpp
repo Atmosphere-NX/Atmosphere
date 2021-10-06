@@ -41,6 +41,7 @@ namespace ams::fs::impl {
 
     Result FileAccessor::ReadWithCacheAccessLog(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option, bool use_path_cache, bool use_data_cache) {
         /* TODO */
+        AMS_UNUSED(out, offset, buf, size, option, use_path_cache, use_data_cache);
         AMS_ABORT();
     }
 

@@ -149,6 +149,7 @@ namespace ams::fssystem {
                     AMS_ASSERT(enc_key_size == KeySize);
                     AMS_ASSERT(iv != nullptr);
                     AMS_ASSERT(iv_size == IvSize);
+                    AMS_UNUSED(iv_size);
 
                     std::memcpy(this->iv, iv, IvSize);
                     std::memcpy(this->encrypted_key, enc_key, enc_key_size);
@@ -221,6 +222,10 @@ namespace ams::fssystem {
                                 fs::QueryRangeInfo new_info;
                                 new_info.Clear();
                                 new_info.aes_ctr_key_type = static_cast<s32>(this->key_index >= 0 ? fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes);
+
+                                /* Merge the new info in. */
+                                reinterpret_cast<fs::QueryRangeInfo *>(dst)->Merge(new_info);
+                                return ResultSuccess();
                             }
                         default:
                             {
@@ -240,10 +245,12 @@ namespace ams::fssystem {
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                    AMS_UNUSED(offset, buffer, size);
                     return fs::ResultUnsupportedOperationInAesCtrStorageExternalA();
                 }
 
                 virtual Result SetSize(s64 size) override {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInAesCtrStorageExternalB();
                 }
         };

@@ -46,6 +46,8 @@ namespace ams::fssystem {
 
             bool Contains(const void *key, size_t key_size, s32 key2) const {
                 AMS_ASSERT(key_size == KeySize);
+                AMS_UNUSED(key_size);
+
                 return key2 == this->key2 && std::memcmp(this->key1, key, KeySize) == 0;
             }
 

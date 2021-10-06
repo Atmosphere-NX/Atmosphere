@@ -256,41 +256,49 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     Result DriverImpl::SetInterruptEnabled(Pad *pad, bool en) {
         /* TODO */
+        AMS_UNUSED(pad, en);
         AMS_ABORT();
     }
 
     Result DriverImpl::GetInterruptStatus(InterruptStatus *out, Pad *pad) {
         /* TODO */
+        AMS_UNUSED(out, pad);
         AMS_ABORT();
     }
 
     Result DriverImpl::ClearInterruptStatus(Pad *pad) {
         /* TODO */
+        AMS_UNUSED(pad);
         AMS_ABORT();
     }
 
     Result DriverImpl::GetDebounceEnabled(bool *out, Pad *pad) const {
         /* TODO */
+        AMS_UNUSED(out, pad);
         AMS_ABORT();
     }
 
     Result DriverImpl::SetDebounceEnabled(Pad *pad, bool en) {
+        AMS_UNUSED(pad, en);
         /* TODO */
         AMS_ABORT();
     }
 
     Result DriverImpl::GetDebounceTime(s32 *out_ms, Pad *pad) const {
         /* TODO */
+        AMS_UNUSED(out_ms, pad);
         AMS_ABORT();
     }
 
     Result DriverImpl::SetDebounceTime(Pad *pad, s32 ms) {
         /* TODO */
+        AMS_UNUSED(pad, ms);
         AMS_ABORT();
     }
 
     Result DriverImpl::GetUnknown22(u32 *out) {
         /* TODO */
+        AMS_UNUSED(out);
         AMS_ABORT();
     }
 
@@ -301,21 +309,25 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     Result DriverImpl::SetValueForSleepState(Pad *pad, GpioValue value) {
         /* TODO */
+        AMS_UNUSED(pad, value);
         AMS_ABORT();
     }
 
     Result DriverImpl::IsWakeEventActive(bool *out, Pad *pad) const {
         /* TODO */
+        AMS_UNUSED(out, pad);
         AMS_ABORT();
     }
 
     Result DriverImpl::SetWakeEventActiveFlagSetForDebug(Pad *pad, bool en) {
         /* TODO */
+        AMS_UNUSED(pad, en);
         AMS_ABORT();
     }
 
     Result DriverImpl::SetWakePinDebugMode(WakePinDebugMode mode) {
         /* TODO */
+        AMS_UNUSED(mode);
         AMS_ABORT();
     }
 

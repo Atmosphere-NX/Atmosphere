@@ -95,6 +95,7 @@ namespace ams::ncm {
 
             Result GetMemoryReport(sf::Out<MemoryReport> out) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
     };

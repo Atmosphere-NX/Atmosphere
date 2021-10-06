@@ -91,6 +91,10 @@ namespace ams::lm::srv {
                     diag::impl::PutImpl(meta, txt, size);
                 }, const_cast<diag::LogMetaData *>(std::addressof(log_meta)));
             }
+            #else
+            {
+                AMS_UNUSED(message);
+            }
             #endif
         }
 

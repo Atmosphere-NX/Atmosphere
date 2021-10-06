@@ -261,6 +261,7 @@ namespace ams::fssystem {
         AMS_ASSERT(enc_key_size == KeySize);
         AMS_ASSERT(iv != nullptr);
         AMS_ASSERT(iv_size == IvSize);
+        AMS_UNUSED(iv_size);
 
         /* Copy the ctr. */
         u8 ctr[IvSize];

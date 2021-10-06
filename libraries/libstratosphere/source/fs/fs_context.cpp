@@ -31,6 +31,7 @@ namespace ams::fs {
     }
 
     AbortSpecifier DefaultResultHandler(Result result) {
+        AMS_UNUSED(result);
         if (g_auto_abort_enabled) {
             return AbortSpecifier::Default;
         } else {
@@ -39,6 +40,7 @@ namespace ams::fs {
     }
 
     AbortSpecifier AlwaysReturnResultHandler(Result result) {
+        AMS_UNUSED(result);
         return AbortSpecifier::Return;
     }
 

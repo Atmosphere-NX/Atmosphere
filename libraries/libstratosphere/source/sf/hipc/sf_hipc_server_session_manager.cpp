@@ -277,6 +277,7 @@ namespace ams::sf::hipc {
 
     Result ServerSessionManager::DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) {
         /* This will get overridden by ... WithDomain class. */
+        AMS_UNUSED(session, in_message, out_message);
         return sf::ResultNotSupported();
     }
 

@@ -385,6 +385,8 @@ namespace ams::fssystem::save {
     }
 
     Result BlockCacheBufferedStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+        AMS_UNUSED(src, src_size);
+
         /* Validate pre-conditions. */
         AMS_ASSERT(this->data_storage != nullptr);
 
@@ -636,6 +638,8 @@ namespace ams::fssystem::save {
     }
 
     Result BlockCacheBufferedStorage::GetAssociateBuffer(MemoryRange *out_range, CacheEntry *out_entry, s64 offset, size_t ideal_size, bool is_allocate_for_write) {
+        AMS_UNUSED(is_allocate_for_write);
+
         /* Validate pre-conditions. */
         AMS_ASSERT(this->data_storage != nullptr);
         AMS_ASSERT(this->buffer_manager != nullptr);

@@ -35,7 +35,7 @@ namespace ams::fssystem {
                     if (!this->is_registered) {
                         this->is_registered = true;
                         this->address       = addr;
-                        this->size          = size;
+                        this->size          = sz;
                     }
                 }
 

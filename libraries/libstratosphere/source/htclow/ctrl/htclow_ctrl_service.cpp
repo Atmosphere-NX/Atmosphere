@@ -107,7 +107,7 @@ namespace ams::htclow::ctrl {
                 R_UNLESS(header.body_size == 0, htclow::ResultProtocolError());
                 break;
             case HtcctrlPacketType_ReadyFromHost:
-                R_UNLESS(0 <= header.body_size && header.body_size <= sizeof(HtcctrlPacketBody), htclow::ResultProtocolError());
+                R_UNLESS(header.body_size <= sizeof(HtcctrlPacketBody), htclow::ResultProtocolError());
                 break;
             default:
                 return htclow::ResultProtocolError();

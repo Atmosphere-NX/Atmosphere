@@ -44,6 +44,8 @@ namespace ams::erpt::srv {
     }
 
     inline void DeallocateWithSize(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         return lmem::FreeToExpHeap(g_heap_handle, p);
     }
 

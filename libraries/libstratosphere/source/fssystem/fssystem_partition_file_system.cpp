@@ -22,10 +22,12 @@ namespace ams::fssystem {
         class PartitionFileSystemDefaultAllocator : public MemoryResource {
             private:
                 virtual void *AllocateImpl(size_t size, size_t alignment) override {
+                    AMS_UNUSED(alignment);
                     return ::ams::fs::impl::Allocate(size);
                 }
 
                 virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
+                    AMS_UNUSED(alignment);
                     ::ams::fs::impl::Deallocate(buffer, size);
                 }
 
@@ -401,46 +403,55 @@ namespace ams::fssystem {
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCleanDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCreateDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCreateFile(const char *path, s64 size, int option) {
+        AMS_UNUSED(path, size, option);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteFile(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoRenameDirectory(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoRenameFile(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInPartitionFileSystemA();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCommitProvisionally(s64 counter) {
+        AMS_UNUSED(counter);
         return fs::ResultUnsupportedOperationInPartitionFileSystemB();
     }
 

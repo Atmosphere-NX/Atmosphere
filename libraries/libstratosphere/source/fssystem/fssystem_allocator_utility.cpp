@@ -29,6 +29,7 @@ namespace ams::fssystem {
         }
 
         void DefaultDeallocate(void *ptr, size_t size) {
+            AMS_UNUSED(size);
             std::free(ptr);
         }
 

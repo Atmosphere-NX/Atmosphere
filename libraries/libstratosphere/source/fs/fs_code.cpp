@@ -184,54 +184,67 @@ namespace ams::fs {
                 }
 
                 virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
+                    AMS_UNUSED(out_dir, path, mode);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
+                    AMS_UNUSED(out, path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
+                    AMS_UNUSED(path, size, flags);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoDeleteFile(const char *path) override final {
+                    AMS_UNUSED(path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoCreateDirectory(const char *path) override final {
+                    AMS_UNUSED(path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoDeleteDirectory(const char *path) override final {
+                    AMS_UNUSED(path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
+                    AMS_UNUSED(path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
+                    AMS_UNUSED(old_path, new_path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
+                    AMS_UNUSED(old_path, new_path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoCleanDirectoryRecursively(const char *path) override final {
+                    AMS_UNUSED(path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override final {
+                    AMS_UNUSED(out, path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override final {
+                    AMS_UNUSED(out, path);
                     return fs::ResultUnsupportedOperation();
                 }
 
                 virtual Result DoCommitProvisionally(s64 counter) override final {
+                    AMS_UNUSED(counter);
                     return fs::ResultUnsupportedOperation();
                 }
         };

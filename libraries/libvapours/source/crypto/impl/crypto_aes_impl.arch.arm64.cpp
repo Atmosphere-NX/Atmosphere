@@ -36,6 +36,7 @@ namespace ams::crypto::impl {
     void AesImpl<KeySize>::Initialize(const void *key, size_t key_size, bool is_encrypt) {
         static_assert(IsSupportedKeySize(KeySize));
         AMS_ASSERT(key_size == KeySize);
+        AMS_UNUSED(key_size);
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
@@ -60,6 +61,7 @@ namespace ams::crypto::impl {
         static_assert(IsSupportedKeySize(KeySize));
         AMS_ASSERT(src_size >= BlockSize);
         AMS_ASSERT(dst_size >= BlockSize);
+        AMS_UNUSED(src_size, dst_size);
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
@@ -84,6 +86,7 @@ namespace ams::crypto::impl {
         static_assert(IsSupportedKeySize(KeySize));
         AMS_ASSERT(src_size >= BlockSize);
         AMS_ASSERT(dst_size >= BlockSize);
+        AMS_UNUSED(src_size, dst_size);
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */

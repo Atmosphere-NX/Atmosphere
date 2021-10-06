@@ -24,6 +24,8 @@ namespace ams::htclow::ctrl {
         constexpr auto JsonParseFlags = rapidjson::kParseTrailingCommasFlag | rapidjson::kParseInsituFlag;
 
         void ParseBody(s16 *out_version, const char **out_channels, int *out_num_channels, int max_channels, void *str, size_t str_size) {
+            AMS_UNUSED(str_size);
+
             /* Create JSON handler. */
             JsonHandler json_handler(out_version, out_channels, out_num_channels, max_channels);
 

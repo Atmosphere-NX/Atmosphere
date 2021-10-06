@@ -526,6 +526,8 @@ namespace ams::ncm {
 
         /* Traverse the placeholder base directory finding valid placeholder files. */
         R_TRY(TraverseDirectory(placeholder_dir, placeholder_accessor.GetHierarchicalDirectoryDepth(), [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) -> Result {
+            AMS_UNUSED(current_path);
+
             *should_continue = true;
             *should_retry_dir_read = false;
 
@@ -559,6 +561,8 @@ namespace ams::ncm {
 
         /* Traverse the content base directory finding all files. */
         R_TRY(TraverseDirectory(path, depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) -> Result {
+            AMS_UNUSED(current_path);
+
             *should_continue = true;
             *should_retry_dir_read = false;
 
@@ -898,6 +902,7 @@ namespace ams::ncm {
     }
 
     Result ContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
+        AMS_UNUSED(content_id, path);
         return ncm::ResultInvalidOperation();
     }
 

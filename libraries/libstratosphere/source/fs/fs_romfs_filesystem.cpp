@@ -179,6 +179,7 @@ namespace ams::fs {
                     AMS_ASSERT(this->GetStorage() != nullptr);
                     AMS_ASSERT(offset >= 0);
                     AMS_ASSERT(buf != nullptr || size == 0);
+                    AMS_UNUSED(buf);
 
                     return ResultSuccess();
                 }
@@ -219,10 +220,12 @@ namespace ams::fs {
                 }
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
+                    AMS_UNUSED(offset, buffer, size, option);
                     return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
                 virtual Result DoSetSize(s64 size) override {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
@@ -441,30 +444,37 @@ namespace ams::fs {
     }
 
     Result RomFsFileSystem::DoCreateFile(const char *path, s64 size, int flags) {
+        AMS_UNUSED(path, size, flags);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteFile(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoCreateDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoRenameFile(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoRenameDirectory(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
@@ -522,19 +532,24 @@ namespace ams::fs {
     }
 
     Result RomFsFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
+        AMS_UNUSED(path);
+
         *out = 0;
         return ResultSuccess();
     }
 
     Result RomFsFileSystem::DoGetTotalSpaceSize(s64 *out, const char *path) {
+        AMS_UNUSED(out, path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemC();
     }
 
     Result RomFsFileSystem::DoCleanDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoCommitProvisionally(s64 counter) {
+        AMS_UNUSED(counter);
         return fs::ResultUnsupportedOperationInRomFsFileSystemB();
     }
 

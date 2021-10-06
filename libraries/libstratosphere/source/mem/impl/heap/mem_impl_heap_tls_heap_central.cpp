@@ -918,6 +918,8 @@ namespace ams::mem::impl::heap {
     }
 
     errno_t TlsHeapCentral::AllocatePhysical(void *start, size_t size) {
+        /* TODO: Implement physical tls heap central logic. */
+        AMS_UNUSED(start, size);
         return 0;
     }
 
@@ -1419,6 +1421,7 @@ namespace ams::mem::impl::heap {
         }
 
         /* TODO: Is this worth supporting? */
+        AMS_UNUSED(out_free_size, out_max_allocatable_size);
         return EOPNOTSUPP;
     }
 
@@ -1494,6 +1497,7 @@ namespace ams::mem::impl::heap {
     }
 
     void TlsHeapCentral::DumpImpl(DumpMode dump_mode, int fd, bool json) {
+        AMS_UNUSED(dump_mode, fd, json);
         AMS_ABORT("Not yet implemented");
     }
 

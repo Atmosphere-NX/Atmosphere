@@ -209,6 +209,8 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsService::AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc) {
+        AMS_UNUSED(out_address);
+
         /* Finish the task. */
         htcs::SocketError err;
         s32 ret_desc;
@@ -233,6 +235,8 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsService::ReceiveSmallResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
+        AMS_UNUSED(desc);
+
         /* Continue the task. */
         m_rpc_client->ReceiveContinue<rpc::ReceiveSmallTask>(task_id, buffer, buffer_size);
 
@@ -270,6 +274,7 @@ namespace ams::htcs::impl {
     }
 
     Result HtcsService::SendSmallResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
+        AMS_UNUSED(desc);
         /* Finish the task. */
         htcs::SocketError err;
         R_TRY(m_rpc_client->End<rpc::SendSmallTask>(task_id, std::addressof(err), out_size));

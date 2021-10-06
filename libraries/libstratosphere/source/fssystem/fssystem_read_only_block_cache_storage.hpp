@@ -36,6 +36,7 @@ namespace ams::fssystem {
                 AMS_ASSERT(util::IsPowerOfTwo(this->block_size));
                 AMS_ASSERT(cache_block_count > 0);
                 AMS_ASSERT(buf_size >= static_cast<size_t>(this->block_size * cache_block_count));
+                AMS_UNUSED(buf_size);
 
                 /* Create a node for each cache block. */
                 for (auto i = 0; i < cache_block_count; i++) {
@@ -128,10 +129,12 @@ namespace ams::fssystem {
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                AMS_UNUSED(offset, buffer, size);
                 return fs::ResultUnsupportedOperationInReadOnlyBlockCacheStorageA();
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInReadOnlyBlockCacheStorageB();
             }
     };

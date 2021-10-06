@@ -36,6 +36,7 @@ namespace ams::htc::server::driver {
 
     void HtclowDriver::SetDisconnectionEmulationEnabled(bool en) {
         /* NOTE: Nintendo ignores the input, here. */
+        AMS_UNUSED(en);
         m_disconnection_emulation_enabled = false;
     }
 

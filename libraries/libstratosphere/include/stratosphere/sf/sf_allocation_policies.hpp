@@ -36,11 +36,13 @@ namespace ams::sf {
 
             template<typename>
             static void *AllocateAligned(size_t size, size_t align) {
+                AMS_UNUSED(align);
                 return A().Allocate(size);
             }
 
             template<typename>
             static void DeallocateAligned(void *ptr, size_t size, size_t align) {
+                AMS_UNUSED(align);
                 A().Deallocate(ptr, size);
             }
     };
@@ -56,11 +58,13 @@ namespace ams::sf {
 
             template<typename T>
             static void *AllocateAligned(size_t size, size_t align) {
+                AMS_UNUSED(align);
                 return StatelessAllocator<T>().Allocate(size);
             }
 
             template<typename T>
             static void DeallocateAligned(void *ptr, size_t size, size_t align) {
+                AMS_UNUSED(align);
                 StatelessAllocator<T>().Deallocate(ptr, size);
             }
     };
@@ -72,10 +76,12 @@ namespace ams::sf {
             using Allocator = A;
 
             static void *AllocateAligned(Allocator *allocator, size_t size, size_t align) {
+                AMS_UNUSED(align);
                 return allocator->Allocate(size);
             }
 
             static void DeallocateAligned(Allocator *allocator, void *ptr, size_t size, size_t align) {
+                AMS_UNUSED(align);
                 allocator->Deallocate(ptr, size);
             }
     };

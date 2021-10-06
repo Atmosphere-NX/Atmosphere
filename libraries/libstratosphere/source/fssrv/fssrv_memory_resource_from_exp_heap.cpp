@@ -27,6 +27,8 @@ namespace ams::fssrv {
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::OnAllocate(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         if (p != nullptr) {
             this->current_free_size = GetUsedSize(p);
             this->peak_free_size = std::min(this->peak_free_size, this->current_free_size);
@@ -34,6 +36,8 @@ namespace ams::fssrv {
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::OnDeallocate(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         if (p != nullptr) {
             this->current_free_size += GetUsedSize(p);
         }
@@ -48,6 +52,8 @@ namespace ams::fssrv {
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::DeallocateImpl(void *p, size_t size, size_t align) {
+        AMS_UNUSED(align);
+
         std::scoped_lock lk(this->mutex);
 
         this->OnDeallocate(p, size);

@@ -35,6 +35,8 @@ namespace ams::scs {
         }
 
         void Deallocate(void *p, size_t size) {
+            AMS_UNUSED(size);
+
             std::scoped_lock lk(g_mutex);
             lmem::FreeToExpHeap(g_tenv_heap_handle, p);
         }

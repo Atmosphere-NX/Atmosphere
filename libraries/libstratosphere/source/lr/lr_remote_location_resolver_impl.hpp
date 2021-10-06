@@ -81,11 +81,13 @@ namespace ams::lr {
 
             Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
@@ -96,6 +98,7 @@ namespace ams::lr {
 
             Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(excluding_ids);
                 AMS_ABORT();
             }
 
@@ -105,41 +108,49 @@ namespace ams::lr {
 
             Result EraseApplicationControlRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
 
             Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
 
             Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
 
             Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out, id);
                 AMS_ABORT();
             }
 
             Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id);
                 AMS_ABORT();
             }
 
             Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(path, id, owner_id);
                 AMS_ABORT();
             }
 
             Result EraseProgramRedirectionForDebug(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(id);
                 AMS_ABORT();
             }
     };

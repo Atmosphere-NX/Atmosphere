@@ -158,11 +158,13 @@ namespace ams::ncm {
 
             Result GetCount(sf::Out<u32> out_count) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out_count);
                 AMS_ABORT();
             }
 
             Result GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out_id, key);
                 AMS_ABORT();
             }
     };

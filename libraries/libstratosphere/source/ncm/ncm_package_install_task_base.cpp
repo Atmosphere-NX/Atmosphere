@@ -26,6 +26,9 @@ namespace ams::ncm {
     }
 
     Result PackageInstallTaskBase::OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) {
+        AMS_UNUSED(key);
+
+        /* Get the file path. */
         PackagePath path;
         if (content_info->GetType() == ContentType::Meta) {
             this->CreateContentMetaPath(std::addressof(path), content_info->GetId());
@@ -57,6 +60,8 @@ namespace ams::ncm {
     }
 
     Result PackageInstallTaskBase::InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) {
+        AMS_UNUSED(meta_type);
+
         /* Read ticket from file. */
         s64 ticket_size;
         std::unique_ptr<char[]> ticket;

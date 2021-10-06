@@ -60,9 +60,12 @@ namespace ams::fssystem {
                 }
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
+                    AMS_UNUSED(buffer);
+
                     bool needs_append;
                     R_TRY(this->DryWrite(std::addressof(needs_append), offset, size, option, fs::OpenMode_Read));
                     AMS_ASSERT(needs_append == false);
+
                     return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
@@ -297,30 +300,37 @@ namespace ams::fssystem {
     }
 
     Result RomFsFileSystem::DoCreateFile(const char *path, s64 size, int flags) {
+        AMS_UNUSED(path, size, flags);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteFile(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoCreateDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteDirectory(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoDeleteDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoRenameFile(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoRenameDirectory(const char *old_path, const char *new_path) {
+        AMS_UNUSED(old_path, new_path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
@@ -381,15 +391,19 @@ namespace ams::fssystem {
     }
 
     Result RomFsFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
+        AMS_UNUSED(path);
+
         *out = 0;
         return ResultSuccess();
     }
 
     Result RomFsFileSystem::DoCleanDirectoryRecursively(const char *path) {
+        AMS_UNUSED(path);
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DoCommitProvisionally(s64 counter) {
+        AMS_UNUSED(counter);
         return fs::ResultUnsupportedOperationInRomFsFileSystemB();
     }
 

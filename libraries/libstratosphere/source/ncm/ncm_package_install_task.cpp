@@ -27,6 +27,7 @@ namespace ams::ncm {
     }
 
     Result PackageInstallTask::GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) {
+        AMS_UNUSED(out_info, key);
         return ncm::ResultContentNotFound();
     }
 
@@ -41,7 +42,7 @@ namespace ams::ncm {
             s64 count;
             fs::DirectoryEntry entry;
             R_TRY(fs::ReadDirectory(std::addressof(count), std::addressof(entry), dir, 1));
-            
+
             /* No more entries remain, we are done. */
             if (count == 0) {
                 break;

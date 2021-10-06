@@ -186,6 +186,8 @@ namespace ams::cfg {
         }
 
         int OverrideConfigIniHandler(void *user, const char *section, const char *name, const char *value) {
+            AMS_UNUSED(user);
+
             /* Taken and modified, with love, from Rajkosto's implementation. */
             if (strcasecmp(section, "hbl_config") == 0) {
                 if (strcasecmp(name, "program_id") == 0 || strcasecmp(name, "program_id_0") == 0) {

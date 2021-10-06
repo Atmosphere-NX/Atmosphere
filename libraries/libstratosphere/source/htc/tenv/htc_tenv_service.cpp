@@ -20,16 +20,19 @@ namespace ams::htc::tenv {
 
     Result Service::GetVariable(sf::Out<s64> out_size, const sf::OutBuffer &out_buffer, const htc::tenv::VariableName &name) {
         /* TODO */
+        AMS_UNUSED(out_size, out_buffer, name);
         AMS_ABORT("Service::GetVariable");
     }
 
-    Result Service::GetVariableLength(sf::Out<s64> out_size,const htc::tenv::VariableName &name) {
+    Result Service::GetVariableLength(sf::Out<s64> out_size, const htc::tenv::VariableName &name) {
         /* TODO */
+        AMS_UNUSED(out_size, name);
         AMS_ABORT("Service::GetVariableLength");
     }
 
     Result Service::WaitUntilVariableAvailable(s64 timeout_ms) {
         /* TODO */
+        AMS_UNUSED(timeout_ms);
         AMS_ABORT("Service::WaitUntilVariableAvailable");
     }
 

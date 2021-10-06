@@ -71,7 +71,7 @@ namespace ams::os::impl {
 
         s32 count = 0;
         while (true) {
-            R_TRY_CATCH(::threadCreate(thread->thread_impl, reinterpret_cast<::ThreadFunc>(&InvokeThread), thread, thread->stack, thread->stack_size, ConvertToHorizonPriority(thread->base_priority), ideal_core)) {
+            R_TRY_CATCH(::threadCreate(thread->thread_impl, reinterpret_cast<::ThreadFunc>(reinterpret_cast<void *>(&InvokeThread)), thread, thread->stack, thread->stack_size, ConvertToHorizonPriority(thread->base_priority), ideal_core)) {
                 R_CATCH(svc::ResultOutOfResource) {
                     if ((++count) < 10) {
                         os::SleepThread(TimeSpan::FromMilliSeconds(10));

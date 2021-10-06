@@ -31,6 +31,8 @@ namespace ams::htc::server {
     }
 
     void InitializePowerStateMonitor(htclow::impl::DriverType driver_type, htclow::HtclowManager *htclow_manager) {
+        AMS_UNUSED(driver_type);
+
         /* Set the htclow manager. */
         g_htclow_manager = htclow_manager;
 

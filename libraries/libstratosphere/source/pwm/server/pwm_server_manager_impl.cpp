@@ -29,6 +29,7 @@ namespace ams::pwm::server {
 
     Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, int channel) {
         /* TODO */
+        AMS_UNUSED(out, channel);
         AMS_ABORT();
     }
 

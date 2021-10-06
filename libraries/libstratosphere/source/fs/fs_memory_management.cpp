@@ -27,6 +27,7 @@ namespace ams::fs {
         }
 
         void DefaultDeallocate(void *ptr, size_t size) {
+            AMS_UNUSED(size);
             ams::Free(ptr);
         }
 

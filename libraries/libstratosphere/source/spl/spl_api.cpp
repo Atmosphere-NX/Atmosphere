@@ -164,17 +164,23 @@ namespace ams::spl {
 
     Result GenerateAesKek(AccessKey *access_key, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(key_source_size);
+
         return splCryptoGenerateAesKek(key_source, generation, option, static_cast<void *>(access_key));
     }
 
     Result LoadAesKey(s32 slot, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(key_source_size);
+
         return splCryptoLoadAesKey(std::addressof(access_key), key_source, static_cast<u32>(slot));
     }
 
     Result GenerateAesKey(void *dst, size_t dst_size, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return WaitAvailableKeySlotAndExecute([&]() -> Result {
             return splCryptoGenerateAesKey(std::addressof(access_key), key_source, dst);
         });
@@ -183,12 +189,15 @@ namespace ams::spl {
     Result GenerateSpecificAesKey(void *dst, size_t dst_size, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return splFsGenerateSpecificAesKey(key_source, static_cast<u32>(generation), option, dst);
     }
 
     Result ComputeCtr(void *dst, size_t dst_size, s32 slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
         AMS_ASSERT(iv_size >= 0x10);
         AMS_ASSERT(dst_size >= src_size);
+        AMS_UNUSED(dst_size, iv_size);
 
         return splCryptoCryptAesCtr(src, dst, src_size, static_cast<s32>(slot), iv);
     }
@@ -196,6 +205,8 @@ namespace ams::spl {
     Result DecryptAesKey(void *dst, size_t dst_size, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return WaitAvailableKeySlotAndExecute([&]() -> Result {
             return splCryptoDecryptAesKey(key_source, static_cast<u32>(generation), option, dst);
         });
@@ -262,6 +273,7 @@ namespace ams::spl {
 
     Result GetPackage2Hash(void *dst, size_t dst_size) {
         AMS_ASSERT(dst_size >= crypto::Sha256Generator::HashSize);
+        AMS_UNUSED(dst_size);
         return splFsGetPackage2Hash(dst);
     }
 

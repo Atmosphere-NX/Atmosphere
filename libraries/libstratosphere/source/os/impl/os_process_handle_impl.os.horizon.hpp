@@ -29,7 +29,7 @@ namespace ams::os::impl {
             }
 
             static ALWAYS_INLINE Result GetProgramId(ncm::ProgramId *out, NativeHandle handle) {
-                return svc::GetInfo(std::addressof(out->value), svc::InfoType_ProgramId, svc::PseudoHandle::CurrentProcess, 0);
+                return svc::GetInfo(std::addressof(out->value), svc::InfoType_ProgramId, handle, 0);
             }
     };
 

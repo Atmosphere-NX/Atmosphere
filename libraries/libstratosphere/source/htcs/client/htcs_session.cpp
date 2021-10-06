@@ -48,13 +48,13 @@ namespace ams::htcs::client {
                 RemoteSocket(::HtcsSocket &s) : m_s(s) { /* ... */ }
                 ~RemoteSocket() { ::htcsCloseSocket(std::addressof(m_s)); }
             public:
-                Result Accept(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address) { AMS_ABORT("Not Implemented"); }
-                Result Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result Send(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle &&mem_handle, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle &&mem_handle, s64 aligned_size, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result ContinueSendOld(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InAutoSelectBuffer &buffer, u32 task_id) { AMS_ABORT("Not Implemented"); }
+                Result Accept(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address) { AMS_UNUSED(out_err, out, out_address); AMS_ABORT("Not Implemented"); }
+                Result Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, s32 flags) { AMS_UNUSED(out_err, out_size, buffer, flags); AMS_ABORT("Not Implemented"); }
+                Result Send(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_UNUSED(out_err, out_size, buffer, flags); AMS_ABORT("Not Implemented"); }
+                Result RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle &&mem_handle, s32 flags) { AMS_UNUSED(out_task_id, out_event, unaligned_size_start, unaligned_size_end, aligned_size, mem_handle, flags); AMS_ABORT("Not Implemented"); }
+                Result SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) { AMS_UNUSED(out_task_id, out_event, buffer, flags); AMS_ABORT("Not Implemented"); }
+                Result SendLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &start_buffer, const sf::InAutoSelectBuffer &end_buffer, sf::CopyHandle &&mem_handle, s64 aligned_size, s32 flags) { AMS_UNUSED(out_task_id, out_event, start_buffer, end_buffer, mem_handle, aligned_size, flags); AMS_ABORT("Not Implemented"); }
+                Result ContinueSendOld(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InAutoSelectBuffer &buffer, u32 task_id) { AMS_UNUSED(out_size, out_wait, buffer, task_id); AMS_ABORT("Not Implemented"); }
 
                 Result Close(sf::Out<s32> out_err, sf::Out<s32> out_res);
                 Result Connect(sf::Out<s32> out_err, sf::Out<s32> out_res, const htcs::SockAddrHtcs &address);
@@ -85,17 +85,17 @@ namespace ams::htcs::client {
 
         class RemoteManager {
             public:
-                Result Socket(sf::Out<s32> out_err, sf::Out<s32> out_sock) { AMS_ABORT("Not Implemented"); }
-                Result Close(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc) { AMS_ABORT("Not Implemented"); }
-                Result Connect(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, const htcs::SockAddrHtcs &address) { AMS_ABORT("Not Implemented"); }
-                Result Bind(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, const htcs::SockAddrHtcs &address) { AMS_ABORT("Not Implemented"); }
-                Result Listen(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 backlog_count) { AMS_ABORT("Not Implemented"); }
-                Result Accept(sf::Out<s32> out_err, sf::Out<s32> out_res, sf::Out<htcs::SockAddrHtcs> out_address, s32 desc) { AMS_ABORT("Not Implemented"); }
-                Result Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutBuffer &buffer, s32 desc, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result Send(sf::Out<s32> out_err, sf::Out<s64> out_size, s32 desc, const sf::InBuffer &buffer, s32 flags) { AMS_ABORT("Not Implemented"); }
-                Result Shutdown(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 how) { AMS_ABORT("Not Implemented"); }
-                Result Fcntl(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 command, s32 value) { AMS_ABORT("Not Implemented"); }
-                Result CreateSocketOld(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out) { AMS_ABORT("Not Implemented"); }
+                Result Socket(sf::Out<s32> out_err, sf::Out<s32> out_sock) { AMS_UNUSED(out_err, out_sock); AMS_ABORT("Not Implemented"); }
+                Result Close(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc) { AMS_UNUSED(out_err, out_res, desc); AMS_ABORT("Not Implemented"); }
+                Result Connect(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, const htcs::SockAddrHtcs &address) { AMS_UNUSED(out_err, out_res, desc, address); AMS_ABORT("Not Implemented"); }
+                Result Bind(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, const htcs::SockAddrHtcs &address) { AMS_UNUSED(out_err, out_res, desc, address); AMS_ABORT("Not Implemented"); }
+                Result Listen(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 backlog_count) { AMS_UNUSED(out_err, out_res, desc, backlog_count); AMS_ABORT("Not Implemented"); }
+                Result Accept(sf::Out<s32> out_err, sf::Out<s32> out_res, sf::Out<htcs::SockAddrHtcs> out_address, s32 desc) { AMS_UNUSED(out_err, out_res, out_address, desc); AMS_ABORT("Not Implemented"); }
+                Result Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutBuffer &buffer, s32 desc, s32 flags) { AMS_UNUSED(out_err, out_size, buffer, desc, flags); AMS_ABORT("Not Implemented"); }
+                Result Send(sf::Out<s32> out_err, sf::Out<s64> out_size, s32 desc, const sf::InBuffer &buffer, s32 flags) { AMS_UNUSED(out_err, out_size, desc, buffer, flags); AMS_ABORT("Not Implemented"); }
+                Result Shutdown(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 how) { AMS_UNUSED(out_err, out_res, desc, how); AMS_ABORT("Not Implemented"); }
+                Result Fcntl(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 desc, s32 command, s32 value) { AMS_UNUSED(out_err, out_res, desc, command, value); AMS_ABORT("Not Implemented"); }
+                Result CreateSocketOld(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out) { AMS_UNUSED(out_err, out); AMS_ABORT("Not Implemented"); }
 
                 Result GetPeerNameAny(sf::Out<htcs::HtcsPeerName> out);
                 Result GetDefaultHostName(sf::Out<htcs::HtcsPeerName> out);
@@ -129,11 +129,13 @@ namespace ams::htcs::client {
 
         Result RemoteManager::RegisterProcessId(const sf::ClientProcessId &client_pid) {
             /* Handled by libnx init. */
+            AMS_UNUSED(client_pid);
             return ResultSuccess();
         }
 
         Result RemoteManager::MonitorManager(const sf::ClientProcessId &client_pid) {
             /* Handled by libnx init. */
+            AMS_UNUSED(client_pid);
             return ResultSuccess();
         }
 

@@ -89,6 +89,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         /* Check that the device is valid. */
         AMS_ASSERT(device != nullptr);
         AMS_ASSERT(this->state == State::Initialized);
+        AMS_UNUSED(device);
 
         /* Acquire exclusive access. */
         std::scoped_lock lk(this->user_count_mutex);
@@ -144,6 +145,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         /* Check that the device is valid. */
         AMS_ASSERT(device != nullptr);
         AMS_ASSERT(this->state == State::Initialized);
+        AMS_UNUSED(device);
 
         /* Acquire exclusive access. */
         std::scoped_lock lk(this->user_count_mutex);

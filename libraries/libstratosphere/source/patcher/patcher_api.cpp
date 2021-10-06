@@ -112,6 +112,7 @@ namespace ams::patcher {
         }
 
         inline u32 GetIpsPatchSize(bool is_ips32, u8 *buffer) {
+            AMS_UNUSED(is_ips32);
             return (buffer[0] << 8) | (buffer[1]);
         }
 

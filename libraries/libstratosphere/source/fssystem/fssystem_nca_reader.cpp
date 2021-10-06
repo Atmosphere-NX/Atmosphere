@@ -187,6 +187,8 @@ namespace ams::fssystem {
     void NcaReader::GetRightsId(u8 *dst, size_t dst_size) const {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size >= NcaHeader::RightsIdSize);
+        AMS_UNUSED(dst_size);
+
         std::memcpy(dst, this->header.rights_id, NcaHeader::RightsIdSize);
     }
 
@@ -247,6 +249,8 @@ namespace ams::fssystem {
         AMS_ASSERT(this->body_storage != nullptr);
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(size >= NcaHeader::EncryptedKeyAreaSize);
+        AMS_UNUSED(size);
+
         std::memcpy(dst, this->header.encrypted_key_area, NcaHeader::EncryptedKeyAreaSize);
     }
 
@@ -291,6 +295,8 @@ namespace ams::fssystem {
     void NcaReader::SetExternalDecryptionKey(const void *src, size_t size) {
         AMS_ASSERT(src != nullptr);
         AMS_ASSERT(size == sizeof(this->external_decryption_key));
+        AMS_UNUSED(size);
+
         std::memcpy(this->external_decryption_key, src, sizeof(this->external_decryption_key));
     }
 
@@ -298,6 +304,7 @@ namespace ams::fssystem {
         AMS_ASSERT(this->body_storage != nullptr);
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size >= sizeof(NcaHeader));
+        AMS_UNUSED(dst_size);
 
         std::memcpy(dst, std::addressof(this->header), sizeof(NcaHeader));
     }
@@ -363,6 +370,8 @@ namespace ams::fssystem {
         AMS_ASSERT(this->IsInitialized());
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size >= sizeof(NcaFsHeader));
+        AMS_UNUSED(dst_size);
+
         std::memcpy(dst, std::addressof(this->data), sizeof(NcaFsHeader));
     }
 

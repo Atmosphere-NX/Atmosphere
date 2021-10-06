@@ -51,7 +51,7 @@ namespace ams::os::impl {
 
             /* TODO: void GetThreadContextUnsafe(ThreadContextInfo *out_context, const ThreadType *thread); */
 
-            void NotifyThreadNameChangedImpl(const ThreadType *thread) const { /* ... */ }
+            void NotifyThreadNameChangedImpl(const ThreadType *thread) const { AMS_UNUSED(thread); }
 
             void SetCurrentThread(ThreadType *thread) const {
                 g_current_thread_pointer = thread;

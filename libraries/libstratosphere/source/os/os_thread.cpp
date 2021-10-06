@@ -38,6 +38,8 @@ namespace ams::os {
             AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(stack), ThreadStackAlignment));
             AMS_ASSERT(stack_size > 0);
             AMS_ASSERT(util::IsAligned(stack_size, ThreadStackAlignment));
+
+            AMS_UNUSED(thread, stack, stack_size, priority);
         }
 
     }

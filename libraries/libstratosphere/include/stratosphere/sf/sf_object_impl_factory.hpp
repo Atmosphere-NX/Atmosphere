@@ -100,7 +100,7 @@ namespace ams::sf {
                         static void *operator new(size_t size);
 
                         static void operator delete(void *ptr, size_t size) {
-                            /* ... */
+                            AMS_UNUSED(ptr, size);
                         }
 
                         static void *operator new(size_t size, Allocator *a) {

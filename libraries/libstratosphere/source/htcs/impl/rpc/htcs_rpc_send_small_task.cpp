@@ -86,6 +86,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SendSmallTask::ProcessResponse(const char *data, size_t size) {
+        AMS_UNUSED(size);
+
         /* Convert the input to a packet. */
         auto *packet = reinterpret_cast<const HtcsRpcPacket *>(data);
 
@@ -96,6 +98,8 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SendSmallTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
+        AMS_UNUSED(size);
+
         /* Sanity check our size. */
         AMS_ASSERT(sizeof(HtcsRpcPacket) + this->GetBufferSize() <= size);
 

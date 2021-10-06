@@ -57,7 +57,7 @@ namespace ams::diag {
         }
 
 #else
-        void DebugLog(const char *format, ...)  { /* ... */ }
+        void DebugLog(const char *format, ...)  { AMS_UNUSED(format); }
 #endif
 
     }
@@ -76,6 +76,8 @@ namespace ams::diag {
             DebugLogImpl(format, vl);
             va_end(vl);
         }
+#else
+        AMS_UNUSED(format);
 #endif
         DebugLog("\n");
 
@@ -108,6 +110,8 @@ namespace ams::diag {
             DebugLogImpl(format, vl);
             va_end(vl);
         }
+#else
+        AMS_UNUSED(format);
 #endif
         DebugLog("\n");
 

@@ -84,6 +84,7 @@ namespace ams::htc::server::rpc {
     Result GetEnvironmentVariableTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
         /* Validate pre-conditions. */
         AMS_ASSERT(size >= sizeof(HtcmiscRpcPacket));
+        AMS_UNUSED(size);
 
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcmiscRpcPacket *>(data);
@@ -182,6 +183,7 @@ namespace ams::htc::server::rpc {
     Result GetEnvironmentVariableLengthTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
         /* Validate pre-conditions. */
         AMS_ASSERT(size >= sizeof(HtcmiscRpcPacket));
+        AMS_UNUSED(size);
 
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcmiscRpcPacket *>(data);
@@ -257,6 +259,7 @@ namespace ams::htc::server::rpc {
     Result RunOnHostTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
         /* Validate pre-conditions. */
         AMS_ASSERT(size >= sizeof(HtcmiscRpcPacket));
+        AMS_UNUSED(size);
 
         /* Create the packet. */
         auto *packet = reinterpret_cast<HtcmiscRpcPacket *>(data);
@@ -282,6 +285,10 @@ namespace ams::htc::server::rpc {
     }
 
     Result RunOnHostTask::ProcessResponse(const char *data, size_t size) {
+        /* Validate pre-conditions. */
+        AMS_ASSERT(size >= sizeof(HtcmiscRpcPacket));
+        AMS_UNUSED(size);
+
         this->Complete(reinterpret_cast<const HtcmiscRpcPacket *>(data)->params[0]);
         return ResultSuccess();
     }

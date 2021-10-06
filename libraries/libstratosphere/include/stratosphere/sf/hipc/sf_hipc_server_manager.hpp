@@ -292,13 +292,17 @@ namespace ams::sf::hipc {
             }
         protected:
             virtual ServerSession *AllocateSession() override final {
-                std::scoped_lock lk(this->resource_mutex);
-                for (size_t i = 0; i < MaxSessions; i++) {
-                    if (!this->session_allocated[i]) {
-                        this->session_allocated[i] = true;
-                        return GetPointer(this->session_storages[i]);
+                if constexpr (MaxSessions > 0) {
+                    std::scoped_lock lk(this->resource_mutex);
+
+                    for (size_t i = 0; i < MaxSessions; i++) {
+                        if (!this->session_allocated[i]) {
+                            this->session_allocated[i] = true;
+                            return GetPointer(this->session_storages[i]);
+                        }
                     }
                 }
+
                 return nullptr;
             }
 
@@ -310,13 +314,17 @@ namespace ams::sf::hipc {
             }
 
             virtual Server *AllocateServer() override final {
-                std::scoped_lock lk(this->resource_mutex);
-                for (size_t i = 0; i < MaxServers; i++) {
-                    if (!this->server_allocated[i]) {
-                        this->server_allocated[i] = true;
-                        return GetPointer(this->server_storages[i]);
+                if constexpr (MaxServers > 0) {
+                    std::scoped_lock lk(this->resource_mutex);
+
+                    for (size_t i = 0; i < MaxServers; i++) {
+                        if (!this->server_allocated[i]) {
+                            this->server_allocated[i] = true;
+                            return GetPointer(this->server_storages[i]);
+                        }
                     }
                 }
+
                 return nullptr;
             }
 
@@ -390,16 +398,20 @@ namespace ams::sf::hipc {
 
             ~ServerManager() {
                 /* Close all sessions. */
-                for (size_t i = 0; i < MaxSessions; i++) {
-                    if (this->session_allocated[i]) {
-                        this->CloseSessionImpl(GetPointer(this->session_storages[i]));
+                if constexpr (MaxSessions > 0) {
+                    for (size_t i = 0; i < MaxSessions; i++) {
+                        if (this->session_allocated[i]) {
+                            this->CloseSessionImpl(GetPointer(this->session_storages[i]));
+                        }
                     }
                 }
 
                 /* Close all servers. */
-                for (size_t i = 0; i < MaxServers; i++) {
-                    if (this->server_allocated[i]) {
-                        this->DestroyServer(GetPointer(this->server_storages[i]));
+                if constexpr (MaxServers > 0) {
+                    for (size_t i = 0; i < MaxServers; i++) {
+                        if (this->server_allocated[i]) {
+                            this->DestroyServer(GetPointer(this->server_storages[i]));
+                        }
                     }
                 }
             }

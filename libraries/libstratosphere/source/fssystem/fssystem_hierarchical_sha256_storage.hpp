@@ -50,6 +50,7 @@ namespace ams::fssystem {
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInHierarchicalSha256StorageA();
             }
     };

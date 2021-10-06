@@ -23,7 +23,7 @@ namespace ams::os {
 
         #ifdef ATMOSPHERE_BUILD_FOR_AUDITING
 
-            void PushAndCheckLockLevel(MutexType *mutex) {
+            void PushAndCheckLockLevel(const MutexType *mutex) {
                 /* If auditing isn't specified, don't bother. */
                 if (mutex->lock_level == 0) {
                     return;
@@ -32,7 +32,7 @@ namespace ams::os {
                 /* TODO: Implement mutex level auditing. */
             }
 
-            void PopAndCheckLockLevel(MutexType *mutex) {
+            void PopAndCheckLockLevel(const MutexType *mutex) {
                 /* If auditing isn't specified, don't bother. */
                 if (mutex->lock_level == 0) {
                     return;
@@ -43,12 +43,12 @@ namespace ams::os {
 
         #else
 
-            void PushAndCheckLockLevel(MutexType *mutex) {
-                /* ... */
+            void PushAndCheckLockLevel(const MutexType *mutex) {
+                AMS_UNUSED(mutex);
             }
 
-            void PopAndCheckLockLevel(MutexType *mutex) {
-                /* ... */
+            void PopAndCheckLockLevel(const MutexType *mutex) {
+                AMS_UNUSED(mutex);
             }
 
         #endif

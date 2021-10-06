@@ -280,6 +280,7 @@ namespace ams::erpt::srv {
             if (needs_save_syslog) {
                 /* Here nintendo sends a report to srepo:u (vtable offset 0xE8) with data report_id. */
                 /* We will not send report ids to srepo:u. */
+                AMS_UNUSED(report_id);
             }
         }
 
@@ -308,6 +309,7 @@ namespace ams::erpt::srv {
             const auto program_id_len = program_id_entry->value_array.size;
             AMS_ASSERT(16 <= program_id_len && program_id_len <= 17);
             AMS_ASSERT(program_id_ofs + program_id_len <= data_size);
+            AMS_UNUSED(data_size);
 
             /* Get the program id string. */
             char program_id_str[17];

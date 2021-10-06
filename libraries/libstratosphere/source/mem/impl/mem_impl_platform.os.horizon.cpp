@@ -25,10 +25,16 @@ namespace ams::mem::impl {
         constinit bool g_virt_mem_enabled = false;
 
         void EnsureVirtualAddressMemoryDetected() {
-            std::scoped_lock lk(g_virt_mem_enabled_lock);
             if (AMS_LIKELY(g_virt_mem_enabled_detected)) {
                 return;
             }
+
+            std::scoped_lock lk(g_virt_mem_enabled_lock);
+
+            if (AMS_UNLIKELY(g_virt_mem_enabled_detected)) {
+                return;
+            }
+
             g_virt_mem_enabled = os::IsVirtualAddressMemoryEnabled();
         }
 
@@ -64,6 +70,7 @@ namespace ams::mem::impl {
         uintptr_t addr;
         if (IsVirtualAddressMemoryEnabled()) {
             /* TODO: Support virtual address memory. */
+            AMS_UNUSED(ptr);
             AMS_ABORT("Virtual address memory not supported yet");
         } else {
             if (auto err = ConvertResult(os::AllocateMemoryBlock(std::addressof(addr), util::AlignUp(size, os::MemoryBlockUnitSize))); err != 0) {

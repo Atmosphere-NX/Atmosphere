@@ -174,8 +174,11 @@ namespace ams::erpt::srv {
 
     JournalRecord<ReportInfo> *JournalForReports::RetrieveRecord(ReportId report_id) {
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
-            return std::addressof(*it);
+            if (auto *record = std::addressof(*it); record->info.id == report_id) {
+                return record;
+            }
         }
+
         return nullptr;
     }
 

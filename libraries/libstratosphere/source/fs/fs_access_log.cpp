@@ -72,6 +72,8 @@ namespace ams::fs {
             } else {
                 g_local_access_log_target &= ~(fs::impl::AccessLogTarget_Application | fs::impl::AccessLogTarget_System);
             }
+        #else
+            AMS_UNUSED(enabled);
         #endif
     }
 
@@ -511,6 +513,7 @@ namespace ams::fs::impl {
     }
 
     bool IsEnabledHandleAccessLog(fs::impl::IdentifyAccessLogHandle handle) {
+        AMS_UNUSED(handle);
         return true;
     }
 

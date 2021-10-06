@@ -82,7 +82,7 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) {
-        R_UNLESS(0 <= ctx_entry.category_count && ctx_entry.category_count <= CategoriesPerMultipleCategoryContext, erpt::ResultInvalidArgument());
+        R_UNLESS(ctx_entry.category_count <= CategoriesPerMultipleCategoryContext, erpt::ResultInvalidArgument());
 
         const u8 *str      = reinterpret_cast<const u8 *>(str_buffer.GetPointer());
         const u32 str_size = static_cast<u32>(str_buffer.GetSize());

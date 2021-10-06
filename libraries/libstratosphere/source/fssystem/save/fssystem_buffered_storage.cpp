@@ -315,6 +315,7 @@ namespace ams::fssystem::save {
                 this->CalcFetchParameter(std::addressof(fetch_param), offset);
                 AMS_ASSERT(fetch_param.offset == offset);
                 AMS_ASSERT(fetch_param.size <= buffer_size);
+                AMS_UNUSED(buffer_size);
 
                 std::memcpy(fetch_param.buffer, buffer, fetch_param.size);
                 this->offset = fetch_param.offset;

@@ -366,7 +366,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
             void SetParameters(int pad, const PadInfo &i) {
                 Base::SetPadNumber(pad);
-                this->info = info;
+                this->info = i;
             }
 
             bool IsLinkedToInterruptBoundPadList() const {

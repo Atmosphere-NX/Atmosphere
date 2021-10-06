@@ -272,7 +272,7 @@ namespace ams::htclow::driver {
             return ResultSuccess();
         }
 
-        void UsbIndicationThreadFunction(void *arg) {
+        void UsbIndicationThreadFunction(void *) {
             /* Get the state change event. */
             os::SystemEventType *state_change_event = g_ds_client.GetStateChangeEvent();
 

@@ -39,6 +39,7 @@ namespace ams::fssystem {
     Result AlignmentMatchingStorageImpl::Read(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, char *buffer, size_t size) {
         /* Check preconditions. */
         AMS_ASSERT(work_buf_size >= data_alignment);
+        AMS_UNUSED(work_buf_size);
 
         /* Succeed if zero size. */
         R_SUCCEED_IF(size == 0);
@@ -120,6 +121,7 @@ namespace ams::fssystem {
     Result AlignmentMatchingStorageImpl::Write(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, const char *buffer, size_t size) {
         /* Check preconditions. */
         AMS_ASSERT(work_buf_size >= data_alignment);
+        AMS_UNUSED(work_buf_size);
 
         /* Succeed if zero size. */
         R_SUCCEED_IF(size == 0);

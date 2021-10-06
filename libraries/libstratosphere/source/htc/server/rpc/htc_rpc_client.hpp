@@ -360,6 +360,8 @@ namespace ams::htc::server::rpc {
 
                 /* Copy the received data. */
                 AMS_ASSERT(0 <= result_size && result_size <= buffer_size);
+                AMS_UNUSED(buffer_size);
+
                 std::memcpy(buffer, result_buffer, result_size);
 
                 return ResultSuccess();

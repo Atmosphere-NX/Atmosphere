@@ -221,6 +221,8 @@ namespace ams::mem::impl::heap {
             void CalculateHeapHash(HeapHash *out);
 
             errno_t AddThreadCache(TlsHeapCache *cache) {
+                AMS_UNUSED(cache);
+
                 std::scoped_lock lk(this->lock);
 
                 /* Add thread and recalculate. */
@@ -231,6 +233,8 @@ namespace ams::mem::impl::heap {
             }
 
             errno_t RemoveThreadCache(TlsHeapCache *cache) {
+                AMS_UNUSED(cache);
+
                 std::scoped_lock lk(this->lock);
 
                 /* Remove thread and recalculate. */
@@ -290,7 +294,7 @@ namespace ams::mem::impl::heap {
                     getcpu(std::addressof(cpu_id));
                 }
 
-                return this->CacheSmallMemoryListImpl(cache, cls, count, p, cpu_id, 0);
+                return this->CacheSmallMemoryListImpl(cache, cls, count, p, cpu_id, align);
             }
 
             bool CheckCachedSize(s32 size) const {
@@ -321,7 +325,7 @@ namespace ams::mem::impl::heap {
                 }
             }
 
-            size_t GetClassFromPointer(const void *ptr) {
+            s32 GetClassFromPointer(const void *ptr) {
                 std::atomic_thread_fence(std::memory_order_acquire);
 
                 const size_t idx = (reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(this)) / TlsHeapStatic::PageSize;
@@ -338,7 +342,7 @@ namespace ams::mem::impl::heap {
                     return this->span_table.pageclass_cache[idx];
                 } else {
                     /* TODO: Handle error? */
-                    return 0xFFFFFFFF;
+                    return -1;
                 }
             }
 

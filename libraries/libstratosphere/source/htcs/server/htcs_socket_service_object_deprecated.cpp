@@ -19,11 +19,11 @@
 
 namespace ams::htcs::server {
 
-    #define AMS_HTCS_MANAGER_DEPRECATED_API() AMS_ABORT("Deprecated IHtcsManager API %s was called.\n", AMS_CURRENT_FUNCTION_NAME)
+    #define AMS_HTCS_MANAGER_DEPRECATED_API(...) ({ AMS_UNUSED(__VA_ARGS__); AMS_ABORT("Deprecated IHtcsManager API %s was called.\n", AMS_CURRENT_FUNCTION_NAME); })
 
     Result SocketServiceObject::Accept(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address) {
         /* NOTE: This is a deprecated API, and Nintendo aborts when it is called. */
-        AMS_HTCS_MANAGER_DEPRECATED_API();
+        AMS_HTCS_MANAGER_DEPRECATED_API(out_err, out, out_address);
     }
 
 }
