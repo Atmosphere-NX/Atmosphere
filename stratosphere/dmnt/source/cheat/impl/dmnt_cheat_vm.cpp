@@ -81,6 +81,8 @@ namespace ams::dmnt::cheat::impl {
         }
 
         fs::WriteFile(this->debug_log_file, this->debug_log_offset, this->debug_log_format_buf, fmt_len, fs::WriteOption::Flush);
+        #else
+        AMS_UNUSED(format);
         #endif
     }
 

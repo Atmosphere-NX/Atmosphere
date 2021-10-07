@@ -36,10 +36,12 @@ namespace ams::i2c {
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */
+        header0 = {};
         header0.Set<impl::CommonCommandFormat::CommandId>(impl::CommandId_Receive);
         header0.Set<impl::ReceiveCommandFormat::StopCondition>((option & TransactionOption_StopCondition) != 0);
         header0.Set<impl::ReceiveCommandFormat::StartCondition>((option & TransactionOption_StartCondition) != 0);
 
+        header1 = {};
         header1.Set<impl::ReceiveCommandFormat::Size>(size);
 
         return ResultSuccess();
@@ -58,10 +60,12 @@ namespace ams::i2c {
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */
+        header0 = {};
         header0.Set<impl::CommonCommandFormat::CommandId>(impl::CommandId_Send);
         header0.Set<impl::SendCommandFormat::StopCondition>((option & TransactionOption_StopCondition) != 0);
         header0.Set<impl::SendCommandFormat::StartCondition>((option & TransactionOption_StartCondition) != 0);
 
+        header1 = {};
         header1.Set<impl::SendCommandFormat::Size>(size);
 
         /* Copy the data we're sending. */
@@ -84,9 +88,11 @@ namespace ams::i2c {
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */
+        header0 = {};
         header0.Set<impl::CommonCommandFormat::CommandId>(impl::CommandId_Extension);
         header0.Set<impl::CommonCommandFormat::SubCommandId>(impl::SubCommandId_Sleep);
 
+        header1 = {};
         header1.Set<impl::SleepCommandFormat::MicroSeconds>(us);
 
         return ResultSuccess();

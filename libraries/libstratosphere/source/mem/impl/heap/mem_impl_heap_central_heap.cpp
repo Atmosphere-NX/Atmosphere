@@ -52,7 +52,7 @@ namespace ams::mem::impl::heap {
             this->use_virtual_memory = false;
         } else {
             /* We were not provided with a region to use as backing. */
-            void *mem;
+            void *mem = nullptr;
             if (auto err = AllocateVirtualMemory(std::addressof(mem), size); err != 0) {
                 return err;
             }

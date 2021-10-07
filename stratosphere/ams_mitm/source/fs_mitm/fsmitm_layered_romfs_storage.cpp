@@ -28,7 +28,7 @@ namespace ams::mitm::fs {
         os::MessageQueue g_req_mq(g_mq_storage + 0, 1);
         os::MessageQueue g_ack_mq(g_mq_storage + 1, 1);
 
-        void RomfsInitializerThreadFunction(void *arg) {
+        void RomfsInitializerThreadFunction(void *) {
             while (true) {
                 uintptr_t storage_uptr = 0;
                 g_req_mq.Receive(&storage_uptr);
@@ -100,7 +100,6 @@ namespace ams::mitm::fs {
 
     Result LayeredRomfsStorage::Read(s64 offset, void *buffer, size_t size) {
         /* Check if we can succeed immediately. */
-        R_UNLESS(size >= 0, fs::ResultInvalidSize());
         R_SUCCEED_IF(size == 0);
 
         /* Ensure we're initialized. */
@@ -112,8 +111,8 @@ namespace ams::mitm::fs {
         const s64 virt_size = this->GetSize();
         R_UNLESS(offset >= 0,        fs::ResultInvalidOffset());
         R_UNLESS(offset < virt_size, fs::ResultInvalidOffset());
-        if (size_t(virt_size - offset) < size) {
-            size = size_t(virt_size - offset);
+        if (static_cast<size_t>(virt_size - offset) < size) {
+            size = static_cast<size_t>(virt_size - offset);
         }
 
         /* Find first source info via binary search. */
@@ -130,7 +129,7 @@ namespace ams::mitm::fs {
 
             if (offset < cur_source.virtual_offset + cur_source.size) {
                 const s64 offset_within_source = offset - cur_source.virtual_offset;
-                const size_t cur_read_size = std::min(size - read_so_far, size_t(cur_source.size - offset_within_source));
+                const size_t cur_read_size = std::min(size - read_so_far, static_cast<size_t>(cur_source.size - offset_within_source));
                 switch (cur_source.source_type) {
                     case romfs::DataSourceType::Storage:
                         R_ABORT_UNLESS(this->storage_romfs->Read(cur_source.storage_source_info.offset + offset_within_source, cur_dst, cur_read_size));
@@ -167,7 +166,7 @@ namespace ams::mitm::fs {
             } else {
                 /* Explicitly handle padding. */
                 const auto &next_source = *(++it);
-                const size_t padding_size = size_t(next_source.virtual_offset - offset);
+                const size_t padding_size = static_cast<size_t>(next_source.virtual_offset - offset);
 
                 std::memset(cur_dst, 0, padding_size);
                 read_so_far += padding_size;
@@ -194,6 +193,8 @@ namespace ams::mitm::fs {
     }
 
     Result LayeredRomfsStorage::OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+        AMS_UNUSED(offset, src, src_size);
+
         switch (op_id) {
             case OperationId::Invalidate:
             case OperationId::QueryRange:

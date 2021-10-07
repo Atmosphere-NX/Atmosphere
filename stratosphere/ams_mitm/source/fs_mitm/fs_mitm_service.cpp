@@ -99,7 +99,7 @@ namespace ams::mitm::fs {
             return sf::CreateSharedObjectEmplaced<ams::fssrv::sf::IStorage, ams::fssrv::impl::StorageInterfaceAdapter>(std::forward<Arguments>(args)...);
         }
 
-        Result OpenHblWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
+        Result OpenHblWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id) {
             /* Verify eligibility. */
             bool is_hbl;
             R_UNLESS(R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, program_id)), sm::mitm::ResultShouldForwardToSession());
@@ -122,7 +122,7 @@ namespace ams::mitm::fs {
             return ResultSuccess();
         }
 
-        Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
+        Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
             /* Directory must exist. */
             {
                 FsDir d;
@@ -174,13 +174,13 @@ namespace ams::mitm::fs {
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
 
             /* Try to mount the HBL web filesystem. If this succeeds then we're done. */
-            R_UNLESS(R_FAILED(OpenHblWebContentFileSystem(out, client_program_id, program_id, filesystem_type)), ResultSuccess());
+            R_SUCCEED_IF(R_SUCCEEDED(OpenHblWebContentFileSystem(out, program_id)));
 
             /* If program specific override shouldn't be attempted, fall back. */
             R_UNLESS(try_program_specific, sm::mitm::ResultShouldForwardToSession());
 
             /* If we're not opening a HBL filesystem, just try to open a generic one. */
-            return OpenProgramSpecificWebContentFileSystem(out, client_program_id, program_id, filesystem_type, fwd, path, with_id);
+            return OpenProgramSpecificWebContentFileSystem(out, program_id, filesystem_type, fwd, path, with_id);
         }
 
     }

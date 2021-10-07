@@ -35,6 +35,7 @@ namespace ams::mitm::socket::resolver {
                 /* We will mitm:
                  * - everything.
                  */
+                AMS_UNUSED(client_info);
                 return true;
             }
         public:

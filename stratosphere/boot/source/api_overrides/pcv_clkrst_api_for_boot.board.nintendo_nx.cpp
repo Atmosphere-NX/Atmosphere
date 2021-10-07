@@ -111,6 +111,8 @@ namespace ams {
         }
 
         void SetClockRate(const ClkRstDefinition &def, u32 hz) {
+            AMS_UNUSED(hz);
+
             /* Enable clock. */
             reg::ReadWrite(g_clkrst_registers + def.clk_en_ofs, 1u << def.clk_en_index, 1u << def.clk_en_index);
 
@@ -166,6 +168,7 @@ namespace ams {
         }
 
         void SetClockDisabled(ClkRstSession *session) {
+            AMS_UNUSED(session);
             AMS_ABORT("SetClockDisabled not implemented for boot system module");
         }
 

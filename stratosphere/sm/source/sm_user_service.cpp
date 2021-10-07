@@ -52,6 +52,8 @@ namespace ams::sm {
     }
 
     Result UserService::DetachClient(const tipc::ClientProcessId client_process_id) {
+        AMS_UNUSED(client_process_id);
+
         m_initialized = false;
         return ResultSuccess();
     }

@@ -60,6 +60,7 @@ namespace ams::ldr {
         }
 
         void Deallocate(void *p, size_t size) {
+            AMS_UNUSED(size);
             return lmem::FreeToExpHeap(g_server_heap_handle, p);
         }
 
@@ -159,11 +160,11 @@ void __appExit(void) {
 
 namespace ams {
 
-    void *Malloc(size_t size) {
+    void *Malloc(size_t) {
         AMS_ABORT("ams::Malloc was called");
     }
 
-    void Free(void *ptr) {
+    void Free(void *) {
         AMS_ABORT("ams::Free was called");
     }
 
@@ -177,20 +178,26 @@ void operator delete(void *p) {
     return ldr::Deallocate(p, 0);
 }
 
-void *__libnx_alloc(size_t size) {
+void operator delete(void *p, size_t size) {
+    return ldr::Deallocate(p, size);
+}
+
+void *__libnx_alloc(size_t) {
     AMS_ABORT("__libnx_alloc was called");
 }
 
-void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+void *__libnx_aligned_alloc(size_t, size_t) {
     AMS_ABORT("__libnx_aligned_alloc was called");
 }
 
-void __libnx_free(void *mem) {
+void __libnx_free(void *) {
     AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
+
     /* Disable auto-abort in fs operations. */
     fs::SetEnabledAutoAbort(false);
 

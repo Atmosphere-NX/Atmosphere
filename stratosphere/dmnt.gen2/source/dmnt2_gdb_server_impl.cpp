@@ -1096,6 +1096,7 @@ namespace ams::dmnt {
                             reply = true;
                         }
                     }
+                    break;
                 case svc::DebugEvent_ExitThread:
                     {
                         AMS_DMNT2_GDB_LOG_DEBUG("ExitThread %lx\n", thread_id);

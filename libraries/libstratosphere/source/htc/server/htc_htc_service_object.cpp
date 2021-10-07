@@ -31,7 +31,7 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::GetEnvironmentVariable(sf::Out<s32> out_size, const sf::OutBuffer &out, const sf::InBuffer &name) {
         /* Get the variable. */
-        size_t var_size;
+        size_t var_size = std::numeric_limits<size_t>::max();
         R_TRY(m_misc_impl.GetEnvironmentVariable(std::addressof(var_size), reinterpret_cast<char *>(out.GetPointer()), out.GetSize(), reinterpret_cast<const char *>(name.GetPointer()), name.GetSize()));
 
         /* Check the output size. */
@@ -44,7 +44,7 @@ namespace ams::htc::server {
 
     Result HtcServiceObject::GetEnvironmentVariableLength(sf::Out<s32> out_size, const sf::InBuffer &name) {
         /* Get the variable. */
-        size_t var_size;
+        size_t var_size = std::numeric_limits<size_t>::max();
         R_TRY(m_misc_impl.GetEnvironmentVariableLength(std::addressof(var_size), reinterpret_cast<const char *>(name.GetPointer()), name.GetSize()));
 
         /* Check the output size. */

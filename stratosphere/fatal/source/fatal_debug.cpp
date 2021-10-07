@@ -143,6 +143,7 @@ namespace ams::fatal::srv {
                         if (request.meta.num_send_buffers != 1) {
                             return false;
                         }
+                        break;
                     default:
                         return false;
                 }

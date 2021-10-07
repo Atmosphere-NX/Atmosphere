@@ -67,6 +67,8 @@ namespace ams::htc {
         }
 
         void Deallocate(void *p, size_t size) {
+            AMS_UNUSED(size);
+
             return lmem::FreeToExpHeap(g_heap_handle, p);
         }
 
@@ -117,48 +119,51 @@ void __appExit(void) {
 
 namespace ams {
 
-    void *Malloc(size_t size) {
+    void *Malloc(size_t) {
         AMS_ABORT("ams::Malloc was called");
     }
 
-    void Free(void *ptr) {
+    void Free(void *) {
         AMS_ABORT("ams::Free was called");
     }
 
-    void *MallocForRapidJson(size_t size) {
+    void *MallocForRapidJson(size_t) {
         AMS_ABORT("ams::MallocForRapidJson was called");
     }
 
-    void *ReallocForRapidJson(void *ptr, size_t size) {
+    void *ReallocForRapidJson(void *, size_t) {
         AMS_ABORT("ams::ReallocForRapidJson was called");
     }
 
     void FreeForRapidJson(void *ptr) {
-        if (ptr == nullptr) {
-            return;
+        if (ptr != nullptr) {
+            AMS_ABORT("ams::FreeForRapidJson was called");
         }
-        AMS_ABORT("ams::FreeForRapidJson was called");
     }
 
 }
 
-void *operator new(size_t size) {
+void *operator new(size_t) {
     AMS_ABORT("operator new(size_t) was called");
 }
 
-void operator delete(void *p) {
+void operator delete(void *) {
     AMS_ABORT("operator delete(void *) was called");
 }
 
-void *__libnx_alloc(size_t size) {
+void operator delete(void *, size_t) {
+    AMS_ABORT("operator delete(void *, size_t) was called");
+}
+
+void *__libnx_alloc(size_t) {
     AMS_ABORT("__libnx_alloc was called");
 }
 
-void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+void *__libnx_aligned_alloc(size_t, size_t) {
     AMS_ABORT("__libnx_aligned_alloc was called");
 }
 
-void __libnx_free(void *mem) {
+void __libnx_free(void *) {
     AMS_ABORT("__libnx_free was called");
 }
 
@@ -211,15 +216,15 @@ namespace ams::htc {
             }
         }
 
-        void HtcIpcThreadFunction(void *arg) {
+        void HtcIpcThreadFunction(void *) {
             htc::server::LoopHtcmiscServer();
         }
 
-        void HtcfsIpcThreadFunction(void *arg) {
+        void HtcfsIpcThreadFunction(void *) {
             htcfs::LoopHipcServer();
         }
 
-        void HtcsIpcThreadFunction(void *arg) {
+        void HtcsIpcThreadFunction(void *) {
             htcs::server::LoopHipcServer();
         }
 
@@ -244,6 +249,8 @@ namespace ams::htclow::driver {
 
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(htc, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(htc, Main));

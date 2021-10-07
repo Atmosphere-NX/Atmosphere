@@ -93,6 +93,8 @@ namespace ams::dmnt {
     }
 
     Result WatchPoint::Clear(DebugProcess *debug_process) {
+        AMS_UNUSED(debug_process);
+
         Result result = svc::ResultInvalidArgument();
         if (m_in_use) {
             AMS_DMNT2_GDB_LOG_DEBUG("WatchPoint::Clear %p 0x%lx\n", this, m_address);

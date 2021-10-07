@@ -104,18 +104,23 @@ void __appExit(void) {
 }
 
 void *__libnx_alloc(size_t size) {
+    AMS_UNUSED(size);
     AMS_ABORT("__libnx_alloc was called");
 }
 
 void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+    AMS_UNUSED(alignment, size);
     AMS_ABORT("__libnx_aligned_alloc was called");
 }
 
 void __libnx_free(void *mem) {
+    AMS_UNUSED(mem);
     AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv) {
+    AMS_UNUSED(argc, argv);
+
     /* Register "ams" port, use up its session. */
     {
         svc::Handle ams_port;

@@ -67,6 +67,8 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(jpegdec, Main));
 

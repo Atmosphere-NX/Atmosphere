@@ -64,7 +64,7 @@ namespace ams::mitm::socket::resolver {
 
         os::ThreadType g_extra_threads[NumExtraThreads];
 
-        void LoopServerThread(void *arg) {
+        void LoopServerThread(void *) {
             /* Loop forever, servicing our services. */
             g_server_manager.LoopProcess();
         }
@@ -114,7 +114,7 @@ namespace ams::mitm::socket::resolver {
 
     }
 
-    void MitmModule::ThreadFunction(void *arg) {
+    void MitmModule::ThreadFunction(void *) {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
 

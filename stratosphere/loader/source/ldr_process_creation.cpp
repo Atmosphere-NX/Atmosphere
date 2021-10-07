@@ -123,6 +123,8 @@ namespace ams::ldr {
                     R_UNLESS(entries[i].version <= version, ResultInvalidVersion());
                 }
             }
+#else
+            AMS_UNUSED(program_id, version);
 #endif
             return ResultSuccess();
         }
@@ -662,6 +664,7 @@ namespace ams::ldr {
 
         {
             /* Mount code. */
+            AMS_UNUSED(path);
             ScopedCodeMount mount(loc, override_status);
             R_TRY(mount.GetResult());
 

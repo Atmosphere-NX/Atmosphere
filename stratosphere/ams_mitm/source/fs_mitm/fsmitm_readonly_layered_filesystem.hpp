@@ -28,45 +28,52 @@ namespace ams::mitm::fs {
             virtual ~ReadOnlyLayeredFileSystem() { /* ... */ }
         private:
             virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
+                AMS_UNUSED(path, size, flags);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoDeleteFile(const char *path) override final {
+                AMS_UNUSED(path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoCreateDirectory(const char *path) override final {
+                AMS_UNUSED(path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoDeleteDirectory(const char *path) override final {
+                AMS_UNUSED(path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
+                AMS_UNUSED(path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
+                AMS_UNUSED(old_path, new_path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
+                AMS_UNUSED(old_path, new_path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoGetEntryType(ams::fs::DirectoryEntryType *out, const char *path) override final {
-                R_UNLESS(R_FAILED(this->fs_1.GetEntryType(out, path)), ResultSuccess());
+                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.GetEntryType(out, path)));
                 return this->fs_2.GetEntryType(out, path);
             }
 
             virtual Result DoOpenFile(std::unique_ptr<ams::fs::fsa::IFile> *out_file, const char *path, ams::fs::OpenMode mode) override final {
-                R_UNLESS(R_FAILED(this->fs_1.OpenFile(out_file, path, mode)), ResultSuccess());
+                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.OpenFile(out_file, path, mode)));
                 return this->fs_2.OpenFile(out_file, path, mode);
             }
 
             virtual Result DoOpenDirectory(std::unique_ptr<ams::fs::fsa::IDirectory> *out_dir, const char *path, ams::fs::OpenDirectoryMode mode) override final {
-                R_UNLESS(R_FAILED(this->fs_1.OpenDirectory(out_dir, path, mode)), ResultSuccess());
+                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.OpenDirectory(out_dir, path, mode)));
                 return this->fs_2.OpenDirectory(out_dir, path, mode);
             }
 
@@ -75,19 +82,22 @@ namespace ams::mitm::fs {
             }
 
             virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) {
+                AMS_UNUSED(out, path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) {
+                AMS_UNUSED(out, path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoCleanDirectoryRecursively(const char *path) {
+                AMS_UNUSED(path);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result DoGetFileTimeStampRaw(ams::fs::FileTimeStampRaw *out, const char *path) {
-                R_UNLESS(R_FAILED(this->fs_1.GetFileTimeStampRaw(out, path)), ResultSuccess());
+                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.GetFileTimeStampRaw(out, path)));
                 return this->fs_2.GetFileTimeStampRaw(out, path);
             }
     };

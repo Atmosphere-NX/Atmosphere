@@ -34,7 +34,7 @@ namespace ams::mitm::bpc_ams {
 
     }
 
-    void MitmModule::ThreadFunction(void *arg) {
+    void MitmModule::ThreadFunction(void *) {
         /* Create bpc:ams. */
         {
             os::NativeHandle bpcams_h;

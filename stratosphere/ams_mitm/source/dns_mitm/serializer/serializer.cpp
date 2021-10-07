@@ -20,6 +20,9 @@
 namespace ams::mitm::socket::resolver::serializer {
 
     ssize_t DNSSerializer::CheckToBufferArguments(const u8 *dst, size_t dst_size, size_t required, int error_id) {
+        /* TODO: Logging, using error_id */
+        AMS_UNUSED(error_id);
+
         if (dst == nullptr) {
             return -1;
         } else if (dst_size < required) {

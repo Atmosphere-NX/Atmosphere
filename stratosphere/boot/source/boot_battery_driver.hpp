@@ -34,7 +34,8 @@ namespace ams::boot {
                 bool present;
                 R_TRY(powctl::IsBatteryPresent(std::addressof(present), this->battery_session));
 
-                return present == false;
+                *out = !present;
+                return ResultSuccess();
             }
 
             Result GetSocRep(float *out) {

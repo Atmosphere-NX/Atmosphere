@@ -69,6 +69,8 @@ namespace ams::tio {
         }
 
         void DeallocateForFs(void *p, size_t size) {
+            AMS_UNUSED(size);
+
             return lmem::FreeToExpHeap(g_fs_heap_handle, p);
         }
 
@@ -117,38 +119,44 @@ void __appExit(void) {
 
 namespace ams {
 
-    void *Malloc(size_t size) {
+    void *Malloc(size_t) {
         AMS_ABORT("ams::Malloc was called");
     }
 
-    void Free(void *ptr) {
+    void Free(void *) {
         AMS_ABORT("ams::Free was called");
     }
 
 }
 
-void *operator new(size_t size) {
+void *operator new(size_t) {
     AMS_ABORT("operator new(size_t) was called");
 }
 
-void operator delete(void *p) {
+void operator delete(void *) {
     AMS_ABORT("operator delete(void *) was called");
 }
 
-void *__libnx_alloc(size_t size) {
+void operator delete(void *, size_t) {
+    AMS_ABORT("operator delete(void *, size_t) was called");
+}
+
+void *__libnx_alloc(size_t) {
     AMS_ABORT("__libnx_alloc was called");
 }
 
-void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+void *__libnx_aligned_alloc(size_t, size_t) {
     AMS_ABORT("__libnx_aligned_alloc was called");
 }
 
-void __libnx_free(void *mem) {
+void __libnx_free(void *) {
     AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(TioServer, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(TioServer, Main));

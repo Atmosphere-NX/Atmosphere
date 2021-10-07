@@ -145,7 +145,7 @@ namespace ams::mitm {
         }
 
         /* Initialization implementation */
-        void InitializeThreadFunc(void *arg) {
+        void InitializeThreadFunc(void *) {
             /* Wait for the SD card to be ready. */
             cfg::WaitSdCardInitialized();
 

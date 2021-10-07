@@ -35,6 +35,7 @@ namespace ams::mitm::settings {
                 /* We will mitm:
                  * - everything, because we want to intercept all settings requests.
                  */
+                AMS_UNUSED(client_info);
                 return true;
             }
         public:

@@ -61,7 +61,7 @@ namespace ams::mitm::ns {
 
     }
 
-    void MitmModule::ThreadFunction(void *arg) {
+    void MitmModule::ThreadFunction(void *) {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
 

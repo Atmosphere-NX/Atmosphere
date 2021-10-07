@@ -244,22 +244,22 @@ namespace ams::fs {
 
     namespace {
 
-        Result CommitImpl(const char *path, const char *func_name) {
-            impl::FileSystemAccessor *accessor;
-            AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::Find(std::addressof(accessor), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
+        Result CommitImpl(const char *mount_name, const char *func_name) {
+            impl::FileSystemAccessor *accessor{};
+            AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::Find(std::addressof(accessor), mount_name), AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, mount_name));
 
-            AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM_WITH_NAME(accessor->Commit(), nullptr, accessor, func_name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, path));
+            AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM_WITH_NAME(accessor->Commit(), nullptr, accessor, func_name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, mount_name));
             return ResultSuccess();
         }
 
     }
 
-    Result Commit(const char *path) {
-        return CommitImpl(path, AMS_CURRENT_FUNCTION_NAME);
+    Result Commit(const char *mount_name) {
+        return CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME);
     }
 
-    Result CommitSaveData(const char *path) {
-        return CommitImpl(path, AMS_CURRENT_FUNCTION_NAME);
+    Result CommitSaveData(const char *mount_name) {
+        return CommitImpl(mount_name, AMS_CURRENT_FUNCTION_NAME);
     }
 
 }

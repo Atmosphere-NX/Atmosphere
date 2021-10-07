@@ -34,10 +34,12 @@ namespace ams::ldr {
             R_TRY(ldr::GetProgramInfo(out, &status, loc));
 
             if (loc.storage_id != static_cast<u8>(ncm::StorageId::None) && loc.program_id != out->program_id) {
-                char path[FS_MAX_PATH];
+                char path[fs::EntryNameLengthMax];
                 const ncm::ProgramLocation new_loc = ncm::ProgramLocation::Make(out->program_id, static_cast<ncm::StorageId>(loc.storage_id));
 
                 R_TRY(ResolveContentPath(path, loc));
+                path[sizeof(path) - 1] = '\x00';
+
                 R_TRY(RedirectContentPath(path, new_loc));
 
                 const auto arg_info = args::Get(loc.program_id);
@@ -59,13 +61,16 @@ namespace ams::ldr {
     Result LoaderService::CreateProcess(sf::OutMoveHandle out, PinId id, u32 flags, sf::CopyHandle &&reslimit_h) {
         ncm::ProgramLocation loc;
         cfg::OverrideStatus override_status;
-        char path[FS_MAX_PATH];
+        char path[fs::EntryNameLengthMax];
 
         /* Get location and override status. */
         R_TRY(ldr::ro::GetProgramLocationAndStatus(&loc, &override_status, id));
 
         if (loc.storage_id != static_cast<u8>(ncm::StorageId::None)) {
             R_TRY(ResolveContentPath(path, loc));
+            path[sizeof(path) - 1] = '\x00';
+        } else {
+            path[0] = '\x00';
         }
 
         /* Create the process. */

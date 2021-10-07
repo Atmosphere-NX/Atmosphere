@@ -159,20 +159,22 @@ namespace ams::htcs::impl {
     Result HtcsManagerImpl::StartSelect(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
         /* Start the select. */
         u32 task_id;
-        os::NativeHandle handle;
+        os::NativeHandle handle = os::InvalidNativeHandle;
         const Result result = m_service.SelectStart(std::addressof(task_id), std::addressof(handle), read_handles, write_handles, exception_handles, tv_sec, tv_usec);
 
         /* Ensure our state ends up clean. */
         if (htcs::ResultCancelled::Includes(result)) {
-            os::SystemEventType event;
-            os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
-
             s32 err;
             bool empty;
             m_service.SelectEnd(std::addressof(err), std::addressof(empty), Span<int>{}, Span<int>{}, Span<int>{}, task_id);
 
-            os::DestroySystemEvent(std::addressof(event));
-        } else {
+            if (handle != os::InvalidNativeHandle) {
+                os::SystemEventType event;
+                os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
+
+                os::DestroySystemEvent(std::addressof(event));
+            }
+        } else if (R_SUCCEEDED(result)) {
             *out_task_id = task_id;
             *out_handle  = handle;
         }

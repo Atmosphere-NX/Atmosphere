@@ -62,6 +62,7 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
     return 0;
 }
 

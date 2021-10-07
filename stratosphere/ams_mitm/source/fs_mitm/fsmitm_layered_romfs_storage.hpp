@@ -52,11 +52,13 @@ namespace ams::mitm::fs {
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 /* TODO: Better result code? */
+                AMS_UNUSED(offset, buffer, size);
                 return ams::fs::ResultUnsupportedOperation();
             }
 
             virtual Result SetSize(s64 size) override {
                 /* TODO: Better result code? */
+                AMS_UNUSED(size);
                 return ams::fs::ResultUnsupportedOperation();
             }
     };

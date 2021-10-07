@@ -143,25 +143,25 @@ void __appExit(void) {
 
 namespace ams {
 
-    void *Malloc(size_t size) {
+    void *Malloc(size_t) {
         AMS_ABORT("ams::Malloc was called");
     }
 
-    void Free(void *ptr) {
+    void Free(void *) {
         AMS_ABORT("ams::Free was called");
     }
 
 }
 
-void *__libnx_alloc(size_t size) {
+void *__libnx_alloc(size_t) {
     AMS_ABORT("__libnx_alloc was called");
 }
 
-void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+void *__libnx_aligned_alloc(size_t, size_t) {
     AMS_ABORT("__libnx_aligned_alloc was called");
 }
 
-void __libnx_free(void *mem) {
+void __libnx_free(void *) {
     AMS_ABORT("__libnx_free was called");
 }
 
@@ -177,6 +177,10 @@ void operator delete(void *p) {
     return Deallocate(p, 0);
 }
 
+void operator delete(void *p, size_t size) {
+    return Deallocate(p, size);
+}
+
 void *operator new[](size_t size) {
     return Allocate(size);
 }
@@ -189,8 +193,14 @@ void operator delete[](void *p) {
     return Deallocate(p, 0);
 }
 
+void operator delete[](void *p, size_t size) {
+    return Deallocate(p, size);
+}
+
 int main(int argc, char **argv)
 {
+    AMS_UNUSED(argc, argv);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot, Main));

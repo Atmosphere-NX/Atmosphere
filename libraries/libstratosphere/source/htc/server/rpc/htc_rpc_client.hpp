@@ -94,8 +94,20 @@ namespace ams::htc::server::rpc {
             Result ReceiveBody(char *dst, size_t size);
             Result SendRequest(const char *src, size_t size);
         private:
-            template<typename T, size_t... Ix> requires IsRpcTask<T>
-            ALWAYS_INLINE Result BeginImpl(std::index_sequence<Ix...>, u32 *out_task_id, RpcTaskArgumentType<T, Ix>... args) {
+            s32 GetTaskHandle(u32 task_id);
+        public:
+            void Wait(u32 task_id) {
+                os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
+            }
+
+            os::NativeHandle DetachReadableHandle(u32 task_id) {
+                return os::DetachReadableHandleOfSystemEvent(m_task_table.Get<Task>(task_id)->GetSystemEvent());
+            }
+
+            void CancelBySocket(s32 handle);
+
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskArgumentsType<T>>::value)
+            Result Begin(u32 *out_task_id, Args &&... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -117,7 +129,7 @@ namespace ams::htc::server::rpc {
                 };
 
                 /* Set the task arguments. */
-                R_TRY(task->SetArguments(args...));
+                R_TRY(task->SetArguments(std::forward<Args>(args)...));
 
                 /* Clear the task's events. */
                 os::ClearEvent(std::addressof(m_receive_buffer_available_events[task_id]));
@@ -138,8 +150,8 @@ namespace ams::htc::server::rpc {
                 return ResultSuccess();
             }
 
-            template<typename T, size_t... Ix> requires IsRpcTask<T>
-            ALWAYS_INLINE Result GetResultImpl(std::index_sequence<Ix...>, u32 task_id, RpcTaskResultType<T, Ix>... args) {
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
+            Result GetResult(u32 task_id, Args &&... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -151,13 +163,13 @@ namespace ams::htc::server::rpc {
                 R_UNLESS(task->GetTaskState() == RpcTaskState::Completed, htc::ResultTaskNotCompleted());
 
                 /* Get the task's result. */
-                R_TRY(task->GetResult(args...));
+                R_TRY(task->GetResult(std::forward<Args>(args)...));
 
                 return ResultSuccess();
             }
 
-            template<typename T, size_t... Ix> requires IsRpcTask<T>
-            ALWAYS_INLINE Result EndImpl(std::index_sequence<Ix...>, u32 task_id, RpcTaskResultType<T, Ix>... args) {
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
+            Result End(u32 task_id, Args &&... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -188,36 +200,9 @@ namespace ams::htc::server::rpc {
                 }
 
                 /* Get the task's result. */
-                R_TRY(task->GetResult(args...));
+                R_TRY(task->GetResult(std::forward<Args>(args)...));
 
                 return ResultSuccess();
-            }
-
-            s32 GetTaskHandle(u32 task_id);
-        public:
-            void Wait(u32 task_id) {
-                os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
-            }
-
-            os::NativeHandle DetachReadableHandle(u32 task_id) {
-                return os::DetachReadableHandleOfSystemEvent(m_task_table.Get<Task>(task_id)->GetSystemEvent());
-            }
-
-            void CancelBySocket(s32 handle);
-
-            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskArgumentsType<T>>::value)
-            Result Begin(u32 *out_task_id, Args &&... args) {
-                return this->BeginImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskArgumentsType<T>>::value>(), out_task_id, std::forward<Args>(args)...);
-            }
-
-            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
-            Result GetResult(u32 task_id, Args &&... args) {
-                return this->GetResultImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskResultsType<T>>::value>(), task_id, std::forward<Args>(args)...);
-            }
-
-            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
-            Result End(u32 task_id, Args &&... args) {
-                return this->EndImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskResultsType<T>>::value>(), task_id, std::forward<Args>(args)...);
             }
 
             template<typename T> requires IsRpcTask<T>

@@ -389,6 +389,7 @@ namespace ams::dmnt {
             }
         } else {
             /* TODO aarch32 branch decoding */
+            AMS_UNUSED(ctx);
         }
     }
 

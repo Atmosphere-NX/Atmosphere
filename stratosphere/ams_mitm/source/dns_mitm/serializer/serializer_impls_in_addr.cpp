@@ -26,7 +26,7 @@ namespace ams::mitm::socket::resolver::serializer {
         concept IsInAddr = std::same_as<T, ams::socket::InAddr> || std::same_as<T, struct in_addr>;
 
         template<typename T> requires IsInAddr<T>
-        size_t SizeOfImpl(const T &in) {
+        size_t SizeOfImpl(const T &) {
             return sizeof(u32);
         }
 

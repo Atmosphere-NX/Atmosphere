@@ -118,7 +118,7 @@ namespace ams::pm::impl {
         };
 
         /* Process Tracking globals. */
-        void ProcessTrackingMain(void *arg);
+        void ProcessTrackingMain(void *);
 
         constinit os::ThreadType g_process_track_thread;
         alignas(os::ThreadStackAlignment) constinit u8 g_process_track_thread_stack[16_KB];
@@ -154,7 +154,7 @@ namespace ams::pm::impl {
         void   OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info);
 
         /* Helpers. */
-        void ProcessTrackingMain(void *arg) {
+        void ProcessTrackingMain(void *) {
             /* This is the main loop of the process tracking thread. */
 
             /* Setup multi wait/holders. */
@@ -552,6 +552,7 @@ namespace ams::pm::impl {
     /* Information Getters. */
     Result GetModuleIdList(u32 *out_count, u8 *out_buf, size_t max_out_count, u64 unused) {
         /* This function was always stubbed... */
+        AMS_UNUSED(out_buf, max_out_count, unused);
         *out_count = 0;
         return ResultSuccess();
     }
@@ -560,11 +561,19 @@ namespace ams::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         size_t count = 0;
-        for (auto &process : *list) {
-            if (process.HasExceptionWaitingAttach()) {
-                out_process_ids[count++] = process.GetProcessId();
+
+        if (max_out_count > 0) {
+            for (auto &process : *list) {
+                if (process.HasExceptionWaitingAttach()) {
+                    out_process_ids[count++] = process.GetProcessId();
+
+                    if (count >= max_out_count) {
+                        break;
+                    }
+                }
             }
         }
+
         *out_count = static_cast<u32>(count);
         return ResultSuccess();
     }

@@ -16,7 +16,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # options for code generation
 #---------------------------------------------------------------------------------
 export DEFINES     = $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
-export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2
+export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2 -Wextra -Werror -Wno-missing-field-initializers
 export CFLAGS      = $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 export CXXFLAGS    = $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
 export ASFLAGS     = $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)

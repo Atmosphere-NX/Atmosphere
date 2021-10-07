@@ -131,7 +131,7 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Get the accept results. */
-        s32 desc;
+        s32 desc = -1;
         manager->AcceptResults(out_err.GetPointer(), std::addressof(desc), out_address.GetPointer(), task_id, m_desc);
 
         /* If an error occurred, we're done. */

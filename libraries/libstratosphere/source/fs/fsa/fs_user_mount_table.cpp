@@ -31,7 +31,7 @@ namespace ams::fs::impl {
     }
 
     Result Find(FileSystemAccessor **out, const char *name) {
-        return g_mount_table.Find(out,  name);
+        return g_mount_table.Find(out, name);
     }
 
     void Unregister(const char *name) {

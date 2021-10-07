@@ -275,6 +275,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SendSmallResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
         AMS_UNUSED(desc);
+
         /* Finish the task. */
         htcs::SocketError err;
         R_TRY(m_rpc_client->End<rpc::SendSmallTask>(task_id, std::addressof(err), out_size));
@@ -387,12 +388,12 @@ namespace ams::htcs::impl {
         u32 task_id;
         R_TRY(m_rpc_client->Begin<rpc::SelectTask>(std::addressof(task_id), read_handles, write_handles, exception_handles, tv_sec, tv_usec));
 
-        /* Check that the task isn't cancelled. */
-        R_UNLESS(!m_rpc_client->IsCancelled<rpc::SelectTask>(task_id), htcs::ResultCancelled());
-
         /* Detach the task. */
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
+
+        /* Check that the task isn't cancelled. */
+        R_UNLESS(!m_rpc_client->IsCancelled<rpc::SelectTask>(task_id), htcs::ResultCancelled());
 
         return ResultSuccess();
     }

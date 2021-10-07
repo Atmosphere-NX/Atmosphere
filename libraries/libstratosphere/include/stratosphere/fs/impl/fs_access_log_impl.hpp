@@ -132,7 +132,7 @@ namespace ams::fs::impl {
 
 /* Access log invocation lambdas. */
 #define AMS_FS_IMPL_ACCESS_LOG_IMPL(__EXPR__, __HANDLE__, __ENABLED__, __NAME__, ...)                                        \
-    [&](const char *name) {                                                                                                  \
+    [&](const char *name) -> Result {                                                                                                  \
         if (!(__ENABLED__)) {                                                                                                \
             return (__EXPR__);                                                                                               \
         } else {                                                                                                             \
@@ -145,7 +145,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_WITH_PRIORITY_IMPL(__EXPR__, __PRIORITY__, __HANDLE__, __ENABLED__, __NAME__, ...)                           \
-    [&](const char *name) {                                                                                                                 \
+    [&](const char *name) -> Result {                                                                                                                 \
         if (!(__ENABLED__)) {                                                                                                               \
             return (__EXPR__);                                                                                                              \
         } else {                                                                                                                            \
@@ -158,7 +158,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_EXPLICIT_IMPL(__RESULT__, __START__, __END__, __HANDLE__, __ENABLED__, __NAME__, ...)                 \
-    [&](const char *name) {                                                                                                          \
+    [&](const char *name) -> Result {                                                                                                          \
         if (!(__ENABLED__)) {                                                                                                        \
             return __RESULT__;                                                                                                       \
         } else {                                                                                                                     \
@@ -169,7 +169,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED_IMPL(__EXPR__, __ENABLED__, __NAME__, ...)                                                 \
-    [&](const char *name) {                                                                                                                  \
+    [&](const char *name) -> Result {                                                                                                                  \
         if (!(__ENABLED__)) {                                                                                                                \
             return (__EXPR__);                                                                                                               \
         } else {                                                                                                                             \
