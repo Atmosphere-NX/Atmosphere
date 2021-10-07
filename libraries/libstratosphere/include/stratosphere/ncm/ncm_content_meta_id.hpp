@@ -39,7 +39,7 @@ namespace ams::ncm {
         return ApplicationId::Start <= program_id && program_id <= ApplicationId::End;
     }
 
-    inline constexpr bool IsApplicationId(const ApplicationId &id) {
+    inline constexpr bool IsApplicationId(const ApplicationId &) {
         return true;
     }
 

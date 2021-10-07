@@ -25,6 +25,7 @@ namespace ams::fs::impl {
             }
 
             static ALWAYS_INLINE void *operator new(size_t size, Newable *placement) noexcept {
+                AMS_UNUSED(size);
                 return placement;
             }
 

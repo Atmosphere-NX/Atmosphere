@@ -159,25 +159,30 @@ namespace ams::fs::fsa {
             virtual Result DoCommit() = 0;
 
             virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) {
+                AMS_UNUSED(out, path);
                 return fs::ResultNotImplemented();
             }
 
             virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) {
+                AMS_UNUSED(out, path);
                 return fs::ResultNotImplemented();
             }
 
             virtual Result DoCleanDirectoryRecursively(const char *path) = 0;
 
             virtual Result DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) {
+                AMS_UNUSED(out, path);
                 return fs::ResultNotImplemented();
             }
 
             virtual Result DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
+                AMS_UNUSED(dst, dst_size, src, src_size, query, path);
                 return fs::ResultNotImplemented();
             }
 
             /* These aren't accessible as commands. */
             virtual Result DoCommitProvisionally(s64 counter) {
+                AMS_UNUSED(counter);
                 return fs::ResultNotImplemented();
             }
 

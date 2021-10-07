@@ -48,7 +48,7 @@ namespace ams::fssystem {
                 return this->integrity_storage.Write(offset, buffer, size);
             }
 
-            virtual Result SetSize(s64 size) override { return fs::ResultUnsupportedOperationInIntegrityRomFsStorageA(); }
+            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInIntegrityRomFsStorageA(); }
 
             virtual Result GetSize(s64 *out) override {
                 return this->integrity_storage.GetSize(out);

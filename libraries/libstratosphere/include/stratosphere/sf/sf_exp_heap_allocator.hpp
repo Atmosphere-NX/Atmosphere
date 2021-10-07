@@ -31,7 +31,7 @@ namespace ams::sf {
         }
 
         void Detach() {
-            this->_handle = 0;
+            this->_handle = {};
         }
 
         void *Allocate(size_t size) {
@@ -42,6 +42,8 @@ namespace ams::sf {
         }
 
         void Deallocate(void *ptr, size_t size) {
+            AMS_UNUSED(size);
+
             os::LockSdkMutex(std::addressof(this->_mutex));
             lmem::FreeToExpHeap(this->_handle, ptr);
             os::UnlockSdkMutex(std::addressof(this->_mutex));

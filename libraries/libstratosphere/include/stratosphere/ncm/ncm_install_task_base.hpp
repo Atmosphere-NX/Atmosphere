@@ -164,7 +164,7 @@ namespace ams::ncm {
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
 
             virtual Result PrepareInstallContentMetaData() = 0;
-            virtual Result GetLatestVersion(util::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
+            virtual Result GetLatestVersion(util::optional<u32> *out_version, u64 id) { AMS_UNUSED(out_version, id); return ncm::ResultContentMetaNotFound(); }
 
             virtual Result OnExecuteComplete() { return ResultSuccess(); }
 

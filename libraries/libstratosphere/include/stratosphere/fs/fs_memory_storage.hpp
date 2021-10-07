@@ -63,10 +63,13 @@ namespace ams::fs {
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInMemoryStorageA();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                AMS_UNUSED(offset, size, src, src_size);
+
                 switch (op_id) {
                     case OperationId::Invalidate:
                         return ResultSuccess();

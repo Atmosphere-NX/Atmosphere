@@ -173,6 +173,7 @@ namespace ams::sf::hipc {
 
             virtual ServerSessionManager *GetSessionManagerByTag(u32 tag) {
                 /* This is unused. */
+                AMS_UNUSED(tag);
                 return this;
             }
     };

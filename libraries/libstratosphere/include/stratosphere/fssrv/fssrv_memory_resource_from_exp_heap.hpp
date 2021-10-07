@@ -31,10 +31,12 @@ namespace ams::fssrv {
             }
 
             virtual void DeallocateImpl(void *p, size_t size, size_t align) override {
+                AMS_UNUSED(size, align);
                 return lmem::FreeToExpHeap(this->heap_handle, p);
             }
 
             virtual bool IsEqualImpl(const MemoryResource &rhs) const override {
+                AMS_UNUSED(rhs);
                 return false;
             }
     };
@@ -67,6 +69,7 @@ namespace ams::fssrv {
             virtual void *AllocateImpl(size_t size, size_t align) override;
             virtual void DeallocateImpl(void *p, size_t size, size_t align) override;
             virtual bool IsEqualImpl(const MemoryResource &rhs) const override {
+                AMS_UNUSED(rhs);
                 return false;
             }
     };

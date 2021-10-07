@@ -70,14 +70,17 @@ namespace ams::mem::impl {
         uintptr_t addr;
         if (IsVirtualAddressMemoryEnabled()) {
             /* TODO: Support virtual address memory. */
-            AMS_UNUSED(ptr);
             AMS_ABORT("Virtual address memory not supported yet");
         } else {
             if (auto err = ConvertResult(os::AllocateMemoryBlock(std::addressof(addr), util::AlignUp(size, os::MemoryBlockUnitSize))); err != 0) {
                 return err;
             }
+
             os::SetMemoryPermission(addr, size, os::MemoryPermission_None);
         }
+
+        /* Set the output pointer. */
+        *ptr = reinterpret_cast<void *>(addr);
 
         return 0;
     }

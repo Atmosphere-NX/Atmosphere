@@ -31,6 +31,8 @@ namespace ams::fssystem {
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
                     AMS_ASSERT(offset >= 0);
                     AMS_ASSERT(buffer != nullptr || size == 0);
+                    AMS_UNUSED(offset);
+
                     if (size > 0) {
                         std::memset(buffer, 0, size);
                     }
@@ -38,6 +40,7 @@ namespace ams::fssystem {
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                    AMS_UNUSED(dst, dst_size, op_id, offset, size, src, src_size);
                     return ResultSuccess();
                 }
 
@@ -52,10 +55,12 @@ namespace ams::fssystem {
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                    AMS_UNUSED(offset, buffer, size);
                     return fs::ResultUnsupportedOperationInZeroStorageA();
                 }
 
                 virtual Result SetSize(s64 size) override {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInZeroStorageB();
                 }
             };

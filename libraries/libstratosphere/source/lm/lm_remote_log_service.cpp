@@ -40,7 +40,7 @@ namespace ams::lm {
         /* Send libnx command. */
         ::Service logger_srv;
         {
-            u64 pid_placeholder;
+            u64 pid_placeholder = 0;
 
             #define NX_SERVICE_ASSUME_NON_DOMAIN
             R_TRY(serviceDispatchIn(&m_srv, 0, pid_placeholder,

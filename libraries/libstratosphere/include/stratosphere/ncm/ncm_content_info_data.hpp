@@ -40,11 +40,11 @@ namespace ams::ncm {
             return this->info.GetId();
         }
 
-        constexpr const ContentType GetType() const {
+        constexpr ContentType GetType() const {
             return this->info.GetType();
         }
 
-        constexpr const u8 GetIdOffset() const {
+        constexpr u8 GetIdOffset() const {
             return this->info.GetIdOffset();
         }
     };
@@ -68,15 +68,15 @@ namespace ams::ncm {
             return this->info.GetId();
         }
 
-        constexpr const u64 GetSize() const {
+        constexpr u64 GetSize() const {
             return this->info.GetSize();
         }
 
-        constexpr const ContentType GetType() const {
+        constexpr ContentType GetType() const {
             return this->info.GetType();
         }
 
-        constexpr const u8 GetIdOffset() const {
+        constexpr u8 GetIdOffset() const {
             return this->info.GetIdOffset();
         }
 
@@ -84,15 +84,15 @@ namespace ams::ncm {
             return this->placeholder_id;
         }
 
-        constexpr const ContentMetaType GetContentMetaType() const {
+        constexpr ContentMetaType GetContentMetaType() const {
             return this->meta_type;
         }
 
-        constexpr const InstallState GetInstallState() const {
+        constexpr InstallState GetInstallState() const {
             return this->install_state;
         }
 
-        constexpr const StorageId GetStorageId() const {
+        constexpr StorageId GetStorageId() const {
             return this->storage_id;
         }
 

@@ -178,10 +178,12 @@ namespace ams::fssystem {
                     AttrInfo *FindAttrInfo(const BufferAttribute &attr);
 
                     s32 GetCacheCountMin(const BufferAttribute &attr) {
+                        AMS_UNUSED(attr);
                         return this->cache_count_min;
                     }
 
                     size_t GetCacheSizeMin(const BufferAttribute &attr) {
+                        AMS_UNUSED(attr);
                         return this->cache_size_min;
                     }
             };

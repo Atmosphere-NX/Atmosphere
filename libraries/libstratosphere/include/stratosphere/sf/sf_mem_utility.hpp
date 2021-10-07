@@ -33,6 +33,7 @@ namespace ams::sf {
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
+                AMS_UNUSED(size, alignment);
                 return this->standard_allocator->Free(buffer);
             }
 

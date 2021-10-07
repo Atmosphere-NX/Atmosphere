@@ -103,10 +103,12 @@ namespace ams::fssystem {
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                AMS_UNUSED(offset, buffer, size);
                 return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageA();
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageB();
             }
         private:

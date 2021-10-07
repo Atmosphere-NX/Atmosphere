@@ -97,6 +97,8 @@ namespace ams::fssystem {
 
             Result Initialize(uintptr_t address, size_t size, size_t block_size, s32 order_max, void *work, size_t work_size) {
                 AMS_ASSERT(work_size >= QueryWorkBufferSize(order_max));
+                AMS_UNUSED(work_size);
+
                 const auto aligned_work = util::AlignUp(reinterpret_cast<uintptr_t>(work), alignof(PageList));
                 this->external_free_lists = reinterpret_cast<PageList *>(aligned_work);
                 return this->Initialize(address, size, block_size, order_max);

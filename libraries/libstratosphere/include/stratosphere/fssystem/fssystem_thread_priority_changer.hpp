@@ -26,16 +26,16 @@ namespace ams::fssystem {
                 Relative,
             };
         private:
-            os::ThreadType *thread;
-            s32 priority;
+            os::ThreadType *m_thread;
+            s32 m_priority;
         public:
-            ALWAYS_INLINE explicit ScopedThreadPriorityChanger(s32 prio, Mode mode) : thread(os::GetCurrentThread()), priority(0) {
-                const auto result_priority = std::min((mode == Mode::Relative) ? os::GetThreadPriority(this->thread) + priority : priority, os::LowestSystemThreadPriority);
-                this->priority = os::ChangeThreadPriority(thread, result_priority);
+            ALWAYS_INLINE explicit ScopedThreadPriorityChanger(s32 priority, Mode mode) : m_thread(os::GetCurrentThread()), m_priority(0) {
+                const auto result_priority = std::min((mode == Mode::Relative) ? os::GetThreadPriority(m_thread) + priority : priority, os::LowestSystemThreadPriority);
+                m_priority = os::ChangeThreadPriority(m_thread, result_priority);
             }
 
             ALWAYS_INLINE ~ScopedThreadPriorityChanger() {
-                os::ChangeThreadPriority(this->thread, this->priority);
+                os::ChangeThreadPriority(m_thread, m_priority);
             }
     };
 

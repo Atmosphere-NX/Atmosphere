@@ -57,7 +57,7 @@ namespace ams::fssystem::save {
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64 size) override { return fs::ResultUnsupportedOperationInIntegrityVerificationStorageA(); }
+            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInIntegrityVerificationStorageA(); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;

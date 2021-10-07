@@ -20,7 +20,7 @@
 namespace ams::os::impl {
 
     template<std::unsigned_integral AddressType, std::unsigned_integral SizeType>
-    AddressSpaceAllocatorBase<AddressType, SizeType>::AddressSpaceAllocatorBase(u64 start_address, u64 end_address, SizeType guard_size, const AddressSpaceAllocatorForbiddenRegion *forbidden_regions, size_t num_forbidden_regions) : m_critical_section() {
+    AddressSpaceAllocatorBase<AddressType, SizeType>::AddressSpaceAllocatorBase(u64 start_address, u64 end_address, SizeType guard_size, const AddressSpaceAllocatorForbiddenRegion *forbidden_regions, size_t num_forbidden_regions) : m_critical_section(), m_forbidden_region_count(0) {
         /* Check pre-conditions. */
         AMS_ASSERT(start_address >= guard_size);
         AMS_ASSERT(end_address + guard_size >= end_address);

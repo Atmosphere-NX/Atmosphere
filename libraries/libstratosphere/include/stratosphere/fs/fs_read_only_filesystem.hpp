@@ -46,10 +46,12 @@ namespace ams::fs {
                 }
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
+                    AMS_UNUSED(offset, buffer, size, option);
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 
                 virtual Result DoSetSize(s64 size) override final {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 

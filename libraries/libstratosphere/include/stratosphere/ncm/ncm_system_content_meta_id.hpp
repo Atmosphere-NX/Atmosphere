@@ -127,7 +127,7 @@ namespace ams::ncm {
         return program_id == AtmosphereProgramId::Mitm || program_id == AtmosphereProgramId::AtmosphereLogManager;
     }
 
-    inline constexpr bool IsSystemProgramId(const AtmosphereProgramId &program_id) {
+    inline constexpr bool IsSystemProgramId(const AtmosphereProgramId &) {
         return true;
     }
 
@@ -213,7 +213,7 @@ namespace ams::ncm {
         return (SystemProgramId::Start <= program_id && program_id <= SystemProgramId::End) || IsAtmosphereProgramId(program_id);
     }
 
-    inline constexpr bool IsSystemProgramId(const SystemProgramId &program_id) {
+    inline constexpr bool IsSystemProgramId(const SystemProgramId &) {
         return true;
     }
 
@@ -318,7 +318,7 @@ namespace ams::ncm {
         return SystemDataId::Start <= data_id && data_id <= SystemDataId::End;
     }
 
-    inline constexpr bool IsSystemDataId(const SystemDataId &data_id) {
+    inline constexpr bool IsSystemDataId(const SystemDataId &) {
         return true;
     }
 
@@ -410,7 +410,7 @@ namespace ams::ncm {
         return SystemAppletId::Start <= program_id && program_id <= SystemAppletId::End;
     }
 
-    inline constexpr bool IsSystemAppletId(const SystemAppletId &program_id) {
+    inline constexpr bool IsSystemAppletId(const SystemAppletId &) {
         return true;
     }
 
@@ -438,7 +438,7 @@ namespace ams::ncm {
         return SystemDebugAppletId::Start <= program_id && program_id <= SystemDebugAppletId::End;
     }
 
-    inline constexpr bool IsSystemDebugAppletId(const SystemDebugAppletId &program_id) {
+    inline constexpr bool IsSystemDebugAppletId(const SystemDebugAppletId &) {
         return true;
     }
 
@@ -496,7 +496,7 @@ namespace ams::ncm {
                id == LibraryAppletId::MyPage;
     }
 
-    inline constexpr bool IsLibraryAppletId(const LibraryAppletId &id) {
+    inline constexpr bool IsLibraryAppletId(const LibraryAppletId &) {
         return true;
     }
 
@@ -536,7 +536,7 @@ namespace ams::ncm {
                id == WebAppletId::WifiWebAuth;
     }
 
-    inline constexpr bool IsWebAppletId(const WebAppletId &id) {
+    inline constexpr bool IsWebAppletId(const WebAppletId &) {
         return true;
     }
 

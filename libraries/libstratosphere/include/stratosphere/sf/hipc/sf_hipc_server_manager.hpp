@@ -176,6 +176,7 @@ namespace ams::sf::hipc {
             virtual Server *AllocateServer() = 0;
             virtual void DestroyServer(Server *server)  = 0;
             virtual Result OnNeedsToAccept(int port_index, Server *server) {
+                AMS_UNUSED(port_index, server);
                 AMS_ABORT("OnNeedsToAccept must be overridden when using indexed ports");
             }
 

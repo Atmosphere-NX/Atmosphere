@@ -790,6 +790,7 @@ namespace ams::sf::impl {
 
             virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
                 /* By default, InObjects aren't supported. */
+                AMS_UNUSED(in_objects);
                 return sf::ResultNotSupported();
             }
     };

@@ -97,7 +97,7 @@ namespace ams::powctl::driver::impl {
                 const auto *rule = this->GetSelectedRule();
                 AMS_ASSERT(rule != nullptr);
 
-                return IsInRange(0, rule->min_battery_done_current, rule->max_battery_done_current);
+                return IsInRange(current, rule->min_battery_done_current, rule->max_battery_done_current);
             }
 
             const ChargeParametersRule *GetSelectedRule() const {

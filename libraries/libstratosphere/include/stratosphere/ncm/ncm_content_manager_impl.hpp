@@ -51,6 +51,7 @@ namespace ams::ncm {
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
+                AMS_UNUSED(size, alignment);
                 return this->allocator.Free(buffer);
             }
 

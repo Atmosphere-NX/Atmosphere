@@ -39,6 +39,7 @@ namespace ams::sf {
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
+                AMS_UNUSED(size, alignment);
                 return lmem::FreeToExpHeap(this->handle, buffer);
             }
 
@@ -64,10 +65,14 @@ namespace ams::sf {
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
                 AMS_ASSERT(size <= lmem::GetUnitHeapUnitSize(this->handle));
                 AMS_ASSERT(alignment <= static_cast<size_t>(lmem::GetUnitHeapAlignment(this->handle)));
+                AMS_UNUSED(size, alignment);
+
                 return lmem::AllocateFromUnitHeap(this->handle);
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
+                AMS_UNUSED(size, alignment);
+
                 return lmem::FreeToUnitHeap(this->handle, buffer);
             }
 
