@@ -16,6 +16,9 @@
 #include <stratosphere.hpp>
 #include "cs_command_impl.hpp"
 
+/* Include command implementations. */
+#include "cs_command_impl.inc"
+
 namespace ams::cs {
 
     namespace {
@@ -82,7 +85,18 @@ namespace ams::cs {
         /* Create the command data. */
         const CommandDataTakeScreenShot params = {
             .layer_stack = layer_stack,
-            .send_header = [&](s32 data_size, s32 width, s32 height) {
+            .buffer      = g_data,
+            .buffer_size = sizeof(g_data),
+        };
+
+        /* Take the screenshot. */
+        Result result;
+        {
+            /* Acquire the send lock. */
+            auto lk = MakeSendGuardBlock();
+
+            /* Perform the command. */
+            result = DoTakeScreenShotCommand(params, [&](s32 data_size, s32 width, s32 height) {
                 /* Use global buffer for response. */
                 ResponseTakeScreenShot *response = reinterpret_cast<ResponseTakeScreenShot *>(g_data);
 
@@ -100,23 +114,10 @@ namespace ams::cs {
 
                 /* Send data. */
                 Send(socket, response, sizeof(*response));
-            },
-            .send_data   = [&](u8 *data, size_t data_size) {
+            }, [&](u8 *data, size_t data_size) {
                 /* Send data. */
                 Send(socket, data, data_size);
-            },
-            .buffer      = g_data,
-            .buffer_size = sizeof(g_data),
-        };
-
-        /* Take the screenshot. */
-        Result result;
-        {
-            /* Acquire the send lock. */
-            auto lk = MakeSendGuardBlock();
-
-            /* Perform the command. */
-            result = DoTakeScreenShotCommand(params);
+            });
         }
 
         /* Handle the error case. */
