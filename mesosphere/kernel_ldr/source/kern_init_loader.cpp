@@ -207,12 +207,14 @@ namespace ams::kern::init::loader {
         /* NOTE: Nintendo does this only on 10.0.0+ */
         init_pt.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
 
-        /* Clear kernel .bss. */
-        std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
-
         /* Apply relocations to the kernel. */
         const Elf::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
         Elf::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
+
+        /* Clear kernel .bss. */
+        /* NOTE: The kernel does this before applying relocations, but we do it after. */
+        /* This allows us to place our relocations in space overlapping with .bss...and thereby reclaim the memory that would otherwise be wasted. */
+        std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
 
         /* Call the kernel's init array functions. */
         /* NOTE: The kernel does this after reprotecting .rodata, but we do it before. */

@@ -9,6 +9,22 @@ def align_up(val, algn):
     val += algn - 1
     return val - (val % algn)
 
+def find_rela(kernel, dynamic):
+    rela_offset, rela_size = (None, None)
+    while True:
+        dyn_type, dyn_val = up('<QQ', kernel[dynamic:dynamic+0x10])
+        if dyn_type == 0:
+            break
+        elif dyn_type == 7:
+            assert (rela_offset is None)
+            rela_offset = dyn_val
+        elif dyn_type == 8:
+            assert (rela_size is None)
+            rela_size = dyn_val
+        dynamic += 0x10
+    assert (rela_offset is not None)
+    assert (rela_size is not None)
+    return (rela_offset, rela_size)
 
 def main(argc, argv):
     if argc != 4:
@@ -21,8 +37,19 @@ def main(argc, argv):
     kernel_metadata_offset = 4
     assert (kernel_metadata_offset <= len(kernel) - 0x40)
     assert (kernel[kernel_metadata_offset:kernel_metadata_offset + 4] == b'MSS0')
-    kernel_end = up('<I', kernel[kernel_metadata_offset + 0x38:kernel_metadata_offset + 0x3C])[0]
-    assert (kernel_end >= len(kernel))
+    bss_start, bss_end, kernel_end, dynamic = up('<IIII', kernel[kernel_metadata_offset + 0x30:kernel_metadata_offset + 0x40])
+    assert (bss_end >= bss_start)
+    bss_size = bss_end - bss_start
+    assert (bss_end == kernel_end)
+    assert (kernel_end <= len(kernel))
+
+    rela_offset, rela_size = find_rela(kernel, dynamic)
+    assert (rela_size == len(kernel) - kernel_end)
+    assert (bss_start <= rela_offset and rela_offset + rela_size <= bss_end)
+    assert (kernel[bss_start:bss_end] == (b'\x00'* bss_size))
+
+    kernel = kernel[:rela_offset] + kernel[bss_end:] + (b'\x00' * (bss_size - (rela_size + (rela_offset - bss_start))))
+    assert (kernel_end == len(kernel))
 
     embedded_ini = b''
     try:
