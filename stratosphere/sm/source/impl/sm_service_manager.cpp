@@ -554,14 +554,6 @@ namespace ams::sm::impl {
         /* Validate service name. */
         R_TRY(ValidateServiceName(service));
 
-        /* In 8.0.0, Nintendo removed the service apm:p -- however, all homebrew attempts to get */
-        /* a handle to this when calling appletInitialize(). Because hbl has access to all services, */
-        /* This would return true, and homebrew would *wait forever* trying to get a handle to a service */
-        /* that will never register. Thus, in the interest of not breaking every single piece of homebrew */
-        /* we will provide a little first class help. */
-        constexpr ServiceName ApmP = ServiceName::Encode("apm:p");
-        R_UNLESS((hos::GetVersion() < hos::Version_8_0_0) || (service != ApmP), sm::ResultNotAllowed());
-
         /* Check that the process is registered and allowed to get the service. */
         if (!IsInitialProcess(process_id)) {
             ProcessInfo *proc = GetProcessInfo(process_id);
@@ -762,7 +754,6 @@ namespace ams::sm::impl {
             service_info->mitm_port_h     = os::InvalidNativeHandle;
             service_info->mitm_query_h    = os::InvalidNativeHandle;
             service_info->mitm_process_id = os::InvalidProcessId;
-
         }
 
         return ResultSuccess();
