@@ -30,16 +30,16 @@ def main(argc, argv):
             embedded_ini = f.read()
     except:
         pass
-    embedded_ini_offset = align_up(kernel_end, 0x1000) + 0x1000
+    embedded_ini_offset = align_up(kernel_end, 0x1000)
     embedded_ini_end = embedded_ini_offset + len(embedded_ini) # TODO: Create and embed an INI, eventually.
 
-    kernel_ldr_offset = align_up(embedded_ini_end, 0x1000) + 0x1000
+    kernel_ldr_offset = align_up(embedded_ini_end, 0x1000) + (0x1000 if len(embedded_ini) == 0 else 0)
     kernel_ldr_end    = kernel_ldr_offset + len(kernel_ldr)
     mesosphere_end    = align_up(kernel_ldr_end, 0x1000)
 
     with open(argv[3], 'wb') as f:
         f.write(kernel[:kernel_metadata_offset + 4])
-        f.write(pk('<QQI', embedded_ini_offset, kernel_ldr_offset, atmosphere_target_firmware(10, 1, 0)))
+        f.write(pk('<QQI', embedded_ini_offset, kernel_ldr_offset, atmosphere_target_firmware(13, 0, 0)))
         f.write(kernel[kernel_metadata_offset + 0x18:])
         f.seek(embedded_ini_offset)
         f.write(embedded_ini)
