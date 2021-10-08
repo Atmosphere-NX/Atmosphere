@@ -25,9 +25,20 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         constinit util::optional<BatteryDevice> g_battery_device;
 
+        constinit util::TypedStorage<Max17050Driver> g_max17050_driver;
+        constinit bool g_constructed_max17050_driver;
+        constinit os::SdkMutex g_max17050_driver_mutex;
+
         Max17050Driver &GetMax17050Driver() {
-            static Max17050Driver s_max17050_driver;
-            return s_max17050_driver;
+            if (AMS_UNLIKELY(!g_constructed_max17050_driver)) {
+                std::scoped_lock lk(g_max17050_driver_mutex);
+
+                if (AMS_LIKELY(!g_constructed_max17050_driver)) {
+                    util::ConstructAt(g_max17050_driver);
+                }
+            }
+
+            return util::GetReference(g_max17050_driver);
         }
 
         constexpr inline const double SenseResistorValue = 0.005;

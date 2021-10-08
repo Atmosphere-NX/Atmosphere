@@ -24,13 +24,25 @@ namespace ams::i2c::driver::impl {
         constinit int g_init_count = 0;
 
         i2c::driver::II2cDriver::List &GetI2cDriverList() {
-            static i2c::driver::II2cDriver::List s_driver_list;
+            static constinit i2c::driver::II2cDriver::List s_driver_list;
             return s_driver_list;
         }
 
         ddsf::DeviceCodeEntryManager &GetDeviceCodeEntryManager() {
-            static ddsf::DeviceCodeEntryManager s_device_code_entry_manager(ddsf::GetDeviceCodeEntryHolderMemoryResource());
-            return s_device_code_entry_manager;
+            static constinit util::TypedStorage<ddsf::DeviceCodeEntryManager> s_device_code_entry_manager;
+            static constinit bool s_initialized = false;
+            static constinit os::SdkMutex s_mutex;
+
+            if (AMS_UNLIKELY(!s_initialized)) {
+                std::scoped_lock lk(s_mutex);
+
+                if (AMS_LIKELY(!s_initialized)) {
+                    util::ConstructAt(s_device_code_entry_manager, ddsf::GetDeviceCodeEntryHolderMemoryResource());
+                    s_initialized = true;
+                }
+            }
+
+            return util::GetReference(s_device_code_entry_manager);
         }
 
     }

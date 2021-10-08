@@ -30,28 +30,50 @@ namespace ams::powctl::impl {
         constinit sf::UnitHeapMemoryResource g_unit_heap_memory_resource;
 
         IPowerControlDriver::List &GetDriverList() {
-            static IPowerControlDriver::List s_driver_list;
+            static constinit IPowerControlDriver::List s_driver_list;
             return s_driver_list;
         }
 
         ddsf::EventHandlerManager &GetInterruptHandlerManager() {
-            static ddsf::EventHandlerManager s_interrupt_handler_manager;
-            return s_interrupt_handler_manager;
+            static constinit util::TypedStorage<ddsf::EventHandlerManager> s_interrupt_handler_manager;
+            static constinit bool s_initialized = false;
+            static constinit os::SdkMutex s_mutex;
+
+            if (AMS_UNLIKELY(!s_initialized)) {
+                std::scoped_lock lk(s_mutex);
+
+                if (AMS_LIKELY(!s_initialized)) {
+                    util::ConstructAt(s_interrupt_handler_manager);
+                    s_initialized = true;
+                }
+            }
+
+            return util::GetReference(s_interrupt_handler_manager);
         }
 
         ddsf::DeviceCodeEntryManager &GetDeviceCodeEntryManager() {
-            static ddsf::DeviceCodeEntryManager s_device_code_entry_manager = [] {
-                /* Initialize the entry code heap. */
-                g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
+            static constinit util::TypedStorage<ddsf::DeviceCodeEntryManager> s_device_code_entry_manager;
+            static constinit bool s_initialized = false;
+            static constinit os::SdkMutex s_mutex;
 
-                /* Initialize the entry code memory resource. */
-                g_unit_heap_memory_resource.Attach(g_unit_heap_handle);
+            if (AMS_UNLIKELY(!s_initialized)) {
+                std::scoped_lock lk(s_mutex);
 
-                /* Make the entry manager using the newly initialized memory resource. */
-                return ddsf::DeviceCodeEntryManager(std::addressof(g_unit_heap_memory_resource));
-            }();
+                if (AMS_LIKELY(!s_initialized)) {
+                    /* Initialize the entry code heap. */
+                    g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
 
-            return s_device_code_entry_manager;
+                    /* Initialize the entry code memory resource. */
+                    g_unit_heap_memory_resource.Attach(g_unit_heap_handle);
+
+                    /* Make the entry manager using the newly initialized memory resource. */
+                    util::ConstructAt(s_device_code_entry_manager, std::addressof(g_unit_heap_memory_resource));
+
+                    s_initialized = true;
+                }
+            }
+
+            return util::GetReference(s_device_code_entry_manager);
         }
 
         void InterruptThreadFunction(void *arg) {

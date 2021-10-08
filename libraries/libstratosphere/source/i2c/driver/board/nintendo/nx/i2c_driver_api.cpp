@@ -98,11 +98,13 @@ namespace ams::i2c::driver::board::nintendo::nx {
     }
 
     void Initialize() {
-        /* TODO: Should these be moved into getters? They're only used here, and they never destruct. */
-        static impl::I2cBusAccessorManager s_bus_accessor_manager(ddsf::GetMemoryResource());
-        static impl::I2cDevicePropertyManager s_device_manager(ddsf::GetMemoryResource());
+        static constinit util::TypedStorage<impl::I2cBusAccessorManager> s_bus_accessor_manager;
+        static constinit util::TypedStorage<impl::I2cDevicePropertyManager> s_device_manager;
 
-        return Initialize(s_bus_accessor_manager, s_device_manager);
+        util::ConstructAt(s_bus_accessor_manager, ddsf::GetMemoryResource());
+        util::ConstructAt(s_device_manager, ddsf::GetMemoryResource());
+
+        return Initialize(util::GetReference(s_bus_accessor_manager), util::GetReference(s_device_manager));
     }
 
 }
