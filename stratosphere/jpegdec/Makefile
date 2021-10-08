@@ -15,6 +15,10 @@ CXXWRAPS +=	-Wl,--wrap,jpeg_get_small
 CXXWRAPS +=	-Wl,--wrap,jpeg_get_large
 CXXWRAPS +=	-Wl,--wrap,jpeg_free_small
 CXXWRAPS +=	-Wl,--wrap,jpeg_free_large
+CXXWRAPS +=	-Wl,--wrap,sprintf
+CXXWRAPS +=	-Wl,--wrap,fprintf
+CXXWRAPS +=	-Wl,--wrap,getenv
+CXXWRAPS +=	-Wl,--wrap,sscanf
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
