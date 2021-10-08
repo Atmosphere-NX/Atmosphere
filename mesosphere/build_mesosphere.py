@@ -9,7 +9,6 @@ def align_up(val, algn):
     val += algn - 1
     return val - (val % algn)
 
-
 def main(argc, argv):
     if argc != 4:
         print('Usage: %s kernel_ldr.bin kernel.bin output.bin' % argv[0])
@@ -21,8 +20,15 @@ def main(argc, argv):
     kernel_metadata_offset = 4
     assert (kernel_metadata_offset <= len(kernel) - 0x40)
     assert (kernel[kernel_metadata_offset:kernel_metadata_offset + 4] == b'MSS0')
-    kernel_end = up('<I', kernel[kernel_metadata_offset + 0x38:kernel_metadata_offset + 0x3C])[0]
-    assert (kernel_end >= len(kernel))
+
+    bss_start, bss_end, kernel_end = up('<III', kernel[kernel_metadata_offset + 0x30:kernel_metadata_offset + 0x3C])
+    assert (bss_end >= bss_start)
+    assert (bss_end == kernel_end)
+
+    assert (len(kernel) <= kernel_end)
+    if len(kernel) < kernel_end:
+        kernel += b'\x00' * (kernel_end - len(kernel))
+    assert (kernel_end == len(kernel))
 
     embedded_ini = b''
     try:
