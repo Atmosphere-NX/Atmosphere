@@ -17,140 +17,55 @@
 #include "dmnt2_debug_log.hpp"
 #include "dmnt2_gdb_server.hpp"
 
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    #define INNER_HEAP_SIZE 0x0
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    void *__libnx_alloc(size_t size);
-    void *__libnx_aligned_alloc(size_t alignment, size_t size);
-    void __libnx_free(void *mem);
-}
-
-using namespace ams;
-
-#define AMS_DMNT2_SERVER_USE_FATAL_ERROR 1
-
-#if AMS_DMNT2_SERVER_USE_FATAL_ERROR
-
-extern "C" {
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-
-}
-
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
-
-#endif
-
-namespace ams::dmnt {
-
-    namespace {
-
-        alignas(0x40) constinit u8 g_htcs_buffer[4_KB];
-
-    }
-
-}
-
-void __libnx_initheap(void) {
-	void*  addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	/* Newlib */
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
-}
-
-void __appInit(void) {
-    hos::InitializeForStratosphere();
-
-    R_ABORT_UNLESS(sm::Initialize());
-
-    /* TODO */
-
-    ams::CheckApiVersion();
-}
-
-void __appExit(void) {
-    /* TODO */
-}
-
 namespace ams {
 
-    void *Malloc(size_t) {
-        AMS_ABORT("ams::Malloc was called");
+    namespace dmnt {
+
+        namespace {
+
+            alignas(0x40) constinit u8 g_htcs_buffer[4_KB];
+
+        }
+
     }
 
-    void Free(void *) {
-        AMS_ABORT("ams::Free was called");
+    namespace init {
+
+        void InitializeSystemModule() {
+            /* Initialize our connection to sm. */
+            R_ABORT_UNLESS(sm::Initialize());
+
+            /* Verify that we can sanely execute. */
+            ams::CheckApiVersion();
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() { /* ... */ }
+
     }
 
-}
+    void Main() {
+        /* Set thread name. */
+        os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(dmnt, Main));
+        AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, Main));
 
-void *operator new(size_t) {
-    AMS_ABORT("operator new(size_t) was called");
-}
+        /* Initialize htcs. */
+        constexpr auto HtcsSocketCountMax = 8;
+        const size_t buffer_size = htcs::GetWorkingMemorySize(HtcsSocketCountMax);
+        AMS_ABORT_UNLESS(sizeof(dmnt::g_htcs_buffer) >= buffer_size);
+        htcs::InitializeForSystem(dmnt::g_htcs_buffer, buffer_size, HtcsSocketCountMax);
 
-void operator delete(void *) {
-    AMS_ABORT("operator delete(void *) was called");
-}
+        /* Initialize debug log thread. */
+        dmnt::InitializeDebugLog();
 
-void operator delete(void *, size_t) {
-    AMS_ABORT("operator delete(void *, size_t) was called");
-}
+        /* Start GdbServer. */
+        dmnt::InitializeGdbServer();
 
-void *__libnx_alloc(size_t) {
-    AMS_ABORT("__libnx_alloc was called");
-}
-
-void *__libnx_aligned_alloc(size_t, size_t) {
-    AMS_ABORT("__libnx_aligned_alloc was called");
-}
-
-void __libnx_free(void *) {
-    AMS_ABORT("__libnx_free was called");
-}
-
-int main(int argc, char **argv)
-{
-    AMS_UNUSED(argc, argv);
-
-    /* TODO ThreadName */
-
-    /* Initialize htcs. */
-    constexpr auto HtcsSocketCountMax = 8;
-    const size_t buffer_size = htcs::GetWorkingMemorySize(HtcsSocketCountMax);
-    AMS_ABORT_UNLESS(sizeof(dmnt::g_htcs_buffer) >= buffer_size);
-    htcs::InitializeForSystem(dmnt::g_htcs_buffer, buffer_size, HtcsSocketCountMax);
-
-    /* Initialize debug log thread. */
-    dmnt::InitializeDebugLog();
-
-    /* Start GdbServer. */
-    dmnt::InitializeGdbServer();
-
-    /* TODO */
-    while (true) {
-        os::SleepThread(TimeSpan::FromDays(1));
+        /* TODO */
+        while (true) {
+            os::SleepThread(TimeSpan::FromDays(1));
+        }
     }
 
-    return 0;
 }

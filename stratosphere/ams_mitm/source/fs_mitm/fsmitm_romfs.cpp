@@ -324,11 +324,11 @@ namespace ams::mitm::fs {
             AMS_ABORT_UNLESS(num_child_dirs >= 0);
 
             {
-                BuildDirectoryContext **child_dirs = reinterpret_cast<BuildDirectoryContext **>(std::malloc(sizeof(BuildDirectoryContext *) * num_child_dirs));
+                BuildDirectoryContext **child_dirs = num_child_dirs != 0 ? reinterpret_cast<BuildDirectoryContext **>(std::malloc(sizeof(BuildDirectoryContext *) * num_child_dirs)) : nullptr;
+                AMS_ABORT_UNLESS(num_child_dirs == 0 || child_dirs != nullptr);
                 ON_SCOPE_EXIT { std::free(child_dirs); };
-                AMS_ABORT_UNLESS(child_dirs != nullptr);
-                s64 cur_child_dir_ind = 0;
 
+                s64 cur_child_dir_ind = 0;
                 {
                     OpenFileSystemRomfsDirectory(&dir, this->program_id, parent, OpenDirectoryMode_All, fs);
                     ON_SCOPE_EXIT { fsDirClose(&dir); };
@@ -342,6 +342,8 @@ namespace ams::mitm::fs {
 
                         AMS_ABORT_UNLESS(this->dir_entry.type == FsDirEntryType_Dir || this->dir_entry.type == FsDirEntryType_File);
                         if (this->dir_entry.type == FsDirEntryType_Dir) {
+                            AMS_ABORT_UNLESS(child_dirs != nullptr);
+
                             BuildDirectoryContext *real_child = nullptr;
                             this->AddDirectory(&real_child, parent, std::make_unique<BuildDirectoryContext>(this->dir_entry.name, strlen(this->dir_entry.name)));
                             AMS_ABORT_UNLESS(real_child != nullptr);

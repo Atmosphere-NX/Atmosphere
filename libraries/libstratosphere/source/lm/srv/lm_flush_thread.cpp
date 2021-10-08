@@ -103,14 +103,15 @@ namespace ams::lm::srv {
         }
 
         void FlushThreadFunction(void *) {
-            /* Disable abort. */
+            /* Initialize fs. */
+            fs::InitializeWithMultiSessionForSystem();
             fs::SetEnabledAutoAbort(false);
 
             /* Create fs heap. */
             g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap, sizeof(g_fs_heap), lmem::CreateOption_None);
             AMS_ABORT_UNLESS(g_fs_heap_handle != nullptr);
 
-            /* Set fs allocation functions. */
+            /* Set fs allocator functions. */
             fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
             /* Create SD card detection event notifier. */

@@ -13,23 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
 
-namespace ams {
+#pragma once
+#include <vapours.hpp>
 
-    namespace init {
+namespace ams::os {
 
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
+    int GetHostArgc();
+    char **GetHostArgv();
 
 }
-

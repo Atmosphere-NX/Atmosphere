@@ -353,7 +353,7 @@ namespace ams::mem::impl::heap {
 
                 std::scoped_lock lk(this->lock);
                 if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    *out = (span->aux.large.color[0] << 0) | (span->aux.large.color[1] << 0) | (span->aux.large.color[2] << 16);
+                    *out = (span->aux.large.color[0] << 0) | (span->aux.large.color[1] << 8) | (span->aux.large.color[2] << 16);
                     return 0;
                 } else {
                     return EINVAL;
@@ -387,7 +387,7 @@ namespace ams::mem::impl::heap {
             errno_t GetName(const void *ptr, char *dst, size_t dst_size) {
                 std::scoped_lock lk(this->lock);
                 if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    strlcpy(dst, span->aux.large.name, dst_size);
+                    util::Strlcpy(dst, span->aux.large.name, dst_size);
                     return 0;
                 } else {
                     return EINVAL;
@@ -397,7 +397,7 @@ namespace ams::mem::impl::heap {
             errno_t SetName(const void *ptr, const char *name) {
                 std::scoped_lock lk(this->lock);
                 if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    strlcpy(span->aux.large.name, name, sizeof(span->aux.large.name));
+                    util::Strlcpy(span->aux.large.name, name, sizeof(span->aux.large.name));
                     return 0;
                 } else {
                     return EINVAL;

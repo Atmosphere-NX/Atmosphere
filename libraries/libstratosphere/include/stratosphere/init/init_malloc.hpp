@@ -13,23 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
+#pragma once
+#include <vapours.hpp>
 
-namespace ams {
+namespace ams::mem {
 
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
+    class StandardAllocator;
 
 }
 
+namespace ams::init {
+
+    void InitializeAllocator(void *address, size_t size, bool cache_enabled);
+    void InitializeAllocator(void *address, size_t size);
+
+    mem::StandardAllocator *GetAllocator();
+
+}

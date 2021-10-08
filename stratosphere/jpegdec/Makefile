@@ -4,9 +4,17 @@
 include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../libraries/config/templates/stratosphere.mk
 
 #---------------------------------------------------------------------------------
-# jpegdec uses libjpeg.
+# jpegdec uses libjpeg-turbo.
 #---------------------------------------------------------------------------------
 LIBS     +=	-ljpeg
+
+#---------------------------------------------------------------------------------
+# jpegdec overrides libjpeg-turbo's memory allocation routines.
+#---------------------------------------------------------------------------------
+CXXWRAPS +=	-Wl,--wrap,jpeg_get_small
+CXXWRAPS +=	-Wl,--wrap,jpeg_get_large
+CXXWRAPS +=	-Wl,--wrap,jpeg_free_small
+CXXWRAPS +=	-Wl,--wrap,jpeg_free_large
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

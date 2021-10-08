@@ -15,21 +15,8 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams {
+namespace ams::jpegdec {
 
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
+    void InitializeJpegHeap();
 
 }
-

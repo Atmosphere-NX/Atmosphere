@@ -126,6 +126,9 @@ ams_environment_weak.o: CXXFLAGS += -fno-lto
 pm_info_api_weak.o: CXXFLAGS += -fno-lto
 hos_stratosphere_api.o: CXXFLAGS += -fno-lto
 
+init_operator_new.o: CXXFLAGS += -fno-lto
+init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
+
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin
 #---------------------------------------------------------------------------------

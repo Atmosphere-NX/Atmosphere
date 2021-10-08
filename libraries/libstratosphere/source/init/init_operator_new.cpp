@@ -15,21 +15,34 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams {
-
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
-
+WEAK_SYMBOL void *operator new(size_t size) {
+    return std::malloc(size);
 }
 
+WEAK_SYMBOL void *operator new(size_t size, const std::nothrow_t &) {
+    return std::malloc(size);
+}
+
+WEAK_SYMBOL void operator delete(void *p) {
+    return std::free(p);
+}
+
+WEAK_SYMBOL void operator delete(void *p, size_t) {
+    return std::free(p);
+}
+
+WEAK_SYMBOL void *operator new[](size_t size) {
+    return std::malloc(size);
+}
+
+WEAK_SYMBOL void *operator new[](size_t size, const std::nothrow_t &) {
+    return std::malloc(size);
+}
+
+WEAK_SYMBOL void operator delete[](void *p) {
+    return std::free(p);
+}
+
+WEAK_SYMBOL void operator delete[](void *p, size_t) {
+    return std::free(p);
+}

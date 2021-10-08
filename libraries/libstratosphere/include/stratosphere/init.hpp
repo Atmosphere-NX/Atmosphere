@@ -13,23 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
 
-namespace ams {
-
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
-
-}
-
+#pragma once
+#include <stratosphere/init/init_malloc.hpp>

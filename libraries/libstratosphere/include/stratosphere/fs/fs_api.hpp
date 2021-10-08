@@ -13,14 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "impl/os_resource_manager.hpp"
+#pragma once
+#include <vapours.hpp>
 
-namespace ams::os {
+namespace ams::fs {
 
-    void InitializeForStratosphereInternal() {
-        /* Initialize the global os resource manager. */
-        os::impl::ResourceManagerHolder::InitializeResourceManagerInstance();
-    }
+    void InitializeForSystem();
+    void InitializeWithMultiSessionForSystem();
 
 }

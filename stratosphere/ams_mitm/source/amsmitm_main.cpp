@@ -19,123 +19,76 @@
 #include "bpc_mitm/bpc_ams_power_utils.hpp"
 #include "sysupdater/sysupdater_fs_utils.hpp"
 
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    #define INNER_HEAP_SIZE 0x1000000
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-
-    void *__libnx_alloc(size_t size);
-    void *__libnx_aligned_alloc(size_t alignment, size_t size);
-    void __libnx_free(void *mem);
-}
-
 namespace ams {
 
-    /* Override. */
+    namespace {
+
+        /* TODO: we really shouldn't be using malloc just to avoid dealing with real allocator separation. */
+        constexpr size_t MallocBufferSize = 16_MB;
+        alignas(os::MemoryPageSize) constinit u8 g_malloc_buffer[MallocBufferSize];
+
+    }
+
+    namespace init {
+
+        void InitializeSystemModule() {
+            /* Initialize our connection to sm. */
+            R_ABORT_UNLESS(sm::Initialize());
+
+            /* Initialize fs. */
+            fs::InitializeForSystem();
+            fs::SetEnabledAutoAbort(false);
+
+            /* Initialize other services. */
+            R_ABORT_UNLESS(pmdmntInitialize());
+            R_ABORT_UNLESS(pminfoInitialize());
+            ncm::Initialize();
+            spl::InitializeForFs();
+
+            /* Verify that we can sanely execute. */
+            ams::CheckApiVersion();
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() {
+            /* Initialize the global malloc allocator. */
+            init::InitializeAllocator(g_malloc_buffer, sizeof(g_malloc_buffer));
+        }
+
+    }
+
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're bpc-mitm (or ams_mitm, anyway), so manually reboot to fatal error. */
         mitm::bpc::RebootForFatalError(ctx);
     }
 
-}
-
-using namespace ams;
-
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
-
-void __libnx_initheap(void) {
-	void*  addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	/* Newlib */
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
-}
-
-void __appInit(void) {
-    hos::InitializeForStratosphere();
-
-    R_ABORT_UNLESS(sm::Initialize());
-
-    R_ABORT_UNLESS(fsInitialize());
-    R_ABORT_UNLESS(pmdmntInitialize());
-    R_ABORT_UNLESS(pminfoInitialize());
-    ncm::Initialize();
-    spl::InitializeForFs();
-
-    /* Disable auto-abort in fs operations. */
-    fs::SetEnabledAutoAbort(false);
-
-    /* Initialize fssystem library. */
-    fssystem::InitializeForFileSystemProxy();
-
-    /* Configure ncm to use fssystem library to mount content from the sd card. */
-    ncm::SetMountContentMetaFunction(mitm::sysupdater::MountSdCardContentMeta);
-
-    ams::CheckApiVersion();
-}
-
-void __appExit(void) {
-    /* Cleanup services. */
-    spl::Finalize();
-    ncm::Finalize();
-    pminfoExit();
-    pmdmntExit();
-    fsExit();
-}
-
-void *__libnx_alloc(size_t size) {
-    AMS_UNUSED(size);
-    AMS_ABORT("__libnx_alloc was called");
-}
-
-void *__libnx_aligned_alloc(size_t alignment, size_t size) {
-    AMS_UNUSED(alignment, size);
-    AMS_ABORT("__libnx_aligned_alloc was called");
-}
-
-void __libnx_free(void *mem) {
-    AMS_UNUSED(mem);
-    AMS_ABORT("__libnx_free was called");
-}
-
-int main(int argc, char **argv) {
-    AMS_UNUSED(argc, argv);
-
-    /* Register "ams" port, use up its session. */
-    {
-        svc::Handle ams_port;
-        R_ABORT_UNLESS(svc::ManageNamedPort(std::addressof(ams_port), "ams", 1));
-
-        svc::Handle ams_session;
-        R_ABORT_UNLESS(svc::ConnectToNamedPort(std::addressof(ams_session), "ams"));
+    void NORETURN Exit(int rc) {
+        AMS_UNUSED(rc);
+        AMS_ABORT("Exit called by immortal process");
     }
 
-    /* Launch all mitm modules in sequence. */
-    mitm::LaunchAllModules();
+    void Main() {
+        /* Register "ams" port, use up its session. */
+        {
+            svc::Handle ams_port;
+            R_ABORT_UNLESS(svc::ManageNamedPort(std::addressof(ams_port), "ams", 1));
 
-    /* Wait for all mitm modules to end. */
-    mitm::WaitAllModules();
+            svc::Handle ams_session;
+            R_ABORT_UNLESS(svc::ConnectToNamedPort(std::addressof(ams_session), "ams"));
+        }
 
-    return 0;
+        /* Initialize fssystem library. */
+        fssystem::InitializeForFileSystemProxy();
+
+        /* Configure ncm to use fssystem library to mount content from the sd card. */
+        ncm::SetMountContentMetaFunction(mitm::sysupdater::MountSdCardContentMeta);
+
+        /* Launch all mitm modules in sequence. */
+        mitm::LaunchAllModules();
+
+        /* Wait for all mitm modules to end. */
+        mitm::WaitAllModules();
+    }
+
 }
-

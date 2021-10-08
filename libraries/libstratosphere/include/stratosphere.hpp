@@ -62,6 +62,7 @@
 #include <stratosphere/htclow.hpp>
 #include <stratosphere/htcs.hpp>
 #include <stratosphere/i2c.hpp>
+#include <stratosphere/init.hpp>
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/lr.hpp>

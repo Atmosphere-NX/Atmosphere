@@ -15,21 +15,24 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams {
+extern "C" {
 
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
-    }
-
-    void Main() {
-        /* ... */
-    }
+    extern u32 __nx_fs_num_sessions;
 
 }
 
+namespace ams::fs {
+
+    /* TODO: FileSystemProxySessionSetting */
+
+    void InitializeForSystem() {
+        __nx_fs_num_sessions = 1;
+        R_ABORT_UNLESS(::fsInitialize());
+    }
+
+    void InitializeWithMultiSessionForSystem() {
+        __nx_fs_num_sessions = 2;
+        R_ABORT_UNLESS(::fsInitialize());
+    }
+
+}

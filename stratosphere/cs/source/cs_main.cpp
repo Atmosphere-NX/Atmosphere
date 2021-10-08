@@ -15,222 +15,137 @@
  */
 #include <stratosphere.hpp>
 
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    #define INNER_HEAP_SIZE 0x0
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    void *__libnx_alloc(size_t size);
-    void *__libnx_aligned_alloc(size_t alignment, size_t size);
-    void __libnx_free(void *mem);
-}
-
-using namespace ams;
-
-#define AMS_CS_SERVER_USE_FATAL_ERROR 1
-
-#if AMS_CS_SERVER_USE_FATAL_ERROR
-
-extern "C" {
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-
-}
-
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
-
-#endif
-
-namespace ams::cs {
-
-    namespace {
-
-        alignas(os::ThreadStackAlignment) constinit u8 g_shell_stack[4_KB];
-        alignas(os::ThreadStackAlignment) constinit u8 g_runner_stack[4_KB];
-
-        alignas(os::MemoryPageSize) constinit u8 g_heap_memory[32_KB];
-
-        alignas(0x40) constinit u8 g_htcs_buffer[2_KB];
-
-        constinit os::SdkMutex g_heap_mutex;
-        constinit lmem::HeapHandle g_heap_handle;
-
-        void *Allocate(size_t size) {
-            std::scoped_lock lk(g_heap_mutex);
-            void *mem = lmem::AllocateFromExpHeap(g_heap_handle, size);
-            return mem;
-        }
-
-        void Deallocate(void *p, size_t size) {
-            AMS_UNUSED(size);
-
-            std::scoped_lock lk(g_heap_mutex);
-            lmem::FreeToExpHeap(g_heap_handle, p);
-        }
-
-        void InitializeHeap() {
-            std::scoped_lock lk(g_heap_mutex);
-            g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
-        }
-
-    }
-
-}
-
-void __libnx_initheap(void) {
-	void*  addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	/* Newlib */
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
-
-    cs::InitializeHeap();
-}
-
-void __appInit(void) {
-    hos::InitializeForStratosphere();
-
-    fs::SetAllocator(cs::Allocate, cs::Deallocate);
-
-    R_ABORT_UNLESS(sm::Initialize());
-
-    R_ABORT_UNLESS(fsInitialize());
-    lr::Initialize();
-    R_ABORT_UNLESS(ldr::InitializeForShell());
-    R_ABORT_UNLESS(pgl::Initialize());
-    R_ABORT_UNLESS(setsysInitialize());
-    /* TODO: Other services? */
-
-    ams::CheckApiVersion();
-}
-
-void __appExit(void) {
-    /* TODO: Other services? */
-    setsysExit();
-    pgl::Finalize();
-    ldr::FinalizeForShell();
-    lr::Finalize();
-    fsExit();
-}
-
 namespace ams {
 
-    void *Malloc(size_t) {
-        AMS_ABORT("ams::Malloc was called");
+    namespace cs {
+
+        namespace {
+
+            alignas(os::ThreadStackAlignment) constinit u8 g_shell_stack[4_KB];
+            alignas(os::ThreadStackAlignment) constinit u8 g_runner_stack[4_KB];
+
+            alignas(os::MemoryPageSize) constinit u8 g_heap_memory[32_KB];
+
+            alignas(0x40) constinit u8 g_htcs_buffer[2_KB];
+
+            constinit os::SdkMutex g_heap_mutex;
+            constinit lmem::HeapHandle g_heap_handle;
+
+            void *Allocate(size_t size) {
+                std::scoped_lock lk(g_heap_mutex);
+                void *mem = lmem::AllocateFromExpHeap(g_heap_handle, size);
+                return mem;
+            }
+
+            void Deallocate(void *p, size_t size) {
+                AMS_UNUSED(size);
+
+                std::scoped_lock lk(g_heap_mutex);
+                lmem::FreeToExpHeap(g_heap_handle, p);
+            }
+
+            void InitializeHeap() {
+                std::scoped_lock lk(g_heap_mutex);
+                g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
+            }
+
+        }
+
+        namespace {
+
+            constinit ::ams::cs::CommandProcessor g_command_processor;
+
+            constinit ::ams::scs::ShellServer g_shell_server;
+            constinit ::ams::scs::ShellServer g_runner_server;
+
+            constinit sf::UnmanagedServiceObject<htc::tenv::IServiceManager, htc::tenv::ServiceManager> g_tenv_service_manager;
+
+            void InitializeCommandProcessor() {
+                g_command_processor.Initialize();
+            }
+
+            void InitializeShellServers() {
+                g_shell_server.Initialize("iywys@$cs", g_shell_stack, sizeof(g_shell_stack), std::addressof(g_command_processor));
+                g_shell_server.Start();
+
+                g_runner_server.Initialize("iywys@$csForRunnerTools", g_runner_stack, sizeof(g_runner_stack), std::addressof(g_command_processor));
+                g_runner_server.Start();
+            }
+
+        }
+
     }
 
-    void Free(void *) {
-        AMS_ABORT("ams::Free was called");
-    }
+    namespace init {
 
-}
+        void InitializeSystemModule() {
+            /* Initialize heap. */
+            cs::InitializeHeap();
 
-void *operator new(size_t) {
-    AMS_ABORT("operator new(size_t) was called");
-}
+            /* Initialize our connection to sm. */
+            R_ABORT_UNLESS(sm::Initialize());
 
-void operator delete(void *) {
-    AMS_ABORT("operator delete(void *) was called");
-}
+            /* Initialize fs. */
+            fs::InitializeForSystem();
+            fs::SetAllocator(cs::Allocate, cs::Deallocate);
+            fs::SetEnabledAutoAbort(false);
 
-void operator delete(void *, size_t) {
-    AMS_ABORT("operator delete(void *, size_t) was called");
-}
+            /* Initialize other services we need. */
+            lr::Initialize();
+            R_ABORT_UNLESS(ldr::InitializeForShell());
+            R_ABORT_UNLESS(pgl::Initialize());
+            R_ABORT_UNLESS(setsysInitialize());
 
-void *__libnx_alloc(size_t) {
-    AMS_ABORT("__libnx_alloc was called");
-}
+            /* Verify that we can sanely execute. */
+            ams::CheckApiVersion();
+        }
 
-void *__libnx_aligned_alloc(size_t, size_t) {
-    AMS_ABORT("__libnx_aligned_alloc was called");
-}
+        void FinalizeSystemModule() { /* ... */ }
 
-void __libnx_free(void *) {
-    AMS_ABORT("__libnx_free was called");
-}
-
-namespace ams::cs {
-
-    namespace {
-
-        constinit ::ams::cs::CommandProcessor g_command_processor;
-
-        constinit ::ams::scs::ShellServer g_shell_server;
-        constinit ::ams::scs::ShellServer g_runner_server;
-
-        constinit sf::UnmanagedServiceObject<htc::tenv::IServiceManager, htc::tenv::ServiceManager> g_tenv_service_manager;
+        void Startup() { /* ... */ }
 
     }
 
-}
+    void Main() {
+        /* Set thread name. */
+        os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(cs, Main));
+        AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(cs, Main));
 
-int main(int argc, char **argv)
-{
-    AMS_UNUSED(argc, argv);
+        /* Initialize htcs. */
+        constexpr auto HtcsSocketCountMax = 6;
+        const size_t buffer_size = htcs::GetWorkingMemorySize(2 * HtcsSocketCountMax);
+        AMS_ABORT_UNLESS(sizeof(cs::g_htcs_buffer) >= buffer_size);
+        htcs::InitializeForSystem(cs::g_htcs_buffer, buffer_size, HtcsSocketCountMax);
 
-    using namespace ams::cs;
+        /* Initialize audio server. */
+        cs::InitializeAudioServer();
 
-    /* Set thread name. */
-    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(cs, Main));
-    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(cs, Main));
+        /* Initialize remote video server. */
+        cs::InitializeRemoteVideoServer();
 
-    /* Initialize htcs. */
-    constexpr auto HtcsSocketCountMax = 6;
-    const size_t buffer_size = htcs::GetWorkingMemorySize(2 * HtcsSocketCountMax);
-    AMS_ABORT_UNLESS(sizeof(g_htcs_buffer) >= buffer_size);
-    htcs::InitializeForSystem(g_htcs_buffer, buffer_size, HtcsSocketCountMax);
+        /* Initialize hid server. */
+        cs::InitializeHidServer();
 
-    /* Initialize audio server. */
-    cs::InitializeAudioServer();
+        /* Initialize target io server. */
+        cs::InitializeTargetIoServer();
 
-    /* Initialize remote video server. */
-    cs::InitializeRemoteVideoServer();
+        /* Initialize command processor. */
+        cs::InitializeCommandProcessor();
 
-    /* Initialize hid server. */
-    cs::InitializeHidServer();
+        /* Setup scs. */
+        scs::InitializeShell();
 
-    /* Initialize target io server. */
-    cs::InitializeTargetIoServer();
+        /* Setup target environment service. */
+        scs::InitializeTenvServiceManager();
 
-    /* Initialize command processor. */
-    g_command_processor.Initialize();
+        /* Initialize the shell servers. */
+        cs::InitializeShellServers();
 
-    /* Setup scs. */
-    scs::InitializeShell();
+        /* Register htc:tenv. */
+        R_ABORT_UNLESS(scs::GetServerManager()->RegisterObjectForServer(cs::g_tenv_service_manager.GetShared(), htc::tenv::ServiceName, scs::SessionCount[scs::Port_HtcTenv]));
 
-    /* Setup target environment service. */
-    scs::InitializeTenvServiceManager();
+        /* Start the scs ipc server. */
+        scs::StartServer();
+    }
 
-    /* Initialize the shell servers. */
-    g_shell_server.Initialize("iywys@$cs", g_shell_stack, sizeof(g_shell_stack), std::addressof(g_command_processor));
-    g_shell_server.Start();
-
-    g_runner_server.Initialize("iywys@$csForRunnerTools", g_runner_stack, sizeof(g_runner_stack), std::addressof(g_command_processor));
-    g_runner_server.Start();
-
-    /* Register htc:tenv. */
-    R_ABORT_UNLESS(scs::GetServerManager()->RegisterObjectForServer(g_tenv_service_manager.GetShared(), htc::tenv::ServiceName, scs::SessionCount[scs::Port_HtcTenv]));
-
-    /* Start the scs ipc server. */
-    scs::StartServer();
-
-    return 0;
 }

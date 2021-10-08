@@ -24,258 +24,190 @@
 #include "boot_pinmux_initial_configuration.hpp"
 #include "boot_repair_boot_images.hpp"
 #include "boot_splash_screen.hpp"
-
 #include "boot_power_utils.hpp"
 
-using namespace ams;
-
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    /* TODO: Evaluate to what extent this can be reduced further. */
-    #define INNER_HEAP_SIZE 0x0
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-
-    void *__libnx_alloc(size_t size);
-    void *__libnx_aligned_alloc(size_t alignment, size_t size);
-    void __libnx_free(void *mem);
-}
-
 namespace ams {
+
+    namespace boot {
+
+        namespace {
+
+            constinit u8 g_exp_heap_memory[20_KB];
+            constinit u8 g_unit_heap_memory[5_KB];
+            constinit lmem::HeapHandle g_exp_heap_handle;
+            constinit lmem::HeapHandle g_unit_heap_handle;
+
+            constinit sf::ExpHeapMemoryResource  g_exp_heap_memory_resource;
+            constinit sf::UnitHeapMemoryResource g_unit_heap_memory_resource;
+
+            void *Allocate(size_t size) {
+                void *mem = lmem::AllocateFromExpHeap(g_exp_heap_handle, size);
+                return mem;
+            }
+
+            void Deallocate(void *p, size_t size) {
+                AMS_UNUSED(size);
+                lmem::FreeToExpHeap(g_exp_heap_handle, p);
+            }
+
+            void InitializeHeaps() {
+                /* Create the heaps. */
+                g_exp_heap_handle  = lmem::CreateExpHeap(g_exp_heap_memory, sizeof(g_exp_heap_memory), lmem::CreateOption_ThreadSafe);
+                g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
+
+                /* Attach the memory resources. */
+                g_exp_heap_memory_resource.Attach(g_exp_heap_handle);
+                g_unit_heap_memory_resource.Attach(g_unit_heap_handle);
+
+                /* Register with ddsf. */
+                ddsf::SetMemoryResource(std::addressof(g_exp_heap_memory_resource));
+                ddsf::SetDeviceCodeEntryHolderMemoryResource(std::addressof(g_unit_heap_memory_resource));
+            }
+
+        }
+
+    }
+
+    namespace init {
+
+        void InitializeSystemModule() {
+            /* Initialize heaps. */
+            boot::InitializeHeaps();
+
+            /* Set fs allocator. */
+            fs::SetAllocator(boot::Allocate, boot::Deallocate);
+
+            /* Initialize services we need. */
+            R_ABORT_UNLESS(sm::Initialize());
+
+            fs::InitializeForSystem();
+            spl::Initialize();
+            R_ABORT_UNLESS(pmshellInitialize());
+
+            /* Verify that we can sanely execute. */
+            ams::CheckApiVersion();
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() { /* ... */ }
+
+    }
 
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're boot sysmodule, so manually reboot to fatal error. */
         boot::RebootForFatalError(ctx);
     }
 
-}
+    void Main() {
+        /* Set thread name. */
+        os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot, Main));
+        AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot, Main));
 
-using namespace ams;
+        /* Perform atmosphere-specific init. */
+        ams::InitializeForBoot();
 
-namespace {
+        /* Set the reboot payload with ams.mitm. */
+        boot::SetInitialRebootPayload();
 
-    constinit u8 g_exp_heap_memory[20_KB];
-    constinit u8 g_unit_heap_memory[5_KB];
-    constinit lmem::HeapHandle g_exp_heap_handle;
-    constinit lmem::HeapHandle g_unit_heap_handle;
+        /* Change voltage from 3.3v to 1.8v for select devices. */
+        boot::ChangeGpioVoltageTo1_8v();
 
-    constinit sf::ExpHeapMemoryResource  g_exp_heap_memory_resource;
-    constinit sf::UnitHeapMemoryResource g_unit_heap_memory_resource;
+        /* Setup gpio. */
+        gpio::driver::SetInitialGpioConfig();
 
-    void *Allocate(size_t size) {
-        void *mem = lmem::AllocateFromExpHeap(g_exp_heap_handle, size);
-        return mem;
-    }
+        /* Initialize the gpio server library. */
+        boot::InitializeGpioDriverLibrary();
 
-    void Deallocate(void *p, size_t size) {
-        AMS_UNUSED(size);
-        lmem::FreeToExpHeap(g_exp_heap_handle, p);
-    }
+        /* Initialize the i2c server library. */
+        boot::InitializeI2cDriverLibrary();
 
-    void InitializeHeaps() {
-        /* Create the heaps. */
-        g_exp_heap_handle  = lmem::CreateExpHeap(g_exp_heap_memory, sizeof(g_exp_heap_memory), lmem::CreateOption_ThreadSafe);
-        g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
+        /* Get the hardware type. */
+        const auto hw_type = spl::GetHardwareType();
 
-        /* Attach the memory resources. */
-        g_exp_heap_memory_resource.Attach(g_exp_heap_handle);
-        g_unit_heap_memory_resource.Attach(g_unit_heap_handle);
+        /* Initialize the power control library without interrupt event handling. */
+        if (hw_type != spl::HardwareType::Calcio) {
+            powctl::Initialize(false);
+        }
 
-        /* Register with ddsf. */
-        ddsf::SetMemoryResource(std::addressof(g_exp_heap_memory_resource));
-        ddsf::SetDeviceCodeEntryHolderMemoryResource(std::addressof(g_unit_heap_memory_resource));
-    }
+        /* Check USB PLL/UTMIP clock. */
+        boot::CheckClock();
 
-}
+        /* Talk to PMIC/RTC, set boot reason with SPL. */
+        boot::DetectBootReason();
 
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
+        /* Display the splash screen and check the battery charge. */
+        if (hw_type != spl::HardwareType::Calcio) {
+            /* Display splash screen for two seconds. */
+            boot::ShowSplashScreen();
 
-void __libnx_initheap(void) {
-    void*  addr = nx_inner_heap;
-    size_t size = nx_inner_heap_size;
+            /* Check that the battery has enough to boot. */
+            boot::CheckBatteryCharge();
+        }
 
-    /* Newlib */
-    extern char* fake_heap_start;
-    extern char* fake_heap_end;
+        /* Configure pinmux + drive pads. */
+        boot::SetInitialPinmuxConfiguration();
 
-    fake_heap_start = (char*)addr;
-    fake_heap_end   = (char*)addr + size;
+        /* Configure the PMC wake pin settings. */
+        gpio::driver::SetInitialWakePinConfig();
 
-    InitializeHeaps();
-}
+        /* Configure output clock. */
+        if (hw_type != spl::HardwareType::Calcio) {
+            boot::SetInitialClockConfiguration();
+        }
 
-void __appInit(void) {
-    hos::InitializeForStratosphere();
+        /* Set Fan enable config (Copper only). */
+        boot::SetFanPowerEnabled();
 
-    fs::SetAllocator(Allocate, Deallocate);
+        /* Repair boot partitions in NAND if needed. */
+        boot::CheckAndRepairBootImages();
 
-    /* Initialize services we need. */
-    R_ABORT_UNLESS(sm::Initialize());
+        /* Finalize the power control library. */
+        if (hw_type != spl::HardwareType::Calcio) {
+            powctl::Finalize();
+        }
 
-    R_ABORT_UNLESS(fsInitialize());
-    spl::Initialize();
-    R_ABORT_UNLESS(pmshellInitialize());
+        /* Finalize the i2c server library. */
+        boot::FinalizeI2cDriverLibrary();
 
-    ams::CheckApiVersion();
-}
+        /* Finalize the gpio server library. */
+        boot::FinalizeGpioDriverLibrary();
 
-void __appExit(void) {
-    /* Cleanup services. */
-    pmshellExit();
-    spl::Finalize();
-    fsExit();
-}
-
-namespace ams {
-
-    void *Malloc(size_t) {
-        AMS_ABORT("ams::Malloc was called");
-    }
-
-    void Free(void *) {
-        AMS_ABORT("ams::Free was called");
+        /* Tell PM to start boot2. */
+        R_ABORT_UNLESS(pmshellNotifyBootFinished());
     }
 
 }
 
-void *__libnx_alloc(size_t) {
-    AMS_ABORT("__libnx_alloc was called");
-}
-
-void *__libnx_aligned_alloc(size_t, size_t) {
-    AMS_ABORT("__libnx_aligned_alloc was called");
-}
-
-void __libnx_free(void *) {
-    AMS_ABORT("__libnx_free was called");
-}
-
+/* Override operator new. */
 void *operator new(size_t size) {
-    return Allocate(size);
+    return ams::boot::Allocate(size);
 }
 
 void *operator new(size_t size, const std::nothrow_t &) {
-    return Allocate(size);
+    return ams::boot::Allocate(size);
 }
 
 void operator delete(void *p) {
-    return Deallocate(p, 0);
+    return ams::boot::Deallocate(p, 0);
 }
 
 void operator delete(void *p, size_t size) {
-    return Deallocate(p, size);
+    return ams::boot::Deallocate(p, size);
 }
 
 void *operator new[](size_t size) {
-    return Allocate(size);
+    return ams::boot::Allocate(size);
 }
 
 void *operator new[](size_t size, const std::nothrow_t &) {
-    return Allocate(size);
+    return ams::boot::Allocate(size);
 }
 
 void operator delete[](void *p) {
-    return Deallocate(p, 0);
+    return ams::boot::Deallocate(p, 0);
 }
 
 void operator delete[](void *p, size_t size) {
-    return Deallocate(p, size);
-}
-
-int main(int argc, char **argv)
-{
-    AMS_UNUSED(argc, argv);
-
-    /* Set thread name. */
-    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot, Main));
-    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot, Main));
-
-    /* Perform atmosphere-specific init. */
-    ams::InitializeForBoot();
-
-    /* Set the reboot payload with ams.mitm. */
-    boot::SetInitialRebootPayload();
-
-    /* Change voltage from 3.3v to 1.8v for select devices. */
-    boot::ChangeGpioVoltageTo1_8v();
-
-    /* Setup gpio. */
-    gpio::driver::SetInitialGpioConfig();
-
-    /* Initialize the gpio server library. */
-    boot::InitializeGpioDriverLibrary();
-
-    /* Initialize the i2c server library. */
-    boot::InitializeI2cDriverLibrary();
-
-    /* Get the hardware type. */
-    const auto hw_type = spl::GetHardwareType();
-
-    /* Initialize the power control library without interrupt event handling. */
-    if (hw_type != spl::HardwareType::Calcio) {
-        powctl::Initialize(false);
-    }
-
-    /* Check USB PLL/UTMIP clock. */
-    boot::CheckClock();
-
-    /* Talk to PMIC/RTC, set boot reason with SPL. */
-    boot::DetectBootReason();
-
-    /* Display the splash screen and check the battery charge. */
-    if (hw_type != spl::HardwareType::Calcio) {
-        /* Display splash screen for two seconds. */
-        boot::ShowSplashScreen();
-
-        /* Check that the battery has enough to boot. */
-        boot::CheckBatteryCharge();
-    }
-
-    /* Configure pinmux + drive pads. */
-    boot::SetInitialPinmuxConfiguration();
-
-    /* Configure the PMC wake pin settings. */
-    gpio::driver::SetInitialWakePinConfig();
-
-    /* Configure output clock. */
-    if (hw_type != spl::HardwareType::Calcio) {
-        boot::SetInitialClockConfiguration();
-    }
-
-    /* Set Fan enable config (Copper only). */
-    boot::SetFanPowerEnabled();
-
-    /* Repair boot partitions in NAND if needed. */
-    boot::CheckAndRepairBootImages();
-
-    /* Finalize the power control library. */
-    if (hw_type != spl::HardwareType::Calcio) {
-        powctl::Finalize();
-    }
-
-    /* Finalize the i2c server library. */
-    boot::FinalizeI2cDriverLibrary();
-
-    /* Finalize the gpio server library. */
-    boot::FinalizeGpioDriverLibrary();
-
-    /* Tell PM to start boot2. */
-    R_ABORT_UNLESS(pmshellNotifyBootFinished());
-
-    return 0;
+    return ams::boot::Deallocate(p, size);
 }

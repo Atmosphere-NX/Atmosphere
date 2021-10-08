@@ -15,21 +15,20 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams {
+namespace ams::init {
 
-    namespace init {
-
-        void InitializeSystemModule() { /* ... */ }
-
-        void FinalizeSystemModule() { /* ... */ }
-
-        void Startup() { /* ... */ }
-
+    WEAK_SYMBOL void InitializeSystemModule() {
+        /* TODO: What should we do here, if anything? */
+        /* Nintendo does nndiagStartup(); nn::diag::InitializeSystemProcessAbortObserver(); */
     }
 
-    void Main() {
-        /* ... */
+    WEAK_SYMBOL void FinalizeSystemModule() {
+        /* Do nothing by default. */
+    }
+
+    WEAK_SYMBOL void Startup() {
+        /* TODO: What should we do here, if anything? */
+        /* Nintendo determines heap size and does init::InitializeAllocator, as relevant. */
     }
 
 }
-

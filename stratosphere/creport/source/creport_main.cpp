@@ -17,198 +17,140 @@
 #include "creport_crash_report.hpp"
 #include "creport_utils.hpp"
 
-
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    #define INNER_HEAP_SIZE 0x0
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-
-    void *__libnx_alloc(size_t size);
-    void *__libnx_aligned_alloc(size_t alignment, size_t size);
-    void __libnx_free(void *mem);
-}
-
-using namespace ams;
-
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
-
-void __libnx_initheap(void) {
-	void*  addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	/* Newlib */
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
-}
-
-namespace {
-
-
-    constinit u8 g_fs_heap_memory[4_KB];
-    lmem::HeapHandle g_fs_heap_handle;
-
-    void *AllocateForFs(size_t size) {
-        return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
-    }
-
-    void DeallocateForFs(void *p, size_t size) {
-        AMS_UNUSED(size);
-        return lmem::FreeToExpHeap(g_fs_heap_handle, p);
-    }
-
-    void InitializeFsHeap() {
-        g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
-    }
-
-}
-
-void __appInit(void) {
-    hos::InitializeForStratosphere();
-
-    InitializeFsHeap();
-    fs::SetAllocator(AllocateForFs, DeallocateForFs);
-
-    R_ABORT_UNLESS(sm::Initialize());
-
-    R_ABORT_UNLESS(fsInitialize());
-
-    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
-}
-
-void __appExit(void) {
-    /* Cleanup services. */
-    fsExit();
-}
-
 namespace ams {
 
-    void *Malloc(size_t) {
-        AMS_ABORT("ams::Malloc was called");
-    }
+    namespace creport {
 
-    void Free(void *) {
-        AMS_ABORT("ams::Free was called");
-    }
+        namespace {
 
-}
+            constinit u8 g_fs_heap_memory[4_KB];
+            lmem::HeapHandle g_fs_heap_handle;
 
-void *operator new(size_t) {
-    AMS_ABORT("operator new(size_t) was called");
-}
-
-void operator delete(void *) {
-    AMS_ABORT("operator delete(void *) was called");
-}
-
-void operator delete(void *, size_t) {
-    AMS_ABORT("operator delete(void *, size_t) was called");
-}
-
-void *__libnx_alloc(size_t) {
-    AMS_ABORT("__libnx_alloc was called");
-}
-
-void *__libnx_aligned_alloc(size_t, size_t) {
-    AMS_ABORT("__libnx_aligned_alloc was called");
-}
-
-void __libnx_free(void *) {
-    AMS_ABORT("__libnx_free was called");
-}
-
-namespace {
-
-    constinit creport::CrashReport g_crash_report;
-
-}
-
-int main(int argc, char **argv) {
-    /* Set thread name. */
-    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(creport, Main));
-    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(creport, Main));
-
-    /* Validate arguments. */
-    if (argc < 2) {
-        return EXIT_FAILURE;
-    }
-    for (int i = 0; i < argc; i++) {
-        if (argv[i] == NULL) {
-            return EXIT_FAILURE;
-        }
-    }
-
-    /* Parse arguments. */
-    const os::ProcessId crashed_pid = creport::ParseProcessIdArgument(argv[0]);
-    const bool has_extra_info       = argv[1][0] == '1';
-    const bool enable_screenshot    = argc >= 3 && argv[2][0] == '1';
-    const bool enable_jit_debug     = argc >= 4 && argv[3][0] == '1';
-
-    /* Initialize the crash report. */
-    g_crash_report.Initialize();
-
-    /* Try to debug the crashed process. */
-    g_crash_report.BuildReport(crashed_pid, has_extra_info);
-    if (!g_crash_report.IsComplete()) {
-        return EXIT_FAILURE;
-    }
-
-    /* Save report to file. */
-    g_crash_report.SaveReport(enable_screenshot);
-
-    /* If we should, try to terminate the process. */
-    if (hos::GetVersion() < hos::Version_11_0_0 || !enable_jit_debug) {
-        if (hos::GetVersion() >= hos::Version_10_0_0) {
-            /* On 10.0.0+, use pgl to terminate. */
-            if (R_SUCCEEDED(pgl::Initialize())) {
-                ON_SCOPE_EXIT { pgl::Finalize(); };
-
-                pgl::TerminateProcess(crashed_pid);
+            void *AllocateForFs(size_t size) {
+                return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
             }
-        } else {
-            /* On < 10.0.0, use ns:dev to terminate. */
-            if (R_SUCCEEDED(::nsdevInitialize())) {
-                ON_SCOPE_EXIT { ::nsdevExit(); };
 
-                nsdevTerminateProcess(static_cast<u64>(crashed_pid));
+            void DeallocateForFs(void *p, size_t size) {
+                AMS_UNUSED(size);
+                return lmem::FreeToExpHeap(g_fs_heap_handle, p);
+            }
+
+            void InitializeFsHeap() {
+                g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
+            }
+
+        }
+
+    }
+
+    namespace init {
+
+        void InitializeSystemModule() {
+            /* Initialize heap. */
+            creport::InitializeFsHeap();
+
+            /* Initialize our connection to sm. */
+            R_ABORT_UNLESS(sm::Initialize());
+
+            /* Initialize fs. */
+            fs::InitializeForSystem();
+            fs::SetAllocator(creport::AllocateForFs, creport::DeallocateForFs);
+            fs::SetEnabledAutoAbort(false);
+
+            /* Mount the SD card. */
+            R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() { /* ... */ }
+
+    }
+
+    namespace {
+
+        constinit creport::CrashReport g_crash_report;
+
+    }
+
+    void Main() {
+        /* Set thread name. */
+        os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(creport, Main));
+        AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(creport, Main));
+
+        /* Get arguments. */
+        const int num_args = os::GetHostArgc();
+        char ** const args = os::GetHostArgv();
+
+        /* Validate arguments. */
+        if (num_args < 2) {
+            return;
+        }
+
+        for (auto i = 0; i < num_args; ++i) {
+            if (args[i] == nullptr) {
+                return;
             }
         }
-    }
 
-    /* Don't fatal if we have extra info, or if we're 5.0.0+ and an application crashed. */
-    if (hos::GetVersion() >= hos::Version_5_0_0) {
-        if (g_crash_report.IsApplication()) {
-            return EXIT_SUCCESS;
+        /* Parse arguments. */
+        const os::ProcessId crashed_pid = creport::ParseProcessIdArgument(args[0]);
+        const bool has_extra_info       = args[1][0] == '1';
+        const bool enable_screenshot    = num_args >= 3 && args[2][0] == '1';
+        const bool enable_jit_debug     = num_args >= 4 && args[3][0] == '1';
+
+        /* Initialize the crash report. */
+        g_crash_report.Initialize();
+
+        /* Try to debug the crashed process. */
+        g_crash_report.BuildReport(crashed_pid, has_extra_info);
+        if (!g_crash_report.IsComplete()) {
+            return;
         }
-    } else if (has_extra_info) {
-        return EXIT_SUCCESS;
+
+        /* Save report to file. */
+        g_crash_report.SaveReport(enable_screenshot);
+
+        /* Try to terminate the process, if we should. */
+        const auto fw_ver = hos::GetVersion();
+        if (fw_ver < hos::Version_11_0_0 || !enable_jit_debug) {
+            if (fw_ver >= hos::Version_10_0_0) {
+                /* Use pgl to terminate. */
+                if (R_SUCCEEDED(pgl::Initialize())) {
+                    ON_SCOPE_EXIT { pgl::Finalize(); };
+
+                    pgl::TerminateProcess(crashed_pid);
+                }
+            } else {
+                /* Use ns to terminate. */
+                if (R_SUCCEEDED(::nsdevInitialize())) {
+                    ON_SCOPE_EXIT { ::nsdevExit(); };
+
+                    nsdevTerminateProcess(crashed_pid.value);
+                }
+            }
+        }
+
+        /* If we're on 5.0.0+ and an application crashed, or if we have extra info, we don't need to fatal. */
+        if (fw_ver >= hos::Version_5_0_0) {
+            if (g_crash_report.IsApplication()) {
+                return;
+            }
+        } else if (has_extra_info) {
+            return;
+        }
+
+        /* We also don't need to fatal on user break. */
+        if (g_crash_report.IsUserBreak()) {
+            return;
+        }
+
+        /* Throw fatal error. */
+        {
+            ::FatalCpuContext ctx;
+            g_crash_report.GetFatalContext(std::addressof(ctx));
+            fatalThrowWithContext(g_crash_report.GetResult().GetValue(), FatalPolicy_ErrorScreen, std::addressof(ctx));
+        }
     }
 
-    /* Also don't fatal if we're a user break. */
-    if (g_crash_report.IsUserBreak()) {
-        return EXIT_SUCCESS;
-    }
-
-    /* Throw fatal error. */
-    ::FatalCpuContext ctx;
-    g_crash_report.GetFatalContext(&ctx);
-    fatalThrowWithContext(g_crash_report.GetResult().GetValue(), FatalPolicy_ErrorScreen, &ctx);
 }
