@@ -58,7 +58,7 @@ SECTIONS
 		*(.dynbss)
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
-		. = ALIGN(16);
+        . = ALIGN(32);
 	} >data :NONE
 	__bss_end__ = .;
 
