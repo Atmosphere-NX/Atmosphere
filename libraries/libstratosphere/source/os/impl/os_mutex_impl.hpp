@@ -18,7 +18,7 @@
 
 namespace ams::os::impl {
 
-    void PushAndCheckLockLevel(MutexType *mutex);
-    void PopAndCheckLockLevel(MutexType *mutex);
+    void PushAndCheckLockLevel(const MutexType *mutex);
+    void PopAndCheckLockLevel(const MutexType *mutex);
 
 }
