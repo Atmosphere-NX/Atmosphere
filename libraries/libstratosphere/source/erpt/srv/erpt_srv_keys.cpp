@@ -73,7 +73,19 @@ namespace ams::erpt::srv {
         }
 
         bool IsProductionMode() {
-            static bool s_is_prod_mode = IsProductionModeImpl();
+            static constinit bool s_initialized  = false;
+            static constinit bool s_is_prod_mode = true;
+            static constinit os::SdkMutex s_mutex;
+
+            if (AMS_UNLIKELY(!s_initialized)) {
+                std::scoped_lock lk(s_mutex);
+
+                if (AMS_LIKELY(!s_initialized)) {
+                    s_is_prod_mode = IsProductionModeImpl();
+                    s_initialized = true;
+                }
+            }
+
             return s_is_prod_mode;
         }
 
