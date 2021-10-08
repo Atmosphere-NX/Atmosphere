@@ -36,7 +36,40 @@ namespace ams::mitm::fs {
         constinit os::SdkMutex g_data_storage_lock;
         constinit os::SdkMutex g_storage_cache_lock;
 
-        std::unordered_map<u64, std::weak_ptr<fs::IStorage>> g_storage_cache;
+        class StorageCacheEntry : public util::IntrusiveRedBlackTreeBaseNode<StorageCacheEntry> {
+            public:
+                using RedBlackKeyType = u64;
+            private:
+                ncm::ProgramId m_program_id;
+                std::weak_ptr<fs::IStorage> m_storage;
+            public:
+                StorageCacheEntry(ncm::ProgramId program_id, const std::shared_ptr<fs::IStorage> *sp) : m_program_id(program_id), m_storage(*sp) { /* ... */ }
+
+                constexpr ncm::ProgramId GetProgramId() const { return m_program_id; }
+                constexpr const std::weak_ptr<fs::IStorage> &GetStorage() const { return m_storage; }
+
+                void SetStorage(const std::shared_ptr<fs::IStorage> *sp) { m_storage = *sp; }
+
+                static constexpr ALWAYS_INLINE int Compare(const RedBlackKeyType &lval, const StorageCacheEntry &rhs) {
+                    const auto rval = rhs.GetProgramId().value;
+
+                    if (lval < rval) {
+                        return -1;
+                    } else if (lval == rval) {
+                        return 0;
+                    } else {
+                        return 1;
+                    }
+                }
+
+                static constexpr ALWAYS_INLINE int Compare(const StorageCacheEntry &lhs, const StorageCacheEntry &rhs) {
+                    return Compare(lhs.GetProgramId().value, rhs);
+                }
+        };
+
+        using StorageCache = typename util::IntrusiveRedBlackTreeBaseTraits<StorageCacheEntry>::TreeType<StorageCacheEntry>;
+
+        constinit StorageCache g_storage_cache;
 
         constinit os::SdkMutex g_boot0_detect_lock;
         constinit bool g_detected_boot0_kind = false;
@@ -60,27 +93,25 @@ namespace ams::mitm::fs {
         std::shared_ptr<fs::IStorage> GetStorageCacheEntry(ncm::ProgramId program_id) {
             std::scoped_lock lk(g_storage_cache_lock);
 
-            auto it = g_storage_cache.find(static_cast<u64>(program_id));
-            if (it == g_storage_cache.end()) {
+            if (const auto it = g_storage_cache.find_key(program_id.value); it != g_storage_cache.end()) {
+                return it->GetStorage().lock();
+            } else {
                 return nullptr;
             }
-
-            return it->second.lock();
         }
 
         void SetStorageCacheEntry(ncm::ProgramId program_id, std::shared_ptr<fs::IStorage> *new_intf) {
             std::scoped_lock lk(g_storage_cache_lock);
 
-            auto it = g_storage_cache.find(static_cast<u64>(program_id));
-            if (it != g_storage_cache.end()) {
-                auto cur_intf = it->second.lock();
-                if (cur_intf != nullptr) {
+            if (auto it = g_storage_cache.find_key(program_id.value); it != g_storage_cache.end()) {
+                if (auto cur_intf = it->GetStorage().lock(); cur_intf != nullptr) {
                     *new_intf = cur_intf;
                     return;
                 }
             }
 
-            g_storage_cache[static_cast<u64>(program_id)] = *new_intf;
+            auto *new_entry = new StorageCacheEntry(program_id, new_intf);
+            g_storage_cache.insert(*new_entry);
         }
 
         bool GetSettingsItemBooleanValue(const char *name, const char *key) {
