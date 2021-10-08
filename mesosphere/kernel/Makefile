@@ -102,7 +102,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 # main targets
 #---------------------------------------------------------------------------------
 $(OUTPUT).bin	:	$(OUTPUT).elf
-	$(OBJCOPY) -S -O binary --set-section-flags .bss=alloc,load,contents $< $@
+	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).elf	:	$(OFILES)

@@ -154,16 +154,14 @@ SECTIONS
 
 	__bss_start__ = .;
 
-    OVERLAY : NOCROSSREFS {
-        .bss {
-            *(.dynbss)
-            *(.bss .bss.* .gnu.linkonce.b.*)
-            *(COMMON)
-            . = ALIGN(0x1000);
-        }
-        .rela.dyn { *(.rela.*) }
-    } :data
+    .rela.dyn : { *(.rela.*) } :data
 
+    .bss ADDR(.rela.dyn) (NOLOAD) : {
+        *(.dynbss)
+        *(.bss .bss.* .gnu.linkonce.b.*)
+        *(COMMON)
+        . = ALIGN(0x1000);
+    }
 
 	__bss_end__ = .;
 
