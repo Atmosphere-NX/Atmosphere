@@ -140,21 +140,21 @@ namespace ams::kern::svc {
                 using CT = const char;
                 using T  = char;
             private:
-                const char *ptr;
+                const char *m_ptr;
             protected:
                 ALWAYS_INLINE Result CopyStringTo(char *dst, size_t size) const {
                     static_assert(sizeof(char) == 1);
-                    R_UNLESS(UserspaceAccess::CopyStringFromUser(dst, this->ptr, size) > 0, svc::ResultInvalidPointer());
+                    R_UNLESS(UserspaceAccess::CopyStringFromUser(dst, m_ptr, size) > 0, svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
 
                 ALWAYS_INLINE Result CopyArrayElementTo(char *dst, size_t index) const {
-                    return Traits::CopyFromUserspace(dst, this->ptr + index, sizeof(*dst));
+                    return Traits::CopyFromUserspace(dst, m_ptr + index, sizeof(*dst));
                 }
 
-                constexpr ALWAYS_INLINE bool IsNull() const { return this->ptr == nullptr; }
+                constexpr ALWAYS_INLINE bool IsNull() const { return m_ptr == nullptr; }
 
-                constexpr ALWAYS_INLINE const char *GetUnsafePointer() const { return this->ptr; }
+                constexpr ALWAYS_INLINE const char *GetUnsafePointer() const { return m_ptr; }
         };
 
     }

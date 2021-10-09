@@ -25,18 +25,18 @@ namespace ams::kern {
             public:
                 static constexpr size_t MaxMemoryRegions = 200;
             private:
-                KMemoryRegion region_heap[MaxMemoryRegions];
-                size_t num_regions;
+                KMemoryRegion m_region_heap[MaxMemoryRegions];
+                size_t m_num_regions;
             public:
-                constexpr ALWAYS_INLINE KMemoryRegionAllocator() : region_heap(), num_regions() { /* ... */ }
+                constexpr ALWAYS_INLINE KMemoryRegionAllocator() : m_region_heap(), m_num_regions() { /* ... */ }
             public:
                 template<typename... Args>
                 ALWAYS_INLINE KMemoryRegion *Allocate(Args&&... args) {
                     /* Ensure we stay within the bounds of our heap. */
-                    MESOSPHERE_INIT_ABORT_UNLESS(this->num_regions < MaxMemoryRegions);
+                    MESOSPHERE_INIT_ABORT_UNLESS(m_num_regions < MaxMemoryRegions);
 
                     /* Create the new region. */
-                    KMemoryRegion *region = std::addressof(this->region_heap[this->num_regions++]);
+                    KMemoryRegion *region = std::addressof(m_region_heap[m_num_regions++]);
                     std::construct_at(region, std::forward<Args>(args)...);
 
                     return region;

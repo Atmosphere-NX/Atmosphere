@@ -54,63 +54,63 @@ namespace ams::kern::init::Elf::Elf64 {
 
     class Dyn {
         private:
-            SXword tag;
+            SXword m_tag;
             union {
-                Xword value;
-                Addr ptr;
+                Xword m_value;
+                Addr m_ptr;
             };
         public:
             constexpr ALWAYS_INLINE SXword GetTag() const {
-                return this->tag;
+                return m_tag;
             }
 
             constexpr ALWAYS_INLINE Xword GetValue() const {
-                return this->value;
+                return m_value;
             }
 
             constexpr ALWAYS_INLINE Addr GetPtr() const {
-                return this->ptr;
+                return m_ptr;
             }
     };
 
     class Rel {
         private:
-            Addr offset;
-            Xword info;
+            Addr m_offset;
+            Xword m_info;
         public:
             constexpr ALWAYS_INLINE Addr GetOffset() const {
-                return this->offset;
+                return m_offset;
             }
 
             constexpr ALWAYS_INLINE Xword GetSym() const {
-                return this->info >> 32;
+                return m_info >> 32;
             }
 
             constexpr ALWAYS_INLINE Xword GetType() const {
-                return this->info & 0xFFFFFFFF;
+                return m_info & 0xFFFFFFFF;
             }
     };
 
     class Rela {
         private:
-            Addr offset;
-            Xword info;
-            SXword addend;
+            Addr m_offset;
+            Xword m_info;
+            SXword m_addend;
         public:
             constexpr ALWAYS_INLINE Addr GetOffset() const {
-                return this->offset;
+                return m_offset;
             }
 
             constexpr ALWAYS_INLINE Xword GetSym() const {
-                return this->info >> 32;
+                return m_info >> 32;
             }
 
             constexpr ALWAYS_INLINE Xword GetType() const {
-                return this->info & 0xFFFFFFFF;
+                return m_info & 0xFFFFFFFF;
             }
 
             constexpr ALWAYS_INLINE SXword GetAddend() const {
-                return this->addend;
+                return m_addend;
             }
     };
 
