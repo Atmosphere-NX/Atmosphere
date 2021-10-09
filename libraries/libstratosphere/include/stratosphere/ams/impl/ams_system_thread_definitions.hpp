@@ -114,6 +114,7 @@ namespace ams::impl {
     /* settings. */
     AMS_DEFINE_SYSTEM_THREAD(21, settings, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, settings, IpcServer);
+    AMS_DEFINE_SYSTEM_THREAD(21, settings, LazyWriter);
 
     /* erpt. */
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, Main);

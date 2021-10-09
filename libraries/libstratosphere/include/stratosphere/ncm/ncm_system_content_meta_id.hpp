@@ -267,6 +267,10 @@ namespace ams::ncm {
         static const SystemDataId RebootlessSystemUpdateVersion;
         static const SystemDataId ContentActionTable;
 
+        static const SystemDataId PlatformConfigCalcio;
+
+        static const SystemDataId PlatformConfigAula;
+
         static const SystemDataId End;
     };
 
@@ -311,6 +315,10 @@ namespace ams::ncm {
     inline constexpr const SystemDataId SystemDataId::ApplicationBlackList          = { 0x0100000000000825ul };
     inline constexpr const SystemDataId SystemDataId::RebootlessSystemUpdateVersion = { 0x0100000000000826ul };
     inline constexpr const SystemDataId SystemDataId::ContentActionTable            = { 0x0100000000000827ul };
+
+    inline constexpr const SystemDataId SystemDataId::PlatformConfigCalcio          = { 0x0100000000000829ul };
+
+    inline constexpr const SystemDataId SystemDataId::PlatformConfigAula            = { 0x0100000000000831ul };
 
     inline constexpr const SystemDataId SystemDataId::End                           = { 0x0100000000000FFFul };
 

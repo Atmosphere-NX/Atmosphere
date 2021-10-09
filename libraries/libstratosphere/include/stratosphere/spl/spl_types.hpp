@@ -138,6 +138,11 @@ namespace ams::spl {
         MemoryArrangement_Count,
     };
 
+    enum QuestState {
+        QuestState_Disabled = 0,
+        QuestState_Enabled  = 1,
+    };
+
     struct BootReasonValue {
         union {
             struct {

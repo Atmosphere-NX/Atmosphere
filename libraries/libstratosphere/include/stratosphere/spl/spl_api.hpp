@@ -60,6 +60,12 @@ namespace ams::spl {
         return static_cast<HardwareState>(v);
     }
 
+    inline QuestState GetQuestState() {
+        u64 v;
+        R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::QuestState));
+        return static_cast<QuestState>(v);
+    }
+
     inline u64 GetDeviceIdLow() {
         u64 v;
         R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::DeviceId));

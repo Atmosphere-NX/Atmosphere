@@ -102,7 +102,7 @@ namespace ams::mitm::settings {
         return GetFirmwareVersionImpl(out.GetPointer(), this->client_info);
     }
 
-    Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::fwdbg::SettingsName &name, const settings::fwdbg::SettingsItemKey &key) {
+    Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
         R_TRY_CATCH(settings::fwdbg::GetSdCardKeyValueStoreSettingsItemValueSize(out_size.GetPointer(), name.value, key.value)) {
             R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CONVERT_ALL(sm::mitm::ResultShouldForwardToSession());
@@ -111,7 +111,7 @@ namespace ams::mitm::settings {
         return ResultSuccess();
     }
 
-    Result SetSysMitmService::GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const settings::fwdbg::SettingsName &name, const settings::fwdbg::SettingsItemKey &key) {
+    Result SetSysMitmService::GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
         R_TRY_CATCH(settings::fwdbg::GetSdCardKeyValueStoreSettingsItemValue(out_size.GetPointer(), out.GetPointer(), out.GetSize(), name.value, key.value)) {
             R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CONVERT_ALL(sm::mitm::ResultShouldForwardToSession());
