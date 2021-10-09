@@ -52,7 +52,7 @@ namespace ams::settings::impl {
             public:
                 LazyFileAccessor() : m_is_activated(false), m_is_busy(false), m_is_cached(false), m_is_modified(false), m_is_file_size_changed(false), m_mount_name{}, m_file_path{}, m_open_mode(0), m_file_size(0), m_offset(0), m_size(0), m_mutex(false), m_timer_event(os::EventClearMode_AutoClear), m_thread{}  {
                     std::memset(m_buffer, 0, sizeof(m_buffer));
-                    std::memset(m_thread_stack, 0, sizeof(m_buffer));
+                    std::memset(m_thread_stack, 0, sizeof(m_thread_stack));
                 }
 
                 Result Activate();
