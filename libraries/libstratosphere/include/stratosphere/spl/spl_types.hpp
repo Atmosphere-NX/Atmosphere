@@ -138,6 +138,11 @@ namespace ams::spl {
         MemoryArrangement_Count,
     };
 
+    enum RetailInteractiveDisplayState {
+        RetailInteractiveDisplayState_Disabled = 0,
+        RetailInteractiveDisplayState_Enabled  = 1,
+    };
+
     struct BootReasonValue {
         union {
             struct {
@@ -217,7 +222,7 @@ namespace ams::spl {
         IsDevelopmentFunctionEnabled  = 11,
         KernelConfiguration           = 12,
         IsChargerHiZModeEnabled       = 13,
-        QuestState                    = 14,
+        RetailInteractiveDisplayState = 14,
         RegulatorType                 = 15,
         DeviceUniqueKeyGeneration     = 16,
         Package2Hash                  = 17,

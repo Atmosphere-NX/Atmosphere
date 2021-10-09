@@ -37,15 +37,15 @@ namespace ams::fuse {
         };
 
         struct OdmWord4 {
-            using HardwareState1 = util::BitPack32::Field<0,                    2, int>;
-            using HardwareType1  = util::BitPack32::Field<HardwareState1::Next, 1, int>;
-            using DramId         = util::BitPack32::Field<HardwareType1::Next,  5, int>;
-            using HardwareType2  = util::BitPack32::Field<DramId::Next,         1, int>;
-            using HardwareState2 = util::BitPack32::Field<HardwareType2::Next,  1, int>;
-            using QuestState     = util::BitPack32::Field<HardwareState2::Next, 1, int>;
-            using FormatVersion  = util::BitPack32::Field<QuestState::Next,     1, int>;
-            using Reserved       = util::BitPack32::Field<FormatVersion::Next,  4, int>;
-            using HardwareType3  = util::BitPack32::Field<Reserved::Next,       4, int>;
+            using HardwareState1                = util::BitPack32::Field<0,                                   2, int>;
+            using HardwareType1                 = util::BitPack32::Field<HardwareState1::Next,                1, int>;
+            using DramId                        = util::BitPack32::Field<HardwareType1::Next,                 5, int>;
+            using HardwareType2                 = util::BitPack32::Field<DramId::Next,                        1, int>;
+            using HardwareState2                = util::BitPack32::Field<HardwareType2::Next,                 1, int>;
+            using RetailInteractiveDisplayState = util::BitPack32::Field<HardwareState2::Next,                1, int>;
+            using FormatVersion                 = util::BitPack32::Field<RetailInteractiveDisplayState::Next, 1, int>;
+            using Reserved                      = util::BitPack32::Field<FormatVersion::Next,                 4, int>;
+            using HardwareType3                 = util::BitPack32::Field<Reserved::Next,                      4, int>;
         };
 
         struct OdmWord28 {
@@ -343,8 +343,8 @@ namespace ams::fuse {
         return static_cast<PatchVersion>(static_cast<int>(GetSocType() << 12) | patch_version);
     }
 
-    QuestState GetQuestState() {
-        return static_cast<QuestState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::QuestState>());
+    RetailInteractiveDisplayState GetRetailInteractiveDisplayState() {
+        return static_cast<RetailInteractiveDisplayState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::RetailInteractiveDisplayState>());
     }
 
     pmic::Regulator GetRegulator() {

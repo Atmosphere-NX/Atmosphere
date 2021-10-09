@@ -81,9 +81,9 @@ namespace ams::fuse {
         DramId_Count,
     };
 
-    enum QuestState {
-        QuestState_Disabled = 0,
-        QuestState_Enabled  = 1,
+    enum RetailInteractiveDisplayState {
+        RetailInteractiveDisplayState_Disabled = 0,
+        RetailInteractiveDisplayState_Enabled  = 1,
     };
 
     void SetRegisterAddress(uintptr_t address);
@@ -102,19 +102,19 @@ namespace ams::fuse {
 
     bool GetSecureBootKey(void *dst);
 
-    void            GetEcid(br::BootEcid *out);
-    HardwareType    GetHardwareType();
-    HardwareState   GetHardwareState();
-    u64             GetDeviceId();
-    PatchVersion    GetPatchVersion();
-    QuestState      GetQuestState();
-    pmic::Regulator GetRegulator();
-    int             GetDeviceUniqueKeyGeneration();
+    void                          GetEcid(br::BootEcid *out);
+    HardwareType                  GetHardwareType();
+    HardwareState                 GetHardwareState();
+    u64                           GetDeviceId();
+    PatchVersion                  GetPatchVersion();
+    RetailInteractiveDisplayState GetRetailInteractiveDisplayState();
+    pmic::Regulator               GetRegulator();
+    int                           GetDeviceUniqueKeyGeneration();
 
-    SocType         GetSocType();
-    int             GetExpectedFuseVersion(TargetFirmware target_fw);
-    int             GetFuseVersion();
-    bool            HasRcmVulnerabilityPatch();
+    SocType                       GetSocType();
+    int                           GetExpectedFuseVersion(TargetFirmware target_fw);
+    int                           GetFuseVersion();
+    bool                          HasRcmVulnerabilityPatch();
 
     bool IsOdmProductionMode();
     void ConfigureFuseBypass();

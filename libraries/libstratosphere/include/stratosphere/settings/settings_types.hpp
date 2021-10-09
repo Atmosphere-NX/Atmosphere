@@ -19,6 +19,21 @@
 
 namespace ams::settings {
 
+    constexpr size_t SettingsNameLengthMax = 0x40;
+    constexpr size_t SettingsItemKeyLengthMax = 0x40;
+
+    struct SettingsName : public sf::LargeData {
+        char value[util::AlignUp(SettingsNameLengthMax + 1, alignof(u64))];
+    };
+
+    static_assert(util::is_pod<SettingsName>::value && sizeof(SettingsName) > SettingsNameLengthMax);
+
+    struct SettingsItemKey : public sf::LargeData {
+        char value[util::AlignUp(SettingsItemKeyLengthMax + 1, alignof(u64))];
+    };
+
+    static_assert(util::is_pod<SettingsItemKey>::value && sizeof(SettingsItemKey) > SettingsItemKeyLengthMax);
+
     enum Language {
         Language_Japanese,
         Language_AmericanEnglish,

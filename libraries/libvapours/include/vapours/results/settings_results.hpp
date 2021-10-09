@@ -22,27 +22,32 @@ namespace ams::settings {
     R_DEFINE_NAMESPACE_RESULT_MODULE(105);
 
     R_DEFINE_ERROR_RESULT(SettingsItemNotFound,                 11);
+    R_DEFINE_ERROR_RESULT(StopIteration,                        21);
 
     R_DEFINE_ERROR_RANGE(InternalError, 100, 149);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyAllocationFailed,   101);
-        R_DEFINE_ERROR_RESULT(SettingsItemValueAllocationFailed, 102);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyAllocationFailed,         101);
+        R_DEFINE_ERROR_RESULT(SettingsItemValueAllocationFailed,       102);
+        R_DEFINE_ERROR_RESULT(SettingsItemKeyIteratorAllocationFailed, 111);
+        R_DEFINE_ERROR_RESULT(TooLargeSystemSaveData,                  141);
 
     R_DEFINE_ERROR_RANGE(InvalidArgument, 200, 399);
-        R_DEFINE_ERROR_RESULT(SettingsNameNull,                 201);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyNull,              202);
-        R_DEFINE_ERROR_RESULT(SettingsItemValueNull,            203);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyBufferNull,        204);
-        R_DEFINE_ERROR_RESULT(SettingsItemValueBufferNull,      205);
+        R_DEFINE_ERROR_RESULT(NullSettingsName,                             201);
+        R_DEFINE_ERROR_RESULT(NullSettingsItemKey,                          202);
+        R_DEFINE_ERROR_RESULT(NullSettingsItemValue,                        203);
+        R_DEFINE_ERROR_RESULT(NullSettingsItemKeyBuffer,                    204);
+        R_DEFINE_ERROR_RESULT(NullSettingsItemValueBuffer,                  205);
 
-        R_DEFINE_ERROR_RESULT(SettingsNameEmpty,                221);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyEmpty,             222);
+        R_DEFINE_ERROR_RESULT(EmptySettingsName,                            221);
+        R_DEFINE_ERROR_RESULT(EmptySettingsItemKey,                         222);
 
-        R_DEFINE_ERROR_RESULT(SettingsNameTooLong,              241);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyTooLong,           242);
+        R_DEFINE_ERROR_RESULT(TooLongSettingsName,                          241);
+        R_DEFINE_ERROR_RESULT(TooLongSettingsItemKey,                       242);
 
-        R_DEFINE_ERROR_RESULT(SettingsNameInvalidFormat,        261);
-        R_DEFINE_ERROR_RESULT(SettingsItemKeyInvalidFormat,     262);
-        R_DEFINE_ERROR_RESULT(SettingsItemValueInvalidFormat,   263);
+        R_DEFINE_ERROR_RESULT(InvalidFormatSettingsName,                    261);
+        R_DEFINE_ERROR_RESULT(InvalidFormatSettingsItemKey,                 262);
+        R_DEFINE_ERROR_RESULT(InvalidFormatSettingsItemValue,               263);
+
+        R_DEFINE_ERROR_RESULT(NotFoundSettingsItemKeyIterator,              281);
 
     R_DEFINE_ERROR_RANGE(CalibrationDataError, 580, 599);
         R_DEFINE_ERROR_RESULT(CalibrationDataFileSystemCorrupted, 581);

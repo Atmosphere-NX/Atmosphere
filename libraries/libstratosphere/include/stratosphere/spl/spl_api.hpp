@@ -60,6 +60,12 @@ namespace ams::spl {
         return static_cast<HardwareState>(v);
     }
 
+    inline RetailInteractiveDisplayState GetRetailInteractiveDisplayState() {
+        u64 v;
+        R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::RetailInteractiveDisplayState));
+        return static_cast<RetailInteractiveDisplayState>(v);
+    }
+
     inline u64 GetDeviceIdLow() {
         u64 v;
         R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::DeviceId));
