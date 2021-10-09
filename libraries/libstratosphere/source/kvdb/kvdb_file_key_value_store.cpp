@@ -37,7 +37,7 @@ namespace ams::kvdb {
         /* If we have memory to work with, ensure it's at least enough for the cache entries. */
         if (this->backing_buffer != nullptr) {
             this->entries = static_cast<decltype(this->entries)>(this->Allocate(sizeof(*this->entries) * this->capacity));
-            R_UNLESS(this->entries != nullptr, ResultBufferInsufficient());
+            R_UNLESS(this->entries != nullptr, kvdb::ResultBufferInsufficient());
         }
 
         return ResultSuccess();
@@ -153,13 +153,13 @@ namespace ams::kvdb {
         /* TODO: Nintendo does not validate that the key is valid hex. Should we do this? */
         const size_t file_name_len = file_name.GetLength();
         const size_t key_name_len = file_name_len - FileExtensionLength;
-        R_UNLESS(file_name_len >= FileExtensionLength + 2, ResultInvalidKeyValue());
-        R_UNLESS(file_name.EndsWith(FileExtension),        ResultInvalidKeyValue());
-        R_UNLESS(util::IsAligned(key_name_len, 2),         ResultInvalidKeyValue());
+        R_UNLESS(file_name_len >= FileExtensionLength + 2, kvdb::ResultInvalidKeyValue());
+        R_UNLESS(file_name.EndsWith(FileExtension),        kvdb::ResultInvalidKeyValue());
+        R_UNLESS(util::IsAligned(key_name_len, 2),         kvdb::ResultInvalidKeyValue());
 
         /* Validate that we have space for the converted key. */
         const size_t key_size = key_name_len / 2;
-        R_UNLESS(key_size <= max_out_size, ResultBufferInsufficient());
+        R_UNLESS(key_size <= max_out_size, kvdb::ResultBufferInsufficient());
 
         /* Convert the hex key back. */
         u8 *out_key = static_cast<u8 *>(_out_key);
@@ -195,7 +195,7 @@ namespace ams::kvdb {
         std::scoped_lock lk(this->lock);
 
         /* Ensure key size is small enough. */
-        R_UNLESS(key_size <= MaxKeySize, ResultOutOfKeyResource());
+        R_UNLESS(key_size <= MaxKeySize, kvdb::ResultOutOfKeyResource());
 
         /* Try to get from cache. */
         {
@@ -209,7 +209,7 @@ namespace ams::kvdb {
         /* Open the value file. */
         fs::FileHandle file;
         R_TRY_CATCH(fs::OpenFile(std::addressof(file), this->GetPath(key, key_size), fs::OpenMode_Read)) {
-            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound());
+            R_CONVERT(fs::ResultPathNotFound, kvdb::ResultKeyNotFound());
         } R_END_TRY_CATCH;
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
@@ -218,7 +218,7 @@ namespace ams::kvdb {
         R_TRY(fs::GetFileSize(std::addressof(file_size), file));
 
         /* Ensure there's enough space for the value. */
-        R_UNLESS(file_size <= static_cast<s64>(max_out_size), ResultBufferInsufficient());
+        R_UNLESS(file_size <= static_cast<s64>(max_out_size), kvdb::ResultBufferInsufficient());
 
         /* Read the value. */
         const size_t value_size = static_cast<size_t>(file_size);
@@ -234,7 +234,7 @@ namespace ams::kvdb {
         std::scoped_lock lk(this->lock);
 
         /* Ensure key size is small enough. */
-        R_UNLESS(key_size <= MaxKeySize, ResultOutOfKeyResource());
+        R_UNLESS(key_size <= MaxKeySize, kvdb::ResultOutOfKeyResource());
 
         /* Try to get from cache. */
         {
@@ -248,7 +248,7 @@ namespace ams::kvdb {
         /* Open the value file. */
         fs::FileHandle file;
         R_TRY_CATCH(fs::OpenFile(std::addressof(file), this->GetPath(key, key_size), fs::OpenMode_Read)) {
-            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound());
+            R_CONVERT(fs::ResultPathNotFound, kvdb::ResultKeyNotFound());
         } R_END_TRY_CATCH;
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
@@ -264,7 +264,7 @@ namespace ams::kvdb {
         std::scoped_lock lk(this->lock);
 
         /* Ensure key size is small enough. */
-        R_UNLESS(key_size <= MaxKeySize, ResultOutOfKeyResource());
+        R_UNLESS(key_size <= MaxKeySize, kvdb::ResultOutOfKeyResource());
 
         /* When the cache contains the key being set, Nintendo invalidates the cache. */
         if (this->cache.Contains(key, key_size)) {
@@ -293,7 +293,7 @@ namespace ams::kvdb {
         std::scoped_lock lk(this->lock);
 
         /* Ensure key size is small enough. */
-        R_UNLESS(key_size <= MaxKeySize, ResultOutOfKeyResource());
+        R_UNLESS(key_size <= MaxKeySize, kvdb::ResultOutOfKeyResource());
 
         /* When the cache contains the key being set, Nintendo invalidates the cache. */
         if (this->cache.Contains(key, key_size)) {
@@ -302,7 +302,7 @@ namespace ams::kvdb {
 
         /* Remove the file. */
         R_TRY_CATCH(fs::DeleteFile(this->GetPath(key, key_size))) {
-            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound())
+            R_CONVERT(fs::ResultPathNotFound, kvdb::ResultKeyNotFound())
         } R_END_TRY_CATCH;
 
         return ResultSuccess();

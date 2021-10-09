@@ -22,7 +22,7 @@ namespace ams::updater {
         /* Open the file. */
         fs::FileHandle file;
         R_TRY_CATCH(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read)) {
-            R_CONVERT(fs::ResultPathNotFound, ResultInvalidBootImagePackage())
+            R_CONVERT(fs::ResultPathNotFound, updater::ResultInvalidBootImagePackage())
         } R_END_TRY_CATCH;
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
@@ -34,7 +34,7 @@ namespace ams::updater {
         /* Open the file. */
         fs::FileHandle file;
         R_TRY_CATCH(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read)) {
-            R_CONVERT(fs::ResultPathNotFound, ResultInvalidBootImagePackage())
+            R_CONVERT(fs::ResultPathNotFound, updater::ResultInvalidBootImagePackage())
         } R_END_TRY_CATCH;
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 

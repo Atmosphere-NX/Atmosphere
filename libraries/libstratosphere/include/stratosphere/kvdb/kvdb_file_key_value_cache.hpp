@@ -219,7 +219,7 @@ namespace ams::kvdb {
                 } R_END_TRY_CATCH;
 
                 /* Check that the entry type is correct. */
-                R_UNLESS(entry_type == type, ResultInvalidFilesystemState());
+                R_UNLESS(entry_type == type, kvdb::ResultInvalidFilesystemState());
 
                 /* The entry exists and is the correct type. */
                 *out = true;
@@ -249,10 +249,10 @@ namespace ams::kvdb {
                 R_TRY(DirectoryExists(&has_kvs, GetFileKeyValueStorePath(dir)));
 
                 /* If neither exists, CreateNewCache was never called. */
-                R_UNLESS(has_lru || has_kvs, ResultNotCreated());
+                R_UNLESS(has_lru || has_kvs, kvdb::ResultNotCreated());
 
                 /* If one exists but not the other, we have an invalid state. */
-                R_UNLESS(has_lru && has_kvs, ResultInvalidFilesystemState());
+                R_UNLESS(has_lru && has_kvs, kvdb::ResultInvalidFilesystemState());
 
                 return ResultSuccess();
             }

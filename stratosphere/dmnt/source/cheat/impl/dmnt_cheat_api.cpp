@@ -231,7 +231,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result EnsureCheatProcess() {
-                    R_UNLESS(this->HasActiveCheatProcess(), ResultCheatNotAttached());
+                    R_UNLESS(this->HasActiveCheatProcess(), dmnt::cheat::ResultCheatNotAttached());
                     return ResultSuccess();
                 }
 
@@ -480,8 +480,8 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const CheatEntry *entry = this->GetCheatEntryById(cheat_id);
-                    R_UNLESS(entry != nullptr,                   ResultCheatUnknownId());
-                    R_UNLESS(entry->definition.num_opcodes != 0, ResultCheatUnknownId());
+                    R_UNLESS(entry != nullptr,                   dmnt::cheat::ResultCheatUnknownId());
+                    R_UNLESS(entry->definition.num_opcodes != 0, dmnt::cheat::ResultCheatUnknownId());
 
                     *out_cheat = *entry;
                     return ResultSuccess();
@@ -493,10 +493,10 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     CheatEntry *entry = this->GetCheatEntryById(cheat_id);
-                    R_UNLESS(entry != nullptr,                   ResultCheatUnknownId());
-                    R_UNLESS(entry->definition.num_opcodes != 0, ResultCheatUnknownId());
+                    R_UNLESS(entry != nullptr,                   dmnt::cheat::ResultCheatUnknownId());
+                    R_UNLESS(entry->definition.num_opcodes != 0, dmnt::cheat::ResultCheatUnknownId());
 
-                    R_UNLESS(cheat_id != 0, ResultCheatCannotDisable());
+                    R_UNLESS(cheat_id != 0, dmnt::cheat::ResultCheatCannotDisable());
 
                     entry->enabled = !entry->enabled;
 
@@ -511,11 +511,11 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    R_UNLESS(def.num_opcodes != 0,                       ResultCheatInvalid());
-                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes != 0,                       dmnt::cheat::ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), dmnt::cheat::ResultCheatInvalid());
 
                     CheatEntry *new_entry = this->GetFreeCheatEntry();
-                    R_UNLESS(new_entry != nullptr, ResultCheatOutOfResource());
+                    R_UNLESS(new_entry != nullptr, dmnt::cheat::ResultCheatOutOfResource());
 
                     new_entry->enabled = enabled;
                     new_entry->definition = def;
@@ -533,7 +533,7 @@ namespace ams::dmnt::cheat::impl {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
-                    R_UNLESS(cheat_id < MaxCheatCount, ResultCheatUnknownId());
+                    R_UNLESS(cheat_id < MaxCheatCount, dmnt::cheat::ResultCheatUnknownId());
 
                     this->ResetCheatEntry(cheat_id);
 
@@ -548,8 +548,8 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    R_UNLESS(def.num_opcodes != 0,                       ResultCheatInvalid());
-                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes != 0,                       dmnt::cheat::ResultCheatInvalid());
+                    R_UNLESS(def.num_opcodes <= util::size(def.opcodes), dmnt::cheat::ResultCheatInvalid());
 
                     CheatEntry *master_entry = this->cheat_entries + 0;
 
@@ -566,7 +566,7 @@ namespace ams::dmnt::cheat::impl {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
-                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, ResultCheatInvalid());
+                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
                     *out = this->cheat_vm.GetStaticRegister(which);
                     return ResultSuccess();
@@ -576,7 +576,7 @@ namespace ams::dmnt::cheat::impl {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
-                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, ResultCheatInvalid());
+                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
                     this->cheat_vm.SetStaticRegister(which, value);
                     return ResultSuccess();
@@ -629,7 +629,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
+                    R_UNLESS(it != this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
 
                     frz_addr->address = it->GetAddress();
                     frz_addr->value   = it->GetValue();
@@ -642,14 +642,14 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it == this->frozen_addresses_map.end(), ResultFrozenAddressAlreadyExists());
+                    R_UNLESS(it == this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressAlreadyExists());
 
                     FrozenAddressValue value = {};
                     value.width = width;
                     R_TRY(this->ReadCheatProcessMemoryUnsafe(address, &value.value, width));
 
                     FrozenAddressMapEntry *entry = AllocateFrozenAddress(address, value);
-                    R_UNLESS(entry != nullptr, ResultFrozenAddressOutOfResource());
+                    R_UNLESS(entry != nullptr, dmnt::cheat::ResultFrozenAddressOutOfResource());
 
                     this->frozen_addresses_map.insert(*entry);
                     *out_value = value.value;
@@ -662,7 +662,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it != this->frozen_addresses_map.end(), ResultFrozenAddressNotFound());
+                    R_UNLESS(it != this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
 
                     FrozenAddressMapEntry *entry = std::addressof(*it);
                     this->frozen_addresses_map.erase(it);
@@ -820,7 +820,7 @@ namespace ams::dmnt::cheat::impl {
 
                 /* If new process launch, we may not want to actually attach. */
                 if (on_process_launch) {
-                    R_UNLESS(status.IsCheatEnabled(), ResultCheatNotAttached());
+                    R_UNLESS(status.IsCheatEnabled(), dmnt::cheat::ResultCheatNotAttached());
                 }
             }
 
@@ -841,7 +841,7 @@ namespace ams::dmnt::cheat::impl {
                 } else if (num_modules == 1 && !on_process_launch) {
                     proc_module = &proc_modules[0];
                 } else {
-                    return ResultCheatNotAttached();
+                    return dmnt::cheat::ResultCheatNotAttached();
                 }
 
                 this->cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
@@ -853,7 +853,7 @@ namespace ams::dmnt::cheat::impl {
             if (!this->LoadCheats(this->cheat_process_metadata.program_id, this->cheat_process_metadata.main_nso_build_id) ||
                 !this->LoadCheatToggles(this->cheat_process_metadata.program_id)) {
                 /* If new process launch, require success. */
-                R_UNLESS(!on_process_launch, ResultCheatNotAttached());
+                R_UNLESS(!on_process_launch, dmnt::cheat::ResultCheatNotAttached());
             }
 
             /* Open a debug handle. */

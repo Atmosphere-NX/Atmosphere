@@ -229,29 +229,29 @@ namespace ams::creport {
     void CrashReport::HandleDebugEventInfoException(const svc::DebugEventInfo &d) {
         switch (d.info.exception.type) {
             case svc::DebugException_UndefinedInstruction:
-                this->result = ResultUndefinedInstruction();
+                this->result = creport::ResultUndefinedInstruction();
                 break;
             case svc::DebugException_InstructionAbort:
-                this->result = ResultInstructionAbort();
+                this->result = creport::ResultInstructionAbort();
                 break;
             case svc::DebugException_DataAbort:
-                this->result = ResultDataAbort();
+                this->result = creport::ResultDataAbort();
                 break;
             case svc::DebugException_AlignmentFault:
-                this->result = ResultAlignmentFault();
+                this->result = creport::ResultAlignmentFault();
                 break;
             case svc::DebugException_UserBreak:
-                this->result = ResultUserBreak();
+                this->result = creport::ResultUserBreak();
                 /* Try to parse out the user break result. */
                 if (hos::GetVersion() >= hos::Version_5_0_0) {
                     svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(std::addressof(this->result)), this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
             case svc::DebugException_UndefinedSystemCall:
-                this->result = ResultUndefinedSystemCall();
+                this->result = creport::ResultUndefinedSystemCall();
                 break;
             case svc::DebugException_MemorySystemError:
-                this->result = ResultMemorySystemError();
+                this->result = creport::ResultMemorySystemError();
                 break;
             case svc::DebugException_DebuggerAttached:
             case svc::DebugException_BreakPoint:

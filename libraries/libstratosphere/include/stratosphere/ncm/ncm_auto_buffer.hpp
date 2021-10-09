@@ -69,7 +69,7 @@ namespace ams::ncm {
 
                 /* Allocate a buffer. */
                 this->buffer = new (std::nothrow) u8[size];
-                R_UNLESS(this->buffer != nullptr, ResultAllocationFailed());
+                R_UNLESS(this->buffer != nullptr, ncm::ResultAllocationFailed());
 
                 this->size = size;
                 return ResultSuccess();

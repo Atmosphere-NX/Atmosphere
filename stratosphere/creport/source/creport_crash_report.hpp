@@ -27,7 +27,7 @@ namespace ams::creport {
         private:
             os::NativeHandle debug_handle = os::InvalidNativeHandle;
             bool has_extra_info = true;
-            Result result = ResultIncompleteReport();
+            Result result = creport::ResultIncompleteReport();
 
             /* Meta, used for building module/thread list. */
             ThreadTlsMap thread_tls_map = {};

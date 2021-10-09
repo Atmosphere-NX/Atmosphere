@@ -120,7 +120,7 @@ namespace ams::ldr {
 
             for (size_t i = 0; i < num_entries; i++) {
                 if (entries[i].program_id == program_id) {
-                    R_UNLESS(entries[i].version <= version, ResultInvalidVersion());
+                    R_UNLESS(entries[i].version <= version, ldr::ResultInvalidVersion());
                 }
             }
 #else
@@ -142,7 +142,7 @@ namespace ams::ldr {
 #define COPY_ACCESS_CONTROL(source, which) \
             ({ \
                 const size_t size = meta->source->which##_size; \
-                R_UNLESS(offset + size <= sizeof(out->ac_buffer), ResultInternalError()); \
+                R_UNLESS(offset + size <= sizeof(out->ac_buffer), ldr::ResultInternalError()); \
                 out->source##_##which##_size = size; \
                 std::memcpy(out->ac_buffer + offset, meta->source##_##which, size); \
                 offset += size; \
@@ -189,7 +189,7 @@ namespace ams::ldr {
                     /* Read NSO header. */
                     size_t read_size;
                     R_TRY(fs::ReadFile(std::addressof(read_size), file, 0, nso_headers + i, sizeof(*nso_headers)));
-                    R_UNLESS(read_size == sizeof(*nso_headers), ResultInvalidNso());
+                    R_UNLESS(read_size == sizeof(*nso_headers), ldr::ResultInvalidNso());
 
                     has_nso[i] = true;
                 }
@@ -200,18 +200,18 @@ namespace ams::ldr {
 
         Result ValidateNsoHeaders(const NsoHeader *nso_headers, const bool *has_nso) {
             /* We must always have a main. */
-            R_UNLESS(has_nso[Nso_Main], ResultInvalidNso());
+            R_UNLESS(has_nso[Nso_Main], ldr::ResultInvalidNso());
 
             /* If we don't have an RTLD, we must only have a main. */
             if (!has_nso[Nso_Rtld]) {
                 for (size_t i = Nso_Main + 1; i < Nso_Count; i++) {
-                    R_UNLESS(!has_nso[i], ResultInvalidNso());
+                    R_UNLESS(!has_nso[i], ldr::ResultInvalidNso());
                 }
             }
 
             /* All NSOs must have zero text offset. */
             for (size_t i = 0; i < Nso_Count; i++) {
-                R_UNLESS(nso_headers[i].text_dst_offset == 0, ResultInvalidNso());
+                R_UNLESS(nso_headers[i].text_dst_offset == 0, ldr::ResultInvalidNso());
             }
 
             return ResultSuccess();
@@ -222,8 +222,8 @@ namespace ams::ldr {
             R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
 
             /* Validate program id. */
-            R_UNLESS(meta->aci->program_id >= meta->acid->program_id_min, ResultInvalidProgramId());
-            R_UNLESS(meta->aci->program_id <= meta->acid->program_id_max, ResultInvalidProgramId());
+            R_UNLESS(meta->aci->program_id >= meta->acid->program_id_min, ldr::ResultInvalidProgramId());
+            R_UNLESS(meta->aci->program_id <= meta->acid->program_id_max, ldr::ResultInvalidProgramId());
 
             /* Validate the kernel capabilities. */
             R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
@@ -240,7 +240,7 @@ namespace ams::ldr {
                 const size_t hsh_size = sizeof(code_verification_data.target_hash);
                 const bool is_signature_valid = crypto::VerifyRsa2048PssSha256WithHash(sig, sig_size, mod, mod_size, exp, exp_size, hsh, hsh_size);
 
-                R_UNLESS(is_signature_valid, ResultInvalidNcaSignature());
+                R_UNLESS(is_signature_valid, ldr::ResultInvalidNcaSignature());
             }
 
             /* All good. */
@@ -272,7 +272,7 @@ namespace ams::ldr {
                     flags |= svc::CreateProcessFlag_AddressSpace64Bit;
                     break;
                 default:
-                    return ResultInvalidMeta();
+                    return ldr::ResultInvalidMeta();
             }
 
             /* Set Enable Debug. */
@@ -317,7 +317,7 @@ namespace ams::ldr {
                         flags |= svc::CreateProcessFlag_PoolPartitionSystemNonSecure;
                         break;
                     default:
-                        return ResultInvalidMeta();
+                        return ldr::ResultInvalidMeta();
                 }
             } else if (hos::GetVersion() >= hos::Version_4_0_0) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
@@ -351,18 +351,18 @@ namespace ams::ldr {
             /* 3.0.0+ System Resource Size. */
             if (hos::GetVersion() >= hos::Version_3_0_0) {
                 /* Validate size is aligned. */
-                R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, os::MemoryBlockUnitSize), ResultInvalidSize());
+                R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, os::MemoryBlockUnitSize), ldr::ResultInvalidSize());
 
                 /* Validate system resource usage. */
                 if (meta->npdm->system_resource_size) {
                     /* Process must be 64-bit. */
-                    R_UNLESS((out->flags & svc::CreateProcessFlag_AddressSpace64Bit), ResultInvalidMeta());
+                    R_UNLESS((out->flags & svc::CreateProcessFlag_AddressSpace64Bit), ldr::ResultInvalidMeta());
 
                     /* Process must be application or applet. */
-                    R_UNLESS(IsApplication(meta) || IsApplet(meta), ResultInvalidMeta());
+                    R_UNLESS(IsApplication(meta) || IsApplet(meta), ldr::ResultInvalidMeta());
 
                     /* Size must be less than or equal to max. */
-                    R_UNLESS(meta->npdm->system_resource_size <= SystemResourceSizeMax, ResultInvalidMeta());
+                    R_UNLESS(meta->npdm->system_resource_size <= SystemResourceSizeMax, ldr::ResultInvalidMeta());
                 }
                 out->system_resource_num_pages = meta->npdm->system_resource_size >> 12;
             }
@@ -541,19 +541,19 @@ namespace ams::ldr {
             }
 
             /* Validate size. */
-            R_UNLESS(file_size <= segment->size,                       ResultInvalidNso());
-            R_UNLESS(segment->size <= std::numeric_limits<s32>::max(), ResultInvalidNso());
+            R_UNLESS(file_size <= segment->size,                       ldr::ResultInvalidNso());
+            R_UNLESS(segment->size <= std::numeric_limits<s32>::max(), ldr::ResultInvalidNso());
 
             /* Load data from file. */
             uintptr_t load_address = is_compressed ? map_end - file_size : map_base;
             size_t read_size;
             R_TRY(fs::ReadFile(std::addressof(read_size), file, segment->file_offset, reinterpret_cast<void *>(load_address), file_size));
-            R_UNLESS(read_size == file_size, ResultInvalidNso());
+            R_UNLESS(read_size == file_size, ldr::ResultInvalidNso());
 
             /* Uncompress if necessary. */
             if (is_compressed) {
                 bool decompressed = (util::DecompressLZ4(reinterpret_cast<void *>(map_base), segment->size, reinterpret_cast<const void *>(load_address), file_size) == static_cast<int>(segment->size));
-                R_UNLESS(decompressed, ResultInvalidNso());
+                R_UNLESS(decompressed, ldr::ResultInvalidNso());
             }
 
             /* Check hash if necessary. */
@@ -561,7 +561,7 @@ namespace ams::ldr {
                 u8 hash[crypto::Sha256Generator::HashSize];
                 crypto::GenerateSha256Hash(hash, sizeof(hash), reinterpret_cast<void *>(map_base), segment->size);
 
-                R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ResultInvalidNso());
+                R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ldr::ResultInvalidNso());
             }
 
             return ResultSuccess();

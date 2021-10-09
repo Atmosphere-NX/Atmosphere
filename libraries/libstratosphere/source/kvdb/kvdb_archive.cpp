@@ -30,7 +30,7 @@ namespace ams::kvdb {
             u32 entry_count;
 
             Result Validate() const {
-                R_UNLESS(std::memcmp(this->magic, ArchiveHeaderMagic, sizeof(ArchiveHeaderMagic)) == 0, ResultInvalidKeyValue());
+                R_UNLESS(std::memcmp(this->magic, ArchiveHeaderMagic, sizeof(ArchiveHeaderMagic)) == 0, kvdb::ResultInvalidKeyValue());
                 return ResultSuccess();
             }
 
@@ -49,7 +49,7 @@ namespace ams::kvdb {
             u32 value_size;
 
             Result Validate() const {
-                R_UNLESS(std::memcmp(this->magic, ArchiveEntryMagic, sizeof(ArchiveEntryMagic)) == 0, ResultInvalidKeyValue());
+                R_UNLESS(std::memcmp(this->magic, ArchiveEntryMagic, sizeof(ArchiveEntryMagic)) == 0, kvdb::ResultInvalidKeyValue());
                 return ResultSuccess();
             }
 
@@ -68,8 +68,8 @@ namespace ams::kvdb {
     /* Reader functionality. */
     Result ArchiveReader::Peek(void *dst, size_t size) {
         /* Bounds check. */
-        R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
-        R_UNLESS(this->offset < this->offset + size,            ResultInvalidKeyValue());
+        R_UNLESS(this->offset + size <= this->buffer.GetSize(), kvdb::ResultInvalidKeyValue());
+        R_UNLESS(this->offset < this->offset + size,            kvdb::ResultInvalidKeyValue());
 
         std::memcpy(dst, this->buffer.Get() + this->offset, size);
         return ResultSuccess();
@@ -129,8 +129,8 @@ namespace ams::kvdb {
     /* Writer functionality. */
     Result ArchiveWriter::Write(const void *src, size_t size) {
         /* Bounds check. */
-        R_UNLESS(this->offset + size <= this->buffer.GetSize(), ResultInvalidKeyValue());
-        R_UNLESS(this->offset < this->offset + size,            ResultInvalidKeyValue());
+        R_UNLESS(this->offset + size <= this->buffer.GetSize(), kvdb::ResultInvalidKeyValue());
+        R_UNLESS(this->offset < this->offset + size,            kvdb::ResultInvalidKeyValue());
 
         std::memcpy(this->buffer.Get() + this->offset, src, size);
         this->offset += size;

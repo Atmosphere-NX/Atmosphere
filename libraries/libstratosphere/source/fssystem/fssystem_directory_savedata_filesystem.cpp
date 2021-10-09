@@ -133,7 +133,7 @@ namespace ams::fssystem {
         }
 
         /* TODO: Return a result here? Nintendo does not, but they have other allocation failed results. */
-        /* Consider returning ResultFsAllocationFailureInDirectorySaveDataFileSystem? */
+        /* Consider returning fs::ResultFsAllocationFailureInDirectorySaveDataFileSystem? */
         AMS_ABORT_UNLESS(false);
     }
 

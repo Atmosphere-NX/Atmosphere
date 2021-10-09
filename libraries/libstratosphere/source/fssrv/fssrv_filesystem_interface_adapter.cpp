@@ -36,7 +36,7 @@ namespace ams::fssrv::impl {
     }
 
     Result FileInterfaceAdapter::Read(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size, fs::ReadOption option) {
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         /* TODO: Deep retry */
         R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
@@ -126,7 +126,7 @@ namespace ams::fssrv::impl {
         const s64 max_num_entries = out_entries.GetSize() / sizeof(fs::DirectoryEntry);
         R_UNLESS(max_num_entries >= 0, fs::ResultInvalidSize());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         return this->base_dir->Read(out.GetPointer(), reinterpret_cast<fs::DirectoryEntry *>(out_entries.GetPointer()), max_num_entries);
     }
 
@@ -266,7 +266,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IFile> file;
         R_TRY(this->base_fs->OpenFile(&file, normalizer.GetPath(), static_cast<fs::OpenMode>(mode)));
 
@@ -294,7 +294,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IDirectory> dir;
         R_TRY(this->base_fs->OpenDirectory(&dir, normalizer.GetPath(), static_cast<fs::OpenDirectoryMode>(mode)));
 

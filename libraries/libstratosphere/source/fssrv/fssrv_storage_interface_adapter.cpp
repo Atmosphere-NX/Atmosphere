@@ -43,7 +43,7 @@ namespace ams::fssrv::impl {
     }
 
     Result StorageInterfaceAdapter::Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size) {
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         /* TODO: Deep retry */
         R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());

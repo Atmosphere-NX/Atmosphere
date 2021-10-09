@@ -200,7 +200,7 @@ namespace ams::settings::impl {
                 s64 file_size = 0;
                 R_TRY(fs::GetFileSize(std::addressof(file_size), file));
                 AMS_ASSERT(0 <= file_size && file_size <= static_cast<s64>(sizeof(m_buffer)));
-                R_UNLESS(file_size <= static_cast<s64>(sizeof(m_buffer)), ResultTooLargeSystemSaveData());
+                R_UNLESS(file_size <= static_cast<s64>(sizeof(m_buffer)), settings::ResultTooLargeSystemSaveData());
 
                 /* Read the save file. */
                 R_TRY(fs::ReadFile(file, 0, m_buffer, static_cast<size_t>(file_size)));

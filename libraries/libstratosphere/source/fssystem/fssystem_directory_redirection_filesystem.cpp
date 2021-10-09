@@ -68,7 +68,7 @@ namespace ams::fssystem {
         const size_t size = normalized_path_len + 1;
         char *new_dir = static_cast<char *>(fs::impl::Allocate(size));
         AMS_ABORT_UNLESS(new_dir != nullptr);
-        /* TODO: custom ResultAllocationFailure? */
+        /* TODO: custom fs::ResultAllocationFailure? */
 
         /* Copy path in. */
         std::memcpy(new_dir, normalized_path, normalized_path_len);

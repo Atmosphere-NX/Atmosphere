@@ -41,7 +41,7 @@ namespace ams::settings::impl {
             const SettingsName &m_name;
         public:
             explicit KeyValueStore(const SettingsName &name) : m_name(name) { /* ... */ }
-            
+
             Result CreateKeyIterator(KeyValueStoreKeyIterator *out);
             Result GetValue(u64 *out_count, char *out_buffer, size_t out_buffer_size, const SettingsItemKey &item_key);
             Result GetValueSize(u64 *out_value_size, const SettingsItemKey &item_key);

@@ -35,7 +35,7 @@ namespace ams::fatal::srv {
                 bool has_thrown;
             private:
                 Result TrySetHasThrown() {
-                    R_UNLESS(!this->has_thrown, ResultAlreadyThrown());
+                    R_UNLESS(!this->has_thrown, fatal::ResultAlreadyThrown());
                     this->has_thrown = true;
                     return ResultSuccess();
                 }

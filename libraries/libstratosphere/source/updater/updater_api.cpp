@@ -51,9 +51,9 @@ namespace ams::updater {
 
         /* Implementations. */
         Result ValidateWorkBuffer(const void *work_buffer, size_t work_buffer_size) {
-            R_UNLESS(work_buffer_size >= BctSize + EksSize,            ResultTooSmallWorkBuffer());
-            R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), ResultNotAlignedWorkBuffer());
-            R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         ResultNotAlignedWorkBuffer());
+            R_UNLESS(work_buffer_size >= BctSize + EksSize,            updater::ResultTooSmallWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), updater::ResultNotAlignedWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         updater::ResultNotAlignedWorkBuffer());
             return ResultSuccess();
         }
 
@@ -144,7 +144,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -202,7 +202,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -264,7 +264,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -330,7 +330,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -450,7 +450,7 @@ namespace ams::updater {
         }
 
         Result CompareHash(const void *lhs, const void *rhs, size_t size) {
-            R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), ResultNeedsRepairBootImages());
+            R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), updater::ResultNeedsRepairBootImages());
             return ResultSuccess();
         }
 
@@ -493,7 +493,7 @@ namespace ams::updater {
         const auto content_meta_type = GetContentMetaType(mode);
 
         auto count = db.ListContentMeta(keys, MaxContentMetas, content_meta_type);
-        R_UNLESS(count.total > 0, ResultBootImagePackageNotFound());
+        R_UNLESS(count.total > 0, updater::ResultBootImagePackageNotFound());
 
         /* Output is sorted, return the lowest valid exfat entry. */
         if (count.total > 1) {

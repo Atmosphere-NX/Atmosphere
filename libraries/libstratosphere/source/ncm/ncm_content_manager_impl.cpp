@@ -94,21 +94,21 @@ namespace ams::ncm {
 
         ALWAYS_INLINE Result GetContentStorageNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
-                case StorageId::GameCard:       return ResultGameCardContentStorageNotActive();
-                case StorageId::BuiltInSystem:  return ResultBuiltInSystemContentStorageNotActive();
-                case StorageId::BuiltInUser:    return ResultBuiltInUserContentStorageNotActive();
-                case StorageId::SdCard:         return ResultSdCardContentStorageNotActive();
-                default:                        return ResultUnknownContentStorageNotActive();
+                case StorageId::GameCard:       return ncm::ResultGameCardContentStorageNotActive();
+                case StorageId::BuiltInSystem:  return ncm::ResultBuiltInSystemContentStorageNotActive();
+                case StorageId::BuiltInUser:    return ncm::ResultBuiltInUserContentStorageNotActive();
+                case StorageId::SdCard:         return ncm::ResultSdCardContentStorageNotActive();
+                default:                        return ncm::ResultUnknownContentStorageNotActive();
             }
         }
 
         ALWAYS_INLINE Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
-                case StorageId::GameCard:       return ResultGameCardContentMetaDatabaseNotActive();
-                case StorageId::BuiltInSystem:  return ResultBuiltInSystemContentMetaDatabaseNotActive();
-                case StorageId::BuiltInUser:    return ResultBuiltInUserContentMetaDatabaseNotActive();
-                case StorageId::SdCard:         return ResultSdCardContentMetaDatabaseNotActive();
-                default:                        return ResultUnknownContentMetaDatabaseNotActive();
+                case StorageId::GameCard:       return ncm::ResultGameCardContentMetaDatabaseNotActive();
+                case StorageId::BuiltInSystem:  return ncm::ResultBuiltInSystemContentMetaDatabaseNotActive();
+                case StorageId::BuiltInUser:    return ncm::ResultBuiltInUserContentMetaDatabaseNotActive();
+                case StorageId::SdCard:         return ncm::ResultSdCardContentMetaDatabaseNotActive();
+                default:                        return ncm::ResultUnknownContentMetaDatabaseNotActive();
             }
         }
 

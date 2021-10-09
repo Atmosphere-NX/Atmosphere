@@ -29,7 +29,7 @@ namespace ams::fatal::srv {
         std::scoped_lock lk{this->lock};
 
         /* Only allow GetEvent to succeed NumFatalEvents times. */
-        R_UNLESS(this->num_events_gotten < FatalEventManager::NumFatalEvents, ResultTooManyEvents());
+        R_UNLESS(this->num_events_gotten < FatalEventManager::NumFatalEvents, fatal::ResultTooManyEvents());
 
         *out = std::addressof(this->events[this->num_events_gotten++]);
         return ResultSuccess();

@@ -122,7 +122,7 @@ namespace ams::kvdb {
 
                     Result Initialize(size_t capacity, MemoryResource *mr) {
                         this->entries = reinterpret_cast<Entry *>(mr->Allocate(sizeof(Entry) * capacity));
-                        R_UNLESS(this->entries != nullptr, ResultAllocationFailed());
+                        R_UNLESS(this->entries != nullptr, kvdb::ResultAllocationFailed());
                         this->capacity = capacity;
                         this->memory_resource = mr;
                         return ResultSuccess();
@@ -136,14 +136,14 @@ namespace ams::kvdb {
                             this->memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
                         } else {
                             /* We need to add a new entry. Check we have room, move future keys forward. */
-                            R_UNLESS(this->count < this->capacity, ResultOutOfKeyResource());
+                            R_UNLESS(this->count < this->capacity, kvdb::ResultOutOfKeyResource());
                             std::memmove(it + 1, it, sizeof(*it) * (this->end() - it));
                             this->count++;
                         }
 
                         /* Allocate new value. */
                         void *new_value = this->memory_resource->Allocate(value_size);
-                        R_UNLESS(new_value != nullptr, ResultAllocationFailed());
+                        R_UNLESS(new_value != nullptr, kvdb::ResultAllocationFailed());
                         std::memcpy(new_value, value, value_size);
 
                         /* Save the new Entry in the map. */
@@ -152,7 +152,7 @@ namespace ams::kvdb {
                     }
 
                     Result AddUnsafe(const Key &key, void *value, size_t value_size) {
-                        R_UNLESS(this->count < this->capacity, ResultOutOfKeyResource());
+                        R_UNLESS(this->count < this->capacity, kvdb::ResultOutOfKeyResource());
 
                         this->entries[this->count++] = Entry(key, value, value_size);
                         return ResultSuccess();
@@ -161,7 +161,7 @@ namespace ams::kvdb {
                     Result Remove(const Key &key) {
                         /* Find entry for key. */
                         Entry *it = this->find(key);
-                        R_UNLESS(it != this->end(), ResultKeyNotFound());
+                        R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                         /* Free the value, move entries back. */
                         this->memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
@@ -324,7 +324,7 @@ namespace ams::kvdb {
 
                         /* Allocate memory for value. */
                         void *new_value = this->memory_resource->Allocate(value_size);
-                        R_UNLESS(new_value != nullptr, ResultAllocationFailed());
+                        R_UNLESS(new_value != nullptr, kvdb::ResultAllocationFailed());
                         auto value_guard = SCOPE_GUARD { this->memory_resource->Deallocate(new_value, value_size); };
 
                         /* Read key and value. */
@@ -380,7 +380,7 @@ namespace ams::kvdb {
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
                 /* Find entry. */
                 auto it = this->find(key);
-                R_UNLESS(it != this->end(), ResultKeyNotFound());
+                R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 size_t size = std::min(max_out_size, it->GetValueSize());
                 std::memcpy(out_value, it->GetValuePointer(), size);
@@ -392,7 +392,7 @@ namespace ams::kvdb {
             Result GetValuePointer(Value **out_value, const Key &key) {
                 /* Find entry. */
                 auto it = this->find(key);
-                R_UNLESS(it != this->end(), ResultKeyNotFound());
+                R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValuePointer<Value>();
                 return ResultSuccess();
@@ -402,7 +402,7 @@ namespace ams::kvdb {
             Result GetValuePointer(const Value **out_value, const Key &key) const {
                 /* Find entry. */
                 auto it = this->find(key);
-                R_UNLESS(it != this->end(), ResultKeyNotFound());
+                R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValuePointer<Value>();
                 return ResultSuccess();
@@ -412,7 +412,7 @@ namespace ams::kvdb {
             Result GetValue(Value *out_value, const Key &key) const {
                 /* Find entry. */
                 auto it = this->find(key);
-                R_UNLESS(it != this->end(), ResultKeyNotFound());
+                R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValue<Value>();
                 return ResultSuccess();
@@ -421,7 +421,7 @@ namespace ams::kvdb {
             Result GetValueSize(size_t *out_size, const Key &key) const {
                 /* Find entry. */
                 auto it = this->find(key);
-                R_UNLESS(it != this->end(), ResultKeyNotFound());
+                R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_size = it->GetValueSize();
                 return ResultSuccess();

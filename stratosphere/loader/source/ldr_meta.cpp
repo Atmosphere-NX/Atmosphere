@@ -43,16 +43,16 @@ namespace ams::ldr {
 
         /* Helpers. */
         Result ValidateSubregion(size_t allowed_start, size_t allowed_end, size_t start, size_t size, size_t min_size = 0) {
-            R_UNLESS(size >= min_size,            ResultInvalidMeta());
-            R_UNLESS(allowed_start <= start,      ResultInvalidMeta());
-            R_UNLESS(start <= allowed_end,        ResultInvalidMeta());
-            R_UNLESS(start + size <= allowed_end, ResultInvalidMeta());
+            R_UNLESS(size >= min_size,            ldr::ResultInvalidMeta());
+            R_UNLESS(allowed_start <= start,      ldr::ResultInvalidMeta());
+            R_UNLESS(start <= allowed_end,        ldr::ResultInvalidMeta());
+            R_UNLESS(start + size <= allowed_end, ldr::ResultInvalidMeta());
             return ResultSuccess();
         }
 
         Result ValidateNpdm(const Npdm *npdm, size_t size) {
             /* Validate magic. */
-            R_UNLESS(npdm->magic == Npdm::Magic, ResultInvalidMeta());
+            R_UNLESS(npdm->magic == Npdm::Magic, ldr::ResultInvalidMeta());
 
             /* Validate flags. */
             u32 mask;
@@ -69,7 +69,7 @@ namespace ams::ldr {
             /* We set the "DisableDeviceAddressSpaceMerge" bit on all versions, so be permissive with it. */
             mask &= ~0x20;
 
-            R_UNLESS(!(npdm->flags & mask), ResultInvalidMeta());
+            R_UNLESS(!(npdm->flags & mask), ldr::ResultInvalidMeta());
 
             /* Validate Acid extents. */
             R_TRY(ValidateSubregion(sizeof(Npdm), size, npdm->acid_offset, npdm->acid_size, sizeof(Acid)));
@@ -82,11 +82,11 @@ namespace ams::ldr {
 
         Result ValidateAcid(const Acid *acid, size_t size) {
             /* Validate magic. */
-            R_UNLESS(acid->magic == Acid::Magic, ResultInvalidMeta());
+            R_UNLESS(acid->magic == Acid::Magic, ldr::ResultInvalidMeta());
 
             /* Validate that the acid is for production if not development. */
             if (!IsDevelopmentForAcidProductionCheck()) {
-                R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ResultInvalidMeta());
+                R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ldr::ResultInvalidMeta());
             }
 
             /* Validate Fac, Sac, Kac. */
@@ -99,7 +99,7 @@ namespace ams::ldr {
 
         Result ValidateAci(const Aci *aci, size_t size) {
             /* Validate magic. */
-            R_UNLESS(aci->magic == Aci::Magic, ResultInvalidMeta());
+            R_UNLESS(aci->magic == Aci::Magic, ldr::ResultInvalidMeta());
 
             /* Validate Fah, Sac, Kac. */
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->fah_offset, aci->fah_size));
@@ -130,7 +130,7 @@ namespace ams::ldr {
             const u8 *msg         = meta->acid->modulus;
             const size_t msg_size = meta->acid->size;
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
-            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ResultInvalidAcidSignature());
+            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ldr::ResultInvalidAcidSignature());
 
             meta->check_verification_data = is_signature_valid;
             return ResultSuccess();
@@ -147,12 +147,12 @@ namespace ams::ldr {
                 R_TRY(fs::GetFileSize(std::addressof(npdm_size), file));
 
                 /* Read data into cache buffer. */
-                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ResultTooLargeMeta());
+                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ldr::ResultTooLargeMeta());
                 R_TRY(fs::ReadFile(file, 0, cache->buffer, npdm_size));
             }
 
             /* Ensure size is big enough. */
-            R_UNLESS(npdm_size >= static_cast<s64>(sizeof(Npdm)), ResultInvalidMeta());
+            R_UNLESS(npdm_size >= static_cast<s64>(sizeof(Npdm)), ldr::ResultInvalidMeta());
 
             /* Validate the meta. */
             {

@@ -107,7 +107,7 @@ namespace ams::ldr {
     }
 
     Result LoaderService::GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id) {
-        R_UNLESS(out.GetSize() <= std::numeric_limits<s32>::max(), ResultInvalidSize());
+        R_UNLESS(out.GetSize() <= std::numeric_limits<s32>::max(), ldr::ResultInvalidSize());
         return ldr::ro::GetProcessModuleInfo(count.GetPointer(), out.GetPointer(), out.GetSize(), process_id);
     }
 

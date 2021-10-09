@@ -19,7 +19,7 @@
 namespace ams::i2c {
 
     Result CommandListFormatter::IsEnqueueAble(size_t sz) const {
-        R_UNLESS(this->command_list_length - this->current_index >= sz, ResultCommandListFull());
+        R_UNLESS(this->command_list_length - this->current_index >= sz, i2c::ResultCommandListFull());
         return ResultSuccess();
     }
 
