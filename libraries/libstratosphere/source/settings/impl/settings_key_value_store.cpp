@@ -214,6 +214,7 @@ namespace ams::settings::impl {
                 ~Allocator() { /* ... */ }
 
                 pointer allocate(size_type n, const_pointer hint = 0) {
+                    AMS_UNUSED(hint);
                     return static_cast<pointer>(AllocateFromHeap(sizeof(T) * n));
                 }
 
@@ -267,6 +268,7 @@ namespace ams::settings::impl {
         }
 
         void FreeToHeap(void *block, size_t size) {
+            AMS_UNUSED(size);
             lmem::FreeToExpHeap(*GetHeapHandle(), block);
         }
 
@@ -582,6 +584,7 @@ namespace ams::settings::impl {
 
             /* Load the map entries. */
             R_TRY(LoadKeyValueStoreMapEntries(out, data, [](Map &map, const MapKey &key, u8 type, const void *value_buffer, u32 value_size) -> Result {
+                AMS_UNUSED(type);
                 /* Find the key in the map. */
                 if (auto it = map.find(key); it != map.end()) {
                     MapValue &map_value = it->second;

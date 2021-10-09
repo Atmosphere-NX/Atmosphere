@@ -97,6 +97,7 @@ namespace ams::settings::impl {
 
         Result LazyFileAccessor::Commit(const char *name, bool synchronous) {
             AMS_ASSERT(name != nullptr);
+            AMS_UNUSED(name);
             std::scoped_lock lk(m_mutex);
 
             AMS_ASSERT(m_is_activated);
