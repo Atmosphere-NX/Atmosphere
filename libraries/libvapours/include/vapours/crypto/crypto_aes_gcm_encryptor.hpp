@@ -37,30 +37,30 @@ namespace ams::crypto {
                 static constexpr size_t BlockSize = AesImpl::BlockSize;
                 static constexpr size_t MacSize   = AesImpl::BlockSize;
             private:
-                AesImpl aes_impl;
-                GcmImpl gcm_impl;
+                AesImpl m_aes_impl;
+                GcmImpl m_gcm_impl;
             public:
                 AesGcmEncryptor() { /* ... */ }
 
                 void Initialize(const void *key, size_t key_size, const void *iv, size_t iv_size) {
-                    this->aes_impl.Initialize(key, key_size);
-                    this->gcm_impl.Initialize(std::addressof(this->aes_impl), iv, iv_size);
+                    m_aes_impl.Initialize(key, key_size);
+                    m_gcm_impl.Initialize(std::addressof(m_aes_impl), iv, iv_size);
                 }
 
                 void Reset(const void *iv, size_t iv_size) {
-                    this->gcm_impl.Reset(iv, iv_size);
+                    m_gcm_impl.Reset(iv, iv_size);
                 }
 
                 size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                    return this->gcm_impl.Update(dst, dst_size, src, src_size);
+                    return m_gcm_impl.Update(dst, dst_size, src, src_size);
                 }
 
                 void UpdateAad(const void *aad, size_t aad_size) {
-                    return this->gcm_impl.UpdateAad(aad, aad_size);
+                    return m_gcm_impl.UpdateAad(aad, aad_size);
                 }
 
                 void GetMac(void *dst, size_t dst_size) {
-                    return this->gcm_impl.GetMac(dst, dst_size);
+                    return m_gcm_impl.GetMac(dst, dst_size);
                 }
         };
 

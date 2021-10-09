@@ -35,29 +35,29 @@ namespace ams::crypto {
             static constexpr size_t BlockSize = Impl::BlockSize;
             static constexpr size_t MacSize   = Impl::MacSize;
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             GcmEncryptor() { /* ... */ }
 
             void Initialize(const BlockCipher *cipher, const void *iv, size_t iv_size) {
-                this->impl.Initialize(cipher);
-                this->impl.Reset(iv, iv_size);
+                m_impl.Initialize(cipher);
+                m_impl.Reset(iv, iv_size);
             }
 
             void Reset(const void *iv, size_t iv_size) {
-                this->impl.Reset(iv, iv_size);
+                m_impl.Reset(iv, iv_size);
             }
 
             size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                return this->impl.Update(dst, dst_size, src, src_size);
+                return m_impl.Update(dst, dst_size, src, src_size);
             }
 
             void UpdateAad(const void *aad, size_t aad_size) {
-                return this->impl.UpdateAad(aad, aad_size);
+                return m_impl.UpdateAad(aad, aad_size);
             }
 
             void GetMac(void *dst, size_t dst_size) {
-                return this->impl.GetMac(dst, dst_size);
+                return m_impl.GetMac(dst, dst_size);
             }
     };
 

@@ -38,8 +38,8 @@ namespace ams::crypto {
                 static constexpr size_t BlockSize = CtrImpl::BlockSize;
                 static constexpr size_t IvSize    = CtrImpl::BlockSize;
             private:
-                AesImpl aes_impl;
-                CtrImpl ctr_impl;
+                AesImpl m_aes_impl;
+                CtrImpl m_ctr_impl;
             public:
                 AesCtrCryptor() { /* ... */ }
 
@@ -52,16 +52,16 @@ namespace ams::crypto {
                     AMS_ASSERT(iv_size  == IvSize);
                     AMS_ASSERT(offset   >= 0);
 
-                    this->aes_impl.Initialize(key, key_size);
-                    this->ctr_impl.Initialize(std::addressof(this->aes_impl), iv, iv_size, offset);
+                    m_aes_impl.Initialize(key, key_size);
+                    m_ctr_impl.Initialize(std::addressof(m_aes_impl), iv, iv_size, offset);
                 }
 
                 void SwitchMessage(const void *iv, size_t iv_size) {
-                    return this->ctr_impl.SwitchMessage(iv, iv_size);
+                    return m_ctr_impl.SwitchMessage(iv, iv_size);
                 }
 
                 size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                    return this->ctr_impl.Update(dst, dst_size, src, src_size);
+                    return m_ctr_impl.Update(dst, dst_size, src, src_size);
                 }
         };
 

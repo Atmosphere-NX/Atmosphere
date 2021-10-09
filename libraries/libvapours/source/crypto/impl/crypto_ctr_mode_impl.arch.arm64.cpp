@@ -89,7 +89,7 @@ namespace ams::crypto::impl {
     template<>
     void CtrModeImpl<AesEncryptor128>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks) {
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = this->block_cipher->GetRoundKey();
+        const u8 *keys = m_block_cipher->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -101,7 +101,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(8);
         DECLARE_ROUND_KEY_VAR(9);
         DECLARE_ROUND_KEY_VAR(10);
-        uint8x16_t ctr0 = vld1q_u8(this->counter);
+        uint8x16_t ctr0 = vld1q_u8(m_counter);
         uint64_t high, low;
 
         /* Process three blocks at a time, when possible. */
@@ -237,13 +237,13 @@ namespace ams::crypto::impl {
             num_blocks--;
         }
 
-        vst1q_u8(this->counter, ctr0);
+        vst1q_u8(m_counter, ctr0);
     }
 
     template<>
     void CtrModeImpl<AesEncryptor192>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks) {
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = this->block_cipher->GetRoundKey();
+        const u8 *keys = m_block_cipher->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -257,7 +257,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(10);
         DECLARE_ROUND_KEY_VAR(11);
         DECLARE_ROUND_KEY_VAR(12);
-        uint8x16_t ctr0 = vld1q_u8(this->counter);
+        uint8x16_t ctr0 = vld1q_u8(m_counter);
         uint64_t high, low;
 
         /* Process three blocks at a time, when possible. */
@@ -401,13 +401,13 @@ namespace ams::crypto::impl {
             num_blocks--;
         }
 
-        vst1q_u8(this->counter, ctr0);
+        vst1q_u8(m_counter, ctr0);
     }
 
     template<>
     void CtrModeImpl<AesEncryptor256>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks) {
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = this->block_cipher->GetRoundKey();
+        const u8 *keys = m_block_cipher->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -423,7 +423,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(12);
         DECLARE_ROUND_KEY_VAR(13);
         DECLARE_ROUND_KEY_VAR(14);
-        uint8x16_t ctr0 = vld1q_u8(this->counter);
+        uint8x16_t ctr0 = vld1q_u8(m_counter);
         uint64_t high, low;
 
         /* Process three blocks at a time, when possible. */
@@ -576,7 +576,7 @@ namespace ams::crypto::impl {
             num_blocks--;
         }
 
-        vst1q_u8(this->counter, ctr0);
+        vst1q_u8(m_counter, ctr0);
     }
 
 }

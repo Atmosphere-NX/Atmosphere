@@ -35,24 +35,24 @@ namespace ams::crypto {
             static constexpr size_t BlockSize = Impl::BlockSize;
             static constexpr size_t IvSize    = Impl::IvSize;
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             CtrEncryptor() { /* ... */ }
 
             void Initialize(const BlockCipher *cipher, const void *iv, size_t iv_size) {
-                this->impl.Initialize(cipher, iv, iv_size);
+                m_impl.Initialize(cipher, iv, iv_size);
             }
 
             void Initialize(const BlockCipher *cipher, const void *iv, size_t iv_size, s64 offset) {
-                this->impl.Initialize(cipher, iv, iv_size, offset);
+                m_impl.Initialize(cipher, iv, iv_size, offset);
             }
 
             void SwitchMessage(const void *iv, size_t iv_size) {
-                this->impl.SwitchMessage(iv, iv_size);
+                m_impl.SwitchMessage(iv, iv_size);
             }
 
             size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                return this->impl.Update(dst, dst_size, src, src_size);
+                return m_impl.Update(dst, dst_size, src, src_size);
             }
     };
 

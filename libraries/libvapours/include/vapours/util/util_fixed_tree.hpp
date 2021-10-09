@@ -119,22 +119,22 @@ namespace ams::util {
                 private:
                     friend class ConstIterator;
                 private:
-                    const FixedTree *m_this;
+                    const FixedTree *m_tree;
                     int m_index;
                 protected:
-                    constexpr ALWAYS_INLINE IteratorBase(const FixedTree *tree, int index) : m_this(tree), m_index(index) { /* ... */ }
+                    constexpr ALWAYS_INLINE IteratorBase(const FixedTree *tree, int index) : m_tree(tree), m_index(index) { /* ... */ }
 
                     constexpr bool IsEqualImpl(const IteratorBase &rhs) const {
                         /* Validate pre-conditions. */
-                        AMS_ASSERT(m_this);
+                        AMS_ASSERT(m_tree);
 
                         /* Check for tree equality. */
-                        if (m_this != rhs.m_this) {
+                        if (m_tree != rhs.m_tree) {
                             return false;
                         }
 
                         /* Check for nil. */
-                        if (m_this->IsNil(m_index) && m_this->IsNil(rhs.m_index)) {
+                        if (m_tree->IsNil(m_index) && m_tree->IsNil(rhs.m_index)) {
                             return true;
                         }
 
@@ -144,19 +144,19 @@ namespace ams::util {
 
                     constexpr IteratorMember &DereferenceImpl() const {
                         /* Validate pre-conditions. */
-                        AMS_ASSERT(m_this);
+                        AMS_ASSERT(m_tree);
 
-                        if (!m_this->IsNil(m_index)) {
-                            return m_this->m_nodes[m_index].m_data;
+                        if (!m_tree->IsNil(m_index)) {
+                            return m_tree->m_nodes[m_index].m_data;
                         } else {
                             AMS_ASSERT(false);
-                            return m_this->GetNode(std::numeric_limits<int>::max())->m_data;
+                            return m_tree->GetNode(std::numeric_limits<int>::max())->m_data;
                         }
                     }
 
                     constexpr ALWAYS_INLINE IteratorBase &IncrementImpl() {
                         /* Validate pre-conditions. */
-                        AMS_ASSERT(m_this);
+                        AMS_ASSERT(m_tree);
 
                         this->OperateIndex(true);
                         return *this;
@@ -164,7 +164,7 @@ namespace ams::util {
 
                     constexpr ALWAYS_INLINE IteratorBase &DecrementImpl() {
                         /* Validate pre-conditions. */
-                        AMS_ASSERT(m_this);
+                        AMS_ASSERT(m_tree);
 
                         this->OperateIndex(false);
                         return *this;
@@ -176,18 +176,18 @@ namespace ams::util {
                             if (m_index == Index_BeforeBegin) {
                                 m_index = 0;
                             } else {
-                                m_index = m_this->UncheckedPP(m_index);
-                                if (m_this->IsNil(m_index)) {
+                                m_index = m_tree->UncheckedPP(m_index);
+                                if (m_tree->IsNil(m_index)) {
                                     m_index = Index_AfterEnd;
                                 }
                             }
                         } else {
                             /* We're decrementing. */
                             if (m_index == Index_AfterEnd) {
-                                m_index = static_cast<int>(m_this->size()) - 1;
+                                m_index = static_cast<int>(m_tree->size()) - 1;
                             } else {
-                                m_index = m_this->UncheckedMM(m_index);
-                                if (m_this->IsNil(m_index)) {
+                                m_index = m_tree->UncheckedMM(m_index);
+                                if (m_tree->IsNil(m_index)) {
                                     m_index = Index_BeforeBegin;
                                 }
                             }
@@ -233,7 +233,7 @@ namespace ams::util {
                     constexpr ALWAYS_INLINE ConstIterator(const FixedTree &tree, int index) : IteratorBase(std::addressof(tree), index) { /* ... */ }
 
                     constexpr ALWAYS_INLINE ConstIterator(const ConstIterator &rhs) = default;
-                    constexpr ALWAYS_INLINE ConstIterator(const Iterator &rhs) : IteratorBase(rhs.m_this, rhs.m_index) { /* ... */ }
+                    constexpr ALWAYS_INLINE ConstIterator(const Iterator &rhs) : IteratorBase(rhs.m_tree, rhs.m_index) { /* ... */ }
 
                     constexpr ALWAYS_INLINE bool operator==(const ConstIterator &rhs) const {
                         return this->IsEqualImpl(rhs);

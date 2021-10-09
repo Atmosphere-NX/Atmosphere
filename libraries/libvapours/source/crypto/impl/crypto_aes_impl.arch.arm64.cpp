@@ -40,16 +40,16 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128ContextCreate(reinterpret_cast<Aes128Context *>(this->round_keys), key, is_encrypt);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes128Context));
+            aes128ContextCreate(reinterpret_cast<Aes128Context *>(m_round_keys), key, is_encrypt);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192ContextCreate(reinterpret_cast<Aes192Context *>(this->round_keys), key, is_encrypt);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes192Context));
+            aes192ContextCreate(reinterpret_cast<Aes192Context *>(m_round_keys), key, is_encrypt);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256ContextCreate(reinterpret_cast<Aes256Context *>(this->round_keys), key, is_encrypt);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes256Context));
+            aes256ContextCreate(reinterpret_cast<Aes256Context *>(m_round_keys), key, is_encrypt);
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
@@ -65,16 +65,16 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128EncryptBlock(reinterpret_cast<const Aes128Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes128Context));
+            aes128EncryptBlock(reinterpret_cast<const Aes128Context *>(m_round_keys), dst, src);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192EncryptBlock(reinterpret_cast<const Aes192Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes192Context));
+            aes192EncryptBlock(reinterpret_cast<const Aes192Context *>(m_round_keys), dst, src);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256EncryptBlock(reinterpret_cast<const Aes256Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes256Context));
+            aes256EncryptBlock(reinterpret_cast<const Aes256Context *>(m_round_keys), dst, src);
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
@@ -90,16 +90,16 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128DecryptBlock(reinterpret_cast<const Aes128Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes128Context));
+            aes128DecryptBlock(reinterpret_cast<const Aes128Context *>(m_round_keys), dst, src);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192DecryptBlock(reinterpret_cast<const Aes192Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes192Context));
+            aes192DecryptBlock(reinterpret_cast<const Aes192Context *>(m_round_keys), dst, src);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256DecryptBlock(reinterpret_cast<const Aes256Context *>(this->round_keys), dst, src);
+            static_assert(sizeof(m_round_keys) == sizeof(::Aes256Context));
+            aes256DecryptBlock(reinterpret_cast<const Aes256Context *>(m_round_keys), dst, src);
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);

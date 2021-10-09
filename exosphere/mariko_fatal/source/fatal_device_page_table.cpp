@@ -76,10 +76,10 @@ namespace ams::secmon::fatal {
                     Bit_Readable  = 31,
                 };
             private:
-                u32 value;
+                u32 m_value;
             protected:
                 constexpr ALWAYS_INLINE u32 SelectBit(Bit n) const {
-                    return (this->value & (1u << n));
+                    return (m_value & (1u << n));
                 }
 
                 constexpr ALWAYS_INLINE bool GetBit(Bit n) const {
@@ -97,7 +97,7 @@ namespace ams::secmon::fatal {
                 ALWAYS_INLINE void SetValue(u32 v) {
                     /* Prevent re-ordering around entry modifications. */
                     __asm__ __volatile__("" ::: "memory");
-                    this->value = v;
+                    m_value = v;
                     __asm__ __volatile__("" ::: "memory");
                 }
             public:
@@ -112,7 +112,7 @@ namespace ams::secmon::fatal {
 
                 constexpr ALWAYS_INLINE u32 GetAttributes() const { return this->SelectBit(Bit_NonSecure) | this->SelectBit(Bit_Writeable) | this->SelectBit(Bit_Readable); }
 
-                constexpr ALWAYS_INLINE dd::PhysicalAddress GetPhysicalAddress() const { return (static_cast<u64>(this->value) << DevicePageBits) & PhysicalAddressMask; }
+                constexpr ALWAYS_INLINE dd::PhysicalAddress GetPhysicalAddress() const { return (static_cast<u64>(m_value) << DevicePageBits) & PhysicalAddressMask; }
 
                 ALWAYS_INLINE void Invalidate() { this->SetValue(0); }
         };

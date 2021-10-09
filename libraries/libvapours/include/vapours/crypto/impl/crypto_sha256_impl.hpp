@@ -42,12 +42,12 @@ namespace ams::crypto::impl {
                 bool finalized;
             };
         private:
-            State state;
+            State m_state;
         public:
             Sha256Impl() { /* ... */ }
             ~Sha256Impl() {
                 static_assert(std::is_trivially_destructible<State>::value);
-                ClearMemory(std::addressof(this->state), sizeof(this->state));
+                ClearMemory(std::addressof(m_state), sizeof(m_state));
             }
 
             void Initialize();
@@ -57,13 +57,13 @@ namespace ams::crypto::impl {
             void InitializeWithContext(const Sha256Context *context);
             size_t GetContext(Sha256Context *context) const;
 
-            size_t GetBufferedDataSize() const { return this->state.num_buffered; }
+            size_t GetBufferedDataSize() const { return m_state.num_buffered; }
 
             void GetBufferedData(void *dst, size_t dst_size) const {
                 AMS_ASSERT(dst_size >= this->GetBufferedDataSize());
                 AMS_UNUSED(dst_size);
 
-                std::memcpy(dst, this->state.buffer, this->GetBufferedDataSize());
+                std::memcpy(dst, m_state.buffer, this->GetBufferedDataSize());
             }
     };
 

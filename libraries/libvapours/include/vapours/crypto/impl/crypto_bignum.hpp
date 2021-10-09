@@ -46,43 +46,43 @@ namespace ams::crypto::impl {
                         private:
                             friend class WordAllocator;
                         private:
-                            WordAllocator *allocator;
-                            Word *buffer;
-                            size_t count;
+                            WordAllocator *m_allocator;
+                            Word *m_buffer;
+                            size_t m_count;
                         private:
-                            constexpr ALWAYS_INLINE Allocation(WordAllocator *a, Word *w, size_t c) : allocator(a), buffer(w), count(c) { /* ... */ }
+                            constexpr ALWAYS_INLINE Allocation(WordAllocator *a, Word *w, size_t c) : m_allocator(a), m_buffer(w), m_count(c) { /* ... */ }
                         public:
-                            ALWAYS_INLINE ~Allocation() { if (allocator) { allocator->Free(this->buffer, this->count); } }
+                            ALWAYS_INLINE ~Allocation() { if (m_allocator) { m_allocator->Free(m_buffer, m_count); } }
 
-                            constexpr ALWAYS_INLINE Word *GetBuffer() const { return this->buffer; }
-                            constexpr ALWAYS_INLINE size_t GetCount() const { return this->count; }
-                            constexpr ALWAYS_INLINE bool IsValid() const { return this->buffer != nullptr; }
+                            constexpr ALWAYS_INLINE Word *GetBuffer() const { return m_buffer; }
+                            constexpr ALWAYS_INLINE size_t GetCount() const { return m_count; }
+                            constexpr ALWAYS_INLINE bool IsValid() const { return m_buffer != nullptr; }
                     };
 
                     friend class Allocation;
                 private:
-                    Word *buffer;
-                    size_t count;
-                    size_t max_count;
-                    size_t min_count;
+                    Word *m_buffer;
+                    size_t m_count;
+                    size_t m_max_count;
+                    size_t m_min_count;
                 private:
                     ALWAYS_INLINE void Free(void *words, size_t num) {
-                        this->buffer -= num;
-                        this->count  += num;
+                        m_buffer -= num;
+                        m_count  += num;
 
-                        AMS_ASSERT(words == this->buffer);
+                        AMS_ASSERT(words == m_buffer);
                         AMS_UNUSED(words);
                     }
                 public:
-                    constexpr ALWAYS_INLINE WordAllocator(Word *buf, size_t c) : buffer(buf), count(c), max_count(c), min_count(c) { /* ... */ }
+                    constexpr ALWAYS_INLINE WordAllocator(Word *buf, size_t c) : m_buffer(buf), m_count(c), m_max_count(c), m_min_count(c) { /* ... */ }
 
                     ALWAYS_INLINE Allocation Allocate(size_t num) {
-                        if (num <= this->count) {
-                            Word *allocated = this->buffer;
+                        if (num <= m_count) {
+                            Word *allocated = m_buffer;
 
-                            this->buffer += num;
-                            this->count -= num;
-                            this->min_count = std::min(this->count, this->min_count);
+                            m_buffer += num;
+                            m_count -= num;
+                            m_min_count = std::min(m_count, m_min_count);
 
                             return Allocation(this, allocated, num);
                         } else {
@@ -91,23 +91,23 @@ namespace ams::crypto::impl {
                     }
 
                     constexpr ALWAYS_INLINE size_t GetMaxUsedSize() const {
-                        return (this->max_count - this->min_count) * sizeof(Word);
+                        return (m_max_count - m_min_count) * sizeof(Word);
                     }
             };
         private:
-            Word *words;
-            size_t num_words;
-            size_t max_words;
+            Word *m_words;
+            size_t m_num_words;
+            size_t m_max_words;
         private:
             static void ImportImpl(Word *out, size_t out_size, const u8 *src, size_t src_size);
             static void ExportImpl(u8 *out, size_t out_size, const Word *src, size_t src_size);
         public:
-            constexpr BigNum() : words(), num_words(), max_words() { /* ... */ }
+            constexpr BigNum() : m_words(), m_num_words(), m_max_words() { /* ... */ }
             ~BigNum() { /* ... */ }
 
             constexpr void ReserveStatic(Word *buf, size_t capacity) {
-                this->words = buf;
-                this->max_words = capacity;
+                m_words = buf;
+                m_max_words = capacity;
             }
 
             bool Import(const void *src, size_t src_size);
@@ -116,7 +116,7 @@ namespace ams::crypto::impl {
             size_t GetSize() const;
 
             bool IsZero() const {
-                return this->num_words == 0;
+                return m_num_words == 0;
             }
 
             bool ExpMod(void *dst, const void *src, size_t size, const BigNum &exp, u32 *work_buf, size_t work_buf_size) const;
@@ -154,10 +154,10 @@ namespace ams::crypto::impl {
             static constexpr size_t NumWords = util::AlignUp(NumBits, BitsPerWord) / BitsPerWord;
             static constexpr size_t NumBytes = NumWords * sizeof(Word);
         private:
-            Word word_buf[NumWords];
+            Word m_word_buf[NumWords];
         public:
-            constexpr StaticBigNum() : word_buf() {
-                this->ReserveStatic(word_buf, NumWords);
+            constexpr StaticBigNum() : m_word_buf() {
+                this->ReserveStatic(m_word_buf, NumWords);
             }
     };
 

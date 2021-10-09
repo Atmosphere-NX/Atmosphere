@@ -54,13 +54,13 @@ namespace ams::crypto::impl {
     }
 
     size_t BigNum::GetSize() const {
-        if (this->num_words == 0) {
+        if (m_num_words == 0) {
             return 0;
         }
         static_assert(sizeof(Word) == 4);
 
-        size_t size = this->num_words * sizeof(Word);
-        const Word last = this->words[this->num_words - 1];
+        size_t size = m_num_words * sizeof(Word);
+        const Word last = m_words[m_num_words - 1];
         AMS_ASSERT(last != 0);
         if (last >= 0x01000000u) {
             return size - 0;
@@ -84,21 +84,21 @@ namespace ams::crypto::impl {
         }
 
         /* Ensure we have space for the number. */
-        AMS_ASSERT(src_size <= this->max_words * sizeof(Word));
-        if (AMS_UNLIKELY(!(src_size <= this->max_words * sizeof(Word)))) {
+        AMS_ASSERT(src_size <= m_max_words * sizeof(Word));
+        if (AMS_UNLIKELY(!(src_size <= m_max_words * sizeof(Word)))) {
             return false;
         }
 
         /* Import. */
-        this->num_words = util::AlignUp(src_size, sizeof(Word)) / sizeof(Word);
+        m_num_words = util::AlignUp(src_size, sizeof(Word)) / sizeof(Word);
 
-        ImportImpl(this->words, this->max_words, data, src_size);
+        ImportImpl(m_words, m_max_words, data, src_size);
         return true;
     }
 
     void BigNum::Export(void *dst, size_t dst_size) {
         AMS_ASSERT(dst_size >= this->GetSize());
-        ExportImpl(static_cast<u8 *>(dst), dst_size, this->words, this->num_words);
+        ExportImpl(static_cast<u8 *>(dst), dst_size, m_words, m_num_words);
     }
 
     bool BigNum::ExpMod(void *dst, const void *src, size_t size, const BigNum &exp, u32 *work_buf, size_t work_buf_size) const {
@@ -126,7 +126,7 @@ namespace ams::crypto::impl {
         }
 
         /* Perform the exponentiation. */
-        if (!ExpMod(signature.words, signature.words, exp.words, exp.num_words, this->words, this->num_words, std::addressof(allocator))) {
+        if (!ExpMod(signature.m_words, signature.m_words, exp.m_words, exp.m_num_words, m_words, m_num_words, std::addressof(allocator))) {
             return false;
         }
 
@@ -138,11 +138,11 @@ namespace ams::crypto::impl {
     }
 
     void BigNum::ClearToZero() {
-        std::memset(this->words, 0, this->num_words * sizeof(Word));
+        std::memset(m_words, 0, m_num_words * sizeof(Word));
     }
 
     void BigNum::UpdateCount() {
-        this->num_words = CountWords(this->words, this->max_words);
+        m_num_words = CountWords(m_words, m_max_words);
     }
 
 }

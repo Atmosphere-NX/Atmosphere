@@ -41,20 +41,20 @@ namespace ams::crypto {
             };
             static constexpr size_t Asn1IdentifierSize = util::size(Asn1Identifier);
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             Sha1Generator() { /* ... */ }
 
             void Initialize() {
-                this->impl.Initialize();
+                m_impl.Initialize();
             }
 
             void Update(const void *data, size_t size) {
-                this->impl.Update(data, size);
+                m_impl.Update(data, size);
             }
 
             void GetHash(void *dst, size_t size) {
-                this->impl.GetHash(dst, size);
+                m_impl.GetHash(dst, size);
             }
     };
 

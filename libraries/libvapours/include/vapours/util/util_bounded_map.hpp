@@ -24,20 +24,20 @@ namespace ams::util {
     template<class Key, class Value, size_t N>
     class BoundedMap {
         private:
-            std::array<util::optional<Key>, N> keys;
-            std::array<TypedStorage<Value>, N> values;
+            std::array<util::optional<Key>, N> m_keys;
+            std::array<TypedStorage<Value>, N> m_values;
         private:
             ALWAYS_INLINE void FreeEntry(size_t i) {
-                this->keys[i].reset();
-                DestroyAt(this->values[i]);
+                m_keys[i].reset();
+                DestroyAt(m_values[i]);
             }
         public:
-            constexpr BoundedMap() : keys(), values() { /* ... */ }
+            constexpr BoundedMap() : m_keys(), m_values() { /* ... */ }
 
             Value *Find(const Key &key) {
                 for (size_t i = 0; i < N; i++) {
-                    if (this->keys[i] && this->keys[i].value() == key) {
-                        return GetPointer(this->values[i]);
+                    if (m_keys[i] && m_keys[i].value() == key) {
+                        return GetPointer(m_values[i]);
                     }
                 }
                 return nullptr;
@@ -45,7 +45,7 @@ namespace ams::util {
 
             void Remove(const Key &key) {
                 for (size_t i = 0; i < N; i++) {
-                    if (this->keys[i] && this->keys[i].value() == key) {
+                    if (m_keys[i] && m_keys[i].value() == key) {
                         this->FreeEntry(i);
                         break;
                     }
@@ -60,7 +60,7 @@ namespace ams::util {
 
             bool IsFull() {
                 for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
+                    if (!m_keys[i]) {
                         return false;
                     }
                 }
@@ -76,9 +76,9 @@ namespace ams::util {
 
                 /* Find a free value. */
                 for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
-                        this->keys[i] = key;
-                        ConstructAt(this->values[i], std::forward<Value>(value));
+                    if (!m_keys[i]) {
+                        m_keys[i] = key;
+                        ConstructAt(m_values[i], std::forward<Value>(value));
                         return true;
                     }
                 }
@@ -89,17 +89,17 @@ namespace ams::util {
             bool InsertOrAssign(const Key &key, Value &&value) {
                 /* Try to find and assign an existing value. */
                 for (size_t i = 0; i < N; i++) {
-                    if (this->keys[i] && this->keys[i].value() == key) {
-                        GetReference(this->values[i]) = std::forward<Value>(value);
+                    if (m_keys[i] && m_keys[i].value() == key) {
+                        GetReference(m_values[i]) = std::forward<Value>(value);
                         return true;
                     }
                 }
 
                 /* Find a free value. */
                 for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
-                        this->keys[i] = key;
-                        ConstructAt(this->values[i], std::move(value));
+                    if (!m_keys[i]) {
+                        m_keys[i] = key;
+                        ConstructAt(m_values[i], std::move(value));
                         return true;
                     }
                 }
@@ -116,9 +116,9 @@ namespace ams::util {
 
                 /* Find a free value. */
                 for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
-                        this->keys[i] = key;
-                        ConstructAt(this->values[i], std::forward<Args>(args)...);
+                    if (!m_keys[i]) {
+                        m_keys[i] = key;
+                        ConstructAt(m_values[i], std::forward<Args>(args)...);
                         return true;
                     }
                 }

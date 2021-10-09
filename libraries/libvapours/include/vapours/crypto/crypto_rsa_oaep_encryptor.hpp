@@ -39,23 +39,23 @@ namespace ams::crypto {
                 Done,
             };
         private:
-            RsaCalculator<ModulusSize, MaximumExponentSize> calculator;
-            Hash hash;
-            bool set_label_digest;
-            u8   label_digest[HashSize];
-            State state;
+            RsaCalculator<ModulusSize, MaximumExponentSize> m_calculator;
+            Hash m_hash;
+            bool m_set_label_digest;
+            u8   m_label_digest[HashSize];
+            State m_state;
         public:
-            RsaOaepEncryptor() : set_label_digest(false), state(State::None) { std::memset(this->label_digest, 0, sizeof(this->label_digest)); }
+            RsaOaepEncryptor() : m_set_label_digest(false), m_state(State::None) { std::memset(m_label_digest, 0, sizeof(m_label_digest)); }
 
             ~RsaOaepEncryptor() {
-                ClearMemory(this->label_digest, sizeof(this->label_digest));
+                ClearMemory(m_label_digest, sizeof(m_label_digest));
             }
 
             bool Initialize(const void *mod, size_t mod_size, const void *exp, size_t exp_size) {
-                this->hash.Initialize();
-                this->set_label_digest = false;
-                if (this->calculator.Initialize(mod, mod_size, exp, exp_size)) {
-                    this->state = State::Initialized;
+                m_hash.Initialize();
+                m_set_label_digest = false;
+                if (m_calculator.Initialize(mod, mod_size, exp, exp_size)) {
+                    m_state = State::Initialized;
                     return true;
                 } else {
                     return false;
@@ -63,54 +63,54 @@ namespace ams::crypto {
             }
 
             void UpdateLabel(const void *data, size_t size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
 
-                this->hash.Update(data, size);
+                m_hash.Update(data, size);
             }
 
             void SetLabelDigest(const void *digest, size_t digest_size) {
-                AMS_ASSERT(this->state == State::Initialized);
-                AMS_ABORT_UNLESS(digest_size == sizeof(this->label_digest));
+                AMS_ASSERT(m_state == State::Initialized);
+                AMS_ABORT_UNLESS(digest_size == sizeof(m_label_digest));
 
-                std::memcpy(this->label_digest, digest, digest_size);
-                this->set_label_digest = true;
+                std::memcpy(m_label_digest, digest, digest_size);
+                m_set_label_digest = true;
             }
 
             bool Encrypt(void *dst, size_t dst_size, const void *src, size_t src_size, const void *salt, size_t salt_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
 
                 impl::RsaOaepImpl<Hash> impl;
-                if (!this->set_label_digest) {
-                    this->hash.GetHash(this->label_digest, sizeof(this->label_digest));
+                if (!m_set_label_digest) {
+                    m_hash.GetHash(m_label_digest, sizeof(m_label_digest));
                 }
 
-                impl.Encode(dst, dst_size, this->label_digest, sizeof(this->label_digest), src, src_size, salt, salt_size);
+                impl.Encode(dst, dst_size, m_label_digest, sizeof(m_label_digest), src, src_size, salt, salt_size);
 
-                if (!this->calculator.ExpMod(dst, dst, dst_size)) {
+                if (!m_calculator.ExpMod(dst, dst, dst_size)) {
                     std::memset(dst, 0, dst_size);
                     return false;
                 }
 
-                this->state = State::Done;
+                m_state = State::Done;
                 return true;
             }
 
             bool Encrypt(void *dst, size_t dst_size, const void *src, size_t src_size, const void *salt, size_t salt_size, void *work, size_t work_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
 
                 impl::RsaOaepImpl<Hash> impl;
-                if (!this->set_label_digest) {
-                    this->hash.GetHash(this->label_digest, sizeof(this->label_digest));
+                if (!m_set_label_digest) {
+                    m_hash.GetHash(m_label_digest, sizeof(m_label_digest));
                 }
 
-                impl.Encode(dst, dst_size, this->label_digest, sizeof(this->label_digest), src, src_size, salt, salt_size);
+                impl.Encode(dst, dst_size, m_label_digest, sizeof(m_label_digest), src, src_size, salt, salt_size);
 
-                if (!this->calculator.ExpMod(dst, dst, dst_size, work, work_size)) {
+                if (!m_calculator.ExpMod(dst, dst, dst_size, work, work_size)) {
                     std::memset(dst, 0, dst_size);
                     return false;
                 }
 
-                this->state = State::Done;
+                m_state = State::Done;
                 return true;
             }
 

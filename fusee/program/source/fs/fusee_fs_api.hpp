@@ -28,7 +28,7 @@ namespace ams::fs {
     };
 
     struct ReadOption {
-        u32 value;
+        u32 _value;
 
         static const ReadOption None;
     };
@@ -36,7 +36,7 @@ namespace ams::fs {
     inline constexpr const ReadOption ReadOption::None = {0};
 
     inline constexpr bool operator==(const ReadOption &lhs, const ReadOption &rhs) {
-        return lhs.value == rhs.value;
+        return lhs._value == rhs._value;
     }
 
     inline constexpr bool operator!=(const ReadOption &lhs, const ReadOption &rhs) {
@@ -46,10 +46,10 @@ namespace ams::fs {
     static_assert(util::is_pod<ReadOption>::value && sizeof(ReadOption) == sizeof(u32));
 
     struct WriteOption {
-        u32 value;
+        u32 _value;
 
         constexpr inline bool HasFlushFlag() const {
-            return this->value & 1;
+            return _value & 1;
         }
 
         static const WriteOption None;
@@ -60,7 +60,7 @@ namespace ams::fs {
     inline constexpr const WriteOption WriteOption::Flush = {1};
 
     inline constexpr bool operator==(const WriteOption &lhs, const WriteOption &rhs) {
-        return lhs.value == rhs.value;
+        return lhs._value == rhs._value;
     }
 
     inline constexpr bool operator!=(const WriteOption &lhs, const WriteOption &rhs) {

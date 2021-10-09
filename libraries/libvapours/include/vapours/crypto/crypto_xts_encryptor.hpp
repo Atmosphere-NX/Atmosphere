@@ -34,21 +34,21 @@ namespace ams::crypto {
             static constexpr size_t BlockSize = Impl::BlockSize;
             static constexpr size_t IvSize    = Impl::IvSize;
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             XtsEncryptor() { /* ... */ }
 
             template<typename BlockCipher2>
             void Initialize(const BlockCipher *cipher1, const BlockCipher2 *cipher2, const void *iv, size_t iv_size) {
-                this->impl.InitializeEncryption(cipher1, cipher2, iv, iv_size);
+                m_impl.InitializeEncryption(cipher1, cipher2, iv, iv_size);
             }
 
             size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                return this->impl.template Update<BlockCipher>(dst, dst_size, src, src_size);
+                return m_impl.template Update<BlockCipher>(dst, dst_size, src, src_size);
             }
 
             size_t Finalize(void *dst, size_t dst_size) {
-                return this->impl.FinalizeEncryption(dst, dst_size);
+                return m_impl.FinalizeEncryption(dst, dst_size);
             }
     };
 

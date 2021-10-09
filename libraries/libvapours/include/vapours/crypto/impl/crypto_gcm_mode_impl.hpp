@@ -63,23 +63,23 @@ namespace ams::crypto::impl {
 
             using CipherFunction = void (*)(void *dst_block, const void *src_block, const void *ctx);
         private:
-            State state;
-            const BlockCipher *block_cipher;
-            CipherFunction cipher_func;
-            u8 pad[sizeof(u64)];
-            Block block_x;
-            Block block_y;
-            Block block_ek;
-            Block block_ek0;
-            Block block_tmp;
-            size_t aad_size;
-            size_t msg_size;
-            u32    aad_remaining;
-            u32    msg_remaining;
-            u32    counter;
-            Block  h_mult_blocks[16];
+            State m_state;
+            const BlockCipher *m_block_cipher;
+            CipherFunction m_cipher_func;
+            u8 m_pad[sizeof(u64)];
+            Block m_block_x;
+            Block m_block_y;
+            Block m_block_ek;
+            Block m_block_ek0;
+            Block m_block_tmp;
+            size_t m_aad_size;
+            size_t m_msg_size;
+            u32    m_aad_remaining;
+            u32    m_msg_remaining;
+            u32    m_counter;
+            Block  m_h_mult_blocks[16];
         public:
-            GcmModeImpl() : state(State_None) { /* ... */ }
+            GcmModeImpl() : m_state(State_None) { /* ... */ }
 
             ~GcmModeImpl() {
                 ClearMemory(this, sizeof(*this));

@@ -20,42 +20,42 @@ namespace ams::crypto::impl {
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 
     void Sha256Impl::Initialize() {
-        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
-        ::sha256ContextCreate(reinterpret_cast<::Sha256Context *>(std::addressof(this->state)));
+        static_assert(sizeof(m_state) == sizeof(::Sha256Context));
+        ::sha256ContextCreate(reinterpret_cast<::Sha256Context *>(std::addressof(m_state)));
     }
 
     void Sha256Impl::Update(const void *data, size_t size) {
-        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
-        ::sha256ContextUpdate(reinterpret_cast<::Sha256Context *>(std::addressof(this->state)), data, size);
+        static_assert(sizeof(m_state) == sizeof(::Sha256Context));
+        ::sha256ContextUpdate(reinterpret_cast<::Sha256Context *>(std::addressof(m_state)), data, size);
     }
 
     void Sha256Impl::GetHash(void *dst, size_t size) {
-        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
+        static_assert(sizeof(m_state) == sizeof(::Sha256Context));
         AMS_ASSERT(size >= HashSize);
         AMS_UNUSED(size);
 
-        ::sha256ContextGetHash(reinterpret_cast<::Sha256Context *>(std::addressof(this->state)), dst);
+        ::sha256ContextGetHash(reinterpret_cast<::Sha256Context *>(std::addressof(m_state)), dst);
     }
 
     void Sha256Impl::InitializeWithContext(const Sha256Context *context) {
-        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
+        static_assert(sizeof(m_state) == sizeof(::Sha256Context));
 
         /* Copy state in from the context. */
-        std::memcpy(this->state.intermediate_hash, context->intermediate_hash, sizeof(this->state.intermediate_hash));
-        this->state.bits_consumed = context->bits_consumed;
+        std::memcpy(m_state.intermediate_hash, context->intermediate_hash, sizeof(m_state.intermediate_hash));
+        m_state.bits_consumed = context->bits_consumed;
 
         /* Clear the rest of state. */
-        std::memset(this->state.buffer, 0, sizeof(this->state.buffer));
-        this->state.num_buffered = 0;
-        this->state.finalized = false;
+        std::memset(m_state.buffer, 0, sizeof(m_state.buffer));
+        m_state.num_buffered = 0;
+        m_state.finalized = false;
     }
 
     size_t Sha256Impl::GetContext(Sha256Context *context) const {
-        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
-        std::memcpy(context->intermediate_hash, this->state.intermediate_hash, sizeof(context->intermediate_hash));
-        context->bits_consumed = this->state.bits_consumed;
+        static_assert(sizeof(m_state) == sizeof(::Sha256Context));
+        std::memcpy(context->intermediate_hash, m_state.intermediate_hash, sizeof(context->intermediate_hash));
+        context->bits_consumed = m_state.bits_consumed;
 
-        return this->state.num_buffered;
+        return m_state.num_buffered;
     }
 
 #else

@@ -39,23 +39,23 @@ namespace ams::crypto {
                 Done,
             };
         private:
-            RsaCalculator<ModulusSize, MaximumExponentSize> calculator;
-            Hash hash;
-            bool set_label_digest;
-            u8   label_digest[HashSize];
-            State state;
+            RsaCalculator<ModulusSize, MaximumExponentSize> m_calculator;
+            Hash m_hash;
+            bool m_set_label_digest;
+            u8   m_label_digest[HashSize];
+            State m_state;
         public:
-            RsaOaepDecryptor() : set_label_digest(false), state(State::None) { std::memset(this->label_digest, 0, sizeof(this->label_digest)); }
+            RsaOaepDecryptor() : m_set_label_digest(false), m_state(State::None) { std::memset(m_label_digest, 0, sizeof(m_label_digest)); }
 
             ~RsaOaepDecryptor() {
-                ClearMemory(this->label_digest, sizeof(this->label_digest));
+                ClearMemory(m_label_digest, sizeof(m_label_digest));
             }
 
             bool Initialize(const void *mod, size_t mod_size, const void *exp, size_t exp_size) {
-                this->hash.Initialize();
-                this->set_label_digest = false;
-                if (this->calculator.Initialize(mod, mod_size, exp, exp_size)) {
-                    this->state = State::Initialized;
+                m_hash.Initialize();
+                m_set_label_digest = false;
+                if (m_calculator.Initialize(mod, mod_size, exp, exp_size)) {
+                    m_state = State::Initialized;
                     return true;
                 } else {
                     return false;
@@ -63,58 +63,58 @@ namespace ams::crypto {
             }
 
             void UpdateLabel(const void *data, size_t size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
 
-                this->hash.Update(data, size);
+                m_hash.Update(data, size);
             }
 
             void SetLabelDigest(const void *digest, size_t digest_size) {
-                AMS_ASSERT(this->state == State::Initialized);
-                AMS_ABORT_UNLESS(digest_size == sizeof(this->label_digest));
+                AMS_ASSERT(m_state == State::Initialized);
+                AMS_ABORT_UNLESS(digest_size == sizeof(m_label_digest));
 
-                std::memcpy(this->label_digest, digest, digest_size);
-                this->set_label_digest = true;
+                std::memcpy(m_label_digest, digest, digest_size);
+                m_set_label_digest = true;
             }
 
             size_t Decrypt(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
 
                 impl::RsaOaepImpl<Hash> impl;
                 u8 message[BlockSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, src, src_size)) {
+                if (!m_calculator.ExpMod(message, src, src_size)) {
                     std::memset(dst, 0, dst_size);
                     return false;
                 }
 
-                if (!this->set_label_digest) {
-                    this->hash.GetHash(this->label_digest, sizeof(this->label_digest));
+                if (!m_set_label_digest) {
+                    m_hash.GetHash(m_label_digest, sizeof(m_label_digest));
                 }
 
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
-                return impl.Decode(dst, dst_size, this->label_digest, sizeof(this->label_digest), message, sizeof(message));
+                return impl.Decode(dst, dst_size, m_label_digest, sizeof(m_label_digest), message, sizeof(message));
             }
 
             size_t Decrypt(void *dst, size_t dst_size, const void *src, size_t src_size, void *work_buf, size_t work_buf_size) {
-                AMS_ASSERT(this->state == State::Initialized);
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                AMS_ASSERT(m_state == State::Initialized);
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
                 impl::RsaOaepImpl<Hash> impl;
                 u8 message[BlockSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, src, src_size, work_buf, work_buf_size)) {
+                if (!m_calculator.ExpMod(message, src, src_size, work_buf, work_buf_size)) {
                     return false;
                 }
 
-                if (!this->set_label_digest) {
-                    this->hash.GetHash(this->label_digest, sizeof(this->label_digest));
-                    this->set_label_digest = true;
+                if (!m_set_label_digest) {
+                    m_hash.GetHash(m_label_digest, sizeof(m_label_digest));
+                    m_set_label_digest = true;
                 }
 
-                return impl.Decode(dst, dst_size, this->label_digest, sizeof(this->label_digest), message, sizeof(message));
+                return impl.Decode(dst, dst_size, m_label_digest, sizeof(m_label_digest), message, sizeof(message));
             }
 
             static size_t Decrypt(void *dst, size_t dst_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *msg, size_t msg_size, const void *lab, size_t lab_size) {

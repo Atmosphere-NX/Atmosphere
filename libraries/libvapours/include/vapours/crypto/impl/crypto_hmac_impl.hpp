@@ -43,17 +43,17 @@ namespace ams::crypto::impl {
                 State_Done        = 2,
             };
         private:
-            Hash hash_function;
-            u32 key[BlockSize / sizeof(u32)];
-            u32 mac[MacSize   / sizeof(u32)];
-            State state;
+            Hash m_hash_function;
+            u32 m_key[BlockSize / sizeof(u32)];
+            u32 m_mac[MacSize   / sizeof(u32)];
+            State m_state;
         public:
-            HmacImpl() : state(State_None) { /* ... */ }
+            HmacImpl() : m_state(State_None) { /* ... */ }
             ~HmacImpl() {
-                static_assert(offsetof(HmacImpl, hash_function) == 0);
+                static_assert(offsetof(HmacImpl, m_hash_function) == 0);
 
                 /* Clear everything except for the hash function. */
-                ClearMemory(reinterpret_cast<u8 *>(this) + sizeof(this->hash_function), sizeof(*this) - sizeof(this->hash_function));
+                ClearMemory(reinterpret_cast<u8 *>(this) + sizeof(m_hash_function), sizeof(*this) - sizeof(m_hash_function));
             }
 
             void Initialize(const void *key, size_t key_size);
@@ -64,64 +64,64 @@ namespace ams::crypto::impl {
     template<typename Hash>
     inline void HmacImpl<Hash>::Initialize(const void *key, size_t key_size) {
         /* Clear the key storage. */
-        std::memset(this->key, 0, sizeof(this->key));
+        std::memset(m_key, 0, sizeof(m_key));
 
         /* Set the key storage. */
         if (key_size > BlockSize) {
-            this->hash_function.Initialize();
-            this->hash_function.Update(key, key_size);
-            this->hash_function.GetHash(this->key, this->hash_function.HashSize);
+            m_hash_function.Initialize();
+            m_hash_function.Update(key, key_size);
+            m_hash_function.GetHash(m_key, m_hash_function.HashSize);
         } else {
-            std::memcpy(this->key, key, key_size);
+            std::memcpy(m_key, key, key_size);
         }
 
         /* Xor the key with the ipad. */
-        for (size_t i = 0; i < util::size(this->key); i++) {
-            this->key[i] ^= IpadMagic;
+        for (size_t i = 0; i < util::size(m_key); i++) {
+            m_key[i] ^= IpadMagic;
         }
 
         /* Update the hash function with the xor'd key. */
-        this->hash_function.Initialize();
-        this->hash_function.Update(this->key, BlockSize);
+        m_hash_function.Initialize();
+        m_hash_function.Update(m_key, BlockSize);
 
         /* Mark initialized. */
-        this->state = State_Initialized;
+        m_state = State_Initialized;
     }
 
     template<typename Hash>
     inline void HmacImpl<Hash>::Update(const void *data, size_t data_size) {
-        AMS_ASSERT(this->state == State_Initialized);
+        AMS_ASSERT(m_state == State_Initialized);
 
-        this->hash_function.Update(data, data_size);
+        m_hash_function.Update(data, data_size);
     }
 
     template<typename Hash>
     inline void HmacImpl<Hash>::GetMac(void *dst, size_t dst_size) {
-        AMS_ASSERT(this->state == State_Initialized || this->state == State_Done);
+        AMS_ASSERT(m_state == State_Initialized || m_state == State_Done);
         AMS_ASSERT(dst_size >= MacSize);
         AMS_UNUSED(dst_size);
 
         /* If we're not already finalized, get the final mac. */
-        if (this->state == State_Initialized) {
+        if (m_state == State_Initialized) {
             /* Get the hash of ((key ^ ipad) || data). */
-            this->hash_function.GetHash(this->mac, MacSize);
+            m_hash_function.GetHash(m_mac, MacSize);
 
             /* Xor the key with the opad. */
-            for (size_t i = 0; i < util::size(this->key); i++) {
-                this->key[i] ^= IpadMagicXorOpadMagic;
+            for (size_t i = 0; i < util::size(m_key); i++) {
+                m_key[i] ^= IpadMagicXorOpadMagic;
             }
 
             /* Calculate the final mac as hash of ((key ^ opad) || hash((key ^ ipad) || data)) */
-            this->hash_function.Initialize();
-            this->hash_function.Update(this->key, BlockSize);
-            this->hash_function.Update(this->mac, MacSize);
-            this->hash_function.GetHash(this->mac, MacSize);
+            m_hash_function.Initialize();
+            m_hash_function.Update(m_key, BlockSize);
+            m_hash_function.Update(m_mac, MacSize);
+            m_hash_function.GetHash(m_mac, MacSize);
 
             /* Set our state as done. */
-            this->state = State_Done;
+            m_state = State_Done;
         }
 
-        std::memcpy(dst, this->mac, MacSize);
+        std::memcpy(dst, m_mac, MacSize);
     }
 
 }

@@ -46,36 +46,36 @@ namespace ams::crypto {
             };
             static constexpr size_t Asn1IdentifierSize = util::size(Asn1Identifier);
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             Sha256Generator() { /* ... */ }
 
             void Initialize() {
-                this->impl.Initialize();
+                m_impl.Initialize();
             }
 
             void Update(const void *data, size_t size) {
-                this->impl.Update(data, size);
+                m_impl.Update(data, size);
             }
 
             void GetHash(void *dst, size_t size) {
-                this->impl.GetHash(dst, size);
+                m_impl.GetHash(dst, size);
             }
 
             void InitializeWithContext(const Sha256Context *context) {
-                this->impl.InitializeWithContext(context);
+                m_impl.InitializeWithContext(context);
             }
 
             size_t GetContext(Sha256Context *context) const {
-                return this->impl.GetContext(context);
+                return m_impl.GetContext(context);
             }
 
             size_t GetBufferedDataSize() const {
-                return this->impl.GetBufferedDataSize();
+                return m_impl.GetBufferedDataSize();
             }
 
             void GetBufferedData(void *dst, size_t dst_size) const {
-                return this->impl.GetBufferedData(dst, dst_size);
+                return m_impl.GetBufferedData(dst, dst_size);
             }
     };
 

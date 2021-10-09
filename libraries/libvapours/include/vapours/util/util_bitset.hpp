@@ -40,22 +40,22 @@ namespace ams::util {
                     return Storage(1) << (FlagsPerWord - 1 - bit);
                 }
             private:
-                Storage words[NumWords];
+                Storage m_words[NumWords];
             public:
-                constexpr ALWAYS_INLINE BitSet() : words() { /* ... */ }
+                constexpr ALWAYS_INLINE BitSet() : m_words() { /* ... */ }
 
                 constexpr ALWAYS_INLINE void SetBit(size_t i) {
-                    this->words[i / FlagsPerWord] |= GetBitMask(i % FlagsPerWord);
+                    m_words[i / FlagsPerWord] |= GetBitMask(i % FlagsPerWord);
                 }
 
                 constexpr ALWAYS_INLINE void ClearBit(size_t i) {
-                    this->words[i / FlagsPerWord] &= ~GetBitMask(i % FlagsPerWord);
+                    m_words[i / FlagsPerWord] &= ~GetBitMask(i % FlagsPerWord);
                 }
 
                 constexpr ALWAYS_INLINE size_t CountLeadingZero() const {
                     for (size_t i = 0; i < NumWords; i++) {
-                        if (this->words[i]) {
-                            return FlagsPerWord * i + CountLeadingZeroImpl(this->words[i]);
+                        if (m_words[i]) {
+                            return FlagsPerWord * i + CountLeadingZeroImpl(m_words[i]);
                         }
                     }
                     return FlagsPerWord * NumWords;
@@ -63,7 +63,7 @@ namespace ams::util {
 
                 constexpr ALWAYS_INLINE size_t GetNextSet(size_t n) const {
                     for (size_t i = (n + 1) / FlagsPerWord; i < NumWords; i++) {
-                        Storage word = this->words[i];
+                        Storage word = m_words[i];
                         if (!util::IsAligned(n + 1, FlagsPerWord)) {
                             word &= GetBitMask(n % FlagsPerWord) - 1;
                         }

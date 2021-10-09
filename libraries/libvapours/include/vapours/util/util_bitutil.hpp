@@ -37,32 +37,32 @@ namespace ams::util {
                 return __builtin_ctzll(static_cast<u64>(v));
             }
 
-            T value;
+            T m_value;
         public:
             /* Note: GCC has a bug in constant-folding here. Workaround: wrap entire caller with constexpr. */
-            constexpr ALWAYS_INLINE BitsOf(T value = T(0u)) : value(value) {
+            constexpr ALWAYS_INLINE BitsOf(T value = T(0u)) : m_value(value) {
                 /* ... */
             }
 
             constexpr ALWAYS_INLINE bool operator==(const BitsOf &other) const {
-                return this->value == other.value;
+                return m_value == other.m_value;
             }
 
             constexpr ALWAYS_INLINE bool operator!=(const BitsOf &other) const {
-                return this->value != other.value;
+                return m_value != other.m_value;
             }
 
             constexpr ALWAYS_INLINE int operator*() const {
-                return GetLsbPos(this->value);
+                return GetLsbPos(m_value);
             }
 
             constexpr ALWAYS_INLINE BitsOf &operator++() {
-                this->value &= ~(T(1u) << GetLsbPos(this->value));
+                m_value &= ~(T(1u) << GetLsbPos(m_value));
                 return *this;
             }
 
             constexpr ALWAYS_INLINE BitsOf &operator++(int) {
-                BitsOf ret(this->value);
+                BitsOf ret(m_value);
                 ++(*this);
                 return ret;
             }

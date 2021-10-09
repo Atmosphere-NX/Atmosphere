@@ -29,11 +29,11 @@ namespace ams {
     /* TODO: Better understand device code components. */
     class DeviceCode {
         private:
-            impl::DeviceCodeType inner_value;
+            impl::DeviceCodeType m_inner_value;
         public:
-            constexpr DeviceCode(impl::DeviceCodeType v) : inner_value(v) { /* ... */ }
+            constexpr DeviceCode(impl::DeviceCodeType v) : m_inner_value(v) { /* ... */ }
 
-            constexpr impl::DeviceCodeType GetInternalValue() const { return this->inner_value; }
+            constexpr impl::DeviceCodeType GetInternalValue() const { return m_inner_value; }
 
             constexpr bool operator==(const DeviceCode &rhs) const {
                 return this->GetInternalValue() == rhs.GetInternalValue();

@@ -51,20 +51,20 @@ namespace ams::util {
                 return value ^ (value >> 30);
             }
         private:
-            State state;
+            State m_state;
         private:
             /* Internal API. */
             void FinalizeInitialization()  {
-                const u32 state0 = this->state.data[0] & TopBitmask;
-                const u32 state1 = this->state.data[1];
-                const u32 state2 = this->state.data[2];
-                const u32 state3 = this->state.data[3];
+                const u32 state0 = m_state.data[0] & TopBitmask;
+                const u32 state1 = m_state.data[1];
+                const u32 state2 = m_state.data[2];
+                const u32 state3 = m_state.data[3];
 
                 if (state0 == 0 && state1 == 0 && state2 == 0 && state3 == 0) {
-                    this->state.data[0] = 'T';
-                    this->state.data[1] = 'I';
-                    this->state.data[2] = 'N';
-                    this->state.data[3] = 'Y';
+                    m_state.data[0] = 'T';
+                    m_state.data[1] = 'I';
+                    m_state.data[2] = 'N';
+                    m_state.data[3] = 'Y';
                 }
 
                 for (int i = 0; i < NumDiscardedInitOutputs; i++) {
@@ -102,42 +102,42 @@ namespace ams::util {
                 state2 ^= y;
             }
         public:
-            constexpr TinyMT() : state() { /* ... */ }
+            constexpr TinyMT() : m_state() { /* ... */ }
 
             /* Public API. */
 
             /* Initialization. */
             void Initialize(u32 seed) {
-                this->state.data[0] = seed;
-                this->state.data[1] = ParamMat1;
-                this->state.data[2] = ParamMat2;
-                this->state.data[3] = ParamTmat;
+                m_state.data[0] = seed;
+                m_state.data[1] = ParamMat1;
+                m_state.data[2] = ParamMat2;
+                m_state.data[3] = ParamTmat;
 
                 for (int i = 1; i < MinimumInitIterations; i++) {
-                    const u32 mixed = XorByShifted30(this->state.data[(i - 1) % NumStateWords]);
-                    this->state.data[i % NumStateWords] ^= mixed * ParamMult + i;
+                    const u32 mixed = XorByShifted30(m_state.data[(i - 1) % NumStateWords]);
+                    m_state.data[i % NumStateWords] ^= mixed * ParamMult + i;
                 }
 
                 this->FinalizeInitialization();
             }
 
             void Initialize(const u32 *seed, int seed_count) {
-                this->state.data[0] = 0;
-                this->state.data[1] = ParamMat1;
-                this->state.data[2] = ParamMat2;
-                this->state.data[3] = ParamTmat;
+                m_state.data[0] = 0;
+                m_state.data[1] = ParamMat1;
+                m_state.data[2] = ParamMat2;
+                m_state.data[3] = ParamTmat;
 
                 {
                     const int num_init_iterations = std::max(seed_count + 1, MinimumInitIterations) - 1;
 
-                    GenerateInitialValuePlus(std::addressof(this->state), 0, seed_count);
+                    GenerateInitialValuePlus(std::addressof(m_state), 0, seed_count);
 
                     for (int i = 0; i < num_init_iterations; i++) {
-                        GenerateInitialValuePlus(std::addressof(this->state), (i + 1) % NumStateWords, (i < seed_count) ? seed[i] : 0);
+                        GenerateInitialValuePlus(std::addressof(m_state), (i + 1) % NumStateWords, (i < seed_count) ? seed[i] : 0);
                     }
 
                     for (int i = 0; i < static_cast<int>(NumStateWords); i++) {
-                        GenerateInitialValueXor(std::addressof(this->state), (i + 1 + num_init_iterations) % NumStateWords);
+                        GenerateInitialValueXor(std::addressof(m_state), (i + 1 + num_init_iterations) % NumStateWords);
                     }
                 }
 
@@ -146,11 +146,11 @@ namespace ams::util {
 
             /* State management. */
             void GetState(TinyMT::State *out) const {
-                std::memcpy(out->data, this->state.data, sizeof(this->state));
+                std::memcpy(out->data, m_state.data, sizeof(m_state));
             }
 
             void SetState(const TinyMT::State *state) {
-                std::memcpy(this->state.data, state->data, sizeof(this->state));
+                std::memcpy(m_state.data, state->data, sizeof(m_state));
             }
 
             /* Random generation. */
@@ -185,13 +185,13 @@ namespace ams::util {
 
             NOINLINE u32 GenerateRandomU32() {
                 /* Advance state. */
-                const u32 x0 = (this->state.data[0] & TopBitmask) ^ this->state.data[1] ^ this->state.data[2];
-                const u32 y0 = this->state.data[3];
+                const u32 x0 = (m_state.data[0] & TopBitmask) ^ m_state.data[1] ^ m_state.data[2];
+                const u32 y0 = m_state.data[3];
                 const u32 x1 = x0 ^ (x0 << 1);
                 const u32 y1 = y0 ^ (y0 >> 1) ^ x1;
 
-                const u32 state0 = this->state.data[1];
-                      u32 state1 = this->state.data[2];
+                const u32 state0 = m_state.data[1];
+                      u32 state1 = m_state.data[2];
                       u32 state2 = x1 ^ (y1 << 10);
                 const u32 state3 = y1;
 
@@ -200,10 +200,10 @@ namespace ams::util {
                     state2 ^= ParamMat2;
                 }
 
-                this->state.data[0] = state0;
-                this->state.data[1] = state1;
-                this->state.data[2] = state2;
-                this->state.data[3] = state3;
+                m_state.data[0] = state0;
+                m_state.data[1] = state1;
+                m_state.data[2] = state2;
+                m_state.data[3] = state3;
 
                 /* Temper. */
                 const u32 t1 = state0 + (state2 >> 8);

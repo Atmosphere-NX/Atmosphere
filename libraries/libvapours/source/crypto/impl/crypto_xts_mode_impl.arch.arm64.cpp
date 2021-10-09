@@ -110,7 +110,7 @@ namespace ams::crypto::impl {
     }
 
     size_t XtsModeImpl::UpdateGeneric(void *dst, size_t dst_size, const void *src, size_t src_size) {
-        AMS_ASSERT(this->state == State_Initialized || this->state == State_Processing);
+        AMS_ASSERT(m_state == State_Initialized || m_state == State_Processing);
 
         return UpdateImpl<void>(this, dst, dst_size, src, src_size);
     }
@@ -118,13 +118,13 @@ namespace ams::crypto::impl {
     size_t XtsModeImpl::ProcessBlocksGeneric(u8 *dst, const u8 *src, size_t num_blocks) {
         size_t processed = BlockSize * (num_blocks - 1);
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst       += BlockSize;
             processed += BlockSize;
         }
 
-        uint8x16_t tweak = vld1q_u8(this->tweak);
+        uint8x16_t tweak = vld1q_u8(m_tweak);
 
         while ((--num_blocks) > 0) {
             /* Xor */
@@ -134,7 +134,7 @@ namespace ams::crypto::impl {
 
             /* Encrypt */
             vst1q_u8(dst, block);
-            this->cipher_func(dst, dst, this->cipher_ctx);
+            m_cipher_func(dst, dst, m_cipher_ctx);
             block = vld1q_u8(dst);
 
             /* Xor */
@@ -146,11 +146,11 @@ namespace ams::crypto::impl {
             tweak = MultiplyTweak(tweak);
         }
 
-        vst1q_u8(this->tweak, tweak);
+        vst1q_u8(m_tweak, tweak);
 
-        std::memcpy(this->last_block, src, BlockSize);
+        std::memcpy(m_last_block, src, BlockSize);
 
-        this->state = State_Processing;
+        m_state = State_Processing;
 
         return processed;
     }
@@ -168,14 +168,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesEncryptor128 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesEncryptor128 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -187,7 +187,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(8);
         DECLARE_ROUND_KEY_VAR(9);
         DECLARE_ROUND_KEY_VAR(10);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -314,10 +314,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }
@@ -327,14 +327,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesEncryptor192 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesEncryptor192 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -348,7 +348,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(10);
         DECLARE_ROUND_KEY_VAR(11);
         DECLARE_ROUND_KEY_VAR(12);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -483,10 +483,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }
@@ -496,14 +496,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesEncryptor256 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesEncryptor256 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -519,7 +519,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(12);
         DECLARE_ROUND_KEY_VAR(13);
         DECLARE_ROUND_KEY_VAR(14);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -663,10 +663,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }
@@ -676,14 +676,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesDecryptor128 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesDecryptor128 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -695,7 +695,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(8);
         DECLARE_ROUND_KEY_VAR(9);
         DECLARE_ROUND_KEY_VAR(10);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -822,10 +822,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }
@@ -835,14 +835,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesDecryptor192 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesDecryptor192 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -856,7 +856,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(10);
         DECLARE_ROUND_KEY_VAR(11);
         DECLARE_ROUND_KEY_VAR(12);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -991,10 +991,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }
@@ -1004,14 +1004,14 @@ namespace ams::crypto::impl {
         /* Handle last buffered block. */
         size_t processed = (num_blocks - 1) * BlockSize;
 
-        if (this->state == State_Processing) {
-            this->ProcessBlock(dst, this->last_block);
+        if (m_state == State_Processing) {
+            this->ProcessBlock(dst, m_last_block);
             dst += BlockSize;
             processed += BlockSize;
         }
 
         /* Preload all round keys + iv into neon registers. */
-        const u8 *keys = static_cast<const AesDecryptor256 *>(this->cipher_ctx)->GetRoundKey();
+        const u8 *keys = static_cast<const AesDecryptor256 *>(m_cipher_ctx)->GetRoundKey();
         DECLARE_ROUND_KEY_VAR(0);
         DECLARE_ROUND_KEY_VAR(1);
         DECLARE_ROUND_KEY_VAR(2);
@@ -1027,7 +1027,7 @@ namespace ams::crypto::impl {
         DECLARE_ROUND_KEY_VAR(12);
         DECLARE_ROUND_KEY_VAR(13);
         DECLARE_ROUND_KEY_VAR(14);
-        uint8x16_t tweak0 = vld1q_u8(this->tweak);
+        uint8x16_t tweak0 = vld1q_u8(m_tweak);
         constexpr uint64_t xorv = 0x87ul;
         uint64_t high, low, mask;
 
@@ -1171,10 +1171,10 @@ namespace ams::crypto::impl {
             dst += BlockSize;
         }
 
-        vst1q_u8(this->tweak, tweak0);
+        vst1q_u8(m_tweak, tweak0);
 
-        std::memcpy(this->last_block, src, BlockSize);
-        this->state = State_Processing;
+        std::memcpy(m_last_block, src, BlockSize);
+        m_state = State_Processing;
 
         return processed;
     }

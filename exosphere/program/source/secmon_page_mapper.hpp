@@ -22,10 +22,10 @@ namespace ams::secmon {
 
         class PageMapperImpl {
             private:
-                uintptr_t physical_address;
-                uintptr_t virtual_address;
+                uintptr_t m_physical_address;
+                uintptr_t m_virtual_address;
             public:
-                constexpr PageMapperImpl(uintptr_t phys) : physical_address(util::AlignDown(phys, 4_KB)), virtual_address() { /* ... */ }
+                constexpr PageMapperImpl(uintptr_t phys) : m_physical_address(util::AlignDown(phys, 4_KB)), m_virtual_address() { /* ... */ }
 
                 void *GetPointerTo(uintptr_t phys, size_t size) const;
 
@@ -37,14 +37,14 @@ namespace ams::secmon {
 
                 template<auto F>
                 bool MapImpl() {
-                    this->virtual_address = F(this->physical_address);
-                    return this->virtual_address != 0;
+                    m_virtual_address = F(m_physical_address);
+                    return m_virtual_address != 0;
                 }
 
                 template<auto F>
                 void UnmapImpl() {
                     F();
-                    this->virtual_address = 0;
+                    m_virtual_address = 0;
                 }
         };
 

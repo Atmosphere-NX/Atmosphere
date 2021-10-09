@@ -111,17 +111,17 @@ namespace ams::util {
             class Reference {
                 friend struct BitFlagSet<N, T>;
                 private:
-                    BitFlagSet<N, T> *set;
-                    s32 idx;
+                    BitFlagSet<N, T> *m_set;
+                    s32 m_idx;
                 private:
-                    constexpr ALWAYS_INLINE Reference() : set(nullptr), idx(0) { /* ... */ }
-                    constexpr ALWAYS_INLINE Reference(BitFlagSet<N, T> &s, s32 i) : set(std::addressof(s)), idx(i) { /* ... */ }
+                    constexpr ALWAYS_INLINE Reference() : m_set(nullptr), m_idx(0) { /* ... */ }
+                    constexpr ALWAYS_INLINE Reference(BitFlagSet<N, T> &s, s32 i) : m_set(std::addressof(s)), m_idx(i) { /* ... */ }
                 public:
-                    constexpr ALWAYS_INLINE Reference &operator=(bool en) { this->set->Set(this->idx, en); return *this; }
-                    constexpr ALWAYS_INLINE Reference &operator=(const Reference &r) { this->set->Set(this->idx, r); return *this; }
-                    constexpr ALWAYS_INLINE Reference &Negate() { this->set->Negate(this->idx); return *this; }
-                    constexpr ALWAYS_INLINE operator bool() const { return this->set->Test(this->idx); }
-                    constexpr ALWAYS_INLINE bool operator~() const { return !this->set->Test(this->idx); }
+                    constexpr ALWAYS_INLINE Reference &operator=(bool en) { m_set->Set(m_idx, en); return *this; }
+                    constexpr ALWAYS_INLINE Reference &operator=(const Reference &r) { m_set->Set(m_idx, r); return *this; }
+                    constexpr ALWAYS_INLINE Reference &Negate() { m_set->Negate(m_idx); return *this; }
+                    constexpr ALWAYS_INLINE operator bool() const { return m_set->Test(m_idx); }
+                    constexpr ALWAYS_INLINE bool operator~() const { return !m_set->Test(m_idx); }
             };
 
             template<s32 _Index>

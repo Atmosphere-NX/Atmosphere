@@ -42,9 +42,9 @@ namespace ams::crypto {
                 static_assert(AesImpl1::KeySize   == AesImpl2::KeySize);
                 static_assert(AesImpl1::BlockSize == AesImpl2::BlockSize);
             private:
-                AesImpl1 aes_impl_1;
-                AesImpl2 aes_impl_2;
-                XtsImpl xts_impl;
+                AesImpl1 m_aes_impl_1;
+                AesImpl2 m_aes_impl_2;
+                XtsImpl m_xts_impl;
             public:
                 AesXtsCryptor() { /* ... */ }
 
@@ -52,17 +52,17 @@ namespace ams::crypto {
                     AMS_ASSERT(key_size == KeySize);
                     AMS_ASSERT(iv_size  == IvSize);
 
-                    this->aes_impl_1.Initialize(key1, key_size);
-                    this->aes_impl_2.Initialize(key2, key_size);
-                    this->xts_impl.Initialize(std::addressof(this->aes_impl_1), std::addressof(this->aes_impl_2), iv, iv_size);
+                    m_aes_impl_1.Initialize(key1, key_size);
+                    m_aes_impl_2.Initialize(key2, key_size);
+                    m_xts_impl.Initialize(std::addressof(m_aes_impl_1), std::addressof(m_aes_impl_2), iv, iv_size);
                 }
 
                 size_t Update(void *dst, size_t dst_size, const void *src, size_t src_size) {
-                    return this->xts_impl.Update(dst, dst_size, src, src_size);
+                    return m_xts_impl.Update(dst, dst_size, src, src_size);
                 }
 
                 size_t Finalize(void *dst, size_t dst_size) {
-                    return this->xts_impl.Finalize(dst, dst_size);
+                    return m_xts_impl.Finalize(dst, dst_size);
                 }
         };
 

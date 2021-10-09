@@ -37,13 +37,13 @@ namespace ams::crypto::impl {
                 State_Initialized,
             };
         private:
-            const BlockCipher *block_cipher;
-            u8 counter[IvSize];
-            u8 encrypted_counter[BlockSize];
-            size_t buffer_offset;
-            State state;
+            const BlockCipher *m_block_cipher;
+            u8 m_counter[IvSize];
+            u8 m_encrypted_counter[BlockSize];
+            size_t m_buffer_offset;
+            State m_state;
         public:
-            CtrModeImpl() : state(State_None) { /* ... */ }
+            CtrModeImpl() : m_state(State_None) { /* ... */ }
 
             ~CtrModeImpl() {
                 ClearMemory(this, sizeof(*this));
@@ -57,8 +57,8 @@ namespace ams::crypto::impl {
                 AMS_ASSERT(iv_size == IvSize);
                 AMS_ASSERT(offset  >= 0);
 
-                this->block_cipher = block_cipher;
-                this->state        = State_Initialized;
+                m_block_cipher = block_cipher;
+                m_state        = State_Initialized;
 
                 this->SwitchMessage(iv, iv_size);
 
@@ -69,32 +69,32 @@ namespace ams::crypto::impl {
                     }
 
                     if (size_t remaining = static_cast<size_t>(offset % BlockSize); remaining != 0) {
-                        this->block_cipher->EncryptBlock(this->encrypted_counter, sizeof(this->encrypted_counter), this->counter, sizeof(this->counter));
+                        m_block_cipher->EncryptBlock(m_encrypted_counter, sizeof(m_encrypted_counter), m_counter, sizeof(m_counter));
                         this->IncrementCounter();
 
-                        this->buffer_offset = remaining;
+                        m_buffer_offset = remaining;
                     }
                 }
             }
 
             void SwitchMessage(const void *iv, size_t iv_size) {
-                AMS_ASSERT(this->state == State_Initialized);
+                AMS_ASSERT(m_state == State_Initialized);
                 AMS_ASSERT(iv_size     == IvSize);
 
-                std::memcpy(this->counter, iv, iv_size);
-                this->buffer_offset = 0;
+                std::memcpy(m_counter, iv, iv_size);
+                m_buffer_offset = 0;
             }
 
             void IncrementCounter() {
                 for (s32 i = IvSize - 1; i >= 0; --i) {
-                    if (++this->counter[i] != 0) {
+                    if (++m_counter[i] != 0) {
                         break;
                     }
                 }
             }
 
             size_t Update(void *_dst, size_t dst_size, const void *_src, size_t src_size) {
-                AMS_ASSERT(this->state == State_Initialized);
+                AMS_ASSERT(m_state == State_Initialized);
                 AMS_ASSERT(dst_size >= src_size);
                 AMS_UNUSED(dst_size);
 
@@ -102,10 +102,10 @@ namespace ams::crypto::impl {
                 const u8 *src = static_cast<const u8 *>(_src);
                 size_t remaining = src_size;
 
-                if (this->buffer_offset > 0) {
-                    const size_t xor_size = std::min(BlockSize - this->buffer_offset, remaining);
+                if (m_buffer_offset > 0) {
+                    const size_t xor_size = std::min(BlockSize - m_buffer_offset, remaining);
 
-                    const u8 *ctr = this->encrypted_counter + this->buffer_offset;
+                    const u8 *ctr = m_encrypted_counter + m_buffer_offset;
                     for (size_t i = 0; i < xor_size; i++) {
                         dst[i] = src[i] ^ ctr[i];
                     }
@@ -113,10 +113,10 @@ namespace ams::crypto::impl {
                     src                 += xor_size;
                     dst                 += xor_size;
                     remaining           -= xor_size;
-                    this->buffer_offset += xor_size;
+                    m_buffer_offset += xor_size;
 
-                    if (this->buffer_offset == BlockSize) {
-                        this->buffer_offset = 0;
+                    if (m_buffer_offset == BlockSize) {
+                        m_buffer_offset = 0;
                     }
                 }
 
@@ -133,7 +133,7 @@ namespace ams::crypto::impl {
 
                 if (remaining > 0) {
                     this->ProcessBlock(dst, src, remaining);
-                    this->buffer_offset = remaining;
+                    m_buffer_offset = remaining;
                 }
 
                 return src_size;
@@ -146,18 +146,18 @@ namespace ams::crypto::impl {
                 u16 acc = 0;
                 const u8 *block = reinterpret_cast<const u8 *>(_block);
                 for (s32 i = IvSize - 1; i >= 0; --i) {
-                    acc += (this->counter[i] + block[i]);
-                    this->counter[i] = acc & 0xFF;
+                    acc += (m_counter[i] + block[i]);
+                    m_counter[i] = acc & 0xFF;
                     acc >>= 8;
                 }
             }
 
             void ProcessBlock(u8 *dst, const u8 *src, size_t src_size) {
-                this->block_cipher->EncryptBlock(this->encrypted_counter, BlockSize, this->counter, IvSize);
+                m_block_cipher->EncryptBlock(m_encrypted_counter, BlockSize, m_counter, IvSize);
                 this->IncrementCounter();
 
                 for (size_t i = 0; i < src_size; i++) {
-                    dst[i] = src[i] ^ this->encrypted_counter[i];
+                    dst[i] = src[i] ^ m_encrypted_counter[i];
                 }
             }
 

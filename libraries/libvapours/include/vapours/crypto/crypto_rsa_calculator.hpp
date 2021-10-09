@@ -29,17 +29,17 @@ namespace ams::crypto {
         public:
             static constexpr inline size_t RequiredWorkBufferSize = 0x10 * ModulusSize;
         private:
-            impl::StaticBigNum<ModulusSize * BITSIZEOF(u8)> modulus;
-            impl::StaticBigNum<ExponentSize * BITSIZEOF(u8)> exponent;
+            impl::StaticBigNum<ModulusSize * BITSIZEOF(u8)> m_modulus;
+            impl::StaticBigNum<ExponentSize * BITSIZEOF(u8)> m_exponent;
         public:
             RsaCalculator() { /* ... */ }
-            ~RsaCalculator() { this->exponent.ClearToZero(); }
+            ~RsaCalculator() { m_exponent.ClearToZero(); }
 
             bool Initialize(const void *mod, size_t mod_size, const void *exp, size_t exp_size) {
-                if (!this->modulus.Import(mod, mod_size) || this->modulus.IsZero()) {
+                if (!m_modulus.Import(mod, mod_size) || m_modulus.IsZero()) {
                     return false;
                 }
-                if (!this->exponent.Import(exp, exp_size) || this->exponent.IsZero()) {
+                if (!m_exponent.Import(exp, exp_size) || m_exponent.IsZero()) {
                     return false;
                 }
                 return true;
@@ -48,7 +48,7 @@ namespace ams::crypto {
             bool ExpMod(void *dst, const void *src, size_t size, void *work_buf, size_t work_buf_size) {
                 AMS_ASSERT(work_buf_size >= RequiredWorkBufferSize);
 
-                return this->modulus.ExpMod(dst, src, size, this->exponent, static_cast<u32 *>(work_buf), work_buf_size);
+                return m_modulus.ExpMod(dst, src, size, m_exponent, static_cast<u32 *>(work_buf), work_buf_size);
             }
 
             bool ExpMod(void *dst, const void *src, size_t size) {

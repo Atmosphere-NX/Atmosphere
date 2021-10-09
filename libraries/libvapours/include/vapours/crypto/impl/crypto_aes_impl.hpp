@@ -31,10 +31,10 @@ namespace ams::crypto::impl {
             static constexpr size_t RoundKeySize = BlockSize * (RoundCount + 1);
         private:
         #ifdef ATMOSPHERE_IS_EXOSPHERE
-            int slot;
+            int m_slot;
         #endif
         #ifdef ATMOSPHERE_IS_STRATOSPHERE
-            u32 round_keys[RoundKeySize / sizeof(u32)];
+            u32 m_round_keys[RoundKeySize / sizeof(u32)];
         #endif
         public:
             ~AesImpl();
@@ -45,7 +45,7 @@ namespace ams::crypto::impl {
 
         #ifdef ATMOSPHERE_IS_STRATOSPHERE
             const u8 *GetRoundKey() const {
-                return reinterpret_cast<const u8 *>(this->round_keys);
+                return reinterpret_cast<const u8 *>(m_round_keys);
             }
         #endif
     };

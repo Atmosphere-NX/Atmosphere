@@ -38,15 +38,15 @@ namespace ams::crypto::impl {
                 State_Done
             };
         private:
-            u8 buffer[BlockSize];
-            u8 tweak[BlockSize];
-            u8 last_block[BlockSize];
-            size_t num_buffered;
-            const void *cipher_ctx;
-            void (*cipher_func)(void *dst_block, const void *src_block, const void *cipher_ctx);
-            State state;
+            u8 m_buffer[BlockSize];
+            u8 m_tweak[BlockSize];
+            u8 m_last_block[BlockSize];
+            size_t m_num_buffered;
+            const void *m_cipher_ctx;
+            void (*m_cipher_func)(void *dst_block, const void *src_block, const void *cipher_ctx);
+            State m_state;
         public:
-            XtsModeImpl() : num_buffered(0), state(State_None) { /* ... */ }
+            XtsModeImpl() : m_num_buffered(0), m_state(State_None) { /* ... */ }
 
             ~XtsModeImpl() {
                 ClearMemory(this, sizeof(*this));
@@ -67,10 +67,10 @@ namespace ams::crypto::impl {
                 AMS_ASSERT(tweak_size == IvSize);
                 AMS_UNUSED(tweak_size);
 
-                cipher->EncryptBlock(this->tweak, IvSize, tweak, IvSize);
+                cipher->EncryptBlock(m_tweak, IvSize, tweak, IvSize);
 
-                this->num_buffered = 0;
-                this->state = State_Initialized;
+                m_num_buffered = 0;
+                m_state = State_Initialized;
             }
 
             void ProcessBlock(u8 *dst, const u8 *src);
@@ -80,8 +80,8 @@ namespace ams::crypto::impl {
                 static_assert(BlockCipher1::BlockSize == BlockSize);
                 static_assert(BlockCipher2::BlockSize == BlockSize);
 
-                this->cipher_ctx  = cipher1;
-                this->cipher_func = EncryptBlockCallback<BlockCipher1>;
+                m_cipher_ctx  = cipher1;
+                m_cipher_func = EncryptBlockCallback<BlockCipher1>;
 
                 this->Initialize(cipher2, tweak, tweak_size);
             }
@@ -91,8 +91,8 @@ namespace ams::crypto::impl {
                 static_assert(BlockCipher1::BlockSize == BlockSize);
                 static_assert(BlockCipher2::BlockSize == BlockSize);
 
-                this->cipher_ctx  = cipher1;
-                this->cipher_func = DecryptBlockCallback<BlockCipher1>;
+                m_cipher_ctx  = cipher1;
+                m_cipher_func = DecryptBlockCallback<BlockCipher1>;
 
                 this->Initialize(cipher2, tweak, tweak_size);
             }
@@ -108,7 +108,7 @@ namespace ams::crypto::impl {
             }
 
             size_t GetBufferedDataSize() const {
-                return this->num_buffered;
+                return m_num_buffered;
             }
 
             constexpr size_t GetBlockSize() const {

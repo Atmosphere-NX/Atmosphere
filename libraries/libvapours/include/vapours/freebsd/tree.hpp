@@ -56,31 +56,31 @@ namespace ams::freebsd {
     template<typename T>
     class RBEntry {
         private:
-            T *rbe_left        = nullptr;
-            T *rbe_right       = nullptr;
-            T *rbe_parent      = nullptr;
-            RBColor rbe_color = RBColor::RB_BLACK;
+            T *m_rbe_left        = nullptr;
+            T *m_rbe_right       = nullptr;
+            T *m_rbe_parent      = nullptr;
+            RBColor m_rbe_color = RBColor::RB_BLACK;
         public:
-            [[nodiscard]] constexpr ALWAYS_INLINE       T *Left()       { return this->rbe_left; }
-            [[nodiscard]] constexpr ALWAYS_INLINE const T *Left() const { return this->rbe_left; }
+            [[nodiscard]] constexpr ALWAYS_INLINE       T *Left()       { return m_rbe_left; }
+            [[nodiscard]] constexpr ALWAYS_INLINE const T *Left() const { return m_rbe_left; }
 
-            constexpr ALWAYS_INLINE void SetLeft(T *e) { this->rbe_left = e; }
+            constexpr ALWAYS_INLINE void SetLeft(T *e) { m_rbe_left = e; }
 
-            [[nodiscard]] constexpr ALWAYS_INLINE       T *Right()       { return this->rbe_right; }
-            [[nodiscard]] constexpr ALWAYS_INLINE const T *Right() const { return this->rbe_right; }
+            [[nodiscard]] constexpr ALWAYS_INLINE       T *Right()       { return m_rbe_right; }
+            [[nodiscard]] constexpr ALWAYS_INLINE const T *Right() const { return m_rbe_right; }
 
-            constexpr ALWAYS_INLINE void SetRight(T *e) { this->rbe_right = e; }
+            constexpr ALWAYS_INLINE void SetRight(T *e) { m_rbe_right = e; }
 
-            [[nodiscard]] constexpr ALWAYS_INLINE       T *Parent()       { return this->rbe_parent; }
-            [[nodiscard]] constexpr ALWAYS_INLINE const T *Parent() const { return this->rbe_parent; }
+            [[nodiscard]] constexpr ALWAYS_INLINE       T *Parent()       { return m_rbe_parent; }
+            [[nodiscard]] constexpr ALWAYS_INLINE const T *Parent() const { return m_rbe_parent; }
 
-            constexpr ALWAYS_INLINE void SetParent(T *e) { this->rbe_parent = e; }
+            constexpr ALWAYS_INLINE void SetParent(T *e) { m_rbe_parent = e; }
 
-            [[nodiscard]] constexpr ALWAYS_INLINE bool IsBlack()   const { return this->rbe_color == RBColor::RB_BLACK; }
-            [[nodiscard]] constexpr ALWAYS_INLINE bool IsRed()     const { return this->rbe_color == RBColor::RB_RED; }
-            [[nodiscard]] constexpr ALWAYS_INLINE RBColor Color() const { return this->rbe_color; }
+            [[nodiscard]] constexpr ALWAYS_INLINE bool IsBlack()   const { return m_rbe_color == RBColor::RB_BLACK; }
+            [[nodiscard]] constexpr ALWAYS_INLINE bool IsRed()     const { return m_rbe_color == RBColor::RB_RED; }
+            [[nodiscard]] constexpr ALWAYS_INLINE RBColor Color() const { return m_rbe_color; }
 
-            constexpr ALWAYS_INLINE void SetColor(RBColor c) { this->rbe_color = c; }
+            constexpr ALWAYS_INLINE void SetColor(RBColor c) { m_rbe_color = c; }
     };
 
     template<typename T> struct CheckRBEntry             { static constexpr bool value = false; };
@@ -98,11 +98,11 @@ namespace ams::freebsd {
     template<typename T> requires HasRBEntry<T>
     class RBHead {
         private:
-            T *rbh_root = nullptr;
+            T *m_rbh_root = nullptr;
         public:
-            [[nodiscard]] constexpr ALWAYS_INLINE       T *Root()       { return this->rbh_root; }
-            [[nodiscard]] constexpr ALWAYS_INLINE const T *Root() const { return this->rbh_root; }
-            constexpr ALWAYS_INLINE void SetRoot(T *root) { this->rbh_root = root; }
+            [[nodiscard]] constexpr ALWAYS_INLINE       T *Root()       { return m_rbh_root; }
+            [[nodiscard]] constexpr ALWAYS_INLINE const T *Root() const { return m_rbh_root; }
+            constexpr ALWAYS_INLINE void SetRoot(T *root) { m_rbh_root = root; }
 
             [[nodiscard]] constexpr ALWAYS_INLINE bool IsEmpty() const { return this->Root() == nullptr; }
     };

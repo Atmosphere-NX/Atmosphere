@@ -41,17 +41,17 @@ namespace ams::crypto {
                 Done,
             };
         private:
-            RsaCalculator<ModulusSize, MaximumExponentSize> calculator;
-            Hash hash;
-            State state;
+            RsaCalculator<ModulusSize, MaximumExponentSize> m_calculator;
+            Hash m_hash;
+            State m_state;
         public:
-            RsaPssVerifier() : state(State::None) { /* ... */ }
+            RsaPssVerifier() : m_state(State::None) { /* ... */ }
             ~RsaPssVerifier() { }
 
             bool Initialize(const void *mod, size_t mod_size, const void *exp, size_t exp_size) {
-                this->hash.Initialize();
-                if (this->calculator.Initialize(mod, mod_size, exp, exp_size)) {
-                    this->state = State::Initialized;
+                m_hash.Initialize();
+                if (m_calculator.Initialize(mod, mod_size, exp, exp_size)) {
+                    m_state = State::Initialized;
                     return true;
                 } else {
                     return false;
@@ -59,62 +59,62 @@ namespace ams::crypto {
             }
 
             void Update(const void *data, size_t size) {
-                return this->hash.Update(data, size);
+                return m_hash.Update(data, size);
             }
 
             bool Verify(const void *signature, size_t size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
                 AMS_UNUSED(size);
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, signature, SignatureSize)) {
+                if (!m_calculator.ExpMod(message, signature, SignatureSize)) {
                     return false;
                 }
 
                 u8 calc_hash[Hash::HashSize];
-                this->hash.GetHash(calc_hash, sizeof(calc_hash));
+                m_hash.GetHash(calc_hash, sizeof(calc_hash));
                 ON_SCOPE_EXIT { ClearMemory(calc_hash, sizeof(calc_hash)); };
 
                 return impl.Verify(message, sizeof(message), calc_hash, sizeof(calc_hash));
             }
 
             bool Verify(const void *signature, size_t size, void *work_buf, size_t work_buf_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
                 AMS_UNUSED(size);
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
+                if (!m_calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
                     return false;
                 }
 
                 u8 calc_hash[Hash::HashSize];
-                this->hash.GetHash(calc_hash, sizeof(calc_hash));
+                m_hash.GetHash(calc_hash, sizeof(calc_hash));
                 ON_SCOPE_EXIT { ClearMemory(calc_hash, sizeof(calc_hash)); };
 
                 return impl.Verify(message, sizeof(message), calc_hash, sizeof(calc_hash));
             }
 
             bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
                 AMS_UNUSED(size);
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, signature, SignatureSize)) {
+                if (!m_calculator.ExpMod(message, signature, SignatureSize)) {
                     return false;
                 }
 
@@ -122,16 +122,16 @@ namespace ams::crypto {
             }
 
             bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
-                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(m_state == State::Initialized);
                 AMS_ASSERT(size == SignatureSize);
                 AMS_UNUSED(size);
-                ON_SCOPE_EXIT { this->state = State::Done; };
+                ON_SCOPE_EXIT { m_state = State::Done; };
 
                 impl::RsaPssImpl<Hash> impl;
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                if (!this->calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
+                if (!m_calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
                     return false;
                 }
 

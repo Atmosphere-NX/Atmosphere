@@ -108,96 +108,96 @@ namespace ams::crypto::impl {
     template<class BlockCipher>
     void GcmModeImpl<BlockCipher>::Initialize(const BlockCipher *block_cipher) {
         /* Set member variables. */
-        this->block_cipher = block_cipher;
-        this->cipher_func  = std::addressof(GcmModeImpl<BlockCipher>::ProcessBlock);
+        m_block_cipher = block_cipher;
+        m_cipher_func  = std::addressof(GcmModeImpl<BlockCipher>::ProcessBlock);
 
         /* Pre-calculate values to speed up galois field multiplications later. */
         this->InitializeHashKey();
 
         /* Note that we're initialized. */
-        this->state = State_Initialized;
+        m_state = State_Initialized;
     }
 
     template<class BlockCipher>
     void GcmModeImpl<BlockCipher>::Reset(const void *iv, size_t iv_size) {
         /* Validate pre-conditions. */
-        AMS_ASSERT(this->state >= State_Initialized);
+        AMS_ASSERT(m_state >= State_Initialized);
 
         /* Reset blocks. */
-        this->block_x.block_128.Clear();
-        this->block_tmp.block_128.Clear();
+        m_block_x.block_128.Clear();
+        m_block_tmp.block_128.Clear();
 
         /* Clear sizes. */
-        this->aad_size      = 0;
-        this->msg_size      = 0;
-        this->aad_remaining = 0;
-        this->msg_remaining = 0;
+        m_aad_size      = 0;
+        m_msg_size      = 0;
+        m_aad_remaining = 0;
+        m_msg_remaining = 0;
 
         /* Update our state. */
-        this->state = State_ProcessingAad;
+        m_state = State_ProcessingAad;
 
         /* Set our iv. */
         if (iv_size == 12) {
             /* If our iv is the correct size, simply copy in the iv, and set the magic bit. */
-            std::memcpy(std::addressof(this->block_ek0), iv, iv_size);
-            util::StoreBigEndian(this->block_ek0.block_32 + 3, static_cast<u32>(1));
+            std::memcpy(std::addressof(m_block_ek0), iv, iv_size);
+            util::StoreBigEndian(m_block_ek0.block_32 + 3, static_cast<u32>(1));
         } else {
             /* Clear our ek0 block. */
-            this->block_ek0.block_128.Clear();
+            m_block_ek0.block_128.Clear();
 
             /* Update using the iv as aad. */
             this->UpdateAad(iv, iv_size);
 
             /* Treat the iv as fake msg for the mac that will become our iv. */
-            this->msg_size = this->aad_size;
-            this->aad_size = 0;
+            m_msg_size = m_aad_size;
+            m_aad_size = 0;
 
             /* Compute a non-final mac. */
             this->ComputeMac(false);
 
             /* Set our ek0 block to our calculated mac block. */
-            this->block_ek0 = this->block_x;
+            m_block_ek0 = m_block_x;
 
             /* Clear our calculated mac block. */
-            this->block_x.block_128.Clear();
+            m_block_x.block_128.Clear();
 
             /* Reset our state. */
-            this->msg_size      = 0;
-            this->aad_size      = 0;
-            this->msg_remaining = 0;
-            this->aad_remaining = 0;
+            m_msg_size      = 0;
+            m_aad_size      = 0;
+            m_msg_remaining = 0;
+            m_aad_remaining = 0;
         }
 
         /* Set the working block to the iv. */
-        this->block_ek = this->block_ek0;
+        m_block_ek = m_block_ek0;
     }
 
     template<class BlockCipher>
     void GcmModeImpl<BlockCipher>::UpdateAad(const void *aad, size_t aad_size) {
         /* Validate pre-conditions. */
-        AMS_ASSERT(this->state    == State_ProcessingAad);
-        AMS_ASSERT(this->msg_size == 0);
+        AMS_ASSERT(m_state    == State_ProcessingAad);
+        AMS_ASSERT(m_msg_size == 0);
 
         /* Update our aad size. */
-        this->aad_size += aad_size;
+        m_aad_size += aad_size;
 
         /* Define a working tracker variable. */
         const u8 *cur_aad = static_cast<const u8 *>(aad);
 
         /* Process any leftover aad data from a previous invocation. */
-        if (this->aad_remaining > 0) {
+        if (m_aad_remaining > 0) {
             while (aad_size > 0) {
                 /* Copy in a byte of the aad to our partial block. */
-                this->block_x.block_8[this->aad_remaining] ^= *(cur_aad++);
+                m_block_x.block_8[m_aad_remaining] ^= *(cur_aad++);
 
                 /* Note that we consumed a byte. */
                 --aad_size;
 
                 /* Increment our partial block size. */
-                this->aad_remaining = (this->aad_remaining + 1) % BlockSize;
+                m_aad_remaining = (m_aad_remaining + 1) % BlockSize;
 
                 /* If we have a complete block, process it and move onward. */
-                GaloisFieldMult(std::addressof(this->block_x), std::addressof(this->block_x), std::addressof(this->h_mult_blocks[0]));
+                GaloisFieldMult(std::addressof(m_block_x), std::addressof(m_block_x), std::addressof(m_h_mult_blocks[0]));
             }
         }
 
@@ -205,11 +205,11 @@ namespace ams::crypto::impl {
         while (aad_size >= BlockSize) {
             /* Xor the current aad into our work block. */
             for (size_t i = 0; i < BlockSize; ++i) {
-                this->block_x.block_8[i] ^= *(cur_aad++);
+                m_block_x.block_8[i] ^= *(cur_aad++);
             }
 
             /* Multiply the blocks in our galois field. */
-            GaloisFieldMult(std::addressof(this->block_x), std::addressof(this->block_x), std::addressof(this->h_mult_blocks[0]));
+            GaloisFieldMult(std::addressof(m_block_x), std::addressof(m_block_x), std::addressof(m_h_mult_blocks[0]));
 
             /* Note that we've processed a block. */
             aad_size -= BlockSize;
@@ -218,11 +218,11 @@ namespace ams::crypto::impl {
         /* Update our state with whatever aad is left over. */
         if (aad_size > 0) {
             /* Note how much left over data we have. */
-            this->aad_remaining = static_cast<u32>(aad_size);
+            m_aad_remaining = static_cast<u32>(aad_size);
 
             /* Xor the data in. */
             for (size_t i = 0; i < aad_size; ++i) {
-                this->block_x.block_8[i] ^= *(cur_aad++);
+                m_block_x.block_8[i] ^= *(cur_aad++);
             }
         }
     }
@@ -234,21 +234,21 @@ namespace ams::crypto::impl {
     template<class BlockCipher>
     void GcmModeImpl<BlockCipher>::GetMac(void *dst, size_t dst_size) {
         /* Validate pre-conditions. */
-        AMS_ASSERT(State_ProcessingAad <= this->state && this->state <= State_Done);
+        AMS_ASSERT(State_ProcessingAad <= m_state && m_state <= State_Done);
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size >= MacSize);
-        AMS_ASSERT(this->aad_remaining == 0);
-        AMS_ASSERT(this->msg_remaining == 0);
+        AMS_ASSERT(m_aad_remaining == 0);
+        AMS_ASSERT(m_msg_remaining == 0);
         AMS_UNUSED(dst_size);
 
         /* If we haven't already done so, compute the final mac. */
-        if (this->state != State_Done) {
+        if (m_state != State_Done) {
             this->ComputeMac(true);
-            this->state = State_Done;
+            m_state = State_Done;
         }
 
-        static_assert(sizeof(this->block_x) == MacSize);
-        std::memcpy(dst, std::addressof(this->block_x), MacSize);
+        static_assert(sizeof(m_block_x) == MacSize);
+        std::memcpy(dst, std::addressof(m_block_x), MacSize);
     }
 
     template<class BlockCipher>
@@ -258,18 +258,18 @@ namespace ams::crypto::impl {
         /*       to speed up galois field arithmetic. */
         constexpr const Block EmptyBlock = {};
 
-        this->ProcessBlock(std::addressof(this->h_mult_blocks[0]), std::addressof(EmptyBlock), this->block_cipher);
+        this->ProcessBlock(std::addressof(m_h_mult_blocks[0]), std::addressof(EmptyBlock), m_block_cipher);
     }
 
     template<class BlockCipher>
     void GcmModeImpl<BlockCipher>::ComputeMac(bool encrypt) {
         /* If we have leftover data, process it. */
-        if (this->aad_remaining > 0 || this->msg_remaining > 0) {
-            GaloisFieldMult(std::addressof(this->block_x), std::addressof(this->block_x), std::addressof(this->h_mult_blocks[0]));
+        if (m_aad_remaining > 0 || m_msg_remaining > 0) {
+            GaloisFieldMult(std::addressof(m_block_x), std::addressof(m_block_x), std::addressof(m_h_mult_blocks[0]));
         }
 
         /* Setup the last block. */
-        Block last_block = Block{ .block_128 = { this->msg_size, this->aad_size } };
+        Block last_block = Block{ .block_128 = { m_msg_size, m_aad_size } };
 
         /* Multiply the last block by 8 to account for bit vs byte sizes. */
         static_assert(offsetof(Block128, hi) == 0);
@@ -279,21 +279,21 @@ namespace ams::crypto::impl {
 
         /* Xor the data in. */
         for (size_t i = 0; i < BlockSize; ++i) {
-            this->block_x.block_8[BlockSize - 1 - i] ^= last_block.block_8[i];
+            m_block_x.block_8[BlockSize - 1 - i] ^= last_block.block_8[i];
         }
 
         /* Perform the final multiplication. */
-        GaloisFieldMult(std::addressof(this->block_x), std::addressof(this->block_x), std::addressof(this->h_mult_blocks[0]));
+        GaloisFieldMult(std::addressof(m_block_x), std::addressof(m_block_x), std::addressof(m_h_mult_blocks[0]));
 
         /* If we need to do an encryption, do so. */
         if (encrypt) {
             /* Encrypt the iv. */
             u8 enc_result[BlockSize];
-            this->ProcessBlock(enc_result, std::addressof(this->block_ek0), this->block_cipher);
+            this->ProcessBlock(enc_result, std::addressof(m_block_ek0), m_block_cipher);
 
             /* Xor the iv in. */
             for (size_t i = 0; i < BlockSize; ++i) {
-                this->block_x.block_8[i] ^= enc_result[i];
+                m_block_x.block_8[i] ^= enc_result[i];
             }
         }
     }

@@ -39,94 +39,94 @@ namespace ams::crypto::impl {
 
         /* Xor. */
         for (size_t i = 0; i < BlockSize; i++) {
-            tmp[i] = this->tweak[i] ^ src[i];
+            tmp[i] = m_tweak[i] ^ src[i];
         }
 
         /* Crypt */
-        this->cipher_func(tmp, tmp, this->cipher_ctx);
+        m_cipher_func(tmp, tmp, m_cipher_ctx);
 
         /* Xor. */
         for (size_t i = 0; i < BlockSize; i++) {
-            dst[i] = this->tweak[i] ^ tmp[i];
+            dst[i] = m_tweak[i] ^ tmp[i];
         }
 
-        MultiplyTweakGeneric(reinterpret_cast<u64 *>(this->tweak));
+        MultiplyTweakGeneric(reinterpret_cast<u64 *>(m_tweak));
     }
 
     size_t XtsModeImpl::FinalizeEncryption(void *dst, size_t dst_size) {
-        AMS_ASSERT(this->state == State_Processing);
+        AMS_ASSERT(m_state == State_Processing);
         AMS_UNUSED(dst_size);
 
         u8 *dst_u8 = static_cast<u8 *>(dst);
         size_t processed = 0;
 
-        if (this->num_buffered == 0) {
-            this->ProcessBlock(dst_u8, this->last_block);
+        if (m_num_buffered == 0) {
+            this->ProcessBlock(dst_u8, m_last_block);
             processed = BlockSize;
         } else {
-            this->ProcessBlock(this->last_block, this->last_block);
+            this->ProcessBlock(m_last_block, m_last_block);
 
-            std::memcpy(this->buffer + this->num_buffered, this->last_block + this->num_buffered, BlockSize - this->num_buffered);
+            std::memcpy(m_buffer + m_num_buffered, m_last_block + m_num_buffered, BlockSize - m_num_buffered);
 
-            this->ProcessBlock(dst_u8, this->buffer);
+            this->ProcessBlock(dst_u8, m_buffer);
 
-            std::memcpy(dst_u8 + BlockSize, this->last_block, this->num_buffered);
+            std::memcpy(dst_u8 + BlockSize, m_last_block, m_num_buffered);
 
-            processed = BlockSize + this->num_buffered;
+            processed = BlockSize + m_num_buffered;
         }
 
-        this->state = State_Done;
+        m_state = State_Done;
         return processed;
     }
 
     size_t XtsModeImpl::FinalizeDecryption(void *dst, size_t dst_size) {
-        AMS_ASSERT(this->state == State_Processing);
+        AMS_ASSERT(m_state == State_Processing);
         AMS_UNUSED(dst_size);
 
         u8 *dst_u8 = static_cast<u8 *>(dst);
         size_t processed = 0;
 
-        if (this->num_buffered == 0) {
-            this->ProcessBlock(dst_u8, this->last_block);
+        if (m_num_buffered == 0) {
+            this->ProcessBlock(dst_u8, m_last_block);
             processed = BlockSize;
         } else {
             u8 tmp_tweak[BlockSize];
-            std::memcpy(tmp_tweak, this->tweak, BlockSize);
-            MultiplyTweakGeneric(reinterpret_cast<u64 *>(this->tweak));
+            std::memcpy(tmp_tweak, m_tweak, BlockSize);
+            MultiplyTweakGeneric(reinterpret_cast<u64 *>(m_tweak));
 
-            this->ProcessBlock(this->last_block, this->last_block);
+            this->ProcessBlock(m_last_block, m_last_block);
 
-            std::memcpy(this->buffer + this->num_buffered, this->last_block + this->num_buffered, BlockSize - this->num_buffered);
+            std::memcpy(m_buffer + m_num_buffered, m_last_block + m_num_buffered, BlockSize - m_num_buffered);
 
-            std::memcpy(this->tweak, tmp_tweak, BlockSize);
+            std::memcpy(m_tweak, tmp_tweak, BlockSize);
 
-            this->ProcessBlock(dst_u8, this->buffer);
+            this->ProcessBlock(dst_u8, m_buffer);
 
-            std::memcpy(dst_u8 + BlockSize, this->last_block, this->num_buffered);
+            std::memcpy(dst_u8 + BlockSize, m_last_block, m_num_buffered);
 
-            processed = BlockSize + this->num_buffered;
+            processed = BlockSize + m_num_buffered;
         }
 
-        this->state = State_Done;
+        m_state = State_Done;
         return processed;
     }
 
     size_t XtsModeImpl::ProcessPartialData(u8 *dst, const u8 *src, size_t size) {
         size_t processed = 0;
 
-        std::memcpy(this->buffer + this->num_buffered, src, size);
-        this->num_buffered += size;
+        std::memcpy(m_buffer + m_num_buffered, src, size);
+        m_num_buffered += size;
 
-        if (this->num_buffered == BlockSize) {
-            if (this->state == State_Processing) {
-                this->ProcessBlock(dst, this->last_block);
+        if (m_num_buffered == BlockSize) {
+            if (m_state == State_Processing) {
+                this->ProcessBlock(dst, m_last_block);
                 processed += BlockSize;
             }
 
-            std::memcpy(this->last_block, this->buffer, BlockSize);
-            this->num_buffered = 0;
+            std::memcpy(m_last_block, m_buffer, BlockSize);
+            m_num_buffered = 0;
 
-            this->state = State_Processing;
+            m_state = State_Processing;
         }
 
         return processed;
@@ -135,8 +135,8 @@ namespace ams::crypto::impl {
     size_t XtsModeImpl::ProcessRemainingData(u8 *dst, const u8 *src, size_t size) {
         AMS_UNUSED(dst);
 
-        std::memcpy(this->buffer, src, size);
-        this->num_buffered = size;
+        std::memcpy(m_buffer, src, size);
+        m_num_buffered = size;
 
         return 0;
     }
