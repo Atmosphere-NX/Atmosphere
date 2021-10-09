@@ -28,7 +28,7 @@ namespace ams::sdmmc::impl {
 
     #if defined(AMS_SDMMC_THREAD_SAFE)
 
-        #define AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX() std::scoped_lock lk(this->base_device->device_mutex)
+        #define AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX() std::scoped_lock lk(m_base_device->m_device_mutex)
 
     #else
 
@@ -41,13 +41,13 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(out_read_bl_len != nullptr);
 
         /* Extract C_SIZE_MULT and READ_BL_LEN from the CSD. */
-        *out_c_size_mult = static_cast<u8>((this->csd[2] >> 7) & 0x7);
-        *out_read_bl_len = static_cast<u8>((this->csd[4] >> 8) & 0xF);
+        *out_c_size_mult = static_cast<u8>((m_csd[2] >> 7) & 0x7);
+        *out_read_bl_len = static_cast<u8>((m_csd[4] >> 8) & 0xF);
     }
 
     Result BaseDevice::SetLegacyMemoryCapacity() {
         /* Get csize from the csd. */
-        const u32 c_size = ((this->csd[3] >> 6) & 0x3FF) | ((this->csd[4] & 0x3) << 10);
+        const u32 c_size = ((m_csd[3] >> 6) & 0x3FF) | ((m_csd[4] & 0x3) << 10);
 
         /* Get c_size_mult and read_bl_len. */
         u8 c_size_mult, read_bl_len;
@@ -57,8 +57,8 @@ namespace ams::sdmmc::impl {
         R_UNLESS((read_bl_len + c_size_mult + 2) >= 9, sdmmc::ResultUnexpectedDeviceCsdValue());
 
         /* Set memory capacity. */
-        this->memory_capacity          = (c_size + 1) << ((read_bl_len + c_size_mult + 2) - 9);
-        this->is_valid_memory_capacity = true;
+        m_memory_capacity          = (c_size + 1) << ((read_bl_len + c_size_mult + 2) - 9);
+        m_is_valid_memory_capacity = true;
 
         return ResultSuccess();
     }
@@ -105,11 +105,11 @@ namespace ams::sdmmc::impl {
         /* Issue the command. */
         constexpr ResponseType CommandResponseType = ResponseType_R1;
         Command command(command_index, command_arg, CommandResponseType, is_busy);
-        R_TRY(this->host_controller->IssueCommand(std::addressof(command)));
+        R_TRY(m_host_controller->IssueCommand(std::addressof(command)));
 
         /* Get the response. */
         AMS_ABORT_UNLESS(out_response != nullptr);
-        this->host_controller->GetLastResponse(out_response, sizeof(u32), CommandResponseType);
+        m_host_controller->GetLastResponse(out_response, sizeof(u32), CommandResponseType);
 
         /* Mask out the ignored status bits. */
         if (status_ignore_mask != 0) {
@@ -117,12 +117,12 @@ namespace ams::sdmmc::impl {
         }
 
         /* Check the r1 response for errors. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
-        R_TRY(this->base_device->CheckDeviceStatus(*out_response));
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
+        R_TRY(m_base_device->CheckDeviceStatus(*out_response));
 
         /* Check the device state. */
         if (expected_state != DeviceState_Unknown) {
-            R_UNLESS(this->base_device->GetDeviceState(*out_response) == expected_state, sdmmc::ResultUnexpectedDeviceState());
+            R_UNLESS(m_base_device->GetDeviceState(*out_response) == expected_state, sdmmc::ResultUnexpectedDeviceState());
         }
 
         return ResultSuccess();
@@ -131,28 +131,28 @@ namespace ams::sdmmc::impl {
     Result BaseDeviceAccessor::IssueCommandGoIdleState() const {
         /* Issue the command. */
         Command command(CommandIndex_GoIdleState, 0, ResponseType_R0, false);
-        return this->host_controller->IssueCommand(std::addressof(command));
+        return m_host_controller->IssueCommand(std::addressof(command));
     }
 
     Result BaseDeviceAccessor::IssueCommandAllSendCid(void *dst, size_t dst_size) const {
         /* Issue the command. */
         constexpr ResponseType CommandResponseType = ResponseType_R2;
         Command command(CommandIndex_AllSendCid, 0, CommandResponseType, false);
-        R_TRY(this->host_controller->IssueCommand(std::addressof(command)));
+        R_TRY(m_host_controller->IssueCommand(std::addressof(command)));
 
         /* Copy the data out. */
         AMS_ABORT_UNLESS(dst != nullptr);
         AMS_ABORT_UNLESS(util::IsAligned(reinterpret_cast<uintptr_t>(dst), alignof(u32)));
         AMS_ABORT_UNLESS(dst_size >= DeviceCidSize);
-        this->host_controller->GetLastResponse(static_cast<u32 *>(dst), DeviceCidSize, CommandResponseType);
+        m_host_controller->GetLastResponse(static_cast<u32 *>(dst), DeviceCidSize, CommandResponseType);
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::IssueCommandSelectCard() const {
         /* Get the command argument. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
-        const u32 arg = static_cast<u32>(this->base_device->GetRca()) << 16;
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
+        const u32 arg = static_cast<u32>(m_base_device->GetRca()) << 16;
 
         /* Issue the command. */
         return this->IssueCommandAndCheckR1(CommandIndex_SelectCard, arg, true, DeviceState_Unknown);
@@ -160,27 +160,27 @@ namespace ams::sdmmc::impl {
 
     Result BaseDeviceAccessor::IssueCommandSendCsd(void *dst, size_t dst_size) const {
         /* Get the command argument. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
-        const u32 arg = static_cast<u32>(this->base_device->GetRca()) << 16;
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
+        const u32 arg = static_cast<u32>(m_base_device->GetRca()) << 16;
 
         /* Issue the command. */
         constexpr ResponseType CommandResponseType = ResponseType_R2;
         Command command(CommandIndex_SendCsd, arg, CommandResponseType, false);
-        R_TRY(this->host_controller->IssueCommand(std::addressof(command)));
+        R_TRY(m_host_controller->IssueCommand(std::addressof(command)));
 
         /* Copy the data out. */
         AMS_ABORT_UNLESS(dst != nullptr);
         AMS_ABORT_UNLESS(util::IsAligned(reinterpret_cast<uintptr_t>(dst), alignof(u32)));
         AMS_ABORT_UNLESS(dst_size >= DeviceCsdSize);
-        this->host_controller->GetLastResponse(static_cast<u32 *>(dst), DeviceCsdSize, CommandResponseType);
+        m_host_controller->GetLastResponse(static_cast<u32 *>(dst), DeviceCsdSize, CommandResponseType);
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::IssueCommandSendStatus(u32 *out_device_status, u32 status_ignore_mask) const {
         /* Get the command argument. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
-        const u32 arg = static_cast<u32>(this->base_device->GetRca()) << 16;
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
+        const u32 arg = static_cast<u32>(m_base_device->GetRca()) << 16;
 
         /* Issue the command. */
         return this->IssueCommandAndCheckR1(out_device_status, CommandIndex_SendStatus, arg, false, DeviceState_Tran, status_ignore_mask);
@@ -193,8 +193,8 @@ namespace ams::sdmmc::impl {
 
     Result BaseDeviceAccessor::IssueCommandMultipleBlock(u32 *out_num_transferred_blocks, u32 sector_index, u32 num_sectors, void *buf, bool is_read) const {
         /* Get the argument. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
-        const u32 arg = this->base_device->IsHighCapacity() ? sector_index : sector_index * SectorSize;
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
+        const u32 arg = m_base_device->IsHighCapacity() ? sector_index : sector_index * SectorSize;
 
         /* Get the command index and transfer direction. */
         const u32 command_index   = is_read ? CommandIndex_ReadMultipleBlock   : CommandIndex_WriteMultipleBlock;
@@ -204,7 +204,7 @@ namespace ams::sdmmc::impl {
         constexpr ResponseType CommandResponseType = ResponseType_R1;
         Command command(command_index, arg, CommandResponseType, false);
         TransferData xfer_data(buf, SectorSize, num_sectors, xfer_direction, true, true);
-        Result result = this->host_controller->IssueCommand(std::addressof(command), std::addressof(xfer_data), out_num_transferred_blocks);
+        Result result = m_host_controller->IssueCommand(std::addressof(command), std::addressof(xfer_data), out_num_transferred_blocks);
 
         /* Handle the failure case. */
         if (R_FAILED(result)) {
@@ -216,9 +216,9 @@ namespace ams::sdmmc::impl {
 
             /* Stop transmission. */
             u32 resp = 0;
-            result = this->host_controller->IssueStopTransmissionCommand(std::addressof(resp));
+            result = m_host_controller->IssueStopTransmissionCommand(std::addressof(resp));
             if (R_SUCCEEDED(result)) {
-                result = this->base_device->CheckDeviceStatus(resp & (~DeviceStatus_IllegalCommand));
+                result = m_base_device->CheckDeviceStatus(resp & (~DeviceStatus_IllegalCommand));
                 if (R_FAILED(result)) {
                     result_to_return = result;
                 }
@@ -242,23 +242,23 @@ namespace ams::sdmmc::impl {
 
         /* Get the responses. */
         u32 resp, st_resp;
-        this->host_controller->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        this->host_controller->GetLastStopTransmissionResponse(std::addressof(st_resp), sizeof(st_resp));
+        m_host_controller->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
+        m_host_controller->GetLastStopTransmissionResponse(std::addressof(st_resp), sizeof(st_resp));
 
         /* Check the device status. */
-        R_TRY(this->base_device->CheckDeviceStatus(resp));
+        R_TRY(m_base_device->CheckDeviceStatus(resp));
 
         /* Decide on what errors to ignore. */
         u32 status_ignore_mask = 0;
         if (is_read) {
             AMS_ABORT_UNLESS(out_num_transferred_blocks != nullptr);
-            if ((*out_num_transferred_blocks + sector_index) == this->base_device->GetMemoryCapacity()) {
+            if ((*out_num_transferred_blocks + sector_index) == m_base_device->GetMemoryCapacity()) {
                 status_ignore_mask = DeviceStatus_AddressOutOfRange;
             }
         }
 
         /* Check the device status. */
-        R_TRY(this->base_device->CheckDeviceStatus(st_resp & ~status_ignore_mask));
+        R_TRY(m_base_device->CheckDeviceStatus(st_resp & ~status_ignore_mask));
 
         return ResultSuccess();
     }
@@ -271,8 +271,8 @@ namespace ams::sdmmc::impl {
         /* Decide on what errors to ignore. */
         u32 status_ignore_mask = 0;
         if (is_read) {
-            AMS_ABORT_UNLESS(this->base_device != nullptr);
-            if ((*out_num_transferred_blocks + sector_index) == this->base_device->GetMemoryCapacity()) {
+            AMS_ABORT_UNLESS(m_base_device != nullptr);
+            if ((*out_num_transferred_blocks + sector_index) == m_base_device->GetMemoryCapacity()) {
                 status_ignore_mask = DeviceStatus_AddressOutOfRange;
             }
         }
@@ -286,7 +286,7 @@ namespace ams::sdmmc::impl {
 
     Result BaseDeviceAccessor::ReadWriteMultiple(u32 sector_index, u32 num_sectors, u32 sector_index_alignment, void *buf, size_t buf_size, bool is_read) {
         /* Verify that we can send the command. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
 
         /* If we want to read zero sectors, there's no work for us to do. */
         R_SUCCEED_IF(num_sectors == 0);
@@ -304,7 +304,7 @@ namespace ams::sdmmc::impl {
             if (sector_index_alignment > 0) {
                 AMS_ABORT_UNLESS((cur_sector_index % sector_index_alignment) == 0);
 
-                const u32 max_sectors = this->host_controller->GetMaxTransferNumBlocks();
+                const u32 max_sectors = m_host_controller->GetMaxTransferNumBlocks();
                 if (remaining_sectors > max_sectors) {
                     cur_sectors = max_sectors - (max_sectors % sector_index_alignment);
                 }
@@ -346,7 +346,7 @@ namespace ams::sdmmc::impl {
                     this->PushErrorLog(true, "%s %X %X:0", is_read ? "R" : "W", cur_sector_index, cur_sectors);
 
                     /* Increment the number of error corrections we've done. */
-                    ++this->num_read_write_error_corrections;
+                    ++m_num_read_write_error_corrections;
                 }
             }
 
@@ -363,67 +363,67 @@ namespace ams::sdmmc::impl {
     #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
     void BaseDeviceAccessor::RegisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Register the address. */
-        return this->host_controller->RegisterDeviceVirtualAddress(buffer, buffer_size, buffer_device_virtual_address);
+        return m_host_controller->RegisterDeviceVirtualAddress(buffer, buffer_size, buffer_device_virtual_address);
     }
 
     void BaseDeviceAccessor::UnregisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Register the address. */
-        return this->host_controller->UnregisterDeviceVirtualAddress(buffer, buffer_size, buffer_device_virtual_address);
+        return m_host_controller->UnregisterDeviceVirtualAddress(buffer, buffer_size, buffer_device_virtual_address);
     }
     #endif
 
     Result BaseDeviceAccessor::Activate() {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is awake. */
-        R_UNLESS(this->base_device->IsAwake(), sdmmc::ResultNotAwakened());
+        R_UNLESS(m_base_device->IsAwake(), sdmmc::ResultNotAwakened());
 
         /* If the device is already active, we don't need to do anything. */
-        R_SUCCEED_IF(this->base_device->IsActive());
+        R_SUCCEED_IF(m_base_device->IsActive());
 
         /* Activate the base device. */
-        auto activate_guard = SCOPE_GUARD { ++this->num_activation_failures; };
+        auto activate_guard = SCOPE_GUARD { ++m_num_activation_failures; };
         R_TRY(this->OnActivate());
 
         /* We successfully activated the device. */
         activate_guard.Cancel();
-        this->base_device->SetActive();
+        m_base_device->SetActive();
 
         return ResultSuccess();
     }
 
     void BaseDeviceAccessor::Deactivate() {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Deactivate the base device. */
-        if (this->base_device->IsActive()) {
-            this->host_controller->Shutdown();
-            this->base_device->Deactivate();
+        if (m_base_device->IsActive()) {
+            m_host_controller->Shutdown();
+            m_base_device->Deactivate();
         }
     }
 
     Result BaseDeviceAccessor::ReadWrite(u32 sector_index, u32 num_sectors, void *buffer, size_t buffer_size, bool is_read) {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Perform the read/write. */
-        auto rw_guard = SCOPE_GUARD { ++this->num_read_write_failures; };
+        auto rw_guard = SCOPE_GUARD { ++m_num_read_write_failures; };
         R_TRY(this->OnReadWrite(sector_index, num_sectors, buffer, buffer_size, is_read));
 
         /* We successfully performed the read/write. */
@@ -433,44 +433,44 @@ namespace ams::sdmmc::impl {
 
     Result BaseDeviceAccessor::CheckConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width) {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the current speed mode/bus width. */
-        *out_speed_mode = this->host_controller->GetSpeedMode();
-        *out_bus_width  = this->host_controller->GetBusWidth();
+        *out_speed_mode = m_host_controller->GetSpeedMode();
+        *out_bus_width  = m_host_controller->GetBusWidth();
 
         /* Verify that we can get the status. */
-        R_TRY(this->host_controller->GetInternalStatus());
+        R_TRY(m_host_controller->GetInternalStatus());
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::GetMemoryCapacity(u32 *out_sectors) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the capacity. */
         AMS_ABORT_UNLESS(out_sectors != nullptr);
-        *out_sectors = this->base_device->GetMemoryCapacity();
+        *out_sectors = m_base_device->GetMemoryCapacity();
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::GetDeviceStatus(u32 *out) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the status. */
         R_TRY(this->IssueCommandSendStatus(out, 0));
@@ -480,73 +480,73 @@ namespace ams::sdmmc::impl {
 
     Result BaseDeviceAccessor::GetOcr(u32 *out) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the ocr. */
         AMS_ABORT_UNLESS(out != nullptr);
-        *out = this->base_device->GetOcr();
+        *out = m_base_device->GetOcr();
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::GetRca(u16 *out) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the rca. */
         AMS_ABORT_UNLESS(out != nullptr);
-        *out = this->base_device->GetRca();
+        *out = m_base_device->GetRca();
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::GetCid(void *out, size_t size) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the cid. */
-        this->base_device->GetCid(out, size);
+        m_base_device->GetCid(out, size);
 
         return ResultSuccess();
     }
 
     Result BaseDeviceAccessor::GetCsd(void *out, size_t size) const {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Check that the device is accessible. */
-        R_TRY(this->base_device->CheckAccessible());
+        R_TRY(m_base_device->CheckAccessible());
 
         /* Get the csd. */
-        this->base_device->GetCsd(out, size);
+        m_base_device->GetCsd(out, size);
 
         return ResultSuccess();
     }
 
     void BaseDeviceAccessor::GetAndClearErrorInfo(ErrorInfo *out_error_info, size_t *out_log_size, char *out_log_buffer, size_t log_buffer_size) {
         /* Lock exclusive access of the base device. */
-        AMS_ABORT_UNLESS(this->base_device != nullptr);
+        AMS_ABORT_UNLESS(m_base_device != nullptr);
         AMS_SDMMC_LOCK_BASE_DEVICE_MUTEX();
 
         /* Set the output error info. */
         AMS_ABORT_UNLESS(out_error_info != nullptr);
-        out_error_info->num_activation_failures           = this->num_activation_failures;
-        out_error_info->num_activation_error_corrections  = this->num_activation_error_corrections;
-        out_error_info->num_read_write_failures           = this->num_read_write_failures;
-        out_error_info->num_read_write_error_corrections  = this->num_read_write_error_corrections;
+        out_error_info->num_activation_failures           = m_num_activation_failures;
+        out_error_info->num_activation_error_corrections  = m_num_activation_error_corrections;
+        out_error_info->num_read_write_failures           = m_num_read_write_failures;
+        out_error_info->num_read_write_error_corrections  = m_num_read_write_error_corrections;
         this->ClearErrorInfo();
 
         /* Check if we should write logs. */
@@ -563,10 +563,10 @@ namespace ams::sdmmc::impl {
         /* Get and clear our logs. */
         #if defined(AMS_SDMMC_USE_LOGGER)
         {
-            if (this->error_logger.HasLog()) {
+            if (m_error_logger.HasLog()) {
                 this->PushErrorTimeStamp();
 
-                *out_log_size = this->error_logger.GetAndClearLogs(out_log_buffer, log_buffer_size);
+                *out_log_size = m_error_logger.GetAndClearLogs(out_log_buffer, log_buffer_size);
             } else {
                 *out_log_size = 0;
             }

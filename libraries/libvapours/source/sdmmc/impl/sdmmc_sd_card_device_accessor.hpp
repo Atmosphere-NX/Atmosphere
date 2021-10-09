@@ -26,13 +26,13 @@ namespace ams::sdmmc::impl {
     class SdCardDevice : public BaseDevice {
         private:
             #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-            mutable os::EventType removed_event;
+            mutable os::EventType m_removed_event;
             #endif
-            u16 rca;
-            bool is_valid_rca;
-            bool is_uhs_i_mode;
+            u16 m_rca;
+            bool m_is_valid_rca;
+            bool m_is_uhs_i_mode;
         public:
-            SdCardDevice() : rca(0) {
+            SdCardDevice() : m_rca(0) {
                 this->OnDeactivate();
             }
 
@@ -43,7 +43,7 @@ namespace ams::sdmmc::impl {
 
             #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
                 virtual os::EventType *GetRemovedEvent() const override {
-                    return std::addressof(this->removed_event);
+                    return std::addressof(m_removed_event);
                 }
             #elif defined(AMS_SDMMC_USE_OS_EVENTS)
                 virtual os::EventType *GetRemovedEvent() const override {
@@ -57,28 +57,28 @@ namespace ams::sdmmc::impl {
             }
 
             virtual u16 GetRca() const override {
-                AMS_ABORT_UNLESS(this->is_valid_rca);
-                return this->rca;
+                AMS_ABORT_UNLESS(m_is_valid_rca);
+                return m_rca;
             }
 
             void OnDeactivate() {
-                this->is_valid_rca  = false;
-                this->is_uhs_i_mode = false;
+                m_is_valid_rca  = false;
+                m_is_uhs_i_mode = false;
             }
 
             void SetRca(u16 v) {
-                this->rca          = v;
-                this->is_valid_rca = true;
+                m_rca          = v;
+                m_is_valid_rca = true;
             }
 
             void SetOcrAndHighCapacity(u32 ocr);
 
             void SetUhsIMode(bool en) {
-                this->is_uhs_i_mode = en;
+                m_is_uhs_i_mode = en;
             }
 
             bool IsUhsIMode() const {
-                return this->is_uhs_i_mode;
+                return m_is_uhs_i_mode;
             }
     };
 
@@ -106,15 +106,15 @@ namespace ams::sdmmc::impl {
 
     class SdCardDeviceAccessor : public BaseDeviceAccessor {
         private:
-            SdCardDevice sd_card_device;
-            void *work_buffer;
-            size_t work_buffer_size;
+            SdCardDevice m_sd_card_device;
+            void *m_work_buffer;
+            size_t m_work_buffer_size;
             #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-            DeviceDetector *sd_card_detector;
+            DeviceDetector *m_sd_card_detector;
             #endif
-            BusWidth max_bus_width;
-            SpeedMode max_speed_mode;
-            bool is_initialized;
+            BusWidth m_max_bus_width;
+            SpeedMode m_max_speed_mode;
+            bool m_is_initialized;
         private:
             #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
                 void RemovedCallback();
@@ -160,21 +160,21 @@ namespace ams::sdmmc::impl {
             virtual Result GetSpeedMode(SpeedMode *out_speed_mode) const override;
         public:
             #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-                explicit SdCardDeviceAccessor(IHostController *hc, DeviceDetector *dd) : BaseDeviceAccessor(hc), sd_card_detector(dd)
+                explicit SdCardDeviceAccessor(IHostController *hc, DeviceDetector *dd) : BaseDeviceAccessor(hc), m_sd_card_detector(dd)
             #else
                 explicit SdCardDeviceAccessor(IHostController *hc) : BaseDeviceAccessor(hc)
             #endif
             {
-                this->work_buffer      = nullptr;
-                this->work_buffer_size = 0;
-                this->max_bus_width    = BusWidth_4Bit;
-                this->max_speed_mode   = SpeedMode_SdCardSdr104;
-                this->is_initialized   = false;
+                m_work_buffer      = nullptr;
+                m_work_buffer_size = 0;
+                m_max_bus_width    = BusWidth_4Bit;
+                m_max_speed_mode   = SpeedMode_SdCardSdr104;
+                m_is_initialized   = false;
             }
 
             void SetSdCardWorkBuffer(void *wb, size_t wb_size) {
-                this->work_buffer      = wb;
-                this->work_buffer_size = wb_size;
+                m_work_buffer      = wb;
+                m_work_buffer_size = wb_size;
             }
 
             void PutSdCardToSleep();
@@ -187,7 +187,7 @@ namespace ams::sdmmc::impl {
 
             bool IsSdCardInserted() {
                 #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-                    return this->sd_card_detector->IsInserted();
+                    return m_sd_card_detector->IsInserted();
                 #else
                     AMS_ABORT("IsSdCardInserted without SdCardDetector");
                 #endif
@@ -195,7 +195,7 @@ namespace ams::sdmmc::impl {
 
             bool IsSdCardRemoved() {
                 #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-                    return this->sd_card_device.IsRemoved();
+                    return m_sd_card_device.IsRemoved();
                 #else
                     AMS_ABORT("IsSdCardRemoved without SdCardDetector");
                 #endif
@@ -203,7 +203,7 @@ namespace ams::sdmmc::impl {
 
             void RegisterSdCardDetectionEventCallback(DeviceDetectionEventCallback cb, void *arg) {
                 #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-                    return this->sd_card_detector->RegisterDetectionEventCallback(cb, arg);
+                    return m_sd_card_detector->RegisterDetectionEventCallback(cb, arg);
                 #else
                     AMS_UNUSED(cb, arg);
                     AMS_ABORT("RegisterSdCardDetectionEventCallback without SdCardDetector");
@@ -212,7 +212,7 @@ namespace ams::sdmmc::impl {
 
             void UnregisterSdCardDetectionEventCallback() {
                 #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-                    return this->sd_card_detector->UnregisterDetectionEventCallback();
+                    return m_sd_card_detector->UnregisterDetectionEventCallback();
                 #else
                     AMS_ABORT("UnregisterSdCardDetectionEventCallback without SdCardDetector");
                 #endif

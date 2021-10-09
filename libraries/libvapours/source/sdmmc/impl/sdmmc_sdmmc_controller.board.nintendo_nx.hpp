@@ -74,18 +74,18 @@ namespace ams::sdmmc::impl {
             };
             static_assert(sizeof(SdmmcRegisters) == SdmmcRegistersSize);
         private:
-            SdmmcRegisters *sdmmc_registers;
-            bool is_shutdown;
-            bool is_awake;
-            SpeedMode current_speed_mode;
-            BusPower bus_power_before_sleep;
-            BusWidth bus_width_before_sleep;
-            SpeedMode speed_mode_before_sleep;
-            u8 tap_value_before_sleep;
-            bool is_powersaving_enable_before_sleep;
-            u8 tap_value_for_hs_400;
-            bool is_valid_tap_value_for_hs_400;
-            Result drive_strength_calibration_status;
+            SdmmcRegisters *m_sdmmc_registers;
+            bool m_is_shutdown;
+            bool m_is_awake;
+            SpeedMode m_current_speed_mode;
+            BusPower m_bus_power_before_sleep;
+            BusWidth m_bus_width_before_sleep;
+            SpeedMode m_speed_mode_before_sleep;
+            u8 m_tap_value_before_sleep;
+            bool m_is_powersaving_enable_before_sleep;
+            u8 m_tap_value_for_hs_400;
+            bool m_is_valid_tap_value_for_hs_400;
+            Result m_drive_strength_calibration_status;
         private:
             void ReleaseReset(SpeedMode speed_mode);
             void AssertReset();
@@ -124,19 +124,19 @@ namespace ams::sdmmc::impl {
             explicit SdmmcController(dd::PhysicalAddress registers_phys_addr) : SdHostStandardController(registers_phys_addr, SdmmcRegistersSize) {
                 /* Set sdmmc registers. */
                 static_assert(offsetof(SdmmcRegisters, sd_host_standard_registers) == 0);
-                this->sdmmc_registers = reinterpret_cast<SdmmcRegisters *>(this->registers);
+                m_sdmmc_registers = reinterpret_cast<SdmmcRegisters *>(m_registers);
 
-                this->is_shutdown                        = true;
-                this->is_awake                           = true;
-                this->is_valid_tap_value_for_hs_400      = false;
-                this->drive_strength_calibration_status  = sdmmc::ResultDriveStrengthCalibrationNotCompleted();
-                this->tap_value_for_hs_400               = 0;
-                this->current_speed_mode                 = SpeedMode_MmcIdentification;
-                this->bus_power_before_sleep             = BusPower_Off;
-                this->bus_width_before_sleep             = BusWidth_1Bit;
-                this->speed_mode_before_sleep            = SpeedMode_MmcIdentification;
-                this->tap_value_before_sleep             = 0;
-                this->is_powersaving_enable_before_sleep = false;
+                m_is_shutdown                        = true;
+                m_is_awake                           = true;
+                m_is_valid_tap_value_for_hs_400      = false;
+                m_drive_strength_calibration_status  = sdmmc::ResultDriveStrengthCalibrationNotCompleted();
+                m_tap_value_for_hs_400               = 0;
+                m_current_speed_mode                 = SpeedMode_MmcIdentification;
+                m_bus_power_before_sleep             = BusPower_Off;
+                m_bus_width_before_sleep             = BusWidth_1Bit;
+                m_speed_mode_before_sleep            = SpeedMode_MmcIdentification;
+                m_tap_value_before_sleep             = 0;
+                m_is_powersaving_enable_before_sleep = false;
             }
 
             virtual void Initialize() override {
@@ -182,7 +182,7 @@ namespace ams::sdmmc::impl {
             virtual Result SetSpeedMode(SpeedMode speed_mode) override;
 
             virtual SpeedMode GetSpeedMode() const override {
-                return this->current_speed_mode;
+                return m_current_speed_mode;
             }
 
             virtual void SetPowerSaving(bool en) override;
@@ -199,7 +199,7 @@ namespace ams::sdmmc::impl {
             virtual void SaveTuningStatusForHs400() override;
 
             virtual Result GetInternalStatus() const override {
-                return this->drive_strength_calibration_status;
+                return m_drive_strength_calibration_status;
             }
     };
 
@@ -216,7 +216,7 @@ namespace ams::sdmmc::impl {
                 NON_COPYABLE(PowerController);
                 NON_MOVEABLE(PowerController);
                 private:
-                    BusPower current_bus_power;
+                    BusPower m_current_bus_power;
                 private:
                     Result ControlVddioSdmmc1(BusPower bus_power);
                     void   SetSdmmcIoMode(bool is_3_3V);
@@ -231,14 +231,14 @@ namespace ams::sdmmc::impl {
             };
         private:
             #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
-            /* TODO: pinmux::PinmuxSession pinmux_session; */
+            /* TODO: pinmux::PinmuxSession m_pinmux_session; */
             #endif
-            BusPower current_bus_power;
+            BusPower m_current_bus_power;
             #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
-            bool is_pcv_control;
+            bool m_is_pcv_control;
             #endif
-            util::TypedStorage<PowerController> power_controller_storage;
-            PowerController *power_controller;
+            util::TypedStorage<PowerController> m_power_controller_storage;
+            PowerController *m_power_controller;
         private:
             Result PowerOnForRegisterControl(BusPower bus_power);
             void PowerOffForRegisterControl();
@@ -398,11 +398,11 @@ namespace ams::sdmmc::impl {
             }
         public:
             Sdmmc1Controller() : SdmmcController(Sdmmc1RegistersPhysicalAddress) {
-                this->current_bus_power = BusPower_Off;
+                m_current_bus_power = BusPower_Off;
                 #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
-                this->is_pcv_control = false;
+                m_is_pcv_control = false;
                 #endif
-                this->power_controller = nullptr;
+                m_power_controller = nullptr;
             }
 
             virtual void Initialize() override;

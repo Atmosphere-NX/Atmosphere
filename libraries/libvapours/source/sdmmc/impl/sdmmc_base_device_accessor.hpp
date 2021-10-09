@@ -26,32 +26,32 @@ namespace ams::sdmmc::impl {
             static constexpr size_t LogLengthMax = 0x20;
             static constexpr size_t LogCountMax  = 0x10;
         private:
-            char logs[LogCountMax][LogLengthMax];
-            int log_index;
+            char m_logs[LogCountMax][LogLengthMax];
+            int m_log_index;
         private:
             void Clear() {
                 for (size_t i = 0; i < LogCountMax; ++i) {
-                    this->logs[i][0] = '\0';
+                    m_logs[i][0] = '\0';
                 }
-                this->log_index = 0;
+                m_log_index = 0;
             }
 
             size_t Pop(char *dst, size_t dst_size) {
                 /* Decrease log index. */
-                if ((--this->log_index) < 0) {
-                    this->log_index = LogCountMax - 1;
+                if ((--m_log_index) < 0) {
+                    m_log_index = LogCountMax - 1;
                 }
 
                 /* Check if we have a log. */
-                if (this->logs[this->log_index][0] == '\0') {
+                if (m_logs[m_log_index][0] == '\0') {
                     return 0;
                 }
 
                 /* Copy log to output. */
-                const int len = ::ams::util::Strlcpy(dst, this->logs[this->log_index], dst_size);
+                const int len = ::ams::util::Strlcpy(dst, m_logs[m_log_index], dst_size);
 
                 /* Clear the log we copied. */
-                this->logs[this->log_index][0] = '\0';
+                m_logs[m_log_index][0] = '\0';
 
                 return static_cast<size_t>(len);
             }
@@ -63,11 +63,11 @@ namespace ams::sdmmc::impl {
 
             void Push(const char *fmt, std::va_list vl) {
                 /* Format the log into the current buffer. */
-                ::ams::util::TVSNPrintf(this->logs[this->log_index], LogLengthMax, fmt, vl);
+                ::ams::util::TVSNPrintf(m_logs[m_log_index], LogLengthMax, fmt, vl);
 
                 /* Update our log index. */
-                if ((++this->log_index) >= static_cast<int>(LogCountMax)) {
-                    this->log_index = 0;
+                if ((++m_log_index) >= static_cast<int>(LogCountMax)) {
+                    m_log_index = 0;
                 }
             }
 
@@ -79,8 +79,8 @@ namespace ams::sdmmc::impl {
             }
 
             bool HasLog() const {
-                const int index = this->log_index > 0 ? this->log_index - 1 : static_cast<int>(LogCountMax - 1);
-                return this->logs[index][0] != '\0';
+                const int index = m_log_index > 0 ? m_log_index - 1 : static_cast<int>(LogCountMax - 1);
+                return m_logs[index][0] != '\0';
             }
 
             size_t GetAndClearLogs(char *dst, size_t dst_size) {
@@ -200,61 +200,61 @@ namespace ams::sdmmc::impl {
 
     class BaseDevice {
         private:
-            u32 ocr;
-            u8 cid[DeviceCidSize];
-            u16 csd[DeviceCsdSize / sizeof(u16)];
-            u32 memory_capacity;
-            bool is_high_capacity;
-            bool is_valid_ocr;
-            bool is_valid_cid;
-            bool is_valid_csd;
-            bool is_valid_high_capacity;
-            bool is_valid_memory_capacity;
-            bool is_active;
-            bool is_awake;
+            u32 m_ocr;
+            u8 m_cid[DeviceCidSize];
+            u16 m_csd[DeviceCsdSize / sizeof(u16)];
+            u32 m_memory_capacity;
+            bool m_is_high_capacity;
+            bool m_is_valid_ocr;
+            bool m_is_valid_cid;
+            bool m_is_valid_csd;
+            bool m_is_valid_high_capacity;
+            bool m_is_valid_memory_capacity;
+            bool m_is_active;
+            bool m_is_awake;
         public:
         #if defined(AMS_SDMMC_THREAD_SAFE)
-            mutable os::SdkRecursiveMutex device_mutex;
+            mutable os::SdkRecursiveMutex m_device_mutex;
         public:
-            BaseDevice() : device_mutex()
+            BaseDevice() : m_device_mutex()
         #else
             BaseDevice()
         #endif
             {
-                this->is_awake         = true;
-                this->ocr              = 0;
-                this->memory_capacity  = 0;
-                this->is_high_capacity = false;
+                m_is_awake         = true;
+                m_ocr              = 0;
+                m_memory_capacity  = 0;
+                m_is_high_capacity = false;
                 this->OnDeactivate();
             }
 
             void OnDeactivate() {
-                this->is_active                = false;
-                this->is_valid_ocr             = false;
-                this->is_valid_cid             = false;
-                this->is_valid_csd             = false;
-                this->is_valid_high_capacity   = false;
-                this->is_valid_memory_capacity = false;
+                m_is_active                = false;
+                m_is_valid_ocr             = false;
+                m_is_valid_cid             = false;
+                m_is_valid_csd             = false;
+                m_is_valid_high_capacity   = false;
+                m_is_valid_memory_capacity = false;
             }
 
             bool IsAwake() const {
-                return this->is_awake;
+                return m_is_awake;
             }
 
             void Awaken() {
-                this->is_awake = true;
+                m_is_awake = true;
             }
 
             void PutToSleep() {
-                this->is_awake = false;
+                m_is_awake = false;
             }
 
             bool IsActive() const {
-                return this->is_active;
+                return m_is_active;
             }
 
             void SetActive() {
-                this->is_active = true;
+                m_is_active = true;
             }
 
             virtual void Deactivate() {
@@ -323,61 +323,61 @@ namespace ams::sdmmc::impl {
             }
 
             void SetHighCapacity(bool en) {
-                this->is_high_capacity       = en;
-                this->is_valid_high_capacity = true;
+                m_is_high_capacity       = en;
+                m_is_valid_high_capacity = true;
             }
 
             bool IsHighCapacity() const {
-                AMS_ABORT_UNLESS(this->is_valid_high_capacity);
-                return this->is_high_capacity;
+                AMS_ABORT_UNLESS(m_is_valid_high_capacity);
+                return m_is_high_capacity;
             }
 
             void SetOcr(u32 o) {
-                this->ocr          = o;
-                this->is_valid_ocr = true;
+                m_ocr          = o;
+                m_is_valid_ocr = true;
             }
 
             u32 GetOcr() const {
-                AMS_ABORT_UNLESS(this->is_valid_ocr);
-                return this->ocr;
+                AMS_ABORT_UNLESS(m_is_valid_ocr);
+                return m_ocr;
             }
 
             void SetCid(const void *src, size_t src_size) {
                 AMS_ABORT_UNLESS(src != nullptr);
                 AMS_ABORT_UNLESS(src_size >= DeviceCidSize);
-                std::memcpy(this->cid, src, DeviceCidSize);
-                this->is_valid_cid = true;
+                std::memcpy(m_cid, src, DeviceCidSize);
+                m_is_valid_cid = true;
             }
 
             void GetCid(void *dst, size_t dst_size) const {
-                AMS_ABORT_UNLESS(this->is_valid_cid);
+                AMS_ABORT_UNLESS(m_is_valid_cid);
                 AMS_ABORT_UNLESS(dst != nullptr);
                 AMS_ABORT_UNLESS(dst_size >= DeviceCidSize);
-                std::memcpy(dst, this->cid, DeviceCidSize);
+                std::memcpy(dst, m_cid, DeviceCidSize);
             }
 
             void SetCsd(const void *src, size_t src_size) {
                 AMS_ABORT_UNLESS(src != nullptr);
                 AMS_ABORT_UNLESS(src_size >= DeviceCsdSize);
-                std::memcpy(this->csd, src, DeviceCsdSize);
-                this->is_valid_csd = true;
+                std::memcpy(m_csd, src, DeviceCsdSize);
+                m_is_valid_csd = true;
             }
 
             void GetCsd(void *dst, size_t dst_size) const {
-                AMS_ABORT_UNLESS(this->is_valid_csd);
+                AMS_ABORT_UNLESS(m_is_valid_csd);
                 AMS_ABORT_UNLESS(dst != nullptr);
                 AMS_ABORT_UNLESS(dst_size >= DeviceCsdSize);
-                std::memcpy(dst, this->csd, DeviceCsdSize);
+                std::memcpy(dst, m_csd, DeviceCsdSize);
             }
 
             void SetMemoryCapacity(u32 num_sectors) {
-                this->memory_capacity          = num_sectors;
-                this->is_valid_memory_capacity = true;
+                m_memory_capacity          = num_sectors;
+                m_is_valid_memory_capacity = true;
             }
 
             u32 GetMemoryCapacity() const {
-                AMS_ABORT_UNLESS(this->is_valid_memory_capacity);
-                return this->memory_capacity;
+                AMS_ABORT_UNLESS(m_is_valid_memory_capacity);
+                return m_memory_capacity;
             }
 
             void GetLegacyCapacityParameters(u8 *out_c_size_mult, u8 *out_read_bl_len) const;
@@ -389,37 +389,37 @@ namespace ams::sdmmc::impl {
 
     class BaseDeviceAccessor : public IDeviceAccessor {
         private:
-            IHostController *host_controller;
-            BaseDevice *base_device;
-            u32 num_activation_failures;
-            u32 num_activation_error_corrections;
-            u32 num_read_write_failures;
-            u32 num_read_write_error_corrections;
+            IHostController *m_host_controller;
+            BaseDevice *m_base_device;
+            u32 m_num_activation_failures;
+            u32 m_num_activation_error_corrections;
+            u32 m_num_read_write_failures;
+            u32 m_num_read_write_error_corrections;
             #if defined(AMS_SDMMC_USE_LOGGER)
-            Logger error_logger;
+            Logger m_error_logger;
             #endif
         private:
             void ClearErrorInfo() {
-                this->num_activation_failures           = 0;
-                this->num_activation_error_corrections  = 0;
-                this->num_read_write_failures           = 0;
-                this->num_read_write_error_corrections  = 0;
+                m_num_activation_failures           = 0;
+                m_num_activation_error_corrections  = 0;
+                m_num_read_write_failures           = 0;
+                m_num_read_write_error_corrections  = 0;
             }
         protected:
-            explicit BaseDeviceAccessor(IHostController *hc) : host_controller(hc), base_device(nullptr) {
+            explicit BaseDeviceAccessor(IHostController *hc) : m_host_controller(hc), m_base_device(nullptr) {
                 this->ClearErrorInfo();
             }
 
             IHostController *GetHostController() const {
-                return this->host_controller;
+                return m_host_controller;
             }
 
             void SetDevice(BaseDevice *bd) {
-                this->base_device = bd;
+                m_base_device = bd;
             }
 
             Result CheckRemoved() const {
-                return this->base_device->CheckRemoved();
+                return m_base_device->CheckRemoved();
             }
 
             Result IssueCommandAndCheckR1(u32 *out_response, u32 command_index, u32 command_arg, bool is_busy, DeviceState expected_state, u32 status_ignore_mask) const;
@@ -454,13 +454,13 @@ namespace ams::sdmmc::impl {
             Result ReadWriteMultiple(u32 sector_index, u32 num_sectors, u32 sector_index_alignment, void *buf, size_t buf_size, bool is_read);
 
             void IncrementNumActivationErrorCorrections() {
-                ++this->num_activation_error_corrections;
+                ++m_num_activation_error_corrections;
             }
 
             void PushErrorTimeStamp() {
                 #if defined(AMS_SDMMC_USE_LOGGER)
                 {
-                    this->error_logger.Push("%u", static_cast<u32>(os::ConvertToTimeSpan(os::GetSystemTick()).GetSeconds()));
+                    m_error_logger.Push("%u", static_cast<u32>(os::ConvertToTimeSpan(os::GetSystemTick()).GetSeconds()));
                 }
                 #endif
             }
@@ -470,7 +470,7 @@ namespace ams::sdmmc::impl {
                 {
                     std::va_list vl;
                     va_start(vl, fmt);
-                    this->error_logger.Push(fmt, vl);
+                    m_error_logger.Push(fmt, vl);
                     va_end(vl);
 
                     if (with_timestamp) {

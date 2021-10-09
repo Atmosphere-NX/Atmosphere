@@ -24,12 +24,12 @@ namespace ams::sdmmc::impl {
             static constexpr u16 Rca = 0;
         private:
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
-            mutable os::EventType removed_event;
+            mutable os::EventType m_removed_event;
             #endif
         public:
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
                 virtual os::EventType *GetRemovedEvent() const override {
-                    return std::addressof(this->removed_event);
+                    return std::addressof(m_removed_event);
                 }
             #endif
 
@@ -44,8 +44,8 @@ namespace ams::sdmmc::impl {
 
     class GcAsicDeviceAccessor : public BaseDeviceAccessor {
         private:
-            GcAsicDevice gc_asic_device;
-            bool is_initialized;
+            GcAsicDevice m_gc_asic_device;
+            bool m_is_initialized;
         private:
             Result IssueCommandWriteOperation(const void *op_buf, size_t op_buf_size) const;
             Result IssueCommandFinishOperation() const;
@@ -64,7 +64,7 @@ namespace ams::sdmmc::impl {
             virtual void Finalize() override;
             virtual Result GetSpeedMode(SpeedMode *out_speed_mode) const override;
         public:
-            explicit GcAsicDeviceAccessor(IHostController *hc) : BaseDeviceAccessor(hc), is_initialized(false) {
+            explicit GcAsicDeviceAccessor(IHostController *hc) : BaseDeviceAccessor(hc), m_is_initialized(false) {
                 /* ... */
             }
 
@@ -78,7 +78,7 @@ namespace ams::sdmmc::impl {
 
             void SignalGcRemovedEvent() {
                 #if defined(AMS_SDMMC_USE_OS_EVENTS)
-                    this->gc_asic_device.SignalRemovedEvent();
+                    m_gc_asic_device.SignalRemovedEvent();
                 #else
                     AMS_ABORT("SignalGcRemovedEvent called without event support\n");
                 #endif
@@ -86,7 +86,7 @@ namespace ams::sdmmc::impl {
 
             void ClearGcRemovedEvent() {
                 #if defined(AMS_SDMMC_USE_OS_EVENTS)
-                    this->gc_asic_device.ClearRemovedEvent();
+                    m_gc_asic_device.ClearRemovedEvent();
                 #else
                     AMS_ABORT("ClearGcRemovedEvent called without event support\n");
                 #endif

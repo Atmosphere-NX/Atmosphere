@@ -24,40 +24,40 @@ namespace ams::sdmmc::impl {
     #if defined(AMS_SDMMC_USE_OS_TIMER)
         class ManualTimer {
             private:
-                os::Tick timeout_tick;
-                bool is_timed_out;
+                os::Tick m_timeout_tick;
+                bool m_is_timed_out;
             public:
                 explicit ManualTimer(u32 ms) {
-                    this->timeout_tick = os::GetSystemTick() + os::ConvertToTick(TimeSpan::FromMilliSeconds(ms));
-                    this->is_timed_out = false;
+                    m_timeout_tick = os::GetSystemTick() + os::ConvertToTick(TimeSpan::FromMilliSeconds(ms));
+                    m_is_timed_out = false;
                 }
 
                 bool Update() {
-                    if (this->is_timed_out) {
+                    if (m_is_timed_out) {
                         return false;
                     }
 
-                    this->is_timed_out = os::GetSystemTick() > this->timeout_tick;
+                    m_is_timed_out = os::GetSystemTick() > m_timeout_tick;
                     return true;
                 }
         };
     #elif defined(AMS_SDMMC_USE_UTIL_TIMER)
         class ManualTimer {
             private:
-                u32 timeout_us;
-                bool is_timed_out;
+                u32 m_timeout_us;
+                bool m_is_timed_out;
             public:
                 explicit ManualTimer(u32 ms) {
-                    this->timeout_us   = util::GetMicroSeconds() + (ms * 1000);
-                    this->is_timed_out = false;
+                    m_timeout_us   = util::GetMicroSeconds() + (ms * 1000);
+                    m_is_timed_out = false;
                 }
 
                 bool Update() {
-                    if (this->is_timed_out) {
+                    if (m_is_timed_out) {
                         return false;
                     }
 
-                    this->is_timed_out = util::GetMicroSeconds() > this->timeout_us;
+                    m_is_timed_out = util::GetMicroSeconds() > m_timeout_us;
                     return true;
                 }
         };

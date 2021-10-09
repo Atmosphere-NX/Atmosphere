@@ -43,13 +43,13 @@ namespace ams::sdmmc::impl {
 
     class MmcDeviceAccessor : public BaseDeviceAccessor {
         private:
-            MmcDevice mmc_device;
-            void *work_buffer;
-            size_t work_buffer_size;
-            BusWidth max_bus_width;
-            SpeedMode max_speed_mode;
-            MmcPartition current_partition;
-            bool is_initialized;
+            MmcDevice m_mmc_device;
+            void *m_work_buffer;
+            size_t m_work_buffer_size;
+            BusWidth m_max_bus_width;
+            SpeedMode m_max_speed_mode;
+            MmcPartition m_current_partition;
+            bool m_is_initialized;
         private:
             enum CommandSwitch {
                 CommandSwitch_SetBitsProductionStateAwarenessEnable               =  0,
@@ -120,16 +120,16 @@ namespace ams::sdmmc::impl {
             virtual Result GetSpeedMode(SpeedMode *out_speed_mode) const override;
         public:
             explicit MmcDeviceAccessor(IHostController *hc)
-                : BaseDeviceAccessor(hc), work_buffer(nullptr), work_buffer_size(0),
-                  max_bus_width(BusWidth_8Bit), max_speed_mode(SpeedMode_MmcHs400), current_partition(MmcPartition_Unknown),
-                  is_initialized(false)
+                : BaseDeviceAccessor(hc), m_work_buffer(nullptr), m_work_buffer_size(0),
+                  m_max_bus_width(BusWidth_8Bit), m_max_speed_mode(SpeedMode_MmcHs400), m_current_partition(MmcPartition_Unknown),
+                  m_is_initialized(false)
             {
                 /* ... */
             }
 
             void SetMmcWorkBuffer(void *wb, size_t wb_size) {
-                this->work_buffer      = wb;
-                this->work_buffer_size = wb_size;
+                m_work_buffer      = wb;
+                m_work_buffer_size = wb_size;
             }
 
             void PutMmcToSleep();

@@ -29,7 +29,7 @@ namespace ams::sdmmc::impl {
 
     #if defined(AMS_SDMMC_THREAD_SAFE)
 
-        #define AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX() std::scoped_lock lk(this->sd_card_device.device_mutex)
+        #define AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX() std::scoped_lock lk(m_sd_card_device.m_device_mutex)
 
     #else
 
@@ -39,7 +39,7 @@ namespace ams::sdmmc::impl {
 
     #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
 
-        #define AMS_SDMMC_CHECK_SD_CARD_REMOVED() R_UNLESS(!this->sd_card_device.IsRemoved(), sdmmc::ResultDeviceRemoved())
+        #define AMS_SDMMC_CHECK_SD_CARD_REMOVED() R_UNLESS(!m_sd_card_device.IsRemoved(), sdmmc::ResultDeviceRemoved())
 
     #else
 
@@ -168,7 +168,7 @@ namespace ams::sdmmc::impl {
     #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
     void SdCardDeviceAccessor::RemovedCallback() {
         /* Signal that the device was removed. */
-        this->sd_card_device.SignalRemovedEvent();
+        m_sd_card_device.SignalRemovedEvent();
 
         /* Acquire exclusive access to the device. */
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
@@ -235,7 +235,7 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         u32 resp;
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        R_TRY(this->sd_card_device.CheckDeviceStatus(resp));
+        R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -258,7 +258,7 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         u32 resp;
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        R_TRY(this->sd_card_device.CheckDeviceStatus(resp));
+        R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -271,7 +271,7 @@ namespace ams::sdmmc::impl {
 
     Result SdCardDeviceAccessor::IssueCommandAppCmd(DeviceState expected_state, u32 ignore_mask) const {
         /* Get arg. */
-        const u32 arg = static_cast<u32>(this->sd_card_device.GetRca()) << 16;
+        const u32 arg = static_cast<u32>(m_sd_card_device.GetRca()) << 16;
 
         /* Issue the command. */
         constexpr ResponseType CommandResponseType = ResponseType_R1;
@@ -289,14 +289,14 @@ namespace ams::sdmmc::impl {
         }
 
         /* Check the device status. */
-        R_TRY(this->sd_card_device.CheckDeviceStatus(resp));
+        R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
         /* Check the app command bit. */
         R_UNLESS((resp & DeviceStatus_AppCmd) != 0, sdmmc::ResultUnexpectedSdCardAcmdDisabled());
 
         /* Check the device state. */
         if (expected_state != DeviceState_Unknown) {
-            R_UNLESS(this->sd_card_device.GetDeviceState(resp) == expected_state, sdmmc::ResultUnexpectedDeviceState());
+            R_UNLESS(m_sd_card_device.GetDeviceState(resp) == expected_state, sdmmc::ResultUnexpectedDeviceState());
         }
 
         return ResultSuccess();
@@ -324,7 +324,7 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         u32 resp;
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        R_TRY(this->sd_card_device.CheckDeviceStatus(resp));
+        R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -366,7 +366,7 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         u32 resp;
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        R_TRY(this->sd_card_device.CheckDeviceStatus(resp));
+        R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -397,13 +397,13 @@ namespace ams::sdmmc::impl {
             R_TRY(this->IssueCommandSendOpCond(std::addressof(ocr), spec_under_2, uhs_i_supported));
 
             if ((ocr & OcrCardPowerUpStatus) != 0) {
-                this->sd_card_device.SetOcrAndHighCapacity(ocr);
+                m_sd_card_device.SetOcrAndHighCapacity(ocr);
 
                 /* Handle uhs i mode. */
-                this->sd_card_device.SetUhsIMode(false);
+                m_sd_card_device.SetUhsIMode(false);
                 if (uhs_i_supported && ((ocr & OcrSwitchingTo1_8VAccepted) != 0)) {
                     R_TRY(this->EnterUhsIMode());
-                    this->sd_card_device.SetUhsIMode(true);
+                    m_sd_card_device.SetUhsIMode(true);
                 }
 
                 return ResultSuccess();
@@ -425,7 +425,7 @@ namespace ams::sdmmc::impl {
             u16 rca;
             R_TRY(this->IssueCommandSendRelativeAddr(std::addressof(rca)));
             if (rca != 0) {
-                this->sd_card_device.SetRca(rca);
+                m_sd_card_device.SetRca(rca);
                 return ResultSuccess();
             }
 
@@ -436,10 +436,10 @@ namespace ams::sdmmc::impl {
 
     Result SdCardDeviceAccessor::SetMemoryCapacity(const void *csd) {
         if (IsLessThanCsdVersion2(static_cast<const u8 *>(csd))) {
-            R_TRY(this->sd_card_device.SetLegacyMemoryCapacity());
+            R_TRY(m_sd_card_device.SetLegacyMemoryCapacity());
         } else {
             AMS_ABORT_UNLESS(util::IsAligned(reinterpret_cast<uintptr_t>(csd), alignof(u16)));
-            this->sd_card_device.SetMemoryCapacity(GetMemoryCapacityFromCsd(static_cast<const u16 *>(csd)));
+            m_sd_card_device.SetMemoryCapacity(GetMemoryCapacityFromCsd(static_cast<const u16 *>(csd)));
         }
 
         return ResultSuccess();
@@ -586,7 +586,7 @@ namespace ams::sdmmc::impl {
         } R_END_TRY_CATCH;
 
         /* Set the rca to 0. */
-        this->sd_card_device.SetRca(0);
+        m_sd_card_device.SetRca(0);
 
         /* Go to ready state. */
         const bool can_use_uhs_i_mode = (max_bw != BusWidth_1Bit) && (max_sm == SpeedMode_SdCardSdr104 || max_sm == SpeedMode_SdCardSdr50);
@@ -595,18 +595,18 @@ namespace ams::sdmmc::impl {
 
         /* Get the CID. */
         R_TRY(BaseDeviceAccessor::IssueCommandAllSendCid(wb, wb_size));
-        this->sd_card_device.SetCid(wb, wb_size);
+        m_sd_card_device.SetCid(wb, wb_size);
 
         /* Go to stby state and get the RCA. */
         R_TRY(this->ChangeToStbyStateAndGetRca());
 
         /* Get the CSD. */
         R_TRY(BaseDeviceAccessor::IssueCommandSendCsd(wb, wb_size));
-        this->sd_card_device.SetCsd(wb, wb_size);
+        m_sd_card_device.SetCsd(wb, wb_size);
         R_TRY(this->SetMemoryCapacity(wb));
 
         /* Set the host controller speed mode to default if we're not in uhs i mode. */
-        if (!this->sd_card_device.IsUhsIMode()) {
+        if (!m_sd_card_device.IsUhsIMode()) {
             R_TRY(hc->SetSpeedMode(SpeedMode_SdCardDefaultSpeed));
         }
 
@@ -628,7 +628,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->ExtendBusWidth(max_bw, sd_bw));
 
         /* Extend the bus speed to as fast as we can. */
-        if (this->sd_card_device.IsUhsIMode()) {
+        if (m_sd_card_device.IsUhsIMode()) {
             R_TRY(this->ExtendBusSpeedAtUhsIMode(max_sm, wb, wb_size));
         } else {
             R_TRY(this->ExtendBusSpeedAtNonUhsIMode(max_sm, spec_under_1_1, wb, wb_size));
@@ -667,15 +667,15 @@ namespace ams::sdmmc::impl {
             const auto &params = StartupParameters[i];
 
             /* Set our max bus width/speed mode. */
-            this->max_bus_width  = params.bus_width;
-            this->max_speed_mode = params.speed_mode;
+            m_max_bus_width  = params.bus_width;
+            m_max_speed_mode = params.speed_mode;
 
             /* Try to start up the device. */
-            result = this->StartupSdCardDevice(this->max_bus_width, this->max_speed_mode, this->work_buffer, this->work_buffer_size);
+            result = this->StartupSdCardDevice(m_max_bus_width, m_max_speed_mode, m_work_buffer, m_work_buffer_size);
             if (R_SUCCEEDED(result)) {
                 /* If we previously failed to start up the device, log the error correction. */
                 if (i != 0) {
-                    BaseDeviceAccessor::PushErrorLog(true, "S %d %d:0", this->max_bus_width, this->max_speed_mode);
+                    BaseDeviceAccessor::PushErrorLog(true, "S %d %d:0", m_max_bus_width, m_max_speed_mode);
                     BaseDeviceAccessor::IncrementNumActivationErrorCorrections();
                 }
 
@@ -686,7 +686,7 @@ namespace ams::sdmmc::impl {
             AMS_SDMMC_CHECK_SD_CARD_REMOVED();
 
             /* Log that our startup failed. */
-            BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", this->max_bus_width, this->max_speed_mode, result.GetValue());
+            BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", m_max_bus_width, m_max_speed_mode, result.GetValue());
 
             /* Shut down the host controller before we try to start up again. */
             BaseDeviceAccessor::GetHostController()->Shutdown();
@@ -696,7 +696,7 @@ namespace ams::sdmmc::impl {
         /* Check the csd for errors. */
         if (sdmmc::ResultUnexpectedDeviceCsdValue::Includes(result)) {
             u32 csd[DeviceCsdSize / sizeof(u32)];
-            this->sd_card_device.GetCsd(csd, sizeof(csd));
+            m_sd_card_device.GetCsd(csd, sizeof(csd));
             BaseDeviceAccessor::PushErrorLog(false, "%06X%08X%08X%08X", csd[3] & 0x00FFFFFF, csd[2], csd[1], csd[0]);
         }
         BaseDeviceAccessor::PushErrorTimeStamp();
@@ -704,7 +704,7 @@ namespace ams::sdmmc::impl {
         /* Check if we failed because the sd card is removed. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
             if (sdmmc::ResultCommunicationNotAttained::Includes(result)) {
-                WaitMicroSeconds(this->sd_card_detector->GetDebounceMilliSeconds() * 1000);
+                WaitMicroSeconds(m_sd_card_detector->GetDebounceMilliSeconds() * 1000);
                 AMS_SDMMC_CHECK_SD_CARD_REMOVED();
             }
         #endif
@@ -719,7 +719,7 @@ namespace ams::sdmmc::impl {
         /* Check if we failed because the sd card is removed. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
             if (sdmmc::ResultCommunicationNotAttained::Includes(result)) {
-                WaitMicroSeconds(this->sd_card_detector->GetDebounceMilliSeconds() * 1000);
+                WaitMicroSeconds(m_sd_card_detector->GetDebounceMilliSeconds() * 1000);
                 AMS_SDMMC_CHECK_SD_CARD_REMOVED();
             }
         #endif
@@ -732,11 +732,11 @@ namespace ams::sdmmc::impl {
         BaseDeviceAccessor::GetHostController()->Shutdown();
 
         /* Perform start up. */
-        Result result = this->StartupSdCardDevice(this->max_bus_width, this->max_speed_mode, this->work_buffer, this->work_buffer_size);
+        Result result = this->StartupSdCardDevice(m_max_bus_width, m_max_speed_mode, m_work_buffer, m_work_buffer_size);
         if (R_FAILED(result)) {
             AMS_SDMMC_CHECK_SD_CARD_REMOVED();
 
-            BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", this->max_bus_width, this->max_speed_mode, result.GetValue());
+            BaseDeviceAccessor::PushErrorLog(false, "S %d %d:%X", m_max_bus_width, m_max_speed_mode, result.GetValue());
             return result;
         }
 
@@ -748,12 +748,12 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* If we've already initialized, we don't need to do anything. */
-        if (this->is_initialized) {
+        if (m_is_initialized) {
             return;
         }
 
         /* Set the base device to our sd card device. */
-        BaseDeviceAccessor::SetDevice(std::addressof(this->sd_card_device));
+        BaseDeviceAccessor::SetDevice(std::addressof(m_sd_card_device));
 
         /* Initialize. */
         IHostController *hc = BaseDeviceAccessor::GetHostController();
@@ -761,21 +761,21 @@ namespace ams::sdmmc::impl {
         {
             /* TODO: We probably want this (and other sd card detection stuff) to be conditional pcv control active. */
             /*       This will be a requirement to support sd card access with detector in stratosphere before PCV is alive. */
-            this->sd_card_device.InitializeRemovedEvent();
-            hc->PreSetRemovedEvent(this->sd_card_device.GetRemovedEvent());
+            m_sd_card_device.InitializeRemovedEvent();
+            hc->PreSetRemovedEvent(m_sd_card_device.GetRemovedEvent());
             CallbackInfo ci = {
                 .inserted_callback     = nullptr,
                 .inserted_callback_arg = this,
                 .removed_callback      = RemovedCallbackEntry,
                 .removed_callback_arg  = this,
             };
-            this->sd_card_detector->Initialize(std::addressof(ci));
+            m_sd_card_detector->Initialize(std::addressof(ci));
         }
         #endif
         hc->Initialize();
 
         /* Mark ourselves as initialized. */
-        this->is_initialized = true;
+        m_is_initialized = true;
     }
 
     void SdCardDeviceAccessor::Finalize() {
@@ -783,10 +783,10 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* If we've already finalized, we don't need to do anything. */
-        if (!this->is_initialized) {
+        if (!m_is_initialized) {
             return;
         }
-        this->is_initialized = false;
+        m_is_initialized = false;
 
         /* Deactivate the device. */
         BaseDeviceAccessor::Deactivate();
@@ -797,8 +797,8 @@ namespace ams::sdmmc::impl {
         /* Finalize the detector. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
         {
-            this->sd_card_detector->Finalize();
-            this->sd_card_device.FinalizeRemovedEvent();
+            m_sd_card_detector->Finalize();
+            m_sd_card_device.FinalizeRemovedEvent();
         }
         #endif
     }
@@ -811,16 +811,16 @@ namespace ams::sdmmc::impl {
             AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
             /* Check that we're awake. */
-            R_UNLESS(this->sd_card_device.IsAwake(), sdmmc::ResultNotAwakened());
+            R_UNLESS(m_sd_card_device.IsAwake(), sdmmc::ResultNotAwakened());
 
             /* Check that we're not already active. */
-            R_SUCCEED_IF(this->sd_card_device.IsActive());
+            R_SUCCEED_IF(m_sd_card_device.IsActive());
 
             /* Clear the removed event. */
-            this->sd_card_device.ClearRemovedEvent();
+            m_sd_card_device.ClearRemovedEvent();
 
             /* Check that the SD card is inserted. */
-            R_UNLESS(this->sd_card_detector->IsInserted(), sdmmc::ResultNoDevice());
+            R_UNLESS(m_sd_card_detector->IsInserted(), sdmmc::ResultNoDevice());
         }
         #endif
 
@@ -836,18 +836,18 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->sd_card_device.CheckAccessible());
+        R_TRY(m_sd_card_device.CheckAccessible());
 
         /* Check whether we're specification 1 (and thus default speed). */
-        R_TRY(this->GetScr(this->work_buffer, this->work_buffer_size));
-        if (IsLessThanSpecification1_1(static_cast<const u8 *>(this->work_buffer))) {
+        R_TRY(this->GetScr(m_work_buffer, m_work_buffer_size));
+        if (IsLessThanSpecification1_1(static_cast<const u8 *>(m_work_buffer))) {
             *out_speed_mode = SpeedMode_SdCardDefaultSpeed;
             return ResultSuccess();
         }
 
         /* Get the current speed mode. */
-        R_TRY(this->IssueCommandCheckSupportedFunction(this->work_buffer, this->work_buffer_size));
-        R_TRY(GetCurrentSpeedMode(out_speed_mode, static_cast<const u8 *>(this->work_buffer), this->sd_card_device.IsUhsIMode()));
+        R_TRY(this->IssueCommandCheckSupportedFunction(m_work_buffer, m_work_buffer_size));
+        R_TRY(GetCurrentSpeedMode(out_speed_mode, static_cast<const u8 *>(m_work_buffer), m_sd_card_device.IsUhsIMode()));
 
         return ResultSuccess();
     }
@@ -857,23 +857,23 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* If the device isn't awake, we don't need to do anything. */
-        if (!this->sd_card_device.IsAwake()) {
+        if (!m_sd_card_device.IsAwake()) {
             return;
         }
 
         /* Put the device to sleep. */
-        this->sd_card_device.PutToSleep();
+        m_sd_card_device.PutToSleep();
 
         /* Put the detector to sleep. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-        this->sd_card_detector->PutToSleep();
+        m_sd_card_detector->PutToSleep();
         #endif
 
         /* If necessary, put the host controller to sleep. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-        if (this->sd_card_device.IsActive() && !this->sd_card_device.IsRemoved())
+        if (m_sd_card_device.IsActive() && !m_sd_card_device.IsRemoved())
         #else
-        if (this->sd_card_device.IsActive())
+        if (m_sd_card_device.IsActive())
         #endif
         {
             BaseDeviceAccessor::GetHostController()->PutToSleep();
@@ -885,7 +885,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* If the device is awake, we don't need to do anything. */
-        if (this->sd_card_device.IsAwake()) {
+        if (m_sd_card_device.IsAwake()) {
             return;
         }
 
@@ -893,9 +893,9 @@ namespace ams::sdmmc::impl {
         bool force_det = false;
 
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-        if (this->sd_card_device.IsActive() && !this->sd_card_device.IsRemoved())
+        if (m_sd_card_device.IsActive() && !m_sd_card_device.IsRemoved())
         #else
-        if (this->sd_card_device.IsActive())
+        if (m_sd_card_device.IsActive())
         #endif
         {
             const Result result = BaseDeviceAccessor::GetHostController()->Awaken();
@@ -909,13 +909,13 @@ namespace ams::sdmmc::impl {
 
         /* Wake the detector. */
         #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
-        this->sd_card_detector->Awaken(force_det);
+        m_sd_card_detector->Awaken(force_det);
         #else
         AMS_UNUSED(force_det);
         #endif
 
         /* Wake the device. */
-        this->sd_card_device.Awaken();
+        m_sd_card_device.Awaken();
     }
 
     Result SdCardDeviceAccessor::GetSdCardScr(void *dst, size_t dst_size) const {
@@ -923,7 +923,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->sd_card_device.CheckAccessible());
+        R_TRY(m_sd_card_device.CheckAccessible());
 
         /* Get the SCR. */
         R_TRY(this->GetScr(dst, dst_size));
@@ -936,7 +936,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->sd_card_device.CheckAccessible());
+        R_TRY(m_sd_card_device.CheckAccessible());
 
         /* Check whether we're specification 1 (and thus can't switch). */
         R_TRY(this->GetScr(dst, dst_size));
@@ -967,11 +967,11 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->sd_card_device.CheckAccessible());
+        R_TRY(m_sd_card_device.CheckAccessible());
 
         /* Check whether we're specification 1 (and thus can't switch). */
-        R_TRY(this->GetScr(this->work_buffer, this->work_buffer_size));
-        R_UNLESS(!IsLessThanSpecification1_1(static_cast<const u8 *>(this->work_buffer)), sdmmc::ResultSdCardNotSupportSwitchFunctionStatus());
+        R_TRY(this->GetScr(m_work_buffer, m_work_buffer_size));
+        R_UNLESS(!IsLessThanSpecification1_1(static_cast<const u8 *>(m_work_buffer)), sdmmc::ResultSdCardNotSupportSwitchFunctionStatus());
 
         /* Determine the access mode. */
         SwitchFunctionAccessMode am;
@@ -997,12 +997,12 @@ namespace ams::sdmmc::impl {
         }
 
         /* Check that the mode is supported. */
-        R_TRY(this->IssueCommandSwitchAccessMode(this->work_buffer, this->work_buffer_size, false, am));
-        R_UNLESS(IsSupportedAccessMode(static_cast<const u8 *>(this->work_buffer), am), sdmmc::ResultSdCardNotSupportAccessMode());
+        R_TRY(this->IssueCommandSwitchAccessMode(m_work_buffer, m_work_buffer_size, false, am));
+        R_UNLESS(IsSupportedAccessMode(static_cast<const u8 *>(m_work_buffer), am), sdmmc::ResultSdCardNotSupportAccessMode());
 
         /* Get the current consumption. */
         AMS_ABORT_UNLESS(out_current_consumption != nullptr);
-        *out_current_consumption = GetMaximumCurrentConsumption(static_cast<const u8 *>(this->work_buffer));
+        *out_current_consumption = GetMaximumCurrentConsumption(static_cast<const u8 *>(m_work_buffer));
 
         return ResultSuccess();
     }
@@ -1012,7 +1012,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->sd_card_device.CheckAccessible());
+        R_TRY(m_sd_card_device.CheckAccessible());
 
         /* Get the status. */
         R_TRY(this->GetSdStatus(dst, dst_size));
@@ -1024,18 +1024,18 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(out_num_sectors != nullptr);
 
         /* Get the sd status. */
-        R_TRY(this->GetSdCardSdStatus(this->work_buffer, this->work_buffer_size));
-        const u32 size_of_protected_area = GetSizeOfProtectedArea(static_cast<const u8 *>(this->work_buffer));
+        R_TRY(this->GetSdCardSdStatus(m_work_buffer, m_work_buffer_size));
+        const u32 size_of_protected_area = GetSizeOfProtectedArea(static_cast<const u8 *>(m_work_buffer));
 
         /* Get the csd. */
         u8 csd[DeviceCsdSize];
-        this->sd_card_device.GetCsd(csd, sizeof(csd));
+        m_sd_card_device.GetCsd(csd, sizeof(csd));
 
         /* Handle based on csd version. */
         if (IsLessThanCsdVersion2(csd)) {
             /* Get c_size_mult and read_bl_len. */
             u8 c_size_mult, read_bl_len;
-            this->sd_card_device.GetLegacyCapacityParameters(std::addressof(c_size_mult), std::addressof(read_bl_len));
+            m_sd_card_device.GetLegacyCapacityParameters(std::addressof(c_size_mult), std::addressof(read_bl_len));
 
             /* Validate the parameters. */
             R_UNLESS((read_bl_len + c_size_mult + 2) >= 9, sdmmc::ResultUnexpectedDeviceCsdValue());

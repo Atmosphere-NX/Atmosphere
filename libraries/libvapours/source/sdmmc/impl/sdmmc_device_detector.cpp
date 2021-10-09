@@ -28,7 +28,7 @@
 namespace ams::sdmmc::impl {
 
     bool DeviceDetector::IsCurrentInserted() {
-        return gpio::GetValue(std::addressof(this->gpio_pad_session)) == this->inserted_gpio_value;
+        return gpio::GetValue(std::addressof(m_gpio_pad_session)) == m_inserted_gpio_value;
     }
 
     void DeviceDetector::HandleDeviceStatus(bool prev_inserted, bool cur_inserted) {
@@ -36,22 +36,22 @@ namespace ams::sdmmc::impl {
             /* Not inserted -> Not inserted, nothing to do. */
         } else if (!prev_inserted && cur_inserted) {
             /* Card was inserted. */
-            if (this->callback_info.inserted_callback != nullptr) {
-                this->callback_info.inserted_callback(this->callback_info.inserted_callback_arg);
+            if (m_callback_info.inserted_callback != nullptr) {
+                m_callback_info.inserted_callback(m_callback_info.inserted_callback_arg);
             }
         } else if (prev_inserted && !cur_inserted) {
             /* Card was removed. */
-            if (this->callback_info.removed_callback != nullptr) {
-                this->callback_info.removed_callback(this->callback_info.removed_callback_arg);
+            if (m_callback_info.removed_callback != nullptr) {
+                m_callback_info.removed_callback(m_callback_info.removed_callback_arg);
             }
         } else /* if (prev_inserted && cur_inserted) */ {
             /* Card was removed, and then inserted. */
-            if (this->callback_info.removed_callback != nullptr) {
-                this->callback_info.removed_callback(this->callback_info.removed_callback_arg);
+            if (m_callback_info.removed_callback != nullptr) {
+                m_callback_info.removed_callback(m_callback_info.removed_callback_arg);
             }
 
-            if (this->callback_info.inserted_callback != nullptr) {
-                this->callback_info.inserted_callback(this->callback_info.inserted_callback_arg);
+            if (m_callback_info.inserted_callback != nullptr) {
+                m_callback_info.inserted_callback(m_callback_info.inserted_callback_arg);
             }
         }
     }
@@ -61,15 +61,15 @@ namespace ams::sdmmc::impl {
         gpio::Initialize();
 
         /* Open and configure the pad session. */
-        gpio::OpenSession(std::addressof(this->gpio_pad_session), this->gpio_device_code);
-        gpio::SetDirection(std::addressof(this->gpio_pad_session), gpio::Direction_Input);
-        gpio::SetDebounceTime(std::addressof(this->gpio_pad_session), this->gpio_debounce_ms);
-        gpio::SetDebounceEnabled(std::addressof(this->gpio_pad_session), true);
-        gpio::SetInterruptMode(std::addressof(this->gpio_pad_session), gpio::InterruptMode_AnyEdge);
+        gpio::OpenSession(std::addressof(m_gpio_pad_session), m_gpio_device_code);
+        gpio::SetDirection(std::addressof(m_gpio_pad_session), gpio::Direction_Input);
+        gpio::SetDebounceTime(std::addressof(m_gpio_pad_session), m_gpio_debounce_ms);
+        gpio::SetDebounceEnabled(std::addressof(m_gpio_pad_session), true);
+        gpio::SetInterruptMode(std::addressof(m_gpio_pad_session), gpio::InterruptMode_AnyEdge);
 
         /* Get the gpio session's interrupt event. */
         os::SystemEventType gpio_event;
-        R_ABORT_UNLESS(gpio::BindInterrupt(std::addressof(gpio_event), std::addressof(this->gpio_pad_session)));
+        R_ABORT_UNLESS(gpio::BindInterrupt(std::addressof(gpio_event), std::addressof(m_gpio_pad_session)));
 
         /* Initialize and link multi wait/holders. */
         os::MultiWaitType multi_wait;
@@ -77,24 +77,24 @@ namespace ams::sdmmc::impl {
         os::MultiWaitHolderType request_sleep_wake_event_holder;
         os::MultiWaitHolderType gpio_event_holder;
         os::InitializeMultiWait(std::addressof(multi_wait));
-        os::InitializeMultiWaitHolder(std::addressof(detector_thread_end_holder), std::addressof(this->detector_thread_end_event));
+        os::InitializeMultiWaitHolder(std::addressof(detector_thread_end_holder), std::addressof(m_detector_thread_end_event));
         os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(detector_thread_end_holder));
-        os::InitializeMultiWaitHolder(std::addressof(request_sleep_wake_event_holder), std::addressof(this->request_sleep_wake_event));
+        os::InitializeMultiWaitHolder(std::addressof(request_sleep_wake_event_holder), std::addressof(m_request_sleep_wake_event));
         os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(request_sleep_wake_event_holder));
         os::InitializeMultiWaitHolder(std::addressof(gpio_event_holder), std::addressof(gpio_event));
         os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(gpio_event_holder));
 
         /* Wait before detecting the initial state of the card. */
-        os::SleepThread(TimeSpan::FromMilliSeconds(this->gpio_debounce_ms));
+        os::SleepThread(TimeSpan::FromMilliSeconds(m_gpio_debounce_ms));
         bool cur_inserted = this->IsCurrentInserted();
-        this->is_prev_inserted = cur_inserted;
+        m_is_prev_inserted = cur_inserted;
 
         /* Set state as awake. */
-        this->state = State_Awake;
-        os::SignalEvent(std::addressof(this->ready_device_status_event));
+        m_state = State_Awake;
+        os::SignalEvent(std::addressof(m_ready_device_status_event));
 
         /* Enable interrupts to be informed of device status. */
-        gpio::SetInterruptEnable(std::addressof(this->gpio_pad_session), true);
+        gpio::SetInterruptEnable(std::addressof(m_gpio_pad_session), true);
 
         /* Wait, servicing our events. */
         while (true) {
@@ -105,14 +105,14 @@ namespace ams::sdmmc::impl {
             bool insert_change = false;
             if (signaled_holder == std::addressof(detector_thread_end_holder)) {
                 /* We should kill ourselves. */
-                os::ClearEvent(std::addressof(this->detector_thread_end_event));
-                this->state = State_Finalized;
+                os::ClearEvent(std::addressof(m_detector_thread_end_event));
+                m_state = State_Finalized;
                 break;
             } else if (signaled_holder == std::addressof(request_sleep_wake_event_holder)) {
                 /* A request for us to sleep/wake has come in, so we'll acknowledge it. */
-                os::ClearEvent(std::addressof(this->request_sleep_wake_event));
-                this->state = State_Sleep;
-                os::SignalEvent(std::addressof(this->acknowledge_sleep_awake_event));
+                os::ClearEvent(std::addressof(m_request_sleep_wake_event));
+                m_state = State_Sleep;
+                os::SignalEvent(std::addressof(m_acknowledge_sleep_awake_event));
 
                 /* Temporarily unlink our interrupt event. */
                 os::UnlinkMultiWaitHolder(std::addressof(gpio_event_holder));
@@ -124,21 +124,21 @@ namespace ams::sdmmc::impl {
                 os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(gpio_event_holder));
 
                 /* We're awake again. Either because we should exit, or because we were asked to wake up. */
-                os::ClearEvent(std::addressof(this->request_sleep_wake_event));
-                this->state = State_Awake;
-                os::SignalEvent(std::addressof(this->acknowledge_sleep_awake_event));
+                os::ClearEvent(std::addressof(m_request_sleep_wake_event));
+                m_state = State_Awake;
+                os::SignalEvent(std::addressof(m_acknowledge_sleep_awake_event));
 
                 /* If we were asked to exit, do so. */
                 if (signaled_holder == std::addressof(detector_thread_end_holder)) {
                     /* We should kill ourselves. */
-                    os::ClearEvent(std::addressof(this->detector_thread_end_event));
-                    this->state = State_Finalized;
+                    os::ClearEvent(std::addressof(m_detector_thread_end_event));
+                    m_state = State_Finalized;
                     break;
                 } else /* if (signaled_holder == std::addressof(request_sleep_wake_event_holder)) */ {
-                    if ((this->force_detection) ||
-                        (({ bool active; R_SUCCEEDED(gpio::IsWakeEventActive(std::addressof(active), this->gpio_device_code)) && active; })) ||
+                    if ((m_force_detection) ||
+                        (({ bool active; R_SUCCEEDED(gpio::IsWakeEventActive(std::addressof(active), m_gpio_device_code)) && active; })) ||
                         (os::TryWaitSystemEvent(std::addressof(gpio_event))) ||
-                        (this->is_prev_inserted != this->IsCurrentInserted()))
+                        (m_is_prev_inserted != this->IsCurrentInserted()))
                     {
                         insert_change = true;
                     }
@@ -151,24 +151,24 @@ namespace ams::sdmmc::impl {
             /* Handle an insert change, if one occurred. */
             if (insert_change) {
                 /* Call the relevant callback, if we have one. */
-                if (this->device_detection_event_callback != nullptr) {
-                    this->device_detection_event_callback(this->device_detection_event_callback_arg);
+                if (m_device_detection_event_callback != nullptr) {
+                    m_device_detection_event_callback(m_device_detection_event_callback_arg);
                 }
 
                 /* Clear the interrupt event. */
                 os::ClearSystemEvent(std::addressof(gpio_event));
-                gpio::ClearInterruptStatus(std::addressof(this->gpio_pad_session));
-                gpio::SetInterruptEnable(std::addressof(this->gpio_pad_session), true);
+                gpio::ClearInterruptStatus(std::addressof(m_gpio_pad_session));
+                gpio::SetInterruptEnable(std::addressof(m_gpio_pad_session), true);
 
                 /* Update insertion status. */
                 cur_inserted = this->IsCurrentInserted();
-                this->HandleDeviceStatus(this->is_prev_inserted, cur_inserted);
-                this->is_prev_inserted = cur_inserted;
+                this->HandleDeviceStatus(m_is_prev_inserted, cur_inserted);
+                m_is_prev_inserted = cur_inserted;
             }
         }
 
         /* Disable interrupts to our gpio event. */
-        gpio::SetInterruptEnable(std::addressof(this->gpio_pad_session), false);
+        gpio::SetInterruptEnable(std::addressof(m_gpio_pad_session), false);
 
         /* Finalize and unlink multi wait/holders. */
         os::UnlinkMultiWaitHolder(std::addressof(gpio_event_holder));
@@ -180,69 +180,69 @@ namespace ams::sdmmc::impl {
         os::FinalizeMultiWait(std::addressof(multi_wait));
 
         /* Finalize the gpio session. */
-        gpio::UnbindInterrupt(std::addressof(this->gpio_pad_session));
-        gpio::CloseSession(std::addressof(this->gpio_pad_session));
+        gpio::UnbindInterrupt(std::addressof(m_gpio_pad_session));
+        gpio::CloseSession(std::addressof(m_gpio_pad_session));
         gpio::Finalize();
     }
 
     void DeviceDetector::Initialize(CallbackInfo *ci) {
         /* Transition our state from finalized to initializing. */
-        AMS_ABORT_UNLESS(this->state == State_Finalized);
-        this->state = State_Initializing;
+        AMS_ABORT_UNLESS(m_state == State_Finalized);
+        m_state = State_Initializing;
 
         /* Set our callback infos. */
-        this->callback_info = *ci;
+        m_callback_info = *ci;
 
         /* Initialize our events. */
-        os::InitializeEvent(std::addressof(this->ready_device_status_event), false, os::EventClearMode_ManualClear);
-        os::InitializeEvent(std::addressof(this->request_sleep_wake_event), false, os::EventClearMode_ManualClear);
-        os::InitializeEvent(std::addressof(this->acknowledge_sleep_awake_event), false, os::EventClearMode_ManualClear);
-        os::InitializeEvent(std::addressof(this->detector_thread_end_event), false, os::EventClearMode_ManualClear);
+        os::InitializeEvent(std::addressof(m_ready_device_status_event), false, os::EventClearMode_ManualClear);
+        os::InitializeEvent(std::addressof(m_request_sleep_wake_event), false, os::EventClearMode_ManualClear);
+        os::InitializeEvent(std::addressof(m_acknowledge_sleep_awake_event), false, os::EventClearMode_ManualClear);
+        os::InitializeEvent(std::addressof(m_detector_thread_end_event), false, os::EventClearMode_ManualClear);
 
         /* Create and start the detector thread. */
-        os::CreateThread(std::addressof(this->detector_thread), DetectorThreadEntry, this, this->detector_thread_stack, sizeof(this->detector_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(sdmmc, DeviceDetector));
-        os::SetThreadNamePointer(std::addressof(this->detector_thread), AMS_GET_SYSTEM_THREAD_NAME(sdmmc, DeviceDetector));
-        os::StartThread(std::addressof(this->detector_thread));
+        os::CreateThread(std::addressof(m_detector_thread), DetectorThreadEntry, this, m_detector_thread_stack, sizeof(m_detector_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(sdmmc, DeviceDetector));
+        os::SetThreadNamePointer(std::addressof(m_detector_thread), AMS_GET_SYSTEM_THREAD_NAME(sdmmc, DeviceDetector));
+        os::StartThread(std::addressof(m_detector_thread));
     }
 
     void DeviceDetector::Finalize() {
         /* Ensure we're not already finalized. */
-        AMS_ABORT_UNLESS(this->state != State_Finalized);
+        AMS_ABORT_UNLESS(m_state != State_Finalized);
 
         /* Signal event to end the detector thread. */
-        os::SignalEvent(std::addressof(this->detector_thread_end_event));
-        os::WaitThread(std::addressof(this->detector_thread));
+        os::SignalEvent(std::addressof(m_detector_thread_end_event));
+        os::WaitThread(std::addressof(m_detector_thread));
 
         /* Finalize thread and events. */
-        os::DestroyThread(std::addressof(this->detector_thread));
-        os::FinalizeEvent(std::addressof(this->ready_device_status_event));
-        os::FinalizeEvent(std::addressof(this->request_sleep_wake_event));
-        os::FinalizeEvent(std::addressof(this->acknowledge_sleep_awake_event));
-        os::FinalizeEvent(std::addressof(this->detector_thread_end_event));
+        os::DestroyThread(std::addressof(m_detector_thread));
+        os::FinalizeEvent(std::addressof(m_ready_device_status_event));
+        os::FinalizeEvent(std::addressof(m_request_sleep_wake_event));
+        os::FinalizeEvent(std::addressof(m_acknowledge_sleep_awake_event));
+        os::FinalizeEvent(std::addressof(m_detector_thread_end_event));
     }
 
     void DeviceDetector::PutToSleep() {
         /* Signal request, wait for acknowledgement. */
-        os::SignalEvent(std::addressof(this->request_sleep_wake_event));
-        os::WaitEvent(std::addressof(this->acknowledge_sleep_awake_event));
-        os::ClearEvent(std::addressof(this->acknowledge_sleep_awake_event));
+        os::SignalEvent(std::addressof(m_request_sleep_wake_event));
+        os::WaitEvent(std::addressof(m_acknowledge_sleep_awake_event));
+        os::ClearEvent(std::addressof(m_acknowledge_sleep_awake_event));
     }
 
     void DeviceDetector::Awaken(bool force_det) {
         /* Signal request, wait for acknowledgement. */
-        this->force_detection = force_det;
-        os::SignalEvent(std::addressof(this->request_sleep_wake_event));
-        os::WaitEvent(std::addressof(this->acknowledge_sleep_awake_event));
-        os::ClearEvent(std::addressof(this->acknowledge_sleep_awake_event));
+        m_force_detection = force_det;
+        os::SignalEvent(std::addressof(m_request_sleep_wake_event));
+        os::WaitEvent(std::addressof(m_acknowledge_sleep_awake_event));
+        os::ClearEvent(std::addressof(m_acknowledge_sleep_awake_event));
     }
 
     bool DeviceDetector::IsInserted() {
         bool inserted = false;
 
-        switch (this->state) {
+        switch (m_state) {
             case State_Initializing:
                 /* Wait for us to know whether the device is inserted. */
-                os::WaitEvent(std::addressof(this->ready_device_status_event));
+                os::WaitEvent(std::addressof(m_ready_device_status_event));
                 [[fallthrough]];
             case State_Awake:
                 /* Get whether the device is currently inserted. */
@@ -251,7 +251,7 @@ namespace ams::sdmmc::impl {
             case State_Sleep:
             case State_Finalized:
                 /* Get whether the device was inserted when we last knew. */
-                inserted = this->is_prev_inserted;
+                inserted = m_is_prev_inserted;
                 break;
         }
 
@@ -259,12 +259,12 @@ namespace ams::sdmmc::impl {
     }
 
     void DeviceDetector::RegisterDetectionEventCallback(DeviceDetectionEventCallback cb, void *arg) {
-        this->device_detection_event_callback_arg = arg;
-        this->device_detection_event_callback     = cb;
+        m_device_detection_event_callback_arg = arg;
+        m_device_detection_event_callback     = cb;
     }
 
     void DeviceDetector::UnregisterDetectionEventCallback() {
-        this->device_detection_event_callback = nullptr;
+        m_device_detection_event_callback = nullptr;
     }
 
 }

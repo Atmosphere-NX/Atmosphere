@@ -32,43 +32,43 @@ namespace ams::sdmmc::impl {
                 static constexpr inline auto NumBufferInfos = 3;
             #endif
         protected:
-            SdHostStandardRegisters *registers;
+            SdHostStandardRegisters *m_registers;
 
             #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
-            BufferInfo buffer_infos[NumBufferInfos];
+            BufferInfo m_buffer_infos[NumBufferInfos];
             #endif
 
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
-            os::MultiWaitType multi_wait;
-            os::InterruptEventType *interrupt_event;
-            os::MultiWaitHolderType interrupt_event_holder;
-            os::EventType *removed_event;
-            os::MultiWaitHolderType removed_event_holder;
+            os::MultiWaitType m_multi_wait;
+            os::InterruptEventType *m_interrupt_event;
+            os::MultiWaitHolderType m_interrupt_event_holder;
+            os::EventType *m_removed_event;
+            os::MultiWaitHolderType m_removed_event_holder;
             #endif
 
-            u64 next_sdma_address;
-            u32 check_transfer_interval_ms;
+            u64 m_next_sdma_address;
+            u32 m_check_transfer_interval_ms;
 
-            u32 device_clock_frequency_khz;
-            bool is_power_saving_enable;
-            bool is_device_clock_enable;
+            u32 m_device_clock_frequency_khz;
+            bool m_is_power_saving_enable;
+            bool m_is_device_clock_enable;
 
-            ResponseType last_response_type;
-            u32 last_response[4];
-            u32 last_stop_transmission_response;
+            ResponseType m_last_response_type;
+            u32 m_last_response[4];
+            u32 m_last_stop_transmission_response;
         protected:
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
                 void PreSetInterruptEvent(os::InterruptEventType *ie) {
-                    this->interrupt_event = ie;
+                    m_interrupt_event = ie;
                 }
 
                 bool IsRemoved() const {
-                    return this->removed_event != nullptr && os::TryWaitEvent(this->removed_event);
+                    return m_removed_event != nullptr && os::TryWaitEvent(m_removed_event);
                 }
             #endif
 
             void SetDeviceClockFrequencyKHz(u32 khz) {
-                this->device_clock_frequency_khz = khz;
+                m_device_clock_frequency_khz = khz;
             }
 
             #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
@@ -119,7 +119,7 @@ namespace ams::sdmmc::impl {
 
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
                 virtual void PreSetRemovedEvent(os::EventType *e) override {
-                    this->removed_event = e;
+                    m_removed_event = e;
                 }
             #endif
 
@@ -143,18 +143,18 @@ namespace ams::sdmmc::impl {
             virtual BusWidth GetBusWidth() const override;
 
             virtual u32 GetDeviceClockFrequencyKHz() const override {
-                return this->device_clock_frequency_khz;
+                return m_device_clock_frequency_khz;
             }
 
             virtual void SetPowerSaving(bool en) override;
             virtual bool IsPowerSavingEnable() const override {
-                return this->is_power_saving_enable;
+                return m_is_power_saving_enable;
             }
 
             virtual void EnableDeviceClock() override;
             virtual void DisableDeviceClock() override;
             virtual bool IsDeviceClockEnable() const override {
-                return this->is_device_clock_enable;
+                return m_is_device_clock_enable;
             }
 
             virtual u32 GetMaxTransferNumBlocks() const override {

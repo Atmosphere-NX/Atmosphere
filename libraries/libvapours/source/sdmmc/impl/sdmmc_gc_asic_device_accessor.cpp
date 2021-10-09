@@ -29,7 +29,7 @@ namespace ams::sdmmc::impl {
 
     #if defined(AMS_SDMMC_THREAD_SAFE)
 
-        #define AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX() std::scoped_lock lk(this->gc_asic_device.device_mutex)
+        #define AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX() std::scoped_lock lk(m_gc_asic_device.m_device_mutex)
 
     #else
 
@@ -39,7 +39,7 @@ namespace ams::sdmmc::impl {
 
     #if defined(AMS_SDMMC_USE_OS_EVENTS)
 
-        #define AMS_SDMMC_CHECK_GC_ASIC_REMOVED() R_UNLESS(!this->gc_asic_device.IsRemoved(), sdmmc::ResultDeviceRemoved())
+        #define AMS_SDMMC_CHECK_GC_ASIC_REMOVED() R_UNLESS(!m_gc_asic_device.IsRemoved(), sdmmc::ResultDeviceRemoved())
 
     #else
 
@@ -70,7 +70,7 @@ namespace ams::sdmmc::impl {
                 result = hc->IssueStopTransmissionCommand(std::addressof(resp));
                 if (R_SUCCEEDED(result)) {
                     /* If we successfully stopped transmission but have an error status, we prefer to return that. */
-                    result = this->gc_asic_device.CheckDeviceStatus(resp);
+                    result = m_gc_asic_device.CheckDeviceStatus(resp);
                     if (R_FAILED(result)) {
                         return_result = result;
                     }
@@ -94,7 +94,7 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         u32 resp;
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
-        R_TRY(this->gc_asic_device.CheckDeviceStatus(resp));
+        R_TRY(m_gc_asic_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -130,8 +130,8 @@ namespace ams::sdmmc::impl {
         R_TRY(hc->Tuning(SpeedMode_GcAsicSpeed, 21));
 
         /* Set the device as low capacity/no memory. */
-        this->gc_asic_device.SetHighCapacity(false);
-        this->gc_asic_device.SetMemoryCapacity(0);
+        m_gc_asic_device.SetHighCapacity(false);
+        m_gc_asic_device.SetMemoryCapacity(0);
 
         /* Enable power saving. */
         hc->SetPowerSaving(true);
@@ -173,25 +173,25 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* If we've already initialized, we don't need to do anything. */
-        if (this->is_initialized) {
+        if (m_is_initialized) {
             return;
         }
 
         /* Set the base device to our gc asic device. */
-        BaseDeviceAccessor::SetDevice(std::addressof(this->gc_asic_device));
+        BaseDeviceAccessor::SetDevice(std::addressof(m_gc_asic_device));
 
         /* Initialize. */
         IHostController *hc = BaseDeviceAccessor::GetHostController();
         #if defined(AMS_SDMMC_USE_OS_EVENTS)
         {
-            this->gc_asic_device.InitializeRemovedEvent();
-            hc->PreSetRemovedEvent(this->gc_asic_device.GetRemovedEvent());
+            m_gc_asic_device.InitializeRemovedEvent();
+            hc->PreSetRemovedEvent(m_gc_asic_device.GetRemovedEvent());
         }
         #endif
         hc->Initialize();
 
         /* Mark ourselves as initialized. */
-        this->is_initialized = true;
+        m_is_initialized = true;
     }
 
     void GcAsicDeviceAccessor::Finalize() {
@@ -199,10 +199,10 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* If we've already finalized, we don't need to do anything. */
-        if (!this->is_initialized) {
+        if (!m_is_initialized) {
             return;
         }
-        this->is_initialized = false;
+        m_is_initialized = false;
 
         /* Deactivate the device. */
         BaseDeviceAccessor::Deactivate();
@@ -213,7 +213,7 @@ namespace ams::sdmmc::impl {
         /* Finalize the removed event. */
         #if defined(AMS_SDMMC_USE_OS_EVENTS)
         {
-            this->gc_asic_device.FinalizeRemovedEvent();
+            m_gc_asic_device.FinalizeRemovedEvent();
         }
         #endif
     }
@@ -226,7 +226,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         *out_speed_mode = SpeedMode_GcAsicSpeed;
         return ResultSuccess();
@@ -237,22 +237,22 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* If the device isn't awake, we don't need to do anything. */
-        if (!this->gc_asic_device.IsAwake()) {
+        if (!m_gc_asic_device.IsAwake()) {
             return;
         }
 
         /* If necessary, put the host controller to sleep. */
         #if defined(AMS_SDMMC_USE_OS_EVENTS)
-        if (this->gc_asic_device.IsActive() && !this->gc_asic_device.IsRemoved())
+        if (m_gc_asic_device.IsActive() && !m_gc_asic_device.IsRemoved())
         #else
-        if (this->gc_asic_device.IsActive())
+        if (m_gc_asic_device.IsActive())
         #endif
         {
             BaseDeviceAccessor::GetHostController()->PutToSleep();
         }
 
         /* Put the gc asic device to sleep. */
-        this->gc_asic_device.PutToSleep();
+        m_gc_asic_device.PutToSleep();
     }
 
     Result GcAsicDeviceAccessor::AwakenGcAsic() {
@@ -260,16 +260,16 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* If the device is awake, we don't need to do anything. */
-        R_SUCCEED_IF(this->gc_asic_device.IsAwake());
+        R_SUCCEED_IF(m_gc_asic_device.IsAwake());
 
         /* Wake the device. */
-        this->gc_asic_device.Awaken();
+        m_gc_asic_device.Awaken();
 
         /* Wake the host controller, if we need to.*/
         #if defined(AMS_SDMMC_USE_OS_EVENTS)
-        if (this->gc_asic_device.IsActive() && !this->gc_asic_device.IsRemoved())
+        if (m_gc_asic_device.IsActive() && !m_gc_asic_device.IsRemoved())
         #else
-        if (this->gc_asic_device.IsActive())
+        if (m_gc_asic_device.IsActive())
         #endif
         {
             R_TRY(BaseDeviceAccessor::GetHostController()->Awaken());
@@ -283,7 +283,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         /* Issue the command. */
         R_TRY(this->IssueCommandWriteOperation(op_buf, op_buf_size));
@@ -297,7 +297,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         /* Issue the command. */
         R_TRY(this->IssueCommandFinishOperation());
@@ -311,12 +311,12 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         /* Issue stop transmission command. */
         u32 resp = 0;
         R_TRY(BaseDeviceAccessor::GetHostController()->IssueStopTransmissionCommand(std::addressof(resp)));
-        R_TRY(this->gc_asic_device.CheckDeviceStatus(resp));
+        R_TRY(m_gc_asic_device.CheckDeviceStatus(resp));
 
         return ResultSuccess();
     }
@@ -326,7 +326,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         /* Issue the command. */
         R_TRY(this->IssueCommandSleep());
@@ -340,7 +340,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_GC_ASIC_DEVICE_MUTEX();
 
         /* Check that we're accessible. */
-        R_TRY(this->gc_asic_device.CheckAccessible());
+        R_TRY(m_gc_asic_device.CheckAccessible());
 
         /* Issue the command. */
         R_TRY(this->IssueCommandUpdateKey());

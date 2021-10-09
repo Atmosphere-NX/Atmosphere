@@ -39,25 +39,25 @@ namespace ams::sdmmc::impl {
                 State_Finalized    = 3,
             };
         private:
-            alignas(os::ThreadStackAlignment) u8 detector_thread_stack[8_KB];
-            State state;
-            bool is_prev_inserted;
-            bool force_detection;
-            os::ThreadType detector_thread;
-            os::EventType detector_thread_end_event;
-            os::EventType request_sleep_wake_event;
-            os::EventType acknowledge_sleep_awake_event;
-            os::EventType ready_device_status_event;
+            alignas(os::ThreadStackAlignment) u8 m_detector_thread_stack[8_KB];
+            State m_state;
+            bool m_is_prev_inserted;
+            bool m_force_detection;
+            os::ThreadType m_detector_thread;
+            os::EventType m_detector_thread_end_event;
+            os::EventType m_request_sleep_wake_event;
+            os::EventType m_acknowledge_sleep_awake_event;
+            os::EventType m_ready_device_status_event;
 
-            DeviceCode gpio_device_code;
-            gpio::GpioValue inserted_gpio_value;
-            u32 gpio_debounce_ms;
-            gpio::GpioPadSession gpio_pad_session;
+            DeviceCode m_gpio_device_code;
+            gpio::GpioValue m_inserted_gpio_value;
+            u32 m_gpio_debounce_ms;
+            gpio::GpioPadSession m_gpio_pad_session;
 
-            CallbackInfo callback_info;
+            CallbackInfo m_callback_info;
 
-            DeviceDetectionEventCallback device_detection_event_callback;
-            void *device_detection_event_callback_arg;
+            DeviceDetectionEventCallback m_device_detection_event_callback;
+            void *m_device_detection_event_callback_arg;
         private:
             static void DetectorThreadEntry(void *arg) {
                 reinterpret_cast<DeviceDetector *>(arg)->DetectorThread();
@@ -68,14 +68,14 @@ namespace ams::sdmmc::impl {
             void HandleDeviceStatus(bool prev_inserted, bool cur_inserted);
         public:
             explicit DeviceDetector(DeviceCode dc, gpio::GpioValue igv, u32 gd)
-                : gpio_device_code(dc), inserted_gpio_value(igv), gpio_debounce_ms(gd)
+                : m_gpio_device_code(dc), m_inserted_gpio_value(igv), m_gpio_debounce_ms(gd)
             {
-                this->state                               = State_Finalized;
-                this->is_prev_inserted                    = false;
-                this->force_detection                     = false;
-                this->callback_info                       = {};
-                this->device_detection_event_callback     = nullptr;
-                this->device_detection_event_callback_arg = nullptr;
+                m_state                               = State_Finalized;
+                m_is_prev_inserted                    = false;
+                m_force_detection                     = false;
+                m_callback_info                       = {};
+                m_device_detection_event_callback     = nullptr;
+                m_device_detection_event_callback_arg = nullptr;
             }
 
             void Initialize(CallbackInfo *ci);
@@ -85,7 +85,7 @@ namespace ams::sdmmc::impl {
             void Awaken(bool force_det);
 
             u32 GetDebounceMilliSeconds() const {
-                return this->gpio_debounce_ms;
+                return m_gpio_debounce_ms;
             }
 
             bool IsInserted();
