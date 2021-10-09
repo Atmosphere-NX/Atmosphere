@@ -190,7 +190,7 @@ namespace ams::ro {
             }
 
             const ModuleId *GetModuleId() const {
-                return &this->module_id;
+                return std::addressof(this->module_id);
             }
     };
     static_assert(sizeof(NroHeader) == 0x80, "NroHeader definition!");

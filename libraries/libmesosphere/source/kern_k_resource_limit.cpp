@@ -182,7 +182,7 @@ namespace ams::kern {
 
             if (m_current_hints[which] + value <= m_limit_values[which] && (timeout < 0 || KHardwareTimer::GetTick() < timeout)) {
                 m_waiter_count++;
-                m_cond_var.Wait(&m_lock, timeout, false);
+                m_cond_var.Wait(std::addressof(m_lock), timeout, false);
                 m_waiter_count--;
 
                 if (GetCurrentThread().IsTerminationRequested()) {

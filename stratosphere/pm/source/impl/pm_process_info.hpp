@@ -186,7 +186,7 @@ namespace ams::pm::impl {
             ProcessInfo *Find(os::ProcessId process_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if ((*it).GetProcessId() == process_id) {
-                        return &*it;
+                        return std::addressof(*it);
                     }
                 }
                 return nullptr;
@@ -195,7 +195,7 @@ namespace ams::pm::impl {
             ProcessInfo *Find(ncm::ProgramId program_id) {
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if ((*it).GetProgramLocation().program_id == program_id) {
-                        return &*it;
+                        return std::addressof(*it);
                     }
                 }
                 return nullptr;
@@ -216,11 +216,11 @@ namespace ams::pm::impl {
             }
 
             ProcessList *operator->() {
-                return &this->list;
+                return std::addressof(this->list);
             }
 
             const ProcessList *operator->() const {
-                return &this->list;
+                return std::addressof(this->list);
             }
 
             ProcessList &operator*() {

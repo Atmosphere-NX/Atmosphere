@@ -160,13 +160,13 @@ namespace ams::fatal::srv {
         bool TryGuessBaseAddress(u64 *out_base_address, os::NativeHandle debug_handle, u64 guess) {
             svc::MemoryInfo mi;
             svc::PageInfo pi;
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess)) || mi.permission != svc::MemoryPermission_ReadExecute) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, guess)) || mi.permission != svc::MemoryPermission_ReadExecute) {
                 return false;
             }
 
             /* Iterate backwards until we find the memory before the code region. */
             while (mi.base_address > 0) {
-                if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, guess))) {
+                if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, guess))) {
                     return false;
                 }
 
@@ -185,16 +185,16 @@ namespace ams::fatal::srv {
         u64 GetBaseAddress(const ThrowContext *throw_ctx, const svc::ThreadContext *thread_ctx, os::NativeHandle debug_handle) {
             u64 base_address = 0;
 
-            if (TryGuessBaseAddress(&base_address, debug_handle, thread_ctx->pc)) {
+            if (TryGuessBaseAddress(std::addressof(base_address), debug_handle, thread_ctx->pc)) {
                 return base_address;
             }
 
-            if (TryGuessBaseAddress(&base_address, debug_handle, thread_ctx->lr)) {
+            if (TryGuessBaseAddress(std::addressof(base_address), debug_handle, thread_ctx->lr)) {
                 return base_address;
             }
 
             for (size_t i = 0; i < throw_ctx->cpu_ctx.aarch64_ctx.stack_trace_size; i++) {
-                if (TryGuessBaseAddress(&base_address, debug_handle, throw_ctx->cpu_ctx.aarch64_ctx.stack_trace[i])) {
+                if (TryGuessBaseAddress(std::addressof(base_address), debug_handle, throw_ctx->cpu_ctx.aarch64_ctx.stack_trace[i])) {
                     return base_address;
                 }
             }
@@ -253,7 +253,7 @@ namespace ams::fatal::srv {
             /* We start by trying to get a list of threads. */
             s32 thread_count;
             u64 thread_ids[0x60];
-            if (R_FAILED(svc::GetThreadList(&thread_count, thread_ids, 0x60, debug_handle))) {
+            if (R_FAILED(svc::GetThreadList(std::addressof(thread_count), thread_ids, 0x60, debug_handle))) {
                 return;
             }
 
@@ -265,7 +265,7 @@ namespace ams::fatal::srv {
                     continue;
                 }
 
-                if (IsThreadFatalCaller(ctx->result, debug_handle, cur_thread_id, cur_thread_tls, &thread_ctx)) {
+                if (IsThreadFatalCaller(ctx->result, debug_handle, cur_thread_id, cur_thread_tls, std::addressof(thread_ctx))) {
                     thread_id  = cur_thread_id;
                     thread_tls = cur_thread_tls;
                     found_fatal_caller = true;
@@ -276,7 +276,7 @@ namespace ams::fatal::srv {
                 return;
             }
         }
-        if (R_FAILED(svc::GetDebugThreadContext(&thread_ctx, debug_handle, thread_id, svc::ThreadContextFlag_All))) {
+        if (R_FAILED(svc::GetDebugThreadContext(std::addressof(thread_ctx), debug_handle, thread_id, svc::ThreadContextFlag_All))) {
             return;
         }
 
@@ -325,7 +325,7 @@ namespace ams::fatal::srv {
         }
 
         /* Parse the base address. */
-        ctx->cpu_ctx.aarch64_ctx.SetBaseAddress(GetBaseAddress(ctx, &thread_ctx, debug_handle));
+        ctx->cpu_ctx.aarch64_ctx.SetBaseAddress(GetBaseAddress(ctx, std::addressof(thread_ctx), debug_handle));
     }
 
 }

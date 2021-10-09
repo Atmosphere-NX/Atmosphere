@@ -156,7 +156,7 @@ namespace ams::ldr {
 
             /* Validate the meta. */
             {
-                Meta *meta = &cache->meta;
+                Meta *meta = std::addressof(cache->meta);
 
                 Npdm *npdm = reinterpret_cast<Npdm *>(cache->buffer);
                 R_TRY(ValidateNpdm(npdm, npdm_size));
@@ -194,11 +194,11 @@ namespace ams::ldr {
         R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
         {
             ON_SCOPE_EXIT { fs::CloseFile(file); };
-            R_TRY(LoadMetaFromFile(file, &g_meta_cache));
+            R_TRY(LoadMetaFromFile(file, std::addressof(g_meta_cache)));
         }
 
         /* Patch meta. Start by setting all program ids to the current program id. */
-        Meta *meta = &g_meta_cache.meta;
+        Meta *meta = std::addressof(g_meta_cache.meta);
         meta->acid->program_id_min = loc.program_id;
         meta->acid->program_id_max = loc.program_id;
         meta->aci->program_id      = loc.program_id;
@@ -209,8 +209,8 @@ namespace ams::ldr {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
 
 
-                if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
-                    Meta *o_meta = &g_original_meta_cache.meta;
+                if (R_SUCCEEDED(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)))) {
+                    Meta *o_meta = std::addressof(g_original_meta_cache.meta);
 
                     /* Fix pool partition. */
                     if (hos::GetVersion() >= hos::Version_5_0_0) {
@@ -253,8 +253,8 @@ namespace ams::ldr {
             if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None || ncm::IsApplicationId(loc.program_id)) {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
-                R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
-                R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
+                R_TRY(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)));
+                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));
                 meta->modulus                 = g_original_meta_cache.meta.modulus;
                 meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
             }

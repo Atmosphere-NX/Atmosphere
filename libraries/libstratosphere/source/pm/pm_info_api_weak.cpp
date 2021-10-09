@@ -21,7 +21,7 @@ namespace ams::pm::info {
     /* Information API. */
     Result WEAK_SYMBOL HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
         bool has_launched = false;
-        R_TRY(pminfoAtmosphereHasLaunchedBootProgram(&has_launched, static_cast<u64>(program_id)));
+        R_TRY(pminfoAtmosphereHasLaunchedBootProgram(std::addressof(has_launched), static_cast<u64>(program_id)));
         *out = has_launched;
         return ResultSuccess();
     }

@@ -41,7 +41,7 @@ namespace ams::kern {
 
         /* Get the physical address of the page. */
         KPhysicalAddress phys_addr = Null<KPhysicalAddress>;
-        MESOSPHERE_ABORT_UNLESS(m_owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));
+        MESOSPHERE_ABORT_UNLESS(m_owner->GetPageTable().GetPhysicalAddress(std::addressof(phys_addr), this->GetAddress()));
 
         /* Unmap the page. */
         R_TRY(m_owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));

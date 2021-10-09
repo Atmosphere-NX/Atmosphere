@@ -94,7 +94,7 @@ namespace ams::fatal::srv::font {
 
         void DrawCodePoint(u32 codepoint, u32 x, u32 y) {
             int width = 0, height = 0;
-            u8* imageptr = stbtt_GetCodepointBitmap(&g_stb_font, g_font_size, g_font_size, codepoint, &width, &height, 0, 0);
+            u8* imageptr = stbtt_GetCodepointBitmap(std::addressof(g_stb_font), g_font_size, g_font_size, codepoint, std::addressof(width), std::addressof(height), 0, 0);
             ON_SCOPE_EXIT { DeallocateForFont(imageptr); };
 
             for (int tmpy = 0; tmpy < height; tmpy++) {
@@ -114,11 +114,11 @@ namespace ams::fatal::srv::font {
             u32 prev_char = 0;
             for (u32 i = 0; i < len; ) {
                 u32 cur_char;
-                ssize_t unit_count = decode_utf8(&cur_char, reinterpret_cast<const u8 *>(str + i));
+                ssize_t unit_count = decode_utf8(std::addressof(cur_char), reinterpret_cast<const u8 *>(str + i));
                 if (unit_count <= 0) break;
 
                 if (!g_mono_adv && i > 0) {
-                    cur_x += g_font_size * stbtt_GetCodepointKernAdvance(&g_stb_font, prev_char, cur_char);
+                    cur_x += g_font_size * stbtt_GetCodepointKernAdvance(std::addressof(g_stb_font), prev_char, cur_char);
                 }
 
                 i += unit_count;
@@ -130,11 +130,11 @@ namespace ams::fatal::srv::font {
                 }
 
                 int adv_width, left_side_bearing;
-                stbtt_GetCodepointHMetrics(&g_stb_font, cur_char, &adv_width, &left_side_bearing);
+                stbtt_GetCodepointHMetrics(std::addressof(g_stb_font), cur_char, std::addressof(adv_width), std::addressof(left_side_bearing));
                 const u32 cur_width = static_cast<u32>(adv_width) * g_font_size;
 
                 int x0, y0, x1, y1;
-                stbtt_GetCodepointBitmapBoxSubpixel(&g_stb_font, cur_char, g_font_size, g_font_size, 0, 0, &x0, &y0, &x1, &y1);
+                stbtt_GetCodepointBitmapBoxSubpixel(std::addressof(g_stb_font), cur_char, g_font_size, g_font_size, 0, 0, std::addressof(x0), std::addressof(y0), std::addressof(x1), std::addressof(y1));
 
                 DrawCodePoint(cur_char, cur_x + x0 + ((mono && g_mono_adv > cur_width) ? ((g_mono_adv - cur_width) / 2) : 0), cur_y + y0);
 
@@ -225,14 +225,14 @@ namespace ams::fatal::srv::font {
     }
 
     void SetFontSize(float fsz) {
-        g_font_size = stbtt_ScaleForPixelHeight(&g_stb_font, fsz * 1.375);
+        g_font_size = stbtt_ScaleForPixelHeight(std::addressof(g_stb_font), fsz * 1.375);
 
         int ascent;
-        stbtt_GetFontVMetrics(&g_stb_font, &ascent,0,0);
+        stbtt_GetFontVMetrics(std::addressof(g_stb_font), std::addressof(ascent),0,0);
         g_font_line_pixels = ascent * g_font_size * 1.125;
 
         int adv_width, left_side_bearing;
-        stbtt_GetCodepointHMetrics(&g_stb_font, 'A', &adv_width, &left_side_bearing);
+        stbtt_GetCodepointHMetrics(std::addressof(g_stb_font), 'A', std::addressof(adv_width), std::addressof(left_side_bearing));
 
         g_mono_adv = adv_width * g_font_size;
     }
@@ -248,10 +248,10 @@ namespace ams::fatal::srv::font {
     }
 
     Result InitializeSharedFont() {
-        R_TRY(plGetSharedFontByType(&g_font, PlSharedFontType_Standard));
+        R_TRY(plGetSharedFontByType(std::addressof(g_font), PlSharedFontType_Standard));
 
         u8 *font_buffer = reinterpret_cast<u8 *>(g_font.address);
-        stbtt_InitFont(&g_stb_font, font_buffer, stbtt_GetFontOffsetForIndex(font_buffer, 0));
+        stbtt_InitFont(std::addressof(g_stb_font), font_buffer, stbtt_GetFontOffsetForIndex(font_buffer, 0));
 
         SetFontSize(16.0f);
         return ResultSuccess();

@@ -251,7 +251,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Print the savedata path. */
         PathString savedata_db_path;
@@ -331,14 +331,14 @@ namespace ams::ncm {
         }
 
         /* First, setup the BuiltInSystem storage entry. */
-        R_TRY(this->InitializeContentStorageRoot(&this->content_storage_roots[this->num_content_storage_entries++], StorageId::BuiltInSystem, fs::ContentStorageId::System));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[this->num_content_storage_entries++]), StorageId::BuiltInSystem, fs::ContentStorageId::System));
         if (R_FAILED(this->VerifyContentStorage(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentStorage(StorageId::BuiltInSystem));
         }
         R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
         /* Next, the BuiltInSystem content meta entry. */
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[this->num_content_meta_entries++]), StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
 
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
@@ -365,19 +365,19 @@ namespace ams::ncm {
         R_TRY(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
         /* Now for BuiltInUser's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(&this->content_storage_roots[this->num_content_storage_entries++], StorageId::BuiltInUser, fs::ContentStorageId::User));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[this->num_content_storage_entries++]), StorageId::BuiltInUser, fs::ContentStorageId::User));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[this->num_content_meta_entries++]), StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* Beyond this point, N uses hardcoded indices. */
 
         /* Next SdCard's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(&this->content_storage_roots[2], StorageId::SdCard, fs::ContentStorageId::SdCard));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[2], StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[2]), StorageId::SdCard, fs::ContentStorageId::SdCard));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[2]), StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* GameCard's content storage and content meta entries. */
         /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
-        R_TRY(this->InitializeGameCardContentStorageRoot(&this->content_storage_roots[3]));
-        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(&this->content_meta_database_roots[3], GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
+        R_TRY(this->InitializeGameCardContentStorageRoot(std::addressof(this->content_storage_roots[3])));
+        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[3]), GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
 
         this->initialized = true;
         return ResultSuccess();
@@ -408,7 +408,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Mount (and optionally create) save data for the root. */
         R_TRY(this->EnsureAndMountSystemSaveData(root->mount_name, root->info));
@@ -449,7 +449,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Mount save data for non-existing content meta databases. */
         const bool mount = !root->content_meta_database;
@@ -460,7 +460,7 @@ namespace ams::ncm {
 
         /* Ensure the root path exists. */
         bool has_dir = false;
-        R_TRY(fs::HasDirectory(&has_dir, root->path));
+        R_TRY(fs::HasDirectory(std::addressof(has_dir), root->path));
         R_UNLESS(has_dir, ncm::ResultInvalidContentMetaDatabase());
 
         return ResultSuccess();
@@ -492,7 +492,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         if (hos::GetVersion() >= hos::Version_2_0_0) {
             /* Obtain the content meta database if already active. */
@@ -524,7 +524,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Delete save data for the content meta database root. */
         return fs::DeleteSaveData(root->info.space_id, root->info.id);
@@ -614,7 +614,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Already activated. */
         R_SUCCEED_IF(root->content_meta_database != nullptr);
@@ -652,7 +652,7 @@ namespace ams::ncm {
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
-        R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
+        R_TRY(this->GetContentMetaDatabaseRoot(std::addressof(root), storage_id));
 
         /* Disable the content meta database, if present. */
         if (root->content_meta_database != nullptr) {

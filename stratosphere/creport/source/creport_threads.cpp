@@ -132,7 +132,7 @@ namespace ams::creport {
         }
 
         /* Get the thread context. */
-        if (R_FAILED(svc::GetDebugThreadContext(&this->context, debug_handle, this->thread_id, svc::ThreadContextFlag_All))) {
+        if (R_FAILED(svc::GetDebugThreadContext(std::addressof(this->context), debug_handle, this->thread_id, svc::ThreadContextFlag_All))) {
             return false;
         }
 
@@ -151,21 +151,21 @@ namespace ams::creport {
             if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_tls), debug_handle, this->tls_address, sizeof(thread_tls)))) {
                 std::memcpy(this->tls, thread_tls, sizeof(this->tls));
                 /* Try to detect libnx threads, and skip name parsing then. */
-                if (*(reinterpret_cast<u32 *>(&thread_tls[0x1E0])) != LibnxThreadVarMagic) {
+                if (*(reinterpret_cast<u32 *>(std::addressof(thread_tls[0x1E0]))) != LibnxThreadVarMagic) {
                     u8 thread_type[0x1C0];
-                    const u64 thread_type_addr = *(reinterpret_cast<u64 *>(&thread_tls[0x1F8]));
+                    const u64 thread_type_addr = *(reinterpret_cast<u64 *>(std::addressof(thread_tls[0x1F8])));
                     if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_type), debug_handle, thread_type_addr, sizeof(thread_type)))) {
                         /* Get the thread version. */
-                        const u16 thread_version = *reinterpret_cast<u16 *>(&thread_type[0x46]);
+                        const u16 thread_version = *reinterpret_cast<u16 *>(std::addressof(thread_type[0x46]));
                         if (thread_version == 0 || thread_version == 0xFFFF) {
                             /* Check thread name is actually at thread name. */
                             static_assert(0x1A8 - 0x188 == NameLengthMax, "NameLengthMax definition!");
-                            if (*(reinterpret_cast<u64 *>(&thread_type[0x1A8])) == thread_type_addr + 0x188) {
+                            if (*(reinterpret_cast<u64 *>(std::addressof(thread_type[0x1A8]))) == thread_type_addr + 0x188) {
                                 std::memcpy(this->name, thread_type + 0x188, NameLengthMax);
                             }
                         } else if (thread_version == 1) {
                             static_assert(0x1A0 - 0x180 == NameLengthMax, "NameLengthMax definition!");
-                            if (*(reinterpret_cast<u64 *>(&thread_type[0x1A0])) == thread_type_addr + 0x180) {
+                            if (*(reinterpret_cast<u64 *>(std::addressof(thread_type[0x1A0]))) == thread_type_addr + 0x180) {
                                 std::memcpy(this->name, thread_type + 0x180, NameLengthMax);
                             }
                         }
@@ -179,9 +179,9 @@ namespace ams::creport {
 
         /* Dump stack trace. */
         if (is_64_bit) {
-            ReadStackTrace<u64>(&this->stack_trace_size, this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
+            ReadStackTrace<u64>(std::addressof(this->stack_trace_size), this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
         } else {
-            ReadStackTrace<u32>(&this->stack_trace_size, this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
+            ReadStackTrace<u32>(std::addressof(this->stack_trace_size), this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
         }
 
         return true;
@@ -191,14 +191,14 @@ namespace ams::creport {
         /* Query stack region. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
-        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, this->context.sp))) {
+        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, this->context.sp))) {
             return;
         }
 
         /* Check if sp points into the stack. */
         if (mi.state != svc::MemoryState_Stack) {
             /* It's possible that sp is below the stack... */
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address + mi.size)) || mi.state != svc::MemoryState_Stack) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, mi.base_address + mi.size)) || mi.state != svc::MemoryState_Stack) {
                 return;
             }
         }
@@ -219,24 +219,24 @@ namespace ams::creport {
 
     void ThreadInfo::DumpBinary(ScopedFile &file) {
         /* Dump id and context. */
-        file.Write(&this->thread_id, sizeof(this->thread_id));
-        file.Write(&this->context, sizeof(this->context));
+        file.Write(std::addressof(this->thread_id), sizeof(this->thread_id));
+        file.Write(std::addressof(this->context), sizeof(this->context));
 
         /* Dump TLS info and name. */
-        file.Write(&this->tls_address, sizeof(this->tls_address));
-        file.Write(&this->tls, sizeof(this->tls));
-        file.Write(&this->name, sizeof(this->name));
+        file.Write(std::addressof(this->tls_address), sizeof(this->tls_address));
+        file.Write(std::addressof(this->tls), sizeof(this->tls));
+        file.Write(std::addressof(this->name), sizeof(this->name));
 
         /* Dump stack extents and stack dump. */
-        file.Write(&this->stack_bottom, sizeof(this->stack_bottom));
-        file.Write(&this->stack_top, sizeof(this->stack_top));
-        file.Write(&this->stack_dump_base, sizeof(this->stack_dump_base));
-        file.Write(&this->stack_dump, sizeof(this->stack_dump));
+        file.Write(std::addressof(this->stack_bottom), sizeof(this->stack_bottom));
+        file.Write(std::addressof(this->stack_top), sizeof(this->stack_top));
+        file.Write(std::addressof(this->stack_dump_base), sizeof(this->stack_dump_base));
+        file.Write(std::addressof(this->stack_dump), sizeof(this->stack_dump));
 
         /* Dump stack trace. */
         {
             const u64 sts = this->stack_trace_size;
-            file.Write(&sts, sizeof(sts));
+            file.Write(std::addressof(sts), sizeof(sts));
         }
         file.Write(this->stack_trace, this->stack_trace_size);
     }
@@ -244,9 +244,9 @@ namespace ams::creport {
     void ThreadList::DumpBinary(ScopedFile &file, u64 crashed_thread_id) {
         const u32 magic = DumpedThreadInfoMagic;
         const u32 count = this->thread_count;
-        file.Write(&magic, sizeof(magic));
-        file.Write(&count, sizeof(count));
-        file.Write(&crashed_thread_id, sizeof(crashed_thread_id));
+        file.Write(std::addressof(magic), sizeof(magic));
+        file.Write(std::addressof(count), sizeof(count));
+        file.Write(std::addressof(crashed_thread_id), sizeof(crashed_thread_id));
         for (size_t i = 0; i < this->thread_count; i++) {
             this->threads[i].DumpBinary(file);
         }
@@ -259,7 +259,7 @@ namespace ams::creport {
         s32 num_threads;
         u64 thread_ids[ThreadCountMax];
         {
-            if (R_FAILED(svc::GetThreadList(&num_threads, thread_ids, ThreadCountMax, debug_handle))) {
+            if (R_FAILED(svc::GetThreadList(std::addressof(num_threads), thread_ids, ThreadCountMax, debug_handle))) {
                 return;
             }
             num_threads = std::min(size_t(num_threads), ThreadCountMax);

@@ -54,7 +54,7 @@ namespace ams::creport {
             if (std::strcmp(this->modules[i].name, "") != 0) {
                 file.WriteFormat("        Name:                    %s\n", module.name);
             }
-            file.DumpMemory("        Build Id:                ", &module.build_id[0], sizeof(module.build_id));
+            file.DumpMemory("        Build Id:                ", module.build_id, sizeof(module.build_id));
         }
     }
 
@@ -77,7 +77,7 @@ namespace ams::creport {
     void ModuleList::TryAddModule(uintptr_t guess) {
         /* Try to locate module from guess. */
         uintptr_t base_address = 0;
-        if (!this->TryFindModule(&base_address, guess)) {
+        if (!this->TryFindModule(std::addressof(base_address), guess)) {
             return;
         }
 
@@ -94,7 +94,7 @@ namespace ams::creport {
             /* Get the region extents. */
             svc::MemoryInfo mi;
             svc::PageInfo pi;
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, cur_address))) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), this->debug_handle, cur_address))) {
                 break;
             }
 
@@ -129,20 +129,20 @@ namespace ams::creport {
         /* Query the memory region our guess falls in. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
-        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, guess))) {
+        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), this->debug_handle, guess))) {
             return false;
         }
 
         /* If we fall into a RW region, it may be rwdata. Query the region before it, which may be rodata or text. */
         if (mi.permission == svc::MemoryPermission_ReadWrite) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, mi.base_address - 4))) {
                 return false;
             }
         }
 
         /* If we fall into an RO region, it may be rodata. Query the region before it, which should be text. */
         if (mi.permission == svc::MemoryPermission_Read) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, mi.base_address - 4))) {
                 return false;
             }
         }
@@ -155,7 +155,7 @@ namespace ams::creport {
         /* Modules are a series of contiguous (text/rodata/rwdata) regions. */
         /* Iterate backwards until we find unmapped memory, to find the start of the set of modules loaded here. */
         while (mi.base_address > 0) {
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, debug_handle, mi.base_address - 4))) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, mi.base_address - 4))) {
                 return false;
             }
 
@@ -181,7 +181,7 @@ namespace ams::creport {
             svc::PageInfo pi;
 
             /* Verify .rodata is read-only. */
-            if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
+            if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
                 return;
             }
 
@@ -228,7 +228,7 @@ namespace ams::creport {
         /* Verify .rodata is read-only. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
-        if (R_FAILED(svc::QueryDebugProcessMemory(&mi, &pi, this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
+        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), this->debug_handle, ro_start_address)) || mi.permission != svc::MemoryPermission_Read) {
             return;
         }
 

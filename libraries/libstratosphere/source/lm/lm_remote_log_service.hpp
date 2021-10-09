@@ -32,14 +32,14 @@ namespace ams::lm {
         public:
             /* Actual commands. */
             Result Log(const sf::InAutoSelectBuffer &message) {
-                return serviceDispatch(&m_srv, 0,
+                return serviceDispatch(std::addressof(m_srv), 0,
                     .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcAutoSelect },
                     .buffers = { { message.GetPointer(), message.GetSize() } },
                 );
             }
 
             Result SetDestination(u32 destination) {
-                return serviceDispatchIn(&m_srv, 1, destination);
+                return serviceDispatchIn(std::addressof(m_srv), 1, destination);
             }
     };
     static_assert(lm::IsILogger<RemoteLogger>);

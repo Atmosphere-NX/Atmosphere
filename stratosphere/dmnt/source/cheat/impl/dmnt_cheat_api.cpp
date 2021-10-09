@@ -195,7 +195,7 @@ namespace ams::dmnt::cheat::impl {
 
                         /* Clear metadata. */
                         static_assert(util::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
-                        std::memset(&this->cheat_process_metadata, 0, sizeof(this->cheat_process_metadata));
+                        std::memset(std::addressof(this->cheat_process_metadata), 0, sizeof(this->cheat_process_metadata));
 
                         /* Clear cheat list. */
                         this->ResetAllCheatEntries();
@@ -219,8 +219,8 @@ namespace ams::dmnt::cheat::impl {
                     /* Note: This function *MUST* be called only with the cheat lock held. */
                     os::ProcessId pid;
                     bool has_cheat_process = this->cheat_process_debug_handle != os::InvalidNativeHandle;
-                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(&pid, this->cheat_process_debug_handle));
-                    has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(&pid));
+                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(std::addressof(pid), this->cheat_process_debug_handle));
+                    has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(std::addressof(pid)));
                     has_cheat_process &= (pid == this->cheat_process_metadata.process_id);
 
                     if (!has_cheat_process) {
@@ -241,7 +241,7 @@ namespace ams::dmnt::cheat::impl {
 
                 os::NativeHandle HookToCreateApplicationProcess() const {
                     os::NativeHandle h;
-                    R_ABORT_UNLESS(pm::dmnt::HookToCreateApplicationProcess(&h));
+                    R_ABORT_UNLESS(pm::dmnt::HookToCreateApplicationProcess(std::addressof(h)));
                     return h;
                 }
 
@@ -254,12 +254,12 @@ namespace ams::dmnt::cheat::impl {
                     /* Learn whether we should enable cheats by default. */
                     {
                         u8 en = 0;
-                        if (settings::fwdbg::GetSettingsItemValue(&en, sizeof(en), "atmosphere", "dmnt_cheats_enabled_by_default") == sizeof(en)) {
+                        if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "dmnt_cheats_enabled_by_default") == sizeof(en)) {
                             this->enable_cheats_by_default = (en != 0);
                         }
 
                         en = 0;
-                        if (settings::fwdbg::GetSettingsItemValue( &en, sizeof(en), "atmosphere", "dmnt_always_save_cheat_toggles") == sizeof(en)) {
+                        if (settings::fwdbg::GetSettingsItemValue( std::addressof(en), sizeof(en), "atmosphere", "dmnt_always_save_cheat_toggles") == sizeof(en)) {
                             this->always_save_cheat_toggles = (en != 0);
                         }
                     }
@@ -293,7 +293,7 @@ namespace ams::dmnt::cheat::impl {
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    std::memcpy(out, &this->cheat_process_metadata, sizeof(*out));
+                    std::memcpy(out, std::addressof(this->cheat_process_metadata), sizeof(*out));
                     return ResultSuccess();
                 }
 
@@ -327,7 +327,7 @@ namespace ams::dmnt::cheat::impl {
                         if (proc_addr <= address && address < proc_addr + size) {
                             const size_t offset = (address - proc_addr);
                             const size_t copy_size = std::min(sizeof(value.value), size - offset);
-                            std::memcpy(&value.value, reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data) + offset), copy_size);
+                            std::memcpy(std::addressof(value.value), reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data) + offset), copy_size);
                         }
                     }
 
@@ -356,7 +356,7 @@ namespace ams::dmnt::cheat::impl {
                     svc::PageInfo page_info;
                     u64 address = 0, count = 0;
                     do {
-                        if (R_FAILED(svc::QueryDebugProcessMemory(&mem_info, &page_info, this->GetCheatProcessHandle(), address))) {
+                        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mem_info), std::addressof(page_info), this->GetCheatProcessHandle(), address))) {
                             break;
                         }
 
@@ -380,7 +380,7 @@ namespace ams::dmnt::cheat::impl {
                     svc::PageInfo page_info;
                     u64 address = 0, total_count = 0, written_count = 0;
                     do {
-                        if (R_FAILED(svc::QueryDebugProcessMemory(&mem_info, &page_info, this->GetCheatProcessHandle(), address))) {
+                        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mem_info), std::addressof(page_info), this->GetCheatProcessHandle(), address))) {
                             break;
                         }
 
@@ -420,7 +420,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     svc::PageInfo page_info;
-                    return svc::QueryDebugProcessMemory(mapping, &page_info, this->GetCheatProcessHandle(), address);
+                    return svc::QueryDebugProcessMemory(mapping, std::addressof(page_info), this->GetCheatProcessHandle(), address);
                 }
 
                 Result PauseCheatProcess() {
@@ -646,7 +646,7 @@ namespace ams::dmnt::cheat::impl {
 
                     FrozenAddressValue value = {};
                     value.width = width;
-                    R_TRY(this->ReadCheatProcessMemoryUnsafe(address, &value.value, width));
+                    R_TRY(this->ReadCheatProcessMemoryUnsafe(address, std::addressof(value.value), width));
 
                     FrozenAddressMapEntry *entry = AllocateFrozenAddress(address, value);
                     R_UNLESS(entry != nullptr, dmnt::cheat::ResultFrozenAddressOutOfResource());
@@ -677,11 +677,11 @@ namespace ams::dmnt::cheat::impl {
             CheatProcessManager *this_ptr = reinterpret_cast<CheatProcessManager *>(_this);
             Event hook;
             while (true) {
-                eventLoadRemote(&hook, this_ptr->HookToCreateApplicationProcess(), true);
-                if (R_SUCCEEDED(eventWait(&hook, std::numeric_limits<u64>::max()))) {
+                eventLoadRemote(std::addressof(hook), this_ptr->HookToCreateApplicationProcess(), true);
+                if (R_SUCCEEDED(eventWait(std::addressof(hook), std::numeric_limits<u64>::max()))) {
                     this_ptr->AttachToApplicationProcess(true);
                 }
-                eventClose(&hook);
+                eventClose(std::addressof(hook));
             }
         }
 
@@ -747,7 +747,7 @@ namespace ams::dmnt::cheat::impl {
 
                             /* Execute program only if it has opcodes. */
                             if (this_ptr->cheat_vm.GetProgramSize()) {
-                                this_ptr->cheat_vm.Execute(&this_ptr->cheat_process_metadata);
+                                this_ptr->cheat_vm.Execute(std::addressof(this_ptr->cheat_process_metadata));
                             }
                         }
 
@@ -792,7 +792,7 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Get the application process's ID. */
-            R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::GetApplicationProcessId(&this->cheat_process_metadata.process_id));
+            R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::GetApplicationProcessId(std::addressof(this->cheat_process_metadata.process_id)));
             auto proc_guard = SCOPE_GUARD {
                 if (on_process_launch) {
                     this->StartProcess(this->cheat_process_metadata.process_id);
@@ -806,7 +806,7 @@ namespace ams::dmnt::cheat::impl {
                 ncm::ProgramLocation loc = {};
                 cfg::OverrideStatus status = {};
 
-                R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(&proc_h, &loc, &status, this->cheat_process_metadata.process_id));
+                R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(std::addressof(proc_h), std::addressof(loc), std::addressof(status), this->cheat_process_metadata.process_id));
                 ON_SCOPE_EXIT { os::CloseNativeHandle(proc_h); };
 
                 this->cheat_process_metadata.program_id = loc.program_id;
@@ -830,7 +830,7 @@ namespace ams::dmnt::cheat::impl {
                 s32 num_modules;
 
                 /* TODO: ldr::dmnt:: */
-                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), &num_modules));
+                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), std::addressof(num_modules)));
 
                 /* All applications must have two modules. */
                 /* Only accept one (which means we're attaching to HBL) */

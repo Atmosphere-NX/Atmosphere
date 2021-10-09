@@ -130,14 +130,14 @@ namespace ams::util {
                 {
                     const int num_init_iterations = std::max(seed_count + 1, MinimumInitIterations) - 1;
 
-                    GenerateInitialValuePlus(&this->state, 0, seed_count);
+                    GenerateInitialValuePlus(std::addressof(this->state), 0, seed_count);
 
                     for (int i = 0; i < num_init_iterations; i++) {
-                        GenerateInitialValuePlus(&this->state, (i + 1) % NumStateWords, (i < seed_count) ? seed[i] : 0);
+                        GenerateInitialValuePlus(std::addressof(this->state), (i + 1) % NumStateWords, (i < seed_count) ? seed[i] : 0);
                     }
 
                     for (int i = 0; i < static_cast<int>(NumStateWords); i++) {
-                        GenerateInitialValueXor(&this->state, (i + 1 + num_init_iterations) % NumStateWords);
+                        GenerateInitialValueXor(std::addressof(this->state), (i + 1 + num_init_iterations) % NumStateWords);
                     }
                 }
 
@@ -163,7 +163,7 @@ namespace ams::util {
                 /* Make sure we're aligned. */
                 if (start < aligned_start) {
                     const u32 rnd = this->GenerateRandomU32();
-                    std::memcpy(dst, &rnd, aligned_start - start);
+                    std::memcpy(dst, std::addressof(rnd), aligned_start - start);
                 }
 
                 /* Write as many aligned u32s as we can. */
@@ -179,7 +179,7 @@ namespace ams::util {
                 /* Handle any leftover unaligned data. */
                 if (aligned_end < end) {
                     const u32 rnd = this->GenerateRandomU32();
-                    std::memcpy(reinterpret_cast<void *>(aligned_end), &rnd, end - aligned_end);
+                    std::memcpy(reinterpret_cast<void *>(aligned_end), std::addressof(rnd), end - aligned_end);
                 }
             }
 

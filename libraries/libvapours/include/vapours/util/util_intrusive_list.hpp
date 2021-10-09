@@ -200,23 +200,23 @@ namespace ams::util {
                 }
 
                 ALWAYS_INLINE iterator end() {
-                    return iterator(&this->root_node);
+                    return iterator(std::addressof(this->root_node));
                 }
 
                 ALWAYS_INLINE const_iterator end() const {
-                    return const_iterator(&this->root_node);
+                    return const_iterator(std::addressof(this->root_node));
                 }
 
                 ALWAYS_INLINE iterator iterator_to(reference v) {
                     /* Only allow iterator_to for values in lists. */
                     AMS_ASSERT(v.IsLinked());
-                    return iterator(&v);
+                    return iterator(std::addressof(v));
                 }
 
                 ALWAYS_INLINE const_iterator iterator_to(const_reference v) const {
                     /* Only allow iterator_to for values in lists. */
                     AMS_ASSERT(v.IsLinked());
-                    return const_iterator(&v);
+                    return const_iterator(std::addressof(v));
                 }
 
                 /* Content management. */
@@ -245,11 +245,11 @@ namespace ams::util {
                 }
 
                 ALWAYS_INLINE void push_back(reference node) {
-                    this->root_node.LinkPrev(&node);
+                    this->root_node.LinkPrev(std::addressof(node));
                 }
 
                 ALWAYS_INLINE void push_front(reference node) {
-                    this->root_node.LinkNext(&node);
+                    this->root_node.LinkNext(std::addressof(node));
                 }
 
                 ALWAYS_INLINE void pop_back() {
@@ -261,8 +261,8 @@ namespace ams::util {
                 }
 
                 ALWAYS_INLINE iterator insert(const_iterator pos, reference node) {
-                    pos.GetNonConstIterator()->LinkPrev(&node);
-                    return iterator(&node);
+                    pos.GetNonConstIterator()->LinkPrev(std::addressof(node));
+                    return iterator(std::addressof(node));
                 }
 
                 ALWAYS_INLINE void splice(const_iterator pos, IntrusiveListImpl &o) {
@@ -303,8 +303,8 @@ namespace ams::util {
                     iterator pos(_pos.GetNonConstIterator());
                     iterator first(_first.GetNonConstIterator());
                     iterator last(_last.GetNonConstIterator());
-                    first->Unlink(&*last);
-                    pos->SplicePrev(&*first, &*first);
+                    first->Unlink(std::addressof(*last));
+                    pos->SplicePrev(std::addressof(*first), std::addressof(*first));
                 }
 
         };
@@ -362,7 +362,7 @@ namespace ams::util {
                     }
 
                     ALWAYS_INLINE pointer operator->() const {
-                        return &Traits::GetParent(*this->iterator);
+                        return std::addressof(Traits::GetParent(*this->iterator));
                     }
 
                     ALWAYS_INLINE reference operator*() const {
@@ -562,11 +562,11 @@ namespace ams::util {
             }
 
             static constexpr ALWAYS_INLINE Derived &GetParent(IntrusiveListNode &node) {
-                return util::GetParentReference<Member, Derived>(&node);
+                return util::GetParentReference<Member, Derived>(std::addressof(node));
             }
 
             static constexpr ALWAYS_INLINE Derived const &GetParent(IntrusiveListNode const &node) {
-                return util::GetParentReference<Member, Derived>(&node);
+                return util::GetParentReference<Member, Derived>(std::addressof(node));
             }
         private:
             static constexpr TypedStorage<Derived> DerivedStorage = {};
@@ -597,11 +597,11 @@ namespace ams::util {
             }
 
             static constexpr ALWAYS_INLINE Derived &GetParent(IntrusiveListNode &node) {
-                return util::GetParentReference<Member, Derived>(&node);
+                return util::GetParentReference<Member, Derived>(std::addressof(node));
             }
 
             static constexpr ALWAYS_INLINE Derived const &GetParent(IntrusiveListNode const &node) {
-                return util::GetParentReference<Member, Derived>(&node);
+                return util::GetParentReference<Member, Derived>(std::addressof(node));
             }
     };
 

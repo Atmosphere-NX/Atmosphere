@@ -85,13 +85,13 @@ namespace ams::fatal::srv {
             }
 
             /* Get program id. */
-            pm::info::GetProgramId(&this->context.program_id, process_id);
+            pm::info::GetProgramId(std::addressof(this->context.program_id), process_id);
             this->context.is_creport = (this->context.program_id == ncm::SystemProgramId::Creport);
 
             if (!this->context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
                 if (hos::GetVersion() >= hos::Version_2_0_0) {
-                    fatal::srv::TryCollectDebugInformation(&this->context, process_id);
+                    fatal::srv::TryCollectDebugInformation(std::addressof(this->context), process_id);
                 }
             } else {
                 /* We received info from creport. Parse program id from afsr0. */
@@ -117,7 +117,7 @@ namespace ams::fatal::srv {
                     this->event_manager.SignalEvents();
 
                     if (GetFatalConfig().ShouldTransitionToFatal()) {
-                        RunTasks(&this->context);
+                        RunTasks(std::addressof(this->context));
                     }
                     break;
                 /* N aborts here. Should we just return an error code? */

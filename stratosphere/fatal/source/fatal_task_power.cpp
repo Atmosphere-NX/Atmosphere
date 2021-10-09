@@ -88,7 +88,7 @@ namespace ams::fatal::srv {
                     break;
                 }
 
-                if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+                if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state))) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                     break;
                 }
 
@@ -112,7 +112,7 @@ namespace ams::fatal::srv {
             PsmBatteryVoltageState bv_state = PsmBatteryVoltageState_Normal;
 
             /* Check the battery state, and shutdown on low voltage. */
-            if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+            if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state))) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                 /* Wait a second for the error report task to finish. */
                 this->context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
                 this->TryShutdown();
@@ -124,7 +124,7 @@ namespace ams::fatal::srv {
 
             /* Loop querying voltage state every 5 seconds. */
             while (true) {
-                if (R_FAILED(psmGetBatteryVoltageState(&bv_state))) {
+                if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state)))) {
                     bv_state = PsmBatteryVoltageState_NeedsShutdown;
                 }
 
@@ -181,7 +181,7 @@ namespace ams::fatal::srv {
                 if (fatal_reboot_helper.IsRebootTiming() || (quest_reboot_helper.IsRebootTiming()) ||
                     (check_vol_up && gpio::GetValue(std::addressof(vol_up_btn)) == gpio::GpioValue_Low) ||
                     (check_vol_down && gpio::GetValue(std::addressof(vol_down_btn)) == gpio::GpioValue_Low) ||
-                    (R_SUCCEEDED(bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held))
+                    (R_SUCCEEDED(bpcGetSleepButtonState(std::addressof(state))) && state == BpcSleepButtonState_Held))
                 {
                     /* If any of the above conditions succeeded, we should reboot. */
                     bpcRebootSystem();
@@ -214,17 +214,17 @@ namespace ams::fatal::srv {
 
     ITask *GetPowerControlTask(const ThrowContext *ctx) {
         g_power_control_task.Initialize(ctx);
-        return &g_power_control_task;
+        return std::addressof(g_power_control_task);
     }
 
     ITask *GetPowerButtonObserveTask(const ThrowContext *ctx) {
         g_power_button_observe_task.Initialize(ctx);
-        return &g_power_button_observe_task;
+        return std::addressof(g_power_button_observe_task);
     }
 
     ITask *GetStateTransitionStopTask(const ThrowContext *ctx) {
         g_state_transition_stop_task.Initialize(ctx);
-        return &g_state_transition_stop_task;
+        return std::addressof(g_state_transition_stop_task);
     }
 
 }

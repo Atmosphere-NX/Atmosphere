@@ -27,7 +27,7 @@ namespace ams::mitm::bpc {
     }
 
     void AtmosphereService::RebootToFatalError(const ams::FatalErrorContext &ctx) {
-        bpc::RebootForFatalError(&ctx);
+        bpc::RebootForFatalError(std::addressof(ctx));
     }
 
     void AtmosphereService::SetRebootPayload(const ams::sf::InBuffer &payload) {

@@ -43,7 +43,7 @@ namespace ams::fatal::srv {
         /* Event creator. */
         os::NativeHandle GetFatalDirtyEventReadableHandle() {
             Event evt;
-            R_ABORT_UNLESS(setsysAcquireFatalDirtyFlagEventHandle(&evt));
+            R_ABORT_UNLESS(setsysAcquireFatalDirtyFlagEventHandle(std::addressof(evt)));
             return evt.revent;
         }
 
@@ -68,7 +68,7 @@ namespace ams::fatal::srv {
         os::ClearSystemEvent(std::addressof(g_fatal_dirty_event));
 
         u64 flags_0, flags_1;
-        if (R_SUCCEEDED(setsysGetFatalDirtyFlags(&flags_0, &flags_1)) && (flags_0 & 1)) {
+        if (R_SUCCEEDED(setsysGetFatalDirtyFlags(std::addressof(flags_0), std::addressof(flags_1))) && (flags_0 & 1)) {
             GetFatalConfigImpl().UpdateLanguageCode();
         }
     }
@@ -77,20 +77,20 @@ namespace ams::fatal::srv {
         /* Get information from set. */
         settings::system::GetSerialNumber(std::addressof(this->serial_number));
         settings::system::GetFirmwareVersion(std::addressof(this->firmware_version));
-        setsysGetQuestFlag(&this->quest_flag);
+        setsysGetQuestFlag(std::addressof(this->quest_flag));
         this->UpdateLanguageCode();
 
         /* Read information from settings. */
-        settings::fwdbg::GetSettingsItemValue(&this->transition_to_fatal, sizeof(this->transition_to_fatal), "fatal", "transition_to_fatal");
-        settings::fwdbg::GetSettingsItemValue(&this->show_extra_info, sizeof(this->show_extra_info), "fatal", "show_extra_info");
+        settings::fwdbg::GetSettingsItemValue(std::addressof(this->transition_to_fatal), sizeof(this->transition_to_fatal), "fatal", "transition_to_fatal");
+        settings::fwdbg::GetSettingsItemValue(std::addressof(this->show_extra_info), sizeof(this->show_extra_info), "fatal", "show_extra_info");
 
         u64 quest_interval_second;
-        settings::fwdbg::GetSettingsItemValue(&quest_interval_second, sizeof(quest_interval_second), "fatal", "quest_reboot_interval_second");
+        settings::fwdbg::GetSettingsItemValue(std::addressof(quest_interval_second), sizeof(quest_interval_second), "fatal", "quest_reboot_interval_second");
         this->quest_reboot_interval = TimeSpan::FromSeconds(quest_interval_second);
 
         /* Atmosphere extension for automatic reboot. */
         u64 auto_reboot_ms;
-        if (settings::fwdbg::GetSettingsItemValue(&auto_reboot_ms, sizeof(auto_reboot_ms), "atmosphere", "fatal_auto_reboot_interval") == sizeof(auto_reboot_ms)) {
+        if (settings::fwdbg::GetSettingsItemValue(std::addressof(auto_reboot_ms), sizeof(auto_reboot_ms), "atmosphere", "fatal_auto_reboot_interval") == sizeof(auto_reboot_ms)) {
             this->fatal_auto_reboot_interval = TimeSpan::FromMilliSeconds(auto_reboot_ms);
             this->fatal_auto_reboot_enabled  = auto_reboot_ms != 0;
         }

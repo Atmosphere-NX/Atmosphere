@@ -79,7 +79,7 @@ namespace ams::sf::hipc {
 
                         /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
                         object_id = cmif::DomainObjectId{session->forward_service->object_id};
-                        domain->ReserveSpecificIds(&object_id, 1);
+                        domain->ReserveSpecificIds(std::addressof(object_id), 1);
 
                         /* Register the object. */
                         domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
@@ -91,7 +91,7 @@ namespace ams::sf::hipc {
                         SharedPointer<cmif::DomainServiceObject> cmif_domain(domain, false);
 
                         /* Reserve a new object in the domain. */
-                        R_TRY(domain->ReserveIds(&object_id, 1));
+                        R_TRY(domain->ReserveIds(std::addressof(object_id), 1));
 
                         /* Register the object. */
                         domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
@@ -136,7 +136,7 @@ namespace ams::sf::hipc {
                     } else {
                         /* Copy from the target domain. */
                         os::NativeHandle new_forward_target;
-                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, &new_forward_target));
+                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, std::addressof(new_forward_target)));
 
                         /* Create new session handles. */
                         os::NativeHandle server_handle, client_handle;

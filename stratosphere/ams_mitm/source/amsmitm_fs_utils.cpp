@@ -28,7 +28,7 @@ namespace ams::mitm::fs {
 
         /* Helpers. */
         Result EnsureSdInitialized() {
-            R_UNLESS(serviceIsActive(&g_sd_filesystem.s), ams::fs::ResultSdCardNotPresent());
+            R_UNLESS(serviceIsActive(std::addressof(g_sd_filesystem.s)), ams::fs::ResultSdCardNotPresent());
             return ResultSuccess();
         }
 
@@ -39,17 +39,17 @@ namespace ams::mitm::fs {
     }
 
     void OpenGlobalSdCardFileSystem() {
-        R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_filesystem));
+        R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(g_sd_filesystem)));
     }
 
     Result CreateSdFile(const char *path, s64 size, s32 option) {
         R_TRY(EnsureSdInitialized());
-        return fsFsCreateFile(&g_sd_filesystem, path, size, option);
+        return fsFsCreateFile(std::addressof(g_sd_filesystem), path, size, option);
     }
 
     Result DeleteSdFile(const char *path) {
         R_TRY(EnsureSdInitialized());
-        return fsFsDeleteFile(&g_sd_filesystem, path);
+        return fsFsDeleteFile(std::addressof(g_sd_filesystem), path);
     }
 
     bool HasSdFile(const char *path) {
@@ -58,7 +58,7 @@ namespace ams::mitm::fs {
         }
 
         FsDirEntryType type;
-        if (R_FAILED(fsFsGetEntryType(&g_sd_filesystem, path, &type))) {
+        if (R_FAILED(fsFsGetEntryType(std::addressof(g_sd_filesystem), path, std::addressof(type)))) {
             return false;
         }
 
@@ -85,7 +85,7 @@ namespace ams::mitm::fs {
 
     Result OpenSdFile(FsFile *out, const char *path, u32 mode) {
         R_TRY(EnsureSdInitialized());
-        return fsFsOpenFile(&g_sd_filesystem, path, mode, out);
+        return fsFsOpenFile(std::addressof(g_sd_filesystem), path, mode, out);
     }
 
     Result OpenAtmosphereSdFile(FsFile *out, const char *path, u32 mode) {
@@ -114,7 +114,7 @@ namespace ams::mitm::fs {
 
     Result CreateSdDirectory(const char *path) {
         R_TRY(EnsureSdInitialized());
-        return fsFsCreateDirectory(&g_sd_filesystem, path);
+        return fsFsCreateDirectory(std::addressof(g_sd_filesystem), path);
     }
 
     Result CreateAtmosphereSdDirectory(const char *path) {
@@ -125,7 +125,7 @@ namespace ams::mitm::fs {
 
     Result OpenSdDirectory(FsDir *out, const char *path, u32 mode) {
         R_TRY(EnsureSdInitialized());
-        return fsFsOpenDirectory(&g_sd_filesystem, path, mode, out);
+        return fsFsOpenDirectory(std::addressof(g_sd_filesystem), path, mode, out);
     }
 
     Result OpenAtmosphereSdDirectory(FsDir *out, const char *path, u32 mode) {
@@ -188,22 +188,22 @@ namespace ams::mitm::fs {
         /* Check if romfs.bin is present. */
         {
             FsFile romfs_file;
-            if (R_SUCCEEDED(OpenAtmosphereSdFile(&romfs_file, program_id, "romfs.bin", OpenMode_Read))) {
-                fsFileClose(&romfs_file);
+            if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(romfs_file), program_id, "romfs.bin", OpenMode_Read))) {
+                fsFileClose(std::addressof(romfs_file));
                 return true;
             }
         }
 
         /* Check for romfs folder with content. */
         FsDir romfs_dir;
-        if (R_FAILED(OpenAtmosphereSdRomfsDirectory(&romfs_dir, program_id, "", OpenDirectoryMode_All))) {
+        if (R_FAILED(OpenAtmosphereSdRomfsDirectory(std::addressof(romfs_dir), program_id, "", OpenDirectoryMode_All))) {
             return false;
         }
-        ON_SCOPE_EXIT { fsDirClose(&romfs_dir); };
+        ON_SCOPE_EXIT { fsDirClose(std::addressof(romfs_dir)); };
 
         /* Verify the folder has at least one entry. */
         s64 num_entries = 0;
-        return R_SUCCEEDED(fsDirGetEntryCount(&romfs_dir, &num_entries)) && num_entries > 0;
+        return R_SUCCEEDED(fsDirGetEntryCount(std::addressof(romfs_dir), std::addressof(num_entries))) && num_entries > 0;
     }
 
     Result SaveAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, void *data, size_t size) {
@@ -215,17 +215,17 @@ namespace ams::mitm::fs {
         /* Unconditionally create. */
         /* Don't check error, as a failure here should be okay. */
         FsFile f;
-        fsFsCreateFile(&g_sd_filesystem, fixed_path, size, 0);
+        fsFsCreateFile(std::addressof(g_sd_filesystem), fixed_path, size, 0);
 
         /* Try to open. */
-        R_TRY(fsFsOpenFile(&g_sd_filesystem, fixed_path, OpenMode_ReadWrite, &f));
-        auto file_guard = SCOPE_GUARD { fsFileClose(&f); };
+        R_TRY(fsFsOpenFile(std::addressof(g_sd_filesystem), fixed_path, OpenMode_ReadWrite, std::addressof(f)));
+        auto file_guard = SCOPE_GUARD { fsFileClose(std::addressof(f)); };
 
         /* Try to set the size. */
-        R_TRY(fsFileSetSize(&f, static_cast<s64>(size)));
+        R_TRY(fsFileSetSize(std::addressof(f), static_cast<s64>(size)));
 
         /* Try to write data. */
-        R_TRY(fsFileWrite(&f, 0, data, size, FsWriteOption_Flush));
+        R_TRY(fsFileWrite(std::addressof(f), 0, data, size, FsWriteOption_Flush));
 
         /* Set output. */
         file_guard.Cancel();
@@ -242,14 +242,14 @@ namespace ams::mitm::fs {
         /* Unconditionally create. */
         /* Don't check error, as a failure here should be okay. */
         FsFile f;
-        fsFsCreateFile(&g_sd_filesystem, fixed_path, size, 0);
+        fsFsCreateFile(std::addressof(g_sd_filesystem), fixed_path, size, 0);
 
         /* Try to open. */
-        R_TRY(fsFsOpenFile(&g_sd_filesystem, fixed_path, OpenMode_ReadWrite, &f));
-        auto file_guard = SCOPE_GUARD { fsFileClose(&f); };
+        R_TRY(fsFsOpenFile(std::addressof(g_sd_filesystem), fixed_path, OpenMode_ReadWrite, std::addressof(f)));
+        auto file_guard = SCOPE_GUARD { fsFileClose(std::addressof(f)); };
 
         /* Try to set the size. */
-        R_TRY(fsFileSetSize(&f, static_cast<s64>(size)));
+        R_TRY(fsFileSetSize(std::addressof(f), static_cast<s64>(size)));
 
         /* Set output. */
         file_guard.Cancel();

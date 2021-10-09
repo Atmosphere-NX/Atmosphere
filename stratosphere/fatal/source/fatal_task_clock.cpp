@@ -41,13 +41,13 @@ namespace ams::fatal::srv {
             if (hos::GetVersion() >= hos::Version_8_0_0) {
                 /* On 8.0.0+, convert to module id + use clkrst API. */
                 PcvModuleId module_id;
-                R_TRY(pcvGetModuleId(&module_id, module));
+                R_TRY(pcvGetModuleId(std::addressof(module_id), module));
 
                 ClkrstSession session;
-                R_TRY(clkrstOpenSession(&session, module_id, 3));
-                ON_SCOPE_EXIT { clkrstCloseSession(&session); };
+                R_TRY(clkrstOpenSession(std::addressof(session), module_id, 3));
+                ON_SCOPE_EXIT { clkrstCloseSession(std::addressof(session)); };
 
-                R_TRY(clkrstSetClockRate(&session, hz));
+                R_TRY(clkrstSetClockRate(std::addressof(session), hz));
             } else {
                 /* On 1.0.0-7.0.1, use pcv API. */
                 R_TRY(pcvSetClockRate(module, hz));
@@ -77,7 +77,7 @@ namespace ams::fatal::srv {
 
     ITask *GetAdjustClockTask(const ThrowContext *ctx) {
         g_adjust_clock_task.Initialize(ctx);
-        return &g_adjust_clock_task;
+        return std::addressof(g_adjust_clock_task);
     }
 
 }

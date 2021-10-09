@@ -137,7 +137,7 @@ namespace ams::ncm {
     Result HostContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
         /* Obtain the regular rights id for the content id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromContentId(&rights_id, content_id));
+        R_TRY(this->GetRightsIdFromContentId(std::addressof(rights_id), content_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);

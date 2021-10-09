@@ -43,9 +43,9 @@ namespace ams::sf::cmif {
                 std::memcpy(in_object_ids, reinterpret_cast<DomainObjectId *>(in_message_raw_data.GetAddress() + in_message_raw_data.GetSize()), sizeof(DomainObjectId) * in_header->num_in_objects);
                 DomainServiceObjectProcessor domain_processor(domain, in_object_ids, in_header->num_in_objects);
                 if (ctx.processor == nullptr) {
-                    ctx.processor = &domain_processor;
+                    ctx.processor = std::addressof(domain_processor);
                 } else {
-                    ctx.processor->SetImplementationProcessor(&domain_processor);
+                    ctx.processor->SetImplementationProcessor(std::addressof(domain_processor));
                 }
                 ctx.srv_obj = target_object.GetServiceObjectUnsafe();
                 return target_object.ProcessMessage(ctx, in_message_raw_data);
@@ -82,9 +82,9 @@ namespace ams::sf::cmif {
                 std::memcpy(in_object_ids, reinterpret_cast<DomainObjectId *>(in_message_raw_data.GetAddress() + in_message_raw_data.GetSize()), sizeof(DomainObjectId) * in_header->num_in_objects);
                 DomainServiceObjectProcessor domain_processor(domain, in_object_ids, in_header->num_in_objects);
                 if (ctx.processor == nullptr) {
-                    ctx.processor = &domain_processor;
+                    ctx.processor = std::addressof(domain_processor);
                 } else {
-                    ctx.processor->SetImplementationProcessor(&domain_processor);
+                    ctx.processor->SetImplementationProcessor(std::addressof(domain_processor));
                 }
                 ctx.srv_obj = target_object.GetServiceObjectUnsafe();
                 return target_object.ProcessMessage(ctx, in_message_raw_data);

@@ -72,7 +72,7 @@ namespace ams::fssystem {
     Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
         /* Open source file. */
         std::unique_ptr<fs::fsa::IFile> src_file;
-        R_TRY(src_fs->OpenFile(&src_file, src_path, fs::OpenMode_Read));
+        R_TRY(src_fs->OpenFile(std::addressof(src_file), src_path, fs::OpenMode_Read));
 
         /* Open dst file. */
         std::unique_ptr<fs::fsa::IFile> dst_file;
@@ -83,7 +83,7 @@ namespace ams::fssystem {
             AMS_ABORT_UNLESS(original_size < sizeof(dst_path));
 
             R_TRY(dst_fs->CreateFile(dst_path, entry->file_size));
-            R_TRY(dst_fs->OpenFile(&dst_file, dst_path, fs::OpenMode_Write));
+            R_TRY(dst_fs->OpenFile(std::addressof(dst_file), dst_path, fs::OpenMode_Write));
         }
 
         /* Read/Write file in work buffer sized chunks. */
@@ -91,7 +91,7 @@ namespace ams::fssystem {
         s64 offset = 0;
         while (remaining > 0) {
             size_t read_size;
-            R_TRY(src_file->Read(&read_size, offset, work_buf, work_buf_size, fs::ReadOption()));
+            R_TRY(src_file->Read(std::addressof(read_size), offset, work_buf, work_buf_size, fs::ReadOption()));
             R_TRY(dst_file->Write(offset, work_buf, read_size, fs::WriteOption()));
 
             remaining -= read_size;
@@ -132,7 +132,7 @@ namespace ams::fssystem {
                 return ResultSuccess();
             },
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On File */
-                return CopyFile(dst_fs, src_fs, dst_path_buf, path, &entry, work_buf, work_buf_size);
+                return CopyFile(dst_fs, src_fs, dst_path_buf, path, std::addressof(entry), work_buf, work_buf_size);
             }
         );
     }

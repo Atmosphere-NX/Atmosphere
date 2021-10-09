@@ -169,7 +169,7 @@ namespace ams::fs {
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
 
                 FsFile f;
-                R_TRY(fsFsOpenFile(std::addressof(this->base_fs), sf_path.str, mode, &f));
+                R_TRY(fsFsOpenFile(std::addressof(this->base_fs), sf_path.str, mode, std::addressof(f)));
 
                 auto file = std::make_unique<RemoteFile>(f);
                 R_UNLESS(file != nullptr, fs::ResultAllocationFailureInNew());
@@ -183,7 +183,7 @@ namespace ams::fs {
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
 
                 FsDir d;
-                R_TRY(fsFsOpenDirectory(std::addressof(this->base_fs), sf_path.str, mode, &d));
+                R_TRY(fsFsOpenDirectory(std::addressof(this->base_fs), sf_path.str, mode, std::addressof(d)));
 
                 auto dir = std::make_unique<RemoteDirectory>(d);
                 R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInNew());

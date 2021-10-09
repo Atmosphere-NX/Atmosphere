@@ -346,7 +346,7 @@ namespace ams::ldr {
             out->reslimit = reslimit_h;
 
             /* Set flags. */
-            R_TRY(GetCreateProcessFlags(&out->flags, meta, flags));
+            R_TRY(GetCreateProcessFlags(std::addressof(out->flags), meta, flags));
 
             /* 3.0.0+ System Resource Size. */
             if (hos::GetVersion() >= hos::Version_3_0_0) {
@@ -574,11 +574,11 @@ namespace ams::ldr {
                 R_TRY(map.GetResult());
 
                 /* Load NSO segments. */
-                R_TRY(LoadNsoSegment(file, &nso_header->segments[NsoHeader::Segment_Text], nso_header->text_compressed_size, nso_header->text_hash, (nso_header->flags & NsoHeader::Flag_CompressedText) != 0,
+                R_TRY(LoadNsoSegment(file, std::addressof(nso_header->segments[NsoHeader::Segment_Text]), nso_header->text_compressed_size, nso_header->text_hash, (nso_header->flags & NsoHeader::Flag_CompressedText) != 0,
                                            (nso_header->flags & NsoHeader::Flag_CheckHashText) != 0, map_address + nso_header->text_dst_offset, map_address + nso_size));
-                R_TRY(LoadNsoSegment(file, &nso_header->segments[NsoHeader::Segment_Ro], nso_header->ro_compressed_size, nso_header->ro_hash, (nso_header->flags & NsoHeader::Flag_CompressedRo) != 0,
+                R_TRY(LoadNsoSegment(file, std::addressof(nso_header->segments[NsoHeader::Segment_Ro]), nso_header->ro_compressed_size, nso_header->ro_hash, (nso_header->flags & NsoHeader::Flag_CompressedRo) != 0,
                                            (nso_header->flags & NsoHeader::Flag_CheckHashRo) != 0, map_address + nso_header->ro_dst_offset, map_address + nso_size));
-                R_TRY(LoadNsoSegment(file, &nso_header->segments[NsoHeader::Segment_Rw], nso_header->rw_compressed_size, nso_header->rw_hash, (nso_header->flags & NsoHeader::Flag_CompressedRw) != 0,
+                R_TRY(LoadNsoSegment(file, std::addressof(nso_header->segments[NsoHeader::Segment_Rw]), nso_header->rw_compressed_size, nso_header->rw_hash, (nso_header->flags & NsoHeader::Flag_CompressedRw) != 0,
                                            (nso_header->flags & NsoHeader::Flag_CheckHashRw) != 0, map_address + nso_header->rw_dst_offset, map_address + nso_size));
 
                 /* Clear unused space to zero. */
@@ -670,10 +670,10 @@ namespace ams::ldr {
 
             /* Load meta, possibly from cache. */
             Meta meta;
-            R_TRY(LoadMetaFromCache(&meta, loc, override_status));
+            R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
 
             /* Validate meta. */
-            R_TRY(ValidateMeta(&meta, loc, mount.GetCodeVerificationData()));
+            R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
 
             /* Load, validate NSOs. */
             R_TRY(LoadNsoHeaders(nso_headers, has_nso));
@@ -681,13 +681,13 @@ namespace ams::ldr {
 
             /* Actually create process. */
             ProcessInfo info;
-            R_TRY(CreateProcessImpl(&info, &meta, nso_headers, has_nso, arg_info, flags, reslimit_h));
+            R_TRY(CreateProcessImpl(std::addressof(info), std::addressof(meta), nso_headers, has_nso, arg_info, flags, reslimit_h));
 
             /* Ensure we close the process handle, if we fail. */
             ON_SCOPE_EXIT { os::CloseNativeHandle(info.process_handle); };
 
             /* Load NSOs into process memory. */
-            R_TRY(LoadNsosIntoProcessMemory(&info, nso_headers, has_nso, arg_info));
+            R_TRY(LoadNsosIntoProcessMemory(std::addressof(info), nso_headers, has_nso, arg_info));
 
             /* Register NSOs with ro manager. */
             {
@@ -732,13 +732,13 @@ namespace ams::ldr {
         {
             ScopedCodeMount mount(loc);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(&meta, loc, mount.GetOverrideStatus()));
+            R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus()));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }
         }
 
-        return GetProgramInfoFromMeta(out, &meta);
+        return GetProgramInfoFromMeta(out, std::addressof(meta));
     }
 
 }

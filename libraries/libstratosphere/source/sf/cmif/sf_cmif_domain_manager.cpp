@@ -19,7 +19,7 @@ namespace ams::sf::cmif {
 
     ServerDomainManager::Domain::~Domain() {
         while (!this->entries.empty()) {
-            Entry *entry = &this->entries.front();
+            Entry *entry = std::addressof(this->entries.front());
             {
                 std::scoped_lock lk(this->manager->entry_owner_lock);
                 AMS_ABORT_UNLESS(entry->owner == this);
@@ -127,7 +127,7 @@ namespace ams::sf::cmif {
             return nullptr;
         }
 
-        Entry *e = &this->free_list.front();
+        Entry *e = std::addressof(this->free_list.front());
         this->free_list.pop_front();
         return e;
     }

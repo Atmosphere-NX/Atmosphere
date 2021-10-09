@@ -88,7 +88,7 @@ namespace ams::ncm {
                     /* Call the process function. */
                     bool should_continue = true;
                     bool should_retry_dir_read = false;
-                    R_TRY(f(&should_continue, &should_retry_dir_read, current_path, entry));
+                    R_TRY(f(std::addressof(should_continue), std::addressof(should_retry_dir_read), current_path, entry));
 
                     /* If the provided function wishes to terminate immediately, we should respect it. */
                     if (!should_continue) {
@@ -368,7 +368,7 @@ namespace ams::ncm {
         MakeContentPath(std::addressof(path), content_id, this->make_content_path_func, this->root_path);
 
         /* Open the content file and store to the cache. */
-        R_TRY_CATCH(fs::OpenFile(&this->cached_file_handle, path, fs::OpenMode_Read)) {
+        R_TRY_CATCH(fs::OpenFile(std::addressof(this->cached_file_handle), path, fs::OpenMode_Read)) {
             R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultContentNotFound())
         } R_END_TRY_CATCH;
 
@@ -416,7 +416,7 @@ namespace ams::ncm {
 
         /* Check if placeholder file exists. */
         bool has = false;
-        R_TRY(fs::HasFile(&has, placeholder_path));
+        R_TRY(fs::HasFile(std::addressof(has), placeholder_path));
         out.SetValue(has);
         return ResultSuccess();
     }
@@ -464,7 +464,7 @@ namespace ams::ncm {
 
         /* Check if the content file exists. */
         bool has = false;
-        R_TRY(fs::HasFile(&has, content_path));
+        R_TRY(fs::HasFile(std::addressof(has), content_path));
         out.SetValue(has);
         return ResultSuccess();
     }
@@ -714,7 +714,7 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         /* Obtain the regular rights id for the placeholder id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromPlaceHolderId(&rights_id, placeholder_id));
+        R_TRY(this->GetRightsIdFromPlaceHolderId(std::addressof(rights_id), placeholder_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
@@ -735,7 +735,7 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
         /* Obtain the regular rights id for the content id. */
         ncm::RightsId rights_id;
-        R_TRY(this->GetRightsIdFromContentId(&rights_id, content_id));
+        R_TRY(this->GetRightsIdFromContentId(std::addressof(rights_id), content_id));
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
@@ -893,7 +893,7 @@ namespace ams::ncm {
 
         /* Get the rights id. */
         ncm::RightsId rights_id;
-        R_TRY(GetRightsId(&rights_id, common_path));
+        R_TRY(GetRightsId(std::addressof(rights_id), common_path));
         this->rights_id_cache->Store(cache_content_id, rights_id);
 
         /* Set output. */

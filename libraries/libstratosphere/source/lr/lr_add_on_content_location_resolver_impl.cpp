@@ -21,19 +21,19 @@ namespace ams::lr {
     Result AddOnContentLocationResolverImpl::ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) {
         /* Find a storage that contains the given program id. */
         ncm::StorageId storage_id = ncm::StorageId::None;
-        R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
+        R_UNLESS(this->registered_storages.Find(std::addressof(storage_id), id), lr::ResultAddOnContentNotFound());
 
         /* Obtain a content meta database for the storage id. */
         ncm::ContentMetaDatabase content_meta_database;
-        R_TRY(ncm::OpenContentMetaDatabase(&content_meta_database, storage_id));
+        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(content_meta_database), storage_id));
 
         /* Find the latest data content id for the given program id. */
         ncm::ContentId data_content_id;
-        R_TRY(content_meta_database.GetLatestData(&data_content_id, id));
+        R_TRY(content_meta_database.GetLatestData(std::addressof(data_content_id), id));
 
         /* Obtain a content storage for the storage id. */
         ncm::ContentStorage content_storage;
-        R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), storage_id));
 
         /* Get the path of the data content. */
         static_assert(sizeof(lr::Path) == sizeof(ncm::Path));

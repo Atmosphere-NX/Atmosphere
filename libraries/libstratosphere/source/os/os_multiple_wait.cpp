@@ -102,7 +102,7 @@ namespace ams::os {
         AMS_ASSERT(!holder_base->IsLinked());
 
         impl.LinkMultiWaitHolder(*holder_base);
-        holder_base->SetMultiWait(&impl);
+        holder_base->SetMultiWait(std::addressof(impl));
     }
 
     void UnlinkMultiWaitHolder(MultiWaitHolderType *holder) {

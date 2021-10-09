@@ -128,9 +128,9 @@ namespace ams::mitm {
                 GetBackupFileName(bis_keys_backup_name, sizeof(bis_keys_backup_name), device_reference, "BISKEYS.bin");
 
                 mitm::fs::CreateAtmosphereSdFile(bis_keys_backup_name, sizeof(bis_keys), ams::fs::CreateOption_None);
-                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(&g_bis_key_file, bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));
-                R_ABORT_UNLESS(fsFileSetSize(&g_bis_key_file, sizeof(bis_keys)));
-                R_ABORT_UNLESS(fsFileWrite(&g_bis_key_file, 0, bis_keys, sizeof(bis_keys), FsWriteOption_Flush));
+                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(g_bis_key_file), bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));
+                R_ABORT_UNLESS(fsFileSetSize(std::addressof(g_bis_key_file), sizeof(bis_keys)));
+                R_ABORT_UNLESS(fsFileWrite(std::addressof(g_bis_key_file), 0, bis_keys, sizeof(bis_keys), FsWriteOption_Flush));
                 /* NOTE: g_bis_key_file is intentionally not closed here.  This prevents any other process from opening it. */
             }
 
@@ -167,7 +167,7 @@ namespace ams::mitm {
                 if (const char *emummc_file_path = emummc::GetFilePath(); emummc_file_path != nullptr) {
                     char emummc_path[ams::fs::EntryNameLengthMax + 1];
                     util::SNPrintf(emummc_path, sizeof(emummc_path), "%s/eMMC", emummc_file_path);
-                    mitm::fs::OpenSdFile(&g_emummc_file, emummc_path, ams::fs::OpenMode_Read);
+                    mitm::fs::OpenSdFile(std::addressof(g_emummc_file), emummc_path, ams::fs::OpenMode_Read);
                 }
             }
 

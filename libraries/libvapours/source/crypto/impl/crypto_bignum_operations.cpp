@@ -257,7 +257,7 @@ namespace ams::crypto::impl {
         if (!(power_1.IsValid() && power_2.IsValid() && power_3.IsValid())) {
             return false;
         }
-        decltype(power_1)* powers[3] = { &power_1, &power_2, &power_3 };
+        decltype(power_1)* powers[3] = { std::addressof(power_1), std::addressof(power_2), std::addressof(power_3) };
 
         /* Set the powers of src. */
         Copy(power_1.GetBuffer(), src, mod_words);

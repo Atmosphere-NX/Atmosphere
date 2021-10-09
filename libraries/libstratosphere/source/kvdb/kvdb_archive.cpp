@@ -87,7 +87,7 @@ namespace ams::kvdb {
 
         /* Read and validate header. */
         ArchiveHeader header;
-        R_TRY(this->Read(&header, sizeof(header)));
+        R_TRY(this->Read(std::addressof(header), sizeof(header)));
         R_TRY(header.Validate());
 
         *out = header.entry_count;
@@ -100,7 +100,7 @@ namespace ams::kvdb {
 
         /* Peek the next entry header. */
         ArchiveEntryHeader header;
-        R_TRY(this->Peek(&header, sizeof(header)));
+        R_TRY(this->Peek(std::addressof(header), sizeof(header)));
         R_TRY(header.Validate());
 
         *out_key_size = header.key_size;
@@ -114,7 +114,7 @@ namespace ams::kvdb {
 
         /* Read the next entry header. */
         ArchiveEntryHeader header;
-        R_TRY(this->Read(&header, sizeof(header)));
+        R_TRY(this->Read(std::addressof(header), sizeof(header)));
         R_TRY(header.Validate());
 
         /* Key size and Value size must be correct. */
@@ -142,7 +142,7 @@ namespace ams::kvdb {
         AMS_ABORT_UNLESS(this->offset == 0);
 
         ArchiveHeader header = ArchiveHeader::Make(entry_count);
-        R_ABORT_UNLESS(this->Write(&header, sizeof(header)));
+        R_ABORT_UNLESS(this->Write(std::addressof(header), sizeof(header)));
     }
 
     void ArchiveWriter::WriteEntry(const void *key, size_t key_size, const void *value, size_t value_size) {
@@ -150,7 +150,7 @@ namespace ams::kvdb {
         AMS_ABORT_UNLESS(this->offset != 0);
 
         ArchiveEntryHeader header = ArchiveEntryHeader::Make(key_size, value_size);
-        R_ABORT_UNLESS(this->Write(&header, sizeof(header)));
+        R_ABORT_UNLESS(this->Write(std::addressof(header), sizeof(header)));
         R_ABORT_UNLESS(this->Write(key, key_size));
         R_ABORT_UNLESS(this->Write(value, value_size));
     }

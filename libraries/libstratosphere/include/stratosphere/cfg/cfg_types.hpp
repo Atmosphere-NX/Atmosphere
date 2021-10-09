@@ -63,7 +63,7 @@ namespace ams::cfg {
     static_assert(util::is_pod<OverrideStatus>::value, "util::is_pod<OverrideStatus>::value");
 
     constexpr inline bool operator==(const OverrideStatus &lhs, const OverrideStatus &rhs) {
-        return std::memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+        return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(lhs)) == 0;
     }
 
     constexpr inline bool operator!=(const OverrideStatus &lhs, const OverrideStatus &rhs) {

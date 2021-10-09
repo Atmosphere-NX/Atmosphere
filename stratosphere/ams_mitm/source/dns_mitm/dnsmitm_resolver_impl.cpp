@@ -24,7 +24,7 @@ namespace ams::mitm::socket::resolver {
 
     ssize_t SerializeRedirectedHostEnt(u8 * const dst, size_t dst_size, const char *hostname, ams::socket::InAddrT redirect_addr) {
         struct in_addr addr = { .s_addr = redirect_addr };
-        struct in_addr *addr_list[2] = { &addr, nullptr };
+        struct in_addr *addr_list[2] = { std::addressof(addr), nullptr };
 
         struct hostent ent = {
             .h_name      = const_cast<char *>(hostname),

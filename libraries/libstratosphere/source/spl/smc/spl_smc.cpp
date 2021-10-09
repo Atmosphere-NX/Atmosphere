@@ -173,13 +173,13 @@ namespace ams::spl::smc {
         svc::SecureMonitorArguments args;
 
         args.r[0] = static_cast<u64>(FunctionId::ReencryptDeviceUniqueData);
-        args.r[1] = reinterpret_cast<u64>(&access_key_dec);
-        args.r[2] = reinterpret_cast<u64>(&access_key_enc);
+        args.r[1] = reinterpret_cast<u64>(std::addressof(access_key_dec));
+        args.r[2] = reinterpret_cast<u64>(std::addressof(access_key_enc));
         args.r[3] = option;
         args.r[4] = reinterpret_cast<u64>(data);
         args.r[5] = size;
-        args.r[6] = reinterpret_cast<u64>(&source_dec);
-        args.r[7] = reinterpret_cast<u64>(&source_enc);
+        args.r[6] = reinterpret_cast<u64>(std::addressof(source_dec));
+        args.r[7] = reinterpret_cast<u64>(std::addressof(source_enc));
         svc::CallSecureMonitor(std::addressof(args));
 
         return static_cast<Result>(args.r[0]);

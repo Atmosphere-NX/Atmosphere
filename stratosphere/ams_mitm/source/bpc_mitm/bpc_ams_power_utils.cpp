@@ -135,13 +135,13 @@ namespace ams::mitm::bpc {
 
         /* Open payload file. */
         FsFile payload_file;
-        R_TRY(fs::OpenAtmosphereSdFile(&payload_file, "/reboot_payload.bin", ams::fs::OpenMode_Read));
-        ON_SCOPE_EXIT { fsFileClose(&payload_file); };
+        R_TRY(fs::OpenAtmosphereSdFile(std::addressof(payload_file), "/reboot_payload.bin", ams::fs::OpenMode_Read));
+        ON_SCOPE_EXIT { fsFileClose(std::addressof(payload_file)); };
 
         /* Read payload file. Discard result. */
         {
             size_t actual_size;
-            fsFileRead(&payload_file, 0, g_reboot_payload, sizeof(g_reboot_payload), FsReadOption_None, &actual_size);
+            fsFileRead(std::addressof(payload_file), 0, g_reboot_payload, sizeof(g_reboot_payload), FsReadOption_None, std::addressof(actual_size));
         }
 
         /* NOTE: Preferred reboot type will be parsed from settings later on. */

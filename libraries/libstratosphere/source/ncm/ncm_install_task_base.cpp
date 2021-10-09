@@ -206,7 +206,7 @@ namespace ams::ncm {
 
         /* Open the relevant content storage. */
         ContentStorage content_storage;
-        R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), storage_id));
 
         /* Iterate over content infos. */
         for (size_t i = 0; i < reader.GetContentCount(); i++) {
@@ -464,7 +464,7 @@ namespace ams::ncm {
 
                 /* Open the content storage for this meta. */
                 ContentStorage content_storage;
-                R_TRY(OpenContentStorage(&content_storage, storage_id));
+                R_TRY(OpenContentStorage(std::addressof(content_storage), storage_id));
 
                 /* Open the content meta database for this meta. */
                 ContentMetaDatabase meta_db;
@@ -546,7 +546,7 @@ namespace ams::ncm {
 
         /* Open the content storage for the content info. */
         ContentStorage content_storage;
-        R_TRY(OpenContentStorage(&content_storage, content_info->storage_id));
+        R_TRY(OpenContentStorage(std::addressof(content_storage), content_info->storage_id));
 
         /* Write data to the placeholder. */
         R_TRY(content_storage.WritePlaceHolder(content_info->placeholder_id, content_info->written, data, data_size));
@@ -658,7 +658,7 @@ namespace ams::ncm {
 
                 /* Open the relevant content storage. */
                 ContentStorage content_storage;
-                R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
+                R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), storage_id));
 
                 /* Update the storage id in the header. */
                 auto writer = content_meta.GetWriter();
@@ -670,7 +670,7 @@ namespace ams::ncm {
 
                     /* Check if we have the content already exists. */
                     bool has_content;
-                    R_TRY(content_storage.Has(&has_content, content_info->GetId()));
+                    R_TRY(content_storage.Has(std::addressof(has_content), content_info->GetId()));
 
                     if (has_content) {
                         /* Add the size of installed content infos to the total size. */
@@ -739,7 +739,7 @@ namespace ams::ncm {
     Result InstallTaskBase::PrepareContentMeta(const InstallContentMetaInfo &meta_info, util::optional<ContentMetaKey> expected_key, util::optional<u32> source_version) {
         /* Open the BuiltInSystem content storage. */
         ContentStorage content_storage;
-        R_TRY(OpenContentStorage(&content_storage, StorageId::BuiltInSystem));
+        R_TRY(OpenContentStorage(std::addressof(content_storage), StorageId::BuiltInSystem));
 
         /* Write content meta to a placeholder. */
         InstallContentInfo content_info;
@@ -1104,7 +1104,7 @@ namespace ams::ncm {
 
         /* Open the content storage. */
         ContentStorage content_storage;
-        R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), storage_id));
 
         /* Iterate over content meta. */
         for (s32 i = 0; i < count; i++) {
@@ -1162,7 +1162,7 @@ namespace ams::ncm {
 
         /* Open the BuiltInSystem content storage. */
         ContentStorage content_storage;
-        R_TRY(ncm::OpenContentStorage(&content_storage, StorageId::BuiltInSystem));
+        R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), StorageId::BuiltInSystem));
 
         /* Write content meta to a placeholder. */
         InstallContentInfo content_info;
@@ -1375,7 +1375,7 @@ namespace ams::ncm {
 
             /* Open the relevant content storage. */
             ContentStorage content_storage;
-            R_TRY(ncm::OpenContentStorage(&content_storage, content_info->storage_id));
+            R_TRY(ncm::OpenContentStorage(std::addressof(content_storage), content_info->storage_id));
 
             /* Get the rights id. */
             RightsId rights_id;

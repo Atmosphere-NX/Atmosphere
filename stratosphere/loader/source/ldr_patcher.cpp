@@ -118,15 +118,15 @@ namespace ams::ldr {
         }
 
         ro::ModuleId module_id;
-        std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
-        ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
+        std::memcpy(std::addressof(module_id.build_id), build_id, sizeof(module_id.build_id));
+        ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, std::addressof(module_id), reinterpret_cast<u8 *>(mapped_nso), mapped_size);
     }
 
     /* Apply embedded patches. */
     void ApplyEmbeddedPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
         /* Make module id. */
         ro::ModuleId module_id;
-        std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
+        std::memcpy(std::addressof(module_id.build_id), build_id, sizeof(module_id.build_id));
 
         if (IsUsb30ForceEnabled()) {
             for (const auto &patch : Usb30ForceEnablePatches) {

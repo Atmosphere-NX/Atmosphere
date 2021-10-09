@@ -116,7 +116,7 @@ namespace ams::sf::cmif {
         using DispatchTableType = DomainServiceObjectDispatchTable;
         static constexpr ProcessHandlerType ProcessHandlerImpl = &impl::ServiceDispatchTableBase::ProcessMessage<DispatchTableType>;
 
-        static constexpr inline ServiceDispatchMeta Meta{&DomainServiceObject::s_CmifServiceDispatchTable, ProcessHandlerImpl};
+        static constexpr inline ServiceDispatchMeta Meta{std::addressof(DomainServiceObject::s_CmifServiceDispatchTable), ProcessHandlerImpl};
     };
 
     template<>
@@ -127,7 +127,7 @@ namespace ams::sf::cmif {
         using DispatchTableType = DomainServiceObjectDispatchTable;
         static constexpr ProcessHandlerType ProcessHandlerImpl = &impl::ServiceDispatchTableBase::ProcessMessageForMitm<DispatchTableType>;
 
-        static constexpr inline ServiceDispatchMeta Meta{&DomainServiceObject::s_CmifServiceDispatchTable, ProcessHandlerImpl};
+        static constexpr inline ServiceDispatchMeta Meta{std::addressof(DomainServiceObject::s_CmifServiceDispatchTable), ProcessHandlerImpl};
     };
 
 

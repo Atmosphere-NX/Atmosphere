@@ -107,23 +107,23 @@ namespace ams::fatal::srv {
         Result ShowFatalTask::SetupDisplayInternal() {
             ViDisplay temp_display;
             /* Try to open the display. */
-            R_TRY_CATCH(viOpenDisplay("Internal", &temp_display)) {
+            R_TRY_CATCH(viOpenDisplay("Internal", std::addressof(temp_display))) {
                 R_CONVERT(vi::ResultNotFound, ResultSuccess());
             } R_END_TRY_CATCH;
 
             /* Guarantee we close the display. */
-            ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
+            ON_SCOPE_EXIT { viCloseDisplay(std::addressof(temp_display)); };
 
             /* Turn on the screen. */
             if (hos::GetVersion() >= hos::Version_3_0_0) {
-                R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On));
+                R_TRY(viSetDisplayPowerState(std::addressof(temp_display), ViPowerState_On));
             } else {
                 /* Prior to 3.0.0, the ViPowerState enum was different (0 = Off, 1 = On). */
-                R_TRY(viSetDisplayPowerState(&temp_display, ViPowerState_On_Deprecated));
+                R_TRY(viSetDisplayPowerState(std::addressof(temp_display), ViPowerState_On_Deprecated));
             }
 
             /* Set alpha to 1.0f. */
-            R_TRY(viSetDisplayAlpha(&temp_display, 1.0f));
+            R_TRY(viSetDisplayAlpha(std::addressof(temp_display), 1.0f));
 
             return ResultSuccess();
         }
@@ -131,15 +131,15 @@ namespace ams::fatal::srv {
         Result ShowFatalTask::SetupDisplayExternal() {
             ViDisplay temp_display;
             /* Try to open the display. */
-            R_TRY_CATCH(viOpenDisplay("External", &temp_display)) {
+            R_TRY_CATCH(viOpenDisplay("External", std::addressof(temp_display))) {
                 R_CONVERT(vi::ResultNotFound, ResultSuccess());
             } R_END_TRY_CATCH;
 
             /* Guarantee we close the display. */
-            ON_SCOPE_EXIT { viCloseDisplay(&temp_display); };
+            ON_SCOPE_EXIT { viCloseDisplay(std::addressof(temp_display)); };
 
             /* Set alpha to 1.0f. */
-            R_TRY(viSetDisplayAlpha(&temp_display, 1.0f));
+            R_TRY(viSetDisplayAlpha(std::addressof(temp_display), 1.0f));
 
             return ResultSuccess();
         }
@@ -156,19 +156,19 @@ namespace ams::fatal::srv {
             R_TRY(SetupDisplayExternal());
 
             /* Open the default display. */
-            R_TRY(viOpenDefaultDisplay(&this->display));
+            R_TRY(viOpenDefaultDisplay(std::addressof(this->display)));
 
             /* Reset the display magnification to its default value. */
             s32 display_width, display_height;
-            R_TRY(viGetDisplayLogicalResolution(&this->display, &display_width, &display_height));
+            R_TRY(viGetDisplayLogicalResolution(std::addressof(this->display), std::addressof(display_width), std::addressof(display_height)));
 
             /* viSetDisplayMagnification was added in 3.0.0. */
             if (hos::GetVersion() >= hos::Version_3_0_0) {
-                R_TRY(viSetDisplayMagnification(&this->display, 0, 0, display_width, display_height));
+                R_TRY(viSetDisplayMagnification(std::addressof(this->display), 0, 0, display_width, display_height));
             }
 
             /* Create layer to draw to. */
-            R_TRY(viCreateLayer(&this->display, &this->layer));
+            R_TRY(viCreateLayer(std::addressof(this->display), std::addressof(this->layer)));
 
             /* Setup the layer. */
             {
@@ -183,16 +183,16 @@ namespace ams::fatal::srv {
                 const float layer_x = static_cast<float>((display_width - LayerWidth) / 2);
                 const float layer_y = static_cast<float>((display_height - LayerHeight) / 2);
 
-                R_TRY(viSetLayerSize(&this->layer, LayerWidth, LayerHeight));
+                R_TRY(viSetLayerSize(std::addressof(this->layer), LayerWidth, LayerHeight));
 
                 /* Set the layer's Z at display maximum, to be above everything else .*/
-                R_TRY(viSetLayerZ(&this->layer, FatalLayerZ));
+                R_TRY(viSetLayerZ(std::addressof(this->layer), FatalLayerZ));
 
                 /* Center the layer in the screen. */
-                R_TRY(viSetLayerPosition(&this->layer, layer_x, layer_y));
+                R_TRY(viSetLayerPosition(std::addressof(this->layer), layer_x, layer_y));
 
                 /* Create framebuffer. */
-                R_TRY(nwindowCreateFromLayer(&this->win, &this->layer));
+                R_TRY(nwindowCreateFromLayer(std::addressof(this->win), std::addressof(this->layer)));
                 R_TRY(this->InitializeNativeWindow());
             }
 
@@ -439,7 +439,7 @@ namespace ams::fatal::srv {
             R_TRY(nvFenceInit());
 
             /* Create nvmap. */
-            R_TRY(nvMapCreate(&this->map, g_framebuffer_memory, sizeof(g_framebuffer_memory), 0x20000, NvKind_Pitch, true));
+            R_TRY(nvMapCreate(std::addressof(this->map), g_framebuffer_memory, sizeof(g_framebuffer_memory), 0x20000, NvKind_Pitch, true));
 
             /* Setup graphics buffer. */
             {
@@ -458,14 +458,14 @@ namespace ams::fatal::srv {
                 grbuf.planes[0].layout              = NvLayout_BlockLinear;
                 grbuf.planes[0].kind                = NvKind_Generic_16BX2;
                 grbuf.planes[0].block_height_log2   = 4;
-                grbuf.nvmap_id                      = nvMapGetId(&this->map);
+                grbuf.nvmap_id                      = nvMapGetId(std::addressof(this->map));
                 grbuf.stride                        = FatalScreenWidthAligned;
                 grbuf.total_size                    = sizeof(g_framebuffer_memory);
                 grbuf.planes[0].pitch               = FatalScreenWidthAlignedBytes;
                 grbuf.planes[0].size                = sizeof(g_framebuffer_memory);
                 grbuf.planes[0].offset              = 0;
 
-                R_TRY(nwindowConfigureBuffer(&this->win, 0, &grbuf));
+                R_TRY(nwindowConfigureBuffer(std::addressof(this->win), 0, std::addressof(grbuf)));
             }
 
             return ResultSuccess();
@@ -473,9 +473,9 @@ namespace ams::fatal::srv {
 
         void ShowFatalTask::DisplayPreRenderedFrame() {
             s32 slot;
-            R_ABORT_UNLESS(nwindowDequeueBuffer(&this->win, &slot, nullptr));
+            R_ABORT_UNLESS(nwindowDequeueBuffer(std::addressof(this->win), std::addressof(slot), nullptr));
             dd::FlushDataCache(g_framebuffer_memory, sizeof(g_framebuffer_memory));
-            R_ABORT_UNLESS(nwindowQueueBuffer(&this->win, this->win.cur_slot, NULL));
+            R_ABORT_UNLESS(nwindowQueueBuffer(std::addressof(this->win), this->win.cur_slot, NULL));
         }
 
         Result ShowFatalTask::ShowFatal() {
@@ -511,12 +511,12 @@ namespace ams::fatal::srv {
 
     ITask *GetShowFatalTask(const ThrowContext *ctx) {
         g_show_fatal_task.Initialize(ctx);
-        return &g_show_fatal_task;
+        return std::addressof(g_show_fatal_task);
     }
 
     ITask *GetBacklightControlTask(const ThrowContext *ctx) {
         g_backlight_control_task.Initialize(ctx);
-        return &g_backlight_control_task;
+        return std::addressof(g_backlight_control_task);
     }
 
 }

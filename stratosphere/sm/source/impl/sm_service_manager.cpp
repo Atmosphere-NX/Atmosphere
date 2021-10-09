@@ -127,7 +127,7 @@ namespace ams::sm::impl {
             public:
                 InitialProcessIdLimits() {
                     /* Retrieve process limits. */
-                    cfg::GetInitialProcessRange(&this->min, &this->max);
+                    cfg::GetInitialProcessRange(std::addressof(this->min), std::addressof(this->max));
 
                     /* Ensure range is sane. */
                     AMS_ABORT_UNLESS(this->min <= this->max);
@@ -538,7 +538,7 @@ namespace ams::sm::impl {
 
         /* Check that we have the service. */
         bool has_service = false;
-        R_TRY(impl::HasService(&has_service, service));
+        R_TRY(impl::HasService(std::addressof(has_service), service));
 
         /* If we do, we can succeed immediately. */
         R_SUCCEED_IF(has_service);

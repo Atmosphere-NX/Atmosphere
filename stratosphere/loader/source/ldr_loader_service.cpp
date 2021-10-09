@@ -31,7 +31,7 @@ namespace ams::ldr {
             std::memset(out, 0, sizeof(*out));
             cfg::OverrideStatus status = {};
 
-            R_TRY(ldr::GetProgramInfo(out, &status, loc));
+            R_TRY(ldr::GetProgramInfo(out, std::addressof(status), loc));
 
             if (loc.storage_id != static_cast<u8>(ncm::StorageId::None) && loc.program_id != out->program_id) {
                 char path[fs::EntryNameLengthMax];
@@ -64,7 +64,7 @@ namespace ams::ldr {
         char path[fs::EntryNameLengthMax];
 
         /* Get location and override status. */
-        R_TRY(ldr::ro::GetProgramLocationAndStatus(&loc, &override_status, id));
+        R_TRY(ldr::ro::GetProgramLocationAndStatus(std::addressof(loc), std::addressof(override_status), id));
 
         if (loc.storage_id != static_cast<u8>(ncm::StorageId::None)) {
             R_TRY(ResolveContentPath(path, loc));

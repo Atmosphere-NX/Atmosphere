@@ -24,7 +24,7 @@ namespace ams::lr {
         public:
             RemoteLocationResolverImpl(::LrLocationResolver &l) : srv(l) { /* ... */ }
 
-            ~RemoteLocationResolverImpl() { ::serviceClose(&srv.s); }
+            ~RemoteLocationResolverImpl() { ::serviceClose(std::addressof(srv.s)); }
         public:
             /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {

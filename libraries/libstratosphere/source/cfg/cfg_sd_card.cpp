@@ -37,7 +37,7 @@ namespace ams::cfg {
         Result CheckSdCardServicesReady() {
             for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
                 bool service_present = false;
-                R_TRY(sm::HasService(&service_present, RequiredServicesForSdCardAccess[i]));
+                R_TRY(sm::HasService(std::addressof(service_present), RequiredServicesForSdCardAccess[i]));
                 if (!service_present) {
                     return fs::ResultSdCardNotPresent();
                 }
@@ -54,14 +54,14 @@ namespace ams::cfg {
 
         Result TryInitializeSdCard() {
             R_TRY(CheckSdCardServicesReady());
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(g_sd_card_filesystem)));
             g_sd_card_initialized = true;
             return ResultSuccess();
         }
 
         void InitializeSdCard() {
             WaitSdCardServicesReadyImpl();
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(g_sd_card_filesystem)));
             g_sd_card_initialized = true;
         }
 

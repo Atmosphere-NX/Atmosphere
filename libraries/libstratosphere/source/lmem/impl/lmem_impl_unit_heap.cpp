@@ -27,11 +27,11 @@ namespace ams::lmem::impl {
         }
 
         constexpr inline UnitHeapHead *GetUnitHeapHead(HeapHead *heap_head) {
-            return &heap_head->impl_head.unit_heap_head;
+            return std::addressof(heap_head->impl_head.unit_heap_head);
         }
 
         constexpr inline const UnitHeapHead *GetUnitHeapHead(const HeapHead *heap_head) {
-            return &heap_head->impl_head.unit_heap_head;
+            return std::addressof(heap_head->impl_head.unit_heap_head);
         }
 
         inline UnitHead *PopUnit(UnitHeapList *list) {
@@ -190,7 +190,7 @@ namespace ams::lmem::impl {
 
         /* Allocate a unit. */
         UnitHeapHead *unit_heap = GetUnitHeapHead(handle);
-        UnitHead *unit = PopUnit(&unit_heap->free_list);
+        UnitHead *unit = PopUnit(std::addressof(unit_heap->free_list));
         if (unit != nullptr) {
             /* Fill memory with pattern for debug, if needed. */
             FillAllocatedMemory(handle, unit, unit_heap->unit_size);
@@ -215,7 +215,7 @@ namespace ams::lmem::impl {
         FillFreedMemory(handle, block, unit_heap->unit_size);
 
         /* Push the unit onto the free list. */
-        PushUnit(&unit_heap->free_list, reinterpret_cast<UnitHead *>(block));
+        PushUnit(std::addressof(unit_heap->free_list), static_cast<UnitHead *>(block));
 
         /* Note that we freed a unit. */
         unit_heap->num_units--;

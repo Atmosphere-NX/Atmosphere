@@ -84,13 +84,13 @@ namespace ams::lr {
         }
     }
 
-    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id)
-    {
+    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {
         /* Remove any redirections with a matching program id. */
-        for (auto &redirection : this->redirection_list) {
-            if (redirection.GetProgramId() == program_id) {
-                this->redirection_list.erase(this->redirection_list.iterator_to(redirection));
-                delete &redirection;
+        for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+            if (it->GetProgramId() == program_id) {
+                auto *redirection = std::addressof(*it);
+                this->redirection_list.erase(it);
+                delete redirection;
                 break;
             }
         }
@@ -100,9 +100,9 @@ namespace ams::lr {
         /* Remove any redirections with matching flags. */
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             if ((it->GetFlags() & flags) == flags) {
-                auto old = it;
+                auto *redirection = std::addressof(*it);
                 it = this->redirection_list.erase(it);
-                delete std::addressof(*old);
+                delete redirection;
             } else {
                 it++;
             }
@@ -118,9 +118,9 @@ namespace ams::lr {
             }
 
             /* Remove the redirection. */
-            auto old = it;
+            auto *redirection = std::addressof(*it);
             it = this->redirection_list.erase(it);
-            delete std::addressof(*old);
+            delete redirection;
         }
     }
 

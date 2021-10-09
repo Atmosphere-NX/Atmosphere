@@ -127,7 +127,7 @@ namespace ams::updater {
                 const OffsetSizeType *entry = nullptr;
                 for (size_t i = 0; i < Meta::NumEntries; i++) {
                     if (Meta::Entries[i].which == which) {
-                        entry = &Meta::Entries[i];
+                        entry = std::addressof(Meta::Entries[i]);
                         break;
                     }
                 }

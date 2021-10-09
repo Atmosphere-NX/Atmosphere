@@ -39,8 +39,8 @@ namespace ams::fatal::srv {
             /* Talk to the ALC5639 over I2C, and disable audio output. */
             {
                 I2cSession audio;
-                if (R_SUCCEEDED(i2cOpenSession(&audio, I2cDevice_Alc5639))) {
-                    ON_SCOPE_EXIT { i2csessionClose(&audio); };
+                if (R_SUCCEEDED(i2cOpenSession(std::addressof(audio), I2cDevice_Alc5639))) {
+                    ON_SCOPE_EXIT { i2csessionClose(std::addressof(audio)); };
 
                     struct {
                         u8 reg;
@@ -50,16 +50,16 @@ namespace ams::fatal::srv {
 
                     cmd.reg = 0x01;
                     cmd.val = 0xC8C8;
-                    i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
+                    i2csessionSendAuto(std::addressof(audio), std::addressof(cmd), sizeof(cmd), I2cTransactionOption_All);
 
                     cmd.reg = 0x02;
                     cmd.val = 0xC8C8;
-                    i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
+                    i2csessionSendAuto(std::addressof(audio), std::addressof(cmd), sizeof(cmd), I2cTransactionOption_All);
 
                     for (u8 reg = 97; reg <= 102; reg++) {
                         cmd.reg = reg;
                         cmd.val = 0;
-                        i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
+                        i2csessionSendAuto(std::addressof(audio), std::addressof(cmd), sizeof(cmd), I2cTransactionOption_All);
                     }
                 }
             }
@@ -89,7 +89,7 @@ namespace ams::fatal::srv {
 
     ITask *GetStopSoundTask(const ThrowContext *ctx) {
         g_stop_sound_task.Initialize(ctx);
-        return &g_stop_sound_task;
+        return std::addressof(g_stop_sound_task);
     }
 
 }

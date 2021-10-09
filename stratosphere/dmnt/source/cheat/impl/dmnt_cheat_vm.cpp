@@ -676,7 +676,7 @@ namespace ams::dmnt::cheat::impl {
             const size_t desired_depth = this->condition_depth - 1;
 
             CheatVmOpcode skip_opcode;
-            while (this->condition_depth > desired_depth && this->DecodeNextOpcode(&skip_opcode)) {
+            while (this->condition_depth > desired_depth && this->DecodeNextOpcode(std::addressof(skip_opcode))) {
                 /* Decode instructions until we see end of the current conditional block. */
                 /* NOTE: This is broken in gateway's implementation. */
                 /* Gateway currently checks for "0x2" instead of "0x20000000" */
@@ -770,7 +770,7 @@ namespace ams::dmnt::cheat::impl {
         u64 kHeld = 0;
 
         /* Get Keys held. */
-        hid::GetKeysHeld(&kHeld);
+        hid::GetKeysHeld(std::addressof(kHeld));
 
         this->OpenDebugLogFile();
         ON_SCOPE_EXIT { this->CloseDebugLogFile(); };
@@ -784,7 +784,7 @@ namespace ams::dmnt::cheat::impl {
         this->ResetState();
 
         /* Loop until program finishes. */
-        while (this->DecodeNextOpcode(&cur_opcode)) {
+        while (this->DecodeNextOpcode(std::addressof(cur_opcode))) {
             this->LogToDebugFile("Instruction Ptr: %04x\n", (u32)this->instruction_ptr);
 
             for (size_t i = 0; i < NumRegisters; i++) {
@@ -794,7 +794,7 @@ namespace ams::dmnt::cheat::impl {
             for (size_t i = 0; i < NumRegisters; i++) {
                 this->LogToDebugFile("SavedRegs[%02x]: %016lx\n", i, this->saved_values[i]);
             }
-            this->LogOpcode(&cur_opcode);
+            this->LogOpcode(std::addressof(cur_opcode));
 
             /* Increment conditional depth, if relevant. */
             if (cur_opcode.begin_conditional_block) {
@@ -812,7 +812,7 @@ namespace ams::dmnt::cheat::impl {
                             case 2:
                             case 4:
                             case 8:
-                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, &dst_value, cur_opcode.store_static.bit_width);
+                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, std::addressof(dst_value), cur_opcode.store_static.bit_width);
                                 break;
                         }
                     }
@@ -827,7 +827,7 @@ namespace ams::dmnt::cheat::impl {
                             case 2:
                             case 4:
                             case 8:
-                                dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(src_address, &src_value, cur_opcode.begin_cond.bit_width);
+                                dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(src_address, std::addressof(src_value), cur_opcode.begin_cond.bit_width);
                                 break;
                         }
                         /* Check against condition. */
@@ -903,7 +903,7 @@ namespace ams::dmnt::cheat::impl {
                             case 2:
                             case 4:
                             case 8:
-                                dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(src_address, &this->registers[cur_opcode.ldr_memory.reg_index], cur_opcode.ldr_memory.bit_width);
+                                dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(src_address, std::addressof(this->registers[cur_opcode.ldr_memory.reg_index]), cur_opcode.ldr_memory.bit_width);
                                 break;
                         }
                     }
@@ -922,7 +922,7 @@ namespace ams::dmnt::cheat::impl {
                             case 2:
                             case 4:
                             case 8:
-                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, &dst_value, cur_opcode.str_static.bit_width);
+                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, std::addressof(dst_value), cur_opcode.str_static.bit_width);
                                 break;
                         }
                         /* Increment register if relevant. */
@@ -1073,7 +1073,7 @@ namespace ams::dmnt::cheat::impl {
                             case 2:
                             case 4:
                             case 8:
-                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, &dst_value, cur_opcode.str_register.bit_width);
+                                dmnt::cheat::impl::WriteCheatProcessMemoryUnsafe(dst_address, std::addressof(dst_value), cur_opcode.str_register.bit_width);
                                 break;
                         }
 
@@ -1144,7 +1144,7 @@ namespace ams::dmnt::cheat::impl {
                                 case 2:
                                 case 4:
                                 case 8:
-                                    dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(cond_address, &cond_value, cur_opcode.begin_reg_cond.bit_width);
+                                    dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(cond_address, std::addressof(cond_value), cur_opcode.begin_reg_cond.bit_width);
                                     break;
                             }
                         }
@@ -1286,7 +1286,7 @@ namespace ams::dmnt::cheat::impl {
                                 case 2:
                                 case 4:
                                 case 8:
-                                    dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(val_address, &log_value, cur_opcode.debug_log.bit_width);
+                                    dmnt::cheat::impl::ReadCheatProcessMemoryUnsafe(val_address, std::addressof(log_value), cur_opcode.debug_log.bit_width);
                                     break;
                             }
                         }

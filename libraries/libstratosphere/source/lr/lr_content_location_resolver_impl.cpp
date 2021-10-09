@@ -34,7 +34,7 @@ namespace ams::lr {
 
         /* Find the latest program content for the program id. */
         ncm::ContentId program_content_id;
-        R_TRY_CATCH(this->content_meta_database.GetLatestProgram(&program_content_id, id)) {
+        R_TRY_CATCH(this->content_meta_database.GetLatestProgram(std::addressof(program_content_id), id)) {
             R_CONVERT(ncm::ResultContentMetaNotFound, lr::ResultProgramNotFound())
         } R_END_TRY_CATCH;
 
@@ -62,7 +62,7 @@ namespace ams::lr {
     Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
         /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
-        R_TRY(this->content_meta_database.GetLatestData(&data_content_id, id));
+        R_TRY(this->content_meta_database.GetLatestData(std::addressof(data_content_id), id));
 
         /* Obtain the content path. */
         this->GetContentStoragePath(out.GetPointer(), data_content_id);
@@ -109,8 +109,8 @@ namespace ams::lr {
         /* Obtain content meta database and content storage objects for this resolver's storage. */
         ncm::ContentMetaDatabase meta_db;
         ncm::ContentStorage storage;
-        R_TRY(ncm::OpenContentMetaDatabase(&meta_db, this->storage_id));
-        R_TRY(ncm::OpenContentStorage(&storage, this->storage_id));
+        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), this->storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(storage), this->storage_id));
 
         /* Store the acquired objects. */
         this->content_meta_database = std::move(meta_db);

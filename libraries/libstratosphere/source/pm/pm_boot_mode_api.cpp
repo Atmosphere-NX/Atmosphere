@@ -21,7 +21,7 @@ namespace ams::pm::bm {
     /* Both functions should be weakly linked, so that they can be overridden by ams::boot2 as needed. */
     BootMode WEAK_SYMBOL GetBootMode() {
         PmBootMode boot_mode = PmBootMode_Normal;
-        R_ABORT_UNLESS(pmbmGetBootMode(&boot_mode));
+        R_ABORT_UNLESS(pmbmGetBootMode(std::addressof(boot_mode)));
         return static_cast<BootMode>(boot_mode);
     }
 

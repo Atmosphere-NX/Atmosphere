@@ -20,7 +20,7 @@
 namespace ams::os::impl {
 
     #define ATOMIC_COMPARE_EXCHANGE_LOCK_COUNT(dst_ref, expected_ref, desired_ref, success, fail) \
-        (__atomic_compare_exchange(reinterpret_cast<u64 *>(&dst_ref), reinterpret_cast<u64 *>(&expected_ref), reinterpret_cast<u64 *>(&desired_ref), true, success, fail))
+        (__atomic_compare_exchange(reinterpret_cast<u64 *>(std::addressof(dst_ref)), reinterpret_cast<u64 *>(std::addressof(expected_ref)), reinterpret_cast<u64 *>(std::addressof(desired_ref)), true, success, fail))
 
 
     void ReaderWriterLockHorizonImpl::AcquireReadLockWriteLocked(os::ReaderWriterLockType *rw_lock) {

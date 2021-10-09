@@ -40,19 +40,17 @@ namespace ams::sm::impl {
         TipcService srv;
         {
             std::scoped_lock lk(GetPerThreadSessionMutex());
-            R_ABORT_UNLESS(smAtmosphereOpenSession(&srv));
+            R_ABORT_UNLESS(smAtmosphereOpenSession(std::addressof(srv)));
         }
         {
-            ON_SCOPE_EXIT { smAtmosphereCloseSession(&srv); };
-            return f(&srv);
+            ON_SCOPE_EXIT { smAtmosphereCloseSession(std::addressof(srv)); };
+            return f(std::addressof(srv));
         }
     }
 
-    NX_CONSTEXPR SmServiceName ConvertName(sm::ServiceName name) {
+    constexpr ALWAYS_INLINE SmServiceName ConvertName(sm::ServiceName name) {
         static_assert(sizeof(SmServiceName) == sizeof(sm::ServiceName));
-        SmServiceName ret = {};
-        __builtin_memcpy(&ret, &name, sizeof(sm::ServiceName));
-        return ret;
+        return std::bit_cast<SmServiceName>(name);
     }
 
 }

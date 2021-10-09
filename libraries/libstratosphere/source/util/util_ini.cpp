@@ -115,12 +115,12 @@ namespace ams::util::ini {
 
     int ParseFile(fs::FileHandle file, void *user_ctx, Handler h) {
         FileContext ctx(file);
-        return ini_parse_stream(ini_reader_file_handle, &ctx, h, user_ctx);
+        return ini_parse_stream(ini_reader_file_handle, std::addressof(ctx), h, user_ctx);
     }
 
     int ParseFile(fs::fsa::IFile *file, void *user_ctx, Handler h) {
         IFileContext ctx(file);
-        return ini_parse_stream(ini_reader_ifile, &ctx, h, user_ctx);
+        return ini_parse_stream(ini_reader_ifile, std::addressof(ctx), h, user_ctx);
     }
 
 }

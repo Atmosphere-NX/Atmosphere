@@ -34,7 +34,7 @@ namespace ams::fatal::srv {
             /* Check if we have time service. */
             {
                 bool has_time_service = false;
-                if (R_FAILED(sm::HasService(&has_time_service, sm::ServiceName::Encode("time:s"))) || !has_time_service) {
+                if (R_FAILED(sm::HasService(std::addressof(has_time_service), sm::ServiceName::Encode("time:s"))) || !has_time_service) {
                     return false;
                 }
             }
@@ -73,7 +73,7 @@ namespace ams::fatal::srv {
 
             /* Get a timestamp. */
             u64 timestamp;
-            if (!TryGetCurrentTimestamp(&timestamp)) {
+            if (!TryGetCurrentTimestamp(std::addressof(timestamp))) {
                 timestamp = os::GetSystemTick().GetInt64Value();
             }
 
@@ -172,7 +172,7 @@ namespace ams::fatal::srv {
 
     ITask *GetErrorReportTask(const ThrowContext *ctx) {
         g_error_report_task.Initialize(ctx);
-        return &g_error_report_task;
+        return std::addressof(g_error_report_task);
     }
 
 }

@@ -96,7 +96,7 @@ namespace ams::fssystem {
         fs::DirectoryEntryType type;
 
         /* Check that the working directory exists. */
-        R_TRY_CATCH(this->base_fs->GetEntryType(&type, WorkingDirectoryPath)) {
+        R_TRY_CATCH(this->base_fs->GetEntryType(std::addressof(type), WorkingDirectoryPath)) {
             /* If path isn't found, create working directory and committed directory. */
             R_CATCH(fs::ResultPathNotFound) {
                 R_TRY(this->base_fs->CreateDirectory(WorkingDirectoryPath));
@@ -105,7 +105,7 @@ namespace ams::fssystem {
         } R_END_TRY_CATCH;
 
         /* Now check for the committed directory. */
-        R_TRY_CATCH(this->base_fs->GetEntryType(&type, CommittedDirectoryPath)) {
+        R_TRY_CATCH(this->base_fs->GetEntryType(std::addressof(type), CommittedDirectoryPath)) {
             /* Committed doesn't exist, so synchronize and rename. */
             R_CATCH(fs::ResultPathNotFound) {
                 R_TRY(this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath));
@@ -148,7 +148,7 @@ namespace ams::fssystem {
         /* Get a work buffer to work with. */
         std::unique_ptr<u8[]> work_buf;
         size_t work_buf_size;
-        R_TRY(this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBufferSize));
+        R_TRY(this->AllocateWorkBuffer(std::addressof(work_buf), std::addressof(work_buf_size), IdealWorkBufferSize));
 
         /* Copy the directory recursively. */
         return fssystem::CopyDirectoryRecursively(this->base_fs, dst, src, work_buf.get(), work_buf_size);
@@ -165,7 +165,7 @@ namespace ams::fssystem {
         /* Normalize it. */
         constexpr size_t WorkingDirectoryPathLength = sizeof(WorkingDirectoryPath) - 1;
         size_t normalized_length;
-        return fs::PathNormalizer::Normalize(out + WorkingDirectoryPathLength - 1, &normalized_length, relative_path, out_size - (WorkingDirectoryPathLength - 1));
+        return fs::PathNormalizer::Normalize(out + WorkingDirectoryPathLength - 1, std::addressof(normalized_length), relative_path, out_size - (WorkingDirectoryPathLength - 1));
     }
 
     void DirectorySaveDataFileSystem::OnWritableFileClose() {
@@ -183,7 +183,7 @@ namespace ams::fssystem {
         /* Get a work buffer to work with. */
         std::unique_ptr<u8[]> work_buf;
         size_t work_buf_size;
-        R_TRY(this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBufferSize));
+        R_TRY(this->AllocateWorkBuffer(std::addressof(work_buf), std::addressof(work_buf_size), IdealWorkBufferSize));
 
         /* Copy the directory recursively. */
         R_TRY(fssystem::CopyDirectoryRecursively(this->base_fs, save_fs, fs::PathNormalizer::RootPath, fs::PathNormalizer::RootPath, work_buf.get(), work_buf_size));
@@ -198,7 +198,7 @@ namespace ams::fssystem {
 
         std::scoped_lock lk(this->accessor_mutex);
         std::unique_ptr<fs::fsa::IFile> base_file;
-        R_TRY(this->base_fs->OpenFile(&base_file, full_path, mode));
+        R_TRY(this->base_fs->OpenFile(std::addressof(base_file), full_path, mode));
 
         std::unique_ptr<DirectorySaveDataFile> file(new (std::nothrow) DirectorySaveDataFile(std::move(base_file), this, mode));
         R_UNLESS(file != nullptr, fs::ResultAllocationFailureInDirectorySaveDataFileSystem());

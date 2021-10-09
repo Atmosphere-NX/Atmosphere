@@ -30,7 +30,7 @@ namespace ams::os {
             const T EffectiveMax = (std::numeric_limits<T>::max() / max) * max;
             T cur_rnd;
             while (true) {
-                os::GenerateRandomBytes(&cur_rnd, sizeof(T));
+                os::GenerateRandomBytes(std::addressof(cur_rnd), sizeof(T));
                 if (cur_rnd < EffectiveMax) {
                     return cur_rnd % max;
                 }
@@ -43,7 +43,7 @@ namespace ams::os {
         std::scoped_lock lk(g_random_mutex);
 
         if (AMS_UNLIKELY(!g_initialized_random)) {
-            impl::InitializeRandomImpl(&g_random);
+            impl::InitializeRandomImpl(std::addressof(g_random));
             g_initialized_random = true;
         }
 

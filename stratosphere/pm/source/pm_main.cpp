@@ -61,7 +61,7 @@ namespace ams {
             void RegisterPrivilegedProcesses() {
                 /* Get privileged process range. */
                 os::ProcessId min_priv_process_id = os::InvalidProcessId, max_priv_process_id = os::InvalidProcessId;
-                cfg::GetInitialProcessRange(&min_priv_process_id, &max_priv_process_id);
+                cfg::GetInitialProcessRange(std::addressof(min_priv_process_id), std::addressof(max_priv_process_id));
 
                 /* Get current process id/program id. */
                 const auto cur_process_id = os::GetCurrentProcessId();
@@ -70,7 +70,7 @@ namespace ams {
                 /* Get list of processes, register all privileged ones. */
                 s32 num_pids;
                 os::ProcessId pids[ProcessCountMax];
-                R_ABORT_UNLESS(svc::GetProcessList(&num_pids, reinterpret_cast<u64 *>(pids), ProcessCountMax));
+                R_ABORT_UNLESS(svc::GetProcessList(std::addressof(num_pids), reinterpret_cast<u64 *>(pids), ProcessCountMax));
                 for (s32 i = 0; i < num_pids; i++) {
                     if (min_priv_process_id <= pids[i] && pids[i] <= max_priv_process_id) {
                         RegisterPrivilegedProcess(pids[i], pids[i] == cur_process_id ? cur_program_id : GetProcessProgramId(pids[i]));

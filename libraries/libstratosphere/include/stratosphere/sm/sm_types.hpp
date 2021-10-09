@@ -50,7 +50,7 @@ namespace ams::sm {
     static_assert(alignof(ServiceName) == 1, "ServiceName definition!");
 
     inline bool operator==(const ServiceName &lhs, const ServiceName &rhs) {
-        return std::memcmp(&lhs, &rhs, sizeof(ServiceName)) == 0;
+        return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(ServiceName)) == 0;
     }
 
     inline bool operator!=(const ServiceName &lhs, const ServiceName &rhs) {

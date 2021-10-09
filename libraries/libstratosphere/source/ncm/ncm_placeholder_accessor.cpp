@@ -137,7 +137,7 @@ namespace ams::ncm {
         /* Attempt to find a cache entry with the same placeholder id. */
         for (size_t i = 0; i < MaxCacheEntries; i++) {
             if (placeholder_id == this->caches[i].id) {
-                return &this->caches[i];
+                return std::addressof(this->caches[i]);
             }
         }
         return nullptr;

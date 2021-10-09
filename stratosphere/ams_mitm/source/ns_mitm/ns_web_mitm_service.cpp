@@ -26,7 +26,7 @@ namespace ams::mitm::ns {
         /* Always succeed for web applets asking about HBL. */
         /* This enables hbl html. */
         bool is_hbl;
-        if (R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, application_id)) && is_hbl) {
+        if (R_SUCCEEDED(pm::info::IsHblProgramId(std::addressof(is_hbl), application_id)) && is_hbl) {
             nswebResolveApplicationContentPath(this->srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
             return ResultSuccess();
         }
@@ -40,8 +40,8 @@ namespace ams::mitm::ns {
     Result NsWebMitmService::GetDocumentInterface(sf::Out<sf::SharedPointer<impl::IDocumentInterface>> out) {
         /* Open a document interface. */
         NsDocumentInterface doc;
-        R_TRY(nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc));
-        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&doc.s)};
+        R_TRY(nsGetDocumentInterfaceFwd(this->forward_service.get(), std::addressof(doc)));
+        const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(doc.s))};
 
         out.SetValue(sf::CreateSharedObjectEmplaced<impl::IDocumentInterface, NsDocumentService>(this->client_info, std::make_unique<NsDocumentInterface>(doc)), target_object_id);
         return ResultSuccess();

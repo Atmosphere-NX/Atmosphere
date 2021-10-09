@@ -177,11 +177,11 @@ namespace ams::settings::fwdbg {
 
         template<typename T>
         Result ParseSettingsItemIntegralValue(SdKeyValueStoreEntry &out, const char *value_str) {
-            R_TRY(AllocateValue(&out.value, sizeof(T)));
+            R_TRY(AllocateValue(std::addressof(out.value), sizeof(T)));
             out.value_size = sizeof(T);
 
             T value = static_cast<T>(strtoul(value_str, nullptr, 0));
-            std::memcpy(out.value, &value, sizeof(T));
+            std::memcpy(out.value, std::addressof(value), sizeof(T));
             return ResultSuccess();
         }
 
@@ -191,7 +191,7 @@ namespace ams::settings::fwdbg {
             R_TRY(ValidateSettingsItemKey(key));
 
             u8 dummy_value = 0;
-            SdKeyValueStoreEntry test_entry { .name = name, .key = key, .value = &dummy_value, .value_size = sizeof(dummy_value) };
+            SdKeyValueStoreEntry test_entry { .name = name, .key = key, .value = std::addressof(dummy_value), .value_size = sizeof(dummy_value) };
 
             auto *begin = g_entries;
             auto *end   = begin + g_num_entries;
@@ -199,7 +199,7 @@ namespace ams::settings::fwdbg {
             R_UNLESS(it != end,         settings::ResultSettingsItemNotFound());
             R_UNLESS(*it == test_entry, settings::ResultSettingsItemNotFound());
 
-            *out = &*it;
+            *out = std::addressof(*it);
             return ResultSuccess();
         }
 
@@ -223,12 +223,12 @@ namespace ams::settings::fwdbg {
             SdKeyValueStoreEntry new_value = {};
 
             /* Find name and key. */
-            R_TRY(FindSettingsName(&new_value.name, name));
-            R_TRY(FindSettingsItemKey(&new_value.key, key));
+            R_TRY(FindSettingsName(std::addressof(new_value.name), name));
+            R_TRY(FindSettingsItemKey(std::addressof(new_value.key), key));
 
             if (strncasecmp(type, "str", type_len) == 0 || strncasecmp(type, "string", type_len) == 0) {
                 const size_t size = value_len + 1;
-                R_TRY(AllocateValue(&new_value.value, size));
+                R_TRY(AllocateValue(std::addressof(new_value.value), size));
                 std::memcpy(new_value.value, value_str, size);
                 new_value.value_size = size;
             } else if (strncasecmp(type, "hex", type_len) == 0 || strncasecmp(type, "bytes", type_len) == 0) {
@@ -237,7 +237,7 @@ namespace ams::settings::fwdbg {
                 R_UNLESS(IsHexadecimal(value_str), settings::ResultInvalidFormatSettingsItemValue());
 
                 const size_t size = value_len / 2;
-                R_TRY(AllocateValue(&new_value.value, size));
+                R_TRY(AllocateValue(std::addressof(new_value.value), size));
                 new_value.value_size = size;
 
                 u8 *data = reinterpret_cast<u8 *>(new_value.value);
@@ -300,7 +300,7 @@ namespace ams::settings::fwdbg {
             AMS_ABORT_UNLESS(file != nullptr);
 
             Result parse_result = ResultSuccess();
-            util::ini::ParseFile(file.get(), &parse_result, SystemSettingsIniHandler);
+            util::ini::ParseFile(file.get(), std::addressof(parse_result), SystemSettingsIniHandler);
             R_TRY(parse_result);
 
             return ResultSuccess();
@@ -422,7 +422,7 @@ namespace ams::settings::fwdbg {
 
     Result GetSdCardKeyValueStoreSettingsItemValueSize(size_t *out_size, const char *name, const char *key) {
         SdKeyValueStoreEntry *entry = nullptr;
-        R_TRY(GetEntry(&entry, name, key));
+        R_TRY(GetEntry(std::addressof(entry), name, key));
 
         *out_size = entry->value_size;
         return ResultSuccess();
@@ -432,7 +432,7 @@ namespace ams::settings::fwdbg {
         R_UNLESS(dst != nullptr, settings::ResultNullSettingsItemValueBuffer());
 
         SdKeyValueStoreEntry *entry = nullptr;
-        R_TRY(GetEntry(&entry, name, key));
+        R_TRY(GetEntry(std::addressof(entry), name, key));
 
         const size_t size = std::min(entry->value_size, dst_size);
         if (size > 0) {

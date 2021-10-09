@@ -306,7 +306,7 @@ namespace ams::kvdb {
                 /* Try to read the archive -- note, path not found is a success condition. */
                 /* This is because no archive file = no entries, so we're in the right state. */
                 AutoBuffer buffer;
-                R_TRY_CATCH(this->ReadArchiveFile(&buffer)) {
+                R_TRY_CATCH(this->ReadArchiveFile(std::addressof(buffer))) {
                     R_CONVERT(fs::ResultPathNotFound, ResultSuccess());
                 } R_END_TRY_CATCH;
 
@@ -315,12 +315,12 @@ namespace ams::kvdb {
                     ArchiveReader reader(buffer);
 
                     size_t entry_count = 0;
-                    R_TRY(reader.ReadEntryCount(&entry_count));
+                    R_TRY(reader.ReadEntryCount(std::addressof(entry_count)));
 
                     for (size_t i = 0; i < entry_count; i++) {
                         /* Get size of key/value. */
                         size_t key_size = 0, value_size = 0;
-                        R_TRY(reader.GetEntrySize(&key_size, &value_size));
+                        R_TRY(reader.GetEntrySize(std::addressof(key_size), std::addressof(value_size)));
 
                         /* Allocate memory for value. */
                         void *new_value = this->memory_resource->Allocate(value_size);
@@ -329,7 +329,7 @@ namespace ams::kvdb {
 
                         /* Read key and value. */
                         Key key;
-                        R_TRY(reader.ReadEntry(&key, sizeof(key), new_value, value_size));
+                        R_TRY(reader.ReadEntry(std::addressof(key), sizeof(key), new_value, value_size));
                         R_TRY(this->index.AddUnsafe(key, new_value, value_size));
 
                         /* We succeeded, so cancel the value guard to prevent deallocation. */
@@ -351,7 +351,7 @@ namespace ams::kvdb {
                     writer.WriteHeader(this->GetCount());
                     for (const auto &it : this->index) {
                         const auto &key = it.GetKey();
-                        writer.WriteEntry(&key, sizeof(Key), it.GetValuePointer(), it.GetValueSize());
+                        writer.WriteEntry(std::addressof(key), sizeof(Key), it.GetValuePointer(), it.GetValueSize());
                     }
                 }
 
@@ -367,7 +367,7 @@ namespace ams::kvdb {
             Result Set(const Key &key, const Value &value) {
                 /* Only allow setting pod. */
                 static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
-                return this->Set(key, &value, sizeof(Value));
+                return this->Set(key, std::addressof(value), sizeof(Value));
             }
 
             template<typename Value>

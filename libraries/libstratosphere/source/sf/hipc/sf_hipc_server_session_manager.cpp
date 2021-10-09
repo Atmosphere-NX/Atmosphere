@@ -102,7 +102,7 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::AcceptSessionImpl(ServerSession *session_memory, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
         /* Create session handle. */
         os::NativeHandle session_handle;
-        R_TRY(svc::AcceptSession(&session_handle, port_handle));
+        R_TRY(svc::AcceptSession(std::addressof(session_handle), port_handle));
 
         auto session_guard = SCOPE_GUARD { os::CloseNativeHandle(session_handle); };
 
@@ -133,7 +133,7 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::AcceptMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* Create session handle. */
         os::NativeHandle mitm_session_handle;
-        R_TRY(svc::AcceptSession(&mitm_session_handle, mitm_port_handle));
+        R_TRY(svc::AcceptSession(std::addressof(mitm_session_handle), mitm_port_handle));
 
         auto session_guard = SCOPE_GUARD { os::CloseNativeHandle(mitm_session_handle); };
 
@@ -147,25 +147,25 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::RegisterSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->RegisterSession(&session_ptr, session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+        return this->RegisterSession(std::addressof(session_ptr), session_handle, std::forward<cmif::ServiceObjectHolder>(obj));
     }
 
     Result ServerSessionManager::AcceptSession(os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->AcceptSession(&session_ptr, port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
+        return this->AcceptSession(std::addressof(session_ptr), port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
     }
 
     Result ServerSessionManager::RegisterMitmSession(os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->RegisterMitmSession(&session_ptr, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+        return this->RegisterMitmSession(std::addressof(session_ptr), mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
     }
 
     Result ServerSessionManager::AcceptMitmSession(os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
-        return this->AcceptMitmSession(&session_ptr, mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
+        return this->AcceptMitmSession(std::addressof(session_ptr), mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
     }
 
     Result ServerSessionManager::ReceiveRequestImpl(ServerSession *session, const cmif::PointerAndSize &message) {
@@ -184,7 +184,7 @@ namespace ams::sf::hipc {
                 );
             }
             hipc::ReceiveResult recv_result;
-            R_TRY(hipc::Receive(&recv_result, session->session_handle, message));
+            R_TRY(hipc::Receive(std::addressof(recv_result), session->session_handle, message));
             switch (recv_result) {
                 case hipc::ReceiveResult::Success:
                     session->is_closed = false;
@@ -203,7 +203,7 @@ namespace ams::sf::hipc {
 
         NX_CONSTEXPR u32 GetCmifCommandType(const cmif::PointerAndSize &message) {
             HipcHeader hdr = {};
-            __builtin_memcpy(&hdr, message.GetPointer(), sizeof(hdr));
+            __builtin_memcpy(std::addressof(hdr), message.GetPointer(), sizeof(hdr));
             return hdr.type;
         }
 
@@ -289,7 +289,7 @@ namespace ams::sf::hipc {
             .manager = this,
             .session = session,
             .processor = nullptr, /* Filled in by template implementations. */
-            .handles_to_close = &handles_to_close,
+            .handles_to_close = std::addressof(handles_to_close),
             .pointer_buffer = session->pointer_buffer,
             .in_message_buffer = in_message,
             .out_message_buffer = out_message,

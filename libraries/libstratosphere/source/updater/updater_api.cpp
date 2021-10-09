@@ -112,7 +112,7 @@ namespace ams::updater {
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Get system data id for boot images (819/81A/81B/81C). */
             ncm::SystemDataId bip_data_id = {};
-            R_TRY(GetBootImagePackageId(&bip_data_id, mode, work_buffer, work_buffer_size));
+            R_TRY(GetBootImagePackageId(std::addressof(bip_data_id), mode, work_buffer, work_buffer_size));
 
             /* Verify the boot images in NAND. */
             R_TRY_CATCH(VerifyBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type)) {
@@ -174,7 +174,7 @@ namespace ams::updater {
                 R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalSub, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
 
                 /* Compare Package1 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -183,7 +183,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -236,7 +236,7 @@ namespace ams::updater {
                 R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeSub, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
 
                 /* Compare Package1 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -245,7 +245,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -291,7 +291,7 @@ namespace ams::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -361,7 +361,7 @@ namespace ams::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -419,7 +419,7 @@ namespace ams::updater {
             void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
             size_t size;
-            R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+            R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
             if (HasEks(boot_image_update_type)) {
                 R_TRY(accessor.UpdateEks(bct, work));
             }
@@ -541,7 +541,7 @@ namespace ams::updater {
 
         /* Get verification state from NAND. */
         VerificationState verification_state;
-        R_TRY(GetVerificationState(&verification_state, work_buffer, work_buffer_size));
+        R_TRY(GetVerificationState(std::addressof(verification_state), work_buffer, work_buffer_size));
 
         /* If we don't need to verify anything, we're done. */
         if (!verification_state.needs_verify_normal && !verification_state.needs_verify_safe) {

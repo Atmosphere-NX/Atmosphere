@@ -34,7 +34,7 @@ namespace ams::pm::dmnt {
 
     Result HookToCreateApplicationProcess(os::NativeHandle *out_handle) {
         Event evt;
-        R_TRY(pmdmntHookToCreateApplicationProcess(&evt));
+        R_TRY(pmdmntHookToCreateApplicationProcess(std::addressof(evt)));
         *out_handle = evt.revent;
         return ResultSuccess();
     }

@@ -28,7 +28,7 @@ namespace ams::fatal::srv {
             }
 
             bool in_repair;
-            return R_SUCCEEDED(setsysGetInRepairProcessEnableFlag(&in_repair)) && in_repair;
+            return R_SUCCEEDED(setsysGetInRepairProcessEnableFlag(std::addressof(in_repair))) && in_repair;
         }
 
         bool IsInRepairWithoutVolHeld() {
@@ -66,7 +66,7 @@ namespace ams::fatal::srv {
             }
 
             bool requires_time_reviser;
-            return R_SUCCEEDED(setsysGetRequiresRunRepairTimeReviser(&requires_time_reviser)) && requires_time_reviser;
+            return R_SUCCEEDED(setsysGetRequiresRunRepairTimeReviser(std::addressof(requires_time_reviser))) && requires_time_reviser;
         }
 
         bool IsTimeReviserCartridgeInserted() {
@@ -74,21 +74,21 @@ namespace ams::fatal::srv {
             u8 gc_attr;
             {
                 FsDeviceOperator devop;
-                if (R_FAILED(fsOpenDeviceOperator(&devop))) {
+                if (R_FAILED(fsOpenDeviceOperator(std::addressof(devop)))) {
                     return false;
                 }
 
                 /* Ensure we close even on early return. */
-                ON_SCOPE_EXIT { fsDeviceOperatorClose(&devop); };
+                ON_SCOPE_EXIT { fsDeviceOperatorClose(std::addressof(devop)); };
 
                 /* Check that a gamecard is inserted. */
                 bool inserted;
-                if (R_FAILED(fsDeviceOperatorIsGameCardInserted(&devop, &inserted)) || !inserted) {
+                if (R_FAILED(fsDeviceOperatorIsGameCardInserted(std::addressof(devop), std::addressof(inserted))) || !inserted) {
                     return false;
                 }
 
                 /* Check that we can retrieve the gamecard's attributes. */
-                if (R_FAILED(fsDeviceOperatorGetGameCardHandle(&devop, &gc_hnd)) || R_FAILED(fsDeviceOperatorGetGameCardAttribute(&devop, &gc_hnd, &gc_attr))) {
+                if (R_FAILED(fsDeviceOperatorGetGameCardHandle(std::addressof(devop), std::addressof(gc_hnd))) || R_FAILED(fsDeviceOperatorGetGameCardAttribute(std::addressof(devop), std::addressof(gc_hnd), std::addressof(gc_attr)))) {
                     return false;
                 }
             }

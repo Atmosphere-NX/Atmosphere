@@ -39,7 +39,7 @@ namespace ams::kern {
             const uintptr_t stack_bottom = stack_top - PageSize;
 
             KPhysicalAddress stack_paddr = Null<KPhysicalAddress>;
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom));
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(std::addressof(stack_paddr), stack_bottom));
 
             MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPages(stack_bottom, 1, KMemoryState_Kernel));
 

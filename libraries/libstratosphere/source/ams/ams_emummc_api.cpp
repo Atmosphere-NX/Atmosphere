@@ -78,10 +78,10 @@ namespace ams::emummc {
                 struct {
                     char file_path[MaxDirLen + 1];
                     char nintendo_path[MaxDirLen + 1];
-                } *paths = reinterpret_cast<decltype(paths)>(&path_storage);
+                } *paths = reinterpret_cast<decltype(paths)>(std::addressof(path_storage));
 
                 /* Retrieve paths from secure monitor. */
-                AMS_ABORT_UNLESS(spl::smc::AtmosphereGetEmummcConfig(&g_exo_config, paths, 0) == spl::smc::Result::Success);
+                AMS_ABORT_UNLESS(spl::smc::AtmosphereGetEmummcConfig(std::addressof(g_exo_config), paths, 0) == spl::smc::Result::Success);
 
                 const Storage storage = static_cast<Storage>(g_exo_config.base_cfg.type);
                 g_is_emummc = g_exo_config.base_cfg.magic == StorageMagic && storage != Storage_Emmc;

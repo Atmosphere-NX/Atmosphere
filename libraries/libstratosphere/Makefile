@@ -129,6 +129,10 @@ hos_stratosphere_api.o: CXXFLAGS += -fno-lto
 init_operator_new.o: CXXFLAGS += -fno-lto
 init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
 
+usb_remote_ds_endpoint.o: CXXFLAGS += -Wno-error=deprecated-declarations
+usb_remote_ds_interface.o: CXXFLAGS += -Wno-error=deprecated-declarations
+usb_remote_ds_service.o: CXXFLAGS += -Wno-error=deprecated-declarations
+
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin
 #---------------------------------------------------------------------------------

@@ -364,7 +364,7 @@ namespace ams::ro::impl {
     bool ShouldEaseNroRestriction() {
         /* Retrieve whether we should ease restrictions from set:sys. */
         u8 should_ease = 0;
-        if (settings::fwdbg::GetSettingsItemValue(&should_ease, sizeof(should_ease), "ro", "ease_nro_restriction") != sizeof(should_ease)) {
+        if (settings::fwdbg::GetSettingsItemValue(std::addressof(should_ease), sizeof(should_ease), "ro", "ease_nro_restriction") != sizeof(should_ease)) {
             return false;
         }
 
@@ -379,7 +379,7 @@ namespace ams::ro::impl {
         {
             /* Validate handle is a valid process handle. */
             os::ProcessId handle_pid;
-            R_UNLESS(R_SUCCEEDED(os::GetProcessId(&handle_pid, process_handle.GetOsHandle())), ro::ResultInvalidProcess());
+            R_UNLESS(R_SUCCEEDED(os::GetProcessId(std::addressof(handle_pid), process_handle.GetOsHandle())), ro::ResultInvalidProcess());
 
             /* Validate process id. */
             R_UNLESS(handle_pid == process_id, ro::ResultInvalidProcess());
@@ -420,7 +420,7 @@ namespace ams::ro::impl {
 
         /* Check we have space for a new NRR. */
         NrrInfo *nrr_info = nullptr;
-        R_TRY(context->GetFreeNrrInfo(&nrr_info));
+        R_TRY(context->GetFreeNrrInfo(std::addressof(nrr_info)));
 
         /* Prepare to cache the NRR's signature hash. */
         Sha256Hash signed_area_hash;
@@ -429,7 +429,7 @@ namespace ams::ro::impl {
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
+        R_TRY(MapAndValidateNrr(std::addressof(header), std::addressof(mapped_code_address), std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
 
         /* Set NRR info. */
         context->SetNrrInfoInUse(nrr_info, true);
@@ -458,7 +458,7 @@ namespace ams::ro::impl {
 
         /* Check the NRR is loaded. */
         NrrInfo *nrr_info = nullptr;
-        R_TRY(context->GetNrrInfoByAddress(&nrr_info, nrr_address));
+        R_TRY(context->GetNrrInfoByAddress(std::addressof(nrr_info), nrr_address));
 
         /* Unmap. */
         const NrrInfo nrr_backup = *nrr_info;
@@ -485,20 +485,20 @@ namespace ams::ro::impl {
 
         /* Check we have space for a new NRO. */
         NroInfo *nro_info = nullptr;
-        R_TRY(context->GetFreeNroInfo(&nro_info));
+        R_TRY(context->GetFreeNroInfo(std::addressof(nro_info)));
         nro_info->nro_heap_address = nro_address;
         nro_info->nro_heap_size = nro_size;
         nro_info->bss_heap_address = bss_address;
         nro_info->bss_heap_size = bss_size;
 
         /* Map the NRO. */
-        R_TRY(MapNro(&nro_info->base_address, context->process_handle, nro_address, nro_size, bss_address, bss_size));
+        R_TRY(MapNro(std::addressof(nro_info->base_address), context->process_handle, nro_address, nro_size, bss_address, bss_size));
 
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
         {
             auto unmap_guard = SCOPE_GUARD { UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
-            R_TRY(context->ValidateNro(&nro_info->module_id, &rx_size, &ro_size, &rw_size, nro_info->base_address, nro_size, bss_size));
+            R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
             unmap_guard.Cancel();
         }
 
@@ -526,7 +526,7 @@ namespace ams::ro::impl {
 
         /* Check the NRO is loaded. */
         NroInfo *nro_info = nullptr;
-        R_TRY(context->GetNroInfoByAddress(&nro_info, nro_address));
+        R_TRY(context->GetNroInfoByAddress(std::addressof(nro_info), nro_address));
 
         /* Unmap. */
         const NroInfo nro_backup = *nro_info;
@@ -552,7 +552,7 @@ namespace ams::ro::impl {
 
                 /* Just copy out the info. */
                 LoaderModuleInfo *out_info = std::addressof(out_infos[count++]);
-                memcpy(out_info->build_id, &nro_info->module_id, sizeof(nro_info->module_id));
+                memcpy(out_info->build_id, std::addressof(nro_info->module_id), sizeof(nro_info->module_id));
                 out_info->base_address = nro_info->base_address;
                 out_info->size = nro_info->nro_heap_size + nro_info->bss_heap_size;
             }

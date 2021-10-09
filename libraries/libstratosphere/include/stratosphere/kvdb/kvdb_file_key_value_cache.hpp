@@ -245,8 +245,8 @@ namespace ams::kvdb {
             static Result ValidateExistingCache(const char *dir) {
                 /* Check for existence. */
                 bool has_lru = false, has_kvs = false;
-                R_TRY(FileExists(&has_lru, GetLeastRecentlyUsedListPath(dir)));
-                R_TRY(DirectoryExists(&has_kvs, GetFileKeyValueStorePath(dir)));
+                R_TRY(FileExists(std::addressof(has_lru), GetLeastRecentlyUsedListPath(dir)));
+                R_TRY(DirectoryExists(std::addressof(has_kvs), GetFileKeyValueStorePath(dir)));
 
                 /* If neither exists, CreateNewCache was never called. */
                 R_UNLESS(has_lru || has_kvs, kvdb::ResultNotCreated());

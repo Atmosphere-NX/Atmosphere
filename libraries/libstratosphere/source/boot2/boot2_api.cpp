@@ -143,7 +143,7 @@ namespace ams::boot2 {
             if (IsAllowedLaunchProgram(loc)) {
                 /* Launch, lightly validate result. */
                 {
-                    const auto launch_result = pm::shell::LaunchProgram(&process_id, loc, launch_flags);
+                    const auto launch_result = pm::shell::LaunchProgram(std::addressof(process_id), loc, launch_flags);
                     AMS_ABORT_UNLESS(!(svc::ResultOutOfResource::Includes(launch_result)));
                     AMS_ABORT_UNLESS(!(svc::ResultOutOfMemory::Includes(launch_result)));
                     AMS_ABORT_UNLESS(!(svc::ResultLimitReached::Includes(launch_result)));
@@ -178,13 +178,13 @@ namespace ams::boot2 {
 
         bool IsForceMaintenance() {
             u8 force_maintenance = 1;
-            settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+            settings::fwdbg::GetSettingsItemValue(std::addressof(force_maintenance), sizeof(force_maintenance), "boot", "force_maintenance");
             return force_maintenance != 0;
         }
 
         bool IsHtcEnabled() {
             u8 enable_htc = 0;
-            settings::fwdbg::GetSettingsItemValue(&enable_htc, sizeof(enable_htc), "atmosphere", "enable_htc");
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_htc), sizeof(enable_htc), "atmosphere", "enable_htc");
             return enable_htc != 0;
         }
 
@@ -195,7 +195,7 @@ namespace ams::boot2 {
             }
 
             u8 enable_ams_lm = 0;
-            settings::fwdbg::GetSettingsItemValue(&enable_ams_lm, sizeof(enable_ams_lm), "atmosphere", "enable_log_manager");
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_ams_lm), sizeof(enable_ams_lm), "atmosphere", "enable_log_manager");
             return enable_ams_lm != 0;
         }
 
@@ -215,7 +215,7 @@ namespace ams::boot2 {
         void IterateOverFlaggedProgramsOnSdCard(F f) {
             /* Validate that the contents directory exists. */
             fs::DirectoryHandle contents_dir;
-            if (R_FAILED(fs::OpenDirectory(&contents_dir, "sdmc:/atmosphere/contents", fs::OpenDirectoryMode_Directory))) {
+            if (R_FAILED(fs::OpenDirectory(std::addressof(contents_dir), "sdmc:/atmosphere/contents", fs::OpenDirectoryMode_Directory))) {
                 return;
             }
             ON_SCOPE_EXIT { fs::CloseDirectory(contents_dir); };
@@ -223,7 +223,7 @@ namespace ams::boot2 {
             /* Iterate over entries in the contents directory */
             fs::DirectoryEntry entry;
             s64 count;
-            while (R_SUCCEEDED(fs::ReadDirectory(&count, &entry, contents_dir, 1)) && count == 1) {
+            while (R_SUCCEEDED(fs::ReadDirectory(std::addressof(count), std::addressof(entry), contents_dir, 1)) && count == 1) {
                 /* Check that the subdirectory can be converted to a program id. */
                 if (std::strlen(entry.name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(entry.name)) {
                     /* Check if we've already launched the program. */
@@ -252,12 +252,12 @@ namespace ams::boot2 {
                     util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
 
                     fs::FileHandle f;
-                    if (R_FAILED(fs::OpenFile(&f, path, fs::OpenMode_Read))) {
+                    if (R_FAILED(fs::OpenFile(std::addressof(f), path, fs::OpenMode_Read))) {
                         return;
                     }
                     ON_SCOPE_EXIT { fs::CloseFile(f); };
 
-                    R_ABORT_UNLESS(fs::ReadFile(&mitm_list_size, f, 0, mitm_list, sizeof(mitm_list)));
+                    R_ABORT_UNLESS(fs::ReadFile(std::addressof(mitm_list_size), f, 0, mitm_list, sizeof(mitm_list)));
                 }
 
                 /* Validate read size. */
@@ -352,7 +352,7 @@ namespace ams::boot2 {
 
                 /* Retrieve setting from the database. */
                 u8 force_maintenance = 0;
-                settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+                settings::fwdbg::GetSettingsItemValue(std::addressof(force_maintenance), sizeof(force_maintenance), "boot", "force_maintenance");
             }
 
             /* Launch pcv. */

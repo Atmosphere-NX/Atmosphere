@@ -27,7 +27,7 @@ namespace ams::os::impl {
         public:
             void SignalAllThreads() {
                 for (MultiWaitHolderBase &holder_base : this->object_list) {
-                    holder_base.GetMultiWait()->SignalAndWakeupThread(&holder_base);
+                    holder_base.GetMultiWait()->SignalAndWakeupThread(std::addressof(holder_base));
                 }
             }
 

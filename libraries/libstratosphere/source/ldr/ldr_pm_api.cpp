@@ -24,12 +24,12 @@ namespace ams::ldr::pm {
     }
 
     Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc) {
-        return ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<LoaderProgramInfo *>(out));
+        return ldrPmGetProgramInfo(reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<LoaderProgramInfo *>(out));
     }
 
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc) {
         static_assert(sizeof(*out) == sizeof(u64), "PinId definition!");
-        return ldrPmPinProgram(reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out));
+        return ldrPmPinProgram(reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<u64 *>(out));
     }
 
     Result UnpinProgram(PinId pin_id) {
@@ -42,7 +42,7 @@ namespace ams::ldr::pm {
 
     Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition!");
-        return ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(&loc));
+        return ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)));
     }
 
     Result SetEnabledProgramVerification(bool enabled) {
@@ -52,7 +52,7 @@ namespace ams::ldr::pm {
     Result AtmospherePinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         static_assert(sizeof(*out) == sizeof(u64), "PinId definition!");
         static_assert(sizeof(status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition!");
-        return ldrPmAtmospherePinProgram(reinterpret_cast<u64 *>(out), reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<const CfgOverrideStatus *>(&status));
+        return ldrPmAtmospherePinProgram(reinterpret_cast<u64 *>(out), reinterpret_cast<const NcmProgramLocation *>(std::addressof(loc)), reinterpret_cast<const CfgOverrideStatus *>(std::addressof(status)));
     }
 
 }

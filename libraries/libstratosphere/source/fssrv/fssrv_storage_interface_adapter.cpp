@@ -84,7 +84,7 @@ namespace ams::fssrv::impl {
             auto read_lock = this->AcquireCacheInvalidationReadLock();
 
             fs::StorageQueryRangeInfo info;
-            R_TRY(this->base_storage->OperateRange(&info, sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
+            R_TRY(this->base_storage->OperateRange(std::addressof(info), sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
             out->Merge(info);
         }
 

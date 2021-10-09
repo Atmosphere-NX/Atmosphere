@@ -66,11 +66,11 @@ namespace ams::patcher {
         bool MatchesModuleId(const char *name, size_t name_len, size_t extension_len, const ro::ModuleId *module_id) {
             /* Get module id. */
             ro::ModuleId module_id_from_name;
-            if (!ParseModuleIdFromPath(&module_id_from_name, name, name_len, extension_len)) {
+            if (!ParseModuleIdFromPath(std::addressof(module_id_from_name), name, name_len, extension_len)) {
                 return false;
             }
 
-            return std::memcmp(&module_id_from_name, module_id, sizeof(*module_id)) == 0;
+            return std::memcmp(std::addressof(module_id_from_name), module_id, sizeof(*module_id)) == 0;
         }
 
         bool IsIpsFileForModule(const char *name, const ro::ModuleId *module_id) {

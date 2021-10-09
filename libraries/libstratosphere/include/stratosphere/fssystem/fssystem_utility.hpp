@@ -29,7 +29,7 @@ namespace ams::fssystem {
         Result IterateDirectoryRecursivelyImpl(fs::fsa::IFileSystem *fs, char *work_path, size_t work_path_size, fs::DirectoryEntry *dir_ent, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
             /* Open the directory. */
             std::unique_ptr<fs::fsa::IDirectory> dir;
-            R_TRY(fs->OpenDirectory(&dir, work_path, fs::OpenDirectoryMode_All));
+            R_TRY(fs->OpenDirectory(std::addressof(dir), work_path, fs::OpenDirectoryMode_All));
 
             const size_t parent_len = strnlen(work_path, work_path_size - 1);
 
@@ -37,7 +37,7 @@ namespace ams::fssystem {
             while (true) {
                 /* Read a single entry. */
                 s64 read_count = 0;
-                R_TRY(dir->Read(&read_count, dir_ent, 1));
+                R_TRY(dir->Read(std::addressof(read_count), dir_ent, 1));
 
                 /* If we're out of entries, we're done. */
                 if (read_count == 0) {
@@ -106,7 +106,7 @@ namespace ams::fssystem {
     Result IterateDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *root_path, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
         fs::DirectoryEntry dir_entry = {};
         char work_path[fs::EntryNameLengthMax + 1] = {};
-        return IterateDirectoryRecursively(fs, root_path, work_path, sizeof(work_path), &dir_entry, on_enter_dir, on_exit_dir, on_file);
+        return IterateDirectoryRecursively(fs, root_path, work_path, sizeof(work_path), std::addressof(dir_entry), on_enter_dir, on_exit_dir, on_file);
     }
 
     template<typename OnEnterDir, typename OnExitDir, typename OnFile>

@@ -297,28 +297,28 @@ namespace ams::mitm {
 
         void ReadStorageCalibrationBinary(CalibrationInfo *out) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, 0, out, sizeof(*out)));
+            R_ABORT_UNLESS(fsStorageRead(std::addressof(calibration_binary_storage), 0, out, sizeof(*out)));
         }
 
         constexpr inline const u8 SecureCalibrationBinaryBackupIv[crypto::Aes128CtrDecryptor::IvSize] = {};
 
         void ReadStorageEncryptedSecureCalibrationBinaryBackupUnsafe(SecureCalibrationInfoBackup *out) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, SecureCalibrationInfoBackupOffset, out, sizeof(*out)));
+            R_ABORT_UNLESS(fsStorageRead(std::addressof(calibration_binary_storage), SecureCalibrationInfoBackupOffset, out, sizeof(*out)));
         }
 
         void WriteStorageEncryptedSecureCalibrationBinaryBackupUnsafe(const SecureCalibrationInfoBackup *src) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageWrite(&calibration_binary_storage, SecureCalibrationInfoBackupOffset, src, sizeof(*src)));
+            R_ABORT_UNLESS(fsStorageWrite(std::addressof(calibration_binary_storage), SecureCalibrationInfoBackupOffset, src, sizeof(*src)));
         }
 
         void GenerateSecureCalibrationBinaryBackupKey(void *dst, size_t dst_size) {

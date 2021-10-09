@@ -113,7 +113,7 @@ namespace ams {
                 svc::lp64::MemoryInfo mem_info;
                 svc::PageInfo page_info;
                 if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur_fp)) && (mem_info.permission & svc::MemoryPermission_Read) == svc::MemoryPermission_Read) {
-                    std::memcpy(&cur_frame, reinterpret_cast<void *>(cur_fp), sizeof(cur_frame));
+                    std::memcpy(std::addressof(cur_frame), reinterpret_cast<void *>(cur_fp), sizeof(cur_frame));
                 } else {
                     break;
                 }
@@ -145,7 +145,7 @@ namespace ams {
         }
 
         /* Just call the user exception handler. */
-        ::ams::ExceptionHandler(&ams_ctx);
+        ::ams::ExceptionHandler(std::addressof(ams_ctx));
     }
 
     NORETURN void AbortImpl();

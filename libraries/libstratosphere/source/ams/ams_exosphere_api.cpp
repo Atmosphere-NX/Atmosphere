@@ -21,7 +21,7 @@ namespace ams::exosphere {
 
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
-        if (spl::smc::GetConfig(&exosphere_cfg, 1, spl::ConfigItem::ExosphereApiVersion) != spl::smc::Result::Success) {
+        if (spl::smc::GetConfig(std::addressof(exosphere_cfg), 1, spl::ConfigItem::ExosphereApiVersion) != spl::smc::Result::Success) {
             R_ABORT_UNLESS(ResultNotPresent());
         }
 

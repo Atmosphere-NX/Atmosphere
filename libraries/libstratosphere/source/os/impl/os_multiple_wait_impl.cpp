@@ -70,7 +70,7 @@ namespace ams::os::impl {
             this->current_time = GetCurrentTick().ToTimeSpan();
 
             TimeSpan min_timeout = 0;
-            MultiWaitHolderBase *min_timeout_object = this->RecalculateNextTimeout(&min_timeout, end_time);
+            MultiWaitHolderBase *min_timeout_object = this->RecalculateNextTimeout(std::addressof(min_timeout), end_time);
 
             s32 index = WaitInvalid;
             Result wait_result = ResultSuccess();
@@ -141,11 +141,10 @@ namespace ams::os::impl {
 
         for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             if (auto handle = holder_base.GetHandle(); handle != os::InvalidNativeHandle) {
-                AMS_ASSERT(count < num);
-                AMS_UNUSED(num);
+                AMS_ABORT_UNLESS(count < num);
 
                 out_handles[count] = handle;
-                out_objects[count] = &holder_base;
+                out_objects[count] = std::addressof(holder_base);
                 count++;
             }
         }
@@ -160,7 +159,7 @@ namespace ams::os::impl {
             TriBool is_signaled = holder_base.LinkToObjectList();
 
             if (signaled_holder == nullptr && is_signaled == TriBool::True) {
-                signaled_holder = &holder_base;
+                signaled_holder = std::addressof(holder_base);
             }
         }
 
@@ -179,7 +178,7 @@ namespace ams::os::impl {
 
         for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
             if (const TimeSpan cur_time = holder_base.GetAbsoluteWakeupTime(); cur_time < min_time) {
-                min_timeout_holder = &holder_base;
+                min_timeout_holder = std::addressof(holder_base);
                 min_time = cur_time;
             }
         }

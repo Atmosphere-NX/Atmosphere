@@ -760,7 +760,7 @@ namespace ams::sf::impl {
             template<size_t Index, typename Interface>
             Out<SharedPointer<Interface>> GetOutObject() {
                 auto sp = std::construct_at(GetOutObjectSharedPointer<Index, Interface>());
-                return Out<SharedPointer<Interface>>(sp, this->out_object_ids + Index);
+                return Out<SharedPointer<Interface>>(sp, std::addressof(this->out_object_ids[Index]));
             }
 
             template<size_t Index, typename Interface>
@@ -869,7 +869,7 @@ namespace ams::sf::impl {
                     return;
                 }
                 os::NativeHandle server_handle, client_handle;
-                R_ABORT_UNLESS(sf::hipc::CreateSession(&server_handle, &client_handle));
+                R_ABORT_UNLESS(sf::hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
                 R_ABORT_UNLESS(manager->RegisterSession(server_handle, std::move(object)));
                 response.move_handles[Index] = client_handle;
             }
@@ -1137,10 +1137,10 @@ namespace ams::sf::impl {
         ImplProcessorType impl_processor;
         if (ctx.processor == nullptr) {
             /* In the non-domain case, this is our only processor. */
-            ctx.processor = &impl_processor;
+            ctx.processor = std::addressof(impl_processor);
         } else {
             /* In the domain case, we already have a processor, so we should give it a pointer to our template implementation. */
-            ctx.processor->SetImplementationProcessor(&impl_processor);
+            ctx.processor->SetImplementationProcessor(std::addressof(impl_processor));
         }
 
         /* Validate the metadata has the expected counts. */

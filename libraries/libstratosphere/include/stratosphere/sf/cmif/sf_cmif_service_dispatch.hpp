@@ -136,7 +136,7 @@ namespace ams::sf::cmif {
         static constexpr ProcessHandlerType ProcessHandlerImpl = sf::IsMitmServiceObject<T> ? (&impl::ServiceDispatchTableBase::ProcessMessageForMitm<DispatchTableType>)
                                                                                             : (&impl::ServiceDispatchTableBase::ProcessMessage<DispatchTableType>);
 
-        static constexpr inline ServiceDispatchMeta Meta{&DispatchTable, ProcessHandlerImpl};
+        static constexpr inline ServiceDispatchMeta Meta{std::addressof(DispatchTable), ProcessHandlerImpl};
     };
 
     template<>
@@ -151,7 +151,7 @@ namespace ams::sf::cmif {
 
     template<typename T>
     constexpr ALWAYS_INLINE const ServiceDispatchMeta *GetServiceDispatchMeta() {
-        return &ServiceDispatchTraits<T>::Meta;
+        return std::addressof(ServiceDispatchTraits<T>::Meta);
     }
 
 }

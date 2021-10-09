@@ -21,7 +21,7 @@ namespace ams::sf::hipc {
     Result ServerManagerBase::InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
         os::NativeHandle query_handle;
-        R_TRY(sm::mitm::InstallMitm(out_port_handle, &query_handle, service_name));
+        R_TRY(sm::mitm::InstallMitm(out_port_handle, std::addressof(query_handle), service_name));
 
         /* Register the query handle. */
         impl::RegisterMitmQueryHandle(query_handle, query_func);
@@ -57,9 +57,9 @@ namespace ams::sf::hipc {
         while (true) {
             this->LinkDeferred();
             auto selected = os::WaitAny(std::addressof(this->multi_wait));
-            if (selected == &this->request_stop_event_holder) {
+            if (selected == std::addressof(this->request_stop_event_holder)) {
                 return nullptr;
-            } else if (selected == &this->notify_event_holder) {
+            } else if (selected == std::addressof(this->notify_event_holder)) {
                 this->notify_event.Clear();
             } else {
                 os::UnlinkMultiWaitHolder(selected);

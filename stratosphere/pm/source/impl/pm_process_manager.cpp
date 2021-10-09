@@ -166,7 +166,7 @@ namespace ams::pm::impl {
 
             while (true) {
                 auto signaled_holder = os::WaitAny(std::addressof(process_multi_wait));
-                if (signaled_holder == &start_event_holder) {
+                if (signaled_holder == std::addressof(start_event_holder)) {
                     /* Launch start event signaled. */
                     /* TryWait will clear signaled, preventing duplicate notifications. */
                     if (g_process_launch_start_event.TryWait()) {
@@ -224,7 +224,7 @@ namespace ams::pm::impl {
             /* Get Program Info. */
             ldr::ProgramInfo program_info;
             cfg::OverrideStatus override_status;
-            R_TRY(ldr::pm::AtmosphereGetProgramInfo(&program_info, &override_status, args.location));
+            R_TRY(ldr::pm::AtmosphereGetProgramInfo(std::addressof(program_info), std::addressof(override_status), args.location));
             const bool is_application = (program_info.flags & ldr::ProgramInfoFlag_ApplicationTypeMask) == ldr::ProgramInfoFlag_Application;
             const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_2_0_0;
 
@@ -236,16 +236,16 @@ namespace ams::pm::impl {
 
             /* Pin the program with loader. */
             ldr::PinId pin_id;
-            R_TRY(ldr::pm::AtmospherePinProgram(&pin_id, location, override_status));
+            R_TRY(ldr::pm::AtmospherePinProgram(std::addressof(pin_id), location, override_status));
 
             /* Ensure resources are available. */
-            resource::WaitResourceAvailable(&program_info);
+            resource::WaitResourceAvailable(std::addressof(program_info));
 
             /* Actually create the process. */
             os::NativeHandle process_handle;
             {
                 auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinProgram(pin_id); };
-                R_TRY(ldr::pm::CreateProcess(&process_handle, pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(&program_info)));
+                R_TRY(ldr::pm::CreateProcess(std::addressof(process_handle), pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(std::addressof(program_info))));
                 pin_guard.Cancel();
             }
 
@@ -301,7 +301,7 @@ namespace ams::pm::impl {
                 os::SignalSystemEvent(std::addressof(g_hook_to_create_application_process_event));
                 g_application_hook = false;
             } else if (!ShouldStartSuspended(args.flags)) {
-                R_TRY(StartProcess(process_info, &program_info));
+                R_TRY(StartProcess(process_info, std::addressof(program_info)));
             }
 
             /* We succeeded, so we can cancel our cleanup. */
@@ -319,7 +319,7 @@ namespace ams::pm::impl {
             const svc::ProcessState old_state = process_info->GetState();
             {
                 s64 tmp = 0;
-                R_ABORT_UNLESS(svc::GetProcessInfo(&tmp, process_info->GetHandle(), svc::ProcessInfoType_ProcessState));
+                R_ABORT_UNLESS(svc::GetProcessInfo(std::addressof(tmp), process_info->GetHandle(), svc::ProcessInfoType_ProcessState));
                 process_info->SetState(static_cast<svc::ProcessState>(tmp));
             }
             const svc::ProcessState new_state = process_info->GetState();
@@ -445,8 +445,8 @@ namespace ams::pm::impl {
         R_UNLESS(!process_info->HasStarted(), pm::ResultAlreadyStarted());
 
         ldr::ProgramInfo program_info;
-        R_TRY(ldr::pm::GetProgramInfo(&program_info, process_info->GetProgramLocation()));
-        return StartProcess(process_info, &program_info);
+        R_TRY(ldr::pm::GetProgramInfo(std::addressof(program_info), process_info->GetProgramLocation()));
+        return StartProcess(process_info, std::addressof(program_info));
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
@@ -518,7 +518,7 @@ namespace ams::pm::impl {
                 out->event = GetProcessEventValue(ProcessEvent::Exited);
                 out->process_id = process_info.GetProcessId();
 
-                CleanupProcessInfo(dead_list, &process_info);
+                CleanupProcessInfo(dead_list, std::addressof(process_info));
                 return ResultSuccess();
             }
         }

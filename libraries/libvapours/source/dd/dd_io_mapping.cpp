@@ -68,13 +68,13 @@ namespace ams::dd {
 
             if (hos::GetVersion() >= hos::Version_10_0_0) {
                 svc::Size region_size = 0;
-                R_TRY_CATCH(svc::QueryIoMapping(&virt_addr, &region_size, aligned_addr, aligned_size)) {
+                R_TRY_CATCH(svc::QueryIoMapping(std::addressof(virt_addr), std::addressof(region_size), aligned_addr, aligned_size)) {
                     /* Official software handles this by returning 0. */
                     R_CATCH(svc::ResultNotFound) { return 0; }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
                 AMS_ASSERT(region_size >= aligned_size);
             } else {
-                R_TRY_CATCH(svc::LegacyQueryIoMapping(&virt_addr, aligned_addr, aligned_size)) {
+                R_TRY_CATCH(svc::LegacyQueryIoMapping(std::addressof(virt_addr), aligned_addr, aligned_size)) {
                     /* Official software handles this by returning 0. */
                     R_CATCH(svc::ResultNotFound) { return 0; }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
@@ -102,7 +102,7 @@ namespace ams::dd {
 
                 u32 ReadWritePmcRegisterImpl(dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
                     u32 out_value;
-                    R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::AtmosphereReadWriteRegister(phys_addr, mask, value, &out_value)));
+                    R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::AtmosphereReadWriteRegister(phys_addr, mask, value, std::addressof(out_value))));
                     return out_value;
                 }
 

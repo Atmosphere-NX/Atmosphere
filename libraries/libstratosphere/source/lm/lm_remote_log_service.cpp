@@ -43,10 +43,10 @@ namespace ams::lm {
             u64 pid_placeholder = 0;
 
             #define NX_SERVICE_ASSUME_NON_DOMAIN
-            R_TRY(serviceDispatchIn(&m_srv, 0, pid_placeholder,
+            R_TRY(serviceDispatchIn(std::addressof(m_srv), 0, pid_placeholder,
                 .in_send_pid = true,
                 .out_num_objects = 1,
-                .out_objects = &logger_srv,
+                .out_objects = std::addressof(logger_srv),
             ));
             #undef NX_SERVICE_ASSUME_NON_DOMAIN
         }

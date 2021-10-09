@@ -373,9 +373,9 @@ namespace ams::cfg {
                 .override_key = g_default_override_key,
                 .cheat_enable_key = g_default_cheat_enable_key,
             };
-            std::memset(&config.locale, 0xCC, sizeof(config.locale));
+            std::memset(std::addressof(config.locale), 0xCC, sizeof(config.locale));
 
-            ParseIniFile(ContentSpecificIniHandler, path, &config);
+            ParseIniFile(ContentSpecificIniHandler, path, std::addressof(config));
             return config;
         }
 
@@ -399,7 +399,7 @@ namespace ams::cfg {
         RefreshOverrideConfiguration();
 
         /* If we can't read the key state, don't override anything. */
-        if (R_FAILED(hid::GetKeysHeld(&status.keys_held))) {
+        if (R_FAILED(hid::GetKeysHeld(std::addressof(status.keys_held)))) {
             return status;
         }
 

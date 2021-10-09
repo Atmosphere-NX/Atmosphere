@@ -42,7 +42,7 @@ namespace ams::fssrv::impl {
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
 
         size_t read_size = 0;
-        R_TRY(this->base_file->Read(&read_size, offset, buffer.GetPointer(), static_cast<size_t>(size), option));
+        R_TRY(this->base_file->Read(std::addressof(read_size), offset, buffer.GetPointer(), static_cast<size_t>(size), option));
 
         out.SetValue(read_size);
         return ResultSuccess();
@@ -82,7 +82,7 @@ namespace ams::fssrv::impl {
             auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
 
             fs::FileQueryRangeInfo info;
-            R_TRY(this->base_file->OperateRange(&info, sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
+            R_TRY(this->base_file->OperateRange(std::addressof(info), sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
             out->Merge(info);
         }
 
@@ -268,7 +268,7 @@ namespace ams::fssrv::impl {
 
         /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IFile> file;
-        R_TRY(this->base_fs->OpenFile(&file, normalizer.GetPath(), static_cast<fs::OpenMode>(mode)));
+        R_TRY(this->base_fs->OpenFile(std::addressof(file), normalizer.GetPath(), static_cast<fs::OpenMode>(mode)));
 
         /* TODO: This is a hack to get the mitm API to work. Better solution? */
         const auto target_object_id = file->GetDomainObjectId();
@@ -296,7 +296,7 @@ namespace ams::fssrv::impl {
 
         /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IDirectory> dir;
-        R_TRY(this->base_fs->OpenDirectory(&dir, normalizer.GetPath(), static_cast<fs::OpenDirectoryMode>(mode)));
+        R_TRY(this->base_fs->OpenDirectory(std::addressof(dir), normalizer.GetPath(), static_cast<fs::OpenDirectoryMode>(mode)));
 
         /* TODO: This is a hack to get the mitm API to work. Better solution? */
         const auto target_object_id = dir->GetDomainObjectId();

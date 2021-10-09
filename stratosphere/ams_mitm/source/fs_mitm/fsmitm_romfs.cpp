@@ -145,7 +145,7 @@ namespace ams::mitm::fs {
                 private:
                     ALWAYS_INLINE void Read(size_t ofs, void *dst, size_t sz) {
                         u64 read_size;
-                        R_ABORT_UNLESS(fsFileRead(this->file, this->offset + ofs, dst, sz, 0, &read_size));
+                        R_ABORT_UNLESS(fsFileRead(this->file, this->offset + ofs, dst, sz, 0, std::addressof(read_size)));
                         AMS_ABORT_UNLESS(read_size == sz);
                     }
 
@@ -317,9 +317,9 @@ namespace ams::mitm::fs {
             /* Get number of child directories. */
             s64 num_child_dirs = 0;
             {
-                OpenFileSystemRomfsDirectory(&dir, this->program_id, parent, OpenDirectoryMode_Directory, fs);
-                ON_SCOPE_EXIT { fsDirClose(&dir); };
-                R_ABORT_UNLESS(fsDirGetEntryCount(&dir, &num_child_dirs));
+                OpenFileSystemRomfsDirectory(std::addressof(dir), this->program_id, parent, OpenDirectoryMode_Directory, fs);
+                ON_SCOPE_EXIT { fsDirClose(std::addressof(dir)); };
+                R_ABORT_UNLESS(fsDirGetEntryCount(std::addressof(dir), std::addressof(num_child_dirs)));
             }
             AMS_ABORT_UNLESS(num_child_dirs >= 0);
 
@@ -330,12 +330,12 @@ namespace ams::mitm::fs {
 
                 s64 cur_child_dir_ind = 0;
                 {
-                    OpenFileSystemRomfsDirectory(&dir, this->program_id, parent, OpenDirectoryMode_All, fs);
-                    ON_SCOPE_EXIT { fsDirClose(&dir); };
+                    OpenFileSystemRomfsDirectory(std::addressof(dir), this->program_id, parent, OpenDirectoryMode_All, fs);
+                    ON_SCOPE_EXIT { fsDirClose(std::addressof(dir)); };
 
                     s64 read_entries = 0;
                     while (true) {
-                        R_ABORT_UNLESS(fsDirRead(&dir, &read_entries, 1, &this->dir_entry));
+                        R_ABORT_UNLESS(fsDirRead(std::addressof(dir), std::addressof(read_entries), 1, std::addressof(this->dir_entry)));
                         if (read_entries != 1) {
                             break;
                         }
@@ -345,7 +345,7 @@ namespace ams::mitm::fs {
                             AMS_ABORT_UNLESS(child_dirs != nullptr);
 
                             BuildDirectoryContext *real_child = nullptr;
-                            this->AddDirectory(&real_child, parent, std::make_unique<BuildDirectoryContext>(this->dir_entry.name, strlen(this->dir_entry.name)));
+                            this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(this->dir_entry.name, strlen(this->dir_entry.name)));
                             AMS_ABORT_UNLESS(real_child != nullptr);
                             child_dirs[cur_child_dir_ind++] = real_child;
                             AMS_ABORT_UNLESS(cur_child_dir_ind <= num_child_dirs);
@@ -392,7 +392,7 @@ namespace ams::mitm::fs {
                 {
                     const DirectoryEntry *cur_child = dir_table.GetEntry(cur_child_offset);
 
-                    this->AddDirectory(&real_child, parent, std::make_unique<BuildDirectoryContext>(cur_child->name, cur_child->name_size));
+                    this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(cur_child->name, cur_child->name_size));
                     AMS_ABORT_UNLESS(real_child != nullptr);
 
                     next_child_offset = cur_child->sibling;
@@ -409,25 +409,25 @@ namespace ams::mitm::fs {
         void Builder::AddSdFiles() {
             /* Open Sd Card filesystem. */
             FsFileSystem sd_filesystem;
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&sd_filesystem));
-            ON_SCOPE_EXIT { fsFsClose(&sd_filesystem); };
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(sd_filesystem)));
+            ON_SCOPE_EXIT { fsFsClose(std::addressof(sd_filesystem)); };
 
             /* If there is no romfs folder on the SD, don't bother continuing. */
             {
                 FsDir dir;
-                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(&dir, this->program_id, this->root->path.get(), OpenDirectoryMode_Directory, &sd_filesystem))) {
+                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), this->program_id, this->root->path.get(), OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
                     return;
                 }
-                fsDirClose(&dir);
+                fsDirClose(std::addressof(dir));
             }
 
             this->cur_source_type = DataSourceType::LooseSdFile;
-            this->VisitDirectory(&sd_filesystem, this->root);
+            this->VisitDirectory(std::addressof(sd_filesystem), this->root);
         }
 
         void Builder::AddStorageFiles(ams::fs::IStorage *storage, DataSourceType source_type) {
             Header header;
-            R_ABORT_UNLESS(storage->Read(0, &header, sizeof(Header)));
+            R_ABORT_UNLESS(storage->Read(0, std::addressof(header), sizeof(Header)));
             AMS_ABORT_UNLESS(header.header_size == sizeof(Header));
 
             /* Read tables. */
@@ -444,8 +444,8 @@ namespace ams::mitm::fs {
 
             /* Open an SD card filesystem. */
             FsFileSystem sd_filesystem;
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&sd_filesystem));
-            ON_SCOPE_EXIT { fsFsClose(&sd_filesystem); };
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(sd_filesystem)));
+            ON_SCOPE_EXIT { fsFsClose(std::addressof(sd_filesystem)); };
 
             /* Calculate hash table sizes. */
             const size_t num_dir_hash_table_entries  = GetHashTableSize(this->num_dirs);
@@ -460,7 +460,7 @@ namespace ams::mitm::fs {
             /* Open metadata file. */
             const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
             FsFile metadata_file;
-            R_ABORT_UNLESS(mitm::fs::CreateAndOpenAtmosphereSdFile(&metadata_file, this->program_id, "romfs_metadata.bin", metadata_size));
+            R_ABORT_UNLESS(mitm::fs::CreateAndOpenAtmosphereSdFile(std::addressof(metadata_file), this->program_id, "romfs_metadata.bin", metadata_size));
 
             /* Ensure later hash tables will have correct defaults. */
             static_assert(EmptyEntry == 0xFFFFFFFF);
@@ -534,13 +534,13 @@ namespace ams::mitm::fs {
                 u32 *file_hash_table = reinterpret_cast<u32 *>(fht_buf);
                 std::memset(file_hash_table, 0xFF, this->file_hash_table_size);
                 ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(&metadata_file, this->dir_hash_table_size + this->dir_table_size, file_hash_table, this->file_hash_table_size, FsWriteOption_None));
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), this->dir_hash_table_size + this->dir_table_size, file_hash_table, this->file_hash_table_size, FsWriteOption_None));
                     std::free(fht_buf);
                 };
 
                 /* Write the file table. */
                 {
-                    FileTableWriter file_table(&metadata_file, this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size, this->file_table_size);
+                    FileTableWriter file_table(std::addressof(metadata_file), this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size, this->file_table_size);
 
                     for (const auto &it : this->files) {
                         BuildFileContext *cur_file = it.get();
@@ -602,13 +602,13 @@ namespace ams::mitm::fs {
                 u32 *dir_hash_table = reinterpret_cast<u32 *>(dht_buf);
                 std::memset(dir_hash_table, 0xFF, this->dir_hash_table_size);
                 ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(&metadata_file, 0, dir_hash_table, this->dir_hash_table_size, FsWriteOption_None));
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), 0, dir_hash_table, this->dir_hash_table_size, FsWriteOption_None));
                     std::free(dht_buf);
                 };
 
                 /* Write the file table. */
                 {
-                    DirectoryTableWriter dir_table(&metadata_file, this->dir_hash_table_size, this->dir_table_size);
+                    DirectoryTableWriter dir_table(std::addressof(metadata_file), this->dir_hash_table_size, this->dir_table_size);
 
                     for (const auto &it : this->directories) {
                         BuildDirectoryContext *cur_dir = it.get();
@@ -657,7 +657,7 @@ namespace ams::mitm::fs {
 
             /* Save metadata to the SD card, to save on memory space. */
             {
-                R_ABORT_UNLESS(fsFileFlush(&metadata_file));
+                R_ABORT_UNLESS(fsFileFlush(std::addressof(metadata_file)));
                 out_infos->emplace_back(header->dir_hash_table_ofs, metadata_size, DataSourceType::Metadata, new RemoteFile(metadata_file));
             }
         }

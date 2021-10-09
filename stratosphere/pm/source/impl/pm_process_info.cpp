@@ -30,7 +30,7 @@ namespace ams::pm::impl {
     void ProcessInfo::Cleanup() {
         if (this->handle != os::InvalidNativeHandle) {
             /* Unregister the process. */
-            fsprUnregisterProgram(static_cast<u64>(this->process_id));
+            fsprUnregisterProgram(this->process_id.value);
             sm::manager::UnregisterProcess(this->process_id);
             ldr::pm::UnpinProgram(this->pin_id);
 
