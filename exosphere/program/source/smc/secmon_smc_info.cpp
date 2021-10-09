@@ -213,8 +213,8 @@ namespace ams::secmon::smc {
                 case ConfigItem::IsChargerHiZModeEnabled:
                     args.r[1] = IsChargerHiZModeEnabled();
                     break;
-                case ConfigItem::QuestState:
-                    args.r[1] = fuse::GetQuestState();
+                case ConfigItem::RetailInteractiveDisplayState:
+                    args.r[1] = fuse::GetRetailInteractiveDisplayState();
                     break;
                 case ConfigItem::RegulatorType:
                     args.r[1] = fuse::GetRegulator();

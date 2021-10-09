@@ -122,20 +122,20 @@ namespace ams::settings::fwdbg {
         }
 
         Result ValidateSettingsName(const char *name) {
-            R_UNLESS(name != nullptr, ResultSettingsNameNull());
+            R_UNLESS(name != nullptr, ResultNullSettingsName());
             const size_t len = strnlen(name, SettingsNameLengthMax + 1);
-            R_UNLESS(len > 0,                          ResultSettingsNameEmpty());
-            R_UNLESS(len <= SettingsNameLengthMax,     ResultSettingsNameTooLong());
-            R_UNLESS(IsValidSettingsFormat(name, len), ResultSettingsNameInvalidFormat());
+            R_UNLESS(len > 0,                          ResultEmptySettingsName());
+            R_UNLESS(len <= SettingsNameLengthMax,     ResultTooLongSettingsName());
+            R_UNLESS(IsValidSettingsFormat(name, len), ResultInvalidFormatSettingsName());
             return ResultSuccess();
         }
 
         Result ValidateSettingsItemKey(const char *key) {
-            R_UNLESS(key != nullptr, ResultSettingsNameNull());
+            R_UNLESS(key != nullptr, ResultNullSettingsName());
             const size_t len = strnlen(key, SettingsItemKeyLengthMax + 1);
-            R_UNLESS(len > 0,                         ResultSettingsItemKeyEmpty());
-            R_UNLESS(len <= SettingsNameLengthMax,    ResultSettingsItemKeyTooLong());
-            R_UNLESS(IsValidSettingsFormat(key, len), ResultSettingsItemKeyInvalidFormat());
+            R_UNLESS(len > 0,                         ResultEmptySettingsItemKey());
+            R_UNLESS(len <= SettingsNameLengthMax,    ResultTooLongSettingsItemKey());
+            R_UNLESS(IsValidSettingsFormat(key, len), ResultInvalidFormatSettingsItemKey());
             return ResultSuccess();
         }
 
@@ -208,7 +208,7 @@ namespace ams::settings::fwdbg {
             const char *value_str = delimiter + 1;
             const char *type = val_tup;
 
-            R_UNLESS(delimiter != nullptr, ResultSettingsItemValueInvalidFormat());
+            R_UNLESS(delimiter != nullptr, ResultInvalidFormatSettingsItemValue());
 
             while (std::isspace(static_cast<unsigned char>(*type)) && type != delimiter) {
                 type++;
@@ -216,8 +216,8 @@ namespace ams::settings::fwdbg {
 
             const size_t type_len = delimiter - type;
             const size_t value_len = strlen(value_str);
-            R_UNLESS(type_len > 0,  ResultSettingsItemValueInvalidFormat());
-            R_UNLESS(value_len > 0, ResultSettingsItemValueInvalidFormat());
+            R_UNLESS(type_len > 0,  ResultInvalidFormatSettingsItemValue());
+            R_UNLESS(value_len > 0, ResultInvalidFormatSettingsItemValue());
 
             /* Create new value. */
             SdKeyValueStoreEntry new_value = {};
@@ -232,9 +232,9 @@ namespace ams::settings::fwdbg {
                 std::memcpy(new_value.value, value_str, size);
                 new_value.value_size = size;
             } else if (strncasecmp(type, "hex", type_len) == 0 || strncasecmp(type, "bytes", type_len) == 0) {
-                R_UNLESS(value_len > 0,            ResultSettingsItemValueInvalidFormat());
-                R_UNLESS(value_len % 2 == 0,       ResultSettingsItemValueInvalidFormat());
-                R_UNLESS(IsHexadecimal(value_str), ResultSettingsItemValueInvalidFormat());
+                R_UNLESS(value_len > 0,            ResultInvalidFormatSettingsItemValue());
+                R_UNLESS(value_len % 2 == 0,       ResultInvalidFormatSettingsItemValue());
+                R_UNLESS(IsHexadecimal(value_str), ResultInvalidFormatSettingsItemValue());
 
                 const size_t size = value_len / 2;
                 R_TRY(AllocateValue(&new_value.value, size));
@@ -253,7 +253,7 @@ namespace ams::settings::fwdbg {
             } else if (strncasecmp(type, "u64", type_len) == 0) {
                 R_TRY((ParseSettingsItemIntegralValue<u64>(new_value, value_str)));
             } else {
-                return ResultSettingsItemValueInvalidFormat();
+                return ResultInvalidFormatSettingsItemValue();
             }
 
             /* Insert the entry. */
@@ -429,7 +429,7 @@ namespace ams::settings::fwdbg {
     }
 
     Result GetSdCardKeyValueStoreSettingsItemValue(size_t *out_size, void *dst, size_t dst_size, const char *name, const char *key) {
-        R_UNLESS(dst != nullptr, ResultSettingsItemValueBufferNull());
+        R_UNLESS(dst != nullptr, ResultNullSettingsItemValueBuffer());
 
         SdKeyValueStoreEntry *entry = nullptr;
         R_TRY(GetEntry(&entry, name, key));

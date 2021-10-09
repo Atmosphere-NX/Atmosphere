@@ -21,14 +21,14 @@
 namespace ams::settings::impl {
 
     namespace {
-        constexpr fs::SystemSaveDataId FwdbgSystemSaveDataId          = 0x8000000000000051;
-        constexpr                  u32 FwdbgSystemSaveDataFlags       = fs::SaveDataFlags_KeepAfterRefurbishment | fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
-        constexpr                  s64 FwdbgSystemSaveDataSize        = 544_KB;
-        constexpr                  s64 FwdbgSystemSaveDataJournalSize = 544_KB;
+        constexpr fs::SystemSaveDataId SystemSaveDataId          = 0x8000000000000051;
+        constexpr                  u32 SystemSaveDataFlags       = fs::SaveDataFlags_KeepAfterRefurbishment | fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
+        constexpr                  s64 SystemSaveDataSize        = 544_KB;
+        constexpr                  s64 SystemSaveDataJournalSize = 544_KB;
 
         constexpr inline const char FwdbgSystemDataMountName[]     = "FwdbgSettingsD";
         constexpr inline const char PfCfgSystemDataMountName[]     = "PfcfgSettingsD";
-        constexpr inline const char FwdbgSystemSaveDataMountName[] = "FwdbgSettingsS";
+        constexpr inline const char SystemSaveDataMountName[]      = "FwdbgSettingsS";
 
         constexpr inline const char SettingsNameSeparator = '!';
 
@@ -43,7 +43,7 @@ namespace ams::settings::impl {
         void FreeMapValueToHeap(const MapValue &value);
         void *AllocateFromHeap(size_t size);
         void FreeToHeap(void *block, size_t size);
-        lmem::HeapHandle *GetHeapHandle();
+        lmem::HeapHandle &GetHeapHandle();
         Result GetKeyValueStoreMap(Map **out);
         Result GetKeyValueStoreMap(Map **out, bool force_load);
         Result GetKeyValueStoreMapForciblyForDebug(Map **out);
@@ -74,21 +74,11 @@ namespace ams::settings::impl {
 
         class MapKey {
             public:
-                static constexpr size_t MaxKeySize = 0x90;
+                static constexpr size_t MaxKeySize = sizeof(SettingsName) + sizeof(SettingsItemKey);
             private:
                 char *m_chars;
                 size_t m_count;
-                u64 reserved[2];
             public:
-                MapKey(MapKey &&other) : m_chars(nullptr), m_count(0) {
-                    std::swap(m_chars, other.m_chars);
-                    std::swap(m_count, other.m_count);
-                }
-
-                MapKey(const MapKey &other) : m_chars(nullptr), m_count(0) {
-                    this->Assign(other.GetString(), other.GetCount());
-                }
-
                 MapKey(const char * const chars) : m_chars(nullptr), m_count(0) {
                     AMS_ASSERT(chars != nullptr);
                     this->Assign(chars, util::Strnlen(chars, MaxKeySize));
@@ -98,6 +88,15 @@ namespace ams::settings::impl {
                     AMS_ASSERT(chars != nullptr);
                     AMS_ASSERT(count >= 0);
                     this->Assign(chars, count);
+                }
+
+                MapKey(MapKey &&other) : m_chars(nullptr), m_count(0) {
+                    std::swap(m_chars, other.m_chars);
+                    std::swap(m_count, other.m_count);
+                }
+
+                MapKey(const MapKey &other) : m_chars(nullptr), m_count(0) {
+                    this->Assign(other.GetString(), other.GetCount());
                 }
 
                 ~MapKey() {
@@ -124,7 +123,7 @@ namespace ams::settings::impl {
                     std::memcpy(new_heap + this->GetCount(), chars, count);
 
                     /* Null-terminate the new string. */
-                    *(new_heap + new_count - 1) = 0;
+                    new_heap[new_count - 1] = '\x00';
 
                     /* Reset and update the key. */
                     this->Reset();
@@ -146,7 +145,7 @@ namespace ams::settings::impl {
                     
                     /* Copy the characters to the buffer. */
                     std::memcpy(m_chars, chars, count);
-                    m_chars[count] = 0;
+                    m_chars[count] = '\x00';
                     return *this;
                 }
 
@@ -155,7 +154,7 @@ namespace ams::settings::impl {
                 }
 
                 s32 GetCount() const {
-                    return m_count - 1;
+                    return static_cast<s32>(m_count) - 1;
                 }
 
                 const char *GetString() const {
@@ -177,19 +176,17 @@ namespace ams::settings::impl {
 
         MapKey MakeMapKey(const SettingsName &name, const SettingsItemKey &item_key) {
             /* Create a map key. */
-            MapKey key(name.value, util::Strnlen(name.value, sizeof(name.value)));
+            MapKey key(name.value, util::Strnlen(name.value, util::size(name.value)));
             
             /* Append the settings name separator followed by the item key. */
             key.Append(SettingsNameSeparator);
-            key.Append(item_key.value, util::Strnlen(item_key.value, sizeof(item_key.value)));
+            key.Append(item_key.value, util::Strnlen(item_key.value, util::size(item_key.value)));
 
             /* Output the map key. */
             return key;
         }
 
         struct MapValue {
-            public:
-                static constexpr size_t MaxValueSize = 0x78;
             public:
                 u8 type;
                 size_t current_value_size;
@@ -205,30 +202,41 @@ namespace ams::settings::impl {
                 using value_type      = T;
                 using size_type       = size_t;
                 using difference_type = ptrdiff_t;
-                using pointer         = T*;
-                using const_pointer   = const T*;
-                using reference       = T&;
-                using const_reference = const T&;
             public:
-                Allocator() { /* ... */ }
-                ~Allocator() { /* ... */ }
-
-                pointer allocate(size_type n, const_pointer hint = 0) {
-                    AMS_UNUSED(hint);
-                    return static_cast<pointer>(AllocateFromHeap(sizeof(T) * n));
+                Allocator() noexcept = default;
+                ~Allocator() noexcept = default;
+                
+                Allocator(const Allocator &) noexcept = default;
+                Allocator(Allocator &&) noexcept = default;
+                
+                T *allocate(size_t n) noexcept {
+                    return static_cast<T *>(AllocateFromHeap(sizeof(T) * n));
                 }
 
-                void deallocate(pointer p, size_type n) {
+                void deallocate(T *p, size_t n) noexcept {
                     FreeToHeap(p, sizeof(T) * n);
                 }
+            private:
+                Allocator &operator=(const Allocator &) noexcept = default;
+                Allocator &operator=(Allocator &&) noexcept = default;
         };
-        
-        os::SdkMutex g_key_value_store_mutex;
+
+        template<class T, class U>
+        constexpr inline bool operator==(const Allocator<T> &, const Allocator<U> &) { 
+            return true;
+        }
+
+        constexpr inline size_t MapKeyBufferSize   = MapKey::MaxKeySize * 2;
+        constexpr inline size_t MapEntryBufferSize = 0x40 + sizeof(Map::value_type);
+
+        constexpr inline size_t HeapMemorySize = 512_KB; 
+
+        constinit os::SdkMutex g_key_value_store_mutex;
 
         void ClearKeyValueStoreMap(Map &map) {
             /* Free all values to the heap. */
-            for (auto it = map.begin(); it != map.end(); ++it) {
-                FreeMapValueToHeap(it->second);
+            for (const auto &kv_pair : map) {
+                FreeMapValueToHeap(kv_pair.second);
             }
 
             /* Clear the map. */
@@ -269,28 +277,28 @@ namespace ams::settings::impl {
 
         void FreeToHeap(void *block, size_t size) {
             AMS_UNUSED(size);
-            lmem::FreeToExpHeap(*GetHeapHandle(), block);
+            lmem::FreeToExpHeap(GetHeapHandle(), block);
         }
 
         void *AllocateFromHeap(size_t size) {
-            return lmem::AllocateFromExpHeap(*GetHeapHandle(), size);
+            return lmem::AllocateFromExpHeap(GetHeapHandle(), size);
         }
 
         size_t GetHeapAllocatableSize() {
-            return lmem::GetExpHeapAllocatableSize(*GetHeapHandle(), alignof(s32));
+            return lmem::GetExpHeapAllocatableSize(GetHeapHandle(), sizeof(void *));
         }
 
-        lmem::HeapHandle *GetHeapHandle() {
+        lmem::HeapHandle &GetHeapHandle() {
             static constinit bool s_is_initialized = false;
             static constinit lmem::HeapHandle s_heap_handle;
-            static constinit u8 s_heap_memory[32_KB];
+            static constinit u8 s_heap_memory[HeapMemorySize];
 
             if (!s_is_initialized) {
                 s_heap_handle = lmem::CreateExpHeap(s_heap_memory, sizeof(s_heap_memory), lmem::CreateOption_None);
                 s_is_initialized = true;
             }
 
-            return std::addressof(s_heap_handle);
+            return s_heap_handle;
         }
 
         Result GetKeyValueStoreMap(Map **out) {
@@ -325,8 +333,10 @@ namespace ams::settings::impl {
             /* Load the map, if we haven't already. */
             if (AMS_UNLIKELY(!s_is_loaded)) {
                 /* Attempt to load the map, allowing for failure if acceptable. */
-                if (const auto result = LoadKeyValueStoreMap(map); R_FAILED(result) && !force_load) {
-                    return result;
+                const auto result = LoadKeyValueStoreMap(map);
+
+                if (!force_load) {
+                    R_TRY(result);
                 }
 
                 /* Note that the map is loaded. */
@@ -467,11 +477,11 @@ namespace ams::settings::impl {
                 util::ConstructAt(s_storage);
 
                 /* Setup system data. */
-                data->SetSystemSaveDataId(FwdbgSystemSaveDataId);
-                data->SetTotalSize(FwdbgSystemSaveDataSize);
-                data->SetJournalSize(FwdbgSystemSaveDataJournalSize);
-                data->SetFlags(FwdbgSystemSaveDataFlags);
-                data->SetMountName(FwdbgSystemSaveDataMountName);
+                data->SetSystemSaveDataId(SystemSaveDataId);
+                data->SetTotalSize(SystemSaveDataSize);
+                data->SetJournalSize(SystemSaveDataJournalSize);
+                data->SetFlags(SystemSaveDataFlags);
+                data->SetMountName(SystemSaveDataMountName);
 
                 /* Note that we constructed. */
                 s_initialized = true;
@@ -504,7 +514,7 @@ namespace ams::settings::impl {
             AMS_ASSERT(system_data != nullptr);
             
             /* Load the default keys/values for the firmware debug system data. */
-            R_TRY(LoadKeyValueStoreMapDefault<SystemData>(out, *system_data));
+            R_TRY(LoadKeyValueStoreMapDefault(out, *system_data));
 
             /* Load the keys/values based on the hardware type. */
             R_TRY(LoadKeyValueStoreMap(out, GetSplHardwareType()));
@@ -512,14 +522,14 @@ namespace ams::settings::impl {
             if (IsSplDevelopment()) {
                 /* Get the system save data. */
                 SystemSaveData *system_save_data = nullptr;
-                R_TRY(GetSystemSaveData(std::addressof(system_save_data), false));
+                R_SUCCEED_IF(R_FAILED(GetSystemSaveData(std::addressof(system_save_data), false)));
                 AMS_ASSERT(system_save_data != nullptr);
 
                 /* Attempt to load the current keys/values from the system save data. */
-                if (const auto result = LoadKeyValueStoreMapCurrent<SystemSaveData>(out, *system_save_data); R_FAILED(result)) {
+                if (const auto result = LoadKeyValueStoreMapCurrent(out, *system_save_data); R_FAILED(result)) {
                     /* Reset all values to their defaults. */
-                    for (auto it = out->begin(); it != out->end(); ++it) {
-                        MapValue &map_value = it->second;
+                    for (auto &kv_pair : *out) {
+                        MapValue &map_value = kv_pair.second;
 
                         /* Free the current value. */
                         if (map_value.current_value != nullptr && map_value.current_value != map_value.default_value) {
@@ -531,7 +541,7 @@ namespace ams::settings::impl {
                         map_value.current_value      = map_value.default_value;
                     }
 
-                    /* Log failure to load system save data. */
+                    /* Log failure to load system save data. TODO: Make this a warning. */
                     AMS_LOG("[firmware debug settings] Warning: Failed to load the system save data. (%08x, %d%03d-%04d)\n", result.GetInnerValue(), 2, result.GetModule(), result.GetDescription());
                 }
             }
@@ -571,7 +581,7 @@ namespace ams::settings::impl {
             AMS_ASSERT(data != nullptr);
 
             /* Load the key value store map. */
-            return LoadKeyValueStoreMapDefault<SystemData>(out, *data);
+            return LoadKeyValueStoreMapDefault(out, *data);
         }
 
         template<typename T>
@@ -581,6 +591,7 @@ namespace ams::settings::impl {
 
             /* Open the data for reading. */
             R_TRY(data.OpenToRead());
+            ON_SCOPE_EXIT { data.Close(); };
 
             /* Load the map entries. */
             R_TRY(LoadKeyValueStoreMapEntries(out, data, [](Map &map, const MapKey &key, u8 type, const void *value_buffer, u32 value_size) -> Result {
@@ -591,7 +602,7 @@ namespace ams::settings::impl {
                     size_t current_value_size = value_size;
                     void *current_value_buffer = nullptr;
 
-                    if (value_size > 0) {
+                    if (current_value_size > 0) {
                         /* Ensure there is sufficient memory for the value. */
                         R_UNLESS(GetHeapAllocatableSize() >= current_value_size, ResultSettingsItemValueAllocationFailed());
                     
@@ -616,8 +627,6 @@ namespace ams::settings::impl {
                 return ResultSuccess();
             }));
 
-            /* Close the data. */
-            data.Close();
             return ResultSuccess();
         }
 
@@ -628,14 +637,15 @@ namespace ams::settings::impl {
 
             /* Open the data for reading. */
             R_TRY(data.OpenToRead());
+            ON_SCOPE_EXIT { data.Close(); };
 
             /* Load the map entries. */
             R_TRY(LoadKeyValueStoreMapEntries(out, data, [](Map &map, const MapKey &key, u8 type, const void *value_buffer, u32 value_size) -> Result {
                 /* Ensure there is sufficient memory for two keys. */
-                R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
+                R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
                 /* Copy the map key. */
-                const MapKey default_key = key;
+                MapKey default_key = key;
                 void *default_value_buffer = nullptr;
 
                 ON_SCOPE_EXIT { 
@@ -667,15 +677,13 @@ namespace ams::settings::impl {
                 };
 
                 /* Ensure there is sufficient memory for the value. */
-                R_UNLESS(GetHeapAllocatableSize() >= MapValue::MaxValueSize, ResultSettingsItemValueAllocationFailed());
+                R_UNLESS(GetHeapAllocatableSize() >= MapEntryBufferSize, ResultSettingsItemValueAllocationFailed());
                 
                 /* Insert the value into the map. */
-                map[default_key] = default_value;
+                map[std::move(default_key)] = default_value;
                 return ResultSuccess();
             }));
 
-            /* Close the data. */
-            data.Close();
             return ResultSuccess();
         }
 
@@ -688,11 +696,11 @@ namespace ams::settings::impl {
             /* Read the number of entries. */
             s64 offset = 0;
             u32 total_size = 0;
-            R_TRY(ReadData<T>(data, offset, std::addressof(total_size), sizeof(total_size)));
+            R_TRY(ReadData(data, offset, std::addressof(total_size), sizeof(total_size)));
         
             /* Iterate through all entries. NOTE: The offset is updated within LoadKeyValueStoreMapEntry. */
             while (offset < total_size) {
-                R_TRY(LoadKeyValueStoreMapEntry<T>(out, data, offset, load));
+                R_TRY(LoadKeyValueStoreMapEntry(out, data, offset, load));
             }
 
             return ResultSuccess();
@@ -706,7 +714,7 @@ namespace ams::settings::impl {
 
             /* Read the size of the key. */
             u32 key_size = 0;
-            R_TRY(ReadData<T>(data, offset, std::addressof(key_size), sizeof(key_size)));
+            R_TRY(ReadData(data, offset, std::addressof(key_size), sizeof(key_size)));
             AMS_ASSERT(key_size > 1);
 
             /* Ensure there is sufficient memory for this key. */
@@ -714,22 +722,22 @@ namespace ams::settings::impl {
             
             /* Read the key. */
             void *key_buffer = nullptr;
-            R_TRY(ReadDataToHeap<T>(data, offset, std::addressof(key_buffer), key_size));
+            R_TRY(ReadDataToHeap(data, offset, std::addressof(key_buffer), key_size));
             AMS_ASSERT(key_buffer != nullptr);
             ON_SCOPE_EXIT { FreeToHeap(key_buffer, key_size); };
 
             /* Ensure there is sufficient memory for two keys. */
-            R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
+            R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
             const MapKey key(static_cast<const char *>(key_buffer), key_size - 1);
 
             /* Read the type from the data. */
             u8 type = 0;
-            R_TRY(ReadData<T>(data, offset, std::addressof(type), sizeof(type)));
+            R_TRY(ReadData(data, offset, std::addressof(type), sizeof(type)));
 
             /* Read the size of the value. */
             u32 value_size = 0;
-            R_TRY(ReadData<T>(data, offset, std::addressof(value_size), sizeof(value_size)));
+            R_TRY(ReadData(data, offset, std::addressof(value_size), sizeof(value_size)));
 
             void *value_buffer = nullptr;
             ON_SCOPE_EXIT { 
@@ -743,7 +751,7 @@ namespace ams::settings::impl {
                 R_UNLESS(GetHeapAllocatableSize() >= value_size, ResultSettingsItemValueAllocationFailed());
 
                 /* Read the value to the buffer. */
-                R_TRY(ReadDataToHeap<T>(data, offset, std::addressof(value_buffer), value_size));
+                R_TRY(ReadDataToHeap(data, offset, std::addressof(value_buffer), value_size));
             }
 
             /* Load the value. */
@@ -761,13 +769,14 @@ namespace ams::settings::impl {
             ClearKeyValueStoreMap(*out);
 
             /* Load the default keys/values for the firmware debug system save data. */
-            R_TRY(LoadKeyValueStoreMapDefault<SystemSaveData>(out, *fwdbg_system_save_data));
+            R_TRY(LoadKeyValueStoreMapDefault(out, *fwdbg_system_save_data));
 
             /* Load the default keys/values for the platform configuration system save data. */
-            R_TRY(LoadKeyValueStoreMapDefault<SystemSaveData>(out, *pfcfg_system_save_data));
+            R_TRY(LoadKeyValueStoreMapDefault(out, *pfcfg_system_save_data));
 
             /* Load the current values for the system save data. */
-            return LoadKeyValueStoreMapCurrent<SystemSaveData>(out, *system_save_data);
+            R_TRY(LoadKeyValueStoreMapCurrent(out, *system_save_data));
+            return ResultSuccess();
         }
         
         template<typename T>
@@ -778,7 +787,7 @@ namespace ams::settings::impl {
             R_TRY(data.Read(offset, buffer, size));
             
             /* Increment the offset. */
-            offset += size;
+            offset += static_cast<s64>(size);
             return ResultSuccess();
         }
 
@@ -834,13 +843,19 @@ namespace ams::settings::impl {
             AMS_ASSERT(out_count != nullptr);
             AMS_ASSERT(out_buffer);
 
-            /* Get the firmware debug system data. */
+            /* Attempt to get the firmware debug system data. */
             SystemData *system_data = nullptr;
-            R_TRY(GetSystemData<SystemDataTag::Fwdbg>(std::addressof(system_data), ncm::SystemDataId::FirmwareDebugSettings));
-            AMS_ASSERT(system_data != nullptr);
+            if (R_SUCCEEDED(GetSystemData<SystemDataTag::Fwdbg>(std::addressof(system_data), ncm::SystemDataId::FirmwareDebugSettings))) {
+                AMS_ASSERT(system_data != nullptr);
 
-            /* Read the data. */
-            return ReadAllBytes<SystemData>(system_data, out_count, out_buffer, out_buffer_size);
+                /* Read the data. */
+                R_TRY(ReadAllBytes(system_data, out_count, out_buffer, out_buffer_size));
+            } else {
+                /* Set the output count to 0. */
+                *out_count = 0;
+            }
+
+            return ResultSuccess();
         }
 
         Result ReadSystemDataPlatformConfiguration(u64 *out_count, char * const out_buffer, size_t out_buffer_size) {
@@ -875,13 +890,19 @@ namespace ams::settings::impl {
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
-            /* Get the platform configuration system data. */
+            /* Attempt to get the platform configuration system data. */
             SystemData *system_data = nullptr;
-            R_TRY(GetSystemData<SystemDataTag::PfCfg>(std::addressof(system_data), system_data_id));
-            AMS_ASSERT(system_data != nullptr);
+            if (R_SUCCEEDED(GetSystemData<SystemDataTag::PfCfg>(std::addressof(system_data), system_data_id))) {
+                AMS_ASSERT(system_data != nullptr);
 
-            /* Read the data. */
-            return ReadAllBytes<SystemData>(system_data, out_count, out_buffer, out_buffer_size);
+                /* Read the data. */
+                R_TRY(ReadAllBytes(system_data, out_count, out_buffer, out_buffer_size));
+            } else {
+                /* Set the output count to 0. */
+                *out_count = 0;
+            }
+
+            return ResultSuccess();
         }
 
         Result ReadSystemSaveData(u64 *out_count, char * const out_buffer, size_t out_buffer_size) {
@@ -889,16 +910,19 @@ namespace ams::settings::impl {
             AMS_ASSERT(out_count != nullptr);
             AMS_ASSERT(out_buffer);
         
-            /* Get the system save data. */
+            /* Attempt to get the system save data. */
             SystemSaveData *system_save_data = nullptr;
-            if (const auto result = GetSystemSaveData(std::addressof(system_save_data), false); R_FAILED(result)) {
-                *out_count = 0;
-                return ResultSuccess();
-            }
-            AMS_ASSERT(system_data != nullptr);
+            if (R_SUCCEEDED(GetSystemSaveData(std::addressof(system_save_data), false))) {
+                AMS_ASSERT(system_save_data != nullptr);
 
-            /* Read the data. */
-            return ReadAllBytes<SystemSaveData>(system_save_data, out_count, out_buffer, out_buffer_size);
+                /* Read the data. */
+                R_TRY(ReadAllBytes(system_save_data, out_count, out_buffer, out_buffer_size));
+            } else {
+                /* Set the output count to 0. */
+                *out_count = 0;
+            }
+
+            return ResultSuccess();
         }
 
         Result SaveKeyValueStoreMap(const Map &map) {
@@ -908,7 +932,7 @@ namespace ams::settings::impl {
             AMS_ASSERT(system_save_data != nullptr);
 
             /* Save the current values of the key value store map. */
-            return SaveKeyValueStoreMapCurrent<SystemSaveData>(*system_save_data, map);
+            return SaveKeyValueStoreMapCurrent(*system_save_data, map);
         }
 
         template<typename T, typename F>
@@ -917,21 +941,21 @@ namespace ams::settings::impl {
             AMS_ASSERT(test != nullptr);
 
             /* Create the save data if necessary. */
-            R_TRY_CATCH(data.Create(512_KB)) {
-                R_CATCH(fs::ResultPathAlreadyExists) { /* ... */ }
+            R_TRY_CATCH(data.Create(HeapMemorySize)) {
+                R_CATCH(fs::ResultPathAlreadyExists) { /* It's okay if the save data already exists. */ }
             } R_END_TRY_CATCH;
 
             {
                 /* Open the save data for writing. */
                 R_TRY(data.OpenToWrite());
                 ON_SCOPE_EXIT {
-                    /* Flush and close the save data. */
+                    /* Flush and close the save data. NOTE: Nintendo only does this if SetFileSize succeeds. */
                     R_ABORT_UNLESS(data.Flush());
                     data.Close(); 
                 };
 
                 /* Set the file size of the save data. */
-                R_TRY(data.SetFileSize(512_KB));
+                R_TRY(data.SetFileSize(HeapMemorySize));
 
                 /* Write the data size, which includes itself. */
                 u32 data_size = sizeof(data_size);
@@ -941,15 +965,15 @@ namespace ams::settings::impl {
                 s64 current_offset = sizeof(data_size);
 
                 /* Iterate through map entries. */
-                for (auto it = map.begin(); it != map.end(); ++it) {
+                for (const auto &kv_pair : map) {
                     /* Declare variables for test. */
-                    u8 type            = 0;
+                    u8 type                  = 0;
                     const void *value_buffer = nullptr;
-                    u32 value_size     = 0;
+                    u32 value_size           = 0;
                     
                     /* Test if the map value varies from the default. */
-                    if (test(std::addressof(type), std::addressof(value_buffer), std::addressof(value_size), it->second)) {
-                        R_TRY(SaveKeyValueStoreMapEntry<T>(data, current_offset, it->first, type, value_buffer, value_size));
+                    if (test(std::addressof(type), std::addressof(value_buffer), std::addressof(value_size), kv_pair.second)) {
+                        R_TRY(SaveKeyValueStoreMapEntry(data, current_offset, kv_pair.first, type, value_buffer, value_size));
                     }
                 }
 
@@ -965,7 +989,7 @@ namespace ams::settings::impl {
         template<typename T>
         Result SaveKeyValueStoreMapCurrent(T &data, const Map &map) {
             /* Save the current values in the map to the data. */
-            return SaveKeyValueStoreMap<T>(data, map, [](u8 *out_type, const void **out_value_buffer, u32 *out_value_size, const MapValue &map_value) -> bool {
+            return SaveKeyValueStoreMap(data, map, [](u8 *out_type, const void **out_value_buffer, u32 *out_value_size, const MapValue &map_value) -> bool {
                 /* Check preconditions. */
                 AMS_ASSERT(out_type != nullptr);
                 AMS_ASSERT(out_value_buffer != nullptr);
@@ -987,7 +1011,7 @@ namespace ams::settings::impl {
         template<typename T>
         Result SaveKeyValueStoreMapDefault(T &data, const Map &map) {
             /* Save the default values in the map to the data. */
-            return SaveKeyValueStoreMap<T>(data, map, [](u8 *out_type, const void **out_value_buffer, u32 *out_value_size, const MapValue &map_value) -> bool {
+            return SaveKeyValueStoreMap(data, map, [](u8 *out_type, const void **out_value_buffer, u32 *out_value_size, const MapValue &map_value) -> bool {
                 /* Check preconditions. */
                 AMS_ASSERT(out_type != nullptr);
                 AMS_ASSERT(out_value_buffer != nullptr);
@@ -1002,7 +1026,7 @@ namespace ams::settings::impl {
         }
 
         Result SaveKeyValueStoreMapDefaultForDebug(SystemSaveData &data, const Map &map) {
-            return SaveKeyValueStoreMapDefault<SystemSaveData>(data, map);
+            return SaveKeyValueStoreMapDefault(data, map);
         }
 
         template<typename T>
@@ -1010,19 +1034,19 @@ namespace ams::settings::impl {
             /* Write the key size and increment the offset. */
             const u32 key_size = key.GetCount() + 1;
             R_TRY(data.Write(offset, std::addressof(key_size), sizeof(key_size)));
-            offset += sizeof(key_size);
+            offset += static_cast<s64>(sizeof(key_size));
 
             /* Write the key string and increment the offset. */
             R_TRY(data.Write(offset, key.GetString(), key_size));
-            offset += key_size;
+            offset += static_cast<s64>(key_size);
 
             /* Write the type and increment the offset. */
             R_TRY(data.Write(offset, std::addressof(type), sizeof(type)));
-            offset += sizeof(type);
+            offset += static_cast<s64>(sizeof(type));
 
             /* Write the value size and increment the offset. */
             R_TRY(data.Write(offset, std::addressof(value_size), sizeof(value_size)));
-            offset += sizeof(value_size);
+            offset += static_cast<s64>(sizeof(value_size));
 
             /* If the value is larger than 0, write it to the data. */
             if (value_size > 0) {
@@ -1030,7 +1054,7 @@ namespace ams::settings::impl {
                 AMS_ASSERT(value_buffer != nullptr);
 
                 R_TRY(data.Write(offset, value_buffer, value_size));
-                offset += value_size;
+                offset += static_cast<s64>(value_size);
             }
 
             return ResultSuccess();
@@ -1051,23 +1075,23 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Create a map key from the key value store's name. */
-        MapKey name_map_key(m_name->value);
+        MapKey map_key_header(m_name.value);
 
         /* Append the settings name separator. */
-        name_map_key.Append(SettingsNameSeparator);
+        map_key_header.Append(SettingsNameSeparator);
 
         /* Define the item map key. */
         const MapKey *item_map_key = nullptr;
 
         /* Find an item map key with the name as a prefix. */
-        for (auto it = map->begin(); it != map->end(); ++it) {
-            const MapKey &map_key = it->first;
+        for (const auto &kv_pair : *map) {
+            const MapKey &map_key = kv_pair.first;
             
             /* Check if the name map key is smaller than the current map key, and the current map key contains the name map key. */
-            if (name_map_key < map_key && map_key.Find(name_map_key)) {
+            if (map_key_header < map_key && map_key.Find(map_key_header)) {
                 item_map_key = std::addressof(map_key);
                 break;
             }
@@ -1078,7 +1102,7 @@ namespace ams::settings::impl {
 
         /* Ensure there is sufficient memory for the item map key. */
         const size_t item_map_key_size = item_map_key->GetCount() + 1;
-        R_UNLESS(GetHeapAllocatableSize() >= item_map_key_size, ResultSettingsKeyValueStoreKeyIteratorAllocationFailed());
+        R_UNLESS(GetHeapAllocatableSize() >= item_map_key_size, ResultSettingsItemKeyIteratorAllocationFailed());
     
         /* Allocate the key buffer. */
         char *buffer = static_cast<char *>(AllocateFromHeap(item_map_key_size));
@@ -1089,9 +1113,9 @@ namespace ams::settings::impl {
 
         /* Output the iterator. */
         *out = {
-            .name_size = static_cast<size_t>(name_map_key.GetCount()),
-            .key_size  = item_map_key_size,
-            .map_key   = buffer,
+            .header_size = static_cast<size_t>(map_key_header.GetCount()),
+            .entire_size = item_map_key_size,
+            .map_key     = buffer,
         };
         return ResultSuccess();
     }
@@ -1110,13 +1134,10 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
-
-        /* Create the map key. */
-        MapKey map_key = MakeMapKey(*m_name, item_key);
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Find the key in the map. */
-        auto it = map->find(map_key);
+        const Map::const_iterator it = map->find(MakeMapKey(m_name, item_key));
         R_UNLESS(it != map->end(), ResultSettingsItemNotFound());
 
         /* Get the map value from the iterator. */
@@ -1136,7 +1157,7 @@ namespace ams::settings::impl {
         return ResultSuccess();
     }
 
-    Result KeyValueStore::GetValueSize(size_t *out_value_size, const SettingsItemKey &item_key) {
+    Result KeyValueStore::GetValueSize(u64 *out_value_size, const SettingsItemKey &item_key) {
         /* Check preconditions. */
         AMS_ASSERT(out_count != nullptr);
 
@@ -1149,13 +1170,10 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
-
-        /* Create the map key. */
-        MapKey map_key = MakeMapKey(*m_name, item_key);
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Find the key in the map. */
-        auto it = map->find(map_key);
+        const Map::const_iterator it = map->find(MakeMapKey(m_name, item_key));
         R_UNLESS(it != map->end(), ResultSettingsItemNotFound());
 
         /* Output the value size. */
@@ -1173,13 +1191,10 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
-
-        /* Create the map key. */
-        MapKey map_key = MakeMapKey(*m_name, item_key);
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Find the key in the map. */
-        auto it = map->find(map_key);
+        const Map::iterator it = map->find(MakeMapKey(m_name, item_key));
         R_UNLESS(it != map->end(), ResultSettingsItemNotFound());
 
         /* Get the map value from the iterator. */
@@ -1228,13 +1243,10 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
-
-        /* Create the map key. */
-        MapKey map_key = MakeMapKey(*m_name, item_key);
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Find the key in the map. */
-        auto it = map->find(map_key);
+        const Map::iterator it = map->find(MakeMapKey(m_name, item_key));
         R_UNLESS(it != map->end(), ResultSettingsItemNotFound());
 
         /* Get the map value from the iterator. */
@@ -1265,27 +1277,26 @@ namespace ams::settings::impl {
         std::swap(map_value.current_value, value_buffer);
 
         /* Attempt to save the key value store map. */
-        if (const auto result = SaveKeyValueStoreMap(*map); R_FAILED(result)) {
-            /* Revert to the previous value. */
+        const auto result = SaveKeyValueStoreMap(*map);
+
+        /* If we failed, revert to the previous value. */
+        if (R_FAILED(result)) {
             std::swap(map_value.current_value_size, value_size);
             std::swap(map_value.current_value, value_buffer);
-
-            /* Free the new value which is now unused. */
-            if (value_buffer != nullptr && value_buffer != map_value.default_value) {
-                FreeToHeap(value_buffer, value_size);
-            }
-
-            /* Attempt to save the map again. Nintendo does not check the result of this. */
-            SaveKeyValueStoreMap(*map);
-            return result;
         }
 
-        /* Free the old value. */
+        /* Free the now unused value. */
         if (value_buffer != nullptr && value_buffer != map_value.default_value) {
             FreeToHeap(value_buffer, value_size);
         }
 
-        return ResultSuccess();
+        /* If we failed, attempt to save the map again. Note that Nintendo does not check the result of this. */
+        if (R_FAILED(result)) {
+            SaveKeyValueStoreMap(*map);
+            return result;
+        }
+
+       return ResultSuccess();
     }
 
     Result AddKeyValueStoreItemForDebug(const KeyValueStoreItemForDebug * const items, size_t items_count) {
@@ -1304,32 +1315,29 @@ namespace ams::settings::impl {
         for (size_t i = 0; i < items_count; i++) {
             const KeyValueStoreItemForDebug &item = items[i];
 
-            /* Get the map value for the item. */
-            MapValue map_value;
-            R_TRY(GetMapValueOfKeyValueStoreItemForDebug(std::addressof(map_value), item));
-
-            /* Ensure we free any buffers we allocate, if we fail. */
+            /* Create a map value for our scope. */
+            MapValue map_value = {};
             ON_SCOPE_EXIT { FreeMapValueToHeap(map_value); };
 
+            /* Get the map value for the item. */
+            R_TRY(GetMapValueOfKeyValueStoreItemForDebug(std::addressof(map_value), item));
+
             /* Ensure there is sufficient memory for two keys. */
-            R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
+            R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
             /* Create the map key. */
             MapKey map_key(item.key);
 
             /* Replace the existing value in the map if it already exists. */
-            if (auto it = map->find(map_key); it != map->end()) {
-                /* Get the existing map value. */
-                MapValue *current_map_value = std::addressof(it->second);
-
+            if (const Map::iterator it = map->find(map_key); it != map->end()) {
                 /* Free the existing map value. */
-                FreeMapValueToHeap(*current_map_value);
+                FreeMapValueToHeap(it->second);
 
                 /* Replace the existing map value. */
-                *current_map_value = map_value;
+                it->second = map_value;
             } else {
                 /* Ensure there is sufficient memory for the value. */
-                R_UNLESS(GetHeapAllocatableSize() >= MapValue::MaxValueSize, ResultSettingsItemValueAllocationFailed());
+                R_UNLESS(GetHeapAllocatableSize() >= MapEntryBufferSize, ResultSettingsItemValueAllocationFailed());
             
                 /* Assign the map value to the map key in the map. */
                 (*map)[std::move(map_key)] = map_value;
@@ -1346,8 +1354,8 @@ namespace ams::settings::impl {
     Result AdvanceKeyValueStoreKeyIterator(KeyValueStoreKeyIterator *out) {
         /* Check preconditions. */
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(out->name_size > 0);
-        AMS_ASSERT(out->name_size < out->key_size);
+        AMS_ASSERT(out->header_size > 0);
+        AMS_ASSERT(out->header_size < out->entire_size);
         AMS_ASSERT(out->map_key != nullptr);
 
         /* Acquire exclusive access to global state. */
@@ -1359,27 +1367,27 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Ensure there is sufficient memory for two keys. */
-        R_UNLESS(GetHeapAllocatableSize() >= MapKey::MaxKeySize * 2, ResultSettingsItemKeyAllocationFailed());
+        R_UNLESS(GetHeapAllocatableSize() >= MapKeyBufferSize, ResultSettingsItemKeyAllocationFailed());
 
         /* Locate the iterator's current key. */
-        auto it = map->find(MapKey(out->map_key, out->key_size - 1)); 
-        R_UNLESS(it != map->end(), ResultSettingsKeyValueStoreKeyIteratorItemNotFound());
+        Map::const_iterator it = map->find(MapKey(out->map_key, static_cast<s32>(out->entire_size) - 1));
+        R_UNLESS(it != map->end(), ResultNotFoundSettingsItemKeyIterator());
 
         /* Increment the iterator, ensuring we aren't at the end of the map. */
-        R_UNLESS(++it != map->end(), ResultSettingsEndIteration());
+        R_UNLESS((++it) != map->end(), ResultStopIteration());
 
         /* Get the map key. */
         const MapKey &map_key = it->first;
         
         /* Ensure the advanced iterator retains the required name. */
-        R_UNLESS(std::strncmp(map_key.GetString(), out->map_key, out->name_size) == 0, ResultSettingsEndIteration());
+        R_UNLESS(std::strncmp(map_key.GetString(), out->map_key, out->header_size) == 0, ResultStopIteration());
 
         /* Ensure there is sufficient memory for the map key. */
         const size_t map_key_size = map_key.GetCount() + 1;
-        R_UNLESS(GetHeapAllocatableSize() >= map_key_size, ResultSettingsKeyValueStoreKeyIteratorAllocationFailed());
+        R_UNLESS(GetHeapAllocatableSize() >= map_key_size, ResultSettingsItemKeyIteratorAllocationFailed());
 
         /* Free the iterator's old map key. */
-        FreeToHeap(out->map_key, out->key_size);
+        FreeToHeap(out->map_key, out->entire_size);
 
         /* Allocate the new map key. */
         char *buffer = static_cast<char *>(AllocateFromHeap(map_key_size));
@@ -1389,8 +1397,8 @@ namespace ams::settings::impl {
         std::memcpy(buffer, map_key.GetString(), map_key_size);
 
         /* Set the output map key. */
-        out->key_size = map_key_size;
-        out->map_key = buffer;
+        out->entire_size = map_key_size;
+        out->map_key     = buffer;
 
         return ResultSuccess();
     }
@@ -1398,24 +1406,24 @@ namespace ams::settings::impl {
     Result DestroyKeyValueStoreKeyIterator(KeyValueStoreKeyIterator *out) {
         /* Check preconditions. */
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(out->name_size > 0);
-        AMS_ASSERT(out->name_size < out->key_size);
+        AMS_ASSERT(out->header_size > 0);
+        AMS_ASSERT(out->header_size < out->entire_size);
         AMS_ASSERT(out->map_key != nullptr);
 
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_key_value_store_mutex);
 
         /* Free the key to the heap. */
-        FreeToHeap(out->map_key, out->key_size);
+        FreeToHeap(out->map_key, out->entire_size);
 
         /* Reset the name and key. */
-        out->name_size = 0;
-        out->key_size = 0;
-        out->map_key = nullptr;
+        out->header_size = 0;
+        out->entire_size = 0;
+        out->map_key     = nullptr;
         return ResultSuccess();
     }
 
-    Result GetKeyValueStoreItemCountForDebug(size_t *out_count) {
+    Result GetKeyValueStoreItemCountForDebug(u64 *out_count) {
         /* Check preconditions. */
         AMS_ASSERT(out != nullptr);
 
@@ -1432,7 +1440,7 @@ namespace ams::settings::impl {
         return ResultSuccess();
     }
     
-    Result GetKeyValueStoreItemForDebug(size_t *out_count, KeyValueStoreItemForDebug * const out_items, size_t out_items_count) {
+    Result GetKeyValueStoreItemForDebug(u64 *out_count, KeyValueStoreItemForDebug * const out_items, size_t out_items_count) {
         /* Check preconditions. */
         AMS_ASSERT(out_count != nullptr);
         AMS_ASSERT(out_items != nullptr);
@@ -1446,12 +1454,12 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Define the count variable. */
-        u64 count = 0;
+        size_t count = 0;
 
         /* Iterate through each value in the map and output kvs items. */
-        for (auto it = map->begin(); it != map->end(); ++it) {
+        for (const auto &kv_pair : *map) {
             /* Get the current map value. */
-            const MapValue &map_value = it->second;
+            const MapValue &map_value = kv_pair.second;
 
             /* Break if the count exceeds the output items count. */
             if (count >= out_items_count) {
@@ -1462,7 +1470,7 @@ namespace ams::settings::impl {
             KeyValueStoreItemForDebug &item = out_items[count++];
 
             /* Copy the map key and value to the item. */
-            item.key                = const_cast<char *>(it->first.GetString());
+            item.key                = kv_pair.first.GetString();
             item.type               = map_value.type;
             item.current_value_size = map_value.current_value_size;
             item.default_value_size = map_value.default_value_size;
@@ -1475,21 +1483,21 @@ namespace ams::settings::impl {
         return ResultSuccess();
     }
 
-    Result GetKeyValueStoreKeyIteratorKey(size_t *out_count, char *out_buffer, size_t out_buffer_size, const KeyValueStoreKeyIterator &iterator) {
+    Result GetKeyValueStoreKeyIteratorKey(u64 *out_count, char *out_buffer, size_t out_buffer_size, const KeyValueStoreKeyIterator &iterator) {
         /* Check preconditions. */
         AMS_ASSERT(out_count != nullptr);
         AMS_ASSERT(out_buffer != nullptr);
-        AMS_ASSERT(iterator.name_size > 0);
-        AMS_ASSERT(iterator.name_size < iterator.key_size);
+        AMS_ASSERT(iterator.header_size > 0);
+        AMS_ASSERT(iterator.header_size < iterator.entire_size);
         AMS_ASSERT(iterator.map_key != nullptr);
 
         /* Copy the key from the iterator to the output buffer. */
-        const size_t key_size = std::min(out_buffer_size, std::min(iterator.key_size - iterator.name_size, SettingsItemKeyLengthMax + 1));
-        std::strncpy(out_buffer, iterator.map_key + iterator.name_size, key_size);
+        const size_t key_size = std::min(out_buffer_size, std::min(iterator.entire_size - iterator.header_size, SettingsItemKeyLengthMax + 1));
+        std::strncpy(out_buffer, iterator.map_key + iterator.header_size, key_size);
         
         /* Set the end of the key to null. */
         if (key_size > 0) {
-            out_buffer[key_size - 1] = 0;
+            out_buffer[key_size - 1] = '\x00';
         }
 
         /* Output the key size. */
@@ -1497,15 +1505,15 @@ namespace ams::settings::impl {
         return ResultSuccess();
     }
 
-    Result GetKeyValueStoreKeyIteratorKeySize(size_t *out_count, const KeyValueStoreKeyIterator &iterator) {
+    Result GetKeyValueStoreKeyIteratorKeySize(u64 *out_count, const KeyValueStoreKeyIterator &iterator) {
         /* Check preconditions. */
         AMS_ASSERT(out_count != nullptr);
-        AMS_ASSERT(iterator.name_size > 0);
-        AMS_ASSERT(iterator.name_size < iterator.key_size);
+        AMS_ASSERT(iterator.header_size > 0);
+        AMS_ASSERT(iterator.header_size < iterator.entire_size);
         AMS_ASSERT(iterator.map_key != nullptr);
 
         /* Output the key size. */
-        *out_count = std::min(iterator.key_size - iterator.name_size, SettingsItemKeyLengthMax + 1);
+        *out_count = std::min(iterator.entire_size - iterator.header_size, SettingsItemKeyLengthMax + 1);
         return ResultSuccess();
     }
 
@@ -1586,20 +1594,24 @@ namespace ams::settings::impl {
         AMS_ASSERT(map != nullptr);
 
         /* Reset all values in the map. */
-        for (auto it = map->begin(); it != map->end(); ++it) {
+        for (auto &kv_pair : *map) {
             /* Get the map value. */
-            MapValue &map_value = it->second;
+            MapValue &map_value = kv_pair.second;
 
             /* If the current value isn't the default value, reset it. */
             if (map_value.current_value != map_value.default_value) {
-                /* Free the current value if present. */
-                if (map_value.current_value != nullptr) {
-                    FreeToHeap(map_value.current_value, map_value.current_value_size);
-                }
+                /* Store the previous value and size. */
+                size_t prev_value_size = map_value.current_value_size;
+                void *prev_value       = map_value.current_value;
 
                 /* Reset the current value to the default value. */
                 map_value.current_value_size = map_value.default_value_size;
                 map_value.current_value      = map_value.default_value;
+
+                /* Free the current value if present. */
+                if (prev_value != nullptr) {
+                    FreeToHeap(prev_value, prev_value_size);
+                }
             }
         }
 

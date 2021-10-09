@@ -45,11 +45,11 @@ namespace ams::settings::impl {
             }
         }
 
-        constexpr bool IsSplRetailInteractiveDisplayStateEnabled(spl::QuestState quest_state) {
+        constexpr bool IsSplRetailInteractiveDisplayStateEnabled(spl::RetailInteractiveDisplayState quest_state) {
             switch (quest_state) {
-                case spl::QuestState_Disabled:
+                case spl::RetailInteractiveDisplayState_Disabled:
                     return false;
-                case spl::QuestState_Enabled:
+                case spl::RetailInteractiveDisplayState_Enabled:
                     return true;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -68,7 +68,7 @@ namespace ams::settings::impl {
                 s_config = {
                     .is_development = spl::IsDevelopment(),
                     .hardware_type  = ConvertToSplHardwareType(spl::GetHardwareType()),
-                    .is_quest       = IsSplRetailInteractiveDisplayStateEnabled(spl::GetQuestState()),
+                    .is_quest       = IsSplRetailInteractiveDisplayStateEnabled(spl::GetRetailInteractiveDisplayState()),
                     .device_id_low  = spl::GetDeviceIdLow(),
                 };
 

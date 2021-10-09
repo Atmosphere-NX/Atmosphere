@@ -20,7 +20,7 @@
 namespace ams::settings::impl {
 
     struct KeyValueStoreItemForDebug {
-        char *key;
+        const char *key;
         u8 type;
         size_t current_value_size;
         size_t default_value_size;
@@ -30,21 +30,21 @@ namespace ams::settings::impl {
     static_assert(sizeof(KeyValueStoreItemForDebug) == 0x30);
 
     struct KeyValueStoreKeyIterator {
-        size_t name_size;
-        size_t key_size;
+        size_t header_size;
+        size_t entire_size;
         char *map_key;
     };
     static_assert(sizeof(KeyValueStoreKeyIterator) == 0x18);
 
     class KeyValueStore {
         private:
-            SettingsName *m_name;
+            const SettingsName &m_name;
         public:
-            KeyValueStore(SettingsName *name) : m_name(name) { /* ... */ }
+            explicit KeyValueStore(const SettingsName &name) : m_name(name) { /* ... */ }
             
             Result CreateKeyIterator(KeyValueStoreKeyIterator *out);
             Result GetValue(u64 *out_count, char *out_buffer, size_t out_buffer_size, const SettingsItemKey &item_key);
-            Result GetValueSize(size_t *out_value_size, const SettingsItemKey &item_key);
+            Result GetValueSize(u64 *out_value_size, const SettingsItemKey &item_key);
             Result ResetValue(const SettingsItemKey &item_key);
             Result SetValue(const SettingsItemKey &item_key, const void *buffer, size_t buffer_size);
     };
@@ -52,10 +52,10 @@ namespace ams::settings::impl {
     Result AddKeyValueStoreItemForDebug(const KeyValueStoreItemForDebug * const items, size_t items_count);
     Result AdvanceKeyValueStoreKeyIterator(KeyValueStoreKeyIterator *out);
     Result DestroyKeyValueStoreKeyIterator(KeyValueStoreKeyIterator *out);
-    Result GetKeyValueStoreItemCountForDebug(size_t *out_count);
-    Result GetKeyValueStoreItemForDebug(size_t *out_count, KeyValueStoreItemForDebug * const out_items, size_t out_items_count);
-    Result GetKeyValueStoreKeyIteratorKey(size_t *out_count, char *out_buffer, size_t out_buffer_size, const KeyValueStoreKeyIterator &iterator);
-    Result GetKeyValueStoreKeyIteratorKeySize(size_t *out_count, const KeyValueStoreKeyIterator &iterator);
+    Result GetKeyValueStoreItemCountForDebug(u64 *out_count);
+    Result GetKeyValueStoreItemForDebug(u64 *out_count, KeyValueStoreItemForDebug * const out_items, size_t out_items_count);
+    Result GetKeyValueStoreKeyIteratorKey(u64 *out_count, char *out_buffer, size_t out_buffer_size, const KeyValueStoreKeyIterator &iterator);
+    Result GetKeyValueStoreKeyIteratorKeySize(u64 *out_count, const KeyValueStoreKeyIterator &iterator);
     Result ReadKeyValueStoreFirmwareDebug(u64 *out_count, char * const out_buffer, size_t out_buffer_size);
     Result ReadKeyValueStorePlatformConfiguration(u64 *out_count, char * const out_buffer, size_t out_buffer_size);
     Result ReadKeyValueStoreSaveData(u64 *out_count, char * const out_buffer, size_t out_buffer_size);
