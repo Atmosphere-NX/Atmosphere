@@ -144,11 +144,11 @@ namespace ams::svc::codegen::impl {
     template<size_t N>
     class RegisterAllocator {
         public:
-            std::array<bool, N> map;
+            std::array<bool, N> m_map;
         public:
-            constexpr explicit RegisterAllocator() : map() { /* ... */ }
+            constexpr explicit RegisterAllocator() : m_map() { /* ... */ }
 
-            constexpr bool IsAllocated(size_t i) const { return this->map[i]; }
+            constexpr bool IsAllocated(size_t i) const { return m_map[i]; }
             constexpr bool IsFree(size_t i) const { return !this->IsAllocated(i); }
 
             constexpr void Allocate(size_t i) {
@@ -156,7 +156,7 @@ namespace ams::svc::codegen::impl {
                     std::abort();
                 }
 
-                this->map[i] = true;
+                m_map[i] = true;
             }
 
             constexpr bool TryAllocate(size_t i) {
@@ -164,14 +164,14 @@ namespace ams::svc::codegen::impl {
                     return false;
                 }
 
-                this->map[i] = true;
+                m_map[i] = true;
                 return true;
             }
 
             constexpr size_t AllocateFirstFree() {
                 for (size_t i = 0; i < N; i++) {
                     if (!this->IsAllocated(i)) {
-                        this->map[i] = true;
+                        m_map[i] = true;
                         return i;
                     }
                 }
@@ -184,7 +184,7 @@ namespace ams::svc::codegen::impl {
                     std::abort();
                 }
 
-                this->map[i] = false;
+                m_map[i] = false;
             }
 
             constexpr size_t GetRegisterCount() const {

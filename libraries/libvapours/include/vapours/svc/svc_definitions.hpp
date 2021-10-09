@@ -211,13 +211,13 @@ namespace ams::svc::test {
         template<typename... Ts>
         struct Validator {
             private:
-                std::array<bool, sizeof...(Ts)> valid;
+                std::array<bool, sizeof...(Ts)> m_valid;
             public:
-                constexpr Validator(Ts... args) : valid{static_cast<bool>(args)...} { /* ... */ }
+                constexpr Validator(Ts... args) : m_valid{static_cast<bool>(args)...} { /* ... */ }
 
                 constexpr bool IsValid() const {
                     for (size_t i = 0; i < sizeof...(Ts); i++) {
-                        if (!this->valid[i]) {
+                        if (!m_valid[i]) {
                             return false;
                         }
                     }

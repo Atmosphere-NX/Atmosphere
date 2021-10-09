@@ -27,20 +27,20 @@ namespace ams::svc {
     /* Utility classes required to encode information into the type system for SVC veneers. */
     class Size {
         private:
-            size_t size;
+            size_t m_size;
         public:
-            constexpr ALWAYS_INLINE Size(size_t s) : size(s) { /* ... */ }
-            constexpr ALWAYS_INLINE operator size_t() { return this->size; }
+            constexpr ALWAYS_INLINE Size(size_t s) : m_size(s) { /* ... */ }
+            constexpr ALWAYS_INLINE operator size_t() { return m_size; }
     };
     static_assert(sizeof(Size) == sizeof(size_t));
     static_assert(std::is_trivially_destructible<Size>::value);
 
     class Address {
         private:
-            uintptr_t uintptr;
+            uintptr_t m_uintptr;
         public:
-            constexpr ALWAYS_INLINE Address(uintptr_t u) : uintptr(u) { /* ... */ }
-            constexpr ALWAYS_INLINE operator uintptr_t() { return this->uintptr; }
+            constexpr ALWAYS_INLINE Address(uintptr_t u) : m_uintptr(u) { /* ... */ }
+            constexpr ALWAYS_INLINE operator uintptr_t() { return m_uintptr; }
     };
     static_assert(sizeof(Address) == sizeof(uintptr_t));
     static_assert(std::is_trivially_destructible<Address>::value);
@@ -57,11 +57,11 @@ namespace ams::svc {
             static_assert(std::is_pointer<T>::value);
             static constexpr bool IsInput = std::is_const<typename std::remove_pointer<T>::type>::value;
         private:
-            T pointer;
+            T m_pointer;
         public:
-            constexpr ALWAYS_INLINE UserPointer(T p) : pointer(p) { /* ... */ }
+            constexpr ALWAYS_INLINE UserPointer(T p) : m_pointer(p) { /* ... */ }
 
-            constexpr ALWAYS_INLINE T GetPointerUnsafe() { return this->pointer; }
+            constexpr ALWAYS_INLINE T GetPointerUnsafe() { return m_pointer; }
     };
 
     template<typename T>

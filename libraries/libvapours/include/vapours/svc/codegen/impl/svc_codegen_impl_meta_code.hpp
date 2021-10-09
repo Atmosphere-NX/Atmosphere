@@ -82,21 +82,21 @@ namespace ams::svc::codegen::impl {
                 return op;
             }
         public:
-            size_t num_operations;
-            std::array<Operation, MaxOperations> operations;
+            size_t m_num_operations;
+            std::array<Operation, MaxOperations> m_operations;
         public:
-            constexpr explicit MetaCode() : num_operations(0), operations() { /* ... */ }
+            constexpr explicit MetaCode() : m_num_operations(0), m_operations() { /* ... */ }
 
             constexpr size_t GetNumOperations() const {
-                return this->num_operations;
+                return m_num_operations;
             }
 
             constexpr Operation GetOperation(size_t i) const {
-                return this->operations[i];
+                return m_operations[i];
             }
 
             constexpr void AddOperation(Operation op) {
-                this->operations[this->num_operations++] = op;
+                m_operations[m_num_operations++] = op;
             }
     };
 
@@ -140,102 +140,102 @@ namespace ams::svc::codegen::impl {
         private:
             using OperationKind = typename MetaCode::OperationKind;
         private:
-            MetaCode meta_code;
+            MetaCode m_meta_code;
         public:
-            constexpr explicit MetaCodeGenerator() : meta_code() { /* ... */ }
+            constexpr explicit MetaCodeGenerator() : m_meta_code() { /* ... */ }
 
             constexpr MetaCode GetMetaCode() const {
-                return this->meta_code;
+                return m_meta_code;
             }
 
             constexpr void AddOperationDirectly(MetaCode::Operation op) {
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t... Registers>
             constexpr void SaveRegisters() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::SaveRegisters, Registers...>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t... Registers>
             constexpr void RestoreRegisters() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::RestoreRegisters, Registers...>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t... Registers>
             constexpr void ClearRegisters() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::ClearRegisters, Registers...>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Size>
             constexpr void AllocateStackSpace() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::AllocateStackSpace, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Size>
             constexpr void FreeStackSpace() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::FreeStackSpace, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Dst, size_t Src>
             constexpr void MoveRegister() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::MoveRegister, Dst, Src>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Reg>
             constexpr void ConvertToBoolean() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::ConvertToBoolean, Reg>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Reg, size_t Offset, size_t Size = 0>
             constexpr void LoadFromStack() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::LoadFromStack, Reg, Offset, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Reg0, size_t Reg1, size_t Offset, size_t Size>
             constexpr void LoadPairFromStack() {
                 static_assert(Offset % Size == 0);
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::LoadPairFromStack, Reg0, Reg1, Offset, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Reg, size_t Offset, size_t Size = 0>
             constexpr void StoreToStack() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::StoreToStack, Reg, Offset, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Reg0, size_t Reg1, size_t Offset, size_t Size>
             constexpr void StorePairToStack() {
                 static_assert(Offset % Size == 0);
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::StorePairToStack, Reg0, Reg1, Offset, Size>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Dst, size_t Low, size_t High>
             constexpr void Pack() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::Pack, Dst, Low, High>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Low, size_t High, size_t Src>
             constexpr void Unpack() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::Unpack, Low, High, Src>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
 
             template<size_t Dst, size_t Offset>
             constexpr void LoadStackAddress() {
                 constexpr auto op = MetaCode::MakeOperation<OperationKind::LoadStackAddress, Dst, Offset>();
-                this->meta_code.AddOperation(op);
+                m_meta_code.AddOperation(op);
             }
     };
 

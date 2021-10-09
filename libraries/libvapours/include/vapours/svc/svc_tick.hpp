@@ -25,7 +25,7 @@ namespace ams::svc {
             static constexpr s64 TicksPerSecond = ::ams::svc::TicksPerSecond;
             static constexpr s64 GetTicksPerSecond() { return TicksPerSecond; }
         private:
-            s64 tick;
+            s64 m_tick;
         private:
             static constexpr s64 NanoSecondsPerSecond = TimeSpan::FromSeconds(1).GetNanoSeconds();
 
@@ -52,19 +52,19 @@ namespace ams::svc {
                 return (ts_div * tick_div) * NanoSecondsPerSecond + ts_div * tick_mod + ts_mod * tick_div + value;
             }
         public:
-            constexpr explicit Tick(s64 t = 0) : tick(t) { /* ... */ }
-            constexpr Tick(TimeSpan ts) : tick(ConvertTimeSpanToTickImpl(ts)) { /* ... */ }
+            constexpr explicit Tick(s64 t = 0) : m_tick(t) { /* ... */ }
+            constexpr Tick(TimeSpan ts) : m_tick(ConvertTimeSpanToTickImpl(ts)) { /* ... */ }
 
-            constexpr operator s64() const { return this->tick; }
+            constexpr operator s64() const { return m_tick; }
 
             /* Tick arithmetic. */
-            constexpr Tick &operator+=(Tick rhs) { this->tick += rhs.tick; return *this; }
-            constexpr Tick &operator-=(Tick rhs) { this->tick -= rhs.tick; return *this; }
+            constexpr Tick &operator+=(Tick rhs) { m_tick += rhs.m_tick; return *this; }
+            constexpr Tick &operator-=(Tick rhs) { m_tick -= rhs.m_tick; return *this; }
             constexpr Tick operator+(Tick rhs) const { Tick r(*this); return r += rhs; }
             constexpr Tick operator-(Tick rhs) const { Tick r(*this); return r -= rhs; }
 
-            constexpr Tick &operator+=(TimeSpan rhs) { this->tick += Tick(rhs).tick; return *this; }
-            constexpr Tick &operator-=(TimeSpan rhs) { this->tick -= Tick(rhs).tick; return *this; }
+            constexpr Tick &operator+=(TimeSpan rhs) { m_tick += Tick(rhs).m_tick; return *this; }
+            constexpr Tick &operator-=(TimeSpan rhs) { m_tick -= Tick(rhs).m_tick; return *this; }
             constexpr Tick operator+(TimeSpan rhs) const { Tick r(*this); return r += rhs; }
             constexpr Tick operator-(TimeSpan rhs) const { Tick r(*this); return r -= rhs; }
     };

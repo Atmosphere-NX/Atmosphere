@@ -26,30 +26,30 @@ namespace ams::svc::codegen::impl {
             static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
         public:
             /* ABI parameters. */
-            Abi abi;
+            Abi m_abi;
 
             /* Parameter storage. */
-            size_t num_parameters;
-            Parameter parameters[MaxParameters];
+            size_t m_num_parameters;
+            Parameter m_parameters[MaxParameters];
         public:
             constexpr explicit ParameterLayout(Abi a)
-                : abi(a), num_parameters(0), parameters()
+                : m_abi(a), m_num_parameters(0), m_parameters()
             { /* ... */ }
 
             constexpr void AddSingle(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, bool b, Storage s, size_t idx) {
-                for (size_t i = 0; i < this->num_parameters; i++) {
-                    if (this->parameters[i].Is(id)) {
-                        this->parameters[i].AddLocation(Location(s, idx));
+                for (size_t i = 0; i < m_num_parameters; i++) {
+                    if (m_parameters[i].Is(id)) {
+                        m_parameters[i].AddLocation(Location(s, idx));
                         return;
                     }
                 }
-                this->parameters[this->num_parameters++] = Parameter(id, type, ts, ps, p, b, Location(s, idx));
+                m_parameters[m_num_parameters++] = Parameter(id, type, ts, ps, p, b, Location(s, idx));
             }
 
             constexpr size_t Add(Parameter::Identifier id, ArgumentType type, size_t ts, size_t ps, bool p, bool b, Storage s, size_t i) {
                 size_t required_registers = 0;
 
-                while (required_registers * this->abi.register_size < ps) {
+                while (required_registers * m_abi.register_size < ps) {
                     this->AddSingle(id, type, ts, ps, p, b, s, i++);
                     required_registers++;
                 }
@@ -58,8 +58,8 @@ namespace ams::svc::codegen::impl {
             }
 
             constexpr bool UsesLocation(Location l) const {
-                for (size_t i = 0; i < this->num_parameters; i++) {
-                    if (this->parameters[i].UsesLocation(l)) {
+                for (size_t i = 0; i < m_num_parameters; i++) {
+                    if (m_parameters[i].UsesLocation(l)) {
                         return true;
                     }
                 }
@@ -75,16 +75,16 @@ namespace ams::svc::codegen::impl {
             }
 
             constexpr size_t GetNumParameters() const {
-                return this->num_parameters;
+                return m_num_parameters;
             }
 
             constexpr Parameter GetParameter(size_t i) const {
-                return this->parameters[i];
+                return m_parameters[i];
             }
 
             constexpr bool HasParameter(Parameter::Identifier id) const {
-                for (size_t i = 0; i < this->num_parameters; i++) {
-                    if (this->parameters[i].Is(id)) {
+                for (size_t i = 0; i < m_num_parameters; i++) {
+                    if (m_parameters[i].Is(id)) {
                         return true;
                     }
                 }
@@ -92,20 +92,21 @@ namespace ams::svc::codegen::impl {
             }
 
             constexpr Parameter GetParameter(Parameter::Identifier id) const {
-                for (size_t i = 0; i < this->num_parameters; i++) {
-                    if (this->parameters[i].Is(id)) {
-                        return this->parameters[i];
+                for (size_t i = 0; i < m_num_parameters; i++) {
+                    if (m_parameters[i].Is(id)) {
+                        return m_parameters[i];
                     }
                 }
-                std::abort();
+
+                AMS_ASSUME(false);
             }
     };
 
     class ProcedureLayout {
         public:
-            Abi abi;
-            ParameterLayout input;
-            ParameterLayout output;
+            Abi m_abi;
+            ParameterLayout m_input;
+            ParameterLayout m_output;
         private:
             template<typename AbiType, typename ArgType>
             constexpr void ProcessArgument(size_t i, size_t &NGRN, size_t &NSAA) {
@@ -136,19 +137,19 @@ namespace ams::svc::codegen::impl {
                 const size_t registers_available = AbiType::RegisterCount - NGRN;
                 if constexpr (!PassedByPointer && IsIntegralOrUserPointer<ArgType> && ArgumentTypeSize > AbiType::RegisterSize) {
                     if (registers_available >= 2) {
-                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
+                        m_input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
                         NGRN += 2;
                     } else {
                         /* Argument went on stack, so stop allocating arguments in registers. */
                         NGRN = AbiType::RegisterCount;
 
                         NSAA += (NSAA & 1);
-                        this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
+                        m_input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
                         NSAA += 2;
                     }
                 } else {
                     if (ArgumentPassSize <= AbiType::RegisterSize * registers_available) {
-                        NGRN += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
+                        NGRN += m_input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Register, NGRN);
                     } else {
                         /* Argument went on stack, so stop allocating arguments in registers. */
                         NGRN = AbiType::RegisterCount;
@@ -156,12 +157,12 @@ namespace ams::svc::codegen::impl {
                         /* TODO: Stack pointer alignment is only ensured for aapcs64. */
                         /* What should we do here? */
 
-                        NSAA += this->input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
+                        NSAA += m_input.Add(id, Type, ArgumentTypeSize, ArgumentPassSize, PassedByPointer, IsBoolean, Storage::Stack, NSAA);
                     }
                 }
             }
         public:
-            constexpr explicit ProcedureLayout(Abi a) : abi(a), input(a), output(a) { /* ... */ }
+            constexpr explicit ProcedureLayout(Abi a) : m_abi(a), m_input(a), m_output(a) { /* ... */ }
 
             template<typename AbiType, typename ReturnType, typename... ArgumentTypes>
             static constexpr ProcedureLayout Create() {
@@ -177,7 +178,7 @@ namespace ams::svc::codegen::impl {
                 /* TODO: It's unclear how to handle the non-integral and too-large case. */
                 if constexpr (!std::is_same<ReturnType, void>::value) {
                     constexpr size_t ReturnTypeSize = AbiType::template Size<ReturnType>;
-                    layout.output.Add(Parameter::Identifier("ReturnType"), ArgumentType::Invalid, ReturnTypeSize, ReturnTypeSize, false, false /* TODO */, Storage::Register, 0);
+                    layout.m_output.Add(Parameter::Identifier("ReturnType"), ArgumentType::Invalid, ReturnTypeSize, ReturnTypeSize, false, false /* TODO */, Storage::Register, 0);
                     static_assert(IsIntegral<ReturnType> || ReturnTypeSize <= AbiType::RegisterSize);
                 }
 
@@ -189,27 +190,27 @@ namespace ams::svc::codegen::impl {
             }
 
             constexpr ParameterLayout GetInputLayout() const {
-                return this->input;
+                return m_input;
             }
 
             constexpr ParameterLayout GetOutputLayout() const {
-                return this->output;
+                return m_output;
             }
 
             constexpr Parameter GetParameter(Parameter::Identifier id) const {
-                if (this->input.HasParameter(id)) {
-                    return this->input.GetParameter(id);
+                if (m_input.HasParameter(id)) {
+                    return m_input.GetParameter(id);
                 } else {
-                    return this->output.GetParameter(id);
+                    return m_output.GetParameter(id);
                 }
             }
     };
 
     class SvcInvocationLayout {
         public:
-            Abi abi;
-            ParameterLayout input;
-            ParameterLayout output;
+            Abi m_abi;
+            ParameterLayout m_input;
+            ParameterLayout m_output;
         private:
             template<typename F>
             constexpr void ForEachInputArgument(ParameterLayout param_layout, F f) {
@@ -296,7 +297,7 @@ namespace ams::svc::codegen::impl {
                 }
             }
         public:
-            constexpr explicit SvcInvocationLayout(Abi a) : abi(a), input(a), output(a) { /* ... */ }
+            constexpr explicit SvcInvocationLayout(Abi a) : m_abi(a), m_input(a), m_output(a) { /* ... */ }
 
             template<typename AbiType>
             static constexpr SvcInvocationLayout Create(ProcedureLayout procedure_layout) {
@@ -305,17 +306,17 @@ namespace ams::svc::codegen::impl {
 
                 /* Input first wants to map in register -> register */
                 layout.ForEachInputArgument(procedure_layout.GetInputLayout(), [&](Parameter parameter) {
-                    AddRegisterParameter(layout.input, input_register_allocator, parameter);
+                    AddRegisterParameter(layout.m_input, input_register_allocator, parameter);
                 });
 
                 /* And then input wants to map in stack -> stack */
                 layout.ForEachInputArgument(procedure_layout.GetInputLayout(), [&](Parameter parameter) {
-                    AddStackParameter(layout.input, input_register_allocator, parameter);
+                    AddStackParameter(layout.m_input, input_register_allocator, parameter);
                 });
 
                 /* And then input wants to map in indirects -> register */
                 layout.ForEachInputPointerArgument(procedure_layout.GetInputLayout(), [&](Parameter parameter) {
-                    AddIndirectParameter<AbiType>(layout.input, input_register_allocator, parameter);
+                    AddIndirectParameter<AbiType>(layout.m_input, input_register_allocator, parameter);
                 });
 
                 /* Handle the return type. */
@@ -327,23 +328,23 @@ namespace ams::svc::codegen::impl {
                     if (return_param.GetIdentifier() != Parameter::Identifier("ReturnType")) {
                         std::abort();
                     }
-                    AddRegisterParameter(layout.output, output_register_allocator, return_param);
+                    AddRegisterParameter(layout.m_output, output_register_allocator, return_param);
                 }
 
                 /* Handle other outputs. */
                 layout.ForEachOutputArgument(procedure_layout.GetInputLayout(), [&](Parameter parameter) {
-                    AddIndirectParameter<AbiType>(layout.output, output_register_allocator, parameter);
+                    AddIndirectParameter<AbiType>(layout.m_output, output_register_allocator, parameter);
                 });
 
                 return layout;
             }
 
             constexpr ParameterLayout GetInputLayout() const {
-                return this->input;
+                return m_input;
             }
 
             constexpr ParameterLayout GetOutputLayout() const {
-                return this->output;
+                return m_output;
             }
     };
 
