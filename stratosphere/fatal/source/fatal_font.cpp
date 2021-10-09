@@ -100,7 +100,7 @@ namespace ams::fatal::srv::font {
             for (int tmpy = 0; tmpy < height; tmpy++) {
                 for (int tmpx = 0; tmpx < width; tmpx++) {
                     /* Implement very simple blending, as the bitmap value is an alpha value. */
-                    u16 *ptr = &g_frame_buffer[g_unswizzle_func(x + tmpx, y + tmpy)];
+                    u16 *ptr = g_frame_buffer + g_unswizzle_func(x + tmpx, y + tmpy);
                     *ptr = Blend(g_font_color, *ptr, imageptr[width * tmpy + tmpx]);
                 }
             }
@@ -114,7 +114,7 @@ namespace ams::fatal::srv::font {
             u32 prev_char = 0;
             for (u32 i = 0; i < len; ) {
                 u32 cur_char;
-                ssize_t unit_count = decode_utf8(&cur_char, reinterpret_cast<const u8 *>(&str[i]));
+                ssize_t unit_count = decode_utf8(&cur_char, reinterpret_cast<const u8 *>(str + i));
                 if (unit_count <= 0) break;
 
                 if (!g_mono_adv && i > 0) {

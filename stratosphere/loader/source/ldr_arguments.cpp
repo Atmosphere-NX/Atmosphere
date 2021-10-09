@@ -30,7 +30,7 @@ namespace ams::ldr::args {
         ArgumentInfo *FindArgumentInfo(ncm::ProgramId program_id) {
             for (size_t i = 0; i < MaxArgumentInfos; i++) {
                 if (g_argument_infos[i].program_id == program_id) {
-                    return &g_argument_infos[i];
+                    return g_argument_infos + i;
                 }
             }
             return nullptr;

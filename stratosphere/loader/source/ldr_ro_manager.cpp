@@ -48,7 +48,7 @@ namespace ams::ldr::ro {
         /* Helpers. */
         ProcessInfo *GetProcessInfo(PinId pin_id) {
             for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = &g_process_infos[i];
+                ProcessInfo *info = g_process_infos + i;
                 if (info->in_use && info->pin_id == pin_id) {
                     return info;
                 }
@@ -58,7 +58,7 @@ namespace ams::ldr::ro {
 
         ProcessInfo *GetProcessInfo(os::ProcessId process_id) {
             for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = &g_process_infos[i];
+                ProcessInfo *info = g_process_infos + i;
                 if (info->in_use && info->process_id == process_id) {
                     return info;
                 }
@@ -68,7 +68,7 @@ namespace ams::ldr::ro {
 
         ProcessInfo *GetFreeProcessInfo() {
             for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = &g_process_infos[i];
+                ProcessInfo *info = g_process_infos + i;
                 if (!info->in_use) {
                     return info;
                 }
@@ -126,7 +126,7 @@ namespace ams::ldr::ro {
 
         /* Nintendo doesn't actually care about successful allocation. */
         for (size_t i = 0; i < ModuleCountMax; i++) {
-            ModuleInfo *module = &info->modules[i];
+            ModuleInfo *module = info->modules + i;
             if (module->in_use) {
                 continue;
             }
@@ -147,7 +147,7 @@ namespace ams::ldr::ro {
 
         size_t count = 0;
         for (size_t i = 0; i < ModuleCountMax && count < max_out_count; i++) {
-            const ModuleInfo *module = &info->modules[i];
+            const ModuleInfo *module = info->modules + i;
             if (!module->in_use) {
                 continue;
             }

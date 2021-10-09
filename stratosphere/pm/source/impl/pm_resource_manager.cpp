@@ -180,7 +180,7 @@ namespace ams::pm::resource {
                 R_ABORT_UNLESS(svc::GetInfo(&value, svc::InfoType_ResourceLimit, svc::InvalidHandle, 0));
                 g_resource_limit_handles[i] = static_cast<svc::Handle>(value);
             } else {
-                R_ABORT_UNLESS(svc::CreateResourceLimit(&g_resource_limit_handles[i]));
+                R_ABORT_UNLESS(svc::CreateResourceLimit(g_resource_limit_handles + i));
             }
         }
 
@@ -243,8 +243,8 @@ namespace ams::pm::resource {
             R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(&total_memory, GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_PhysicalMemoryMax));
 
             /* Get and save application + applet memory. */
-            R_ABORT_UNLESS(svc::GetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application], svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
-            R_ABORT_UNLESS(svc::GetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet],      svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Applet));
+            R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application]), svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
+            R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet]),      svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Applet));
 
             const s64 application_size         = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application];
             const s64 applet_size              = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet];

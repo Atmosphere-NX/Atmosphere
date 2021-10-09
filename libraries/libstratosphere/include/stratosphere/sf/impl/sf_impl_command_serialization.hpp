@@ -617,7 +617,7 @@ namespace ams::sf::impl {
                 static_assert(Offset <= Size, "Offset <= Size");
                 static_assert(TypeSize <= Size, "TypeSize <= Size");
                 static_assert(Offset + TypeSize <= Size, "Offset + TypeSize <= Size");
-                return reinterpret_cast<uintptr_t>(&data[Offset]);
+                return reinterpret_cast<uintptr_t>(std::addressof(data[Offset]));
             }
 
             constexpr inline void CopyTo(void *dst) const {
@@ -760,7 +760,7 @@ namespace ams::sf::impl {
             template<size_t Index, typename Interface>
             Out<SharedPointer<Interface>> GetOutObject() {
                 auto sp = std::construct_at(GetOutObjectSharedPointer<Index, Interface>());
-                return Out<SharedPointer<Interface>>(sp, &this->out_object_ids[Index]);
+                return Out<SharedPointer<Interface>>(sp, this->out_object_ids + Index);
             }
 
             template<size_t Index, typename Interface>
@@ -907,11 +907,11 @@ namespace ams::sf::impl {
                 if constexpr (Attributes & SfBufferAttr_HipcMapAlias) {
                     is_buffer_map_alias = true;
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcBufferDescriptor *desc = &ctx.request.data.send_buffers[Info.send_map_alias_index];
+                        const HipcBufferDescriptor *desc = std::addressof(ctx.request.data.send_buffers[Info.send_map_alias_index]);
                         buffer = cmif::PointerAndSize(hipcGetBufferAddress(desc), hipcGetBufferSize(desc));
                         if (!IsMapTransferModeValid<Attributes>(static_cast<u32>(desc->mode))) { map_alias_buffers_valid = false; }
                     } else if constexpr (Attributes & SfBufferAttr_Out) {
-                        const HipcBufferDescriptor *desc = &ctx.request.data.recv_buffers[Info.recv_map_alias_index];
+                        const HipcBufferDescriptor *desc = std::addressof(ctx.request.data.recv_buffers[Info.recv_map_alias_index]);
                         buffer = cmif::PointerAndSize(hipcGetBufferAddress(desc), hipcGetBufferSize(desc));
                         if (!IsMapTransferModeValid<Attributes>(static_cast<u32>(desc->mode))) { map_alias_buffers_valid = false; }
                     } else {
@@ -920,7 +920,7 @@ namespace ams::sf::impl {
                 } else if constexpr (Attributes & SfBufferAttr_HipcPointer) {
                     is_buffer_map_alias = false;
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcStaticDescriptor *desc = &ctx.request.data.send_statics[Info.send_pointer_index];
+                        const HipcStaticDescriptor *desc = std::addressof(ctx.request.data.send_statics[Info.send_pointer_index]);
                         buffer = cmif::PointerAndSize(hipcGetStaticAddress(desc), hipcGetStaticSize(desc));
                         const size_t size = buffer.GetSize();
                         if (size) {
@@ -943,8 +943,8 @@ namespace ams::sf::impl {
                     }
                 } else if constexpr (Attributes & SfBufferAttr_HipcAutoSelect) {
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcBufferDescriptor *map_desc = &ctx.request.data.send_buffers[Info.send_map_alias_index];
-                        const HipcStaticDescriptor *ptr_desc = &ctx.request.data.send_statics[Info.send_pointer_index];
+                        const HipcBufferDescriptor *map_desc = std::addressof(ctx.request.data.send_buffers[Info.send_map_alias_index]);
+                        const HipcStaticDescriptor *ptr_desc = std::addressof(ctx.request.data.send_statics[Info.send_pointer_index]);
                         is_buffer_map_alias = hipcGetBufferAddress(map_desc) != 0;
                         if (is_buffer_map_alias) {
                             buffer = cmif::PointerAndSize(hipcGetBufferAddress(map_desc), hipcGetBufferSize(map_desc));
@@ -957,7 +957,7 @@ namespace ams::sf::impl {
                             }
                         }
                     } else if constexpr (Attributes & SfBufferAttr_Out) {
-                        const HipcBufferDescriptor *map_desc = &ctx.request.data.recv_buffers[Info.recv_map_alias_index];
+                        const HipcBufferDescriptor *map_desc = std::addressof(ctx.request.data.recv_buffers[Info.recv_map_alias_index]);
                         is_buffer_map_alias = hipcGetBufferAddress(map_desc) != 0;
                         if (is_buffer_map_alias) {
                             buffer = cmif::PointerAndSize(hipcGetBufferAddress(map_desc), hipcGetBufferSize(map_desc));

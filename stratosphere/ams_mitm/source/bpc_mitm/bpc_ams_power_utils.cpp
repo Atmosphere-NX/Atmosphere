@@ -57,7 +57,7 @@ namespace ams::mitm::bpc {
 
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
+                std::memcpy(g_work_page, g_reboot_payload + ofs, std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -70,7 +70,7 @@ namespace ams::mitm::bpc {
 
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
+                std::memcpy(g_work_page, g_reboot_payload + ofs, std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 

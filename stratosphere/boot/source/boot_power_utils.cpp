@@ -49,7 +49,7 @@ namespace ams::boot {
 
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &fusee_bin[ofs], std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
+                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -62,7 +62,7 @@ namespace ams::boot {
 
             /* Copy in payload. */
             for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &fusee_bin[ofs], std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
+                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 

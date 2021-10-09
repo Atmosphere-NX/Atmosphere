@@ -90,7 +90,7 @@ namespace ams::spl::smc {
         svc::CallSecureMonitor(std::addressof(args));
 
         if (args.r[0] == static_cast<u64>(Result::Success) && (size <= sizeof(args) - sizeof(args.r[0]))) {
-            std::memcpy(out, &args.r[1], size);
+            std::memcpy(out, std::addressof(args.r[1]), size);
         }
         return static_cast<Result>(args.r[0]);
     }
@@ -220,8 +220,8 @@ namespace ams::spl::smc {
         args.r[0] = static_cast<u64>(FunctionId::PrepareEsDeviceUniqueKey);
         args.r[1] = reinterpret_cast<u64>(base);
         args.r[2] = reinterpret_cast<u64>(mod);
-        std::memset(&args.r[3], 0, 4 * sizeof(args.r[3]));
-        std::memcpy(&args.r[3], label_digest, std::min(size_t(4 * sizeof(args.r[3])), label_digest_size));
+        std::memset(std::addressof(args.r[3]), 0, 4 * sizeof(args.r[3]));
+        std::memcpy(std::addressof(args.r[3]), label_digest, std::min(size_t(4 * sizeof(args.r[3])), label_digest_size));
         args.r[7] = option;
         svc::CallSecureMonitor(std::addressof(args));
 
@@ -358,7 +358,7 @@ namespace ams::spl::smc {
         args.r[2] = paths;
         svc::CallSecureMonitor(std::addressof(args));
 
-        std::memcpy(out_config, &args.r[1], sizeof(args) - sizeof(args.r[0]));
+        std::memcpy(out_config, std::addressof(args.r[1]), sizeof(args) - sizeof(args.r[0]));
         return static_cast<Result>(args.r[0]);
     }
 

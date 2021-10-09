@@ -123,7 +123,7 @@ namespace ams::fssystem {
                 R_UNLESS(len >= 2, fs::ResultInvalidPathFormat());
 
                 /* Find previous separator, add null terminator */
-                char *cur = &dst_path_buf[len - 2];
+                char *cur = dst_path_buf + len - 2;
                 while (!fs::PathNormalizer::IsSeparator(*cur) && cur > dst_path_buf) {
                     cur--;
                 }

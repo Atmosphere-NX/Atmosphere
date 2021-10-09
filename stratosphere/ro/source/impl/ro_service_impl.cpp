@@ -95,7 +95,7 @@ namespace ams::ro::impl {
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
                     if (this->nrr_in_use[i] && this->nrr_infos[i].nrr_heap_address == nrr_heap_address) {
                         if (out != nullptr) {
-                            *out = &this->nrr_infos[i];
+                            *out = this->nrr_infos + i;
                         }
                         return ResultSuccess();
                     }
@@ -107,7 +107,7 @@ namespace ams::ro::impl {
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
                     if (!this->nrr_in_use[i]) {
                         if (out != nullptr) {
-                            *out = &this->nrr_infos[i];
+                            *out = this->nrr_infos + i;
                         }
                         return ResultSuccess();
                     }
@@ -119,7 +119,7 @@ namespace ams::ro::impl {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
                     if (this->nro_in_use[i] && this->nro_infos[i].base_address == nro_address) {
                         if (out != nullptr) {
-                            *out = &this->nro_infos[i];
+                            *out = this->nro_infos + i;
                         }
                         return ResultSuccess();
                     }
@@ -129,9 +129,9 @@ namespace ams::ro::impl {
 
             Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (this->nro_in_use[i] && std::memcmp(&this->nro_infos[i].module_id, module_id, sizeof(*module_id)) == 0) {
+                    if (this->nro_in_use[i] && std::memcmp(std::addressof(this->nro_infos[i].module_id), module_id, sizeof(*module_id)) == 0) {
                         if (out != nullptr) {
-                            *out = &this->nro_infos[i];
+                            *out = this->nro_infos + i;
                         }
                         return ResultSuccess();
                     }
@@ -143,7 +143,7 @@ namespace ams::ro::impl {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
                     if (!this->nro_in_use[i]) {
                         if (out != nullptr) {
-                            *out = &this->nro_infos[i];
+                            *out = this->nro_infos + i;
                         }
                         return ResultSuccess();
                     }
@@ -282,13 +282,13 @@ namespace ams::ro::impl {
             }
 
             AMS_ABORT_UNLESS(context_id < MaxSessions);
-            return &g_process_contexts[context_id];
+            return g_process_contexts + context_id;
         }
 
         ProcessContext *GetContextByProcessId(os::ProcessId process_id) {
             for (size_t i = 0; i < MaxSessions; i++) {
                 if (g_process_contexts[i].process_id == process_id) {
-                    return &g_process_contexts[i];
+                    return g_process_contexts + i;
                 }
             }
             return nullptr;
@@ -297,7 +297,7 @@ namespace ams::ro::impl {
         size_t AllocateContext(os::NativeHandle process_handle, os::ProcessId process_id) {
             /* Find a free process context. */
             for (size_t i = 0; i < MaxSessions; i++) {
-                ProcessContext *context = &g_process_contexts[i];
+                ProcessContext *context = g_process_contexts + i;
 
                 if (!context->in_use) {
                     std::memset(context, 0, sizeof(*context));
@@ -548,10 +548,10 @@ namespace ams::ro::impl {
                     continue;
                 }
 
-                const NroInfo *nro_info = &context->nro_infos[i];
+                const NroInfo *nro_info = context->nro_infos + i;
 
                 /* Just copy out the info. */
-                LoaderModuleInfo *out_info = &out_infos[count++];
+                LoaderModuleInfo *out_info = std::addressof(out_infos[count++]);
                 memcpy(out_info->build_id, &nro_info->module_id, sizeof(nro_info->module_id));
                 out_info->base_address = nro_info->base_address;
                 out_info->size = nro_info->nro_heap_size + nro_info->bss_heap_size;

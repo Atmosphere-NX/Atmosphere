@@ -129,7 +129,7 @@ namespace ams::dmnt::cheat::impl {
 
                 void ResetCheatEntry(size_t i) {
                     if (i < MaxCheatCount) {
-                        std::memset(&this->cheat_entries[i], 0, sizeof(this->cheat_entries[i]));
+                        std::memset(this->cheat_entries + i, 0, sizeof(this->cheat_entries[i]));
                         this->cheat_entries[i].cheat_id = i;
 
                         this->SetNeedsReloadVm(true);
@@ -146,7 +146,7 @@ namespace ams::dmnt::cheat::impl {
 
                 CheatEntry *GetCheatEntryById(size_t i) {
                     if (i < MaxCheatCount) {
-                        return &this->cheat_entries[i];
+                        return this->cheat_entries + i;
                     }
 
                     return nullptr;
@@ -156,7 +156,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Check all non-master cheats for match. */
                     for (size_t i = 1; i < MaxCheatCount; i++) {
                         if (std::strncmp(this->cheat_entries[i].definition.readable_name, readable_name, sizeof(this->cheat_entries[i].definition.readable_name)) == 0) {
-                            return &this->cheat_entries[i];
+                            return this->cheat_entries + i;
                         }
                     }
 
@@ -167,7 +167,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Check all non-master cheats for availability. */
                     for (size_t i = 1; i < MaxCheatCount; i++) {
                         if (this->cheat_entries[i].definition.num_opcodes == 0) {
-                            return &this->cheat_entries[i];
+                            return this->cheat_entries + i;
                         }
                     }
 
@@ -837,9 +837,9 @@ namespace ams::dmnt::cheat::impl {
                 /* if we aren't auto-attaching. */
                 const LoaderModuleInfo *proc_module = nullptr;
                 if (num_modules == 2) {
-                    proc_module = &proc_modules[1];
+                    proc_module = std::addressof(proc_modules[1]);
                 } else if (num_modules == 1 && !on_process_launch) {
-                    proc_module = &proc_modules[0];
+                    proc_module = std::addressof(proc_modules[0]);
                 } else {
                     return dmnt::cheat::ResultCheatNotAttached();
                 }
@@ -915,14 +915,14 @@ namespace ams::dmnt::cheat::impl {
 
                     /* s[i+1:j] is cheat name. */
                     const size_t cheat_name_len = std::min(j - i - 1, sizeof(cur_entry->definition.readable_name));
-                    std::memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
+                    std::memcpy(cur_entry->definition.readable_name, s + (i + 1), cheat_name_len);
                     cur_entry->definition.readable_name[cheat_name_len] = 0;
 
                     /* Skip onwards. */
                     i = j + 1;
                 } else if (s[i] == '{') {
                     /* We're parsing a master cheat. */
-                    cur_entry = &this->cheat_entries[0];
+                    cur_entry = std::addressof(this->cheat_entries[0]);
 
                     /* There can only be one master cheat. */
                     if (cur_entry->definition.num_opcodes > 0) {
@@ -940,7 +940,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* s[i+1:j] is cheat name. */
                     const size_t cheat_name_len = std::min(j - i - 1, sizeof(cur_entry->definition.readable_name));
-                    memcpy(cur_entry->definition.readable_name, &s[i+1], cheat_name_len);
+                    memcpy(cur_entry->definition.readable_name, s + (i + 1), cheat_name_len);
                     cur_entry->definition.readable_name[cheat_name_len] = 0;
 
                     /* Skip onwards. */
@@ -966,7 +966,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* Parse the new opcode. */
                     char hex_str[9] = {0};
-                    std::memcpy(hex_str, &s[i], 8);
+                    std::memcpy(hex_str, s + i, 8);
                     cur_entry->definition.opcodes[cur_entry->definition.num_opcodes++] = std::strtoul(hex_str, NULL, 16);
 
                     /* Skip onwards. */
@@ -1013,7 +1013,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* s[i+1:j] is cheat name. */
                     const size_t cheat_name_len = std::min(j - i - 1, sizeof(cur_cheat_name));
-                    std::memcpy(cur_cheat_name, &s[i+1], cheat_name_len);
+                    std::memcpy(cur_cheat_name, s + (i + 1), cheat_name_len);
                     cur_cheat_name[cheat_name_len] = 0;
 
                     /* Skip onwards. */
@@ -1035,7 +1035,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* s[i:j] is toggle. */
                     const size_t toggle_len = (j - i);
-                    std::memcpy(toggle, &s[i], toggle_len);
+                    std::memcpy(toggle, s + i, toggle_len);
                     toggle[toggle_len] = 0;
 
                     /* Allow specifying toggle for not present cheat. */

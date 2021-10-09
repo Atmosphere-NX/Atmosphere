@@ -186,7 +186,7 @@ namespace ams::kern::board::nintendo::nx::smc {
             MESOSPHERE_INIT_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
 
             /* Copy output. */
-            std::memcpy(dst, &args.x[1], size);
+            std::memcpy(dst, std::addressof(args.x[1]), size);
         }
 
         bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value) {
@@ -255,7 +255,7 @@ namespace ams::kern::board::nintendo::nx::smc {
         MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
 
         /* Copy output. */
-        std::memcpy(dst, &args.x[1], size);
+        std::memcpy(dst, std::addressof(args.x[1]), size);
     }
 
     void NORETURN Panic(u32 color) {
