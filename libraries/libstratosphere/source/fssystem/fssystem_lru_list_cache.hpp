@@ -27,26 +27,26 @@ namespace ams::fssystem {
                 NON_COPYABLE(Node);
                 NON_MOVEABLE(Node);
                 public:
-                    Key key;
-                    Value value;
-                    util::IntrusiveListNode mru_list_node;
+                    Key m_key;
+                    Value m_value;
+                    util::IntrusiveListNode m_mru_list_node;
                 public:
-                    explicit Node(const Value &value) : value(value) { /* ... */ }
+                    explicit Node(const Value &value) : m_value(value) { /* ... */ }
             };
         private:
-            using MruList = typename util::IntrusiveListMemberTraits<&Node::mru_list_node>::ListType;
+            using MruList = typename util::IntrusiveListMemberTraits<&Node::m_mru_list_node>::ListType;
         private:
-            MruList mru_list;
+            MruList m_mru_list;
         public:
-            constexpr LruListCache() : mru_list() { /* ... */ }
+            constexpr LruListCache() : m_mru_list() { /* ... */ }
 
             bool FindValueAndUpdateMru(Value *out, const Key &key) {
-                for (auto it = this->mru_list.begin(); it != this->mru_list.end(); ++it) {
-                    if (it->key == key) {
-                        *out = it->value;
+                for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
+                    if (it->m_key == key) {
+                        *out = it->m_value;
 
-                        this->mru_list.erase(it);
-                        this->mru_list.push_front(*it);
+                        m_mru_list.erase(it);
+                        m_mru_list.push_front(*it);
 
                         return true;
                     }
@@ -56,33 +56,33 @@ namespace ams::fssystem {
             }
 
             std::unique_ptr<Node> PopLruNode() {
-                AMS_ABORT_UNLESS(!this->mru_list.empty());
-                Node *lru = std::addressof(*this->mru_list.rbegin());
-                this->mru_list.pop_back();
+                AMS_ABORT_UNLESS(!m_mru_list.empty());
+                Node *lru = std::addressof(*m_mru_list.rbegin());
+                m_mru_list.pop_back();
 
                 return std::unique_ptr<Node>(lru);
             }
 
             void PushMruNode(std::unique_ptr<Node> &&node, const Key &key) {
-                node->key = key;
-                this->mru_list.push_front(*node);
+                node->m_key = key;
+                m_mru_list.push_front(*node);
                 node.release();
             }
 
             void DeleteAllNodes() {
-                while (!this->mru_list.empty()) {
-                    Node *lru = std::addressof(*this->mru_list.rbegin());
-                    this->mru_list.erase(this->mru_list.iterator_to(*lru));
+                while (!m_mru_list.empty()) {
+                    Node *lru = std::addressof(*m_mru_list.rbegin());
+                    m_mru_list.erase(m_mru_list.iterator_to(*lru));
                     delete lru;
                 }
             }
 
             size_t GetSize() const {
-                return this->mru_list.size();
+                return m_mru_list.size();
             }
 
             bool IsEmpty() const {
-                return this->mru_list.empty();
+                return m_mru_list.empty();
             }
     };
 

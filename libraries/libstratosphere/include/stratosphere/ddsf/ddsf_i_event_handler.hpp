@@ -26,22 +26,22 @@ namespace ams::ddsf {
         NON_MOVEABLE(IEventHandler);
         friend class EventHandlerManager;
         private:
-            os::MultiWaitHolderType holder;
-            uintptr_t user_data;
-            bool is_initialized;
-            bool is_registered;
+            os::MultiWaitHolderType m_holder;
+            uintptr_t m_user_data;
+            bool m_is_initialized;
+            bool m_is_registered;
         private:
             void Link(os::MultiWaitType *multi_wait) {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(!this->IsRegistered());
                 AMS_ASSERT(multi_wait != nullptr);
-                os::LinkMultiWaitHolder(multi_wait, std::addressof(this->holder));
+                os::LinkMultiWaitHolder(multi_wait, std::addressof(m_holder));
             }
 
             void Unlink() {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(this->IsRegistered());
-                os::UnlinkMultiWaitHolder(std::addressof(this->holder));
+                os::UnlinkMultiWaitHolder(std::addressof(m_holder));
             }
 
             static IEventHandler &ToEventHandler(os::MultiWaitHolderType *holder) {
@@ -51,7 +51,7 @@ namespace ams::ddsf {
                 return event_handler;
             }
         public:
-            IEventHandler() : holder(), user_data(0), is_initialized(false), is_registered(false) { /* ... */ }
+            IEventHandler() : m_holder(), m_user_data(0), m_is_initialized(false), m_is_registered(false) { /* ... */ }
 
             ~IEventHandler() {
                 if (this->IsRegistered()) {
@@ -62,28 +62,28 @@ namespace ams::ddsf {
                 }
             }
 
-            bool IsInitialized() const { return this->is_initialized; }
-            bool IsRegistered() const { return this->is_registered; }
+            bool IsInitialized() const { return m_is_initialized; }
+            bool IsRegistered() const { return m_is_registered; }
 
-            uintptr_t GetUserData() const { return this->user_data; }
-            void SetUserData(uintptr_t d) { this->user_data = d; }
+            uintptr_t GetUserData() const { return m_user_data; }
+            void SetUserData(uintptr_t d) { m_user_data = d; }
 
             template<typename T>
             void Initialize(T *object) {
                 AMS_ASSERT(object != nullptr);
                 AMS_ASSERT(!this->IsInitialized());
-                os::InitializeMultiWaitHolder(std::addressof(this->holder), object);
-                os::SetMultiWaitHolderUserData(std::addressof(this->holder), reinterpret_cast<uintptr_t>(this));
-                this->is_initialized = true;
-                this->is_registered  = false;
+                os::InitializeMultiWaitHolder(std::addressof(m_holder), object);
+                os::SetMultiWaitHolderUserData(std::addressof(m_holder), reinterpret_cast<uintptr_t>(this));
+                m_is_initialized = true;
+                m_is_registered  = false;
             }
 
             void Finalize() {
                 AMS_ASSERT(this->IsInitialized());
                 AMS_ASSERT(!this->IsRegistered());
-                os::FinalizeMultiWaitHolder(std::addressof(this->holder));
-                this->is_initialized = false;
-                this->is_registered  = false;
+                os::FinalizeMultiWaitHolder(std::addressof(m_holder));
+                m_is_initialized = false;
+                m_is_registered  = false;
             }
         protected:
             virtual void HandleEvent() = 0;

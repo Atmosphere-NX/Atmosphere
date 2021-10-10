@@ -109,17 +109,17 @@ namespace ams::sf::cmif {
 
     Result DomainServiceObjectProcessor::PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const {
         /* Validate in object count. */
-        R_UNLESS(this->impl_metadata.GetInObjectCount() == this->GetInObjectCount(), sf::cmif::ResultInvalidNumInObjects());
+        R_UNLESS(m_impl_metadata.GetInObjectCount() == this->GetInObjectCount(), sf::cmif::ResultInvalidNumInObjects());
 
         /* Nintendo reserves domain object IDs here. We do this later, to support mitm semantics. */
 
         /* Pass onwards. */
-        return this->impl_processor->PrepareForProcess(ctx, runtime_metadata);
+        return m_impl_processor->PrepareForProcess(ctx, runtime_metadata);
     }
 
     Result DomainServiceObjectProcessor::GetInObjects(ServiceObjectHolder *in_objects) const {
         for (size_t i = 0; i < this->GetInObjectCount(); i++) {
-            in_objects[i] = this->domain->GetObject(this->in_object_ids[i]);
+            in_objects[i] = m_domain->GetObject(m_in_object_ids[i]);
         }
         return ResultSuccess();
     }
@@ -127,7 +127,7 @@ namespace ams::sf::cmif {
     HipcRequest DomainServiceObjectProcessor::PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) {
         /* Call into impl processor, get request. */
         PointerAndSize raw_data;
-        HipcRequest request = this->impl_processor->PrepareForReply(ctx, raw_data, runtime_metadata);
+        HipcRequest request = m_impl_processor->PrepareForReply(ctx, raw_data, runtime_metadata);
 
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
@@ -137,7 +137,7 @@ namespace ams::sf::cmif {
 
         /* Set output raw data. */
         out_raw_data = cmif::PointerAndSize(raw_data.GetAddress() + out_header_size, raw_data.GetSize() - out_header_size);
-        this->out_object_ids = reinterpret_cast<DomainObjectId *>(out_raw_data.GetAddress() + impl_out_data_total_size);
+        m_out_object_ids = reinterpret_cast<DomainObjectId *>(out_raw_data.GetAddress() + impl_out_data_total_size);
 
         return request;
     }
@@ -145,7 +145,7 @@ namespace ams::sf::cmif {
     void DomainServiceObjectProcessor::PrepareForErrorReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) {
         /* Call into impl processor, get request. */
         PointerAndSize raw_data;
-        this->impl_processor->PrepareForErrorReply(ctx, raw_data, runtime_metadata);
+        m_impl_processor->PrepareForErrorReply(ctx, raw_data, runtime_metadata);
 
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
@@ -188,8 +188,8 @@ namespace ams::sf::cmif {
                     }
                 }
                 /* TODO: Can we make this error non-fatal? It isn't for N, since they can reserve IDs earlier due to not having to worry about mitm. */
-                R_ABORT_UNLESS(this->domain->ReserveIds(reservations, num_unreserved_ids));
-                this->domain->ReserveSpecificIds(specific_ids, num_specific_ids);
+                R_ABORT_UNLESS(m_domain->ReserveIds(reservations, num_unreserved_ids));
+                m_domain->ReserveSpecificIds(specific_ids, num_specific_ids);
             }
 
             size_t reservation_index = 0;
@@ -205,17 +205,17 @@ namespace ams::sf::cmif {
         for (size_t i = 0; i < num_out_objects; i++) {
             if (!out_objects[i]) {
                 if (is_reserved[i]) {
-                    this->domain->UnreserveIds(object_ids + i, 1);
+                    m_domain->UnreserveIds(object_ids + i, 1);
                 }
                 object_ids[i] = InvalidDomainObjectId;
                 continue;
             }
-            this->domain->RegisterObject(object_ids[i], std::move(out_objects[i]));
+            m_domain->RegisterObject(object_ids[i], std::move(out_objects[i]));
         }
 
         /* Set out object IDs in message. */
         for (size_t i = 0; i < num_out_objects; i++) {
-            this->out_object_ids[i] = object_ids[i];
+            m_out_object_ids[i] = object_ids[i];
         }
     }
 

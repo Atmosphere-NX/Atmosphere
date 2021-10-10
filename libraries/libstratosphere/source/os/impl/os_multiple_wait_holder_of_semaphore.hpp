@@ -21,31 +21,31 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfSemaphore : public MultiWaitHolderOfUserObject {
         private:
-            SemaphoreType *semaphore;
+            SemaphoreType *m_semaphore;
         private:
             TriBool IsSignaledImpl() const {
-                return this->semaphore->count > 0 ? TriBool::True : TriBool::False;
+                return m_semaphore->count > 0 ? TriBool::True : TriBool::False;
             }
         public:
-            explicit MultiWaitHolderOfSemaphore(SemaphoreType *s) : semaphore(s) { /* ... */ }
+            explicit MultiWaitHolderOfSemaphore(SemaphoreType *s) : m_semaphore(s) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
+                std::scoped_lock lk(GetReference(m_semaphore->cs_sema));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
+                std::scoped_lock lk(GetReference(m_semaphore->cs_sema));
 
-                GetReference(this->semaphore->waitlist).LinkMultiWaitHolder(*this);
+                GetReference(m_semaphore->waitlist).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
+                std::scoped_lock lk(GetReference(m_semaphore->cs_sema));
 
-                GetReference(this->semaphore->waitlist).UnlinkMultiWaitHolder(*this);
+                GetReference(m_semaphore->waitlist).UnlinkMultiWaitHolder(*this);
             }
     };
 

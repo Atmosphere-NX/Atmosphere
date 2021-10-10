@@ -20,50 +20,50 @@ namespace ams::capsrv::server {
 
     Result DecoderControlServerManager::Initialize() {
         /* Create the objects. */
-        this->service_holder.emplace();
-        this->server_manager_holder.emplace();
+        m_service_holder.emplace();
+        m_server_manager_holder.emplace();
 
         /* Register the service. */
-        R_ABORT_UNLESS((this->server_manager_holder->RegisterObjectForServer(this->service_holder->GetShared(), ServiceName, MaxSessions)));
+        R_ABORT_UNLESS((m_server_manager_holder->RegisterObjectForServer(m_service_holder->GetShared(), ServiceName, MaxSessions)));
 
         /* Initialize the idle event, we're idle initially. */
-        os::InitializeEvent(std::addressof(this->idle_event), true, os::EventClearMode_ManualClear);
+        os::InitializeEvent(std::addressof(m_idle_event), true, os::EventClearMode_ManualClear);
 
         return ResultSuccess();
     }
 
     void DecoderControlServerManager::Finalize() {
         /* Check that the server is idle. */
-        AMS_ASSERT(os::TryWaitEvent(std::addressof(this->idle_event)));
+        AMS_ASSERT(os::TryWaitEvent(std::addressof(m_idle_event)));
 
         /* Destroy the server. */
-        os::FinalizeEvent(std::addressof(this->idle_event));
-        this->server_manager_holder = util::nullopt;
-        this->service_holder        = util::nullopt;
+        os::FinalizeEvent(std::addressof(m_idle_event));
+        m_server_manager_holder = util::nullopt;
+        m_service_holder        = util::nullopt;
     }
 
     void DecoderControlServerManager::StartServer() {
-        this->server_manager_holder->ResumeProcessing();
+        m_server_manager_holder->ResumeProcessing();
     }
 
     void DecoderControlServerManager::StopServer() {
         /* Request the server stop, and wait until it does. */
-        this->server_manager_holder->RequestStopProcessing();
-        os::WaitEvent(std::addressof(this->idle_event));
+        m_server_manager_holder->RequestStopProcessing();
+        os::WaitEvent(std::addressof(m_idle_event));
     }
 
     void DecoderControlServerManager::RunServer() {
         /* Ensure that we are allowed to run. */
-        AMS_ABORT_UNLESS(os::TryWaitEvent(std::addressof(this->idle_event)));
+        AMS_ABORT_UNLESS(os::TryWaitEvent(std::addressof(m_idle_event)));
 
         /* Clear the event. */
-        os::ClearEvent(std::addressof(this->idle_event));
+        os::ClearEvent(std::addressof(m_idle_event));
 
         /* Process forever. */
-        this->server_manager_holder->LoopProcess();
+        m_server_manager_holder->LoopProcess();
 
         /* Signal that we're idle again. */
-        os::SignalEvent(std::addressof(this->idle_event));
+        os::SignalEvent(std::addressof(m_idle_event));
     }
 
 }

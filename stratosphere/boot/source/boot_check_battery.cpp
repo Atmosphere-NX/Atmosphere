@@ -42,18 +42,18 @@ namespace ams::boot {
 
         class BatteryChecker {
             private:
-                boot::ChargerDriver &charger_driver;
-                boot::BatteryDriver &battery_driver;
-                const powctl::driver::impl::ChargeParameters &charge_parameters;
-                powctl::driver::impl::ChargeArbiter charge_arbiter;
-                powctl::ChargeCurrentState charge_current_state;
-                int fast_charge_current_limit;
-                int charge_voltage_limit;
-                int battery_compensation;
-                int voltage_clamp;
-                TimeSpan charging_done_interval;
-                bool has_start_time;
-                TimeSpan start_time;
+                boot::ChargerDriver &m_charger_driver;
+                boot::BatteryDriver &m_battery_driver;
+                const powctl::driver::impl::ChargeParameters &m_charge_parameters;
+                powctl::driver::impl::ChargeArbiter m_charge_arbiter;
+                powctl::ChargeCurrentState m_charge_current_state;
+                int m_fast_charge_current_limit;
+                int m_charge_voltage_limit;
+                int m_battery_compensation;
+                int m_voltage_clamp;
+                TimeSpan m_charging_done_interval;
+                bool m_has_start_time;
+                TimeSpan m_start_time;
             private:
                 bool IsChargeDone();
                 void UpdateChargeDoneCurrent();
@@ -63,25 +63,25 @@ namespace ams::boot {
 
                 void UpdateStartTime() {
                     /* Update start time. */
-                    this->start_time = os::ConvertToTimeSpan(os::GetSystemTick());
-                    this->has_start_time = true;
+                    m_start_time = os::ConvertToTimeSpan(os::GetSystemTick());
+                    m_has_start_time = true;
                 }
             public:
-                BatteryChecker(boot::ChargerDriver &cd, boot::BatteryDriver &bd, const powctl::driver::impl::ChargeParameters &cp, int cvl) : charger_driver(cd), battery_driver(bd), charge_parameters(cp), charge_arbiter(cp.rules, cp.num_rules, cvl), charging_done_interval(TimeSpan::FromSeconds(2)), has_start_time(false) {
+                BatteryChecker(boot::ChargerDriver &cd, boot::BatteryDriver &bd, const powctl::driver::impl::ChargeParameters &cp, int cvl) : m_charger_driver(cd), m_battery_driver(bd), m_charge_parameters(cp), m_charge_arbiter(cp.rules, cp.num_rules, cvl), m_charging_done_interval(TimeSpan::FromSeconds(2)), m_has_start_time(false) {
                     /* Get parameters from charger. */
-                    if (R_FAILED(this->charger_driver.GetChargeCurrentState(std::addressof(this->charge_current_state)))) {
+                    if (R_FAILED(m_charger_driver.GetChargeCurrentState(std::addressof(m_charge_current_state)))) {
                         boot::ShutdownSystem();
                     }
-                    if (R_FAILED(this->charger_driver.GetFastChargeCurrentLimit(std::addressof(this->fast_charge_current_limit)))) {
+                    if (R_FAILED(m_charger_driver.GetFastChargeCurrentLimit(std::addressof(m_fast_charge_current_limit)))) {
                         boot::ShutdownSystem();
                     }
-                    if (R_FAILED(this->charger_driver.GetChargeVoltageLimit(std::addressof(this->charge_voltage_limit)))) {
+                    if (R_FAILED(m_charger_driver.GetChargeVoltageLimit(std::addressof(m_charge_voltage_limit)))) {
                         boot::ShutdownSystem();
                     }
-                    if (R_FAILED(this->charger_driver.GetBatteryCompensation(std::addressof(this->battery_compensation)))) {
+                    if (R_FAILED(m_charger_driver.GetBatteryCompensation(std::addressof(m_battery_compensation)))) {
                         boot::ShutdownSystem();
                     }
-                    if (R_FAILED(this->charger_driver.GetVoltageClamp(std::addressof(this->voltage_clamp)))) {
+                    if (R_FAILED(m_charger_driver.GetVoltageClamp(std::addressof(m_voltage_clamp)))) {
                         boot::ShutdownSystem();
                     }
 
@@ -112,16 +112,16 @@ namespace ams::boot {
             /* Get various battery metrics. */
             int avg_current, current, open_circuit_voltage;
             float temp;
-            if (R_FAILED(this->battery_driver.GetAverageCurrent(std::addressof(avg_current)))) {
+            if (R_FAILED(m_battery_driver.GetAverageCurrent(std::addressof(avg_current)))) {
                 return;
             }
-            if (R_FAILED(this->battery_driver.GetCurrent(std::addressof(current)))) {
+            if (R_FAILED(m_battery_driver.GetCurrent(std::addressof(current)))) {
                 return;
             }
-            if (R_FAILED(this->battery_driver.GetTemperature(std::addressof(temp)))) {
+            if (R_FAILED(m_battery_driver.GetTemperature(std::addressof(temp)))) {
                 return;
             }
-            if (R_FAILED(this->battery_driver.GetOpenCircuitVoltage(std::addressof(open_circuit_voltage)))) {
+            if (R_FAILED(m_battery_driver.GetOpenCircuitVoltage(std::addressof(open_circuit_voltage)))) {
                 return;
             }
 
@@ -132,7 +132,7 @@ namespace ams::boot {
         bool BatteryChecker::IsChargeDone() {
             /* Get the charger status. */
             boot::ChargerStatus charger_status;
-            if (R_FAILED(this->charger_driver.GetChargerStatus(std::addressof(charger_status)))) {
+            if (R_FAILED(m_charger_driver.GetChargerStatus(std::addressof(charger_status)))) {
                 boot::ShutdownSystem();
             }
 
@@ -142,20 +142,20 @@ namespace ams::boot {
             }
 
             /* Return whether a done current of zero is acceptable. */
-            return this->charge_arbiter.IsBatteryDoneCurrentAcceptable(0);
+            return m_charge_arbiter.IsBatteryDoneCurrentAcceptable(0);
         }
 
         void BatteryChecker::UpdateChargeDoneCurrent() {
             int done_current = 0;
-            if (this->has_start_time && (os::ConvertToTimeSpan(os::GetSystemTick()) - this->start_time) >= this->charging_done_interval) {
+            if (m_has_start_time && (os::ConvertToTimeSpan(os::GetSystemTick()) - m_start_time) >= m_charging_done_interval) {
                 /* Get the current. */
-                if (R_FAILED(this->battery_driver.GetCurrent(std::addressof(done_current)))) {
+                if (R_FAILED(m_battery_driver.GetCurrent(std::addressof(done_current)))) {
                     boot::ShutdownSystem();
                 }
             } else {
                 /* Get the charger status. */
                 boot::ChargerStatus charger_status;
-                if (R_FAILED(this->charger_driver.GetChargerStatus(std::addressof(charger_status)))) {
+                if (R_FAILED(m_charger_driver.GetChargerStatus(std::addressof(charger_status)))) {
                     boot::ShutdownSystem();
                 }
 
@@ -166,50 +166,50 @@ namespace ams::boot {
             }
 
             /* Update done current. */
-            this->charge_arbiter.SetBatteryDoneCurrent(done_current);
+            m_charge_arbiter.SetBatteryDoneCurrent(done_current);
         }
 
         void BatteryChecker::UpdateCharger() {
             /* Get the battery temperature. */
             float temp;
-            if (R_FAILED(this->battery_driver.GetTemperature(std::addressof(temp)))) {
+            if (R_FAILED(m_battery_driver.GetTemperature(std::addressof(temp)))) {
                 boot::ShutdownSystem();
             }
 
             /* Update the temperature level. */
             powctl::BatteryTemperatureLevel temp_level;
-            if (temp < static_cast<float>(this->charge_parameters.temp_min)) {
+            if (temp < static_cast<float>(m_charge_parameters.temp_min)) {
                 temp_level = powctl::BatteryTemperatureLevel::TooLow;
-            } else if (temp < static_cast<float>(this->charge_parameters.temp_low)) {
+            } else if (temp < static_cast<float>(m_charge_parameters.temp_low)) {
                 temp_level = powctl::BatteryTemperatureLevel::Low;
-            } else if (temp < static_cast<float>(this->charge_parameters.temp_high)) {
+            } else if (temp < static_cast<float>(m_charge_parameters.temp_high)) {
                 temp_level = powctl::BatteryTemperatureLevel::Medium;
-            } else if (temp < static_cast<float>(this->charge_parameters.temp_max)) {
+            } else if (temp < static_cast<float>(m_charge_parameters.temp_max)) {
                 temp_level = powctl::BatteryTemperatureLevel::High;
             } else {
                 temp_level = powctl::BatteryTemperatureLevel::TooHigh;
             }
-            this->charge_arbiter.SetBatteryTemperatureLevel(temp_level);
+            m_charge_arbiter.SetBatteryTemperatureLevel(temp_level);
 
             /* Update average voltage. */
             int avg_v_cell;
-            if (R_FAILED(this->battery_driver.GetAverageVCell(std::addressof(avg_v_cell)))) {
+            if (R_FAILED(m_battery_driver.GetAverageVCell(std::addressof(avg_v_cell)))) {
                 boot::ShutdownSystem();
             }
-            this->charge_arbiter.SetBatteryAverageVCell(avg_v_cell);
+            m_charge_arbiter.SetBatteryAverageVCell(avg_v_cell);
 
             /* Update open circuit voltage. */
             int ocv;
-            if (R_FAILED(this->battery_driver.GetOpenCircuitVoltage(std::addressof(ocv)))) {
+            if (R_FAILED(m_battery_driver.GetOpenCircuitVoltage(std::addressof(ocv)))) {
                 boot::ShutdownSystem();
             }
-            this->charge_arbiter.SetBatteryOpenCircuitVoltage(ocv);
+            m_charge_arbiter.SetBatteryOpenCircuitVoltage(ocv);
 
             /* Update charge done current. */
             this->UpdateChargeDoneCurrent();
 
             /* Update arbiter power state. */
-            this->charge_arbiter.SetPowerState(powctl::PowerState::ShutdownChargeMain);
+            m_charge_arbiter.SetPowerState(powctl::PowerState::ShutdownChargeMain);
 
             /* Apply the newly selected rule. */
             this->ApplyArbiterRule();
@@ -217,19 +217,19 @@ namespace ams::boot {
 
         void BatteryChecker::ApplyArbiterRule() {
             /* Get the selected rule. */
-            const auto *rule = this->charge_arbiter.GetSelectedRule();
+            const auto *rule = m_charge_arbiter.GetSelectedRule();
             AMS_ASSERT(rule != nullptr);
 
             /* Check if we need to perform charger initialization. */
             const bool reinit_charger = rule->reinitialize_charger;
-            const auto cur_charge_current_state = this->charge_current_state;
+            const auto cur_charge_current_state = m_charge_current_state;
 
             /* Set the charger to not charging while we make changes. */
             if (!reinit_charger || cur_charge_current_state != powctl::ChargeCurrentState_NotCharging) {
-                if (R_FAILED(this->charger_driver.SetChargeCurrentState(powctl::ChargeCurrentState_NotCharging))) {
+                if (R_FAILED(m_charger_driver.SetChargeCurrentState(powctl::ChargeCurrentState_NotCharging))) {
                     boot::ShutdownSystem();
                 }
-                this->charge_current_state = powctl::ChargeCurrentState_NotCharging;
+                m_charge_current_state = powctl::ChargeCurrentState_NotCharging;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -237,25 +237,25 @@ namespace ams::boot {
 
             /* Process fast charge current limit when rule is smaller. */
             const auto rule_fast_charge_current_limit = rule->fast_charge_current_limit;
-            const auto cur_fast_charge_current_limit  = this->fast_charge_current_limit;
+            const auto cur_fast_charge_current_limit  = m_fast_charge_current_limit;
             if (rule_fast_charge_current_limit < cur_fast_charge_current_limit) {
-                if (R_FAILED(this->charger_driver.SetFastChargeCurrentLimit(rule_fast_charge_current_limit))) {
+                if (R_FAILED(m_charger_driver.SetFastChargeCurrentLimit(rule_fast_charge_current_limit))) {
                     boot::ShutdownSystem();
                 }
-                this->fast_charge_current_limit = rule_fast_charge_current_limit;
+                m_fast_charge_current_limit = rule_fast_charge_current_limit;
 
                 /* Update start time. */
                 this->UpdateStartTime();
             }
 
             /* Process charge voltage limit when rule is smaller. */
-            const auto rule_charge_voltage_limit = std::min(rule->charge_voltage_limit, this->charge_arbiter.GetChargeVoltageLimit());
-            const auto cur_charge_voltage_limit  = this->charge_voltage_limit;
+            const auto rule_charge_voltage_limit = std::min(rule->charge_voltage_limit, m_charge_arbiter.GetChargeVoltageLimit());
+            const auto cur_charge_voltage_limit  = m_charge_voltage_limit;
             if (rule_charge_voltage_limit < cur_charge_voltage_limit) {
-                if (R_FAILED(this->charger_driver.SetChargeVoltageLimit(rule_charge_voltage_limit))) {
+                if (R_FAILED(m_charger_driver.SetChargeVoltageLimit(rule_charge_voltage_limit))) {
                     boot::ShutdownSystem();
                 }
-                this->charge_voltage_limit = rule_charge_voltage_limit;
+                m_charge_voltage_limit = rule_charge_voltage_limit;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -263,12 +263,12 @@ namespace ams::boot {
 
             /* Process battery compensation when rule is smaller. */
             const auto rule_battery_compensation = rule->battery_compensation;
-            const auto cur_battery_compensation  = this->battery_compensation;
+            const auto cur_battery_compensation  = m_battery_compensation;
             if (rule_battery_compensation < cur_battery_compensation) {
-                if (R_FAILED(this->charger_driver.SetBatteryCompensation(rule_battery_compensation))) {
+                if (R_FAILED(m_charger_driver.SetBatteryCompensation(rule_battery_compensation))) {
                     boot::ShutdownSystem();
                 }
-                this->battery_compensation = rule_battery_compensation;
+                m_battery_compensation = rule_battery_compensation;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -276,12 +276,12 @@ namespace ams::boot {
 
             /* Process voltage clamp when rule is smaller. */
             const auto rule_voltage_clamp = rule->voltage_clamp;
-            const auto cur_voltage_clamp  = this->voltage_clamp;
+            const auto cur_voltage_clamp  = m_voltage_clamp;
             if (rule_voltage_clamp < cur_voltage_clamp) {
-                if (R_FAILED(this->charger_driver.SetVoltageClamp(rule_voltage_clamp))) {
+                if (R_FAILED(m_charger_driver.SetVoltageClamp(rule_voltage_clamp))) {
                     boot::ShutdownSystem();
                 }
-                this->voltage_clamp = rule_voltage_clamp;
+                m_voltage_clamp = rule_voltage_clamp;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -289,10 +289,10 @@ namespace ams::boot {
 
             /* Process voltage clamp when rule is larger. */
             if (rule_voltage_clamp > cur_voltage_clamp) {
-                if (R_FAILED(this->charger_driver.SetVoltageClamp(rule_voltage_clamp))) {
+                if (R_FAILED(m_charger_driver.SetVoltageClamp(rule_voltage_clamp))) {
                     boot::ShutdownSystem();
                 }
-                this->voltage_clamp = rule_voltage_clamp;
+                m_voltage_clamp = rule_voltage_clamp;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -300,10 +300,10 @@ namespace ams::boot {
 
             /* Process battery compensation when rule is larger. */
             if (rule_battery_compensation > cur_battery_compensation) {
-                if (R_FAILED(this->charger_driver.SetBatteryCompensation(rule_battery_compensation))) {
+                if (R_FAILED(m_charger_driver.SetBatteryCompensation(rule_battery_compensation))) {
                     boot::ShutdownSystem();
                 }
-                this->battery_compensation = rule_battery_compensation;
+                m_battery_compensation = rule_battery_compensation;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -311,10 +311,10 @@ namespace ams::boot {
 
             /* Process fast charge current limit when rule is larger. */
             if (rule_fast_charge_current_limit > cur_fast_charge_current_limit) {
-                if (R_FAILED(this->charger_driver.SetFastChargeCurrentLimit(rule_fast_charge_current_limit))) {
+                if (R_FAILED(m_charger_driver.SetFastChargeCurrentLimit(rule_fast_charge_current_limit))) {
                     boot::ShutdownSystem();
                 }
-                this->fast_charge_current_limit = rule_fast_charge_current_limit;
+                m_fast_charge_current_limit = rule_fast_charge_current_limit;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -322,10 +322,10 @@ namespace ams::boot {
 
             /* Process charge voltage limit when rule is larger. */
             if (rule_charge_voltage_limit > cur_charge_voltage_limit) {
-                if (R_FAILED(this->charger_driver.SetChargeVoltageLimit(rule_charge_voltage_limit))) {
+                if (R_FAILED(m_charger_driver.SetChargeVoltageLimit(rule_charge_voltage_limit))) {
                     boot::ShutdownSystem();
                 }
-                this->charge_voltage_limit = rule_charge_voltage_limit;
+                m_charge_voltage_limit = rule_charge_voltage_limit;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -333,10 +333,10 @@ namespace ams::boot {
 
             /* If we're not charging and we expect to reinitialize the charger, do so. */
             if (cur_charge_current_state != powctl::ChargeCurrentState_Charging && reinit_charger) {
-                if (R_FAILED(this->charger_driver.SetChargeCurrentState(powctl::ChargeCurrentState_Charging))) {
+                if (R_FAILED(m_charger_driver.SetChargeCurrentState(powctl::ChargeCurrentState_Charging))) {
                     boot::ShutdownSystem();
                 }
-                this->charge_current_state = powctl::ChargeCurrentState_Charging;
+                m_charge_current_state = powctl::ChargeCurrentState_Charging;
 
                 /* Update start time. */
                 this->UpdateStartTime();
@@ -357,7 +357,7 @@ namespace ams::boot {
             if (show_charging_display) {
                 /* Get the raw battery charge. */
                 float raw_battery_charge;
-                if (R_FAILED(this->battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
+                if (R_FAILED(m_battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
                     return CheckBatteryResult::Shutdown;
                 }
 
@@ -372,13 +372,13 @@ namespace ams::boot {
             while (true) {
                 /* Get the raw battery charge. */
                 float raw_battery_charge;
-                if (R_FAILED(this->battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
+                if (R_FAILED(m_battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
                     return CheckBatteryResult::Shutdown;
                 }
 
                 /* Get the average vcell. */
                 int battery_voltage;
-                if (R_FAILED(this->battery_driver.GetAverageVCell(std::addressof(battery_voltage)))) {
+                if (R_FAILED(m_battery_driver.GetAverageVCell(std::addressof(battery_voltage)))) {
                     return CheckBatteryResult::Shutdown;
                 }
 

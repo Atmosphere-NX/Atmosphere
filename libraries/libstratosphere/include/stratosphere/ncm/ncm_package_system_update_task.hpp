@@ -22,10 +22,10 @@ namespace ams::ncm {
         private:
             using PackagePath = kvdb::BoundedString<0x100>;
         private:
-            PackagePath context_path;
-            FileInstallTaskData data;
-            ContentMetaDatabase package_db;
-            bool gamecard_content_meta_database_active;
+            PackagePath m_context_path;
+            FileInstallTaskData m_data;
+            ContentMetaDatabase m_package_db;
+            bool m_gamecard_content_meta_database_active;
         public:
             ~PackageSystemUpdateTask();
 
@@ -35,7 +35,7 @@ namespace ams::ncm {
         protected:
             virtual Result PrepareInstallContentMetaData() override;
             virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;
-            InstallTaskDataBase &GetInstallData() { return this->data; } /* Atmosphere extension. */
+            InstallTaskDataBase &GetInstallData() { return m_data; } /* Atmosphere extension. */
         private:
             virtual Result PrepareDependency() override;
 

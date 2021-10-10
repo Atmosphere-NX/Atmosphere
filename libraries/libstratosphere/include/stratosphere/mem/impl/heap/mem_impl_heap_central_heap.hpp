@@ -33,13 +33,13 @@ namespace ams::mem::impl::heap {
             static constexpr size_t MinimumAlignment = alignof(u64);
             using DestructorHandler = void (*)(void *start, void *end);
         private:
-            TlsHeapCentral *tls_heap_central;
-            bool use_virtual_memory;
-            u32 option;
-            u8 *start;
-            u8 *end;
+            TlsHeapCentral *m_tls_heap_central;
+            bool m_use_virtual_memory;
+            u32 m_option;
+            u8 *m_start;
+            u8 *m_end;
         public:
-            constexpr CentralHeap() : tls_heap_central(), use_virtual_memory(), option(), start(), end() { /* ... */ }
+            constexpr CentralHeap() : m_tls_heap_central(), m_use_virtual_memory(), m_option(), m_start(), m_end() { /* ... */ }
             ~CentralHeap() { this->Finalize(); }
 
             errno_t Initialize(void *start, size_t size, u32 option);

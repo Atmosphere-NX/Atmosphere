@@ -31,17 +31,17 @@ namespace ams::fs::impl {
             using FileList = util::IntrusiveListBaseTraits<FileAccessor>::ListType;
             using DirList  = util::IntrusiveListBaseTraits<DirectoryAccessor>::ListType;
         private:
-            MountName name;
-            std::unique_ptr<fsa::IFileSystem> impl;
-            FileList open_file_list;
-            DirList open_dir_list;
-            os::SdkMutex open_list_lock;
-            std::unique_ptr<fsa::ICommonMountNameGenerator> mount_name_generator;
-            bool access_log_enabled;
-            bool data_cache_attachable;
-            bool path_cache_attachable;
-            bool path_cache_attached;
-            bool multi_commit_supported;
+            MountName m_name;
+            std::unique_ptr<fsa::IFileSystem> m_impl;
+            FileList m_open_file_list;
+            DirList m_open_dir_list;
+            os::SdkMutex m_open_list_lock;
+            std::unique_ptr<fsa::ICommonMountNameGenerator> m_mount_name_generator;
+            bool m_access_log_enabled;
+            bool m_data_cache_attachable;
+            bool m_path_cache_attachable;
+            bool m_path_cache_attached;
+            bool m_multi_commit_supported;
         public:
             FileSystemAccessor(const char *name, std::unique_ptr<fsa::IFileSystem> &&fs, std::unique_ptr<fsa::ICommonMountNameGenerator> &&generator = nullptr);
             virtual ~FileSystemAccessor();
@@ -63,32 +63,32 @@ namespace ams::fs::impl {
             Result GetFileTimeStampRaw(FileTimeStampRaw *out, const char *path);
             Result QueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryId query, const char *path);
 
-            const char *GetName() const { return this->name.str; }
+            const char *GetName() const { return m_name.str; }
             Result GetCommonMountName(char *dst, size_t dst_size) const;
 
-            void SetAccessLogEnabled(bool en) { this->access_log_enabled = en; }
-            void SetFileDataCacheAttachable(bool en) { this->data_cache_attachable = en; }
-            void SetPathBasedFileDataCacheAttachable(bool en) { this->path_cache_attachable = en; }
-            void SetMultiCommitSupported(bool en) { this->multi_commit_supported = en; }
+            void SetAccessLogEnabled(bool en) { m_access_log_enabled = en; }
+            void SetFileDataCacheAttachable(bool en) { m_data_cache_attachable = en; }
+            void SetPathBasedFileDataCacheAttachable(bool en) { m_path_cache_attachable = en; }
+            void SetMultiCommitSupported(bool en) { m_multi_commit_supported = en; }
 
-            bool IsEnabledAccessLog() const { return this->access_log_enabled; }
-            bool IsFileDataCacheAttachable() const { return this->data_cache_attachable; }
-            bool IsPathBasedFileDataCacheAttachable() const { return this->path_cache_attachable; }
+            bool IsEnabledAccessLog() const { return m_access_log_enabled; }
+            bool IsFileDataCacheAttachable() const { return m_data_cache_attachable; }
+            bool IsPathBasedFileDataCacheAttachable() const { return m_path_cache_attachable; }
 
             void AttachPathBasedFileDataCache() {
                 if (this->IsPathBasedFileDataCacheAttachable()) {
-                    this->path_cache_attached = true;
+                    m_path_cache_attached = true;
                 }
             }
 
             void DetachPathBasedFileDataCache() {
-                this->path_cache_attached = false;
+                m_path_cache_attached = false;
             }
 
             std::shared_ptr<fssrv::impl::FileSystemInterfaceAdapter> GetMultiCommitTarget();
 
             fsa::IFileSystem *GetRawFileSystemUnsafe() {
-                return this->impl.get();
+                return m_impl.get();
             }
         private:
             void NotifyCloseFile(FileAccessor *f);

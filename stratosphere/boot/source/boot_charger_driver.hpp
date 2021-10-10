@@ -27,14 +27,14 @@ namespace ams::boot {
 
     class ChargerDriver {
         private:
-            powctl::Session charger_session;
+            powctl::Session m_charger_session;
         public:
-            ChargerDriver() : charger_session() {
-                R_ABORT_UNLESS(powctl::OpenSession(std::addressof(this->charger_session), powctl::DeviceCode_Bq24193, ddsf::AccessMode_ReadWrite));
+            ChargerDriver() : m_charger_session() {
+                R_ABORT_UNLESS(powctl::OpenSession(std::addressof(m_charger_session), powctl::DeviceCode_Bq24193, ddsf::AccessMode_ReadWrite));
             }
 
             ~ChargerDriver() {
-                powctl::CloseSession(this->charger_session);
+                powctl::CloseSession(m_charger_session);
             }
 
             Result Initialize(bool set_input_current_limit) {
@@ -46,51 +46,51 @@ namespace ams::boot {
 
                 /* Set input current limit to 500 ma. */
                 if (set_input_current_limit) {
-                    R_TRY(powctl::SetChargerInputCurrentLimit(this->charger_session, 500));
+                    R_TRY(powctl::SetChargerInputCurrentLimit(m_charger_session, 500));
                 }
 
                 /* Set input voltage limit to 500 mv. */
-                R_TRY(powctl::SetChargerInputVoltageLimit(this->charger_session, 500));
+                R_TRY(powctl::SetChargerInputVoltageLimit(m_charger_session, 500));
 
                 /* Disable hi-z mode. */
-                R_TRY(powctl::SetChargerHiZEnabled(this->charger_session, false));
+                R_TRY(powctl::SetChargerHiZEnabled(m_charger_session, false));
 
                 /* Set configuration to charge battery. */
-                R_TRY(powctl::SetChargerChargerConfiguration(this->charger_session, powctl::ChargerConfiguration_ChargeBattery));
+                R_TRY(powctl::SetChargerChargerConfiguration(m_charger_session, powctl::ChargerConfiguration_ChargeBattery));
 
                 return ResultSuccess();
             }
 
             Result GetChargeCurrentState(powctl::ChargeCurrentState *out) {
-                return powctl::GetChargerChargeCurrentState(out, this->charger_session);
+                return powctl::GetChargerChargeCurrentState(out, m_charger_session);
             }
 
             Result SetChargeCurrentState(powctl::ChargeCurrentState state) {
-                return powctl::SetChargerChargeCurrentState(this->charger_session, state);
+                return powctl::SetChargerChargeCurrentState(m_charger_session, state);
             }
 
             Result GetInputCurrentLimit(int *out) {
-                return powctl::GetChargerInputCurrentLimit(out, this->charger_session);
+                return powctl::GetChargerInputCurrentLimit(out, m_charger_session);
             }
 
             Result SetChargerConfiguration(powctl::ChargerConfiguration cfg) {
-                return powctl::SetChargerChargerConfiguration(this->charger_session, cfg);
+                return powctl::SetChargerChargerConfiguration(m_charger_session, cfg);
             }
 
             Result GetFastChargeCurrentLimit(int *out) {
-                return powctl::GetChargerFastChargeCurrentLimit(out, this->charger_session);
+                return powctl::GetChargerFastChargeCurrentLimit(out, m_charger_session);
             }
 
             Result SetFastChargeCurrentLimit(int limit) {
-                return powctl::SetChargerFastChargeCurrentLimit(this->charger_session, limit);
+                return powctl::SetChargerFastChargeCurrentLimit(m_charger_session, limit);
             }
 
             Result GetChargeVoltageLimit(int *out) {
-                return powctl::GetChargerChargeVoltageLimit(out, this->charger_session);
+                return powctl::GetChargerChargeVoltageLimit(out, m_charger_session);
             }
 
             Result SetChargeVoltageLimit(int limit) {
-                return powctl::SetChargerChargeVoltageLimit(this->charger_session, limit);
+                return powctl::SetChargerChargeVoltageLimit(m_charger_session, limit);
             }
 
             Result GetChargerStatus(boot::ChargerStatus *out) {
@@ -99,7 +99,7 @@ namespace ams::boot {
 
                 /* Get the powctl status. */
                 powctl::ChargerStatus powctl_status;
-                R_TRY(powctl::GetChargerChargerStatus(std::addressof(powctl_status), this->charger_session));
+                R_TRY(powctl::GetChargerChargerStatus(std::addressof(powctl_status), m_charger_session));
 
                 switch (powctl_status) {
                     case powctl::ChargerStatus_Charging:              *out = boot::ChargerStatus_Charging;              break;
@@ -111,19 +111,19 @@ namespace ams::boot {
             }
 
             Result GetBatteryCompensation(int *out) {
-                return powctl::GetChargerBatteryCompensation(out, this->charger_session);
+                return powctl::GetChargerBatteryCompensation(out, m_charger_session);
             }
 
             Result SetBatteryCompensation(int v) {
-                return powctl::SetChargerBatteryCompensation(this->charger_session, v);
+                return powctl::SetChargerBatteryCompensation(m_charger_session, v);
             }
 
             Result GetVoltageClamp(int *out) {
-                return powctl::GetChargerVoltageClamp(out, this->charger_session);
+                return powctl::GetChargerVoltageClamp(out, m_charger_session);
             }
 
             Result SetVoltageClamp(int v) {
-                return powctl::SetChargerVoltageClamp(this->charger_session, v);
+                return powctl::SetChargerVoltageClamp(m_charger_session, v);
             }
     };
 

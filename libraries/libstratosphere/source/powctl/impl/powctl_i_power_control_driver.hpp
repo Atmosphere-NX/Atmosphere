@@ -32,13 +32,13 @@ namespace ams::powctl::impl {
         NON_MOVEABLE(IPowerControlDriver);
         AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::IPowerControlDriver, ::ams::ddsf::IDriver);
         private:
-            bool event_handler_enabled;
+            bool m_event_handler_enabled;
         protected:
             constexpr bool IsEventHandlerEnabled() const {
-                return this->event_handler_enabled;
+                return m_event_handler_enabled;
             }
         public:
-            IPowerControlDriver(bool ev) : IDriver(), event_handler_enabled(ev) { /* ... */ }
+            IPowerControlDriver(bool ev) : IDriver(), m_event_handler_enabled(ev) { /* ... */ }
             virtual ~IPowerControlDriver() { /* ... */ }
 
             virtual void InitializeDriver() = 0;

@@ -75,64 +75,64 @@ namespace ams::pgl::srv {
             NON_COPYABLE(HostPackageReader);
             NON_MOVEABLE(HostPackageReader);
             private:
-                char content_path[fs::EntryNameLengthMax] = {};
-                ExtensionType extension_type              = ExtensionType::None;
-                char mount_name[fs::MountNameLengthMax]   = {};
-                bool is_mounted                           = false;
-                ncm::AutoBuffer content_meta_buffer;
-                ncm::ProgramId program_id                 = ncm::InvalidProgramId;
-                u32 program_version                       = 0;
-                ncm::ContentMetaType content_meta_type    = static_cast<ncm::ContentMetaType>(0);
-                u8 program_index                          = 0;
+                char m_content_path[fs::EntryNameLengthMax] = {};
+                ExtensionType m_extension_type              = ExtensionType::None;
+                char m_mount_name[fs::MountNameLengthMax]   = {};
+                bool m_is_mounted                           = false;
+                ncm::AutoBuffer m_content_meta_buffer;
+                ncm::ProgramId m_program_id                 = ncm::InvalidProgramId;
+                u32 m_program_version                       = 0;
+                ncm::ContentMetaType m_content_meta_type    = static_cast<ncm::ContentMetaType>(0);
+                u8 m_program_index                          = 0;
             public:
-                HostPackageReader() : content_meta_buffer() { /* ... */ }
+                HostPackageReader() : m_content_meta_buffer() { /* ... */ }
                 ~HostPackageReader() {
-                    if (this->is_mounted) {
-                        fs::Unmount(this->mount_name);
+                    if (m_is_mounted) {
+                        fs::Unmount(m_mount_name);
                     }
                 }
 
                 Result Initialize(const char *package, const char *mount) {
                     /* Copy in the content path. */
-                    R_UNLESS(strlen(package) <= sizeof(this->content_path) - 1, pgl::ResultBufferNotEnough());
-                    std::strcpy(this->content_path, package);
+                    R_UNLESS(strlen(package) <= sizeof(m_content_path) - 1, pgl::ResultBufferNotEnough());
+                    std::strcpy(m_content_path, package);
 
                     /* Set the extension type. */
                     R_TRY(this->SetExtensionType());
 
                     /* Copy in mount name. */
-                    R_UNLESS(strlen(mount) <= sizeof(this->mount_name) - 1, pgl::ResultBufferNotEnough());
-                    std::strcpy(this->mount_name, mount);
+                    R_UNLESS(strlen(mount) <= sizeof(m_mount_name) - 1, pgl::ResultBufferNotEnough());
+                    std::strcpy(m_mount_name, mount);
 
                     /* Mount the package. */
-                    R_TRY(fs::MountApplicationPackage(this->mount_name, this->content_path));
-                    this->is_mounted = true;
+                    R_TRY(fs::MountApplicationPackage(m_mount_name, m_content_path));
+                    m_is_mounted = true;
 
                     /* Set the content meta buffer. */
                     R_TRY(this->SetContentMetaBuffer());
 
                     /* Ensure we have a content meta buffer. */
-                    R_UNLESS(this->content_meta_buffer.Get() != nullptr, pgl::ResultContentMetaNotFound());
+                    R_UNLESS(m_content_meta_buffer.Get() != nullptr, pgl::ResultContentMetaNotFound());
 
                     return ResultSuccess();
                 }
 
                 Result ReadProgramInfo() {
                     /* First, read the program index. */
-                    R_TRY(this->GetProgramIndex(std::addressof(this->program_index)));
+                    R_TRY(this->GetProgramIndex(std::addressof(m_program_index)));
 
                     /* Next, create a key for the rest of the fields. */
-                    const auto key = ncm::PackagedContentMetaReader(this->content_meta_buffer.Get(), this->content_meta_buffer.GetSize()).GetKey();
+                    const auto key = ncm::PackagedContentMetaReader(m_content_meta_buffer.Get(), m_content_meta_buffer.GetSize()).GetKey();
 
                     /* Set fields. */
-                    this->program_id        = {key.id};
-                    this->program_version   = key.version;
-                    this->content_meta_type = key.type;
+                    m_program_id        = {key.id};
+                    m_program_version   = key.version;
+                    m_content_meta_type = key.type;
                     return ResultSuccess();
                 }
 
                 Result GetContentPath(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
-                    switch (this->extension_type) {
+                    switch (m_extension_type) {
                         case ExtensionType::Nsp:  return this->GetContentPathInNsp(out, type, index);
                         case ExtensionType::Nspd: return this->GetContentPathInNspd(out, type, index);
                         AMS_UNREACHABLE_DEFAULT_CASE();
@@ -140,24 +140,24 @@ namespace ams::pgl::srv {
                 }
 
                 ncm::ProgramId GetProgramId() const {
-                    return this->program_id;
+                    return m_program_id;
                 }
 
                 u32 GetProgramVersion() const {
-                    return this->program_version;
+                    return m_program_version;
                 }
 
                 ncm::ContentMetaType GetContentMetaType() const {
-                    return this->content_meta_type;
+                    return m_content_meta_type;
                 }
 
                 u8 GetProgramIndex() const {
-                    return this->program_index;
+                    return m_program_index;
                 }
             private:
                 Result GetContentPathInNsp(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
                     /* Create a reader. */
-                    auto reader = ncm::PackagedContentMetaReader(this->content_meta_buffer.Get(), this->content_meta_buffer.GetSize());
+                    auto reader = ncm::PackagedContentMetaReader(m_content_meta_buffer.Get(), m_content_meta_buffer.GetSize());
 
                     /* Get the content info. */
                     const ncm::PackagedContentInfo *content_info = nullptr;
@@ -214,13 +214,13 @@ namespace ams::pgl::srv {
 
                 Result GetProgramIndex(u8 *out) {
                     /* Nspd programs do not have indices. */
-                    if (this->extension_type == ExtensionType::Nspd) {
+                    if (m_extension_type == ExtensionType::Nspd) {
                         *out = 0;
                         return ResultSuccess();
                     }
 
                     /* Create a reader. */
-                    auto reader = ncm::PackagedContentMetaReader(this->content_meta_buffer.Get(), this->content_meta_buffer.GetSize());
+                    auto reader = ncm::PackagedContentMetaReader(m_content_meta_buffer.Get(), m_content_meta_buffer.GetSize());
 
                     /* Get the program content info. */
                     auto program_content_info = reader.GetContentInfo(ncm::ContentType::Program);
@@ -233,15 +233,15 @@ namespace ams::pgl::srv {
 
                 Result SetExtensionType() {
                     /* First, clear the suffix if the path is a program ncd. */
-                    if (HasSuffix(this->content_path, "program0.ncd/")) {
-                        this->content_path[strnlen(this->content_path, sizeof(this->content_path)) - std::strlen("program0.ncd/")] = 0;
+                    if (HasSuffix(m_content_path, "program0.ncd/")) {
+                        m_content_path[strnlen(m_content_path, sizeof(m_content_path)) - std::strlen("program0.ncd/")] = 0;
                     }
 
-                    if (HasSuffix(this->content_path, ".nsp")) {
-                        this->extension_type = ExtensionType::Nsp;
+                    if (HasSuffix(m_content_path, ".nsp")) {
+                        m_extension_type = ExtensionType::Nsp;
                         return ResultSuccess();
-                    } else if (HasSuffix(this->content_path, ".nspd") || HasSuffix(this->content_path, ".nspd/")) {
-                        this->extension_type = ExtensionType::Nspd;
+                    } else if (HasSuffix(m_content_path, ".nspd") || HasSuffix(m_content_path, ".nspd/")) {
+                        m_extension_type = ExtensionType::Nspd;
                         return ResultSuccess();
                     } else {
                         return fs::ResultPathNotFound();
@@ -255,7 +255,7 @@ namespace ams::pgl::srv {
                     /* Find the Content meta path. */
                     bool has_content = false;
                     lr::Path meta_path;
-                    switch (this->extension_type) {
+                    switch (m_extension_type) {
                         case ExtensionType::Nsp:   R_TRY(this->SearchContent(std::addressof(has_content), std::addressof(meta_path), ContentMetaFileExtension, fs::OpenDirectoryMode_File)); break;
                         case ExtensionType::Nspd:  R_TRY(this->SearchContent(std::addressof(has_content), std::addressof(meta_path), ContentMetaDirectoryExtension, fs::OpenDirectoryMode_Directory)); break;
                         AMS_UNREACHABLE_DEFAULT_CASE();
@@ -263,13 +263,13 @@ namespace ams::pgl::srv {
                     R_UNLESS(has_content, pgl::ResultContentMetaNotFound());
 
                     /* Read the content meta buffer. */
-                    return ncm::ReadContentMetaPath(std::addressof(this->content_meta_buffer), meta_path.str);
+                    return ncm::ReadContentMetaPath(std::addressof(m_content_meta_buffer), meta_path.str);
                 }
 
                 Result SearchContent(bool *out, lr::Path *out_path, const char *extension, fs::OpenDirectoryMode mode) const {
                     /* Generate the root directory path. */
-                    char root_dir[sizeof(this->mount_name) + 2];
-                    util::SNPrintf(root_dir, sizeof(root_dir), "%s:/", this->mount_name);
+                    char root_dir[sizeof(m_mount_name) + 2];
+                    util::SNPrintf(root_dir, sizeof(root_dir), "%s:/", m_mount_name);
 
                     /* Open the root directory. */
                     fs::DirectoryHandle dir;
@@ -289,7 +289,7 @@ namespace ams::pgl::srv {
                         if (HasSuffix(entry.name, extension)) {
                             *out = true;
                             if (out_path) {
-                                const size_t len = util::SNPrintf(out_path->str, sizeof(out_path->str), "%s/%s", this->content_path, entry.name);
+                                const size_t len = util::SNPrintf(out_path->str, sizeof(out_path->str), "%s/%s", m_content_path, entry.name);
                                 R_UNLESS(len + 1 < sizeof(out_path->str), pgl::ResultBufferNotEnough());
                                 if (entry.type == fs::DirectoryEntryType_Directory) {
                                     out_path->str[len]     = '/';

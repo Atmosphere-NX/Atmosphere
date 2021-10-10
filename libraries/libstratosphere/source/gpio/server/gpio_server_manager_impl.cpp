@@ -19,12 +19,12 @@
 namespace ams::gpio::server {
 
     ManagerImpl::ManagerImpl() {
-        this->heap_handle = lmem::CreateExpHeap(this->heap_buffer, sizeof(this->heap_buffer), lmem::CreateOption_None);
-        this->pad_allocator.Attach(this->heap_handle);
+        m_heap_handle = lmem::CreateExpHeap(m_heap_buffer, sizeof(m_heap_buffer), lmem::CreateOption_None);
+        m_pad_allocator.Attach(m_heap_handle);
     }
 
     ManagerImpl::~ManagerImpl() {
-        lmem::DestroyExpHeap(this->heap_handle);
+        lmem::DestroyExpHeap(m_heap_handle);
     }
 
     Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
@@ -69,7 +69,7 @@ namespace ams::gpio::server {
 
     Result ManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
         /* Allocate a session. */
-        auto session = Factory::CreateSharedEmplaced<gpio::sf::IPadSession, PadSessionImpl>(std::addressof(this->pad_allocator), this);
+        auto session = Factory::CreateSharedEmplaced<gpio::sf::IPadSession, PadSessionImpl>(std::addressof(m_pad_allocator), this);
 
         /* Open the session. */
         R_TRY(session.GetImpl().OpenSession(device_code, access_mode));

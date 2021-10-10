@@ -38,63 +38,63 @@ namespace ams::ddsf {
 
     void EventHandlerManager::Initialize() {
         /* Check that we're not already initialized. */
-        if (this->is_initialized) {
+        if (m_is_initialized) {
             return;
         }
 
         /* Initialize multi wait/holder. */
-        os::InitializeMultiWait(std::addressof(this->multi_wait));
-        os::InitializeMultiWaitHolder(std::addressof(this->loop_control_event_holder), this->loop_control_event.GetBase());
-        os::LinkMultiWaitHolder(std::addressof(this->multi_wait), std::addressof(this->loop_control_event_holder));
+        os::InitializeMultiWait(std::addressof(m_multi_wait));
+        os::InitializeMultiWaitHolder(std::addressof(m_loop_control_event_holder), m_loop_control_event.GetBase());
+        os::LinkMultiWaitHolder(std::addressof(m_multi_wait), std::addressof(m_loop_control_event_holder));
 
-        this->is_initialized = true;
+        m_is_initialized = true;
     }
 
     void EventHandlerManager::Finalize() {
         /* Check that we're initialized and not looping. */
-        AMS_ASSERT(!this->is_looping);
-        AMS_ASSERT(this->is_initialized);
-        if (!this->is_initialized) {
+        AMS_ASSERT(!m_is_looping);
+        AMS_ASSERT(m_is_initialized);
+        if (!m_is_initialized) {
             return;
         }
 
         /* Finalize multi wait/holder. */
-        os::UnlinkMultiWaitHolder(std::addressof(this->loop_control_event_holder));
-        os::FinalizeMultiWaitHolder(std::addressof(this->loop_control_event_holder));
-        os::FinalizeMultiWait(std::addressof(this->multi_wait));
+        os::UnlinkMultiWaitHolder(std::addressof(m_loop_control_event_holder));
+        os::FinalizeMultiWaitHolder(std::addressof(m_loop_control_event_holder));
+        os::FinalizeMultiWait(std::addressof(m_multi_wait));
 
-        this->is_initialized = false;
+        m_is_initialized = false;
     }
 
     void EventHandlerManager::ProcessControlCommand(LoopControlCommandParameters *params) {
         /* Check pre-conditions. */
-        AMS_ASSERT(this->is_initialized);
+        AMS_ASSERT(m_is_initialized);
         AMS_ASSERT(params != nullptr);
 
         /* Acquire exclusive access. */
-        std::scoped_lock lk(this->loop_control_lock);
+        std::scoped_lock lk(m_loop_control_lock);
 
         /* If we're processing for the loop thread, we can directly handle. */
-        if (!this->is_looping || this->IsRunningOnLoopThread()) {
+        if (!m_is_looping || this->IsRunningOnLoopThread()) {
             this->ProcessControlCommandImpl(params);
         } else {
             /* Otherwise, signal to the loop thread. */
-            this->loop_control_command_params = params;
-            this->loop_control_event.Signal();
-            this->loop_control_command_done_event.Wait();
+            m_loop_control_command_params = params;
+            m_loop_control_event.Signal();
+            m_loop_control_command_done_event.Wait();
         }
     }
 
     void EventHandlerManager::ProcessControlCommandImpl(LoopControlCommandParameters *params) {
         /* Check pre-conditions. */
-        AMS_ASSERT(this->loop_control_lock.IsLockedByCurrentThread() || !this->loop_control_lock.TryLock());
+        AMS_ASSERT(m_loop_control_lock.IsLockedByCurrentThread() || !m_loop_control_lock.TryLock());
         AMS_ASSERT(params != nullptr);
         AMS_ASSERT(params->target != nullptr);
 
         /* Process the command. */
         switch (params->command) {
             case LoopControlCommand::Register:
-                params->target->Link(std::addressof(this->multi_wait));
+                params->target->Link(std::addressof(m_multi_wait));
                 break;
             case LoopControlCommand::Unregister:
                 params->target->Unlink();
@@ -125,74 +125,74 @@ namespace ams::ddsf {
 
     void EventHandlerManager::WaitLoopEnter() {
         /* Acquire exclusive access. */
-        std::scoped_lock lk(this->loop_control_lock);
+        std::scoped_lock lk(m_loop_control_lock);
 
         /* Wait until we're looping. */
-        while (!this->is_looping) {
-            this->is_looping_cv.Wait(this->loop_control_lock);
+        while (!m_is_looping) {
+            m_is_looping_cv.Wait(m_loop_control_lock);
         }
     }
 
     void EventHandlerManager::WaitLoopExit() {
         /* Acquire exclusive access. */
-        std::scoped_lock lk(this->loop_control_lock);
+        std::scoped_lock lk(m_loop_control_lock);
 
         /* Wait until we're not looping. */
-        while (this->is_looping) {
-            this->is_looping_cv.Wait(this->loop_control_lock);
+        while (m_is_looping) {
+            m_is_looping_cv.Wait(m_loop_control_lock);
         }
     }
 
     void EventHandlerManager::RequestStop() {
         /* Check that we're looping and not the loop thread. */
-        AMS_ASSERT(this->is_looping);
+        AMS_ASSERT(m_is_looping);
         AMS_ASSERT(!this->IsRunningOnLoopThread());
 
-        if (this->is_looping) {
+        if (m_is_looping) {
             /* Acquire exclusive access. */
-            std::scoped_lock lk(this->loop_control_lock);
+            std::scoped_lock lk(m_loop_control_lock);
 
             /* Signal to the loop thread. */
             LoopControlCommandParameters params(LoopControlCommand::Terminate, nullptr);
-            this->loop_control_command_params = std::addressof(params);
-            this->loop_control_event.Signal();
-            this->loop_control_command_done_event.Wait();
+            m_loop_control_command_params = std::addressof(params);
+            m_loop_control_event.Signal();
+            m_loop_control_command_done_event.Wait();
         }
     }
 
     void EventHandlerManager::LoopAuto() {
         /* Check that we're not already looping. */
-        AMS_ASSERT(!this->is_looping);
+        AMS_ASSERT(!m_is_looping);
 
         /* Begin looping with the current thread. */
-        this->loop_thread   = os::GetCurrentThread();
-        this->is_looping    = true;
-        this->is_looping_cv.Broadcast();
+        m_loop_thread   = os::GetCurrentThread();
+        m_is_looping    = true;
+        m_is_looping_cv.Broadcast();
 
         /* Whenever we're done looping, clean up. */
         ON_SCOPE_EXIT {
-            this->loop_thread   = nullptr;
-            this->is_looping    = false;
-            this->is_looping_cv.Broadcast();
+            m_loop_thread   = nullptr;
+            m_is_looping    = false;
+            m_is_looping_cv.Broadcast();
         };
 
         /* Loop until we're asked to stop. */
         bool should_terminate = false;
         while (!should_terminate) {
             /* Wait for a holder to be signaled. */
-            os::MultiWaitHolderType *event_holder = os::WaitAny(std::addressof(this->multi_wait));
+            os::MultiWaitHolderType *event_holder = os::WaitAny(std::addressof(m_multi_wait));
             AMS_ASSERT(event_holder != nullptr);
 
             /* Check if we have a request to handle. */
-            if (event_holder == std::addressof(this->loop_control_event_holder)) {
+            if (event_holder == std::addressof(m_loop_control_event_holder)) {
                 /* Check that the request hasn't already been handled. */
-                if (this->loop_control_event.TryWait()) {
+                if (m_loop_control_event.TryWait()) {
                     /* Handle the request. */
-                    AMS_ASSERT(this->loop_control_command_params != nullptr);
-                    switch (this->loop_control_command_params->command) {
+                    AMS_ASSERT(m_loop_control_command_params != nullptr);
+                    switch (m_loop_control_command_params->command) {
                         case LoopControlCommand::Register:
                         case LoopControlCommand::Unregister:
-                            this->ProcessControlCommandImpl(this->loop_control_command_params);
+                            this->ProcessControlCommandImpl(m_loop_control_command_params);
                             break;
                         case LoopControlCommand::Terminate:
                             should_terminate = true;
@@ -201,8 +201,8 @@ namespace ams::ddsf {
                     }
 
                     /* Clear the request, and signal that it's done. */
-                    this->loop_control_command_params = nullptr;
-                    this->loop_control_command_done_event.Signal();
+                    m_loop_control_command_params = nullptr;
+                    m_loop_control_command_done_event.Signal();
                 }
             } else {
                 /* Handle the event. */

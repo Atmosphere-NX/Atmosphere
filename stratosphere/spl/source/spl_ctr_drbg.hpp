@@ -26,11 +26,11 @@ namespace ams::spl {
             static constexpr size_t BlockSize = AES_BLOCK_SIZE;
             static constexpr size_t SeedSize = 2 * AES_BLOCK_SIZE;
         private:
-            Aes128Context aes_ctx;
-            u8 counter[BlockSize];
-            u8 key[BlockSize];
-            u8 work[2][SeedSize];
-            u32 reseed_counter;
+            Aes128Context m_aes_ctx;
+            u8 m_counter[BlockSize];
+            u8 m_key[BlockSize];
+            u8 m_work[2][SeedSize];
+            u32 m_reseed_counter;
         private:
             static void Xor(void *dst, const void *src, size_t size) {
                 const u8 *src_u8 = reinterpret_cast<const u8 *>(src);

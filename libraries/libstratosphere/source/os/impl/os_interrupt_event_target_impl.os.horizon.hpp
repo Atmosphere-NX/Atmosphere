@@ -20,8 +20,8 @@ namespace ams::os::impl {
 
     class InterruptEventHorizonImpl {
         private:
-            svc::Handle handle;
-            bool manual_clear;
+            svc::Handle m_handle;
+            bool m_manual_clear;
         public:
             explicit InterruptEventHorizonImpl(InterruptName name, EventClearMode mode);
             ~InterruptEventHorizonImpl();
@@ -36,7 +36,7 @@ namespace ams::os::impl {
             }
 
             NativeHandle GetHandle() const {
-                return this->handle;
+                return m_handle;
             }
     };
 

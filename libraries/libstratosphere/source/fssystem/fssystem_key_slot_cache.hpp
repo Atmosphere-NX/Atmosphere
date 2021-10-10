@@ -22,12 +22,12 @@ namespace ams::fssystem {
         NON_COPYABLE(KeySlotCacheAccessor);
         NON_MOVEABLE(KeySlotCacheAccessor);
         private:
-            util::unique_lock<os::SdkMutex> lk;
-            const s32 slot_index;
+            util::unique_lock<os::SdkMutex> m_lk;
+            const s32 m_slot_index;
         public:
-            KeySlotCacheAccessor(s32 idx, util::unique_lock<os::SdkMutex> &&l) : lk(std::move(l)), slot_index(idx) { /* ... */ }
+            KeySlotCacheAccessor(s32 idx, util::unique_lock<os::SdkMutex> &&l) : m_lk(std::move(l)), m_slot_index(idx) { /* ... */ }
 
-            s32 GetKeySlotIndex() const { return this->slot_index; }
+            s32 GetKeySlotIndex() const { return m_slot_index; }
     };
 
     class KeySlotCacheEntry : public util::IntrusiveListBaseNode<KeySlotCacheEntry> {
@@ -36,27 +36,27 @@ namespace ams::fssystem {
         public:
             static constexpr size_t KeySize = crypto::AesDecryptor128::KeySize;
         private:
-            const s32 slot_index;
-            u8 key1[KeySize];
-            s32 key2;
+            const s32 m_slot_index;
+            u8 m_key1[KeySize];
+            s32 m_key2;
         public:
-            explicit KeySlotCacheEntry(s32 idx) : slot_index(idx), key2(-1) {
-                std::memset(this->key1, 0, sizeof(this->key1));
+            explicit KeySlotCacheEntry(s32 idx) : m_slot_index(idx), m_key2(-1) {
+                std::memset(m_key1, 0, sizeof(m_key1));
             }
 
             bool Contains(const void *key, size_t key_size, s32 key2) const {
                 AMS_ASSERT(key_size == KeySize);
                 AMS_UNUSED(key_size);
 
-                return key2 == this->key2 && std::memcmp(this->key1, key, KeySize) == 0;
+                return key2 == m_key2 && std::memcmp(m_key1, key, KeySize) == 0;
             }
 
-            s32 GetKeySlotIndex() const { return this->slot_index; }
+            s32 GetKeySlotIndex() const { return m_slot_index; }
 
             void SetKey(const void *key, size_t key_size, s32 key2) {
                 AMS_ASSERT(key_size == KeySize);
-                std::memcpy(this->key1, key, key_size);
-                this->key2 = key2;
+                std::memcpy(m_key1, key, key_size);
+                m_key2 = key2;
             }
     };
 
@@ -66,24 +66,24 @@ namespace ams::fssystem {
         private:
             using KeySlotCacheEntryList = util::IntrusiveListBaseTraits<KeySlotCacheEntry>::ListType;
         private:
-            os::SdkMutex mutex;
-            KeySlotCacheEntryList high_priority_mru_list;
-            KeySlotCacheEntryList low_priority_mru_list;
+            os::SdkMutex m_mutex;
+            KeySlotCacheEntryList m_high_priority_mru_list;
+            KeySlotCacheEntryList m_low_priority_mru_list;
         public:
-            constexpr KeySlotCache() : mutex(), high_priority_mru_list(), low_priority_mru_list() { /* ... */ }
+            constexpr KeySlotCache() : m_mutex(), m_high_priority_mru_list(), m_low_priority_mru_list() { /* ... */ }
 
             Result AllocateHighPriority(std::unique_ptr<KeySlotCacheAccessor> *out, const void *key, size_t key_size, s32 key2) {
-                return this->AllocateFromLru(out, this->high_priority_mru_list, key, key_size, key2);
+                return this->AllocateFromLru(out, m_high_priority_mru_list, key, key_size, key2);
             }
 
             Result AllocateLowPriority(std::unique_ptr<KeySlotCacheAccessor> *out, const void *key, size_t key_size, s32 key2) {
-                return this->AllocateFromLru(out, this->high_priority_mru_list, key, key_size, key2);
+                return this->AllocateFromLru(out, m_high_priority_mru_list, key, key_size, key2);
             }
 
             Result Find(std::unique_ptr<KeySlotCacheAccessor> *out, const void *key, size_t key_size, s32 key2) {
-                util::unique_lock lk(this->mutex);
+                util::unique_lock lk(m_mutex);
 
-                KeySlotCacheEntryList *lists[2] = { std::addressof(this->high_priority_mru_list), std::addressof(this->low_priority_mru_list) };
+                KeySlotCacheEntryList *lists[2] = { std::addressof(m_high_priority_mru_list), std::addressof(m_low_priority_mru_list) };
                 for (auto list : lists) {
                     for (auto it = list->begin(); it != list->end(); ++it) {
                         if (it->Contains(key, key_size, key2)) {
@@ -102,14 +102,14 @@ namespace ams::fssystem {
             }
 
             void AddEntry(KeySlotCacheEntry *entry) {
-                util::unique_lock lk(this->mutex);
-                this->low_priority_mru_list.push_front(*entry);
+                util::unique_lock lk(m_mutex);
+                m_low_priority_mru_list.push_front(*entry);
             }
         private:
             Result AllocateFromLru(std::unique_ptr<KeySlotCacheAccessor> *out, KeySlotCacheEntryList &dst_list, const void *key, size_t key_size, s32 key2) {
-                util::unique_lock lk(this->mutex);
+                util::unique_lock lk(m_mutex);
 
-                KeySlotCacheEntryList &src_list = this->low_priority_mru_list.empty() ? this->high_priority_mru_list : this->low_priority_mru_list;
+                KeySlotCacheEntryList &src_list = m_low_priority_mru_list.empty() ? m_high_priority_mru_list : m_low_priority_mru_list;
                 AMS_ASSERT(!src_list.empty());
 
                 auto it = src_list.rbegin();

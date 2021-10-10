@@ -19,7 +19,7 @@
 
 namespace ams::erpt::srv {
 
-    ReportImpl::ReportImpl() : report(nullptr) {
+    ReportImpl::ReportImpl() : m_report(nullptr) {
         /* ... */
     }
 
@@ -28,52 +28,52 @@ namespace ams::erpt::srv {
     }
 
     Result ReportImpl::Open(const ReportId &report_id) {
-        R_UNLESS(this->report == nullptr, erpt::ResultAlreadyInitialized());
+        R_UNLESS(m_report == nullptr, erpt::ResultAlreadyInitialized());
 
         JournalRecord<ReportInfo> *record = Journal::Retrieve(report_id);
         R_UNLESS(record != nullptr, erpt::ResultNotFound());
 
-        this->report = new Report(record, false);
-        R_UNLESS(this->report != nullptr, erpt::ResultOutOfMemory());
-        auto report_guard = SCOPE_GUARD { delete this->report; this->report = nullptr; };
+        m_report = new Report(record, false);
+        R_UNLESS(m_report != nullptr, erpt::ResultOutOfMemory());
+        auto report_guard = SCOPE_GUARD { delete m_report; m_report = nullptr; };
 
-        R_TRY(this->report->Open(ReportOpenType_Read));
+        R_TRY(m_report->Open(ReportOpenType_Read));
         report_guard.Cancel();
 
         return ResultSuccess();
     }
 
     Result ReportImpl::Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)  {
-        R_UNLESS(this->report != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_report != nullptr, erpt::ResultNotInitialized());
 
-        return this->report->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize()));
+        return m_report->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize()));
     }
 
     Result ReportImpl::SetFlags(ReportFlagSet flags)  {
-        R_UNLESS(this->report != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_report != nullptr, erpt::ResultNotInitialized());
 
-        return this->report->SetFlags(flags);
+        return m_report->SetFlags(flags);
     }
 
     Result ReportImpl::GetFlags(ams::sf::Out<ReportFlagSet> out)  {
-        R_UNLESS(this->report != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_report != nullptr, erpt::ResultNotInitialized());
 
-        return this->report->GetFlags(out.GetPointer());
+        return m_report->GetFlags(out.GetPointer());
     }
 
     Result ReportImpl::Close()  {
-        if (this->report != nullptr) {
-            this->report->Close();
-            delete this->report;
-            this->report = nullptr;
+        if (m_report != nullptr) {
+            m_report->Close();
+            delete m_report;
+            m_report = nullptr;
         }
         return ResultSuccess();
     }
 
     Result ReportImpl::GetSize(ams::sf::Out<s64> out)  {
-        R_UNLESS(this->report != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_report != nullptr, erpt::ResultNotInitialized());
 
-        return this->report->GetSize(out.GetPointer());
+        return m_report->GetSize(out.GetPointer());
     }
 
 }

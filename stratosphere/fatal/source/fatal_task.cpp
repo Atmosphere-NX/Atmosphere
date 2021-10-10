@@ -29,7 +29,7 @@ namespace ams::fatal::srv {
         class TaskThread {
             NON_COPYABLE(TaskThread);
             private:
-                os::ThreadType thread;
+                os::ThreadType m_thread;
             private:
                 static void RunTaskImpl(void *arg) {
                     ITask *task = reinterpret_cast<ITask *>(arg);
@@ -41,9 +41,9 @@ namespace ams::fatal::srv {
             public:
                 TaskThread() { /* ... */ }
                 void StartTask(ITask *task) {
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->thread), RunTaskImpl, task, task->GetStack(), task->GetStackSize(), AMS_GET_SYSTEM_THREAD_PRIORITY(fatalsrv, FatalTaskThread), 3));
-                    os::SetThreadNamePointer(std::addressof(this->thread), AMS_GET_SYSTEM_THREAD_NAME(fatalsrv, FatalTaskThread));
-                    os::StartThread(std::addressof(this->thread));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(m_thread), RunTaskImpl, task, task->GetStack(), task->GetStackSize(), AMS_GET_SYSTEM_THREAD_PRIORITY(fatalsrv, FatalTaskThread), 3));
+                    os::SetThreadNamePointer(std::addressof(m_thread), AMS_GET_SYSTEM_THREAD_NAME(fatalsrv, FatalTaskThread));
+                    os::StartThread(std::addressof(m_thread));
                 }
         };
 
@@ -52,13 +52,13 @@ namespace ams::fatal::srv {
             private:
                 static constexpr size_t MaxTasks = 8;
             private:
-                TaskThread task_threads[MaxTasks];
-                size_t task_count = 0;
+                TaskThread m_task_threads[MaxTasks];
+                size_t m_task_count = 0;
             public:
                 TaskManager() { /* ... */ }
                 void StartTask(ITask *task) {
-                    AMS_ABORT_UNLESS(this->task_count < MaxTasks);
-                    this->task_threads[this->task_count++].StartTask(task);
+                    AMS_ABORT_UNLESS(m_task_count < MaxTasks);
+                    m_task_threads[m_task_count++].StartTask(task);
                 }
         };
 

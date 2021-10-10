@@ -33,36 +33,36 @@ namespace ams::kvdb {
             /* Subtypes. */
             class Entry {
                 private:
-                    Key key;
-                    void *value;
-                    size_t value_size;
+                    Key m_key;
+                    void *m_value;
+                    size_t m_value_size;
                 public:
-                    constexpr Entry(const Key &k, void *v, size_t s) : key(k), value(v), value_size(s) { /* ... */ }
+                    constexpr Entry(const Key &k, void *v, size_t s) : m_key(k), m_value(v), m_value_size(s) { /* ... */ }
 
                     const Key &GetKey() const {
-                        return this->key;
+                        return m_key;
                     }
 
                     template<typename Value = void>
                     Value *GetValuePointer() {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
+                            AMS_ABORT_UNLESS(sizeof(Value) <= m_value_size);
                             /* Ensure we only get pod. */
                             static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
-                        return reinterpret_cast<Value *>(this->value);
+                        return reinterpret_cast<Value *>(m_value);
                     }
 
                     template<typename Value = void>
                     const Value *GetValuePointer() const {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
+                            AMS_ABORT_UNLESS(sizeof(Value) <= m_value_size);
                             /* Ensure we only get pod. */
                             static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
-                        return reinterpret_cast<Value *>(this->value);
+                        return reinterpret_cast<Value *>(m_value);
                     }
 
                     template<typename Value>
@@ -76,55 +76,55 @@ namespace ams::kvdb {
                     }
 
                     size_t GetValueSize() const {
-                        return this->value_size;
+                        return m_value_size;
                     }
 
                     constexpr inline bool operator<(const Key &rhs) const {
-                        return key < rhs;
+                        return m_key < rhs;
                     }
 
                     constexpr inline bool operator==(const Key &rhs) const {
-                        return key == rhs;
+                        return m_key == rhs;
                     }
             };
 
             class Index {
                 private:
-                    size_t count;
-                    size_t capacity;
-                    Entry *entries;
-                    MemoryResource *memory_resource;
+                    size_t m_count;
+                    size_t m_capacity;
+                    Entry *m_entries;
+                    MemoryResource *m_memory_resource;
                 public:
-                    Index() : count(0), capacity(0), entries(nullptr), memory_resource(nullptr) { /* ... */ }
+                    Index() : m_count(0), m_capacity(0), m_entries(nullptr), m_memory_resource(nullptr) { /* ... */ }
 
                     ~Index() {
-                        if (this->entries != nullptr) {
+                        if (m_entries != nullptr) {
                             this->ResetEntries();
-                            this->memory_resource->Deallocate(this->entries, sizeof(Entry) * this->capacity);
-                            this->entries = nullptr;
+                            m_memory_resource->Deallocate(m_entries, sizeof(Entry) * m_capacity);
+                            m_entries = nullptr;
                         }
                     }
 
                     size_t GetCount() const {
-                        return this->count;
+                        return m_count;
                     }
 
                     size_t GetCapacity() const {
-                        return this->capacity;
+                        return m_capacity;
                     }
 
                     void ResetEntries() {
-                        for (size_t i = 0; i < this->count; i++) {
-                            this->memory_resource->Deallocate(this->entries[i].GetValuePointer(), this->entries[i].GetValueSize());
+                        for (size_t i = 0; i < m_count; i++) {
+                            m_memory_resource->Deallocate(m_entries[i].GetValuePointer(), m_entries[i].GetValueSize());
                         }
-                        this->count = 0;
+                        m_count = 0;
                     }
 
                     Result Initialize(size_t capacity, MemoryResource *mr) {
-                        this->entries = reinterpret_cast<Entry *>(mr->Allocate(sizeof(Entry) * capacity));
-                        R_UNLESS(this->entries != nullptr, kvdb::ResultAllocationFailed());
-                        this->capacity = capacity;
-                        this->memory_resource = mr;
+                        m_entries = reinterpret_cast<Entry *>(mr->Allocate(sizeof(Entry) * capacity));
+                        R_UNLESS(m_entries != nullptr, kvdb::ResultAllocationFailed());
+                        m_capacity = capacity;
+                        m_memory_resource = mr;
                         return ResultSuccess();
                     }
 
@@ -133,16 +133,16 @@ namespace ams::kvdb {
                         Entry *it = this->lower_bound(key);
                         if (it != this->end() && it->GetKey() == key) {
                             /* Entry already exists. Free old value. */
-                            this->memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
+                            m_memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
                         } else {
                             /* We need to add a new entry. Check we have room, move future keys forward. */
-                            R_UNLESS(this->count < this->capacity, kvdb::ResultOutOfKeyResource());
+                            R_UNLESS(m_count < m_capacity, kvdb::ResultOutOfKeyResource());
                             std::memmove(it + 1, it, sizeof(*it) * (this->end() - it));
-                            this->count++;
+                            m_count++;
                         }
 
                         /* Allocate new value. */
-                        void *new_value = this->memory_resource->Allocate(value_size);
+                        void *new_value = m_memory_resource->Allocate(value_size);
                         R_UNLESS(new_value != nullptr, kvdb::ResultAllocationFailed());
                         std::memcpy(new_value, value, value_size);
 
@@ -152,9 +152,9 @@ namespace ams::kvdb {
                     }
 
                     Result AddUnsafe(const Key &key, void *value, size_t value_size) {
-                        R_UNLESS(this->count < this->capacity, kvdb::ResultOutOfKeyResource());
+                        R_UNLESS(m_count < m_capacity, kvdb::ResultOutOfKeyResource());
 
-                        this->entries[this->count++] = Entry(key, value, value_size);
+                        m_entries[m_count++] = Entry(key, value, value_size);
                         return ResultSuccess();
                     }
 
@@ -164,9 +164,9 @@ namespace ams::kvdb {
                         R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                         /* Free the value, move entries back. */
-                        this->memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
+                        m_memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
                         std::memmove(it, it + 1, sizeof(*it) * (this->end() - (it + 1)));
-                        this->count--;
+                        m_count--;
                         return ResultSuccess();
                     }
 
@@ -211,19 +211,19 @@ namespace ams::kvdb {
                     }
                 private:
                     Entry *GetBegin() {
-                        return this->entries;
+                        return m_entries;
                     }
 
                     const Entry *GetBegin() const {
-                        return this->entries;
+                        return m_entries;
                     }
 
                     Entry *GetEnd() {
-                        return this->GetBegin() + this->count;
+                        return this->GetBegin() + m_count;
                     }
 
                     const Entry *GetEnd() const {
-                        return this->GetBegin() + this->count;
+                        return this->GetBegin() + m_count;
                     }
 
                     Entry *GetLowerBound(const Key &key) {
@@ -255,10 +255,10 @@ namespace ams::kvdb {
         private:
             using Path = kvdb::BoundedString<fs::EntryNameLengthMax>;
         private:
-            Index index;
-            Path path;
-            Path temp_path;
-            MemoryResource *memory_resource;
+            Index m_index;
+            Path m_path;
+            Path m_temp_path;
+            MemoryResource *m_memory_resource;
         public:
             MemoryKeyValueStore() { /* ... */ }
 
@@ -269,12 +269,12 @@ namespace ams::kvdb {
                 R_UNLESS(entry_type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
                 /* Set paths. */
-                this->path.SetFormat("%s%s", dir, "/imkvdb.arc");
-                this->temp_path.SetFormat("%s%s", dir, "/imkvdb.tmp");
+                m_path.SetFormat("%s%s", dir, "/imkvdb.arc");
+                m_temp_path.SetFormat("%s%s", dir, "/imkvdb.tmp");
 
                 /* Initialize our index. */
-                R_TRY(this->index.Initialize(capacity, mr));
-                this->memory_resource = mr;
+                R_TRY(m_index.Initialize(capacity, mr));
+                m_memory_resource = mr;
 
                 return ResultSuccess();
             }
@@ -282,26 +282,26 @@ namespace ams::kvdb {
             Result Initialize(size_t capacity, MemoryResource *mr) {
                 /* This initializes without an archive file. */
                 /* A store initialized this way cannot have its contents loaded from or flushed to disk. */
-                this->path.Set("");
-                this->temp_path.Set("");
+                m_path.Set("");
+                m_temp_path.Set("");
 
                 /* Initialize our index. */
-                R_TRY(this->index.Initialize(capacity, mr));
-                this->memory_resource = mr;
+                R_TRY(m_index.Initialize(capacity, mr));
+                m_memory_resource = mr;
                 return ResultSuccess();
             }
 
             size_t GetCount() const {
-                return this->index.GetCount();
+                return m_index.GetCount();
             }
 
             size_t GetCapacity() const {
-                return this->index.GetCapacity();
+                return m_index.GetCapacity();
             }
 
             Result Load() {
                 /* Reset any existing entries. */
-                this->index.ResetEntries();
+                m_index.ResetEntries();
 
                 /* Try to read the archive -- note, path not found is a success condition. */
                 /* This is because no archive file = no entries, so we're in the right state. */
@@ -323,14 +323,14 @@ namespace ams::kvdb {
                         R_TRY(reader.GetEntrySize(std::addressof(key_size), std::addressof(value_size)));
 
                         /* Allocate memory for value. */
-                        void *new_value = this->memory_resource->Allocate(value_size);
+                        void *new_value = m_memory_resource->Allocate(value_size);
                         R_UNLESS(new_value != nullptr, kvdb::ResultAllocationFailed());
-                        auto value_guard = SCOPE_GUARD { this->memory_resource->Deallocate(new_value, value_size); };
+                        auto value_guard = SCOPE_GUARD { m_memory_resource->Deallocate(new_value, value_size); };
 
                         /* Read key and value. */
                         Key key;
                         R_TRY(reader.ReadEntry(std::addressof(key), sizeof(key), new_value, value_size));
-                        R_TRY(this->index.AddUnsafe(key, new_value, value_size));
+                        R_TRY(m_index.AddUnsafe(key, new_value, value_size));
 
                         /* We succeeded, so cancel the value guard to prevent deallocation. */
                         value_guard.Cancel();
@@ -349,7 +349,7 @@ namespace ams::kvdb {
                 {
                     ArchiveWriter writer(buffer);
                     writer.WriteHeader(this->GetCount());
-                    for (const auto &it : this->index) {
+                    for (const auto &it : m_index) {
                         const auto &key = it.GetKey();
                         writer.WriteEntry(std::addressof(key), sizeof(Key), it.GetValuePointer(), it.GetValueSize());
                     }
@@ -360,7 +360,7 @@ namespace ams::kvdb {
             }
 
             Result Set(const Key &key, const void *value, size_t value_size) {
-                return this->index.Set(key, value, value_size);
+                return m_index.Set(key, value, value_size);
             }
 
             template<typename Value>
@@ -428,47 +428,47 @@ namespace ams::kvdb {
             }
 
             Result Remove(const Key &key) {
-                return this->index.Remove(key);
+                return m_index.Remove(key);
             }
 
             Entry *begin() {
-                return this->index.begin();
+                return m_index.begin();
             }
 
             const Entry *begin() const {
-                return this->index.begin();
+                return m_index.begin();
             }
 
             Entry *end() {
-                return this->index.end();
+                return m_index.end();
             }
 
             const Entry *end() const {
-                return this->index.end();
+                return m_index.end();
             }
 
             const Entry *cbegin() const {
-                return this->index.cbegin();
+                return m_index.cbegin();
             }
 
             const Entry *cend() const {
-                return this->index.cend();
+                return m_index.cend();
             }
 
             Entry *lower_bound(const Key &key) {
-                return this->index.lower_bound(key);
+                return m_index.lower_bound(key);
             }
 
             const Entry *lower_bound(const Key &key) const {
-                return this->index.lower_bound(key);
+                return m_index.lower_bound(key);
             }
 
             Entry *find(const Key &key) {
-                return this->index.find(key);
+                return m_index.find(key);
             }
 
             const Entry *find(const Key &key) const {
-                return this->index.find(key);
+                return m_index.find(key);
             }
         private:
             Result SaveArchiveToFile(const char *path, const void *buf, size_t size) {
@@ -492,16 +492,16 @@ namespace ams::kvdb {
             Result Commit(const AutoBuffer &buffer, bool destructive) {
                 if (destructive) {
                     /* Delete and save to the real archive. */
-                    R_TRY(SaveArchiveToFile(this->path.Get(), buffer.Get(), buffer.GetSize()));
+                    R_TRY(SaveArchiveToFile(m_path.Get(), buffer.Get(), buffer.GetSize()));
                 } else {
                     /* Delete and save to a temporary archive. */
-                    R_TRY(SaveArchiveToFile(this->temp_path.Get(), buffer.Get(), buffer.GetSize()));
+                    R_TRY(SaveArchiveToFile(m_temp_path.Get(), buffer.Get(), buffer.GetSize()));
 
                     /* Try to delete the saved archive, but allow deletion failure. */
-                    fs::DeleteFile(this->path.Get());
+                    fs::DeleteFile(m_path.Get());
 
                     /* Rename the path. */
-                    R_TRY(fs::RenameFile(this->temp_path.Get(), this->path.Get()));
+                    R_TRY(fs::RenameFile(m_temp_path.Get(), m_path.Get()));
                 }
 
                 return ResultSuccess();
@@ -510,7 +510,7 @@ namespace ams::kvdb {
             size_t GetArchiveSize() const {
                 ArchiveSizeHelper size_helper;
 
-                for (const auto &it : this->index) {
+                for (const auto &it : m_index) {
                     size_helper.AddEntry(sizeof(Key), it.GetValueSize());
                 }
 
@@ -520,7 +520,7 @@ namespace ams::kvdb {
             Result ReadArchiveFile(AutoBuffer *dst) const {
                 /* Open the file. */
                 fs::FileHandle file;
-                R_TRY(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read));
+                R_TRY(fs::OpenFile(std::addressof(file), m_path, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
 
                 /* Get the archive file size. */

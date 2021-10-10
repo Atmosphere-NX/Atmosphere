@@ -18,16 +18,16 @@
 namespace ams::ncm {
 
     PackageSystemUpdateTask::~PackageSystemUpdateTask() {
-        if (this->context_path.GetLength() > 0) {
-            fs::DeleteFile(this->context_path);
+        if (m_context_path.GetLength() > 0) {
+            fs::DeleteFile(m_context_path);
         }
         this->Inactivate();
     }
 
     void PackageSystemUpdateTask::Inactivate() {
-        if (this->gamecard_content_meta_database_active) {
+        if (m_gamecard_content_meta_database_active) {
             InactivateContentMetaDatabase(StorageId::GameCard);
-            this->gamecard_content_meta_database_active = false;
+            m_gamecard_content_meta_database_active = false;
         }
     }
 
@@ -37,13 +37,13 @@ namespace ams::ncm {
 
         /* Activate the game card content meta database. */
         R_TRY(ActivateContentMetaDatabase(StorageId::GameCard));
-        this->gamecard_content_meta_database_active = true;
+        m_gamecard_content_meta_database_active = true;
         auto meta_db_guard = SCOPE_GUARD { this->Inactivate(); };
 
         /* Open the game card content meta database. */
-        OpenContentMetaDatabase(std::addressof(this->package_db), StorageId::GameCard);
+        OpenContentMetaDatabase(std::addressof(m_package_db), StorageId::GameCard);
 
-        ContentMetaDatabaseBuilder builder(std::addressof(this->package_db));
+        ContentMetaDatabaseBuilder builder(std::addressof(m_package_db));
 
         /* Cleanup and build the content meta database. */
         R_TRY(builder.Cleanup());
@@ -55,18 +55,18 @@ namespace ams::ncm {
         auto context_guard = SCOPE_GUARD { fs::DeleteFile(context_path); };
 
         /* Initialize data. */
-        R_TRY(this->data.Initialize(context_path));
+        R_TRY(m_data.Initialize(context_path));
 
         /* Initialize PackageInstallTaskBase. */
         u32 config = !requires_exfat_driver ? InstallConfig_SystemUpdate : InstallConfig_SystemUpdate | InstallConfig_RequiresExFatDriver;
-        R_TRY(PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, StorageId::BuiltInSystem, std::addressof(this->data), config));
+        R_TRY(PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, StorageId::BuiltInSystem, std::addressof(m_data), config));
 
         /* Cancel guards. */
         context_guard.Cancel();
         meta_db_guard.Cancel();
 
         /* Set the context path. */
-        this->context_path.Set(context_path);
+        m_context_path.Set(context_path);
         return ResultSuccess();
     }
 
@@ -109,7 +109,7 @@ namespace ams::ncm {
     Result PackageSystemUpdateTask::PrepareInstallContentMetaData() {
         /* Obtain a SystemUpdate key. */
         ContentMetaKey key;
-        auto list_count = this->package_db.ListContentMeta(std::addressof(key), 1, ContentMetaType::SystemUpdate);
+        auto list_count = m_package_db.ListContentMeta(std::addressof(key), 1, ContentMetaType::SystemUpdate);
         R_UNLESS(list_count.written > 0, ncm::ResultSystemUpdateNotFoundInPackage());
 
         /* Get the content info for the key. */
@@ -130,7 +130,7 @@ namespace ams::ncm {
             /* List content infos. */
             s32 count;
             ContentInfo info;
-            R_TRY(this->package_db.ListContentInfo(std::addressof(count), std::addressof(info), 1, key, ofs++));
+            R_TRY(m_package_db.ListContentInfo(std::addressof(count), std::addressof(info), 1, key, ofs++));
 
             /* No content infos left to list. */
             if (count == 0) {

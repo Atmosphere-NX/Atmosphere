@@ -20,70 +20,70 @@ namespace ams::fatal::srv {
 
     class FatalConfig {
         private:
-            settings::system::SerialNumber serial_number{};
-            settings::system::FirmwareVersion firmware_version{};
-            u64 language_code{};
-            TimeSpan quest_reboot_interval{};
-            bool transition_to_fatal{};
-            bool show_extra_info{};
-            bool quest_flag{};
-            const char *error_msg{};
-            const char *error_desc{};
-            const char *quest_desc{};
-            TimeSpan fatal_auto_reboot_interval{};
-            bool fatal_auto_reboot_enabled{};
+            settings::system::SerialNumber m_serial_number{};
+            settings::system::FirmwareVersion m_firmware_version{};
+            u64 m_language_code{};
+            TimeSpan m_quest_reboot_interval{};
+            bool m_transition_to_fatal{};
+            bool m_show_extra_info{};
+            bool m_quest_flag{};
+            const char *m_error_msg{};
+            const char *m_error_desc{};
+            const char *m_quest_desc{};
+            TimeSpan m_fatal_auto_reboot_interval{};
+            bool m_fatal_auto_reboot_enabled{};
         public:
             FatalConfig();
 
             const settings::system::SerialNumber &GetSerialNumber() const {
-                return this->serial_number;
+                return m_serial_number;
             }
 
             const settings::system::FirmwareVersion &GetFirmwareVersion() const {
-                return this->firmware_version;
+                return m_firmware_version;
             }
 
             void UpdateLanguageCode() {
-                setGetLanguageCode(&this->language_code);
+                setGetLanguageCode(&m_language_code);
             }
 
             u64 GetLanguageCode() const {
-                return this->language_code;
+                return m_language_code;
             }
 
             bool ShouldTransitionToFatal() const {
-                return this->transition_to_fatal;
+                return m_transition_to_fatal;
             }
 
             bool ShouldShowExtraInfo() const {
-                return this->show_extra_info;
+                return m_show_extra_info;
             }
 
             bool IsQuest() const {
-                return this->quest_flag;
+                return m_quest_flag;
             }
 
             bool IsFatalRebootEnabled() const {
-                return this->fatal_auto_reboot_enabled;
+                return m_fatal_auto_reboot_enabled;
             }
 
             TimeSpan GetQuestRebootTimeoutInterval() const {
-                return this->quest_reboot_interval;
+                return m_quest_reboot_interval;
             }
 
             TimeSpan GetFatalRebootTimeoutInterval() const {
-                return this->fatal_auto_reboot_interval;
+                return m_fatal_auto_reboot_interval;
             }
 
             const char *GetErrorMessage() const {
-                return this->error_msg;
+                return m_error_msg;
             }
 
             const char *GetErrorDescription() const {
                 if (this->IsQuest()) {
-                    return this->quest_desc;
+                    return m_quest_desc;
                 } else {
-                    return this->error_desc;
+                    return m_error_desc;
                 }
             }
     };

@@ -25,17 +25,17 @@ namespace ams::powctl::impl::board::nintendo::nx {
         NON_MOVEABLE(BatteryDevice);
         AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::BatteryDevice, ::ams::powctl::impl::IDevice);
         private:
-            bool use_event_handler;
-            util::optional<BatteryInterruptEventHandler> event_handler;
-            os::SystemEventType system_event;
+            bool m_use_event_handler;
+            util::optional<BatteryInterruptEventHandler> m_event_handler;
+            os::SystemEventType m_system_event;
         public:
             BatteryDevice(bool ev);
 
-            os::SystemEventType *GetSystemEvent() { return std::addressof(this->system_event); }
+            os::SystemEventType *GetSystemEvent() { return std::addressof(m_system_event); }
 
             void SetInterruptEnabled(bool en) {
-                if (this->use_event_handler) {
-                    this->event_handler->SetInterruptEnabled(en);
+                if (m_use_event_handler) {
+                    m_event_handler->SetInterruptEnabled(en);
                 }
             }
     };

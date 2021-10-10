@@ -59,12 +59,12 @@ namespace ams::ncm {
             struct DataHolder : public InstallContentMeta, public util::IntrusiveListBaseNode<DataHolder>{};
             using DataList = util::IntrusiveListBaseTraits<DataHolder>::ListType;
         private:
-            DataList data_list;
-            InstallProgressState state;
-            Result last_result;
-            SystemUpdateTaskApplyInfo system_update_task_apply_info;
+            DataList m_data_list;
+            InstallProgressState m_state;
+            Result m_last_result;
+            SystemUpdateTaskApplyInfo m_system_update_task_apply_info;
         public:
-            MemoryInstallTaskData() : state(InstallProgressState::NotPrepared), last_result(ResultSuccess()) { /* ... */ };
+            MemoryInstallTaskData() : m_state(InstallProgressState::NotPrepared), m_last_result(ResultSuccess()) { /* ... */ };
             ~MemoryInstallTaskData() {
                 this->Cleanup();
             }
@@ -104,8 +104,8 @@ namespace ams::ncm {
 
             static_assert(sizeof(EntryInfo) == 0x10);
         private:
-            Header header;
-            char path[64];
+            Header m_header;
+            char m_path[64];
         private:
             static constexpr Header MakeInitialHeader(s32 max_entries) {
                 return {

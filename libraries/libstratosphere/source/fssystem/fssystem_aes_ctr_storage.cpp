@@ -30,7 +30,7 @@ namespace ams::fssystem {
         util::StoreBigEndian(reinterpret_cast<s64 *>(out_addr + sizeof(u64)), static_cast<s64>(offset / BlockSize));
     }
 
-    AesCtrStorage::AesCtrStorage(IStorage *base, const void *key, size_t key_size, const void *iv, size_t iv_size) : base_storage(base) {
+    AesCtrStorage::AesCtrStorage(IStorage *base, const void *key, size_t key_size, const void *iv, size_t iv_size) : m_base_storage(base) {
         AMS_ASSERT(base != nullptr);
         AMS_ASSERT(key  != nullptr);
         AMS_ASSERT(iv   != nullptr);
@@ -38,8 +38,8 @@ namespace ams::fssystem {
         AMS_ASSERT(iv_size  == IvSize);
         AMS_UNUSED(key_size, iv_size);
 
-        std::memcpy(this->key, key, KeySize);
-        std::memcpy(this->iv, iv, IvSize);
+        std::memcpy(m_key, key, KeySize);
+        std::memcpy(m_iv, iv, IvSize);
     }
 
     Result AesCtrStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -54,18 +54,18 @@ namespace ams::fssystem {
         R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidArgument());
 
         /* Read the data. */
-        R_TRY(this->base_storage->Read(offset, buffer, size));
+        R_TRY(m_base_storage->Read(offset, buffer, size));
 
         /* Prepare to decrypt the data, with temporarily increased priority. */
         ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
         /* Setup the counter. */
         char ctr[IvSize];
-        std::memcpy(ctr, this->iv, IvSize);
+        std::memcpy(ctr, m_iv, IvSize);
         AddCounter(ctr, IvSize, offset / BlockSize);
 
         /* Decrypt, ensure we decrypt correctly. */
-        auto dec_size = crypto::DecryptAes128Ctr(buffer, size, this->key, KeySize, ctr, IvSize, buffer, size);
+        auto dec_size = crypto::DecryptAes128Ctr(buffer, size, m_key, KeySize, ctr, IvSize, buffer, size);
         R_UNLESS(size == dec_size, fs::ResultUnexpectedInAesCtrStorageA());
 
         return ResultSuccess();
@@ -91,7 +91,7 @@ namespace ams::fssystem {
 
         /* Setup the counter. */
         char ctr[IvSize];
-        std::memcpy(ctr, this->iv, IvSize);
+        std::memcpy(ctr, m_iv, IvSize);
         AddCounter(ctr, IvSize, offset / BlockSize);
 
         /* Loop until all data is written. */
@@ -106,12 +106,12 @@ namespace ams::fssystem {
             {
                 ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
-                auto enc_size = crypto::EncryptAes128Ctr(write_buf, write_size, this->key, KeySize, ctr, IvSize, reinterpret_cast<const char *>(buffer) + cur_offset, write_size);
+                auto enc_size = crypto::EncryptAes128Ctr(write_buf, write_size, m_key, KeySize, ctr, IvSize, reinterpret_cast<const char *>(buffer) + cur_offset, write_size);
                 R_UNLESS(enc_size == write_size, fs::ResultUnexpectedInAesCtrStorageA());
             }
 
             /* Write the encrypted data. */
-            R_TRY(this->base_storage->Write(offset + cur_offset, write_buf, write_size));
+            R_TRY(m_base_storage->Write(offset + cur_offset, write_buf, write_size));
 
             /* Advance. */
             cur_offset += write_size;
@@ -125,7 +125,7 @@ namespace ams::fssystem {
     }
 
     Result AesCtrStorage::Flush() {
-        return this->base_storage->Flush();
+        return m_base_storage->Flush();
     }
 
     Result AesCtrStorage::SetSize(s64 size) {
@@ -134,7 +134,7 @@ namespace ams::fssystem {
     }
 
     Result AesCtrStorage::GetSize(s64 *out) {
-        return this->base_storage->GetSize(out);
+        return m_base_storage->GetSize(out);
     }
 
     Result AesCtrStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -160,7 +160,7 @@ namespace ams::fssystem {
                     R_UNLESS(dst != nullptr,                         fs::ResultNullptrArgument());
                     R_UNLESS(dst_size == sizeof(fs::QueryRangeInfo), fs::ResultInvalidSize());
 
-                    R_TRY(this->base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
 
                     fs::QueryRangeInfo info;
                     info.Clear();
@@ -171,7 +171,7 @@ namespace ams::fssystem {
                 break;
             default:
                 {
-                    R_TRY(this->base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                 }
                 break;
         }

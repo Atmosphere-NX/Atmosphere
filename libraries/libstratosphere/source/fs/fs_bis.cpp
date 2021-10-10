@@ -22,13 +22,13 @@ namespace ams::fs {
 
         class BisCommonMountNameGenerator : public fsa::ICommonMountNameGenerator, public impl::Newable {
             private:
-                const BisPartitionId id;
+                const BisPartitionId m_id;
             public:
-                explicit BisCommonMountNameGenerator(BisPartitionId i) : id(i) { /* ... */ }
+                explicit BisCommonMountNameGenerator(BisPartitionId i) : m_id(i) { /* ... */ }
 
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
-                    const char *bis_mount_name = GetBisMountName(this->id);
+                    const char *bis_mount_name = GetBisMountName(m_id);
                     const size_t needed_size = util::Strnlen(bis_mount_name, MountNameLengthMax) + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 

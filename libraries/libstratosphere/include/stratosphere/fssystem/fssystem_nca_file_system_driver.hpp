@@ -85,16 +85,16 @@ namespace ams::fssystem {
         NON_COPYABLE(NcaReader);
         NON_MOVEABLE(NcaReader);
         private:
-            NcaHeader header;
-            u8 decryption_keys[NcaHeader::DecryptionKey_Count][NcaCryptoConfiguration::Aes128KeySize];
-            std::shared_ptr<fs::IStorage> shared_base_storage;
-            std::unique_ptr<fs::IStorage> header_storage;
-            fs::IStorage *body_storage;
-            u8 external_decryption_key[NcaCryptoConfiguration::Aes128KeySize];
-            DecryptAesCtrFunction decrypt_aes_ctr;
-            DecryptAesCtrFunction decrypt_aes_ctr_external;
-            bool is_software_aes_prioritized;
-            NcaHeader::EncryptionType header_encryption_type;
+            NcaHeader m_header;
+            u8 m_decryption_keys[NcaHeader::DecryptionKey_Count][NcaCryptoConfiguration::Aes128KeySize];
+            std::shared_ptr<fs::IStorage> m_shared_base_storage;
+            std::unique_ptr<fs::IStorage> m_header_storage;
+            fs::IStorage *m_body_storage;
+            u8 m_external_decryption_key[NcaCryptoConfiguration::Aes128KeySize];
+            DecryptAesCtrFunction m_decrypt_aes_ctr;
+            DecryptAesCtrFunction m_decrypt_aes_ctr_external;
+            bool m_is_software_aes_prioritized;
+            NcaHeader::EncryptionType m_header_encryption_type;
         public:
             NcaReader();
             ~NcaReader();
@@ -143,18 +143,18 @@ namespace ams::fssystem {
         NON_COPYABLE(NcaFsHeaderReader);
         NON_MOVEABLE(NcaFsHeaderReader);
         private:
-            NcaFsHeader data;
-            s32 fs_index;
+            NcaFsHeader m_data;
+            s32 m_fs_index;
         public:
-            NcaFsHeaderReader() : fs_index(-1) {
-                std::memset(std::addressof(this->data), 0, sizeof(this->data));
+            NcaFsHeaderReader() : m_fs_index(-1) {
+                std::memset(std::addressof(m_data), 0, sizeof(m_data));
             }
 
             Result Initialize(const NcaReader &reader, s32 index);
-            bool IsInitialized() const { return this->fs_index >= 0; }
+            bool IsInitialized() const { return m_fs_index >= 0; }
 
-            NcaFsHeader &GetData() { return this->data; }
-            const NcaFsHeader &GetData() const { return this->data; }
+            NcaFsHeader &GetData() { return m_data; }
+            const NcaFsHeader &GetData() const { return m_data; }
             void GetRawData(void *dst, size_t dst_size) const;
 
             NcaFsHeader::HashData &GetHashData();
@@ -179,19 +179,19 @@ namespace ams::fssystem {
             class StorageOption;
             class StorageOptionWithHeaderReader;
         private:
-            std::shared_ptr<NcaReader> original_reader;
-            std::shared_ptr<NcaReader> reader;
-            MemoryResource * const allocator;
-            fssystem::IBufferManager * const buffer_manager;
+            std::shared_ptr<NcaReader> m_original_reader;
+            std::shared_ptr<NcaReader> m_reader;
+            MemoryResource * const m_allocator;
+            fssystem::IBufferManager * const m_buffer_manager;
         public:
             static Result SetupFsHeaderReader(NcaFsHeaderReader *out, const NcaReader &reader, s32 fs_index);
         public:
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : original_reader(), reader(reader), allocator(allocator), buffer_manager(buffer_manager) {
-                AMS_ASSERT(this->reader != nullptr);
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : m_original_reader(), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager) {
+                AMS_ASSERT(m_reader != nullptr);
             }
 
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : original_reader(original_reader), reader(reader), allocator(allocator), buffer_manager(buffer_manager) {
-                AMS_ASSERT(this->reader != nullptr);
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : m_original_reader(original_reader), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager) {
+                AMS_ASSERT(m_reader != nullptr);
             }
 
             Result OpenRawStorage(std::shared_ptr<fs::IStorage> *out, s32 fs_index);

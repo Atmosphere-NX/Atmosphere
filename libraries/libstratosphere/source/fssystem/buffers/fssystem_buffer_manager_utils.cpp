@@ -23,14 +23,14 @@ namespace ams::fssystem::buffers {
 
         class ThreadLocalStorageWrapper {
             private:
-                os::TlsSlot tls_slot;
+                os::TlsSlot m_tls_slot;
             public:
-                ThreadLocalStorageWrapper() { R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(this->tls_slot), nullptr)); }
-                ~ThreadLocalStorageWrapper() { os::FreeTlsSlot(this->tls_slot); }
+                ThreadLocalStorageWrapper() { R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(m_tls_slot), nullptr)); }
+                ~ThreadLocalStorageWrapper() { os::FreeTlsSlot(m_tls_slot); }
 
-                void SetValue(uintptr_t value) { os::SetTlsValue(this->tls_slot, value); }
-                uintptr_t GetValue() const { return os::GetTlsValue(this->tls_slot); }
-                os::TlsSlot GetTlsSlot() const { return this->tls_slot; }
+                void SetValue(uintptr_t value) { os::SetTlsValue(m_tls_slot, value); }
+                uintptr_t GetValue() const { return os::GetTlsValue(m_tls_slot); }
+                os::TlsSlot GetTlsSlot() const { return m_tls_slot; }
         } g_buffer_manager_context_tls_slot;
 
     }

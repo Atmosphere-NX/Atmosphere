@@ -22,38 +22,38 @@ namespace ams::lr {
         NON_COPYABLE(Redirection);
         NON_MOVEABLE(Redirection);
         private:
-            ncm::ProgramId program_id;
-            ncm::ProgramId owner_id;
-            Path path;
-            u32 flags;
+            ncm::ProgramId m_program_id;
+            ncm::ProgramId m_owner_id;
+            Path m_path;
+            u32 m_flags;
         public:
             Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) :
-                program_id(program_id), owner_id(owner_id), path(path), flags(flags) { /* ... */ }
+                m_program_id(program_id), m_owner_id(owner_id), m_path(path), m_flags(flags) { /* ... */ }
 
             ncm::ProgramId GetProgramId() const {
-                return this->program_id;
+                return m_program_id;
             }
 
             ncm::ProgramId GetOwnerProgramId() const {
-                return this->owner_id;
+                return m_owner_id;
             }
 
             void GetPath(Path *out) const {
-                *out = this->path;
+                *out = m_path;
             }
 
             u32 GetFlags() const {
-                return this->flags;
+                return m_flags;
             }
 
             void SetFlags(u32 flags) {
-                this->flags = flags;
+                m_flags = flags;
             }
     };
 
     bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) const {
         /* Obtain the path of a matching redirection. */
-        for (const auto &redirection : this->redirection_list) {
+        for (const auto &redirection : m_redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);
                 return true;
@@ -71,12 +71,12 @@ namespace ams::lr {
         this->EraseRedirection(program_id);
 
         /* Insert a new redirection into the list. */
-        this->redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
+        m_redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
     }
 
     void LocationRedirector::SetRedirectionFlags(ncm::ProgramId program_id, u32 flags) {
         /* Set the flags of a redirection with a matching program id. */
-        for (auto &redirection : this->redirection_list) {
+        for (auto &redirection : m_redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.SetFlags(flags);
                 break;
@@ -86,10 +86,10 @@ namespace ams::lr {
 
     void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {
         /* Remove any redirections with a matching program id. */
-        for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end();) {
             if (it->GetProgramId() == program_id) {
                 auto *redirection = std::addressof(*it);
-                this->redirection_list.erase(it);
+                m_redirection_list.erase(it);
                 delete redirection;
                 break;
             }
@@ -98,10 +98,10 @@ namespace ams::lr {
 
     void LocationRedirector::ClearRedirections(u32 flags) {
         /* Remove any redirections with matching flags. */
-        for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end();) {
             if ((it->GetFlags() & flags) == flags) {
                 auto *redirection = std::addressof(*it);
-                it = this->redirection_list.erase(it);
+                it = m_redirection_list.erase(it);
                 delete redirection;
             } else {
                 it++;
@@ -110,7 +110,7 @@ namespace ams::lr {
     }
 
     void LocationRedirector::ClearRedirectionsExcludingOwners(const ncm::ProgramId *excluding_ids, size_t num_ids) {
-        for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end();) {
             /* Skip removal if the redirection has an excluded owner program id. */
             if (this->IsExcluded(it->GetOwnerProgramId(), excluding_ids, num_ids)) {
                 it++;
@@ -119,7 +119,7 @@ namespace ams::lr {
 
             /* Remove the redirection. */
             auto *redirection = std::addressof(*it);
-            it = this->redirection_list.erase(it);
+            it = m_redirection_list.erase(it);
             delete redirection;
         }
     }

@@ -33,30 +33,30 @@ namespace ams::ddsf {
         public:
             AMS_DDSF_CASTABLE_ROOT_TRAITS(ams::ddsf::IDevice);
         private:
-            util::IntrusiveListNode list_node;
-            IDevice *device;
-            AccessMode access_mode;
+            util::IntrusiveListNode m_list_node;
+            IDevice *m_device;
+            AccessMode m_access_mode;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&ISession::list_node>;
+            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&ISession::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<ISession, util::IntrusiveListMemberTraitsDeferredAssert<&ISession::list_node>>;
+            friend class util::IntrusiveList<ISession, util::IntrusiveListMemberTraitsDeferredAssert<&ISession::m_list_node>>;
         private:
             void AttachDevice(IDevice *dev, AccessMode mode) {
                 AMS_ASSERT(dev != nullptr);
                 AMS_ASSERT(!this->IsOpen());
-                this->device      = dev;
-                this->access_mode = mode;
+                m_device      = dev;
+                m_access_mode = mode;
                 AMS_ASSERT(this->IsOpen());
             }
 
             void DetachDevice() {
                 AMS_ASSERT(this->IsOpen());
-                this->device      = nullptr;
-                this->access_mode = AccessMode_None;
+                m_device      = nullptr;
+                m_access_mode = AccessMode_None;
                 AMS_ASSERT(!this->IsOpen());
             }
         public:
-            ISession() : list_node(), device(nullptr), access_mode() { /* ... */ }
+            ISession() : m_list_node(), m_device(nullptr), m_access_mode() { /* ... */ }
         protected:
             ~ISession() { this->DetachDevice(); AMS_ASSERT(!this->IsOpen()); }
         public:
@@ -69,26 +69,26 @@ namespace ams::ddsf {
             }
 
             bool IsLinkedToList() const {
-                return this->list_node.IsLinked();
+                return m_list_node.IsLinked();
             }
 
             IDevice &GetDevice() {
                 AMS_ASSERT(this->IsOpen());
-                return *this->device;
+                return *m_device;
             }
 
             const IDevice &GetDevice() const {
                 AMS_ASSERT(this->IsOpen());
-                return *this->device;
+                return *m_device;
             }
 
             bool IsOpen() const {
-                return this->device != nullptr;
+                return m_device != nullptr;
             }
 
             bool CheckAccess(AccessMode mode) const {
                 AMS_ASSERT(this->IsOpen());
-                return ((~this->access_mode) & mode) == 0;
+                return ((~m_access_mode) & mode) == 0;
             }
 
             bool CheckExclusiveWrite() const {

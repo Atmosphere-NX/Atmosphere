@@ -22,33 +22,33 @@ namespace ams::fs {
     class ScopedSetter {
         NON_COPYABLE(ScopedSetter);
         private:
-            T *ptr;
-            T value;
+            T *m_ptr;
+            T m_value;
         public:
-            constexpr ALWAYS_INLINE ScopedSetter(T &p, T v) : ptr(std::addressof(p)), value(v) { /* ... */ }
+            constexpr ALWAYS_INLINE ScopedSetter(T &p, T v) : m_ptr(std::addressof(p)), m_value(v) { /* ... */ }
             ALWAYS_INLINE ~ScopedSetter() {
-                if (this->ptr) {
-                    *this->ptr = this->value;
+                if (m_ptr) {
+                    *m_ptr = m_value;
                 }
             }
 
             ALWAYS_INLINE ScopedSetter(ScopedSetter &&rhs) {
-                this->ptr = rhs.ptr;
-                this->value = rhs.value;
+                m_ptr = rhs.ptr;
+                m_value = rhs.value;
                 rhs.Reset();
             }
 
             ALWAYS_INLINE ScopedSetter &operator=(ScopedSetter &&rhs) {
-                this->ptr = rhs.ptr;
-                this->value = rhs.value;
+                m_ptr = rhs.ptr;
+                m_value = rhs.value;
                 rhs.Reset();
                 return *this;
             }
 
-            ALWAYS_INLINE void Set(T v) { this->value = v; }
+            ALWAYS_INLINE void Set(T v) { m_value = v; }
         private:
             ALWAYS_INLINE void Reset() {
-                this->ptr = nullptr;
+                m_ptr = nullptr;
             }
     };
 

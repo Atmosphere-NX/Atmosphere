@@ -37,31 +37,31 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 Xfer_Read  = 1,
             };
         private:
-            volatile I2cRegisters *registers;
-            SpeedMode speed_mode;
-            os::InterruptEventType interrupt_event;
-            int user_count;
-            os::SdkMutex user_count_mutex;
-            os::SdkMutex register_mutex;
-            regulator::RegulatorSession regulator_session;
-            bool has_regulator_session;
-            State state;
-            os::SdkMutex transaction_order_mutex;
-            bool is_power_bus;
-            dd::PhysicalAddress registers_phys_addr;
-            size_t registers_size;
-            os::InterruptName interrupt_name;
-            DeviceCode device_code;
-            util::IntrusiveListNode bus_accessor_list_node;
+            volatile I2cRegisters *m_registers;
+            SpeedMode m_speed_mode;
+            os::InterruptEventType m_interrupt_event;
+            int m_user_count;
+            os::SdkMutex m_user_count_mutex;
+            os::SdkMutex m_register_mutex;
+            regulator::RegulatorSession m_regulator_session;
+            bool m_has_regulator_session;
+            State m_state;
+            os::SdkMutex m_transaction_order_mutex;
+            bool m_is_power_bus;
+            dd::PhysicalAddress m_registers_phys_addr;
+            size_t m_registers_size;
+            os::InterruptName m_interrupt_name;
+            DeviceCode m_device_code;
+            util::IntrusiveListNode m_bus_accessor_list_node;
         public:
-            using BusAccessorListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::bus_accessor_list_node>;
+            using BusAccessorListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::m_bus_accessor_list_node>;
             using BusAccessorList       = typename BusAccessorListTraits::ListType;
-            friend class util::IntrusiveList<I2cBusAccessor, util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::bus_accessor_list_node>>;
+            friend class util::IntrusiveList<I2cBusAccessor, util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::m_bus_accessor_list_node>>;
         public:
             I2cBusAccessor()
-                : registers(nullptr), speed_mode(SpeedMode_Fast), user_count(0), user_count_mutex(),
-                 register_mutex(), has_regulator_session(false), state(State::NotInitialized), transaction_order_mutex(),
-                 is_power_bus(false), registers_phys_addr(0), registers_size(0), interrupt_name(), device_code(-1), bus_accessor_list_node()
+                : m_registers(nullptr), m_speed_mode(SpeedMode_Fast), m_user_count(0), m_user_count_mutex(),
+                 m_register_mutex(), m_has_regulator_session(false), m_state(State::NotInitialized), m_transaction_order_mutex(),
+                 m_is_power_bus(false), m_registers_phys_addr(0), m_registers_size(0), m_interrupt_name(), m_device_code(-1), m_bus_accessor_list_node()
             {
                 /* ... */
             }
@@ -69,10 +69,10 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             void Initialize(dd::PhysicalAddress reg_paddr, size_t reg_size, os::InterruptName intr, bool pb, SpeedMode sm);
             void RegisterDeviceCode(DeviceCode device_code);
 
-            SpeedMode GetSpeedMode() const { return this->speed_mode; }
-            dd::PhysicalAddress GetRegistersPhysicalAddress() const { return this->registers_phys_addr; }
-            size_t GetRegistersSize() const { return this->registers_size; }
-            os::InterruptName GetInterruptName() const { return this->interrupt_name; }
+            SpeedMode GetSpeedMode() const { return m_speed_mode; }
+            dd::PhysicalAddress GetRegistersPhysicalAddress() const { return m_registers_phys_addr; }
+            size_t GetRegistersSize() const { return m_registers_size; }
+            os::InterruptName GetInterruptName() const { return m_interrupt_name; }
         private:
             Result TryOpenRegulatorSession();
 
@@ -94,8 +94,8 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             void HandleTransactionError(Result result);
 
             void DisableInterruptMask() {
-                reg::Write(this->registers->interrupt_mask_register, 0);
-                reg::Read(this->registers->interrupt_mask_register);
+                reg::Write(m_registers->interrupt_mask_register, 0);
+                reg::Read(m_registers->interrupt_mask_register);
             }
 
             Result CheckAndHandleError() {
@@ -103,7 +103,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                 this->HandleTransactionError(result);
                 if (R_FAILED(result)) {
                     this->DisableInterruptMask();
-                    os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+                    os::ClearInterruptEvent(std::addressof(m_interrupt_event));
                     return result;
                 }
 
@@ -120,7 +120,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             virtual Result Receive(void *dst, size_t dst_size, I2cDeviceProperty *device, TransactionOption option) override;
 
             virtual os::SdkMutex &GetTransactionOrderMutex() override {
-                return this->transaction_order_mutex;
+                return m_transaction_order_mutex;
             }
 
             virtual void SuspendBus() override;
@@ -130,7 +130,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             virtual void ResumePowerBus() override;
 
             virtual const DeviceCode &GetDeviceCode() const override {
-                return this->device_code;
+                return m_device_code;
             }
     };
 

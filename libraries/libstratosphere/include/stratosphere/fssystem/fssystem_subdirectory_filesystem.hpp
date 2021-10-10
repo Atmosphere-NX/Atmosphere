@@ -24,8 +24,8 @@ namespace ams::fssystem {
             using PathResolutionFileSystem = impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
             friend class impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
         private:
-            char *base_path;
-            size_t base_path_len;
+            char *m_base_path;
+            size_t m_base_path_len;
         public:
             SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
             SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);

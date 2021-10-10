@@ -23,47 +23,47 @@ namespace ams::fssystem::save {
         AMS_ASSERT(bm != nullptr);
 
         /* Set storages. */
-        this->hash_storage = hs;
-        this->data_storage = ds;
+        m_hash_storage = hs;
+        m_data_storage = ds;
 
         /* Set verification block sizes. */
-        this->verification_block_size  = verif_block_size;
-        this->verification_block_order = ILog2(static_cast<u32>(verif_block_size));
-        AMS_ASSERT(this->verification_block_size == (1l << this->verification_block_order));
+        m_verification_block_size  = verif_block_size;
+        m_verification_block_order = ILog2(static_cast<u32>(verif_block_size));
+        AMS_ASSERT(m_verification_block_size == (1l << m_verification_block_order));
 
         /* Set buffer manager. */
-        this->buffer_manager = bm;
+        m_buffer_manager = bm;
 
         /* Set upper layer block sizes. */
         upper_layer_verif_block_size               = std::max(upper_layer_verif_block_size, HashSize);
-        this->upper_layer_verification_block_size  = upper_layer_verif_block_size;
-        this->upper_layer_verification_block_order = ILog2(static_cast<u32>(upper_layer_verif_block_size));
-        AMS_ASSERT(this->upper_layer_verification_block_size == (1l << this->upper_layer_verification_block_order));
+        m_upper_layer_verification_block_size  = upper_layer_verif_block_size;
+        m_upper_layer_verification_block_order = ILog2(static_cast<u32>(upper_layer_verif_block_size));
+        AMS_ASSERT(m_upper_layer_verification_block_size == (1l << m_upper_layer_verification_block_order));
 
         /* Validate sizes. */
         {
             s64 hash_size = 0;
             s64 data_size = 0;
-            R_ASSERT(hash_storage.GetSize(std::addressof(hash_size)));
-            R_ASSERT(data_storage.GetSize(std::addressof(hash_size)));
-            AMS_ASSERT(((hash_size / HashSize) * this->verification_block_size) >= data_size);
+            AMS_ASSERT(R_SUCCEEDED(m_hash_storage.GetSize(std::addressof(hash_size))));
+            AMS_ASSERT(R_SUCCEEDED(m_data_storage.GetSize(std::addressof(hash_size))));
+            AMS_ASSERT(((hash_size / HashSize) * m_verification_block_size) >= data_size);
             AMS_UNUSED(hash_size, data_size);
         }
 
         /* Set salt. */
-        std::memcpy(this->salt.value, salt.value, fs::HashSalt::Size);
+        std::memcpy(m_salt.value, salt.value, fs::HashSalt::Size);
 
         /* Set data and storage type. */
-        this->is_real_data = is_real_data;
-        this->storage_type = storage_type;
+        m_is_real_data = is_real_data;
+        m_storage_type = storage_type;
         return ResultSuccess();
     }
 
     void IntegrityVerificationStorage::Finalize() {
-        if (this->buffer_manager != nullptr) {
-            this->hash_storage = fs::SubStorage();
-            this->data_storage = fs::SubStorage();
-            this->buffer_manager = nullptr;
+        if (m_buffer_manager != nullptr) {
+            m_hash_storage = fs::SubStorage();
+            m_data_storage = fs::SubStorage();
+            m_buffer_manager = nullptr;
         }
     }
 
@@ -72,8 +72,8 @@ namespace ams::fssystem::save {
         AMS_ASSERT(size != 0);
 
         /* Validate other preconditions. */
-        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(this->verification_block_size)));
-        AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(this->verification_block_size)));
+        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
+        AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(m_verification_block_size)));
 
         /* Succeed if zero size. */
         R_SUCCEED_IF(size == 0);
@@ -83,19 +83,19 @@ namespace ams::fssystem::save {
 
         /* Validate the offset. */
         s64 data_size;
-        R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+        R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
         R_UNLESS(offset <= data_size, fs::ResultInvalidOffset());
 
         /* Validate the access range. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(this->verification_block_size))), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))), fs::ResultOutOfRange());
 
         /* Determine the read extents. */
         size_t read_size = size;
         if (static_cast<s64>(offset + read_size) > data_size) {
             /* Determine the padding sizes. */
             s64 padding_offset  = data_size - offset;
-            size_t padding_size = static_cast<size_t>(this->verification_block_size - (padding_offset & (this->verification_block_size - 1)));
-            AMS_ASSERT(static_cast<s64>(padding_size) < this->verification_block_size);
+            size_t padding_size = static_cast<size_t>(m_verification_block_size - (padding_offset & (m_verification_block_size - 1)));
+            AMS_ASSERT(static_cast<s64>(padding_size) < m_verification_block_size);
 
             /* Clear the padding. */
             std::memset(static_cast<u8 *>(buffer) + padding_offset, 0, padding_size);
@@ -107,12 +107,12 @@ namespace ams::fssystem::save {
         /* Perform the read. */
         {
             auto clear_guard = SCOPE_GUARD { std::memset(buffer, 0, size); };
-            R_TRY(this->data_storage.Read(offset, buffer, read_size));
+            R_TRY(m_data_storage.Read(offset, buffer, read_size));
             clear_guard.Cancel();
         }
 
         /* Prepare to validate the signatures. */
-        const auto signature_count = size >> this->verification_block_order;
+        const auto signature_count = size >> m_verification_block_order;
         PooledBuffer signature_buffer(signature_count * sizeof(BlockHash), sizeof(BlockHash));
         const auto buffer_count = std::min(signature_count, signature_buffer.GetSize() / sizeof(BlockHash));
 
@@ -123,23 +123,23 @@ namespace ams::fssystem::save {
         while (verified_count < signature_count) {
             /* Read the current signatures. */
             const auto cur_count = std::min(buffer_count, signature_count - verified_count);
-            auto cur_result = this->ReadBlockSignature(signature_buffer.GetBuffer(), signature_buffer.GetSize(), offset + (verified_count << this->verification_block_order), cur_count << this->verification_block_order);
+            auto cur_result = this->ReadBlockSignature(signature_buffer.GetBuffer(), signature_buffer.GetSize(), offset + (verified_count << m_verification_block_order), cur_count << m_verification_block_order);
 
             /* Temporarily increase our priority. */
             ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
             /* Loop over each signature we read. */
             for (size_t i = 0; i < cur_count && R_SUCCEEDED(cur_result); ++i) {
-                const auto verified_size = (verified_count + i) << this->verification_block_order;
+                const auto verified_size = (verified_count + i) << m_verification_block_order;
                 u8 *cur_buf = static_cast<u8 *>(buffer) + verified_size;
                 cur_result = this->VerifyHash(cur_buf, reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i);
 
                 /* If the data is corrupted, clear the corrupted parts. */
                 if (fs::ResultIntegrityVerificationStorageCorrupted::Includes(cur_result)) {
-                    std::memset(cur_buf, 0, this->verification_block_size);
+                    std::memset(cur_buf, 0, m_verification_block_size);
 
                     /* Set the result if we should. */
-                    if (!fs::ResultClearedRealDataVerificationFailed::Includes(cur_result) && this->storage_type != fs::StorageType_Authoring) {
+                    if (!fs::ResultClearedRealDataVerificationFailed::Includes(cur_result) && m_storage_type != fs::StorageType_Authoring) {
                         verify_hash_result = cur_result;
                     }
 
@@ -170,17 +170,17 @@ namespace ams::fssystem::save {
 
         /* Validate the offset. */
         s64 data_size;
-        R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+        R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
         R_UNLESS(offset < data_size, fs::ResultInvalidOffset());
 
         /* Validate the access range. */
-        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(this->verification_block_size))), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, util::AlignUp(data_size, static_cast<size_t>(m_verification_block_size))), fs::ResultOutOfRange());
 
         /* Validate preconditions. */
-        AMS_ASSERT(util::IsAligned(offset, this->verification_block_size));
-        AMS_ASSERT(util::IsAligned(size,   this->verification_block_size));
+        AMS_ASSERT(util::IsAligned(offset, m_verification_block_size));
+        AMS_ASSERT(util::IsAligned(size,   m_verification_block_size));
         AMS_ASSERT(offset <= data_size);
-        AMS_ASSERT(static_cast<s64>(offset + size) < data_size + this->verification_block_size);
+        AMS_ASSERT(static_cast<s64>(offset + size) < data_size + m_verification_block_size);
 
         /* Validate that if writing past the end, all extra data is zero padding. */
         if (static_cast<s64>(offset + size) > data_size) {
@@ -201,13 +201,13 @@ namespace ams::fssystem::save {
         }
 
         /* Determine the size we're writing in blocks. */
-        const auto aligned_write_size = util::AlignUp(write_size, this->verification_block_size);
+        const auto aligned_write_size = util::AlignUp(write_size, m_verification_block_size);
 
         /* Write the updated block signatures. */
         Result update_result = ResultSuccess();
         size_t updated_count = 0;
         {
-            const auto signature_count = aligned_write_size >> this->verification_block_order;
+            const auto signature_count = aligned_write_size >> m_verification_block_order;
             PooledBuffer signature_buffer(signature_count * sizeof(BlockHash), sizeof(BlockHash));
             const auto buffer_count = std::min(signature_count, signature_buffer.GetSize() / sizeof(BlockHash));
 
@@ -219,13 +219,13 @@ namespace ams::fssystem::save {
                     ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
                     for (size_t i = 0; i < cur_count; ++i) {
-                        const auto updated_size = (updated_count + i) << this->verification_block_order;
+                        const auto updated_size = (updated_count + i) << m_verification_block_order;
                         this->CalcBlockHash(reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i, reinterpret_cast<const u8 *>(buffer) + updated_size);
                     }
                 }
 
                 /* Write the new block signatures. */
-                if (R_FAILED((update_result = this->WriteBlockSignature(signature_buffer.GetBuffer(), signature_buffer.GetSize(), offset + (updated_count << this->verification_block_order), cur_count << this->verification_block_order)))) {
+                if (R_FAILED((update_result = this->WriteBlockSignature(signature_buffer.GetBuffer(), signature_buffer.GetSize(), offset + (updated_count << m_verification_block_order), cur_count << m_verification_block_order)))) {
                     break;
                 }
 
@@ -235,44 +235,44 @@ namespace ams::fssystem::save {
         }
 
         /* Write the data. */
-        R_TRY(this->data_storage.Write(offset, buffer, std::min(write_size, updated_count << this->verification_block_order)));
+        R_TRY(m_data_storage.Write(offset, buffer, std::min(write_size, updated_count << m_verification_block_order)));
 
         return update_result;
     }
 
     Result IntegrityVerificationStorage::GetSize(s64 *out) {
-        return this->data_storage.GetSize(out);
+        return m_data_storage.GetSize(out);
     }
 
     Result IntegrityVerificationStorage::Flush() {
         /* Flush both storages. */
-        R_TRY(this->hash_storage.Flush());
-        R_TRY(this->data_storage.Flush());
+        R_TRY(m_hash_storage.Flush());
+        R_TRY(m_data_storage.Flush());
         return ResultSuccess();
     }
 
     Result IntegrityVerificationStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Validate preconditions. */
-        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(this->verification_block_size)));
-        AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(this->verification_block_size)));
+        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
+        AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(m_verification_block_size)));
 
         switch (op_id) {
             case fs::OperationId::FillZero:
                 {
                     /* Clear should only be called for save data. */
-                    AMS_ASSERT(this->storage_type == fs::StorageType_SaveData);
+                    AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
 
                     /* Validate the range. */
                     s64 data_size = 0;
-                    R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+                    R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
                     R_UNLESS(0 <= offset && offset <= data_size, fs::ResultInvalidOffset());
 
                     /* Determine the extents to clear. */
-                    const auto sign_offset = (offset >> this->verification_block_order) * HashSize;
-                    const auto sign_size   = (std::min(size, data_size - offset) >> this->verification_block_order) * HashSize;
+                    const auto sign_offset = (offset >> m_verification_block_order) * HashSize;
+                    const auto sign_size   = (std::min(size, data_size - offset) >> m_verification_block_order) * HashSize;
 
                     /* Allocate a work buffer. */
-                    const auto buf_size = static_cast<size_t>(std::min(sign_size, static_cast<s64>(1) << (this->upper_layer_verification_block_order + 2)));
+                    const auto buf_size = static_cast<size_t>(std::min(sign_size, static_cast<s64>(1) << (m_upper_layer_verification_block_order + 2)));
                     std::unique_ptr<char[], fs::impl::Deleter> buf = fs::impl::MakeUnique<char[]>(buf_size);
                     R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInIntegrityVerificationStorageA());
 
@@ -284,7 +284,7 @@ namespace ams::fssystem::save {
 
                     while (remaining_size > 0) {
                         const auto cur_size = static_cast<size_t>(std::min(remaining_size, static_cast<s64>(buf_size)));
-                        R_TRY(this->hash_storage.Write(sign_offset + sign_size - remaining_size, buf.get(), cur_size));
+                        R_TRY(m_hash_storage.Write(sign_offset + sign_size - remaining_size, buf.get(), cur_size));
                         remaining_size -= cur_size;
                     }
 
@@ -293,23 +293,23 @@ namespace ams::fssystem::save {
             case fs::OperationId::DestroySignature:
                 {
                     /* Clear Signature should only be called for save data. */
-                    AMS_ASSERT(this->storage_type == fs::StorageType_SaveData);
+                    AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
 
                     /* Validate the range. */
                     s64 data_size = 0;
-                    R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+                    R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
                     R_UNLESS(0 <= offset && offset <= data_size, fs::ResultInvalidOffset());
 
                     /* Determine the extents to clear the signature for. */
-                    const auto sign_offset = (offset >> this->verification_block_order) * HashSize;
-                    const auto sign_size   = (std::min(size, data_size - offset) >> this->verification_block_order) * HashSize;
+                    const auto sign_offset = (offset >> m_verification_block_order) * HashSize;
+                    const auto sign_size   = (std::min(size, data_size - offset) >> m_verification_block_order) * HashSize;
 
                     /* Allocate a work buffer. */
                     std::unique_ptr<char[], fs::impl::Deleter> buf = fs::impl::MakeUnique<char[]>(sign_size);
                     R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInIntegrityVerificationStorageB());
 
                     /* Read the existing signature. */
-                    R_TRY(this->hash_storage.Read(sign_offset, buf.get(), sign_size));
+                    R_TRY(m_hash_storage.Read(sign_offset, buf.get(), sign_size));
 
                     /* Clear the signature. */
                     /* This sets all bytes to FF, with the verification bit cleared. */
@@ -318,25 +318,25 @@ namespace ams::fssystem::save {
                     }
 
                     /* Write the cleared signature. */
-                    return this->hash_storage.Write(sign_offset, buf.get(), sign_size);
+                    return m_hash_storage.Write(sign_offset, buf.get(), sign_size);
                 }
             case fs::OperationId::Invalidate:
                 {
                     /* Only allow cache invalidation for RomFs. */
-                    R_UNLESS(this->storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInIntegrityVerificationStorageB());
+                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInIntegrityVerificationStorageB());
 
                     /* Validate the range. */
                     s64 data_size = 0;
-                    R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+                    R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
                     R_UNLESS(0 <= offset && offset <= data_size, fs::ResultInvalidOffset());
 
                     /* Determine the extents to invalidate. */
-                    const auto sign_offset = (offset >> this->verification_block_order) * HashSize;
-                    const auto sign_size   = (std::min(size, data_size - offset) >> this->verification_block_order) * HashSize;
+                    const auto sign_offset = (offset >> m_verification_block_order) * HashSize;
+                    const auto sign_size   = (std::min(size, data_size - offset) >> m_verification_block_order) * HashSize;
 
                     /* Operate on our storages. */
-                    R_TRY(this->hash_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
-                    R_TRY(this->data_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
+                    R_TRY(m_hash_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
+                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
 
                     return ResultSuccess();
                 }
@@ -344,14 +344,14 @@ namespace ams::fssystem::save {
                 {
                     /* Validate the range. */
                     s64 data_size = 0;
-                    R_TRY(this->data_storage.GetSize(std::addressof(data_size)));
+                    R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
                     R_UNLESS(0 <= offset && offset <= data_size, fs::ResultInvalidOffset());
 
                     /* Determine the real size to query. */
                     const auto actual_size = std::min(size, data_size - offset);
 
                     /* Query the data storage. */
-                    R_TRY(this->data_storage.OperateRange(dst, dst_size, op_id, offset, actual_size, src, src_size));
+                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, actual_size, src, src_size));
 
                     return ResultSuccess();
                 }
@@ -366,8 +366,8 @@ namespace ams::fssystem::save {
         sha.Initialize();
 
         /* If calculating for save data, hash the salt. */
-        if (this->storage_type == fs::StorageType_SaveData) {
-            sha.Update(this->salt.value, sizeof(this->salt));
+        if (m_storage_type == fs::StorageType_SaveData) {
+            sha.Update(m_salt.value, sizeof(m_salt));
         }
 
         /* Update with the buffer and get the hash. */
@@ -375,7 +375,7 @@ namespace ams::fssystem::save {
         sha.GetHash(out, sizeof(*out));
 
         /* Set the validation bit, if the hash is for save data. */
-        if (this->storage_type == fs::StorageType_SaveData) {
+        if (m_storage_type == fs::StorageType_SaveData) {
             SetValidationBit(out);
         }
     }
@@ -383,12 +383,12 @@ namespace ams::fssystem::save {
     Result IntegrityVerificationStorage::ReadBlockSignature(void *dst, size_t dst_size, s64 offset, size_t size) {
         /* Validate preconditions. */
         AMS_ASSERT(dst != nullptr);
-        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(this->verification_block_size)));
-        AMS_ASSERT(util::IsAligned(size, static_cast<size_t>(this->verification_block_size)));
+        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
+        AMS_ASSERT(util::IsAligned(size, static_cast<size_t>(m_verification_block_size)));
 
         /* Determine where to read the signature. */
-        const s64 sign_offset = (offset >> this->verification_block_order) * HashSize;
-        const auto sign_size  = static_cast<size_t>((size >> this->verification_block_order) * HashSize);
+        const s64 sign_offset = (offset >> m_verification_block_order) * HashSize;
+        const auto sign_size  = static_cast<size_t>((size >> m_verification_block_order) * HashSize);
         AMS_ASSERT(dst_size >= sign_size);
         AMS_UNUSED(dst_size);
 
@@ -397,13 +397,13 @@ namespace ams::fssystem::save {
 
         /* Validate that we can read the signature. */
         s64 hash_size;
-        R_TRY(this->hash_storage.GetSize(std::addressof(hash_size)));
+        R_TRY(m_hash_storage.GetSize(std::addressof(hash_size)));
         const bool range_valid = static_cast<s64>(sign_offset + sign_size) <= hash_size;
         AMS_ASSERT(range_valid);
         R_UNLESS(range_valid, fs::ResultOutOfRange());
 
         /* Read the signature. */
-        R_TRY(this->hash_storage.Read(sign_offset, dst, sign_size));
+        R_TRY(m_hash_storage.Read(sign_offset, dst, sign_size));
 
         /* We succeeded. */
         clear_guard.Cancel();
@@ -413,16 +413,16 @@ namespace ams::fssystem::save {
     Result IntegrityVerificationStorage::WriteBlockSignature(const void *src, size_t src_size, s64 offset, size_t size) {
         /* Validate preconditions. */
         AMS_ASSERT(src != nullptr);
-        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(this->verification_block_size)));
+        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
 
         /* Determine where to write the signature. */
-        const s64 sign_offset = (offset >> this->verification_block_order) * HashSize;
-        const auto sign_size  = static_cast<size_t>((size >> this->verification_block_order) * HashSize);
+        const s64 sign_offset = (offset >> m_verification_block_order) * HashSize;
+        const auto sign_size  = static_cast<size_t>((size >> m_verification_block_order) * HashSize);
         AMS_ASSERT(src_size >= sign_size);
         AMS_UNUSED(src_size);
 
         /* Write the signature. */
-        R_TRY(this->hash_storage.Write(sign_offset, src, sign_size));
+        R_TRY(m_hash_storage.Write(sign_offset, src, sign_size));
 
         /* We succeeded. */
         return ResultSuccess();
@@ -437,7 +437,7 @@ namespace ams::fssystem::save {
         auto &cmp_hash = *hash;
 
         /* If save data, check if the data is uninitialized. */
-        if (this->storage_type == fs::StorageType_SaveData) {
+        if (m_storage_type == fs::StorageType_SaveData) {
             bool is_cleared = false;
             R_TRY(this->IsCleared(std::addressof(is_cleared), cmp_hash));
             R_UNLESS(!is_cleared, fs::ResultClearedRealDataVerificationFailed());
@@ -453,7 +453,7 @@ namespace ams::fssystem::save {
             std::memset(std::addressof(cmp_hash), 0, sizeof(cmp_hash));
 
             /* Return the appropriate result. */
-            if (this->is_real_data) {
+            if (m_is_real_data) {
                 return fs::ResultUnclearedRealDataVerificationFailed();
             } else {
                 return fs::ResultNonRealDataVerificationFailed();
@@ -466,7 +466,7 @@ namespace ams::fssystem::save {
     Result IntegrityVerificationStorage::IsCleared(bool *is_cleared, const BlockHash &hash) {
         /* Validate preconditions. */
         AMS_ASSERT(is_cleared != nullptr);
-        AMS_ASSERT(this->storage_type == fs::StorageType_SaveData);
+        AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
 
         /* Default to uncleared. */
         *is_cleared = false;

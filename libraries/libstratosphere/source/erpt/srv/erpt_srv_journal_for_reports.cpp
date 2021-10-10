@@ -19,17 +19,17 @@
 
 namespace ams::erpt::srv {
 
-    util::IntrusiveListBaseTraits<JournalRecord<ReportInfo>>::ListType JournalForReports::s_record_list;
-    u32 JournalForReports::s_record_count = 0;
-    u32 JournalForReports::s_record_count_by_type[ReportType_Count] = {};
-    u32 JournalForReports::s_used_storage = 0;
+    constinit util::IntrusiveListBaseTraits<JournalRecord<ReportInfo>>::ListType JournalForReports::s_record_list;
+    constinit u32 JournalForReports::s_record_count = 0;
+    constinit u32 JournalForReports::s_record_count_by_type[ReportType_Count] = {};
+    constinit u32 JournalForReports::s_used_storage = 0;
 
     void JournalForReports::CleanupReports() {
         for (auto it = s_record_list.begin(); it != s_record_list.end(); /* ... */) {
             auto *record = std::addressof(*it);
             it = s_record_list.erase(s_record_list.iterator_to(*record));
             if (record->RemoveReference()) {
-                Stream::DeleteStream(Report::FileName(record->info.id, false).name);
+                Stream::DeleteStream(Report::FileName(record->m_info.id, false).name);
                 delete record;
             }
         }
@@ -44,7 +44,7 @@ namespace ams::erpt::srv {
     Result JournalForReports::CommitJournal(Stream *stream) {
         R_TRY(stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(s_record_count)), sizeof(s_record_count)));
         for (auto it = s_record_list.crbegin(); it != s_record_list.crend(); it++) {
-            R_TRY(stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(it->info)), sizeof(it->info)));
+            R_TRY(stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(it->m_info)), sizeof(it->m_info)));
         }
         return ResultSuccess();
     }
@@ -55,22 +55,22 @@ namespace ams::erpt::srv {
 
         /* Update storage tracking counts. */
         --s_record_count;
-        --s_record_count_by_type[record->info.type];
-        s_used_storage -= static_cast<u32>(record->info.report_size);
+        --s_record_count_by_type[record->m_info.type];
+        s_used_storage -= static_cast<u32>(record->m_info.report_size);
 
         /* If we should increment count, do so. */
         if (increment_count) {
-            JournalForMeta::IncrementCount(record->info.flags.Test<ReportFlag::Transmitted>(), record->info.type);
+            JournalForMeta::IncrementCount(record->m_info.flags.Test<ReportFlag::Transmitted>(), record->m_info.type);
         }
 
         /* Delete any attachments. */
-        if (force_delete_attachments || record->info.flags.Test<ReportFlag::HasAttachment>()) {
-            JournalForAttachments::DeleteAttachments(record->info.id);
+        if (force_delete_attachments || record->m_info.flags.Test<ReportFlag::HasAttachment>()) {
+            JournalForAttachments::DeleteAttachments(record->m_info.id);
         }
 
         /* Delete the object, if we should. */
         if (record->RemoveReference()) {
-            Stream::DeleteStream(Report::FileName(record->info.id, false).name);
+            Stream::DeleteStream(Report::FileName(record->m_info.id, false).name);
             delete record;
         }
     }
@@ -78,7 +78,7 @@ namespace ams::erpt::srv {
     Result JournalForReports::DeleteReport(ReportId report_id) {
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
             auto *record = std::addressof(*it);
-            if (record->info.id == report_id) {
+            if (record->m_info.id == report_id) {
                 EraseReportImpl(record, false, false);
                 return ResultSuccess();
             }
@@ -89,7 +89,7 @@ namespace ams::erpt::srv {
     Result JournalForReports::DeleteReportWithAttachments() {
         for (auto it = s_record_list.rbegin(); it != s_record_list.rend(); it++) {
             auto *record = std::addressof(*it);
-            if (record->info.flags.Test<ReportFlag::HasAttachment>()) {
+            if (record->m_info.flags.Test<ReportFlag::HasAttachment>()) {
                 EraseReportImpl(record, true, true);
                 return ResultSuccess();
             }
@@ -100,7 +100,7 @@ namespace ams::erpt::srv {
     s64 JournalForReports::GetMaxReportSize() {
         s64 max_size = 0;
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
-            max_size = std::max(max_size, it->info.report_size);
+            max_size = std::max(max_size, it->m_info.report_size);
         }
         return max_size;
     }
@@ -108,8 +108,8 @@ namespace ams::erpt::srv {
     Result JournalForReports::GetReportList(ReportList *out, ReportType type_filter) {
         u32 count = 0;
         for (auto it = s_record_list.cbegin(); it != s_record_list.cend() && count < util::size(out->reports); it++) {
-            if (type_filter == ReportType_Any || type_filter == it->info.type) {
-                out->reports[count++] = it->info;
+            if (type_filter == ReportType_Any || type_filter == it->m_info.type) {
+                out->reports[count++] = it->m_info;
             }
         }
         out->report_count = count;
@@ -158,8 +158,8 @@ namespace ams::erpt::srv {
             /* We will ensure it is freed if we early error. */
             auto record_guard = SCOPE_GUARD { delete record; };
 
-            if (record->info.report_size == 0) {
-                R_UNLESS(R_SUCCEEDED(Stream::GetStreamSize(std::addressof(record->info.report_size), Report::FileName(record->info.id, false).name)), erpt::ResultCorruptJournal());
+            if (record->m_info.report_size == 0) {
+                R_UNLESS(R_SUCCEEDED(Stream::GetStreamSize(std::addressof(record->m_info.report_size), Report::FileName(record->m_info.id, false).name)), erpt::ResultCorruptJournal());
             }
 
             record_guard.Cancel();
@@ -174,7 +174,7 @@ namespace ams::erpt::srv {
 
     JournalRecord<ReportInfo> *JournalForReports::RetrieveRecord(ReportId report_id) {
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
-            if (auto *record = std::addressof(*it); record->info.id == report_id) {
+            if (auto *record = std::addressof(*it); record->m_info.id == report_id) {
                 return record;
             }
         }
@@ -185,14 +185,14 @@ namespace ams::erpt::srv {
     Result JournalForReports::StoreRecord(JournalRecord<ReportInfo> *record) {
         /* Check if the record already exists. */
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
-            R_UNLESS(it->info.id != record->info.id, erpt::ResultAlreadyExists());
+            R_UNLESS(it->m_info.id != record->m_info.id, erpt::ResultAlreadyExists());
         }
 
         /* Delete an older report if we need to. */
         if (s_record_count >= ReportCountMax) {
             /* Nintendo deletes the oldest report from the type with the most reports. */
             /* This is an approximation of FIFO. */
-            ReportType most_used_type  = record->info.type;
+            ReportType most_used_type  = record->m_info.type;
             u32 most_used_count        = s_record_count_by_type[most_used_type];
 
             for (int i = ReportType_Start; i < ReportType_End; i++) {
@@ -203,7 +203,7 @@ namespace ams::erpt::srv {
             }
 
             for (auto it = s_record_list.rbegin(); it != s_record_list.rend(); it++) {
-                if (it->info.type != most_used_type) {
+                if (it->m_info.type != most_used_type) {
                     continue;
                 }
 
@@ -219,8 +219,8 @@ namespace ams::erpt::srv {
         /* Push the record into the list. */
         s_record_list.push_front(*record);
         s_record_count++;
-        s_record_count_by_type[record->info.type]++;
-        s_used_storage += static_cast<u32>(record->info.report_size);
+        s_record_count_by_type[record->m_info.type]++;
+        s_used_storage += static_cast<u32>(record->m_info.report_size);
 
         return ResultSuccess();
     }

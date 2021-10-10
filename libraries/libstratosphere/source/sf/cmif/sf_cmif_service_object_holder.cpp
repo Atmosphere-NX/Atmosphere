@@ -18,8 +18,8 @@
 namespace ams::sf::cmif {
 
     Result ServiceObjectHolder::ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-        const auto ProcessHandler = this->dispatch_meta->ProcessHandler;
-        const auto *DispatchTable = this->dispatch_meta->DispatchTable;
+        const auto ProcessHandler = m_dispatch_meta->ProcessHandler;
+        const auto *DispatchTable = m_dispatch_meta->DispatchTable;
         return (DispatchTable->*ProcessHandler)(ctx, in_raw_data);
     }
 

@@ -82,10 +82,10 @@ namespace ams::fs {
 namespace ams::fs::impl {
 
     const char *IdString::ToValueString(int id) {
-        const int len = util::SNPrintf(this->buffer, sizeof(this->buffer), "%d", id);
-        AMS_ASSERT(static_cast<size_t>(len) < sizeof(this->buffer));
+        const int len = util::SNPrintf(m_buffer, sizeof(m_buffer), "%d", id);
+        AMS_ASSERT(static_cast<size_t>(len) < sizeof(m_buffer));
         AMS_UNUSED(len);
-        return this->buffer;
+        return m_buffer;
     }
 
     template<> const char *IdString::ToString<fs::Priority>(fs::Priority id) {
@@ -171,20 +171,20 @@ namespace ams::fs::impl {
 
         class AccessLogPrinterCallbackManager {
             private:
-                AccessLogPrinterCallback callback;
+                AccessLogPrinterCallback m_callback;
             public:
-                constexpr AccessLogPrinterCallbackManager() : callback(nullptr) { /* ... */ }
+                constexpr AccessLogPrinterCallbackManager() : m_callback(nullptr) { /* ... */ }
 
-                constexpr bool IsRegisteredCallback() const { return this->callback != nullptr; }
+                constexpr bool IsRegisteredCallback() const { return m_callback != nullptr; }
 
                 constexpr void RegisterCallback(AccessLogPrinterCallback c) {
-                    AMS_ASSERT(this->callback == nullptr);
-                    this->callback = c;
+                    AMS_ASSERT(m_callback == nullptr);
+                    m_callback = c;
                 }
 
                 constexpr int InvokeCallback(char *buf, size_t size) const {
-                    AMS_ASSERT(this->callback != nullptr);
-                    return this->callback(buf, size);
+                    AMS_ASSERT(m_callback != nullptr);
+                    return m_callback(buf, size);
                 }
         };
 

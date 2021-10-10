@@ -206,24 +206,24 @@ namespace ams::pinmux::driver::board::nintendo::nx {
 
         class PinmuxPad {
             private:
-                u32 reg_address;
-                u32 reg_mask;
-                u32 reg_value;
-                u8  safe_func;
-                const char *pad_name;
+                u32 m_reg_address;
+                u32 m_reg_mask;
+                u32 m_reg_value;
+                u8  m_safe_func;
+                const char *m_pad_name;
             private:
                 bool IsValidRegisterAddress() const {
-                    return this->reg_address - 0x70003000 <= 0x2C4;
+                    return m_reg_address - 0x70003000 <= 0x2C4;
                 }
 
                 uintptr_t GetRegisterAddress() const {
-                    return g_apb_misc_virtual_address + (this->reg_address - 0x70000000);
+                    return g_apb_misc_virtual_address + (m_reg_address - 0x70000000);
                 }
 
                 bool UpdateBits(u32 value, u32 offset, u32 mask) {
-                    if ((this->reg_mask & mask) != 0) {
-                        if ((value & (mask >> offset)) != ((this->reg_value & mask) >> offset)) {
-                            this->reg_value = (this->reg_value & ~mask) | ((value << offset) & mask);
+                    if ((m_reg_mask & mask) != 0) {
+                        if ((value & (mask >> offset)) != ((m_reg_value & mask) >> offset)) {
+                            m_reg_value = (m_reg_value & ~mask) | ((value << offset) & mask);
                         }
                         return true;
                     } else {
@@ -241,18 +241,18 @@ namespace ams::pinmux::driver::board::nintendo::nx {
 
                 void WriteReg() const {
                     if (this->IsValidRegisterAddress()) {
-                        reg::Write(this->GetRegisterAddress(), this->reg_value);
+                        reg::Write(this->GetRegisterAddress(), m_reg_value);
                     }
                 }
 
                 bool IsLocked() const {
-                    return (this->reg_value & PinmuxPadMask_Lock) != 0;
+                    return (m_reg_value & PinmuxPadMask_Lock) != 0;
                 }
 
                 void UpdatePm(u8 v) {
                     if (v != 0xFF) {
                         if (v == PinmuxPadPm_Safe) {
-                            v = this->safe_func;
+                            v = m_safe_func;
                         }
                         this->UpdateBits(v, PinmuxPadBitOffset_Pm, PinmuxPadMask_Pm);
                     }
@@ -336,11 +336,11 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                     }
                 }
             public:
-                constexpr PinmuxPad() : reg_address(), reg_mask(), reg_value(), safe_func(), pad_name() { /* ... */ }
+                constexpr PinmuxPad() : m_reg_address(), m_reg_mask(), m_reg_value(), m_safe_func(), m_pad_name() { /* ... */ }
 
                 void UpdatePinmuxPad(u32 config, u32 config_mask) {
                     /* Update register value. */
-                    this->reg_value = this->ReadReg();
+                    m_reg_value = this->ReadReg();
 
                     /* Check if we're locked. */
                     if (this->IsLocked()) {
@@ -377,19 +377,19 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                         if (opt == PinmuxOpt_Output) {
                             this->UpdateTristate(false);
                             this->UpdateEInput(false);
-                            if ((this->reg_mask & PinmuxPadMask_EOd) != 0) {
+                            if ((m_reg_mask & PinmuxPadMask_EOd) != 0) {
                                 this->UpdateEOd(false);
                             }
                         } else if (opt == PinmuxOpt_Input) {
                             this->UpdateTristate(true);
                             this->UpdateEInput(true);
-                            if ((this->reg_mask & PinmuxPadMask_EOd) != 0) {
+                            if ((m_reg_mask & PinmuxPadMask_EOd) != 0) {
                                 this->UpdateEOd(false);
                             }
                         } else if (opt == PinmuxOpt_Bidirection) {
                             this->UpdateTristate(false);
                             this->UpdateEInput(true);
-                            if ((this->reg_mask & PinmuxPadMask_EOd) != 0) {
+                            if ((m_reg_mask & PinmuxPadMask_EOd) != 0) {
                                 this->UpdateEOd(false);
                             }
                         } else if (opt == PinmuxOpt_OpenDrain) {
@@ -458,14 +458,14 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                 }
 
                 void SetCharacter(const PinmuxPadCharacter &character) {
-                    this->reg_address = character.reg_offset + 0x70000000;
-                    this->reg_mask    = character.reg_mask;
-                    this->safe_func   = character.safe_func;
-                    this->reg_value   = this->ReadReg();
-                    this->pad_name    = character.pad_name;
+                    m_reg_address = character.reg_offset + 0x70000000;
+                    m_reg_mask    = character.reg_mask;
+                    m_safe_func   = character.safe_func;
+                    m_reg_value   = this->ReadReg();
+                    m_pad_name    = character.pad_name;
 
-                    if ((this->reg_mask & this->reg_value & PinmuxPadMask_Park) != 0) {
-                        this->reg_value &= ~(PinmuxPadMask_Park);
+                    if ((m_reg_mask & m_reg_value & PinmuxPadMask_Park) != 0) {
+                        m_reg_value &= ~(PinmuxPadMask_Park);
                     }
 
                     this->WriteReg();
@@ -474,23 +474,23 @@ namespace ams::pinmux::driver::board::nintendo::nx {
 
         class PinmuxDrivePad {
             private:
-                u32 reg_address;
-                u32 reg_mask;
-                u32 reg_value;
-                const char *pad_name;
+                u32 m_reg_address;
+                u32 m_reg_mask;
+                u32 m_reg_value;
+                const char *m_pad_name;
             private:
                 bool IsValidRegisterAddress() const {
-                    return this->reg_address - 0x700008E4 <= 0x288;
+                    return m_reg_address - 0x700008E4 <= 0x288;
                 }
 
                 uintptr_t GetRegisterAddress() const {
-                    return g_apb_misc_virtual_address + (this->reg_address - 0x70000000);
+                    return g_apb_misc_virtual_address + (m_reg_address - 0x70000000);
                 }
 
                 bool UpdateBits(u32 value, u32 offset, u32 mask) {
-                    if ((this->reg_mask & mask) != 0) {
-                        if ((value & (mask >> offset)) != ((this->reg_value & mask) >> offset)) {
-                            this->reg_value = (this->reg_value & ~mask) | ((value << offset) & mask);
+                    if ((m_reg_mask & mask) != 0) {
+                        if ((value & (mask >> offset)) != ((m_reg_value & mask) >> offset)) {
+                            m_reg_value = (m_reg_value & ~mask) | ((value << offset) & mask);
                         }
                         return true;
                     } else {
@@ -508,16 +508,16 @@ namespace ams::pinmux::driver::board::nintendo::nx {
 
                 void WriteReg() const {
                     if (this->IsValidRegisterAddress()) {
-                        reg::Write(this->GetRegisterAddress(), this->reg_value);
+                        reg::Write(this->GetRegisterAddress(), m_reg_value);
                     }
                 }
 
                 bool IsCzDrvDn() const {
-                    return (this->reg_mask & PinmuxDrivePadMask_CzDrvDn) == PinmuxDrivePadMask_CzDrvDn;
+                    return (m_reg_mask & PinmuxDrivePadMask_CzDrvDn) == PinmuxDrivePadMask_CzDrvDn;
                 }
 
                 bool IsCzDrvUp() const {
-                    return (this->reg_mask & PinmuxDrivePadMask_CzDrvUp) == PinmuxDrivePadMask_CzDrvUp;
+                    return (m_reg_mask & PinmuxDrivePadMask_CzDrvUp) == PinmuxDrivePadMask_CzDrvUp;
                 }
 
                 void UpdateDrvDn(u8 v) {
@@ -556,11 +556,11 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                     }
                 }
             public:
-                constexpr PinmuxDrivePad() : reg_address(), reg_mask(), reg_value(), pad_name() { /* ... */ }
+                constexpr PinmuxDrivePad() : m_reg_address(), m_reg_mask(), m_reg_value(), m_pad_name() { /* ... */ }
 
                 void UpdatePinmuxDrivePad(u32 config, u32 config_mask) {
                     /* Update register value. */
-                    this->reg_value = this->ReadReg();
+                    m_reg_value = this->ReadReg();
 
                     /* Update drvdn. */
                     if ((config_mask & PinmuxDriveOptBitMask_DrvDn) != 0) {
@@ -601,10 +601,10 @@ namespace ams::pinmux::driver::board::nintendo::nx {
                 }
 
                 void SetCharacter(const PinmuxDrivePadCharacter &character) {
-                    this->reg_address = character.reg_offset + 0x70000000;
-                    this->reg_mask    = character.reg_mask;
-                    this->reg_value   = this->ReadReg();
-                    this->pad_name    = character.pad_name;
+                    m_reg_address = character.reg_offset + 0x70000000;
+                    m_reg_mask    = character.reg_mask;
+                    m_reg_value   = this->ReadReg();
+                    m_pad_name    = character.pad_name;
                 }
         };
 

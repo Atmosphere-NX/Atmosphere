@@ -29,10 +29,10 @@ namespace ams::os::impl {
         R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 0), svc::InfoType_RandomEntropy, svc::InvalidHandle, 2));
         R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 2), svc::InfoType_RandomEntropy, svc::InvalidHandle, 3));
 
-        this->mt.Initialize(seed, util::size(seed));
+        m_mt.Initialize(seed, util::size(seed));
 
         /* Note that we've initialized. */
-        this->initialized = true;
+        m_initialized = true;
     }
 
 }

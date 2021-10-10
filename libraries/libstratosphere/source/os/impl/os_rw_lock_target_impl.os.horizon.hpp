@@ -23,15 +23,15 @@ namespace ams::os::impl {
             using LockCount = os::ReaderWriterLockType::LockCount;
         private:
             static ALWAYS_INLINE u32 GetThreadHandle(const LockCount &lc) {
-                return GetReference(lc.cs_storage).Get()->thread_handle;
+                return GetReference(lc.cs_storage).Get()->m_thread_handle;
             }
 
             static ALWAYS_INLINE uintptr_t GetThreadHandleAddress(LockCount &lc) {
-                return reinterpret_cast<uintptr_t>(std::addressof(GetReference(lc.cs_storage).Get()->thread_handle));
+                return reinterpret_cast<uintptr_t>(std::addressof(GetReference(lc.cs_storage).Get()->m_thread_handle));
             }
 
             static ALWAYS_INLINE void SetThreadHandle(LockCount &lc, u32 handle) {
-                GetReference(lc.cs_storage).Get()->thread_handle = handle;
+                GetReference(lc.cs_storage).Get()->m_thread_handle = handle;
             }
 
             static void AcquireReadLockWriteLocked(os::ReaderWriterLockType *rw_lock);

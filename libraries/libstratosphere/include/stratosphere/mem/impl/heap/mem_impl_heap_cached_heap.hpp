@@ -24,18 +24,18 @@ namespace ams::mem::impl::heap {
     class CachedHeap final {
         NON_COPYABLE(CachedHeap);
         private:
-            TlsHeapCache *tls_heap_cache;
+            TlsHeapCache *m_tls_heap_cache;
         public:
-            constexpr CachedHeap() : tls_heap_cache() { /* ... */ }
+            constexpr CachedHeap() : m_tls_heap_cache() { /* ... */ }
             ~CachedHeap() { this->Finalize(); }
 
-            ALWAYS_INLINE CachedHeap(CachedHeap &&rhs) : tls_heap_cache(rhs.tls_heap_cache) {
-                rhs.tls_heap_cache = nullptr;
+            ALWAYS_INLINE CachedHeap(CachedHeap &&rhs) : m_tls_heap_cache(rhs.m_tls_heap_cache) {
+                rhs.m_tls_heap_cache = nullptr;
             }
             ALWAYS_INLINE CachedHeap &operator=(CachedHeap &&rhs) {
                 this->Reset();
-                this->tls_heap_cache = rhs.tls_heap_cache;
-                rhs.tls_heap_cache   = nullptr;
+                m_tls_heap_cache = rhs.m_tls_heap_cache;
+                rhs.m_tls_heap_cache   = nullptr;
                 return *this;
             }
 
@@ -57,7 +57,7 @@ namespace ams::mem::impl::heap {
             void Reset(TlsHeapCache *thc);
             TlsHeapCache *Release();
 
-            constexpr explicit ALWAYS_INLINE operator bool() const { return this->tls_heap_cache != nullptr; }
+            constexpr explicit ALWAYS_INLINE operator bool() const { return m_tls_heap_cache != nullptr; }
     };
 
 }

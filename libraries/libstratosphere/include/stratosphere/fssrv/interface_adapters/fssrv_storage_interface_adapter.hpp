@@ -31,11 +31,11 @@ namespace ams::fssrv::impl {
         NON_COPYABLE(StorageInterfaceAdapter);
         private:
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
-            std::shared_ptr<fs::IStorage> base_storage;
-            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
-            os::ReaderWriterLock invalidation_lock;
+            std::shared_ptr<fs::IStorage> m_base_storage;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
+            os::ReaderWriterLock m_invalidation_lock;
             /* TODO: DataStorageContext. */
-            bool deep_retry_enabled = false;
+            bool m_deep_retry_enabled = false;
         public:
             StorageInterfaceAdapter(fs::IStorage *storage);
             StorageInterfaceAdapter(std::unique_ptr<fs::IStorage> storage);

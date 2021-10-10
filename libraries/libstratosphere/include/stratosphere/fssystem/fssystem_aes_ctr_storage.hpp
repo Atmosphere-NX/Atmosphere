@@ -28,9 +28,9 @@ namespace ams::fssystem {
             static constexpr size_t KeySize   = crypto::Aes128CtrEncryptor::KeySize;
             static constexpr size_t IvSize    = crypto::Aes128CtrEncryptor::IvSize;
         private:
-            IStorage * const base_storage;
-            char key[KeySize];
-            char iv[IvSize];
+            IStorage * const m_base_storage;
+            char m_key[KeySize];
+            char m_iv[IvSize];
         public:
             static void MakeIv(void *dst, size_t dst_size, u64 upper, s64 offset);
         public:

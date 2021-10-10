@@ -25,8 +25,8 @@ namespace ams::ro {
 
     class RoService {
         private:
-            size_t context_id;
-            NrrKind nrr_kind;
+            size_t m_context_id;
+            NrrKind m_nrr_kind;
         protected:
             explicit RoService(NrrKind k);
         public:

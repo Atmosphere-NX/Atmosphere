@@ -36,8 +36,8 @@ namespace ams::i2c::driver::impl {
                 Receive = 1,
             };
         private:
-            TimeSpan retry_interval;
-            int max_retry_count;
+            TimeSpan m_retry_interval;
+            int m_max_retry_count;
         private:
             Result SendHandler(const u8 **cur_cmd, u8 **cur_dst);
             Result ReceiveHandler(const u8 **cur_cmd, u8 **cur_dst);
@@ -45,7 +45,7 @@ namespace ams::i2c::driver::impl {
 
             Result ExecuteTransactionWithRetry(void *dst, Command command, const void *src, size_t size, TransactionOption option);
         public:
-            I2cSessionImpl(int mr, TimeSpan rt) : retry_interval(rt), max_retry_count(mr) { /* ... */ }
+            I2cSessionImpl(int mr, TimeSpan rt) : m_retry_interval(rt), m_max_retry_count(mr) { /* ... */ }
 
             ~I2cSessionImpl() {
                 this->Close();

@@ -23,7 +23,7 @@ namespace ams::spl::smc {
         args.r[0] = static_cast<u64>(FunctionId::SetConfig);
         args.r[1] = static_cast<u64>(which);
         args.r[2] = reinterpret_cast<u64>(address);
-        for (size_t i = 0; i < std::min(size_t(4), num_qwords); i++) {
+        for (size_t i = 0; i < std::min(static_cast<size_t>(4), num_qwords); i++) {
             args.r[3 + i] = value[i];
         }
         svc::CallSecureMonitor(std::addressof(args));
@@ -38,7 +38,7 @@ namespace ams::spl::smc {
         args.r[1] = static_cast<u64>(which);
         svc::CallSecureMonitor(std::addressof(args));
 
-        for (size_t i = 0; i < std::min(size_t(4), num_qwords); i++) {
+        for (size_t i = 0; i < std::min(static_cast<size_t>(4), num_qwords); i++) {
             out[i] = args.r[1 + i];
         }
         return static_cast<Result>(args.r[0]);
@@ -221,7 +221,7 @@ namespace ams::spl::smc {
         args.r[1] = reinterpret_cast<u64>(base);
         args.r[2] = reinterpret_cast<u64>(mod);
         std::memset(std::addressof(args.r[3]), 0, 4 * sizeof(args.r[3]));
-        std::memcpy(std::addressof(args.r[3]), label_digest, std::min(size_t(4 * sizeof(args.r[3])), label_digest_size));
+        std::memcpy(std::addressof(args.r[3]), label_digest, std::min(static_cast<size_t>(4 * sizeof(args.r[3])), label_digest_size));
         args.r[7] = option;
         svc::CallSecureMonitor(std::addressof(args));
 

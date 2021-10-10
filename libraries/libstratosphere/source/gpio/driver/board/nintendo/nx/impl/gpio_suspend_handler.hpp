@@ -54,21 +54,21 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
                 }
             };
         private:
-            ddsf::IDriver &driver;
-            uintptr_t gpio_virtual_address;
-            RegisterValues register_values[GpioPadPort_Count];
-            ValuesForSleepState values_for_sleep_state[GpioPadPort_Count];
+            ddsf::IDriver &m_driver;
+            uintptr_t m_gpio_virtual_address;
+            RegisterValues m_register_values[GpioPadPort_Count];
+            ValuesForSleepState m_values_for_sleep_state[GpioPadPort_Count];
         private:
             uintptr_t GetGpioVirtualAddress() const {
-                AMS_ASSERT(this->gpio_virtual_address != 0);
-                return this->gpio_virtual_address;
+                AMS_ASSERT(m_gpio_virtual_address != 0);
+                return m_gpio_virtual_address;
             }
         public:
-            explicit SuspendHandler(ddsf::IDriver *drv) : driver(*drv), gpio_virtual_address(0) {
-                for (auto &rv : this->register_values) {
+            explicit SuspendHandler(ddsf::IDriver *drv) : m_driver(*drv), m_gpio_virtual_address(0) {
+                for (auto &rv : m_register_values) {
                     rv.Reset();
                 }
-                for (auto &v : this->values_for_sleep_state) {
+                for (auto &v : m_values_for_sleep_state) {
                     v.Reset();
                 }
             }

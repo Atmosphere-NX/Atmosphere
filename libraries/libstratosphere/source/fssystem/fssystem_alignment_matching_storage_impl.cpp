@@ -203,39 +203,39 @@ namespace ams::fssystem {
 
         /* Determine extents. */
         const auto offset_end         = offset + static_cast<s64>(size);
-        const auto aligned_offset     = util::AlignDown(offset, this->data_align);
-        const auto aligned_offset_end = util::AlignUp(offset_end, this->data_align);
+        const auto aligned_offset     = util::AlignDown(offset, m_data_align);
+        const auto aligned_offset_end = util::AlignUp(offset_end, m_data_align);
         const auto aligned_size       = static_cast<size_t>(aligned_offset_end - aligned_offset);
 
         /* If we aren't aligned, we need to allocate a buffer. */
         PooledBuffer pooled_buffer;
         if (aligned_offset != offset || aligned_size != size) {
             if (aligned_size <= pooled_buffer.GetAllocatableSizeMax()) {
-                pooled_buffer.Allocate(aligned_size, this->data_align);
+                pooled_buffer.Allocate(aligned_size, m_data_align);
 
                 if (aligned_size <= pooled_buffer.GetSize()) {
-                    R_TRY(this->base_storage->Read(aligned_offset, pooled_buffer.GetBuffer(), aligned_size));
+                    R_TRY(m_base_storage->Read(aligned_offset, pooled_buffer.GetBuffer(), aligned_size));
                     std::memcpy(buffer, pooled_buffer.GetBuffer() + (offset - aligned_offset), size);
                     return ResultSuccess();
                 } else {
-                    pooled_buffer.Shrink(this->data_align);
+                    pooled_buffer.Shrink(m_data_align);
                 }
             } else {
-                pooled_buffer.Allocate(this->data_align, this->data_align);
+                pooled_buffer.Allocate(m_data_align, m_data_align);
             }
 
-            AMS_ASSERT(pooled_buffer.GetSize() >= static_cast<size_t>(this->data_align));
+            AMS_ASSERT(pooled_buffer.GetSize() >= static_cast<size_t>(m_data_align));
         }
 
         /* Determine read extents for the aligned portion. */
-        const auto core_offset     = util::AlignUp(offset, this->data_align);
-        const auto core_offset_end = util::AlignDown(offset_end, this->data_align);
+        const auto core_offset     = util::AlignUp(offset, m_data_align);
+        const auto core_offset_end = util::AlignDown(offset_end, m_data_align);
 
         /* Handle any data before the aligned portion. */
         if (offset < core_offset) {
             const auto head_size = static_cast<size_t>(core_offset - offset);
             AMS_ASSERT(head_size < size);
-            R_TRY(this->base_storage->Read(aligned_offset, pooled_buffer.GetBuffer(), this->data_align));
+            R_TRY(m_base_storage->Read(aligned_offset, pooled_buffer.GetBuffer(), m_data_align));
             std::memcpy(buffer, pooled_buffer.GetBuffer() + (offset - aligned_offset), head_size);
         }
 
@@ -244,13 +244,13 @@ namespace ams::fssystem {
             const auto core_buffer = static_cast<char *>(buffer) + (core_offset - offset);
             const auto core_size   = static_cast<size_t>(core_offset_end - core_offset);
 
-            R_TRY(this->base_storage->Read(core_offset, core_buffer, core_size));
+            R_TRY(m_base_storage->Read(core_offset, core_buffer, core_size));
         }
 
         /* Handle any data after the aligned portion. */
         if (core_offset_end < offset_end) {
             const auto tail_size = static_cast<size_t>(offset_end - core_offset_end);
-            R_TRY(this->base_storage->Read(core_offset_end, pooled_buffer.GetBuffer(), this->data_align));
+            R_TRY(m_base_storage->Read(core_offset_end, pooled_buffer.GetBuffer(), m_data_align));
             std::memcpy(buffer, pooled_buffer.GetBuffer(), tail_size);
         }
 

@@ -24,16 +24,16 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         NON_MOVEABLE(PwmDeviceImpl);
         AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo::nx::impl::PwmDeviceImpl, ::ams::pwm::driver::IPwmDevice);
         private:
-            os::SdkMutex suspend_mutex;
-            u32 suspend_value;
+            os::SdkMutex m_suspend_mutex;
+            u32 m_suspend_value;
         public:
-            PwmDeviceImpl(int channel) : IPwmDevice(channel), suspend_mutex(), suspend_value() { /* ... */ }
+            PwmDeviceImpl(int channel) : IPwmDevice(channel), m_suspend_mutex(), m_suspend_value() { /* ... */ }
 
-            void SetSuspendValue(u32 v) { this->suspend_value = v; }
-            u32 GetSuspendValue() const { return this->suspend_value; }
+            void SetSuspendValue(u32 v) { m_suspend_value = v; }
+            u32 GetSuspendValue() const { return m_suspend_value; }
 
-            void lock() { return this->suspend_mutex.lock(); }
-            void unlock() { return this->suspend_mutex.unlock(); }
+            void lock() { return m_suspend_mutex.lock(); }
+            void unlock() { return m_suspend_mutex.unlock(); }
     };
 
     class PwmDriverImpl : public ::ams::pwm::driver::IPwmDriver {
@@ -41,14 +41,14 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         NON_MOVEABLE(PwmDriverImpl);
         AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo::nx::impl::PwmDriverImpl, ::ams::pwm::driver::IPwmDriver);
         private:
-            dd::PhysicalAddress registers_phys_addr;
-            size_t registers_size;
-            const ChannelDefinition *channels;
-            size_t num_channels;
-            uintptr_t registers;
+            dd::PhysicalAddress m_registers_phys_addr;
+            size_t m_registers_size;
+            const ChannelDefinition *m_channels;
+            size_t m_num_channels;
+            uintptr_t m_registers;
         private:
             ALWAYS_INLINE uintptr_t GetRegistersFor(IPwmDevice &device) {
-                return registers + PWM_CONTROLLER_PWM_CHANNEL_OFFSET(device.GetChannelIndex());
+                return m_registers + PWM_CONTROLLER_PWM_CHANNEL_OFFSET(device.GetChannelIndex());
             }
 
             ALWAYS_INLINE uintptr_t GetRegistersFor(IPwmDevice *device) {

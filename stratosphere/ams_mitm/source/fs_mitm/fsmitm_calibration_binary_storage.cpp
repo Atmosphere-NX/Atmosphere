@@ -36,7 +36,7 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Handle the blank region. */
-        if (this->read_blank) {
+        if (m_read_blank) {
             if (BlankStartOffset <= offset && offset < BlankEndOffset) {
                 const size_t blank_size = std::min(size, static_cast<size_t>(BlankEndOffset - offset));
                 mitm::ReadFromBlankCalibrationBinary(offset, buffer, blank_size);
@@ -88,10 +88,10 @@ namespace ams::mitm::fs {
         R_SUCCEED_IF(size == 0);
 
         /* Only allow writes if we should. */
-        R_UNLESS(this->allow_writes, fs::ResultUnsupportedOperation());
+        R_UNLESS(m_allow_writes, fs::ResultUnsupportedOperation());
 
         /* Handle the blank region. */
-        if (this->read_blank) {
+        if (m_read_blank) {
             if (BlankStartOffset <= offset && offset < BlankEndOffset) {
                 const size_t blank_size = std::min(size, static_cast<size_t>(BlankEndOffset - offset));
                 mitm::WriteToBlankCalibrationBinary(offset, buffer, blank_size);

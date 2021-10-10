@@ -476,7 +476,7 @@ namespace ams::sf::impl {
                 if constexpr (std::tuple_size<OutDatas>::value) {
                     return alignof(typename std::tuple_element<0, OutDatas>::type);
                 }
-                return size_t();
+                return static_cast<size_t>(0);
             }();
 
             /* Handle marshalling. */
@@ -608,21 +608,21 @@ namespace ams::sf::impl {
             static constexpr size_t Size = _Size;
             static constexpr size_t Align = _Align ? _Align : alignof(u8);
         private:
-            alignas(Align) u8 data[Size];
+            alignas(Align) u8 m_data[Size];
         public:
-            constexpr OutRawHolder() : data() { /* ... */ }
+            constexpr OutRawHolder() : m_data() { /* ... */ }
 
             template<size_t Offset, size_t TypeSize>
             constexpr inline uintptr_t GetAddress() const {
                 static_assert(Offset <= Size, "Offset <= Size");
                 static_assert(TypeSize <= Size, "TypeSize <= Size");
                 static_assert(Offset + TypeSize <= Size, "Offset + TypeSize <= Size");
-                return reinterpret_cast<uintptr_t>(std::addressof(data[Offset]));
+                return reinterpret_cast<uintptr_t>(std::addressof(m_data[Offset]));
             }
 
             constexpr inline void CopyTo(void *dst) const {
                 if constexpr (Size > 0) {
-                    std::memcpy(dst, data, Size);
+                    std::memcpy(dst, m_data, Size);
                 }
             }
     };
@@ -633,23 +633,23 @@ namespace ams::sf::impl {
             static constexpr size_t NumMove = _NumMove;
             static constexpr size_t NumCopy = _NumCopy;
         private:
-            MoveHandle move_handles[NumMove];
-            CopyHandle copy_handles[NumCopy];
+            MoveHandle m_move_handles[NumMove];
+            CopyHandle m_copy_handles[NumCopy];
         public:
-            constexpr InHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+            constexpr InHandleHolder() : m_move_handles(), m_copy_handles() { /* ... */ }
 
             template<size_t Index>
             constexpr inline MoveHandle &SetMoveHandle(os::NativeHandle os_handle) {
                 static_assert(Index < NumMove);
-                move_handles[Index] = sf::NativeHandle(os_handle, true);
-                return move_handles[Index];
+                m_move_handles[Index] = sf::NativeHandle(os_handle, true);
+                return m_move_handles[Index];
             }
 
             template<size_t Index>
             constexpr inline CopyHandle &SetCopyHandle(os::NativeHandle os_handle) {
                 static_assert(Index < NumCopy);
-                copy_handles[Index] = sf::NativeHandle(os_handle, true);
-                return copy_handles[Index];
+                m_copy_handles[Index] = sf::NativeHandle(os_handle, true);
+                return m_copy_handles[Index];
             }
     };
 
@@ -659,26 +659,26 @@ namespace ams::sf::impl {
             static constexpr size_t NumMove = _NumMove;
             static constexpr size_t NumCopy = _NumCopy;
         private:
-            NativeHandle move_handles[NumMove];
-            NativeHandle copy_handles[NumCopy];
+            NativeHandle m_move_handles[NumMove];
+            NativeHandle m_copy_handles[NumCopy];
         public:
-            constexpr OutHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+            constexpr OutHandleHolder() : m_move_handles(), m_copy_handles() { /* ... */ }
 
             template<size_t Index>
             constexpr inline NativeHandle *GetMoveHandlePointer() {
                 static_assert(Index < NumMove, "Index < NumMove");
-                return move_handles + Index;
+                return m_move_handles + Index;
             }
 
             template<size_t Index>
             constexpr inline NativeHandle *GetCopyHandlePointer() {
                 static_assert(Index < NumCopy, "Index < NumCopy");
-                return copy_handles + Index;
+                return m_copy_handles + Index;
             }
 
             constexpr inline void CopyTo(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, const size_t num_out_object_handles) {
                 ctx.handles_to_close->num_handles = 0;
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = copy_handles[n].GetOsHandle(); response.copy_handles[n] = handle; if (copy_handles[n].IsManaged()) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } copy_handles[n].Detach(); } } while (0)
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = m_copy_handles[n].GetOsHandle(); response.copy_handles[n] = handle; if (m_copy_handles[n].IsManaged()) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } m_copy_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(2);
@@ -688,7 +688,7 @@ namespace ams::sf::impl {
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(6);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(7);
                 #undef _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = move_handles[n].GetOsHandle(); move_handles[n].Detach(); } } while (0)
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = m_move_handles[n].GetOsHandle(); m_move_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(2);
@@ -704,13 +704,13 @@ namespace ams::sf::impl {
     template<size_t NumInObjects, size_t NumOutObjects>
     class InOutObjectHolder {
         private:
-            std::array<cmif::ServiceObjectHolder, NumInObjects> in_object_holders;
-            std::array<cmif::ServiceObjectHolder, NumOutObjects> out_object_holders;
-            std::array<util::TypedStorage<SharedPointer<sf::IServiceObject>>, NumOutObjects> out_shared_pointers;
-            std::array<cmif::DomainObjectId, NumOutObjects> out_object_ids;
+            std::array<cmif::ServiceObjectHolder, NumInObjects> m_in_object_holders;
+            std::array<cmif::ServiceObjectHolder, NumOutObjects> m_out_object_holders;
+            std::array<util::TypedStorage<SharedPointer<sf::IServiceObject>>, NumOutObjects> m_out_shared_pointers;
+            std::array<cmif::DomainObjectId, NumOutObjects> m_out_object_ids;
         public:
-            constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() {
-                #define _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(n) if constexpr (NumOutObjects > n) { this->out_object_ids[n] = cmif::InvalidDomainObjectId; }
+            constexpr InOutObjectHolder() : m_in_object_holders(), m_out_object_holders() {
+                #define _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(n) if constexpr (NumOutObjects > n) { m_out_object_ids[n] = cmif::InvalidDomainObjectId; }
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(0)
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(1)
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(2)
@@ -724,7 +724,7 @@ namespace ams::sf::impl {
 
             Result GetInObjects(const sf::cmif::ServerMessageProcessor *processor) {
                 if constexpr (NumInObjects > 0) {
-                    R_TRY(processor->GetInObjects(this->in_object_holders.data()));
+                    R_TRY(processor->GetInObjects(m_in_object_holders.data()));
                 }
                 return ResultSuccess();
             }
@@ -736,7 +736,7 @@ namespace ams::sf::impl {
                     if constexpr (NumInObjects > n) { \
                         using SharedPointerType = typename std::tuple_element<n, ServiceImplTuple>::type; \
                         using ServiceImplType   = typename SharedPointerType::Interface; \
-                        R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
+                        R_UNLESS((m_in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
                     } \
                 } while (0)
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(0);
@@ -754,23 +754,23 @@ namespace ams::sf::impl {
             template<size_t Index, typename Interface>
             SharedPointer<Interface> *GetOutObjectSharedPointer() {
                 static_assert(sizeof(SharedPointer<Interface>) == sizeof(SharedPointer<sf::IServiceObject>));
-                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(GetPointer(out_shared_pointers[Index])));
+                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(GetPointer(m_out_shared_pointers[Index])));
             }
 
             template<size_t Index, typename Interface>
             Out<SharedPointer<Interface>> GetOutObject() {
                 auto sp = std::construct_at(GetOutObjectSharedPointer<Index, Interface>());
-                return Out<SharedPointer<Interface>>(sp, std::addressof(this->out_object_ids[Index]));
+                return Out<SharedPointer<Interface>>(sp, std::addressof(m_out_object_ids[Index]));
             }
 
             template<size_t Index, typename Interface>
             void SetOutObject() {
-                this->out_object_holders[Index] = cmif::ServiceObjectHolder(std::move(*GetOutObjectSharedPointer<Index, Interface>()));
+                m_out_object_holders[Index] = cmif::ServiceObjectHolder(std::move(*GetOutObjectSharedPointer<Index, Interface>()));
             }
 
             constexpr void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response) {
                 if constexpr (NumOutObjects > 0) {
-                    ctx.processor->SetOutObjects(ctx, response, this->out_object_holders.data(), this->out_object_ids.data());
+                    ctx.processor->SetOutObjects(ctx, response, m_out_object_holders.data(), m_out_object_ids.data());
                 }
             }
     };
@@ -934,7 +934,7 @@ namespace ams::sf::impl {
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         } else {
                             const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
-                            const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
+                            const size_t size = static_cast<size_t>(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         }
@@ -970,7 +970,7 @@ namespace ams::sf::impl {
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                             } else {
                                 const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
-                                const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
+                                const size_t size = static_cast<size_t>(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                                 pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                             }

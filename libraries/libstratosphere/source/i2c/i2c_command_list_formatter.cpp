@@ -19,7 +19,7 @@
 namespace ams::i2c {
 
     Result CommandListFormatter::IsEnqueueAble(size_t sz) const {
-        R_UNLESS(this->command_list_length - this->current_index >= sz, i2c::ResultCommandListFull());
+        R_UNLESS(m_command_list_length - m_current_index >= sz, i2c::ResultCommandListFull());
         return ResultSuccess();
     }
 
@@ -29,11 +29,11 @@ namespace ams::i2c {
         R_TRY(this->IsEnqueueAble(CommandLength));
 
         /* Get the command list. */
-        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
+        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(m_command_list);
 
         /* Get references to the header. */
-        auto &header0 = cmd_list[this->current_index++];
-        auto &header1 = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[m_current_index++];
+        auto &header1 = cmd_list[m_current_index++];
 
         /* Set the header. */
         header0 = {};
@@ -53,11 +53,11 @@ namespace ams::i2c {
         R_TRY(this->IsEnqueueAble(CommandLength + size));
 
         /* Get the command list. */
-        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
+        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(m_command_list);
 
         /* Get references to the header. */
-        auto &header0 = cmd_list[this->current_index++];
-        auto &header1 = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[m_current_index++];
+        auto &header1 = cmd_list[m_current_index++];
 
         /* Set the header. */
         header0 = {};
@@ -69,8 +69,8 @@ namespace ams::i2c {
         header1.Set<impl::SendCommandFormat::Size>(size);
 
         /* Copy the data we're sending. */
-        std::memcpy(cmd_list + this->current_index, src, size);
-        this->current_index += size;
+        std::memcpy(cmd_list + m_current_index, src, size);
+        m_current_index += size;
 
         return ResultSuccess();
     }
@@ -81,11 +81,11 @@ namespace ams::i2c {
         R_TRY(this->IsEnqueueAble(CommandLength));
 
         /* Get the command list. */
-        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
+        util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(m_command_list);
 
         /* Get references to the header. */
-        auto &header0 = cmd_list[this->current_index++];
-        auto &header1 = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[m_current_index++];
+        auto &header1 = cmd_list[m_current_index++];
 
         /* Set the header. */
         header0 = {};

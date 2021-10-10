@@ -25,8 +25,8 @@ namespace ams::fssystem {
     class PooledBuffer {
         NON_COPYABLE(PooledBuffer);
         private:
-            char *buffer;
-            size_t size;
+            char *m_buffer;
+            size_t m_size;
         private:
             static size_t GetAllocatableSizeMaxCore(bool large);
         public:
@@ -34,14 +34,14 @@ namespace ams::fssystem {
             static size_t GetAllocatableParticularlyLargeSizeMax() { return GetAllocatableSizeMaxCore(true); }
         private:
             void Swap(PooledBuffer &rhs) {
-                std::swap(this->buffer, rhs.buffer);
-                std::swap(this->size, rhs.size);
+                std::swap(m_buffer, rhs.m_buffer);
+                std::swap(m_size, rhs.m_size);
             }
         public:
             /* Constructor/Destructor. */
-            constexpr PooledBuffer() : buffer(), size() { /* ... */ }
+            constexpr PooledBuffer() : m_buffer(), m_size() { /* ... */ }
 
-            PooledBuffer(size_t ideal_size, size_t required_size) : buffer(), size() {
+            PooledBuffer(size_t ideal_size, size_t required_size) : m_buffer(), m_size() {
                 this->Allocate(ideal_size, required_size);
             }
 
@@ -50,9 +50,9 @@ namespace ams::fssystem {
             }
 
             /* Move and assignment. */
-            explicit PooledBuffer(PooledBuffer &&rhs) : buffer(rhs.buffer), size(rhs.size) {
-                rhs.buffer = nullptr;
-                rhs.size   = 0;
+            explicit PooledBuffer(PooledBuffer &&rhs) : m_buffer(rhs.m_buffer), m_size(rhs.m_size) {
+                rhs.m_buffer = nullptr;
+                rhs.m_size   = 0;
             }
 
             PooledBuffer &operator=(PooledBuffer &&rhs) {
@@ -74,17 +74,17 @@ namespace ams::fssystem {
             void Deallocate() {
                 /* Shrink the buffer to empty. */
                 this->Shrink(0);
-                AMS_ASSERT(this->buffer == nullptr);
+                AMS_ASSERT(m_buffer == nullptr);
             }
 
             char *GetBuffer() const {
-                AMS_ASSERT(this->buffer != nullptr);
-                return this->buffer;
+                AMS_ASSERT(m_buffer != nullptr);
+                return m_buffer;
             }
 
             size_t GetSize() const {
-                AMS_ASSERT(this->buffer != nullptr);
-                return this->size;
+                AMS_ASSERT(m_buffer != nullptr);
+                return m_size;
             }
         private:
             void AllocateCore(size_t ideal_size, size_t required_size, bool large);

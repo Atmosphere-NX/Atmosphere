@@ -24,8 +24,8 @@
 
 namespace ams::erpt::srv {
 
-    lmem::HeapHandle g_heap_handle;
-    ams::sf::ExpHeapAllocator g_sf_allocator;
+    constinit lmem::HeapHandle g_heap_handle;
+    constinit ams::sf::ExpHeapAllocator g_sf_allocator;
 
     namespace {
 

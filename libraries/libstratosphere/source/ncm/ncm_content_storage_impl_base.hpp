@@ -22,15 +22,15 @@ namespace ams::ncm {
         NON_COPYABLE(ContentStorageImplBase);
         NON_MOVEABLE(ContentStorageImplBase);
         protected:
-            PathString root_path;
-            MakeContentPathFunction make_content_path_func;
-            bool disabled;
+            PathString m_root_path;
+            MakeContentPathFunction m_make_content_path_func;
+            bool m_disabled;
         protected:
-            ContentStorageImplBase() : make_content_path_func(), disabled(false) { /* ... */ }
+            ContentStorageImplBase() : m_make_content_path_func(), m_disabled(false) { /* ... */ }
         protected:
             /* Helpers. */
             Result EnsureEnabled() const {
-                R_UNLESS(!this->disabled, ncm::ResultInvalidContentStorage());
+                R_UNLESS(!m_disabled, ncm::ResultInvalidContentStorage());
                 return ResultSuccess();
             }
 

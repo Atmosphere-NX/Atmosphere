@@ -65,9 +65,9 @@ namespace ams::fssystem {
                 }
             };
         private:
-            ZeroStorage zero_storage;
+            ZeroStorage m_zero_storage;
         public:
-            SparseStorage() : IndirectStorage(), zero_storage() { /* ... */ }
+            SparseStorage() : IndirectStorage(), m_zero_storage() { /* ... */ }
             virtual ~SparseStorage() { /* ... */ }
 
             using IndirectStorage::Initialize;
@@ -95,7 +95,7 @@ namespace ams::fssystem {
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
         private:
             void SetZeroStorage() {
-                return this->SetStorage(1, std::addressof(this->zero_storage), 0, std::numeric_limits<s64>::max());
+                return this->SetStorage(1, std::addressof(m_zero_storage), 0, std::numeric_limits<s64>::max());
             }
     };
 

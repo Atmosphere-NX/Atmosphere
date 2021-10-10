@@ -22,53 +22,53 @@ namespace ams::i2c::server {
 
     class SessionImpl {
         private:
-            ManagerImpl *parent; /* NOTE: this is an sf::SharedPointer<> in Nintendo's code. */
-            i2c::driver::I2cSession internal_session;
-            bool has_session;
+            ManagerImpl *m_parent; /* NOTE: this is an sf::SharedPointer<> in Nintendo's code. */
+            i2c::driver::I2cSession m_internal_session;
+            bool m_has_session;
         public:
-            explicit SessionImpl(ManagerImpl *p) : parent(p), has_session(false) { /* ... */ }
+            explicit SessionImpl(ManagerImpl *p) : m_parent(p), m_has_session(false) { /* ... */ }
 
             ~SessionImpl() {
-                if (this->has_session) {
-                    i2c::driver::CloseSession(this->internal_session);
+                if (m_has_session) {
+                    i2c::driver::CloseSession(m_internal_session);
                 }
             }
 
             Result OpenSession(DeviceCode device_code) {
-                AMS_ABORT_UNLESS(!this->has_session);
+                AMS_ABORT_UNLESS(!m_has_session);
 
-                R_TRY(i2c::driver::OpenSession(std::addressof(this->internal_session), device_code));
-                this->has_session = true;
+                R_TRY(i2c::driver::OpenSession(std::addressof(m_internal_session), device_code));
+                m_has_session = true;
                 return ResultSuccess();
             }
         public:
             /* Actual commands. */
             Result SendOld(const ams::sf::InBuffer &in_data, i2c::TransactionOption option) {
-                return i2c::driver::Send(this->internal_session, in_data.GetPointer(), in_data.GetSize(), option);
+                return i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option);
             }
 
             Result ReceiveOld(const ams::sf::OutBuffer &out_data, i2c::TransactionOption option) {
-                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), this->internal_session, option);
+                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option);
             }
 
             Result ExecuteCommandListOld(const ams::sf::OutBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list){
-                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), this->internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
+                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
             }
 
             Result Send(const ams::sf::InAutoSelectBuffer &in_data, i2c::TransactionOption option) {
-                return i2c::driver::Send(this->internal_session, in_data.GetPointer(), in_data.GetSize(), option);
+                return i2c::driver::Send(m_internal_session, in_data.GetPointer(), in_data.GetSize(), option);
             }
 
             Result Receive(const ams::sf::OutAutoSelectBuffer &out_data, i2c::TransactionOption option) {
-                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), this->internal_session, option);
+                return i2c::driver::Receive(out_data.GetPointer(), out_data.GetSize(), m_internal_session, option);
             }
 
             Result ExecuteCommandList(const ams::sf::OutAutoSelectBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list) {
-                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), this->internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
+                return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), m_internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
             }
 
             Result SetRetryPolicy(s32 max_retry_count, s32 retry_interval_us) {
-                return i2c::driver::SetRetryPolicy(this->internal_session, max_retry_count, retry_interval_us);
+                return i2c::driver::SetRetryPolicy(m_internal_session, max_retry_count, retry_interval_us);
             }
     };
     static_assert(i2c::sf::IsISession<SessionImpl>);

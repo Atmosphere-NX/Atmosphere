@@ -20,38 +20,38 @@ namespace ams::ncm {
 
     class SubmissionPackageInstallTask::Impl {
         private:
-            fs::FileHandleStorage storage;
-            util::optional<impl::MountName> mount_name;
+            fs::FileHandleStorage m_storage;
+            util::optional<impl::MountName> m_mount_name;
         public:
-            explicit Impl(fs::FileHandle file) : storage(file), mount_name(util::nullopt) { /* ... */ }
+            explicit Impl(fs::FileHandle file) : m_storage(file), m_mount_name(util::nullopt) { /* ... */ }
 
             ~Impl() {
-                if (this->mount_name) {
-                    fs::fsa::Unregister(this->mount_name->str);
+                if (m_mount_name) {
+                    fs::fsa::Unregister(m_mount_name->str);
                 }
             }
 
             Result Initialize() {
-                AMS_ASSERT(!this->mount_name);
+                AMS_ASSERT(!m_mount_name);
 
                 /* Allocate a partition file system. */
                 auto partition_file_system = std::make_unique<fssystem::PartitionFileSystem>();
                 R_UNLESS(partition_file_system != nullptr, ncm::ResultAllocationFailed());
 
                 /* Initialize the partition file system. */
-                R_TRY(partition_file_system->Initialize(std::addressof(this->storage)));
+                R_TRY(partition_file_system->Initialize(std::addressof(m_storage)));
 
                 /* Create a mount name and register the file system. */
                 auto mount_name = impl::CreateUniqueMountName();
                 R_TRY(fs::fsa::Register(mount_name.str, std::move(partition_file_system)));
 
                 /* Initialize members. */
-                this->mount_name = mount_name;
+                m_mount_name = mount_name;
                 return ResultSuccess();
             }
 
             const impl::MountName &GetMountName() const {
-                return *this->mount_name;
+                return *m_mount_name;
             }
     };
 
@@ -59,17 +59,17 @@ namespace ams::ncm {
     SubmissionPackageInstallTask::~SubmissionPackageInstallTask() { /* ... */ }
 
     Result SubmissionPackageInstallTask::Initialize(fs::FileHandle file, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
-        AMS_ASSERT(!this->impl);
+        AMS_ASSERT(!m_impl);
 
         /* Allocate impl. */
-        this->impl.reset(new (std::nothrow) Impl(file));
-        R_UNLESS(this->impl != nullptr, ncm::ResultAllocationFailed());
+        m_impl.reset(new (std::nothrow) Impl(file));
+        R_UNLESS(m_impl != nullptr, ncm::ResultAllocationFailed());
 
         /* Initialize impl. */
-        R_TRY(this->impl->Initialize());
+        R_TRY(m_impl->Initialize());
 
         /* Initialize parent. N doesn't check the result. */
-        PackageInstallTask::Initialize(impl::GetRootDirectoryPath(this->impl->GetMountName()).str, storage_id, buffer, buffer_size, ignore_ticket);
+        PackageInstallTask::Initialize(impl::GetRootDirectoryPath(m_impl->GetMountName()).str, storage_id, buffer, buffer_size, ignore_ticket);
         return ResultSuccess();
     }
 

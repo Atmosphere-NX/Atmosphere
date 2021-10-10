@@ -23,7 +23,7 @@ namespace ams::ncm {
         private:
             class Impl;
         private:
-            std::unique_ptr<Impl> impl;
+            std::unique_ptr<Impl> m_impl;
         public:
             SubmissionPackageInstallTask();
             virtual ~SubmissionPackageInstallTask() override;

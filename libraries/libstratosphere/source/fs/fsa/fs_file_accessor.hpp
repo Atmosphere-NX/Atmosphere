@@ -30,13 +30,13 @@ namespace ams::fs::impl {
     class FileAccessor : public util::IntrusiveListBaseNode<FileAccessor>, public Newable {
         NON_COPYABLE(FileAccessor);
         private:
-            std::unique_ptr<fsa::IFile> impl;
-            FileSystemAccessor * const parent;
-            WriteState write_state;
-            Result write_result;
-            const OpenMode open_mode;
-            std::unique_ptr<FilePathHash> file_path_hash;
-            s32 path_hash_index;
+            std::unique_ptr<fsa::IFile> m_impl;
+            FileSystemAccessor * const m_parent;
+            WriteState m_write_state;
+            Result m_write_result;
+            const OpenMode m_open_mode;
+            std::unique_ptr<FilePathHash> m_file_path_hash;
+            s32 m_path_hash_index;
         public:
             FileAccessor(std::unique_ptr<fsa::IFile>&& f, FileSystemAccessor *p, OpenMode mode);
             ~FileAccessor();
@@ -48,9 +48,9 @@ namespace ams::fs::impl {
             Result GetSize(s64 *out);
             Result OperateRange(void *dst, size_t dst_size, OperationId operation, s64 offset, s64 size, const void *src, size_t src_size);
 
-            OpenMode GetOpenMode() const { return this->open_mode; }
-            WriteState GetWriteState() const { return this->write_state; }
-            FileSystemAccessor *GetParent() const { return this->parent; }
+            OpenMode GetOpenMode() const { return m_open_mode; }
+            WriteState GetWriteState() const { return m_write_state; }
+            FileSystemAccessor *GetParent() const { return m_parent; }
 
             void SetFilePathHash(std::unique_ptr<FilePathHash>&& file_path_hash, s32 index);
             Result ReadWithoutCacheAccessLog(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option);
@@ -59,7 +59,7 @@ namespace ams::fs::impl {
 
             ALWAYS_INLINE Result UpdateLastResult(Result r) {
                 if (!fs::ResultNotEnoughFreeSpace::Includes(r)) {
-                    this->write_result = r;
+                    m_write_result = r;
                 }
                 return r;
             }

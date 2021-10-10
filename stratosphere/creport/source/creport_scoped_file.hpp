@@ -22,24 +22,24 @@ namespace ams::creport {
         NON_COPYABLE(ScopedFile);
         NON_MOVEABLE(ScopedFile);
         private:
-            fs::FileHandle file;
-            s64 offset;
-            bool opened;
+            fs::FileHandle m_file;
+            s64 m_offset;
+            bool m_opened;
         public:
-            ScopedFile(const char *path) : file(), offset(), opened(false) {
+            ScopedFile(const char *path) : m_file(), m_offset(), m_opened(false) {
                 if (R_SUCCEEDED(fs::CreateFile(path, 0))) {
-                    this->opened = R_SUCCEEDED(fs::OpenFile(std::addressof(this->file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
+                    m_opened = R_SUCCEEDED(fs::OpenFile(std::addressof(m_file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
                 }
             }
 
             ~ScopedFile() {
-                if (this->opened) {
-                    fs::CloseFile(file);
+                if (m_opened) {
+                    fs::CloseFile(m_file);
                 }
             }
 
             bool IsOpen() const {
-                return this->opened;
+                return m_opened;
             }
 
             void WriteString(const char *str);

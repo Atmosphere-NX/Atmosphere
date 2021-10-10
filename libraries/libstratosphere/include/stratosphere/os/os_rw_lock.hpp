@@ -25,46 +25,46 @@ namespace ams::os {
         NON_COPYABLE(ReaderWriterLock);
         NON_MOVEABLE(ReaderWriterLock);
         private:
-            ReaderWriterLockType rw_lock;
+            ReaderWriterLockType m_rw_lock;
         public:
-            constexpr explicit ReaderWriterLock() : rw_lock{{}, 0, ::ams::os::ReaderWriterLockType::State_Initialized, nullptr, 0, {}, {}} { /* ... */ }
+            constexpr explicit ReaderWriterLock() : m_rw_lock{{}, 0, ::ams::os::ReaderWriterLockType::State_Initialized, nullptr, 0, {}, {}} { /* ... */ }
 
-            ~ReaderWriterLock() { os::FinalizeReaderWriterLock(std::addressof(this->rw_lock)); }
+            ~ReaderWriterLock() { os::FinalizeReaderWriterLock(std::addressof(m_rw_lock)); }
 
             void AcquireReadLock() {
-                return os::AcquireReadLock(std::addressof(this->rw_lock));
+                return os::AcquireReadLock(std::addressof(m_rw_lock));
             }
 
             bool TryAcquireReadLock() {
-                return os::TryAcquireReadLock(std::addressof(this->rw_lock));
+                return os::TryAcquireReadLock(std::addressof(m_rw_lock));
             }
 
             void ReleaseReadLock() {
-                return os::ReleaseReadLock(std::addressof(this->rw_lock));
+                return os::ReleaseReadLock(std::addressof(m_rw_lock));
             }
 
             void AcquireWriteLock() {
-                return os::AcquireWriteLock(std::addressof(this->rw_lock));
+                return os::AcquireWriteLock(std::addressof(m_rw_lock));
             }
 
             bool TryAcquireWriteLock() {
-                return os::TryAcquireWriteLock(std::addressof(this->rw_lock));
+                return os::TryAcquireWriteLock(std::addressof(m_rw_lock));
             }
 
             void ReleaseWriteLock() {
-                return os::ReleaseWriteLock(std::addressof(this->rw_lock));
+                return os::ReleaseWriteLock(std::addressof(m_rw_lock));
             }
 
             bool IsReadLockHeld() const {
-                return os::IsReadLockHeld(std::addressof(this->rw_lock));
+                return os::IsReadLockHeld(std::addressof(m_rw_lock));
             }
 
             bool IsWriteLockHeldByCurrentThread() const {
-                return os::IsWriteLockHeldByCurrentThread(std::addressof(this->rw_lock));
+                return os::IsWriteLockHeldByCurrentThread(std::addressof(m_rw_lock));
             }
 
             bool IsLockOwner() const {
-                return os::IsReaderWriterLockOwnerThread(std::addressof(this->rw_lock));
+                return os::IsReaderWriterLockOwnerThread(std::addressof(m_rw_lock));
             }
 
             void lock_shared() {
@@ -92,15 +92,15 @@ namespace ams::os {
             }
 
             operator ReaderWriterLockType &() {
-                return this->rw_lock;
+                return m_rw_lock;
             }
 
             operator const ReaderWriterLockType &() const {
-                return this->rw_lock;
+                return m_rw_lock;
             }
 
             ReaderWriterLockType *GetBase() {
-                return std::addressof(this->rw_lock);
+                return std::addressof(m_rw_lock);
             }
     };
 

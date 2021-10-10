@@ -28,46 +28,46 @@ namespace ams::fssystem {
 
     class IntegrityRomFsStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
-            save::HierarchicalIntegrityVerificationStorage integrity_storage;
-            save::FileSystemBufferManagerSet buffers;
-            os::SdkRecursiveMutex mutex;
-            Hash master_hash;
-            std::unique_ptr<fs::MemoryStorage> master_hash_storage;
+            save::HierarchicalIntegrityVerificationStorage m_integrity_storage;
+            save::FileSystemBufferManagerSet m_buffers;
+            os::SdkRecursiveMutex m_mutex;
+            Hash m_master_hash;
+            std::unique_ptr<fs::MemoryStorage> m_master_hash_storage;
         public:
-            IntegrityRomFsStorage() : mutex() { /* ... */ }
+            IntegrityRomFsStorage() : m_mutex() { /* ... */ }
             virtual ~IntegrityRomFsStorage() override { this->Finalize(); }
 
             Result Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                return this->integrity_storage.Read(offset, buffer, size);
+                return m_integrity_storage.Read(offset, buffer, size);
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                return this->integrity_storage.Write(offset, buffer, size);
+                return m_integrity_storage.Write(offset, buffer, size);
             }
 
             virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInIntegrityRomFsStorageA(); }
 
             virtual Result GetSize(s64 *out) override {
-                return this->integrity_storage.GetSize(out);
+                return m_integrity_storage.GetSize(out);
             }
 
             virtual Result Flush() override {
-                return this->integrity_storage.Flush();
+                return m_integrity_storage.Flush();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                return this->integrity_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                return m_integrity_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
             }
 
             Result Commit() {
-                return this->integrity_storage.Commit();
+                return m_integrity_storage.Commit();
             }
 
             save::FileSystemBufferManagerSet *GetBuffers() {
-                return this->integrity_storage.GetBuffers();
+                return m_integrity_storage.GetBuffers();
             }
     };
 

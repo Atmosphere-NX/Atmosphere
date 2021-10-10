@@ -69,7 +69,7 @@ namespace ams::os::impl {
     }
 
     void MultiWaitHorizonImpl::CancelWait() {
-        R_ABORT_UNLESS(svc::CancelSynchronization(this->handle));
+        R_ABORT_UNLESS(svc::CancelSynchronization(m_handle));
     }
 
 }

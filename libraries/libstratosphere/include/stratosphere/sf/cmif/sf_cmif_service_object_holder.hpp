@@ -22,29 +22,29 @@ namespace ams::sf::cmif {
 
     class ServiceObjectHolder {
         private:
-            SharedPointer<IServiceObject> srv;
-            const ServiceDispatchMeta *dispatch_meta;
+            SharedPointer<IServiceObject> m_srv;
+            const ServiceDispatchMeta *m_dispatch_meta;
         private:
             /* Copy constructor. */
-            ServiceObjectHolder(const ServiceObjectHolder &o) : srv(o.srv), dispatch_meta(o.dispatch_meta) { /* ... */ }
+            ServiceObjectHolder(const ServiceObjectHolder &o) : m_srv(o.m_srv), m_dispatch_meta(o.m_dispatch_meta) { /* ... */ }
             ServiceObjectHolder &operator=(const ServiceObjectHolder &o) = delete;
         public:
             /* Default constructor, null all members. */
-            ServiceObjectHolder() : srv(nullptr, false), dispatch_meta(nullptr) { /* ... */ }
+            ServiceObjectHolder() : m_srv(nullptr, false), m_dispatch_meta(nullptr) { /* ... */ }
 
             ~ServiceObjectHolder() {
-                this->dispatch_meta = nullptr;
+                m_dispatch_meta = nullptr;
             }
 
             /* Ensure correct type id at runtime through template constructor. */
             template<typename ServiceImpl>
-            constexpr explicit ServiceObjectHolder(SharedPointer<ServiceImpl> &&s) : srv(std::move(s)), dispatch_meta(GetServiceDispatchMeta<ServiceImpl>()) {
+            constexpr explicit ServiceObjectHolder(SharedPointer<ServiceImpl> &&s) : m_srv(std::move(s)), m_dispatch_meta(GetServiceDispatchMeta<ServiceImpl>()) {
                 /* ... */
             }
 
             /* Move constructor, assignment operator. */
-            ServiceObjectHolder(ServiceObjectHolder &&o) : srv(std::move(o.srv)), dispatch_meta(std::move(o.dispatch_meta)) {
-                o.dispatch_meta = nullptr;
+            ServiceObjectHolder(ServiceObjectHolder &&o) : m_srv(std::move(o.m_srv)), m_dispatch_meta(std::move(o.m_dispatch_meta)) {
+                o.m_dispatch_meta = nullptr;
             }
 
             ServiceObjectHolder &operator=(ServiceObjectHolder &&o) {
@@ -55,13 +55,13 @@ namespace ams::sf::cmif {
 
             /* State management. */
             void swap(ServiceObjectHolder &o) {
-                this->srv.swap(o.srv);
-                std::swap(this->dispatch_meta, o.dispatch_meta);
+                m_srv.swap(o.m_srv);
+                std::swap(m_dispatch_meta, o.m_dispatch_meta);
             }
 
             void Reset() {
-                this->srv = nullptr;
-                this->dispatch_meta = nullptr;
+                m_srv = nullptr;
+                m_dispatch_meta = nullptr;
             }
 
             ServiceObjectHolder Clone() const {
@@ -70,17 +70,17 @@ namespace ams::sf::cmif {
 
             /* Boolean operators. */
             explicit constexpr operator bool() const {
-                return this->srv != nullptr;
+                return m_srv != nullptr;
             }
 
             constexpr bool operator!() const {
-                return this->srv == nullptr;
+                return m_srv == nullptr;
             }
 
             /* Getters. */
             constexpr uintptr_t GetServiceId() const {
-                if (this->dispatch_meta) {
-                    return this->dispatch_meta->GetServiceId();
+                if (m_dispatch_meta) {
+                    return m_dispatch_meta->GetServiceId();
                 }
                 return 0;
             }
@@ -93,13 +93,13 @@ namespace ams::sf::cmif {
             template<typename Interface>
             inline Interface *GetServiceObject() const {
                 if (this->GetServiceId() == GetServiceDispatchMeta<Interface>()->GetServiceId()) {
-                    return static_cast<Interface *>(this->srv.Get());
+                    return static_cast<Interface *>(m_srv.Get());
                 }
                 return nullptr;
             }
 
             inline sf::IServiceObject *GetServiceObjectUnsafe() const {
-                return static_cast<sf::IServiceObject *>(this->srv.Get());
+                return static_cast<sf::IServiceObject *>(m_srv.Get());
             }
 
             /* Processing. */

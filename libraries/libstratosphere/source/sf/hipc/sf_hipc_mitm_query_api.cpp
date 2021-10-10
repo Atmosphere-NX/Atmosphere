@@ -27,12 +27,12 @@ namespace ams::sf::hipc::impl {
 
         class MitmQueryService {
             private:
-                ServerManagerBase::MitmQueryFunction query_function;
+                ServerManagerBase::MitmQueryFunction m_query_function;
             public:
-                MitmQueryService(ServerManagerBase::MitmQueryFunction qf) : query_function(qf) { /* ... */ }
+                MitmQueryService(ServerManagerBase::MitmQueryFunction qf) : m_query_function(qf) { /* ... */ }
 
                 void ShouldMitm(sf::Out<bool> out, const sm::MitmProcessInfo &client_info) {
-                    *out = this->query_function(client_info);
+                    *out = m_query_function(client_info);
                 }
         };
         static_assert(IsIMitmQueryService<MitmQueryService>);

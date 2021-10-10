@@ -31,8 +31,8 @@ namespace ams::lr {
                 bool is_valid;
             };
         private:
-            Entry entries[NumEntries];
-            size_t capacity;
+            Entry m_entries[NumEntries];
+            size_t m_capacity;
         private:
             inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId *excluding_ids, size_t num_ids) const {
                 /* Try to find program id in exclusions. */
@@ -47,21 +47,21 @@ namespace ams::lr {
 
             inline void RegisterImpl(size_t i, const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Populate entry. */
-                Entry &entry = this->entries[i];
+                Entry &entry = m_entries[i];
                 entry.key = key;
                 entry.value = value;
                 entry.owner_id = owner_id;
                 entry.is_valid = true;
             }
         public:
-            RegisteredData(size_t capacity = NumEntries) : capacity(capacity) {
+            RegisteredData(size_t capacity = NumEntries) : m_capacity(capacity) {
                 this->Clear();
             }
 
             bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry &entry = this->entries[i];
+                    Entry &entry = m_entries[i];
                     if (entry.is_valid && entry.key == key) {
                         this->RegisterImpl(i, key, value, owner_id);
                         return true;
@@ -70,7 +70,7 @@ namespace ams::lr {
 
                 /* We didn't find an existing entry, so try to create a new one. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry &entry = this->entries[i];
+                    Entry &entry = m_entries[i];
                     if (!entry.is_valid) {
                         this->RegisterImpl(i, key, value, owner_id);
                         return true;
@@ -83,7 +83,7 @@ namespace ams::lr {
             void Unregister(const Key &key) {
                 /* Invalidate entries with a matching key. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry &entry = this->entries[i];
+                    Entry &entry = m_entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.is_valid = false;
                     }
@@ -93,7 +93,7 @@ namespace ams::lr {
             void UnregisterOwnerProgram(ncm::ProgramId owner_id) {
                 /* Invalidate entries with a matching owner id. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry &entry = this->entries[i];
+                    Entry &entry = m_entries[i];
                     if (entry.owner_id == owner_id) {
                         entry.is_valid = false;
                     }
@@ -103,7 +103,7 @@ namespace ams::lr {
             bool Find(Value *out, const Key &key) const {
                 /* Locate a matching entry. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    const Entry &entry = this->entries[i];
+                    const Entry &entry = m_entries[i];
                     if (entry.is_valid && entry.key == key) {
                         *out = entry.value;
                         return true;
@@ -116,14 +116,14 @@ namespace ams::lr {
             void Clear() {
                 /* Invalidate all entries. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    this->entries[i].is_valid = false;
+                    m_entries[i].is_valid = false;
                 }
             }
 
             void ClearExcluding(const ncm::ProgramId *ids, size_t num_ids) {
                 /* Invalidate all entries unless excluded. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry &entry = this->entries[i];
+                    Entry &entry = m_entries[i];
 
                     if (!this->IsExcluded(entry.owner_id, ids, num_ids)) {
                         entry.is_valid = false;
@@ -132,7 +132,7 @@ namespace ams::lr {
             }
 
             size_t GetCapacity() const {
-                return this->capacity;
+                return m_capacity;
             }
     };
 

@@ -25,16 +25,16 @@ namespace ams::lr {
     /* Helper function. */
     void ContentLocationResolverImpl::GetContentStoragePath(Path *out, ncm::ContentId content_id) {
         static_assert(sizeof(lr::Path) == sizeof(ncm::Path));
-        this->content_storage.GetPath(reinterpret_cast<ncm::Path *>(out), content_id);
+        m_content_storage.GetPath(reinterpret_cast<ncm::Path *>(out), content_id);
     }
 
     Result ContentLocationResolverImpl::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
         /* Use a redirection if present. */
-        R_SUCCEED_IF(this->program_redirector.FindRedirection(out.GetPointer(), id));
+        R_SUCCEED_IF(m_program_redirector.FindRedirection(out.GetPointer(), id));
 
         /* Find the latest program content for the program id. */
         ncm::ContentId program_content_id;
-        R_TRY_CATCH(this->content_meta_database.GetLatestProgram(std::addressof(program_content_id), id)) {
+        R_TRY_CATCH(m_content_meta_database.GetLatestProgram(std::addressof(program_content_id), id)) {
             R_CONVERT(ncm::ResultContentMetaNotFound, lr::ResultProgramNotFound())
         } R_END_TRY_CATCH;
 
@@ -45,24 +45,24 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::RedirectProgramPath(const Path &path, ncm::ProgramId id) {
-        this->program_redirector.SetRedirection(id, path);
+        m_program_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->app_control_redirector.FindRedirection(out.GetPointer(), id), lr::ResultControlNotFound());
+        R_UNLESS(m_app_control_redirector.FindRedirection(out.GetPointer(), id), lr::ResultControlNotFound());
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->html_docs_redirector.FindRedirection(out.GetPointer(), id), lr::ResultHtmlDocumentNotFound());
+        R_UNLESS(m_html_docs_redirector.FindRedirection(out.GetPointer(), id), lr::ResultHtmlDocumentNotFound());
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
         /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
-        R_TRY(this->content_meta_database.GetLatestData(std::addressof(data_content_id), id));
+        R_TRY(m_content_meta_database.GetLatestData(std::addressof(data_content_id), id));
 
         /* Obtain the content path. */
         this->GetContentStoragePath(out.GetPointer(), data_content_id);
@@ -71,37 +71,37 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->app_control_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_app_control_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->app_control_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_app_control_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->html_docs_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_html_docs_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->html_docs_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_html_docs_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->legal_info_redirector.FindRedirection(out.GetPointer(), id), lr::ResultLegalInformationNotFound());
+        R_UNLESS(m_legal_info_redirector.FindRedirection(out.GetPointer(), id), lr::ResultLegalInformationNotFound());
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->legal_info_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_legal_info_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->legal_info_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_legal_info_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
@@ -109,12 +109,12 @@ namespace ams::lr {
         /* Obtain content meta database and content storage objects for this resolver's storage. */
         ncm::ContentMetaDatabase meta_db;
         ncm::ContentStorage storage;
-        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), this->storage_id));
-        R_TRY(ncm::OpenContentStorage(std::addressof(storage), this->storage_id));
+        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), m_storage_id));
+        R_TRY(ncm::OpenContentStorage(std::addressof(storage), m_storage_id));
 
         /* Store the acquired objects. */
-        this->content_meta_database = std::move(meta_db);
-        this->content_storage       = std::move(storage);
+        m_content_meta_database = std::move(meta_db);
+        m_content_storage       = std::move(storage);
 
         /* Remove any existing redirections. */
         this->ClearRedirections();
@@ -123,12 +123,12 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
@@ -143,28 +143,28 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::EraseProgramRedirection(ncm::ProgramId id) {
-        this->program_redirector.EraseRedirection(id);
+        m_program_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::EraseApplicationControlRedirection(ncm::ProgramId id) {
-        this->app_control_redirector.EraseRedirection(id);
+        m_app_control_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) {
-        this->html_docs_redirector.EraseRedirection(id);
+        m_html_docs_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::EraseApplicationLegalInformationRedirection(ncm::ProgramId id) {
-        this->legal_info_redirector.EraseRedirection(id);
+        m_legal_info_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
         /* Use a redirection if present. */
-        R_SUCCEED_IF(this->debug_program_redirector.FindRedirection(out.GetPointer(), id));
+        R_SUCCEED_IF(m_debug_program_redirector.FindRedirection(out.GetPointer(), id));
 
         /* Otherwise find the path for the program id. */
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
@@ -175,22 +175,22 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) {
-        this->debug_program_redirector.SetRedirection(id, path);
+        m_debug_program_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) {
-        this->debug_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_debug_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->debug_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_debug_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result ContentLocationResolverImpl::EraseProgramRedirectionForDebug(ncm::ProgramId id) {
-        this->debug_program_redirector.EraseRedirection(id);
+        m_debug_program_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 

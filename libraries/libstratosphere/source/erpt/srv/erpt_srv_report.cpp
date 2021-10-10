@@ -34,20 +34,20 @@ namespace ams::erpt::srv {
         return report_name;
     }
 
-    Report::Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd) : record(r), redirect_to_sd_card(redirect_to_sd) {
-        this->record->AddReference();
+    Report::Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd) : m_record(r), m_redirect_to_sd_card(redirect_to_sd) {
+        m_record->AddReference();
     }
 
     Report::~Report() {
         this->CloseStream();
-        if (this->record->RemoveReference()) {
+        if (m_record->RemoveReference()) {
             this->DeleteStream(this->FileName().name);
-            delete this->record;
+            delete m_record;
         }
     }
 
     ReportFileName Report::FileName() const {
-        return FileName(this->record->info.id, this->redirect_to_sd_card);
+        return FileName(m_record->m_info.id, m_redirect_to_sd_card);
     }
 
     Result Report::Open(ReportOpenType type) {
@@ -71,13 +71,13 @@ namespace ams::erpt::srv {
     }
 
     Result Report::GetFlags(ReportFlagSet *out) const {
-        *out = this->record->info.flags;
+        *out = m_record->m_info.flags;
         return ResultSuccess();
     }
 
     Result Report::SetFlags(ReportFlagSet flags) {
-        if (((~this->record->info.flags) & flags).IsAnySet()) {
-            this->record->info.flags |= flags;
+        if (((~m_record->m_info.flags) & flags).IsAnySet()) {
+            m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
         return ResultSuccess();

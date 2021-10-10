@@ -21,17 +21,17 @@ namespace ams::erpt::srv {
     class RefCount {
         private:
             static constexpr u32 MaxReferenceCount = 1000;
-            std::atomic<u32> ref_count;
+            std::atomic<u32> m_ref_count;
         public:
-            RefCount() : ref_count(0) { /* ... */ }
+            RefCount() : m_ref_count(0) { /* ... */ }
 
             void AddReference() {
-                const auto prev = this->ref_count.fetch_add(1);
+                const auto prev = m_ref_count.fetch_add(1);
                 AMS_ABORT_UNLESS(prev <= MaxReferenceCount);
             }
 
             bool RemoveReference() {
-                auto prev = this->ref_count.fetch_sub(1);
+                auto prev = m_ref_count.fetch_sub(1);
                 AMS_ABORT_UNLESS(prev != 0);
                 return prev == 1;
             }

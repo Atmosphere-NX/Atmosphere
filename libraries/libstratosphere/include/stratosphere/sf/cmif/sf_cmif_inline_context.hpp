@@ -26,10 +26,10 @@ namespace ams::sf::cmif {
 
     class ScopedInlineContextChanger {
         private:
-            InlineContext prev_ctx;
+            InlineContext m_prev_ctx;
         public:
-            ALWAYS_INLINE explicit ScopedInlineContextChanger(InlineContext new_ctx) : prev_ctx(SetInlineContext(new_ctx)) { /* ... */ }
-            ~ScopedInlineContextChanger() { SetInlineContext(this->prev_ctx); }
+            ALWAYS_INLINE explicit ScopedInlineContextChanger(InlineContext new_ctx) : m_prev_ctx(SetInlineContext(new_ctx)) { /* ... */ }
+            ~ScopedInlineContextChanger() { SetInlineContext(m_prev_ctx); }
     };
 
 }

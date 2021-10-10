@@ -25,25 +25,25 @@ namespace ams::i2c::driver {
         NON_MOVEABLE(I2cDeviceProperty);
         AMS_DDSF_CASTABLE_TRAITS(ams::i2c::driver::I2cDeviceProperty, ::ams::ddsf::IDevice);
         private:
-            u16 address;
-            AddressingMode addressing_mode;
-            util::IntrusiveListNode device_property_list_node;
+            u16 m_address;
+            AddressingMode m_addressing_mode;
+            util::IntrusiveListNode m_device_property_list_node;
         public:
-            using DevicePropertyListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::device_property_list_node>;
+            using DevicePropertyListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::m_device_property_list_node>;
             using DevicePropertyList       = typename DevicePropertyListTraits::ListType;
-            friend class util::IntrusiveList<I2cDeviceProperty, util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::device_property_list_node>>;
+            friend class util::IntrusiveList<I2cDeviceProperty, util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::m_device_property_list_node>>;
         public:
-            I2cDeviceProperty() : IDevice(false), address(0), addressing_mode(AddressingMode_SevenBit), device_property_list_node() { /* ... */ }
-            I2cDeviceProperty(u16 addr, AddressingMode m) : IDevice(false), address(addr), addressing_mode(m), device_property_list_node() { /* ... */ }
+            I2cDeviceProperty() : IDevice(false), m_address(0), m_addressing_mode(AddressingMode_SevenBit), m_device_property_list_node() { /* ... */ }
+            I2cDeviceProperty(u16 addr, AddressingMode m) : IDevice(false), m_address(addr), m_addressing_mode(m), m_device_property_list_node() { /* ... */ }
 
             virtual ~I2cDeviceProperty() { /* ... */ }
 
             u16 GetAddress() const {
-                return this->address;
+                return m_address;
             }
 
             AddressingMode GetAddressingMode() const {
-                return this->addressing_mode;
+                return m_addressing_mode;
             }
     };
 

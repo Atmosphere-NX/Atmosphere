@@ -28,28 +28,28 @@ namespace ams::os::impl {
 
     class InternalConditionVariable {
         private:
-            InternalConditionVariableImpl impl;
+            InternalConditionVariableImpl m_impl;
         public:
-            constexpr InternalConditionVariable() : impl() { /* ... */ }
+            constexpr InternalConditionVariable() : m_impl() { /* ... */ }
 
             constexpr void Initialize() {
-                this->impl.Initialize();
+                m_impl.Initialize();
             }
 
             void Signal() {
-                this->impl.Signal();
+                m_impl.Signal();
             }
 
             void Broadcast() {
-                this->impl.Broadcast();
+                m_impl.Broadcast();
             }
 
             void Wait(InternalCriticalSection *cs) {
-                this->impl.Wait(cs);
+                m_impl.Wait(cs);
             }
 
             ConditionVariableStatus TimedWait(InternalCriticalSection *cs, const TimeoutHelper &timeout_helper) {
-                return this->impl.TimedWait(cs, timeout_helper);
+                return m_impl.TimedWait(cs, timeout_helper);
             }
     };
 

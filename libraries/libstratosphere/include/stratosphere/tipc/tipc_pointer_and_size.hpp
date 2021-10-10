@@ -20,23 +20,23 @@ namespace ams::tipc {
 
     class PointerAndSize {
         private:
-            uintptr_t pointer;
-            size_t size;
+            uintptr_t m_pointer;
+            size_t m_size;
         public:
-            constexpr PointerAndSize() : pointer(0), size(0) { /* ... */ }
-            constexpr PointerAndSize(uintptr_t ptr, size_t sz) : pointer(ptr), size(sz) { /* ... */ }
+            constexpr PointerAndSize() : m_pointer(0), m_size(0) { /* ... */ }
+            constexpr PointerAndSize(uintptr_t ptr, size_t sz) : m_pointer(ptr), m_size(sz) { /* ... */ }
             constexpr PointerAndSize(void *ptr, size_t sz) : PointerAndSize(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
 
             constexpr ALWAYS_INLINE void *GetPointer() const {
-                return reinterpret_cast<void *>(this->pointer);
+                return reinterpret_cast<void *>(m_pointer);
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
-                return this->pointer;
+                return m_pointer;
             }
 
             constexpr ALWAYS_INLINE size_t GetSize() const {
-                return this->size;
+                return m_size;
             }
     };
 

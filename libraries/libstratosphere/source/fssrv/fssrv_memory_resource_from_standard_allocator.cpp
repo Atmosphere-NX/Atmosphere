@@ -17,28 +17,28 @@
 
 namespace ams::fssrv {
 
-    MemoryResourceFromStandardAllocator::MemoryResourceFromStandardAllocator(mem::StandardAllocator *allocator) : allocator(allocator), mutex() {
-        this->current_free_size = this->allocator->GetTotalFreeSize();
+    MemoryResourceFromStandardAllocator::MemoryResourceFromStandardAllocator(mem::StandardAllocator *allocator) : m_allocator(allocator), m_mutex() {
+        m_current_free_size = m_allocator->GetTotalFreeSize();
         this->ClearPeak();
     }
 
     void MemoryResourceFromStandardAllocator::ClearPeak() {
-        std::scoped_lock lk(this->mutex);
-        this->peak_free_size      = this->current_free_size;
-        this->peak_allocated_size = 0;
+        std::scoped_lock lk(m_mutex);
+        m_peak_free_size      = m_current_free_size;
+        m_peak_allocated_size = 0;
     }
 
     void *MemoryResourceFromStandardAllocator::AllocateImpl(size_t size, size_t align) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
-        void *p = this->allocator->Allocate(size, align);
+        void *p = m_allocator->Allocate(size, align);
 
         if (p != nullptr) {
-            this->current_free_size -= this->allocator->GetSizeOf(p);
-            this->peak_free_size = std::min(this->peak_free_size, this->current_free_size);
+            m_current_free_size -= m_allocator->GetSizeOf(p);
+            m_peak_free_size = std::min(m_peak_free_size, m_current_free_size);
         }
 
-        this->peak_allocated_size = std::max(this->peak_allocated_size, size);
+        m_peak_allocated_size = std::max(m_peak_allocated_size, size);
 
         return p;
     }
@@ -46,10 +46,10 @@ namespace ams::fssrv {
     void MemoryResourceFromStandardAllocator::DeallocateImpl(void *p, size_t size, size_t align) {
         AMS_UNUSED(size, align);
 
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
-        this->current_free_size += this->allocator->GetSizeOf(p);
-        this->allocator->Free(p);
+        m_current_free_size += m_allocator->GetSizeOf(p);
+        m_allocator->Free(p);
     }
 
 }

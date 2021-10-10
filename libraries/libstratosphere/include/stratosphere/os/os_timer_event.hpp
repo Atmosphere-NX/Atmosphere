@@ -25,54 +25,54 @@ namespace ams::os {
         NON_COPYABLE(TimerEvent);
         NON_MOVEABLE(TimerEvent);
         private:
-            TimerEventType event;
+            TimerEventType m_event;
         public:
             explicit TimerEvent(EventClearMode clear_mode) {
-                InitializeTimerEvent(std::addressof(this->event), clear_mode);
+                InitializeTimerEvent(std::addressof(m_event), clear_mode);
             }
 
             ~TimerEvent() {
-                FinalizeTimerEvent(std::addressof(this->event));
+                FinalizeTimerEvent(std::addressof(m_event));
             }
 
             void StartOneShot(TimeSpan first_time) {
-                return StartOneShotTimerEvent(std::addressof(this->event), first_time);
+                return StartOneShotTimerEvent(std::addressof(m_event), first_time);
             }
 
             void StartPeriodic(TimeSpan first_time, TimeSpan interval) {
-                return StartPeriodicTimerEvent(std::addressof(this->event), first_time, interval);
+                return StartPeriodicTimerEvent(std::addressof(m_event), first_time, interval);
             }
 
             void Stop() {
-                return StopTimerEvent(std::addressof(this->event));
+                return StopTimerEvent(std::addressof(m_event));
             }
 
             void Wait() {
-                return WaitTimerEvent(std::addressof(this->event));
+                return WaitTimerEvent(std::addressof(m_event));
             }
 
             bool TryWait() {
-                return TryWaitTimerEvent(std::addressof(this->event));
+                return TryWaitTimerEvent(std::addressof(m_event));
             }
 
             void Signal() {
-                return SignalTimerEvent(std::addressof(this->event));
+                return SignalTimerEvent(std::addressof(m_event));
             }
 
             void Clear() {
-                return ClearTimerEvent(std::addressof(this->event));
+                return ClearTimerEvent(std::addressof(m_event));
             }
 
             operator TimerEventType &() {
-                return this->event;
+                return m_event;
             }
 
             operator const TimerEventType &() const {
-                return this->event;
+                return m_event;
             }
 
             TimerEventType *GetBase() {
-                return std::addressof(this->event);
+                return std::addressof(m_event);
             }
     };
 

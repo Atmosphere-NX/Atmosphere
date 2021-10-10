@@ -20,21 +20,20 @@ namespace ams::ncm {
 
     class PlaceHolderAccessor {
         private:
-            class CacheEntry {
-                public:
-                    PlaceHolderId id;
-                    fs::FileHandle handle;
-                    u64 counter;
+            struct CacheEntry {
+                PlaceHolderId id;
+                fs::FileHandle handle;
+                u64 counter;
             };
 
             static constexpr size_t MaxCacheEntries = 0x2;
         private:
-            std::array<CacheEntry, MaxCacheEntries> caches;
-            PathString *root_path;
-            u64 cur_counter;
-            os::SdkMutex cache_mutex;
-            MakePlaceHolderPathFunction make_placeholder_path_func;
-            bool delay_flush;
+            std::array<CacheEntry, MaxCacheEntries> m_caches;
+            PathString *m_root_path;
+            u64 m_cur_counter;
+            os::SdkMutex m_cache_mutex;
+            MakePlaceHolderPathFunction m_make_placeholder_path_func;
+            bool m_delay_flush;
         private:
             Result Open(fs::FileHandle *out_handle, PlaceHolderId placeholder_id);
             bool LoadFromCache(fs::FileHandle *out_handle, PlaceHolderId placeholder_id);
@@ -43,9 +42,9 @@ namespace ams::ncm {
             CacheEntry *FindInCache(PlaceHolderId placeholder_id);
             CacheEntry *GetFreeEntry();;
         public:
-            PlaceHolderAccessor() : cur_counter(0), cache_mutex(), delay_flush(false) {
+            PlaceHolderAccessor() : m_cur_counter(0), m_cache_mutex(), m_delay_flush(false) {
                 for (size_t i = 0; i < MaxCacheEntries; i++) {
-                    caches[i].id = InvalidPlaceHolderId;
+                    m_caches[i].id = InvalidPlaceHolderId;
                 }
             }
 
@@ -56,9 +55,9 @@ namespace ams::ncm {
         public:
             /* API. */
             void Initialize(PathString *root, MakePlaceHolderPathFunction path_func, bool delay_flush) {
-                this->root_path = root;
-                this->make_placeholder_path_func = path_func;
-                this->delay_flush = delay_flush;
+                m_root_path = root;
+                m_make_placeholder_path_func = path_func;
+                m_delay_flush = delay_flush;
             }
 
             Result CreatePlaceHolderFile(PlaceHolderId placeholder_id, s64 size);
@@ -73,7 +72,7 @@ namespace ams::ncm {
             void InvalidateAll();
 
             Result EnsurePlaceHolderDirectory(PlaceHolderId placeholder_id);
-            size_t GetHierarchicalDirectoryDepth() const { return GetHierarchicalPlaceHolderDirectoryDepth(this->make_placeholder_path_func); }
+            size_t GetHierarchicalDirectoryDepth() const { return GetHierarchicalPlaceHolderDirectoryDepth(m_make_placeholder_path_func); }
     };
 
 }

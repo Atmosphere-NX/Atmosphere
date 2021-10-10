@@ -20,13 +20,13 @@ namespace ams::os::impl {
 
     class RngManager {
         private:
-            util::TinyMT mt;
-            os::SdkMutex lock;
-            bool initialized;
+            util::TinyMT m_mt;
+            os::SdkMutex m_lock;
+            bool m_initialized;
         private:
             void Initialize();
         public:
-            constexpr RngManager() : mt(), lock(), initialized() { /* ... */ }
+            constexpr RngManager() : m_mt(), m_lock(), m_initialized() { /* ... */ }
         public:
             u64 GenerateRandomU64();
     };

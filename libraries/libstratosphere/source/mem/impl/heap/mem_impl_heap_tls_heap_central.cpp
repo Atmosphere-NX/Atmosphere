@@ -301,35 +301,35 @@ namespace ams::mem::impl::heap {
         AMS_ASSERT(TlsHeapStatic::IsPageAligned(size));
 
         /* Clear lists. */
-        ListClearLink(std::addressof(this->spanpage_list));
-        ListClearLink(std::addressof(this->full_spanpage_list));
-        for (size_t i = 0; i < util::size(this->freelists); i++) {
-            ListClearLink(std::addressof(this->freelists[i]));
+        ListClearLink(std::addressof(m_spanpage_list));
+        ListClearLink(std::addressof(m_full_spanpage_list));
+        for (size_t i = 0; i < util::size(m_freelists); i++) {
+            ListClearLink(std::addressof(m_freelists[i]));
         }
-        for (size_t i = 0; i < util::size(this->freelists_bitmap); i++) {
-            this->freelists_bitmap[i] = 0;
+        for (size_t i = 0; i < util::size(m_freelists_bitmap); i++) {
+            m_freelists_bitmap[i] = 0;
         }
-        for (size_t i = 0; i < util::size(this->smallmem_lists); i++) {
-            ListClearLink(std::addressof(this->smallmem_lists[i]));
+        for (size_t i = 0; i < util::size(m_smallmem_lists); i++) {
+            ListClearLink(std::addressof(m_smallmem_lists[i]));
         }
 
         /* Setup span table. */
         const size_t total_pages         = TlsHeapStatic::GetPageIndex(size);
         const size_t n                   = total_pages * sizeof(Span *);
-        this->span_table.total_pages     = total_pages;
-        this->span_table.page_to_span    = reinterpret_cast<Span **>(static_cast<u8 *>(start) + sizeof(*this));
-        this->span_table.pageclass_cache = static_cast<u8 *>(start) + sizeof(*this) + n;
+        m_span_table.total_pages     = total_pages;
+        m_span_table.page_to_span    = reinterpret_cast<Span **>(static_cast<u8 *>(start) + sizeof(*this));
+        m_span_table.pageclass_cache = static_cast<u8 *>(start) + sizeof(*this) + n;
 
-        u8 *meta_end = this->span_table.pageclass_cache + total_pages;
+        u8 *meta_end = m_span_table.pageclass_cache + total_pages;
         size_t num_physical_page_flags;
         if (use_virtual_memory) {
-            this->physical_page_flags = meta_end;
+            m_physical_page_flags = meta_end;
             const uintptr_t phys_start = TlsHeapStatic::AlignDownPhysicalPage(reinterpret_cast<uintptr_t>(start));
             const uintptr_t phys_end   = TlsHeapStatic::AlignUpPhysicalPage(reinterpret_cast<uintptr_t>(start) + size);
             num_physical_page_flags    = TlsHeapStatic::GetPhysicalPageIndex(phys_end - phys_start);
             meta_end = TlsHeapStatic::AlignUpPage(meta_end + num_physical_page_flags);
         } else {
-            this->physical_page_flags = nullptr;
+            m_physical_page_flags = nullptr;
             num_physical_page_flags   = 0;
             meta_end = TlsHeapStatic::AlignUpPage(meta_end);
         }
@@ -340,19 +340,19 @@ namespace ams::mem::impl::heap {
             size_t phys_size = phys_end - reinterpret_cast<uintptr_t>(start);
             phys_size = std::min(phys_size, size);
             if (auto err = AllocatePhysicalMemory(start, phys_size); err != 0) {
-                this->span_table.total_pages = 0;
+                m_span_table.total_pages = 0;
                 return err;
             }
-            std::memset(this->physical_page_flags, 0, num_physical_page_flags);
-            std::memset(this->physical_page_flags, 1, TlsHeapStatic::GetPhysicalPageIndex(phys_end) - TlsHeapStatic::GetPhysicalPageIndex(reinterpret_cast<uintptr_t>(start)));
+            std::memset(m_physical_page_flags, 0, num_physical_page_flags);
+            std::memset(m_physical_page_flags, 1, TlsHeapStatic::GetPhysicalPageIndex(phys_end) - TlsHeapStatic::GetPhysicalPageIndex(reinterpret_cast<uintptr_t>(start)));
         }
 
-        std::memset(this->span_table.page_to_span, 0, n);
-        std::memset(this->span_table.pageclass_cache, 0, total_pages);
+        std::memset(m_span_table.page_to_span, 0, n);
+        std::memset(m_span_table.pageclass_cache, 0, total_pages);
 
         SpanPage *span_page = reinterpret_cast<SpanPage *>(meta_end);
         InitializeSpanPage(span_page);
-        ListInsertAfter(std::addressof(this->spanpage_list), span_page);
+        ListInsertAfter(std::addressof(m_spanpage_list), span_page);
 
         meta_end += TlsHeapStatic::PageSize;
         AMS_ASSERT(TlsHeapStatic::IsPageAligned(meta_end));
@@ -387,28 +387,28 @@ namespace ams::mem::impl::heap {
         span_admin->status            = Span::Status_InUseSystem;
         span_admin->id                = 0;
 
-        RegisterSpan(std::addressof(this->span_table), span_admin);
-        RegisterSpan(std::addressof(this->span_table), std::addressof(span_page->info.span_of_spanpage));
-        RegisterSpan(std::addressof(this->span_table), span);
+        RegisterSpan(std::addressof(m_span_table), span_admin);
+        RegisterSpan(std::addressof(m_span_table), std::addressof(span_page->info.span_of_spanpage));
+        RegisterSpan(std::addressof(m_span_table), span);
 
         this->AddToFreeBlockList(span);
 
-        this->num_threads = 1;
-        this->static_thread_quota = std::min((this->span_table.total_pages * TlsHeapStatic::PageSize) / sizeof(void *), 2_MB);
-        this->dynamic_thread_quota = this->static_thread_quota;
-        this->use_virtual_memory = use_virtual_memory;
+        m_num_threads = 1;
+        m_static_thread_quota = std::min((m_span_table.total_pages * TlsHeapStatic::PageSize) / sizeof(void *), 2_MB);
+        m_dynamic_thread_quota = m_static_thread_quota;
+        m_use_virtual_memory = use_virtual_memory;
 
         return 0;
     }
 
     bool TlsHeapCentral::IsClean() {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
 
         this->MakeFreeSpan(std::numeric_limits<size_t>::max());
 
         Span *span = this->GetFirstSpan();
-        Span *next = GetNextSpan(std::addressof(this->span_table), span);
-        if (next && next->status == Span::Status_InFreeList && GetNextSpan(std::addressof(this->span_table), next) == nullptr) {
+        Span *next = GetNextSpan(std::addressof(m_span_table), span);
+        if (next && next->status == Span::Status_InFreeList && GetNextSpan(std::addressof(m_span_table), next) == nullptr) {
             return true;
         } else {
             return false;
@@ -424,12 +424,12 @@ namespace ams::mem::impl::heap {
 
         /* NOTE: This function uses locks unsafely (unscoped) */
 
-        this->lock.Lock();
+        m_lock.Lock();
 
-        Span *ptr_span = GetSpanFromPointer(std::addressof(this->span_table), ptr);
+        Span *ptr_span = GetSpanFromPointer(std::addressof(m_span_table), ptr);
         if (!ptr_span) {
             AMS_ASSERT(ptr_span != nullptr);
-            this->lock.Unlock();
+            m_lock.Unlock();
             return EFAULT;
         }
 
@@ -442,16 +442,16 @@ namespace ams::mem::impl::heap {
                     span->num_pages = ptr_span->num_pages - num_pages;
                     span->id = 0;
                     span->status = Span::Status_InUse;
-                    ChangeRangeOfSpan(std::addressof(this->span_table), ptr_span, ptr_span->start.u, num_pages);
-                    RegisterSpan(std::addressof(this->span_table), span);
+                    ChangeRangeOfSpan(std::addressof(m_span_table), ptr_span, ptr_span->start.u, num_pages);
+                    RegisterSpan(std::addressof(m_span_table), span);
                     this->FreePagesImpl(span);
                 }
             } else {
-                Span *next_span = GetNextSpan(std::addressof(this->span_table), ptr_span);
+                Span *next_span = GetNextSpan(std::addressof(m_span_table), ptr_span);
                 if (!next_span || next_span->status != Span::Status_InFreeList || next_span->num_pages < num_pages - ptr_span->num_pages) {
-                    this->lock.Unlock();
+                    m_lock.Unlock();
 
-                    this->lock.Lock();
+                    m_lock.Lock();
 
                     Span *span = this->AllocatePagesImpl(num_pages);
                     if (span) {
@@ -461,44 +461,44 @@ namespace ams::mem::impl::heap {
                         *p = nullptr;
                     }
 
-                    this->lock.Unlock();
+                    m_lock.Unlock();
                     if (*p == nullptr) {
                         return ENOMEM;
                     }
 
                     std::memcpy(*p, ptr, num_pages * TlsHeapStatic::PageSize);
 
-                    this->lock.Lock();
+                    m_lock.Lock();
                     this->FreePagesImpl(ptr_span);
-                    this->lock.Unlock();
+                    m_lock.Unlock();
 
                     return 0;
                 }
 
-                if (this->use_virtual_memory && this->AllocatePhysical(next_span->start.p, (num_pages - ptr_span->num_pages) * TlsHeapStatic::PageSize)) {
-                    this->lock.Unlock();
+                if (m_use_virtual_memory && this->AllocatePhysical(next_span->start.p, (num_pages - ptr_span->num_pages) * TlsHeapStatic::PageSize)) {
+                    m_lock.Unlock();
                     return ENOMEM;
                 }
 
                 this->RemoveFromFreeBlockList(next_span);
                 if (next_span->num_pages == num_pages - ptr_span->num_pages) {
-                    UnregisterSpan(std::addressof(this->span_table), next_span);
-                    ChangeRangeOfSpan(std::addressof(this->span_table), ptr_span, ptr_span->start.u, num_pages);
+                    UnregisterSpan(std::addressof(m_span_table), next_span);
+                    ChangeRangeOfSpan(std::addressof(m_span_table), ptr_span, ptr_span->start.u, num_pages);
                     SpanPage *sp = GetSpanPage(next_span);
                     this->FreeSpanToSpanPage(next_span, sp);
                     this->DestroySpanPageIfEmpty(sp, false);
                 } else {
                     const uintptr_t new_end = ptr_span->start.u + num_pages * TlsHeapStatic::PageSize;
                     const size_t new_num_pages = next_span->num_pages - (num_pages - ptr_span->num_pages);
-                    ChangeRangeOfSpan(std::addressof(this->span_table), next_span, new_end, new_num_pages);
-                    ChangeRangeOfSpan(std::addressof(this->span_table), ptr_span, ptr_span->start.u, num_pages);
+                    ChangeRangeOfSpan(std::addressof(m_span_table), next_span, new_end, new_num_pages);
+                    ChangeRangeOfSpan(std::addressof(m_span_table), ptr_span, ptr_span->start.u, num_pages);
                     this->MergeIntoFreeList(next_span);
                 }
             }
         }
 
         *p = ptr;
-        this->lock.Unlock();
+        m_lock.Unlock();
         return 0;
     }
 
@@ -509,9 +509,9 @@ namespace ams::mem::impl::heap {
 
         AMS_ASSERT(size <= MaxSize);
 
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
 
-        Span *ptr_span = GetSpanFromPointer(std::addressof(this->span_table), ptr);
+        Span *ptr_span = GetSpanFromPointer(std::addressof(m_span_table), ptr);
         if (!ptr_span) {
             AMS_ASSERT(ptr_span != nullptr);
             return EFAULT;
@@ -528,8 +528,8 @@ namespace ams::mem::impl::heap {
                 span->num_pages = ptr_span->num_pages - num_pages;
                 span->id = 0;
                 span->status = Span::Status_InUse;
-                ChangeRangeOfSpan(std::addressof(this->span_table), ptr_span, ptr_span->start.u, num_pages);
-                RegisterSpan(std::addressof(this->span_table), span);
+                ChangeRangeOfSpan(std::addressof(m_span_table), ptr_span, ptr_span->start.u, num_pages);
+                RegisterSpan(std::addressof(m_span_table), span);
                 this->FreePagesImpl(span);
             }
         }
@@ -543,9 +543,9 @@ namespace ams::mem::impl::heap {
         size_t hash        = 0;
 
         {
-            std::scoped_lock lk(this->lock);
+            std::scoped_lock lk(m_lock);
 
-            for (Span *span = GetSpanFromPointer(std::addressof(this->span_table), this); span != nullptr; span = GetNextSpan(std::addressof(this->span_table), span)) {
+            for (Span *span = GetSpanFromPointer(std::addressof(m_span_table), this); span != nullptr; span = GetNextSpan(std::addressof(m_span_table), span)) {
                 if (span->status != Span::Status_InUse) {
                     continue;
                 }
@@ -594,7 +594,7 @@ namespace ams::mem::impl::heap {
         }
         AMS_ASSERT(span->page_class == 0);
 
-        if (this->use_virtual_memory && this->AllocatePhysical(span->start.p, TlsHeapStatic::PageSize) != 0) {
+        if (m_use_virtual_memory && this->AllocatePhysical(span->start.p, TlsHeapStatic::PageSize) != 0) {
             return nullptr;
         }
 
@@ -604,7 +604,7 @@ namespace ams::mem::impl::heap {
         Span *new_span = GetSpanPageSpan(sp);
         if (span->num_pages == 1) {
             this->RemoveFromFreeBlockList(span);
-            MigrateSpan(std::addressof(this->span_table), span, new_span);
+            MigrateSpan(std::addressof(m_span_table), span, new_span);
             AMS_ASSERT(new_span->num_pages == 1);
             new_span->status = Span::Status_InUseSystem;
 
@@ -620,15 +620,15 @@ namespace ams::mem::impl::heap {
             if (span->num_pages - 1 < FreeListCount) {
                 this->RemoveFromFreeBlockList(span);
             }
-            ChangeRangeOfSpan(std::addressof(this->span_table), span, span->start.u + TlsHeapStatic::PageSize, span->num_pages - 1);
-            RegisterSpan(std::addressof(this->span_table), new_span);
+            ChangeRangeOfSpan(std::addressof(m_span_table), span, span->start.u + TlsHeapStatic::PageSize, span->num_pages - 1);
+            RegisterSpan(std::addressof(m_span_table), new_span);
 
             if (span->num_pages < FreeListCount) {
                 this->AddToFreeBlockList(span);
             }
         }
 
-        ListInsertAfter(std::addressof(this->spanpage_list), sp);
+        ListInsertAfter(std::addressof(m_spanpage_list), sp);
         return sp;
     }
 
@@ -648,7 +648,7 @@ namespace ams::mem::impl::heap {
 
         if (sp->info.free_count == 0) {
             ListRemoveSelf(sp);
-            ListInsertAfter(std::addressof(this->full_spanpage_list), sp);
+            ListInsertAfter(std::addressof(m_full_spanpage_list), sp);
         }
 
         return span;
@@ -671,10 +671,10 @@ namespace ams::mem::impl::heap {
 
 
         if (remaining_pages >= FreeListCount) {
-            ChangeRangeOfSpan(std::addressof(this->span_table), span, old_start, remaining_pages);
+            ChangeRangeOfSpan(std::addressof(m_span_table), span, old_start, remaining_pages);
         } else {
             this->RemoveFromFreeBlockList(span);
-            ChangeRangeOfSpan(std::addressof(this->span_table), span, old_start, remaining_pages);
+            ChangeRangeOfSpan(std::addressof(m_span_table), span, old_start, remaining_pages);
             this->AddToFreeBlockList(span);
         }
 
@@ -686,22 +686,22 @@ namespace ams::mem::impl::heap {
         new_span->aux.large_clear.zero = 0;
         span->aux.large_clear.zero = 0;
 
-        if (this->use_virtual_memory && this->AllocatePhysical(new_span->start.p, new_span->num_pages * TlsHeapStatic::PageSize) != 0) {
+        if (m_use_virtual_memory && this->AllocatePhysical(new_span->start.p, new_span->num_pages * TlsHeapStatic::PageSize) != 0) {
             new_span->status = Span::Status_InFreeList;
             this->MergeIntoFreeList(new_span);
             return nullptr;
         }
 
-        RegisterSpan(std::addressof(this->span_table), new_span);
+        RegisterSpan(std::addressof(m_span_table), new_span);
         return new_span;
     }
 
     void TlsHeapCentral::MergeFreeSpans(Span *span, Span *span_to_merge, uintptr_t start) {
         const size_t total_pages = span->num_pages + span_to_merge->num_pages;
-        UnregisterSpan(std::addressof(this->span_table), span_to_merge);
+        UnregisterSpan(std::addressof(m_span_table), span_to_merge);
         SpanPage *span_page = GetSpanPage(span_to_merge);
         this->FreeSpanToSpanPage(span_to_merge, span_page);
-        ChangeRangeOfSpan(std::addressof(this->span_table), span, start, total_pages);
+        ChangeRangeOfSpan(std::addressof(m_span_table), span, start, total_pages);
     }
 
     bool TlsHeapCentral::DestroySpanPageIfEmpty(SpanPage *sp, bool full) {
@@ -716,7 +716,7 @@ namespace ams::mem::impl::heap {
             size_t first = this->FreeListFirstNonEmpty(0);
 
             while (first < FreeListCount) {
-                for (Span *target = ListGetNext(std::addressof(this->freelists[first])); target; target = ListGetNext(target)) {
+                for (Span *target = ListGetNext(std::addressof(m_freelists[first])); target; target = ListGetNext(target)) {
                     AMS_ASSERT(target->status == Span::Status_InFreeList);
 
                     SpanPage *target_sp = GetSpanPage(target);
@@ -724,7 +724,7 @@ namespace ams::mem::impl::heap {
                         Span *new_span = this->AllocateSpanFromSpanPage(sp);
                         AMS_ASSERT(new_span != nullptr);
 
-                        MigrateSpan(std::addressof(this->span_table), target, new_span);
+                        MigrateSpan(std::addressof(m_span_table), target, new_span);
                         this->FreeSpanToSpanPage(target, target_sp);
                         this->DestroySpanPageIfEmpty(target_sp, full);
                     }
@@ -743,7 +743,7 @@ namespace ams::mem::impl::heap {
             if (other_sp->info.free_count > 0x10) {
                 target = other_sp;
             } else {
-                for (target = ListGetNext(std::addressof(this->spanpage_list)); target && (target == sp || !target->info.free_count); target = ListGetNext(target)) {
+                for (target = ListGetNext(std::addressof(m_spanpage_list)); target && (target == sp || !target->info.free_count); target = ListGetNext(target)) {
                     /* ... */
                 }
                 if (!target) {
@@ -757,7 +757,7 @@ namespace ams::mem::impl::heap {
             Span *new_span = this->AllocateSpanFromSpanPage(target);
             AMS_ASSERT(new_span != nullptr);
 
-            MigrateSpan(std::addressof(this->span_table), GetSpanPageSpan(sp), new_span);
+            MigrateSpan(std::addressof(m_span_table), GetSpanPageSpan(sp), new_span);
 
             ListRemoveSelf(sp);
             this->FreePagesImpl(new_span);
@@ -768,15 +768,15 @@ namespace ams::mem::impl::heap {
     }
 
     Span *TlsHeapCentral::GetFirstSpan() const {
-        Span *span = GetSpanFromPointer(std::addressof(this->span_table), reinterpret_cast<const void *>(this));
+        Span *span = GetSpanFromPointer(std::addressof(m_span_table), reinterpret_cast<const void *>(this));
         AMS_ASSERT(span != nullptr);
-        return GetNextSpan(std::addressof(this->span_table), span);
+        return GetNextSpan(std::addressof(m_span_table), span);
     }
 
     Span *TlsHeapCentral::MakeFreeSpan(size_t num_pages) {
         while (true) {
             SpanPage *sp;
-            for (sp = ListGetNext(std::addressof(this->spanpage_list)); sp && !this->DestroySpanPageIfEmpty(sp, true); sp = ListGetNext(sp)) {
+            for (sp = ListGetNext(std::addressof(m_spanpage_list)); sp && !this->DestroySpanPageIfEmpty(sp, true); sp = ListGetNext(sp)) {
                 /* ... */
             }
             if (!sp) {
@@ -798,7 +798,7 @@ namespace ams::mem::impl::heap {
             }
         }
 
-        Span *cur  = ListGetNext(std::addressof(this->freelists[start]));
+        Span *cur  = ListGetNext(std::addressof(m_freelists[start]));
         Span *best = cur;
         if (start == FreeListCount - 1) {
             if (num_pages >= FreeListCount) {
@@ -849,7 +849,7 @@ namespace ams::mem::impl::heap {
         sp->info.alloc_bitmap &= ~(TopBit >> span_idx);
         if ((++(sp->info.free_count)) == 1) {
             ListRemoveSelf(sp);
-            ListInsertAfter(std::addressof(this->spanpage_list), sp);
+            ListInsertAfter(std::addressof(m_spanpage_list), sp);
         }
     }
 
@@ -861,8 +861,8 @@ namespace ams::mem::impl::heap {
         AMS_ASSERT(!span->list_prev && !span->list_next);
         AMS_ASSERT(span->status != Span::Status_InUse);
 
-        Span *prev_span = GetPrevSpan(std::addressof(this->span_table), span);
-        Span *next_span = GetNextSpan(std::addressof(this->span_table), span);
+        Span *prev_span = GetPrevSpan(std::addressof(m_span_table), span);
+        Span *next_span = GetNextSpan(std::addressof(m_span_table), span);
         const bool prev_free  = prev_span && prev_span->status == Span::Status_InFreeList;
         const bool prev_small = prev_span && prev_span->num_pages < FreeListCount;
         const bool next_free  = next_span && next_span->status == Span::Status_InFreeList;
@@ -936,16 +936,16 @@ namespace ams::mem::impl::heap {
         AMS_ASSERT(i < idx_end);
 
         if (i + 1 == idx_end) {
-            if (this->physical_page_flags[i]) {
-                this->physical_page_flags[i] = 2;
+            if (m_physical_page_flags[i]) {
+                m_physical_page_flags[i] = 2;
             }
         } else {
-            const void *set_flag = ::memchr(std::addressof(this->physical_page_flags[i]), 1, idx_end - i);
+            const void *set_flag = ::memchr(std::addressof(m_physical_page_flags[i]), 1, idx_end - i);
             if (set_flag) {
-                const uintptr_t set_idx = reinterpret_cast<const u8 *>(set_flag) - this->physical_page_flags;
-                const void *lst_flag = ::memrchr(std::addressof(this->physical_page_flags[set_idx]), 1, idx_end - set_idx);
-                const uintptr_t lst_idx = (lst_flag) ? (reinterpret_cast<const u8 *>(lst_flag) - this->physical_page_flags + 1) : idx_end;
-                std::memset(std::addressof(this->physical_page_flags[set_idx]), 2, lst_idx - set_idx);
+                const uintptr_t set_idx = reinterpret_cast<const u8 *>(set_flag) - m_physical_page_flags;
+                const void *lst_flag = ::memrchr(std::addressof(m_physical_page_flags[set_idx]), 1, idx_end - set_idx);
+                const uintptr_t lst_idx = (lst_flag) ? (reinterpret_cast<const u8 *>(lst_flag) - m_physical_page_flags + 1) : idx_end;
+                std::memset(std::addressof(m_physical_page_flags[set_idx]), 2, lst_idx - set_idx);
             }
         }
 
@@ -953,7 +953,7 @@ namespace ams::mem::impl::heap {
     }
 
     Span *TlsHeapCentral::AllocatePagesImpl(size_t num_pages) {
-        if (num_pages >= this->span_table.total_pages / 4) {
+        if (num_pages >= m_span_table.total_pages / 4) {
             this->MakeFreeSpan(std::numeric_limits<size_t>::max());
         }
 
@@ -968,7 +968,7 @@ namespace ams::mem::impl::heap {
         AMS_ASSERT(span->status == Span::Status_InFreeList);
 
         if (num_pages == span->num_pages) {
-            if (this->use_virtual_memory && this->AllocatePhysical(span->start.p, span->num_pages * TlsHeapStatic::PageSize) != 0) {
+            if (m_use_virtual_memory && this->AllocatePhysical(span->start.p, span->num_pages * TlsHeapStatic::PageSize) != 0) {
                 return nullptr;
             } else {
                 this->RemoveFromFreeBlockList(span);
@@ -990,7 +990,7 @@ namespace ams::mem::impl::heap {
             auto new_span_guard = SCOPE_GUARD { this->FreeSpanToSpanPage(new_span); };
 
             /* Allocating the new span potentially invalidates the span we were looking at, so find the span for it in the table. */
-            span = GetSpanFromPointer(std::addressof(this->span_table), prev_ptr);
+            span = GetSpanFromPointer(std::addressof(m_span_table), prev_ptr);
             const size_t cur_pages = span->num_pages;
 
             /* If the span was partially allocated, we need to find a new one that's big enough. */
@@ -1010,7 +1010,7 @@ namespace ams::mem::impl::heap {
                 new_span_guard.Cancel();
 
                 return this->SplitSpan(span, num_pages, new_span);
-            } else if (this->use_virtual_memory && this->AllocatePhysical(span->start.p, span->num_pages * TlsHeapStatic::PageSize) != 0) {
+            } else if (m_use_virtual_memory && this->AllocatePhysical(span->start.p, span->num_pages * TlsHeapStatic::PageSize) != 0) {
                 return nullptr;
             } else {
                 this->RemoveFromFreeBlockList(span);
@@ -1023,7 +1023,7 @@ namespace ams::mem::impl::heap {
     }
 
     Span *TlsHeapCentral::AllocatePagesWithBigAlignImpl(size_t num_pages, size_t align) {
-        if (num_pages >= this->span_table.total_pages / 4) {
+        if (num_pages >= m_span_table.total_pages / 4) {
             this->MakeFreeSpan(std::numeric_limits<size_t>::max());
         }
 
@@ -1054,7 +1054,7 @@ namespace ams::mem::impl::heap {
         AMS_ASSERT(span->status == Span::Status_InFreeList);
 
         const uintptr_t aligned_start = util::AlignUp(span->start.u, align);
-        if (this->use_virtual_memory && this->AllocatePhysical(reinterpret_cast<void *>(aligned_start), num_pages * TlsHeapStatic::PageSize) != 0) {
+        if (m_use_virtual_memory && this->AllocatePhysical(reinterpret_cast<void *>(aligned_start), num_pages * TlsHeapStatic::PageSize) != 0) {
             this->FreeSpanToSpanPage(before_span);
             this->FreeSpanToSpanPage(after_span);
             return nullptr;
@@ -1072,9 +1072,9 @@ namespace ams::mem::impl::heap {
 
             span->status = Span::Status_InUse;
             span->aux.large_clear.zero = 0;
-            ChangeRangeOfSpan(std::addressof(this->span_table), span, aligned_start, num_pages);
+            ChangeRangeOfSpan(std::addressof(m_span_table), span, aligned_start, num_pages);
 
-            RegisterSpan(std::addressof(this->span_table), after_span);
+            RegisterSpan(std::addressof(m_span_table), after_span);
             this->MergeIntoFreeList(after_span);
 
             return span;
@@ -1100,10 +1100,10 @@ namespace ams::mem::impl::heap {
                 span->status = Span::Status_InUse;
                 span->aux.large_clear.zero = 0;
 
-                ChangeRangeOfSpan(std::addressof(this->span_table), span, aligned_start, num_pages);
+                ChangeRangeOfSpan(std::addressof(m_span_table), span, aligned_start, num_pages);
 
-                RegisterSpan(std::addressof(this->span_table), before_span);
-                RegisterSpan(std::addressof(this->span_table), after_span);
+                RegisterSpan(std::addressof(m_span_table), before_span);
+                RegisterSpan(std::addressof(m_span_table), after_span);
                 this->MergeIntoFreeList(before_span);
                 this->MergeIntoFreeList(after_span);
 
@@ -1117,9 +1117,9 @@ namespace ams::mem::impl::heap {
                 span->status = Span::Status_InUse;
                 span->aux.large_clear.zero = 0;
 
-                ChangeRangeOfSpan(std::addressof(this->span_table), span, aligned_start, num_pages);
+                ChangeRangeOfSpan(std::addressof(m_span_table), span, aligned_start, num_pages);
 
-                RegisterSpan(std::addressof(this->span_table), before_span);
+                RegisterSpan(std::addressof(m_span_table), before_span);
                 this->MergeIntoFreeList(before_span);
 
                 return span;
@@ -1134,7 +1134,7 @@ namespace ams::mem::impl::heap {
             /* Double free error. */
         } else {
             span->status = Span::Status_InFreeList;
-            if (this->use_virtual_memory) {
+            if (m_use_virtual_memory) {
                 const uintptr_t start     = span->start.u;
                 const uintptr_t end       = span->start.u + (span->num_pages * TlsHeapStatic::PageSize);
                 uintptr_t start_alignup   = TlsHeapStatic::AlignUpPhysicalPage(start);
@@ -1166,7 +1166,7 @@ namespace ams::mem::impl::heap {
     void *TlsHeapCentral::CacheSmallMemoryImpl(size_t cls, size_t align, bool for_system) {
         AMS_ASSERT(cls != 0 && cls < TlsHeapStatic::NumClassInfo);
 
-        Span *span = ListGetNext(std::addressof(this->smallmem_lists[cls]));
+        Span *span = ListGetNext(std::addressof(m_smallmem_lists[cls]));
         while (true) {
             if (for_system) {
                 while (span && span->status != Span::Status_InUseSystem) {
@@ -1200,8 +1200,8 @@ namespace ams::mem::impl::heap {
 
         Span *new_span = this->AllocatePagesImpl(TlsHeapStatic::GetNumPages(cls));
         if (new_span) {
-            SpanToSmallMemorySpan(std::addressof(this->span_table), new_span, cls);
-            ListInsertAfter(std::addressof(this->smallmem_lists[cls]), new_span);
+            SpanToSmallMemorySpan(std::addressof(m_span_table), new_span, cls);
+            ListInsertAfter(std::addressof(m_smallmem_lists[cls]), new_span);
             InitSmallMemorySpan(new_span, cls, for_system, 0);
 
             void *mem = AllocateSmallMemory(new_span);
@@ -1212,7 +1212,7 @@ namespace ams::mem::impl::heap {
         } else {
             for (size_t cur_cls = cls; cur_cls < TlsHeapStatic::NumClassInfo; cur_cls++) {
                 if (align == 0 || util::IsAligned(TlsHeapStatic::GetChunkSize(cur_cls), align)) {
-                    span = ListGetNext(std::addressof(this->smallmem_lists[cur_cls]));
+                    span = ListGetNext(std::addressof(m_smallmem_lists[cur_cls]));
                     if (for_system) {
                         while (span && span->status != Span::Status_InUseSystem) {
                             span = ListGetNext(span);
@@ -1242,10 +1242,10 @@ namespace ams::mem::impl::heap {
     }
 
     errno_t TlsHeapCentral::UncacheSmallMemoryImpl(void *ptr) {
-        Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr);
+        Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr);
         if (span && span->page_class) {
             if (!span->aux.small.objects) {
-                ListInsertAfter(std::addressof(this->smallmem_lists[span->page_class]), span);
+                ListInsertAfter(std::addressof(m_smallmem_lists[span->page_class]), span);
             }
 
             ReleaseSmallMemory(span, ptr);
@@ -1254,7 +1254,7 @@ namespace ams::mem::impl::heap {
                 span->aux.small.objects = nullptr;
                 ListRemoveSelf(span);
                 AMS_ASSERT(span->page_class != 0);
-                SmallMemorySpanToSpan(std::addressof(this->span_table), span);
+                SmallMemorySpanToSpan(std::addressof(m_span_table), span);
                 this->FreePagesImpl(span);
             }
 
@@ -1272,7 +1272,7 @@ namespace ams::mem::impl::heap {
         Span::SmallMemory head = {};
         Span::SmallMemory *hptr = std::addressof(head);
 
-        Span *span = ListGetNext(std::addressof(this->smallmem_lists[*cls]));
+        Span *span = ListGetNext(std::addressof(m_smallmem_lists[*cls]));
         size_t n = 0;
 
         while (span) {
@@ -1304,8 +1304,8 @@ namespace ams::mem::impl::heap {
 
         Span *new_span = this->AllocatePagesImpl(TlsHeapStatic::GetNumPages(*cls));
         if (new_span) {
-            SpanToSmallMemorySpan(std::addressof(this->span_table), new_span, *cls);
-            ListInsertAfter(std::addressof(this->smallmem_lists[*cls]), new_span);
+            SpanToSmallMemorySpan(std::addressof(m_span_table), new_span, *cls);
+            ListInsertAfter(std::addressof(m_smallmem_lists[*cls]), new_span);
             InitSmallMemorySpan(new_span, *cls, false, cpu_id);
 
             MangledSmallMemory memlist;
@@ -1329,7 +1329,7 @@ namespace ams::mem::impl::heap {
         } else {
             for (size_t cur_cls = *cls; cur_cls < TlsHeapStatic::NumClassInfo; cur_cls++) {
                 if (align == 0 || util::IsAligned(TlsHeapStatic::GetChunkSize(cur_cls), align)) {
-                    span = ListGetNext(std::addressof(this->smallmem_lists[cur_cls]));
+                    span = ListGetNext(std::addressof(m_smallmem_lists[cur_cls]));
 
                     while (span && (span->status == Span::Status_InUseSystem)) {
                         span = ListGetNext(span);
@@ -1363,7 +1363,7 @@ namespace ams::mem::impl::heap {
     errno_t TlsHeapCentral::WalkAllocatedPointersImpl(HeapWalkCallback callback, void *user_data) {
         errno_t err = ENOENT;
 
-        for (Span *span = GetSpanFromPointer(std::addressof(this->span_table), this); span != nullptr; span = GetNextSpan(std::addressof(this->span_table), span)) {
+        for (Span *span = GetSpanFromPointer(std::addressof(m_span_table), this); span != nullptr; span = GetNextSpan(std::addressof(m_span_table), span)) {
             if (span->status != Span::Status_InUse) {
                 continue;
             }
@@ -1416,7 +1416,7 @@ namespace ams::mem::impl::heap {
     }
 
     errno_t TlsHeapCentral::GetMappedMemStatsImpl(size_t *out_free_size, size_t *out_max_allocatable_size) {
-        if (!this->use_virtual_memory) {
+        if (!m_use_virtual_memory) {
             return EOPNOTSUPP;
         }
 
@@ -1434,7 +1434,7 @@ namespace ams::mem::impl::heap {
         size_t num_free_spans       = 0;
         size_t wip_allocatable_size = 0;
 
-        Span *span = GetSpanFromPointer(std::addressof(this->span_table), this);
+        Span *span = GetSpanFromPointer(std::addressof(m_span_table), this);
         while (span) {
             const size_t size = span->num_pages * TlsHeapStatic::PageSize;
 
@@ -1463,13 +1463,13 @@ namespace ams::mem::impl::heap {
                 wip_allocatable_size += size;
             }
 
-            span = GetNextSpan(std::addressof(this->span_table), span);
+            span = GetNextSpan(std::addressof(m_span_table), span);
         }
 
         max_allocatable_size = std::max(max_allocatable_size, wip_allocatable_size);
 
         bool sp_full = true;
-        for (SpanPage *sp = ListGetNext(std::addressof(this->spanpage_list)); sp != nullptr; sp = ListGetNext(sp)) {
+        for (SpanPage *sp = ListGetNext(std::addressof(m_spanpage_list)); sp != nullptr; sp = ListGetNext(sp)) {
             if (sp->info.is_sticky == 0 && CanAllocateSpan(sp)) {
                 sp_full = false;
                 break;

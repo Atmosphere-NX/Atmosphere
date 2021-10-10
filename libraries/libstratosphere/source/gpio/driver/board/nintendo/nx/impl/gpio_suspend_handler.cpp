@@ -20,7 +20,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     void SuspendHandler::Initialize(uintptr_t gpio_vaddr) {
         /* Set our gpio virtual address. */
-        this->gpio_virtual_address = gpio_vaddr;
+        m_gpio_virtual_address = gpio_vaddr;
 
         /* Ensure that we can use the wec library. */
         ams::wec::Initialize();

@@ -55,24 +55,24 @@ namespace ams::fssystem {
 
             class ContinuousReadingInfo {
                 private:
-                    size_t read_size;
-                    s32 skip_count;
-                    bool done;
+                    size_t m_read_size;
+                    s32 m_skip_count;
+                    bool m_done;
                 public:
-                    constexpr ContinuousReadingInfo() : read_size(), skip_count(), done() { /* ... */ }
+                    constexpr ContinuousReadingInfo() : m_read_size(), m_skip_count(), m_done() { /* ... */ }
 
-                    constexpr void Reset() { this->read_size = 0; this->skip_count = 0; this->done = false; }
+                    constexpr void Reset() { m_read_size = 0; m_skip_count = 0; m_done = false; }
 
-                    constexpr void SetSkipCount(s32 count) { AMS_ASSERT(count >= 0); this->skip_count = count; }
-                    constexpr s32 GetSkipCount() const { return this->skip_count; }
-                    constexpr bool CheckNeedScan() { return (--this->skip_count) <= 0; }
+                    constexpr void SetSkipCount(s32 count) { AMS_ASSERT(count >= 0); m_skip_count = count; }
+                    constexpr s32 GetSkipCount() const { return m_skip_count; }
+                    constexpr bool CheckNeedScan() { return (--m_skip_count) <= 0; }
 
-                    constexpr void Done() { this->read_size = 0; this->done = true; }
-                    constexpr bool IsDone() const { return this->done; }
+                    constexpr void Done() { m_read_size = 0; m_done = true; }
+                    constexpr bool IsDone() const { return m_done; }
 
-                    constexpr void SetReadSize(size_t size) { this->read_size = size; }
-                    constexpr size_t GetReadSize() const { return this->read_size; }
-                    constexpr bool CanDo() const { return this->read_size > 0; }
+                    constexpr void SetReadSize(size_t size) { m_read_size = size; }
+                    constexpr size_t GetReadSize() const { return m_read_size; }
+                    constexpr bool CanDo() const { return m_read_size > 0; }
             };
 
             using IAllocator = MemoryResource;
@@ -80,60 +80,60 @@ namespace ams::fssystem {
             class NodeBuffer {
                 NON_COPYABLE(NodeBuffer);
                 private:
-                    IAllocator *allocator;
-                    void *header;
+                    IAllocator *m_allocator;
+                    void *m_header;
                 public:
-                    NodeBuffer() : allocator(), header() { /* ... */ }
+                    NodeBuffer() : m_allocator(), m_header() { /* ... */ }
 
                     ~NodeBuffer() {
-                        AMS_ASSERT(this->header == nullptr);
+                        AMS_ASSERT(m_header == nullptr);
                     }
 
-                    NodeBuffer(NodeBuffer &&rhs) : allocator(rhs.allocator), header(rhs.allocator) {
-                        rhs.allocator = nullptr;
-                        rhs.header = nullptr;
+                    NodeBuffer(NodeBuffer &&rhs) : m_allocator(rhs.m_allocator), m_header(rhs.m_allocator) {
+                        rhs.m_allocator = nullptr;
+                        rhs.m_header = nullptr;
                     }
 
                     NodeBuffer &operator=(NodeBuffer &&rhs) {
                         if (this != std::addressof(rhs)) {
-                            AMS_ASSERT(this->header == nullptr);
+                            AMS_ASSERT(m_header == nullptr);
 
-                            this->allocator = rhs.allocator;
-                            this->header    = rhs.header;
+                            m_allocator = rhs.m_allocator;
+                            m_header    = rhs.m_header;
 
-                            rhs.allocator   = nullptr;
-                            rhs.header      = nullptr;
+                            rhs.m_allocator   = nullptr;
+                            rhs.m_header      = nullptr;
                         }
                         return *this;
                     }
 
                     bool Allocate(IAllocator *allocator, size_t node_size) {
-                        AMS_ASSERT(this->header == nullptr);
+                        AMS_ASSERT(m_header == nullptr);
 
-                        this->allocator = allocator;
-                        this->header    = allocator->Allocate(node_size, sizeof(s64));
+                        m_allocator = allocator;
+                        m_header    = allocator->Allocate(node_size, sizeof(s64));
 
-                        AMS_ASSERT(util::IsAligned(this->header, sizeof(s64)));
+                        AMS_ASSERT(util::IsAligned(m_header, sizeof(s64)));
 
-                        return this->header != nullptr;
+                        return m_header != nullptr;
                     }
 
                     void Free(size_t node_size) {
-                        if (this->header) {
-                            this->allocator->Deallocate(this->header, node_size);
-                            this->header = nullptr;
+                        if (m_header) {
+                            m_allocator->Deallocate(m_header, node_size);
+                            m_header = nullptr;
                         }
-                        this->allocator = nullptr;
+                        m_allocator = nullptr;
                     }
 
                     void FillZero(size_t node_size) const {
-                        if (this->header) {
-                            std::memset(this->header, 0, node_size);
+                        if (m_header) {
+                            std::memset(m_header, 0, node_size);
                         }
                     }
 
                     NodeHeader *Get() const {
-                        return reinterpret_cast<NodeHeader *>(this->header);
+                        return reinterpret_cast<NodeHeader *>(m_header);
                     }
 
                     NodeHeader *operator->() const { return this->Get(); }
@@ -142,11 +142,11 @@ namespace ams::fssystem {
                     T *Get() const {
                         static_assert(util::is_pod<T>::value);
                         static_assert(sizeof(T) == sizeof(NodeHeader));
-                        return reinterpret_cast<T *>(this->header);
+                        return reinterpret_cast<T *>(m_header);
                     }
 
                     IAllocator *GetAllocator() const {
-                        return this->allocator;
+                        return m_allocator;
                     }
             };
         private:
@@ -205,43 +205,43 @@ namespace ams::fssystem {
                 return GetEntrySetCount(node_size, entry_size, entry_count) * static_cast<s64>(node_size);
             }
         private:
-            mutable fs::SubStorage node_storage;
-            mutable fs::SubStorage entry_storage;
-            NodeBuffer node_l1;
-            size_t node_size;
-            size_t entry_size;
-            s32 entry_count;
-            s32 offset_count;
-            s32 entry_set_count;
-            s64 start_offset;
-            s64 end_offset;
+            mutable fs::SubStorage m_node_storage;
+            mutable fs::SubStorage m_entry_storage;
+            NodeBuffer m_node_l1;
+            size_t m_node_size;
+            size_t m_entry_size;
+            s32 m_entry_count;
+            s32 m_offset_count;
+            s32 m_entry_set_count;
+            s64 m_start_offset;
+            s64 m_end_offset;
         public:
-            BucketTree() : node_storage(), entry_storage(), node_l1(), node_size(), entry_size(), entry_count(), offset_count(), entry_set_count(), start_offset(), end_offset() { /* ... */ }
+            BucketTree() : m_node_storage(), m_entry_storage(), m_node_l1(), m_node_size(), m_entry_size(), m_entry_count(), m_offset_count(), m_entry_set_count(), m_start_offset(), m_end_offset() { /* ... */ }
             ~BucketTree() { this->Finalize(); }
 
             Result Initialize(IAllocator *allocator, fs::SubStorage node_storage, fs::SubStorage entry_storage, size_t node_size, size_t entry_size, s32 entry_count);
             void Initialize(size_t node_size, s64 end_offset);
             void Finalize();
 
-            bool IsInitialized() const { return this->node_size > 0; }
-            bool IsEmpty() const { return this->entry_size == 0; }
+            bool IsInitialized() const { return m_node_size > 0; }
+            bool IsEmpty() const { return m_entry_size == 0; }
 
             Result Find(Visitor *visitor, s64 virtual_address) const;
             Result InvalidateCache();
 
-            s32 GetEntryCount() const { return this->entry_count; }
-            IAllocator *GetAllocator() const { return this->node_l1.GetAllocator(); }
+            s32 GetEntryCount() const { return m_entry_count; }
+            IAllocator *GetAllocator() const { return m_node_l1.GetAllocator(); }
 
-            s64 GetStart() const { return this->start_offset; }
-            s64 GetEnd() const { return this->end_offset; }
-            s64 GetSize() const { return this->end_offset - this->start_offset; }
+            s64 GetStart() const { return m_start_offset; }
+            s64 GetEnd() const { return m_end_offset; }
+            s64 GetSize() const { return m_end_offset - m_start_offset; }
 
             bool Includes(s64 offset) const {
-                return this->start_offset <= offset && offset < this->end_offset;
+                return m_start_offset <= offset && offset < m_end_offset;
             }
 
             bool Includes(s64 offset, s64 size) const {
-                return size > 0 && this->start_offset <= offset && size <= this->end_offset - offset;
+                return size > 0 && m_start_offset <= offset && size <= m_end_offset - offset;
             }
         private:
             template<typename EntryType>
@@ -256,11 +256,11 @@ namespace ams::fssystem {
             template<typename EntryType>
             Result ScanContinuousReading(ContinuousReadingInfo *out_info, const ContinuousReadingParam<EntryType> &param) const;
 
-            bool IsExistL2() const { return this->offset_count < this->entry_set_count; }
-            bool IsExistOffsetL2OnL1() const { return this->IsExistL2() && this->node_l1->count < this->offset_count; }
+            bool IsExistL2() const { return m_offset_count < m_entry_set_count; }
+            bool IsExistOffsetL2OnL1() const { return this->IsExistL2() && m_node_l1->count < m_offset_count; }
 
             s64 GetEntrySetIndex(s32 node_index, s32 offset_index) const {
-                return (this->offset_count - this->node_l1->count) + (this->offset_count * node_index) + offset_index;
+                return (m_offset_count - m_node_l1->count) + (m_offset_count * node_index) + offset_index;
             }
     };
 
@@ -282,24 +282,24 @@ namespace ams::fssystem {
             };
             static_assert(util::is_pod<EntrySetHeader>::value);
         private:
-            const BucketTree *tree;
-            void *entry;
-            s32 entry_index;
-            s32 entry_set_count;
-            EntrySetHeader entry_set;
+            const BucketTree *m_tree;
+            void *m_entry;
+            s32 m_entry_index;
+            s32 m_entry_set_count;
+            EntrySetHeader m_entry_set;
         public:
-            constexpr Visitor() : tree(), entry(), entry_index(-1), entry_set_count(), entry_set{} { /* ... */ }
+            constexpr Visitor() : m_tree(), m_entry(), m_entry_index(-1), m_entry_set_count(), m_entry_set{} { /* ... */ }
             ~Visitor() {
-                if (this->entry != nullptr) {
-                    this->tree->GetAllocator()->Deallocate(this->entry, this->tree->entry_size);
-                    this->tree  = nullptr;
-                    this->entry = nullptr;
+                if (m_entry != nullptr) {
+                    m_tree->GetAllocator()->Deallocate(m_entry, m_tree->m_entry_size);
+                    m_tree  = nullptr;
+                    m_entry = nullptr;
                 }
             }
 
-            bool IsValid() const { return this->entry_index >= 0; }
-            bool CanMoveNext() const { return this->IsValid() && (this->entry_index + 1 < this->entry_set.info.count || this->entry_set.info.index + 1 < this->entry_set_count); }
-            bool CanMovePrevious() const { return this->IsValid() && (this->entry_index > 0 || this->entry_set.info.index > 0); }
+            bool IsValid() const { return m_entry_index >= 0; }
+            bool CanMoveNext() const { return this->IsValid() && (m_entry_index + 1 < m_entry_set.info.count || m_entry_set.info.index + 1 < m_entry_set_count); }
+            bool CanMovePrevious() const { return this->IsValid() && (m_entry_index > 0 || m_entry_set.info.index > 0); }
 
             Result MoveNext();
             Result MovePrevious();
@@ -307,12 +307,12 @@ namespace ams::fssystem {
             template<typename EntryType>
             Result ScanContinuousReading(ContinuousReadingInfo *out_info, s64 offset, size_t size) const;
 
-            const void *Get() const { AMS_ASSERT(this->IsValid()); return this->entry; }
+            const void *Get() const { AMS_ASSERT(this->IsValid()); return m_entry; }
 
             template<typename T>
-            const T *Get() const { AMS_ASSERT(this->IsValid()); return reinterpret_cast<const T *>(this->entry); }
+            const T *Get() const { AMS_ASSERT(this->IsValid()); return reinterpret_cast<const T *>(m_entry); }
 
-            const BucketTree *GetTree() const { return this->tree; }
+            const BucketTree *GetTree() const { return m_tree; }
         private:
             Result Initialize(const BucketTree *tree);
 

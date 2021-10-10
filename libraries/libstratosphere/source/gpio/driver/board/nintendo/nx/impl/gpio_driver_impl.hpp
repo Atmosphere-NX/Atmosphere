@@ -26,14 +26,14 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     class InterruptEventHandler : public ddsf::IEventHandler {
         private:
-            DriverImpl *driver;
-            os::InterruptName interrupt_name;
-            os::InterruptEventType interrupt_event;
-            int controller_number;
+            DriverImpl *m_driver;
+            os::InterruptName m_interrupt_name;
+            os::InterruptEventType m_interrupt_event;
+            int m_controller_number;
         private:
             bool CheckAndHandleInterrupt(TegraPad &pad);
         public:
-            InterruptEventHandler() : IEventHandler(), driver(nullptr), interrupt_name(), interrupt_event(), controller_number() { /* ... */ }
+            InterruptEventHandler() : IEventHandler(), m_driver(nullptr), m_interrupt_name(), m_interrupt_event(), m_controller_number() { /* ... */ }
 
             void Initialize(DriverImpl *drv, os::InterruptName intr, int ctlr);
 
@@ -46,11 +46,11 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo::nx::impl::DriverImpl, ::ams::gpio::driver::IGpioDriver);
         friend class InterruptEventHandler;
         private:
-            dd::PhysicalAddress gpio_physical_address;
-            uintptr_t gpio_virtual_address;
-            SuspendHandler suspend_handler;
-            TegraPad::InterruptList interrupt_pad_list;
-            mutable os::SdkMutex interrupt_control_mutex;
+            dd::PhysicalAddress m_gpio_physical_address;
+            uintptr_t m_gpio_virtual_address;
+            SuspendHandler m_suspend_handler;
+            TegraPad::InterruptList m_interrupt_pad_list;
+            mutable os::SdkMutex m_interrupt_control_mutex;
         public:
             DriverImpl(dd::PhysicalAddress reg_paddr, size_t size);
 
@@ -76,7 +76,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
 
             virtual os::SdkMutex &GetInterruptControlMutex(const Pad &pad) const override {
                 AMS_UNUSED(pad);
-                return this->interrupt_control_mutex;
+                return m_interrupt_control_mutex;
             }
 
             virtual Result GetDebounceEnabled(bool *out, Pad *pad) const override;
@@ -114,14 +114,14 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
             void AddInterruptPad(TegraPad *pad) {
                 AMS_ASSERT(pad != nullptr);
                 if (!pad->IsLinkedToInterruptBoundPadList()) {
-                    this->interrupt_pad_list.push_back(*pad);
+                    m_interrupt_pad_list.push_back(*pad);
                 }
             }
 
             void RemoveInterruptPad(TegraPad *pad) {
                 AMS_ASSERT(pad != nullptr);
                 if (pad->IsLinkedToInterruptBoundPadList()) {
-                    this->interrupt_pad_list.erase(this->interrupt_pad_list.iterator_to(*pad));
+                    m_interrupt_pad_list.erase(m_interrupt_pad_list.iterator_to(*pad));
                 }
             }
     };

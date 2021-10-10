@@ -27,18 +27,18 @@ namespace ams::os::impl {
 
     class InternalCriticalSection {
         private:
-            InternalCriticalSectionImpl impl;
+            InternalCriticalSectionImpl m_impl;
         public:
-            constexpr InternalCriticalSection() : impl() { /* ... */ }
+            constexpr InternalCriticalSection() : m_impl() { /* ... */ }
 
-            constexpr void Initialize() { this->impl.Initialize(); }
-            constexpr void Finalize()   { this->impl.Finalize(); }
+            constexpr void Initialize() { m_impl.Initialize(); }
+            constexpr void Finalize()   { m_impl.Finalize(); }
 
-            void Enter()    { return this->impl.Enter(); }
-            bool TryEnter() { return this->impl.TryEnter(); }
-            void Leave()    { return this->impl.Leave(); }
+            void Enter()    { return m_impl.Enter(); }
+            bool TryEnter() { return m_impl.TryEnter(); }
+            void Leave()    { return m_impl.Leave(); }
 
-            bool IsLockedByCurrentThread() const { return this->impl.IsLockedByCurrentThread(); }
+            bool IsLockedByCurrentThread() const { return m_impl.IsLockedByCurrentThread(); }
 
             ALWAYS_INLINE void Lock()    { return this->Enter(); }
             ALWAYS_INLINE bool TryLock() { return this->TryEnter(); }
@@ -49,11 +49,11 @@ namespace ams::os::impl {
             ALWAYS_INLINE void unlock()   { return this->Unlock(); }
 
             InternalCriticalSectionImpl *Get() {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
 
             const InternalCriticalSectionImpl *Get() const {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
     };
 

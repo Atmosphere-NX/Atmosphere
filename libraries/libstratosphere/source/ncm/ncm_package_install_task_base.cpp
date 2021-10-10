@@ -19,9 +19,9 @@ namespace ams::ncm {
 
     Result PackageInstallTaskBase::Initialize(const char *package_root_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config) {
         R_TRY(InstallTaskBase::Initialize(storage_id, data, config));
-        this->package_root.Set(package_root_path);
-        this->buffer = buffer;
-        this->buffer_size = buffer_size;
+        m_package_root.Set(package_root_path);
+        m_buffer = buffer;
+        m_buffer_size = buffer_size;
         return ResultSuccess();
     }
 
@@ -45,7 +45,7 @@ namespace ams::ncm {
         while (true) {
             /* Read as much of the remainder of the file as possible. */
             size_t size_read;
-            R_TRY(fs::ReadFile(std::addressof(size_read), file, content_info->written, this->buffer, this->buffer_size));
+            R_TRY(fs::ReadFile(std::addressof(size_read), file, content_info->written, m_buffer, m_buffer_size));
 
             /* There is nothing left to read. */
             if (size_read == 0) {
@@ -53,7 +53,7 @@ namespace ams::ncm {
             }
 
             /* Write the placeholder. */
-            R_TRY(this->WritePlaceHolderBuffer(content_info, this->buffer, size_read));
+            R_TRY(this->WritePlaceHolderBuffer(content_info, m_buffer, size_read));
         }
 
         return ResultSuccess();
@@ -110,25 +110,25 @@ namespace ams::ncm {
     void PackageInstallTaskBase::CreateContentPath(PackagePath *out_path, ContentId content_id) {
         char str[ContentIdStringLength + 1] = {};
         GetStringFromContentId(str, sizeof(str), content_id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".nca");
+        out_path->SetFormat("%s%s%s", m_package_root.Get(), str, ".nca");
     }
 
     void PackageInstallTaskBase::CreateContentMetaPath(PackagePath *out_path, ContentId content_id) {
         char str[ContentIdStringLength + 1] = {};
         GetStringFromContentId(str, sizeof(str), content_id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".cnmt.nca");
+        out_path->SetFormat("%s%s%s", m_package_root.Get(), str, ".cnmt.nca");
     }
 
     void PackageInstallTaskBase::CreateTicketPath(PackagePath *out_path, fs::RightsId id) {
         char str[RightsIdStringLength + 1] = {};
         GetStringFromRightsId(str, sizeof(str), id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".tik");
+        out_path->SetFormat("%s%s%s", m_package_root.Get(), str, ".tik");
     }
 
     void PackageInstallTaskBase::CreateCertificatePath(PackagePath *out_path, fs::RightsId id) {
         char str[RightsIdStringLength + 1] = {};
         GetStringFromRightsId(str, sizeof(str), id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".cert");
+        out_path->SetFormat("%s%s%s", m_package_root.Get(), str, ".cert");
     }
 
 }

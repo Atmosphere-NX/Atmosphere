@@ -37,24 +37,24 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     class Bq24193Driver {
         private:
-            os::SdkMutex mutex;
-            int init_count;
-            i2c::I2cSession i2c_session;
+            os::SdkMutex m_mutex;
+            int m_init_count;
+            i2c::I2cSession m_i2c_session;
         private:
             Result InitializeSession();
         public:
-            Bq24193Driver() : mutex(), init_count(0), i2c_session() {
+            Bq24193Driver() : m_mutex(), m_init_count(0), m_i2c_session() {
                 /* ... */
             }
 
             void Initialize() {
-                std::scoped_lock lk(this->mutex);
-                if ((this->init_count++) == 0) {
+                std::scoped_lock lk(m_mutex);
+                if ((m_init_count++) == 0) {
                     /* Initialize i2c library. */
                     i2c::InitializeEmpty();
 
                     /* Open session. */
-                    R_ABORT_UNLESS(i2c::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Bq24193));
+                    R_ABORT_UNLESS(i2c::OpenSession(std::addressof(m_i2c_session), i2c::DeviceCode_Bq24193));
 
                     /* Initialize session. */
                     R_ABORT_UNLESS(this->InitializeSession());
@@ -62,10 +62,10 @@ namespace ams::powctl::impl::board::nintendo::nx {
             }
 
             void Finalize() {
-                std::scoped_lock lk(this->mutex);
-                if ((--this->init_count) == 0) {
+                std::scoped_lock lk(m_mutex);
+                if ((--m_init_count) == 0) {
                     /* Close session. */
-                    i2c::CloseSession(this->i2c_session);
+                    i2c::CloseSession(m_i2c_session);
 
                     /* Finalize i2c library. */
                     i2c::Finalize();

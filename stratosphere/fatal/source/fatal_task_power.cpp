@@ -53,17 +53,17 @@ namespace ams::fatal::srv {
 
         class RebootTimingObserver {
             private:
-                os::Tick start_tick;
-                TimeSpan interval;
-                bool flag;
+                os::Tick m_start_tick;
+                TimeSpan m_interval;
+                bool m_flag;
             public:
-                RebootTimingObserver(bool flag, TimeSpan iv) : start_tick(os::GetSystemTick()), interval(iv), flag(flag)  {
+                RebootTimingObserver(bool flag, TimeSpan iv) : m_start_tick(os::GetSystemTick()), m_interval(iv), m_flag(flag)  {
                     /* ... */
                 }
 
                 bool IsRebootTiming() const {
                     auto current_tick = os::GetSystemTick();
-                    return this->flag && (current_tick - this->start_tick).ToTimeSpan() >= this->interval;
+                    return m_flag && (current_tick - m_start_tick).ToTimeSpan() >= m_interval;
                 }
         };
 
@@ -114,13 +114,13 @@ namespace ams::fatal::srv {
             /* Check the battery state, and shutdown on low voltage. */
             if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state))) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                 /* Wait a second for the error report task to finish. */
-                this->context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
+                m_context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
                 this->TryShutdown();
                 return;
             }
 
             /* Signal we've checked the battery at least once. */
-            this->context->battery_event->Signal();
+            m_context->battery_event->Signal();
 
             /* Loop querying voltage state every 5 seconds. */
             while (true) {
@@ -148,7 +148,7 @@ namespace ams::fatal::srv {
 
         void PowerButtonObserveTask::WaitForPowerButton() {
             /* Wait up to a second for error report generation to finish. */
-            this->context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
+            m_context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
 
             /* Force a reboot after some time if kiosk unit. */
             const auto &config = GetFatalConfig();

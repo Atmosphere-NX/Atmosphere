@@ -20,7 +20,7 @@ namespace ams::erpt::srv {
 
     class ManagerImpl : public util::IntrusiveListBaseNode<ManagerImpl> {
         private:
-            os::SystemEvent system_event;
+            os::SystemEvent m_system_event;
         public:
             ManagerImpl();
             ~ManagerImpl();

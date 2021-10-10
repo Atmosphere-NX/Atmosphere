@@ -44,9 +44,9 @@ namespace ams::fssrv::fscreator {
         R_UNLESS(size == sizeof(acid_size), fs::ResultInvalidAcidFileSize());
 
         /* Allocate memory for the acid. */
-        u8 *acid = static_cast<u8 *>(this->allocator->Allocate(acid_size));
+        u8 *acid = static_cast<u8 *>(m_allocator->Allocate(acid_size));
         R_UNLESS(acid != nullptr, fs::ResultAllocationFailureInStorageOnNcaCreatorA());
-        ON_SCOPE_EXIT { this->allocator->Deallocate(acid, acid_size); };
+        ON_SCOPE_EXIT { m_allocator->Deallocate(acid, acid_size); };
 
         /* Read the acid. */
         R_TRY(file->Read(std::addressof(size), acid_offset, acid, acid_size, fs::ReadOption()));
@@ -72,7 +72,7 @@ namespace ams::fssrv::fscreator {
         {
             const u8 *sig         = acid + AcidSignOffset;
             const size_t sig_size = static_cast<size_t>(AcidSignSize);
-            const u8 *mod         = fssystem::GetAcidSignatureKeyModulus(this->is_prod, acid_signature_key_generation);
+            const u8 *mod         = fssystem::GetAcidSignatureKeyModulus(m_is_prod, acid_signature_key_generation);
             const size_t mod_size = fssystem::AcidSignatureKeyModulusSize;
             const u8 *exp         = fssystem::GetAcidSignatureKeyPublicExponent();
             const size_t exp_size = fssystem::AcidSignatureKeyPublicExponentSize;
@@ -81,7 +81,7 @@ namespace ams::fssrv::fscreator {
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
             if (!is_signature_valid) {
                 /* If the signature is invalid, then unless program verification is disabled error out. */
-                R_UNLESS(!this->is_enabled_program_verification, fs::ResultAcidVerificationFailed());
+                R_UNLESS(!m_is_enabled_program_verification, fs::ResultAcidVerificationFailed());
 
                 /* If program verification is disabled, then we're fine. */
                 return ResultSuccess();
@@ -104,7 +104,7 @@ namespace ams::fssrv::fscreator {
 
     Result StorageOnNcaCreator::Create(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index, bool verify_header_sign_2) {
         /* Create a fs driver. */
-        fssystem::NcaFileSystemDriver nca_fs_driver(nca_reader, this->allocator, this->buffer_manager);
+        fssystem::NcaFileSystemDriver nca_fs_driver(nca_reader, m_allocator, m_buffer_manager);
 
         /* Open the storage. */
         std::shared_ptr<fs::IStorage> storage;
@@ -122,7 +122,7 @@ namespace ams::fssrv::fscreator {
 
     Result StorageOnNcaCreator::CreateWithPatch(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index, bool verify_header_sign_2) {
         /* Create a fs driver. */
-        fssystem::NcaFileSystemDriver nca_fs_driver(original_nca_reader, current_nca_reader, this->allocator, this->buffer_manager);
+        fssystem::NcaFileSystemDriver nca_fs_driver(original_nca_reader, current_nca_reader, m_allocator, m_buffer_manager);
 
         /* Open the storage. */
         std::shared_ptr<fs::IStorage> storage;
@@ -144,7 +144,7 @@ namespace ams::fssrv::fscreator {
         R_UNLESS(reader != nullptr, fs::ResultAllocationFailureInStorageOnNcaCreatorB());
 
         /* Initialize the reader. */
-        R_TRY(reader->Initialize(std::move(storage), this->nca_crypto_cfg));
+        R_TRY(reader->Initialize(std::move(storage), m_nca_crypto_cfg));
 
         /* Set the output. */
         *out = std::move(reader);
@@ -152,8 +152,8 @@ namespace ams::fssrv::fscreator {
     }
 
     void StorageOnNcaCreator::SetEnabledProgramVerification(bool en) {
-        if (!this->is_prod) {
-            this->is_enabled_program_verification = en;
+        if (!m_is_prod) {
+            m_is_enabled_program_verification = en;
         }
     }
 

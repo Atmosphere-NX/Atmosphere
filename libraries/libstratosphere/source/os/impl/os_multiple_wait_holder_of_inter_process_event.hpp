@@ -21,9 +21,9 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfInterProcessEvent : public MultiWaitHolderOfKernelObject {
         private:
-            InterProcessEventType *event;
+            InterProcessEventType *m_event;
         public:
-            explicit MultiWaitHolderOfInterProcessEvent(InterProcessEventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfInterProcessEvent(InterProcessEventType *e) : m_event(e) { /* ... */ }
 
             /* IsSignaled, GetHandle both implemented. */
             virtual TriBool IsSignaled() const override {
@@ -31,7 +31,7 @@ namespace ams::os::impl {
             }
 
             virtual NativeHandle GetHandle() const override {
-                return this->event->readable_handle;
+                return m_event->readable_handle;
             }
     };
 

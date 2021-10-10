@@ -25,29 +25,29 @@ namespace ams::lr {
         NON_MOVEABLE(LocationResolverImplBase);
         protected:
             /* Location redirectors. */
-            LocationRedirector program_redirector;
-            LocationRedirector debug_program_redirector;
-            LocationRedirector app_control_redirector;
-            LocationRedirector html_docs_redirector;
-            LocationRedirector legal_info_redirector;
+            LocationRedirector m_program_redirector;
+            LocationRedirector m_debug_program_redirector;
+            LocationRedirector m_app_control_redirector;
+            LocationRedirector m_html_docs_redirector;
+            LocationRedirector m_legal_info_redirector;
         protected:
-            LocationResolverImplBase() : program_redirector(), debug_program_redirector(), app_control_redirector(), html_docs_redirector(), legal_info_redirector() { /* ... */ }
+            LocationResolverImplBase() : m_program_redirector(), m_debug_program_redirector(), m_app_control_redirector(), m_html_docs_redirector(), m_legal_info_redirector() { /* ... */ }
         protected:
             /* Helper functions. */
             void ClearRedirections(u32 flags = RedirectionFlags_None) {
-                this->program_redirector.ClearRedirections(flags);
-                this->debug_program_redirector.ClearRedirections(flags);
-                this->app_control_redirector.ClearRedirections(flags);
-                this->html_docs_redirector.ClearRedirections(flags);
-                this->legal_info_redirector.ClearRedirections(flags);
+                m_program_redirector.ClearRedirections(flags);
+                m_debug_program_redirector.ClearRedirections(flags);
+                m_app_control_redirector.ClearRedirections(flags);
+                m_html_docs_redirector.ClearRedirections(flags);
+                m_legal_info_redirector.ClearRedirections(flags);
             }
 
             void ClearRedirections(const ncm::ProgramId *excluding_ids, size_t num_ids) {
-                this->program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
-                this->debug_program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
-                this->app_control_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
-                this->html_docs_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
-                this->legal_info_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                m_program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                m_debug_program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                m_app_control_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                m_html_docs_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                m_legal_info_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
             }
     };
 

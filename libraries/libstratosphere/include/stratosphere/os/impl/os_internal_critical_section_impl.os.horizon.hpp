@@ -33,11 +33,11 @@ namespace ams::os::impl {
 
             friend class InternalConditionVariableImpl;
         private:
-            u32 thread_handle;
+            u32 m_thread_handle;
         public:
-            constexpr InternalCriticalSectionImpl() : thread_handle(svc::InvalidHandle) { /* ... */ }
+            constexpr InternalCriticalSectionImpl() : m_thread_handle(svc::InvalidHandle) { /* ... */ }
 
-            constexpr void Initialize() { this->thread_handle = svc::InvalidHandle; }
+            constexpr void Initialize() { m_thread_handle = svc::InvalidHandle; }
             constexpr void Finalize() { /* ... */ }
 
             void Enter();

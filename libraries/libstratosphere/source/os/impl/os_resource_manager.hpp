@@ -24,20 +24,20 @@ namespace ams::os::impl {
 
     class OsResourceManager {
         private:
-            RngManager  rng_manager{};
-            AslrSpaceManager aslr_space_manager{};
+            RngManager  m_rng_manager{};
+            AslrSpaceManager m_aslr_space_manager{};
             /* TODO */
-            ThreadManager thread_manager{};
+            ThreadManager m_thread_manager{};
             /* TODO */
-            TickManager tick_manager{};
+            TickManager m_tick_manager{};
             /* TODO */
         public:
             OsResourceManager() = default;
 
-            constexpr ALWAYS_INLINE RngManager &GetRngManager() { return this->rng_manager; }
-            constexpr ALWAYS_INLINE AslrSpaceManager &GetAslrSpaceManager() { return this->aslr_space_manager; }
-            constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return this->thread_manager; }
-            constexpr ALWAYS_INLINE TickManager &GetTickManager() { return this->tick_manager; }
+            constexpr ALWAYS_INLINE RngManager &GetRngManager() { return m_rng_manager; }
+            constexpr ALWAYS_INLINE AslrSpaceManager &GetAslrSpaceManager() { return m_aslr_space_manager; }
+            constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return m_thread_manager; }
+            constexpr ALWAYS_INLINE TickManager &GetTickManager() { return m_tick_manager; }
     };
 
     class ResourceManagerHolder {

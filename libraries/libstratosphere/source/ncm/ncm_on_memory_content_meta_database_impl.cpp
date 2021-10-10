@@ -28,7 +28,7 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
+        for (auto entry = m_kvs->begin(); entry != m_kvs->end(); entry++) {
             const ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
@@ -70,7 +70,7 @@ namespace ams::ncm {
         util::optional<ContentMetaKey> found_key = util::nullopt;
 
         /* Find the last key with the desired program id. */
-        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
+        for (auto entry = m_kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != m_kvs->end(); entry++) {
             /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != id) {
                 break;

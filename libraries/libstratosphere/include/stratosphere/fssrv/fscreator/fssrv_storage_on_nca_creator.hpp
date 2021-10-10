@@ -30,15 +30,15 @@ namespace ams::fssrv::fscreator {
         NON_COPYABLE(StorageOnNcaCreator);
         NON_MOVEABLE(StorageOnNcaCreator);
         private:
-            MemoryResource *allocator;
-            fssystem::IBufferManager * const buffer_manager;
-            const fssystem::NcaCryptoConfiguration &nca_crypto_cfg;
-            bool is_prod;
-            bool is_enabled_program_verification;
+            MemoryResource *m_allocator;
+            fssystem::IBufferManager * const m_buffer_manager;
+            const fssystem::NcaCryptoConfiguration &m_nca_crypto_cfg;
+            bool m_is_prod;
+            bool m_is_enabled_program_verification;
         private:
             Result VerifyNcaHeaderSign2(fssystem::NcaReader *nca_reader, fs::IStorage *storage);
         public:
-            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, bool prod, fssystem::IBufferManager *bm) : allocator(mr), buffer_manager(bm), nca_crypto_cfg(cfg), is_prod(prod), is_enabled_program_verification(true) {
+            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, bool prod, fssystem::IBufferManager *bm) : m_allocator(mr), m_buffer_manager(bm), m_nca_crypto_cfg(cfg), m_is_prod(prod), m_is_enabled_program_verification(true) {
                 /* ... */
             }
 

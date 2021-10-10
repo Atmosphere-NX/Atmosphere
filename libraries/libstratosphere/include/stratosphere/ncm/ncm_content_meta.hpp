@@ -118,9 +118,9 @@ namespace ams::ncm {
             using HeaderType = ContentMetaHeaderType;
             using InfoType   = ContentInfoType;
         private:
-            void *data;
-            const size_t size;
-            bool is_header_valid;
+            void *m_data;
+            const size_t m_size;
+            bool m_is_header_valid;
         private:
             static size_t GetExtendedHeaderSize(ContentMetaType type) {
                 switch (type) {
@@ -132,8 +132,8 @@ namespace ams::ncm {
                 }
             }
         protected:
-            constexpr ContentMetaAccessor(const void *d, size_t sz) : data(const_cast<void *>(d)), size(sz), is_header_valid(true) { /* ... */ }
-            constexpr ContentMetaAccessor(void *d, size_t sz) : data(d), size(sz), is_header_valid(false) { /* ... */ }
+            constexpr ContentMetaAccessor(const void *d, size_t sz) : m_data(const_cast<void *>(d)), m_size(sz), m_is_header_valid(true) { /* ... */ }
+            constexpr ContentMetaAccessor(void *d, size_t sz) : m_data(d), m_size(sz), m_is_header_valid(false) { /* ... */ }
 
             template<class NewHeaderType, class NewInfoType>
             static constexpr size_t CalculateSizeImpl(size_t ext_header_size, size_t content_count, size_t content_meta_count, size_t extended_data_size, bool has_digest) {
@@ -145,7 +145,7 @@ namespace ams::ncm {
             }
 
             uintptr_t GetExtendedHeaderAddress() const {
-                return reinterpret_cast<uintptr_t>(this->data) + sizeof(HeaderType);
+                return reinterpret_cast<uintptr_t>(m_data) + sizeof(HeaderType);
             }
 
             uintptr_t GetContentInfoStartAddress() const {
@@ -214,21 +214,21 @@ namespace ams::ncm {
 
         public:
             const void *GetData() const {
-                return this->data;
+                return m_data;
             }
 
             size_t GetSize() const {
-                return this->size;
+                return m_size;
             }
 
             HeaderType *GetWritableHeader() const {
-                AMS_ABORT_UNLESS(this->is_header_valid);
-                return reinterpret_cast<HeaderType *>(this->data);
+                AMS_ABORT_UNLESS(m_is_header_valid);
+                return reinterpret_cast<HeaderType *>(m_data);
             }
 
             const HeaderType *GetHeader() const {
-                AMS_ABORT_UNLESS(this->is_header_valid);
-                return static_cast<const HeaderType *>(this->data);
+                AMS_ABORT_UNLESS(m_is_header_valid);
+                return static_cast<const HeaderType *>(m_data);
             }
 
             ContentMetaKey GetKey() const {

@@ -30,13 +30,13 @@ namespace ams::os::impl {
             static constexpr s32 WaitInvalid   = -3;
             static constexpr s32 WaitCancelled = -2;
             static constexpr s32 WaitTimedOut  = -1;
-            using MultiWaitList = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::multi_wait_node>::ListType;
+            using MultiWaitList = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::m_multi_wait_node>::ListType;
         private:
-            MultiWaitList multi_wait_list;
-            MultiWaitHolderBase *signaled_holder;
-            TimeSpan current_time;
-            InternalCriticalSection cs_wait;
-            MultiWaitTargetImpl target_impl;
+            MultiWaitList m_multi_wait_list;
+            MultiWaitHolderBase *m_signaled_holder;
+            TimeSpan m_current_time;
+            InternalCriticalSection m_cs_wait;
+            MultiWaitTargetImpl m_target_impl;
         private:
             Result WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
             Result WaitAnyHandleImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target);
@@ -76,35 +76,35 @@ namespace ams::os::impl {
 
             /* List management. */
             bool IsEmpty() const {
-                return this->multi_wait_list.empty();
+                return m_multi_wait_list.empty();
             }
 
             void LinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
-                this->multi_wait_list.push_back(holder_base);
+                m_multi_wait_list.push_back(holder_base);
             }
 
             void UnlinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
-                this->multi_wait_list.erase(this->multi_wait_list.iterator_to(holder_base));
+                m_multi_wait_list.erase(m_multi_wait_list.iterator_to(holder_base));
             }
 
             void UnlinkAll() {
                 while (!this->IsEmpty()) {
-                    this->multi_wait_list.front().SetMultiWait(nullptr);
-                    this->multi_wait_list.pop_front();
+                    m_multi_wait_list.front().SetMultiWait(nullptr);
+                    m_multi_wait_list.pop_front();
                 }
             }
 
             void MoveAllFrom(MultiWaitImpl &other) {
                 /* Set ourselves as multi wait for all of the other's holders. */
-                for (auto &w : other.multi_wait_list) {
+                for (auto &w : other.m_multi_wait_list) {
                     w.SetMultiWait(this);
                 }
-                this->multi_wait_list.splice(this->multi_wait_list.end(), other.multi_wait_list);
+                m_multi_wait_list.splice(m_multi_wait_list.end(), other.m_multi_wait_list);
             }
 
             /* Other. */
             TimeSpan GetCurrentTime() const {
-                return this->current_time;
+                return m_current_time;
             }
 
             void SignalAndWakeupThread(MultiWaitHolderBase *holder_base);

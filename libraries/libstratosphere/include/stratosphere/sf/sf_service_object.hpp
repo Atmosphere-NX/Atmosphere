@@ -36,10 +36,10 @@ namespace ams::sf {
 
     class MitmServiceImplBase {
         protected:
-            std::shared_ptr<::Service> forward_service;
-            sm::MitmProcessInfo client_info;
+            std::shared_ptr<::Service> m_forward_service;
+            sm::MitmProcessInfo m_client_info;
         public:
-            MitmServiceImplBase(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : forward_service(std::move(s)), client_info(c) { /* ... */ }
+            MitmServiceImplBase(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : m_forward_service(std::move(s)), m_client_info(c) { /* ... */ }
     };
 
     template<typename T>

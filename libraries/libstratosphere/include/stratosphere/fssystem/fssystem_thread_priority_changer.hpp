@@ -48,9 +48,9 @@ namespace ams::fssystem {
         private:
             static s32 GetThreadPriorityByAccessPriority(AccessMode mode);
         private:
-            ScopedThreadPriorityChanger scoped_changer;
+            ScopedThreadPriorityChanger m_scoped_changer;
         public:
-            ALWAYS_INLINE explicit ScopedThreadPriorityChangerByAccessPriority(AccessMode mode) : scoped_changer(GetThreadPriorityByAccessPriority(mode), ScopedThreadPriorityChanger::Mode::Absolute) {
+            ALWAYS_INLINE explicit ScopedThreadPriorityChangerByAccessPriority(AccessMode mode) : m_scoped_changer(GetThreadPriorityByAccessPriority(mode), ScopedThreadPriorityChanger::Mode::Absolute) {
                 /* ... */
             }
     };

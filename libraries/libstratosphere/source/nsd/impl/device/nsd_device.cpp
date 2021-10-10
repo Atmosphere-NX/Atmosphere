@@ -29,18 +29,20 @@ namespace ams::nsd::impl::device {
     }
 
     const EnvironmentIdentifier &GetEnvironmentIdentifierFromSettings() {
-        std::scoped_lock lk(g_environment_identifier_lock);
+        if (AMS_UNLIKELY(!g_determined_environment_identifier)) {
+            std::scoped_lock lk(g_environment_identifier_lock);
 
-        if (!g_determined_environment_identifier) {
-            /* Check size. */
-            AMS_ABORT_UNLESS(settings::fwdbg::GetSettingsItemValueSize(SettingsName, SettingsKey) != 0);
+            if (AMS_LIKELY(!g_determined_environment_identifier)) {
+                /* Check size. */
+                AMS_ABORT_UNLESS(settings::fwdbg::GetSettingsItemValueSize(SettingsName, SettingsKey) != 0);
 
-            /* Get value. */
-            const size_t size = settings::fwdbg::GetSettingsItemValue(g_environment_identifier.value, EnvironmentIdentifier::Size, SettingsName, SettingsKey);
-            AMS_ABORT_UNLESS(size < EnvironmentIdentifier::Size);
-            AMS_ABORT_UNLESS(g_environment_identifier == EnvironmentIdentifierOfProductDevice || g_environment_identifier == EnvironmentIdentifierOfNotProductDevice);
+                /* Get value. */
+                const size_t size = settings::fwdbg::GetSettingsItemValue(g_environment_identifier.value, EnvironmentIdentifier::Size, SettingsName, SettingsKey);
+                AMS_ABORT_UNLESS(size < EnvironmentIdentifier::Size);
+                AMS_ABORT_UNLESS(g_environment_identifier == EnvironmentIdentifierOfProductDevice || g_environment_identifier == EnvironmentIdentifierOfNotProductDevice);
 
-            g_determined_environment_identifier = true;
+                g_determined_environment_identifier = true;
+            }
         }
 
         return g_environment_identifier;

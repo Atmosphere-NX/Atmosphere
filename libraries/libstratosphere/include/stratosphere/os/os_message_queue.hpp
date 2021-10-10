@@ -25,76 +25,76 @@ namespace ams::os {
         NON_COPYABLE(MessageQueue);
         NON_MOVEABLE(MessageQueue);
         private:
-            MessageQueueType mq;
+            MessageQueueType m_mq;
         public:
             explicit MessageQueue(uintptr_t *buf, size_t count) {
-                InitializeMessageQueue(std::addressof(this->mq), buf, count);
+                InitializeMessageQueue(std::addressof(m_mq), buf, count);
             }
 
-            ~MessageQueue() { FinalizeMessageQueue(std::addressof(this->mq)); }
+            ~MessageQueue() { FinalizeMessageQueue(std::addressof(m_mq)); }
 
             /* Sending (FIFO functionality) */
             void Send(uintptr_t data) {
-                return SendMessageQueue(std::addressof(this->mq), data);
+                return SendMessageQueue(std::addressof(m_mq), data);
             }
 
             bool TrySend(uintptr_t data) {
-                return TrySendMessageQueue(std::addressof(this->mq), data);
+                return TrySendMessageQueue(std::addressof(m_mq), data);
             }
 
             bool TimedSend(uintptr_t data, TimeSpan timeout) {
-                return TimedSendMessageQueue(std::addressof(this->mq), data, timeout);
+                return TimedSendMessageQueue(std::addressof(m_mq), data, timeout);
             }
 
             /* Jamming (LIFO functionality) */
             void Jam(uintptr_t data) {
-                return JamMessageQueue(std::addressof(this->mq), data);
+                return JamMessageQueue(std::addressof(m_mq), data);
             }
 
             bool TryJam(uintptr_t data) {
-                return TryJamMessageQueue(std::addressof(this->mq), data);
+                return TryJamMessageQueue(std::addressof(m_mq), data);
             }
 
             bool TimedJam(uintptr_t data, TimeSpan timeout) {
-                return TimedJamMessageQueue(std::addressof(this->mq), data, timeout);
+                return TimedJamMessageQueue(std::addressof(m_mq), data, timeout);
             }
 
             /* Receive functionality */
             void Receive(uintptr_t *out) {
-                return ReceiveMessageQueue(out, std::addressof(this->mq));
+                return ReceiveMessageQueue(out, std::addressof(m_mq));
             }
 
             bool TryReceive(uintptr_t *out) {
-                return TryReceiveMessageQueue(out, std::addressof(this->mq));
+                return TryReceiveMessageQueue(out, std::addressof(m_mq));
             }
 
             bool TimedReceive(uintptr_t *out, TimeSpan timeout) {
-                return TimedReceiveMessageQueue(out, std::addressof(this->mq), timeout);
+                return TimedReceiveMessageQueue(out, std::addressof(m_mq), timeout);
             }
 
             /* Peek functionality */
             void Peek(uintptr_t *out) const {
-                return PeekMessageQueue(out, std::addressof(this->mq));
+                return PeekMessageQueue(out, std::addressof(m_mq));
             }
 
             bool TryPeek(uintptr_t *out) const {
-                return TryPeekMessageQueue(out, std::addressof(this->mq));
+                return TryPeekMessageQueue(out, std::addressof(m_mq));
             }
 
             bool TimedPeek(uintptr_t *out, TimeSpan timeout) const {
-                return TimedPeekMessageQueue(out, std::addressof(this->mq), timeout);
+                return TimedPeekMessageQueue(out, std::addressof(m_mq), timeout);
             }
 
             operator MessageQueueType &() {
-                return this->mq;
+                return m_mq;
             }
 
             operator const MessageQueueType &() const {
-                return this->mq;
+                return m_mq;
             }
 
             MessageQueueType *GetBase() {
-                return std::addressof(this->mq);
+                return std::addressof(m_mq);
             }
     };
 

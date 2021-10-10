@@ -26,9 +26,9 @@ namespace ams::fs::RomPathTool {
             path++;
         }
 
-        this->prev_path_start = path;
-        this->prev_path_end   = path;
-        for (this->next_path = path + 1; IsSeparator(this->next_path[0]); ++this->next_path) {
+        m_prev_path_start = path;
+        m_prev_path_end   = path;
+        for (m_next_path = path + 1; IsSeparator(m_next_path[0]); ++m_next_path) {
             /* ... */
         }
 
@@ -36,63 +36,63 @@ namespace ams::fs::RomPathTool {
     }
 
     void PathParser::Finalize() {
-        this->prev_path_start = nullptr;
-        this->prev_path_end   = nullptr;
-        this->next_path       = nullptr;
-        this->finished        = false;
+        m_prev_path_start = nullptr;
+        m_prev_path_end   = nullptr;
+        m_next_path       = nullptr;
+        m_finished        = false;
     }
 
     bool PathParser::IsParseFinished() const {
-        return this->finished;
+        return m_finished;
     }
 
     bool PathParser::IsDirectoryPath() const {
-        AMS_ASSERT(this->next_path != nullptr);
+        AMS_ASSERT(m_next_path != nullptr);
 
-        if (IsNullTerminator(this->next_path[0]) && IsSeparator(this->next_path[-1])) {
+        if (IsNullTerminator(m_next_path[0]) && IsSeparator(m_next_path[-1])) {
             return true;
         }
 
-        if (IsCurrentDirectory(this->next_path)) {
+        if (IsCurrentDirectory(m_next_path)) {
             return true;
         }
 
-        return IsParentDirectory(this->next_path);
+        return IsParentDirectory(m_next_path);
     }
 
     Result PathParser::GetNextDirectoryName(RomEntryName *out) {
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(this->prev_path_start != nullptr);
-        AMS_ASSERT(this->prev_path_end   != nullptr);
-        AMS_ASSERT(this->next_path       != nullptr);
+        AMS_ASSERT(m_prev_path_start != nullptr);
+        AMS_ASSERT(m_prev_path_end   != nullptr);
+        AMS_ASSERT(m_next_path       != nullptr);
 
         /* Set the current path to output. */
-        out->length = this->prev_path_end - this->prev_path_start;
-        out->path   = this->prev_path_start;
+        out->length = m_prev_path_end - m_prev_path_start;
+        out->path   = m_prev_path_start;
 
         /* Parse the next path. */
-        this->prev_path_start = this->next_path;
-        const RomPathChar *cur = this->next_path;
+        m_prev_path_start = m_next_path;
+        const RomPathChar *cur = m_next_path;
         for (size_t name_len = 0; true; name_len++) {
             if (IsSeparator(cur[name_len])) {
                 R_UNLESS(name_len < MaxPathLength, fs::ResultDbmDirectoryNameTooLong());
 
-                this->prev_path_end = cur + name_len;
-                this->next_path     = this->prev_path_end + 1;
+                m_prev_path_end = cur + name_len;
+                m_next_path     = m_prev_path_end + 1;
 
-                while (IsSeparator(this->next_path[0])) {
-                    ++this->next_path;
+                while (IsSeparator(m_next_path[0])) {
+                    ++m_next_path;
                 }
-                if (IsNullTerminator(this->next_path[0])) {
-                    this->finished = true;
+                if (IsNullTerminator(m_next_path[0])) {
+                    m_finished = true;
                 }
                 break;
             }
 
             if (IsNullTerminator(cur[name_len])) {
-                this->finished      = true;
-                this->next_path     = cur + name_len;
-                this->prev_path_end = cur + name_len;
+                m_finished      = true;
+                m_next_path     = cur + name_len;
+                m_prev_path_end = cur + name_len;
                 break;
             }
         }
@@ -102,29 +102,29 @@ namespace ams::fs::RomPathTool {
 
     Result PathParser::GetAsDirectoryName(RomEntryName *out) const {
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(this->prev_path_start != nullptr);
-        AMS_ASSERT(this->prev_path_end   != nullptr);
-        AMS_ASSERT(this->next_path       != nullptr);
+        AMS_ASSERT(m_prev_path_start != nullptr);
+        AMS_ASSERT(m_prev_path_end   != nullptr);
+        AMS_ASSERT(m_next_path       != nullptr);
 
-        const size_t len = this->prev_path_end - this->prev_path_start;
+        const size_t len = m_prev_path_end - m_prev_path_start;
         R_UNLESS(len <= MaxPathLength, fs::ResultDbmDirectoryNameTooLong());
 
         out->length = len;
-        out->path   = this->prev_path_start;
+        out->path   = m_prev_path_start;
         return ResultSuccess();
     }
 
     Result PathParser::GetAsFileName(RomEntryName *out) const {
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(this->prev_path_start != nullptr);
-        AMS_ASSERT(this->prev_path_end   != nullptr);
-        AMS_ASSERT(this->next_path       != nullptr);
+        AMS_ASSERT(m_prev_path_start != nullptr);
+        AMS_ASSERT(m_prev_path_end   != nullptr);
+        AMS_ASSERT(m_next_path       != nullptr);
 
-        const size_t len = this->prev_path_end - this->prev_path_start;
+        const size_t len = m_prev_path_end - m_prev_path_start;
         R_UNLESS(len <= MaxPathLength, fs::ResultDbmFileNameTooLong());
 
         out->length = len;
-        out->path   = this->prev_path_start;
+        out->path   = m_prev_path_start;
         return ResultSuccess();
     }
 

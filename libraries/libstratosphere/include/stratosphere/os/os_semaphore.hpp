@@ -23,48 +23,48 @@ namespace ams::os {
         NON_COPYABLE(Semaphore);
         NON_MOVEABLE(Semaphore);
         private:
-            SemaphoreType sema;
+            SemaphoreType m_sema;
         public:
             explicit Semaphore(s32 count, s32 max_count) {
-                InitializeSemaphore(std::addressof(this->sema), count, max_count);
+                InitializeSemaphore(std::addressof(m_sema), count, max_count);
             }
 
-            ~Semaphore() { FinalizeSemaphore(std::addressof(this->sema)); }
+            ~Semaphore() { FinalizeSemaphore(std::addressof(m_sema)); }
 
             void Acquire() {
-                return os::AcquireSemaphore(std::addressof(this->sema));
+                return os::AcquireSemaphore(std::addressof(m_sema));
             }
 
             bool TryAcquire() {
-                return os::TryAcquireSemaphore(std::addressof(this->sema));
+                return os::TryAcquireSemaphore(std::addressof(m_sema));
             }
 
             bool TimedAcquire(TimeSpan timeout) {
-                return os::TimedAcquireSemaphore(std::addressof(this->sema), timeout);
+                return os::TimedAcquireSemaphore(std::addressof(m_sema), timeout);
             }
 
             void Release() {
-                return os::ReleaseSemaphore(std::addressof(this->sema));
+                return os::ReleaseSemaphore(std::addressof(m_sema));
             }
 
             void Release(s32 count) {
-                return os::ReleaseSemaphore(std::addressof(this->sema), count);
+                return os::ReleaseSemaphore(std::addressof(m_sema), count);
             }
 
             s32 GetCurrentCount() const {
-                return os::GetCurrentSemaphoreCount(std::addressof(this->sema));
+                return os::GetCurrentSemaphoreCount(std::addressof(m_sema));
             }
 
             operator SemaphoreType &() {
-                return this->sema;
+                return m_sema;
             }
 
             operator const SemaphoreType &() const {
-                return this->sema;
+                return m_sema;
             }
 
             SemaphoreType *GetBase() {
-                return std::addressof(this->sema);
+                return std::addressof(m_sema);
             }
     };
 

@@ -26,46 +26,46 @@ namespace ams::os {
         NON_COPYABLE(Event);
         NON_MOVEABLE(Event);
         private:
-            EventType event;
+            EventType m_event;
         public:
             explicit Event(EventClearMode clear_mode) {
-                InitializeEvent(std::addressof(this->event), false, clear_mode);
+                InitializeEvent(std::addressof(m_event), false, clear_mode);
             }
 
             ~Event() {
-                FinalizeEvent(std::addressof(this->event));
+                FinalizeEvent(std::addressof(m_event));
             }
 
             void Wait() {
-                return WaitEvent(std::addressof(this->event));
+                return WaitEvent(std::addressof(m_event));
             }
 
             bool TryWait() {
-                return TryWaitEvent(std::addressof(this->event));
+                return TryWaitEvent(std::addressof(m_event));
             }
 
             bool TimedWait(TimeSpan timeout) {
-                return TimedWaitEvent(std::addressof(this->event), timeout);
+                return TimedWaitEvent(std::addressof(m_event), timeout);
             }
 
             void Signal() {
-                return SignalEvent(std::addressof(this->event));
+                return SignalEvent(std::addressof(m_event));
             }
 
             void Clear() {
-                return ClearEvent(std::addressof(this->event));
+                return ClearEvent(std::addressof(m_event));
             }
 
             operator EventType &() {
-                return this->event;
+                return m_event;
             }
 
             operator const EventType &() const {
-                return this->event;
+                return m_event;
             }
 
             EventType *GetBase() {
-                return std::addressof(this->event);
+                return std::addressof(m_event);
             }
     };
 

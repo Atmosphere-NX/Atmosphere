@@ -22,17 +22,17 @@ namespace ams::powctl::driver::impl {
 
     class ChargeArbiter {
         private:
-            const ChargeParametersRule *rules;
-            size_t num_rules;
-            int charge_voltage_limit;
-            BatteryTemperatureLevel temperature_level;
-            int avg_v_cell;
-            int open_circuit_voltage;
-            bool has_battery_done_current;
-            int battery_done_current;
-            PowerState power_state;
-            const ChargeParametersRule *selected_rule;
-            bool check_battery_done_current;
+            const ChargeParametersRule *m_rules;
+            size_t m_num_rules;
+            int m_charge_voltage_limit;
+            BatteryTemperatureLevel m_temperature_level;
+            int m_avg_v_cell;
+            int m_open_circuit_voltage;
+            bool m_has_battery_done_current;
+            int m_battery_done_current;
+            PowerState m_power_state;
+            const ChargeParametersRule *m_selected_rule;
+            bool m_check_battery_done_current;
         private:
             static constexpr bool IsInRange(int value, int min, int max) {
                 if (!(min <= value)) {
@@ -48,7 +48,7 @@ namespace ams::powctl::driver::impl {
 
             bool IsAcceptablePowerState(const PowerState *acceptable, size_t num_acceptable) const {
                 for (size_t i = 0; i < num_acceptable; ++i) {
-                    if (this->power_state == acceptable[i]) {
+                    if (m_power_state == acceptable[i]) {
                         return true;
                     }
                 }
@@ -56,41 +56,41 @@ namespace ams::powctl::driver::impl {
             }
         public:
             ChargeArbiter(const ChargeParametersRule *r, size_t nr, int cvl)
-                : rules(r), num_rules(nr), charge_voltage_limit(cvl), temperature_level(BatteryTemperatureLevel::Medium),
-                  avg_v_cell(4080), open_circuit_voltage(4001), has_battery_done_current(false), battery_done_current(0),
-                  power_state(PowerState::FullAwake), selected_rule(nullptr), check_battery_done_current(false)
+                : m_rules(r), m_num_rules(nr), m_charge_voltage_limit(cvl), m_temperature_level(BatteryTemperatureLevel::Medium),
+                  m_avg_v_cell(4080), m_open_circuit_voltage(4001), m_has_battery_done_current(false), m_battery_done_current(0),
+                  m_power_state(PowerState::FullAwake), m_selected_rule(nullptr), m_check_battery_done_current(false)
             {
                 this->UpdateSelectedRule();
             }
 
             void SetBatteryTemperatureLevel(BatteryTemperatureLevel btl) {
-                this->temperature_level = btl;
+                m_temperature_level = btl;
                 this->UpdateSelectedRule();
             }
 
             void SetBatteryAverageVCell(int avg) {
-                this->avg_v_cell = avg;
+                m_avg_v_cell = avg;
                 this->UpdateSelectedRule();
             }
 
             void SetBatteryOpenCircuitVoltage(int ocv) {
-                this->open_circuit_voltage = ocv;
+                m_open_circuit_voltage = ocv;
                 this->UpdateSelectedRule();
             }
 
             void SetBatteryDoneCurrent(int current) {
-                this->battery_done_current     = current;
-                this->has_battery_done_current = true;
+                m_battery_done_current     = current;
+                m_has_battery_done_current = true;
                 this->UpdateSelectedRule();
             }
 
             void SetPowerState(PowerState ps) {
-                this->power_state = ps;
+                m_power_state = ps;
                 this->UpdateSelectedRule();
             }
 
             int GetChargeVoltageLimit() const {
-                return this->charge_voltage_limit;
+                return m_charge_voltage_limit;
             }
 
             bool IsBatteryDoneCurrentAcceptable(int current) const {
@@ -101,28 +101,28 @@ namespace ams::powctl::driver::impl {
             }
 
             const ChargeParametersRule *GetSelectedRule() const {
-                return this->selected_rule;
+                return m_selected_rule;
             }
 
             void UpdateSelectedRule() {
                 /* Try to find an entry that fits our current requirements. */
                 const ChargeParametersRule *best_rule = nullptr;
-                for (size_t i = 0; i < this->num_rules; ++i) {
+                for (size_t i = 0; i < m_num_rules; ++i) {
                     /* Get the current rule. */
-                    const ChargeParametersRule &cur_rule = this->rules[i];
+                    const ChargeParametersRule &cur_rule = m_rules[i];
 
                     /* Check the temperature level. */
-                    if (this->temperature_level != cur_rule.temperature_level) {
+                    if (m_temperature_level != cur_rule.temperature_level) {
                         continue;
                     }
 
                     /* Check that average voltage is in range. */
-                    if (!IsInRange(this->avg_v_cell, cur_rule.min_avg_v_cell, cur_rule.max_avg_v_cell)) {
+                    if (!IsInRange(m_avg_v_cell, cur_rule.min_avg_v_cell, cur_rule.max_avg_v_cell)) {
                         continue;
                     }
 
                     /* Check that open circuit voltage is in range. */
-                    if (!IsInRange(this->open_circuit_voltage, cur_rule.min_open_circuit_voltage, cur_rule.max_open_circuit_voltage)) {
+                    if (!IsInRange(m_open_circuit_voltage, cur_rule.min_open_circuit_voltage, cur_rule.max_open_circuit_voltage)) {
                         continue;
                     }
 
@@ -132,18 +132,18 @@ namespace ams::powctl::driver::impl {
                     }
 
                     /* The limit is probably acceptable. */
-                    if (this->selected_rule != std::addressof(cur_rule)) {
+                    if (m_selected_rule != std::addressof(cur_rule)) {
                         /* We're selecting a new rule. Check if our need to deal with battery current is acceptable. */
-                        if (cur_rule.check_battery_current && this->check_battery_done_current) {
+                        if (cur_rule.check_battery_current && m_check_battery_done_current) {
                             continue;
                         }
 
                         /* Set whether we need to check the battery done current. */
-                        this->has_battery_done_current = false;
-                        this->check_battery_done_current |= cur_rule.check_battery_current;
+                        m_has_battery_done_current = false;
+                        m_check_battery_done_current |= cur_rule.check_battery_current;
                     } else {
                         /* We're selecting the currently selected rule. Make sure the battery done current is acceptable if we have one. */
-                        if (this->has_battery_done_current && !IsInRange(this->battery_done_current, cur_rule.min_battery_done_current, cur_rule.max_battery_done_current)) {
+                        if (m_has_battery_done_current && !IsInRange(m_battery_done_current, cur_rule.min_battery_done_current, cur_rule.max_battery_done_current)) {
                             continue;
                         }
                     }
@@ -154,7 +154,7 @@ namespace ams::powctl::driver::impl {
                 }
 
                 /* Update our selected rule. */
-                this->selected_rule = best_rule;
+                m_selected_rule = best_rule;
             }
     };
 

@@ -28,17 +28,17 @@ namespace ams::fs {
             NON_COPYABLE(ReadOnlyFile);
             NON_MOVEABLE(ReadOnlyFile);
             private:
-                std::unique_ptr<fsa::IFile> base_file;
+                std::unique_ptr<fsa::IFile> m_base_file;
             public:
-                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : base_file(std::move(f)) { /* ... */ }
+                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : m_base_file(std::move(f)) { /* ... */ }
                 virtual ~ReadOnlyFile() { /* ... */ }
             private:
                 virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
-                    return this->base_file->Read(out, offset, buffer, size, option);
+                    return m_base_file->Read(out, offset, buffer, size, option);
                 }
 
                 virtual Result DoGetSize(s64 *out) override final {
-                    return this->base_file->GetSize(out);
+                    return m_base_file->GetSize(out);
                 }
 
                 virtual Result DoFlush() override final {
@@ -59,14 +59,14 @@ namespace ams::fs {
                     switch (op_id) {
                         case OperationId::Invalidate:
                         case OperationId::QueryRange:
-                            return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                            return m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
                         default:
                             return fs::ResultUnsupportedOperationInReadOnlyFileB();
                     }
                 }
             public:
                 virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
-                    return this->base_file->GetDomainObjectId();
+                    return m_base_file->GetDomainObjectId();
                 }
         };
 
@@ -77,9 +77,9 @@ namespace ams::fs {
         NON_COPYABLE(ReadOnlyFileSystemTemplate);
         NON_MOVEABLE(ReadOnlyFileSystemTemplate);
         private:
-            T base_fs;
+            T m_base_fs;
         public:
-            explicit ReadOnlyFileSystemTemplate(T &&fs) : base_fs(std::move(fs)) { /* ... */ }
+            explicit ReadOnlyFileSystemTemplate(T &&fs) : m_base_fs(std::move(fs)) { /* ... */ }
             virtual ~ReadOnlyFileSystemTemplate() { /* ... */ }
         private:
             virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
@@ -87,7 +87,7 @@ namespace ams::fs {
                 R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
                 std::unique_ptr<fsa::IFile> base_file;
-                R_TRY(this->base_fs->OpenFile(std::addressof(base_file), path, mode));
+                R_TRY(m_base_fs->OpenFile(std::addressof(base_file), path, mode));
 
                 auto read_only_file = std::make_unique<ReadOnlyFile>(std::move(base_file));
                 R_UNLESS(read_only_file != nullptr, fs::ResultAllocationFailureInReadOnlyFileSystemA());
@@ -97,11 +97,11 @@ namespace ams::fs {
             }
 
             virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
-                return this->base_fs->OpenDirectory(out_dir, path, mode);
+                return m_base_fs->OpenDirectory(out_dir, path, mode);
             }
 
             virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
-                return this->base_fs->GetEntryType(out, path);
+                return m_base_fs->GetEntryType(out, path);
             }
 
             virtual Result DoCommit() override final {

@@ -27,13 +27,13 @@ namespace ams::dmnt::cheat::impl {
                 static constexpr size_t NumCores = 4;
                 static constexpr size_t ThreadStackSize = os::MemoryPageSize;
             private:
-                std::array<uintptr_t, NumCores> handle_message_queue_buffers;
-                std::array<uintptr_t, NumCores> result_message_queue_buffers;
-                std::array<os::MessageQueue, NumCores> handle_message_queues;
-                std::array<os::MessageQueue, NumCores> result_message_queues;
-                std::array<os::ThreadType, NumCores> threads;
+                std::array<uintptr_t, NumCores> m_handle_message_queue_buffers;
+                std::array<uintptr_t, NumCores> m_result_message_queue_buffers;
+                std::array<os::MessageQueue, NumCores> m_handle_message_queues;
+                std::array<os::MessageQueue, NumCores> m_result_message_queues;
+                std::array<os::ThreadType, NumCores> m_threads;
 
-                alignas(os::MemoryPageSize) u8 thread_stacks[NumCores][ThreadStackSize];
+                alignas(os::MemoryPageSize) u8 m_thread_stacks[NumCores][ThreadStackSize];
             private:
                 static void PerCoreThreadFunction(void *_this) {
                     /* This thread will wait on the appropriate message queue. */
@@ -73,12 +73,12 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 void SendHandle(size_t target_core, os::NativeHandle debug_handle) {
-                    this->handle_message_queues[target_core].Send(static_cast<uintptr_t>(debug_handle));
+                    m_handle_message_queues[target_core].Send(static_cast<uintptr_t>(debug_handle));
                 }
 
                 os::NativeHandle WaitReceiveHandle(size_t core_id) {
                     uintptr_t x = 0;
-                    this->handle_message_queues[core_id].Receive(&x);
+                    m_handle_message_queues[core_id].Receive(&x);
                     return static_cast<os::NativeHandle>(x);
                 }
 
@@ -91,38 +91,38 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 void SendContinueResult(size_t target_core, Result result) {
-                    this->result_message_queues[target_core].Send(static_cast<uintptr_t>(result.GetValue()));
+                    m_result_message_queues[target_core].Send(static_cast<uintptr_t>(result.GetValue()));
                 }
 
                 Result GetContinueResult(size_t core_id) {
                     uintptr_t x = 0;
-                    this->result_message_queues[core_id].Receive(&x);
+                    m_result_message_queues[core_id].Receive(&x);
                     return static_cast<Result>(x);
                 }
             public:
                 DebugEventsManager()
-                    : handle_message_queues{
-                        os::MessageQueue(std::addressof(handle_message_queue_buffers[0]), 1),
-                        os::MessageQueue(std::addressof(handle_message_queue_buffers[1]), 1),
-                        os::MessageQueue(std::addressof(handle_message_queue_buffers[2]), 1),
-                        os::MessageQueue(std::addressof(handle_message_queue_buffers[3]), 1)},
-                    result_message_queues{
-                        os::MessageQueue(std::addressof(result_message_queue_buffers[0]), 1),
-                        os::MessageQueue(std::addressof(result_message_queue_buffers[1]), 1),
-                        os::MessageQueue(std::addressof(result_message_queue_buffers[2]), 1),
-                        os::MessageQueue(std::addressof(result_message_queue_buffers[3]), 1)},
-                     thread_stacks{}
+                    : m_handle_message_queues{
+                        os::MessageQueue(std::addressof(m_handle_message_queue_buffers[0]), 1),
+                        os::MessageQueue(std::addressof(m_handle_message_queue_buffers[1]), 1),
+                        os::MessageQueue(std::addressof(m_handle_message_queue_buffers[2]), 1),
+                        os::MessageQueue(std::addressof(m_handle_message_queue_buffers[3]), 1)},
+                      m_result_message_queues{
+                        os::MessageQueue(std::addressof(m_result_message_queue_buffers[0]), 1),
+                        os::MessageQueue(std::addressof(m_result_message_queue_buffers[1]), 1),
+                        os::MessageQueue(std::addressof(m_result_message_queue_buffers[2]), 1),
+                        os::MessageQueue(std::addressof(m_result_message_queue_buffers[3]), 1)},
+                      m_thread_stacks{}
                 {
                     for (size_t i = 0; i < NumCores; i++) {
                         /* Create thread. */
-                        R_ABORT_UNLESS(os::CreateThread(std::addressof(this->threads[i]), PerCoreThreadFunction, this, this->thread_stacks[i], ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, MultiCoreEventManager), i));
-                        os::SetThreadNamePointer(std::addressof(this->threads[i]), AMS_GET_SYSTEM_THREAD_NAME(dmnt, MultiCoreEventManager));
+                        R_ABORT_UNLESS(os::CreateThread(std::addressof(m_threads[i]), PerCoreThreadFunction, this, m_thread_stacks[i], ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, MultiCoreEventManager), i));
+                        os::SetThreadNamePointer(std::addressof(m_threads[i]), AMS_GET_SYSTEM_THREAD_NAME(dmnt, MultiCoreEventManager));
 
                         /* Set core mask. */
-                        os::SetThreadCoreMask(std::addressof(this->threads[i]), i, (1u << i));
+                        os::SetThreadCoreMask(std::addressof(m_threads[i]), i, (1u << i));
 
                         /* Start thread. */
-                        os::StartThread(std::addressof(this->threads[i]));
+                        os::StartThread(std::addressof(m_threads[i]));
                     }
                 }
 

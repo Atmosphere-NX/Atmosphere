@@ -33,18 +33,18 @@ namespace ams::gpio::driver::impl {
         NON_MOVEABLE(PadSessionImpl);
         AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::impl::PadSessionImpl, ::ams::ddsf::ISession);
         private:
-            EventHolder event_holder;
+            EventHolder m_event_holder;
         private:
             Result UpdateDriverInterruptEnabled();
         public:
-            PadSessionImpl() : event_holder() { /* ... */ }
+            PadSessionImpl() : m_event_holder() { /* ... */ }
 
             ~PadSessionImpl() {
                 this->Close();
             }
 
             bool IsInterruptBound() const {
-                return this->event_holder.IsBound();
+                return m_event_holder.IsBound();
             }
 
             Result Open(Pad *pad, ddsf::AccessMode access_mode);

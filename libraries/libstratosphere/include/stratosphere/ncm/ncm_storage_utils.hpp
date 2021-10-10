@@ -23,30 +23,30 @@ namespace ams::ncm {
         public:
             static constexpr s32 MaxCount = 10;
         private:
-            StorageId ids[MaxCount];
-            s32 count;
+            StorageId m_ids[MaxCount];
+            s32 m_count;
         public:
-            constexpr StorageList() : ids(), count() { /* ... */ }
+            constexpr StorageList() : m_ids(), m_count() { /* ... */ }
 
             void Push(StorageId storage_id) {
-                AMS_ABORT_UNLESS(this->count < MaxCount);
+                AMS_ABORT_UNLESS(m_count < MaxCount);
 
                 for (s32 i = 0; i < MaxCount; i++) {
-                    if (this->ids[i] == storage_id) {
+                    if (m_ids[i] == storage_id) {
                         return;
                     }
                 }
 
-                this->ids[this->count++] = storage_id;
+                m_ids[m_count++] = storage_id;
             }
 
             s32 Count() const {
-                return this->count;
+                return m_count;
             }
 
             StorageId operator[](s32 i) const {
-                AMS_ABORT_UNLESS(i < this->count);
-                return this->ids[i];
+                AMS_ABORT_UNLESS(i < m_count);
+                return m_ids[i];
             }
     };
 

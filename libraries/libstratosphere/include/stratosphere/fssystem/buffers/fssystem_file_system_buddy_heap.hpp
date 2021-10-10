@@ -37,31 +37,31 @@ namespace ams::fssystem {
                 NON_COPYABLE(PageList);
                 NON_MOVEABLE(PageList);
                 private:
-                    PageEntry *first_page_entry;
-                    PageEntry *last_page_entry;
-                    s32 entry_count;
+                    PageEntry *m_first_page_entry;
+                    PageEntry *m_last_page_entry;
+                    s32 m_entry_count;
                 public:
-                    constexpr  PageList() : first_page_entry(), last_page_entry(), entry_count() { /* ... */ }
+                    constexpr  PageList() : m_first_page_entry(), m_last_page_entry(), m_entry_count() { /* ... */ }
 
-                    constexpr bool IsEmpty() const { return this->entry_count == 0; }
-                    constexpr s32  GetSize() const { return this->entry_count; }
+                    constexpr bool IsEmpty() const { return m_entry_count == 0; }
+                    constexpr s32  GetSize() const { return m_entry_count; }
 
-                    constexpr const PageEntry *GetFront() const { return this->first_page_entry; }
+                    constexpr const PageEntry *GetFront() const { return m_first_page_entry; }
                 public:
                     PageEntry *PopFront();
                     void PushBack(PageEntry *page_entry);
                     bool Remove(PageEntry *page_entry);
             };
         private:
-            size_t block_size;
-            s32    order_max;
-            uintptr_t heap_start;
-            size_t    heap_size;
+            size_t m_block_size;
+            s32    m_order_max;
+            uintptr_t m_heap_start;
+            size_t    m_heap_size;
 
-            PageList *free_lists;
-            size_t total_free_size;
-            PageList *external_free_lists;
-            std::unique_ptr<PageList[]> internal_free_lists;
+            PageList *m_free_lists;
+            size_t m_total_free_size;
+            PageList *m_external_free_lists;
+            std::unique_ptr<PageList[]> m_internal_free_lists;
         public:
             static constexpr s32 GetBlockCountFromOrder(s32 order) {
                 AMS_ASSERT(0 <= order);
@@ -87,7 +87,7 @@ namespace ams::fssystem {
             }
 
         public:
-            constexpr FileSystemBuddyHeap() : block_size(), order_max(), heap_start(), heap_size(), free_lists(), total_free_size(), external_free_lists(), internal_free_lists() { /* ... */ }
+            constexpr FileSystemBuddyHeap() : m_block_size(), m_order_max(), m_heap_start(), m_heap_size(), m_free_lists(), m_total_free_size(), m_external_free_lists(), m_internal_free_lists() { /* ... */ }
 
             Result Initialize(uintptr_t address, size_t size, size_t block_size, s32 order_max);
 
@@ -100,7 +100,7 @@ namespace ams::fssystem {
                 AMS_UNUSED(work_size);
 
                 const auto aligned_work = util::AlignUp(reinterpret_cast<uintptr_t>(work), alignof(PageList));
-                this->external_free_lists = reinterpret_cast<PageList *>(aligned_work);
+                m_external_free_lists = reinterpret_cast<PageList *>(aligned_work);
                 return this->Initialize(address, size, block_size, order_max);
             }
 
@@ -118,34 +118,34 @@ namespace ams::fssystem {
             void Dump() const;
 
             s32 GetOrderFromBytes(size_t size) const {
-                AMS_ASSERT(this->free_lists != nullptr);
+                AMS_ASSERT(m_free_lists != nullptr);
                 return this->GetOrderFromBlockCount(this->GetBlockCountFromSize(size));
             }
 
             size_t GetBytesFromOrder(s32 order) const {
-                AMS_ASSERT(this->free_lists != nullptr);
+                AMS_ASSERT(m_free_lists != nullptr);
                 AMS_ASSERT(0 <= order);
                 AMS_ASSERT(order < this->GetOrderMax());
                 return (this->GetBlockSize() << order);
             }
 
             s32 GetOrderMax() const {
-                AMS_ASSERT(this->free_lists != nullptr);
-                return this->order_max;
+                AMS_ASSERT(m_free_lists != nullptr);
+                return m_order_max;
             }
 
             size_t GetBlockSize() const {
-                AMS_ASSERT(this->free_lists != nullptr);
-                return this->block_size;
+                AMS_ASSERT(m_free_lists != nullptr);
+                return m_block_size;
             }
 
             s32 GetPageBlockCountMax() const {
-                AMS_ASSERT(this->free_lists != nullptr);
+                AMS_ASSERT(m_free_lists != nullptr);
                 return 1 << this->GetOrderMax();
             }
 
             size_t GetPageSizeMax() const {
-                AMS_ASSERT(this->free_lists != nullptr);
+                AMS_ASSERT(m_free_lists != nullptr);
                 return this->GetPageBlockCountMax() * this->GetBlockSize();
             }
         private:
@@ -163,24 +163,24 @@ namespace ams::fssystem {
 
             uintptr_t GetAddressFromPageEntry(const PageEntry &page_entry) const {
                 const uintptr_t address = reinterpret_cast<uintptr_t>(std::addressof(page_entry));
-                AMS_ASSERT(this->heap_start <= address);
-                AMS_ASSERT(address < this->heap_start + this->heap_size);
-                AMS_ASSERT(util::IsAligned(address - this->heap_start, this->GetBlockSize()));
+                AMS_ASSERT(m_heap_start <= address);
+                AMS_ASSERT(address < m_heap_start + m_heap_size);
+                AMS_ASSERT(util::IsAligned(address - m_heap_start, this->GetBlockSize()));
                 return address;
             }
 
             PageEntry *GetPageEntryFromAddress(uintptr_t address) const {
-                AMS_ASSERT(this->heap_start <= address);
-                AMS_ASSERT(address < this->heap_start + this->heap_size);
-                return reinterpret_cast<PageEntry *>(this->heap_start + util::AlignDown(address - this->heap_start, this->GetBlockSize()));
+                AMS_ASSERT(m_heap_start <= address);
+                AMS_ASSERT(address < m_heap_start + m_heap_size);
+                return reinterpret_cast<PageEntry *>(m_heap_start + util::AlignDown(address - m_heap_start, this->GetBlockSize()));
             }
 
             s32 GetIndexFromPageEntry(const PageEntry &page_entry) const {
                 const uintptr_t address = reinterpret_cast<uintptr_t>(std::addressof(page_entry));
-                AMS_ASSERT(this->heap_start <= address);
-                AMS_ASSERT(address < this->heap_start + this->heap_size);
-                AMS_ASSERT(util::IsAligned(address - this->heap_start, this->GetBlockSize()));
-                return static_cast<s32>((address - this->heap_start) / this->GetBlockSize());
+                AMS_ASSERT(m_heap_start <= address);
+                AMS_ASSERT(address < m_heap_start + m_heap_size);
+                AMS_ASSERT(util::IsAligned(address - m_heap_start, this->GetBlockSize()));
+                return static_cast<s32>((address - m_heap_start) / this->GetBlockSize());
             }
 
             bool IsAlignedToOrder(const PageEntry *page_entry, s32 order) const {

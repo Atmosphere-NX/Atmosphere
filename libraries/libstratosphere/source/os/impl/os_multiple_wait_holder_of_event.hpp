@@ -21,31 +21,31 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfEvent : public MultiWaitHolderOfUserObject {
         private:
-            EventType *event;
+            EventType *m_event;
         private:
             TriBool IsSignaledImpl() const {
-                return this->event->signaled ? TriBool::True : TriBool::False;
+                return m_event->signaled ? TriBool::True : TriBool::False;
             }
         public:
-            explicit MultiWaitHolderOfEvent(EventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfEvent(EventType *e) : m_event(e) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(m_event->cs_event));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(m_event->cs_event));
 
-                GetReference(this->event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_event));
+                std::scoped_lock lk(GetReference(m_event->cs_event));
 
-                GetReference(this->event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
             }
     };
 

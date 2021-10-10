@@ -30,16 +30,16 @@ namespace ams::fssystem::save {
             class UniqueCache;
             class SharedCache;
         private:
-            fs::SubStorage base_storage;
-            IBufferManager *buffer_manager;
-            size_t block_size;
-            s64 base_storage_size;
-            std::unique_ptr<Cache[]> caches;
-            s32 cache_count;
-            Cache *next_acquire_cache;
-            Cache *next_fetch_cache;
-            os::SdkMutex mutex;
-            bool bulk_read_enabled;
+            fs::SubStorage m_base_storage;
+            IBufferManager *m_buffer_manager;
+            size_t m_block_size;
+            s64 m_base_storage_size;
+            std::unique_ptr<Cache[]> m_caches;
+            s32 m_cache_count;
+            Cache *m_next_acquire_cache;
+            Cache *m_next_fetch_cache;
+            os::SdkMutex m_mutex;
+            bool m_bulk_read_enabled;
         public:
             BufferedStorage();
             virtual ~BufferedStorage();
@@ -47,7 +47,7 @@ namespace ams::fssystem::save {
             Result Initialize(fs::SubStorage base_storage, IBufferManager *buffer_manager, size_t block_size, s32 buffer_count);
             void Finalize();
 
-            bool IsInitialized() const { return this->caches != nullptr; }
+            bool IsInitialized() const { return m_caches != nullptr; }
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
@@ -61,9 +61,9 @@ namespace ams::fssystem::save {
 
             void InvalidateCaches();
 
-            IBufferManager *GetBufferManager() const { return this->buffer_manager; }
+            IBufferManager *GetBufferManager() const { return m_buffer_manager; }
 
-            void EnableBulkRead() { this->bulk_read_enabled = true; }
+            void EnableBulkRead() { m_bulk_read_enabled = true; }
         private:
             Result PrepareAllocation();
             Result ControlDirtiness();

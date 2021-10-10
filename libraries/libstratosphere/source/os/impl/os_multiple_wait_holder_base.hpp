@@ -23,10 +23,10 @@ namespace ams::os::impl {
 
     class MultiWaitHolderBase {
         private:
-            MultiWaitImpl *multi_wait = nullptr;
+            MultiWaitImpl *m_multi_wait = nullptr;
         public:
-            util::IntrusiveListNode multi_wait_node;
-            util::IntrusiveListNode object_list_node;
+            util::IntrusiveListNode m_multi_wait_node;
+            util::IntrusiveListNode m_object_list_node;
         public:
             /* Gets whether the held object is currently signaled. */
             virtual TriBool IsSignaled() const = 0;
@@ -43,15 +43,15 @@ namespace ams::os::impl {
 
             /* Interface with multi wait. */
             void SetMultiWait(MultiWaitImpl *m) {
-                this->multi_wait = m;
+                m_multi_wait = m;
             }
 
             MultiWaitImpl *GetMultiWait() const {
-                return this->multi_wait;
+                return m_multi_wait;
             }
 
             bool IsLinked() const {
-                return this->multi_wait != nullptr;
+                return m_multi_wait != nullptr;
             }
     };
 

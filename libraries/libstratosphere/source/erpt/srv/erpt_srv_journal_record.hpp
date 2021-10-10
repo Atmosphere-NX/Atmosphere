@@ -23,13 +23,13 @@ namespace ams::erpt::srv {
     template<typename Info>
     class JournalRecord : public Allocator, public RefCount, public util::IntrusiveListBaseNode<JournalRecord<Info>> {
         public:
-            Info info;
+            Info m_info;
 
             JournalRecord() {
-                std::memset(std::addressof(this->info), 0, sizeof(this->info));
+                std::memset(std::addressof(m_info), 0, sizeof(m_info));
             }
 
-            explicit JournalRecord(Info info) : info(info) { /* ... */ }
+            explicit JournalRecord(Info info) : m_info(info) { /* ... */ }
 
     };
 

@@ -356,16 +356,16 @@ namespace ams::erpt::srv {
             R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
             record->AddReference();
 
-            record->info.type              = type;
-            record->info.id                = report_id;
-            record->info.flags             = erpt::srv::MakeNoReportFlags();
-            record->info.timestamp_user    = timestamp_user;
-            record->info.timestamp_network = timestamp_network;
+            record->m_info.type              = type;
+            record->m_info.id                = report_id;
+            record->m_info.flags             = erpt::srv::MakeNoReportFlags();
+            record->m_info.timestamp_user    = timestamp_user;
+            record->m_info.timestamp_network = timestamp_network;
             if (meta != nullptr) {
-                record->info.meta_data = *meta;
+                record->m_info.meta_data = *meta;
             }
             if (num_attachments > 0) {
-                record->info.flags.Set<ReportFlag::HasAttachment>();
+                record->m_info.flags.Set<ReportFlag::HasAttachment>();
             }
 
             auto report = std::make_unique<Report>(record.get(), redirect_new_reports);
@@ -373,7 +373,7 @@ namespace ams::erpt::srv {
             auto report_guard = SCOPE_GUARD { report->Delete(); };
 
             R_TRY(Context::WriteContextsToReport(report.get()));
-            R_TRY(report->GetSize(std::addressof(record->info.report_size)));
+            R_TRY(report->GetSize(std::addressof(record->m_info.report_size)));
 
             if (!redirect_new_reports) {
                 /* If we're not redirecting new reports, then we want to store the report in the journal. */

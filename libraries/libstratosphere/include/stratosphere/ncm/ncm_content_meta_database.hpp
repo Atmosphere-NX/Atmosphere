@@ -26,13 +26,13 @@ namespace ams::ncm {
                 s32 total;
             };
         private:
-            sf::SharedPointer<IContentMetaDatabase> interface;
+            sf::SharedPointer<IContentMetaDatabase> m_interface;
         public:
             ContentMetaDatabase() { /* ... */ }
-            explicit ContentMetaDatabase(sf::SharedPointer<IContentMetaDatabase> intf) : interface(intf) { /* ... */ }
+            explicit ContentMetaDatabase(sf::SharedPointer<IContentMetaDatabase> intf) : m_interface(intf) { /* ... */ }
 
             ContentMetaDatabase(ContentMetaDatabase &&rhs) {
-                this->interface = std::move(rhs.interface);
+                m_interface = std::move(rhs.m_interface);
             }
 
             ContentMetaDatabase &operator=(ContentMetaDatabase &&rhs) {
@@ -41,18 +41,18 @@ namespace ams::ncm {
             }
 
             void swap(ContentMetaDatabase &rhs) {
-                std::swap(this->interface, rhs.interface);
+                std::swap(m_interface, rhs.m_interface);
             }
         public:
             Result Set(const ContentMetaKey &key, const void *buf, size_t size) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->Set(key, sf::InBuffer(buf, size));
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->Set(key, sf::InBuffer(buf, size));
             }
 
             Result Get(size_t *out_size, void *dst, size_t dst_size, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
+                AMS_ASSERT(m_interface != nullptr);
                 u64 size;
-                R_TRY(this->interface->Get(std::addressof(size), key, sf::OutBuffer(dst, dst_size)));
+                R_TRY(m_interface->Get(std::addressof(size), key, sf::OutBuffer(dst, dst_size)));
 
                 *out_size = size;
                 return ResultSuccess();
@@ -60,13 +60,13 @@ namespace ams::ncm {
 
             #define AMS_NCM_DEFINE_GETTERS(Kind, IdType)                                                                                \
             Result Get##Kind(ContentId *out, IdType##Id id, u32 version) {                                                              \
-                return this->interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind); \
+                return m_interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind); \
             }                                                                                                                           \
                                                                                                                                         \
             Result GetLatest##Kind(ContentId *out, IdType##Id id) {                                                                     \
                 ContentMetaKey latest_key;                                                                                              \
-                R_TRY(this->interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                  \
-                return this->interface->GetContentIdByType(out, latest_key, ContentType::Kind);                                         \
+                R_TRY(m_interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                  \
+                return m_interface->GetContentIdByType(out, latest_key, ContentType::Kind);                                         \
             }
 
             AMS_NCM_DEFINE_GETTERS(Program,          Program)
@@ -78,8 +78,8 @@ namespace ams::ncm {
             #undef AMS_NCM_DEFINE_GETTERS
 
             Result Remove(const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->Remove(key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->Remove(key);
             }
 
             Result Remove(SystemProgramId id, u32 version) {
@@ -95,99 +95,99 @@ namespace ams::ncm {
             }
 
             Result GetContentIdByType(ContentId *out_content_id, const ContentMetaKey &key, ContentType type) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetContentIdByType(out_content_id, key, type);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetContentIdByType(out_content_id, key, type);
             }
 
             Result GetContentIdByTypeAndIdOffset(ContentId *out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetContentIdByTypeAndIdOffset(out_content_id, key, type, id_offset);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetContentIdByTypeAndIdOffset(out_content_id, key, type, id_offset);
             }
 
             ListCount ListApplication(ApplicationContentMetaKey *dst, size_t dst_size) {
                 ListCount lc = {};
-                R_ABORT_UNLESS(this->interface->ListApplication(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ApplicationContentMetaKey>(dst, dst_size), ContentMetaType::Unknown));
+                R_ABORT_UNLESS(m_interface->ListApplication(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ApplicationContentMetaKey>(dst, dst_size), ContentMetaType::Unknown));
                 return lc;
             }
 
             ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type = ContentMetaType::Unknown, ApplicationId app_id = InvalidApplicationId, u64 min = std::numeric_limits<u64>::min(), u64 max = std::numeric_limits<u64>::max(), ContentInstallType install_type = ContentInstallType::Full) {
                 ListCount lc = {};
-                R_ABORT_UNLESS(this->interface->List(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ContentMetaKey>(dst, dst_size), type, app_id, min, max, install_type));
+                R_ABORT_UNLESS(m_interface->List(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ContentMetaKey>(dst, dst_size), type, app_id, min, max, install_type));
                 return lc;
             }
 
             Result GetLatest(ContentMetaKey *out_key, u64 id) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetLatestContentMetaKey(out_key, id);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetLatestContentMetaKey(out_key, id);
             }
 
             Result ListContentInfo(s32 *out_count, ContentInfo *dst, size_t dst_size, const ContentMetaKey &key, s32 offset) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->ListContentInfo(out_count, sf::OutArray<ContentInfo>(dst, dst_size), key, offset);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->ListContentInfo(out_count, sf::OutArray<ContentInfo>(dst, dst_size), key, offset);
             }
 
             Result ListContentMetaInfo(s32 *out_count, ContentMetaInfo *dst, size_t dst_size, const ContentMetaKey &key, s32 offset) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->ListContentMetaInfo(out_count, sf::OutArray<ContentMetaInfo>(dst, dst_size), key, offset);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->ListContentMetaInfo(out_count, sf::OutArray<ContentMetaInfo>(dst, dst_size), key, offset);
             }
 
             Result Has(bool *out, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->Has(out, key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->Has(out, key);
             }
 
             Result HasAll(bool *out, const ContentMetaKey *keys, size_t num_keys) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->HasAll(out, sf::InArray<ContentMetaKey>(keys, num_keys));
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->HasAll(out, sf::InArray<ContentMetaKey>(keys, num_keys));
             }
 
             Result HasContent(bool *out, const ContentMetaKey &key, const ContentId &content_id) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->HasContent(out, key, content_id);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->HasContent(out, key, content_id);
             }
 
             Result GetSize(size_t *out_size, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
+                AMS_ASSERT(m_interface != nullptr);
                 u64 size;
-                R_TRY(this->interface->GetSize(std::addressof(size), key));
+                R_TRY(m_interface->GetSize(std::addressof(size), key));
 
                 *out_size = size;
                 return ResultSuccess();
             }
 
             Result GetRequiredSystemVersion(u32 *out_version, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetRequiredSystemVersion(out_version, key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetRequiredSystemVersion(out_version, key);
             }
 
             Result GetPatchId(PatchId *out_patch_id, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetPatchId(out_patch_id, key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetPatchId(out_patch_id, key);
             }
 
             Result DisableForcibly() {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->DisableForcibly();
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->DisableForcibly();
             }
 
             Result LookupOrphanContent(bool *out_orphaned, ContentId *content_list, size_t count) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->LookupOrphanContent(sf::OutArray<bool>(out_orphaned, count), sf::InArray<ContentId>(content_list, count));
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->LookupOrphanContent(sf::OutArray<bool>(out_orphaned, count), sf::InArray<ContentId>(content_list, count));
             }
 
             Result Commit() {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->Commit();
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->Commit();
             }
 
             Result GetAttributes(u8 *out_attributes, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetAttributes(out_attributes, key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetAttributes(out_attributes, key);
             }
 
             Result GetRequiredApplicationVersion(u32 *out_version, const ContentMetaKey &key) {
-                AMS_ASSERT(this->interface != nullptr);
-                return this->interface->GetRequiredApplicationVersion(out_version, key);
+                AMS_ASSERT(m_interface != nullptr);
+                return m_interface->GetRequiredApplicationVersion(out_version, key);
             }
     };
 

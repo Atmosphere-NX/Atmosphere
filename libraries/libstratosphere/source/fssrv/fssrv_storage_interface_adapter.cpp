@@ -18,15 +18,15 @@
 
 namespace ams::fssrv::impl {
 
-    StorageInterfaceAdapter::StorageInterfaceAdapter(fs::IStorage *storage) : base_storage(storage) {
+    StorageInterfaceAdapter::StorageInterfaceAdapter(fs::IStorage *storage) : m_base_storage(storage) {
         /* ... */
     }
 
-    StorageInterfaceAdapter::StorageInterfaceAdapter(std::unique_ptr<fs::IStorage> storage) : base_storage(storage.release()) {
+    StorageInterfaceAdapter::StorageInterfaceAdapter(std::unique_ptr<fs::IStorage> storage) : m_base_storage(storage.release()) {
         /* ... */
     }
 
-    StorageInterfaceAdapter::StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> storage) : base_storage(std::move(storage)) {
+    StorageInterfaceAdapter::StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> storage) : m_base_storage(std::move(storage)) {
         /* ... */
     }
 
@@ -36,8 +36,8 @@ namespace ams::fssrv::impl {
 
     util::optional<std::shared_lock<os::ReaderWriterLock>> StorageInterfaceAdapter::AcquireCacheInvalidationReadLock() {
         util::optional<std::shared_lock<os::ReaderWriterLock>> lock;
-        if (this->deep_retry_enabled) {
-            lock.emplace(this->invalidation_lock);
+        if (m_deep_retry_enabled) {
+            lock.emplace(m_invalidation_lock);
         }
         return lock;
     }
@@ -47,7 +47,7 @@ namespace ams::fssrv::impl {
         /* TODO: Deep retry */
         R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
-        return this->base_storage->Read(offset, buffer.GetPointer(), size);
+        return m_base_storage->Read(offset, buffer.GetPointer(), size);
     }
 
     Result StorageInterfaceAdapter::Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size)  {
@@ -56,23 +56,23 @@ namespace ams::fssrv::impl {
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
 
         auto read_lock = this->AcquireCacheInvalidationReadLock();
-        return this->base_storage->Write(offset, buffer.GetPointer(), size);
+        return m_base_storage->Write(offset, buffer.GetPointer(), size);
     }
 
     Result StorageInterfaceAdapter::Flush()  {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
-        return this->base_storage->Flush();
+        return m_base_storage->Flush();
     }
 
     Result StorageInterfaceAdapter::SetSize(s64 size)  {
         R_UNLESS(size >= 0, fs::ResultInvalidSize());
         auto read_lock = this->AcquireCacheInvalidationReadLock();
-        return this->base_storage->SetSize(size);
+        return m_base_storage->SetSize(size);
     }
 
     Result StorageInterfaceAdapter::GetSize(ams::sf::Out<s64> out)  {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
-        return this->base_storage->GetSize(out.GetPointer());
+        return m_base_storage->GetSize(out.GetPointer());
     }
 
     Result StorageInterfaceAdapter::OperateRange(ams::sf::Out<fs::StorageQueryRangeInfo> out, s32 op_id, s64 offset, s64 size) {
@@ -84,7 +84,7 @@ namespace ams::fssrv::impl {
             auto read_lock = this->AcquireCacheInvalidationReadLock();
 
             fs::StorageQueryRangeInfo info;
-            R_TRY(this->base_storage->OperateRange(std::addressof(info), sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
+            R_TRY(m_base_storage->OperateRange(std::addressof(info), sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
             out->Merge(info);
         }
 

@@ -25,30 +25,30 @@ namespace ams::os::impl {
             AMS_ASSERT(svc::GetThreadLocalRegion()->disable_count == 0);
 
             /* Use the libnx impl. */
-            static_assert(std::is_same<decltype(this->thread_handle), ::Mutex>::value);
-            return ::mutexLock(std::addressof(this->thread_handle));
+            static_assert(std::is_same<decltype(m_thread_handle), ::Mutex>::value);
+            return ::mutexLock(std::addressof(m_thread_handle));
         }
 
         bool InternalCriticalSectionImpl::TryEnter() {
             AMS_ASSERT(svc::GetThreadLocalRegion()->disable_count == 0);
 
             /* Use the libnx impl. */
-            static_assert(std::is_same<decltype(this->thread_handle), ::Mutex>::value);
-            return ::mutexTryLock(std::addressof(this->thread_handle));
+            static_assert(std::is_same<decltype(m_thread_handle), ::Mutex>::value);
+            return ::mutexTryLock(std::addressof(m_thread_handle));
         }
 
         void InternalCriticalSectionImpl::Leave() {
             AMS_ASSERT(svc::GetThreadLocalRegion()->disable_count == 0);
 
             /* Use the libnx impl. */
-            static_assert(std::is_same<decltype(this->thread_handle), ::Mutex>::value);
-            return ::mutexUnlock(std::addressof(this->thread_handle));
+            static_assert(std::is_same<decltype(m_thread_handle), ::Mutex>::value);
+            return ::mutexUnlock(std::addressof(m_thread_handle));
         }
 
         bool InternalCriticalSectionImpl::IsLockedByCurrentThread() const {
             /* Use the libnx impl. */
-            static_assert(std::is_same<decltype(this->thread_handle), ::Mutex>::value);
-            return ::mutexIsLockedByCurrentThread(std::addressof(this->thread_handle));
+            static_assert(std::is_same<decltype(m_thread_handle), ::Mutex>::value);
+            return ::mutexIsLockedByCurrentThread(std::addressof(m_thread_handle));
         }
 
     #else

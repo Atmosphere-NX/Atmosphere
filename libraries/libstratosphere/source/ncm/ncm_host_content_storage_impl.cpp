@@ -58,7 +58,7 @@ namespace ams::ncm {
 
         /* Attempt to locate the content. */
         Path path;
-        R_TRY_CATCH(this->registered_content->GetPath(std::addressof(path), content_id)) {
+        R_TRY_CATCH(m_registered_content->GetPath(std::addressof(path), content_id)) {
             /* The content is absent, this is fine. */
             R_CATCH(ncm::ResultContentNotFound) {
                 out.SetValue(false);
@@ -72,7 +72,7 @@ namespace ams::ncm {
 
     Result HostContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
-        return this->registered_content->GetPath(out.GetPointer(), content_id);
+        return m_registered_content->GetPath(out.GetPointer(), content_id);
     }
 
     Result HostContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
@@ -105,7 +105,7 @@ namespace ams::ncm {
     }
 
     Result HostContentStorageImpl::DisableForcibly() {
-        this->disabled = true;
+        m_disabled = true;
         return ResultSuccess();
     }
 
@@ -149,7 +149,7 @@ namespace ams::ncm {
 
         /* Get the content path. */
         Path path;
-        R_TRY(this->registered_content->GetPath(std::addressof(path), content_id));
+        R_TRY(m_registered_content->GetPath(std::addressof(path), content_id));
 
         /* Acquire the rights id for the content. */
         RightsId rights_id;
@@ -201,12 +201,12 @@ namespace ams::ncm {
 
     Result HostContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
         AMS_ABORT_UNLESS(spl::IsDevelopment());
-        return this->registered_content->RegisterPath(content_id, path);
+        return m_registered_content->RegisterPath(content_id, path);
     }
 
     Result HostContentStorageImpl::ClearRegisteredPath() {
         AMS_ABORT_UNLESS(spl::IsDevelopment());
-        this->registered_content->ClearPaths();
+        m_registered_content->ClearPaths();
         return ResultSuccess();
     }
 

@@ -18,29 +18,29 @@
 namespace ams::ncm {
 
     void HeapState::Initialize(lmem::HeapHandle heap_handle) {
-        std::scoped_lock lk(this->mutex);
-        this->heap_handle = heap_handle;
+        std::scoped_lock lk(m_mutex);
+        m_heap_handle = heap_handle;
     }
 
     void HeapState::Allocate(size_t size) {
-        std::scoped_lock lk(this->mutex);
-        this->total_alloc_size += size;
-        this->peak_total_alloc_size = std::max(this->total_alloc_size, this->peak_total_alloc_size);
-        this->peak_alloc_size = std::max(size, this->peak_alloc_size);
+        std::scoped_lock lk(m_mutex);
+        m_total_alloc_size += size;
+        m_peak_total_alloc_size = std::max(m_total_alloc_size, m_peak_total_alloc_size);
+        m_peak_alloc_size = std::max(size, m_peak_alloc_size);
     }
 
     void HeapState::Free(size_t size) {
-        std::scoped_lock lk(this->mutex);
-        this->total_alloc_size -= size;
+        std::scoped_lock lk(m_mutex);
+        m_total_alloc_size -= size;
     }
 
     void HeapState::GetMemoryResourceState(MemoryResourceState *out) {
         *out = {};
-        std::scoped_lock lk(this->mutex);
-        out->peak_total_alloc_size = this->peak_total_alloc_size;
-        out->peak_alloc_size = this->peak_alloc_size;
-        out->total_free_size = lmem::GetExpHeapTotalFreeSize(this->heap_handle);
-        out->allocatable_size = lmem::GetExpHeapAllocatableSize(this->heap_handle, alignof(s32));
+        std::scoped_lock lk(m_mutex);
+        out->peak_total_alloc_size = m_peak_total_alloc_size;
+        out->peak_alloc_size = m_peak_alloc_size;
+        out->total_free_size = lmem::GetExpHeapTotalFreeSize(m_heap_handle);
+        out->allocatable_size = lmem::GetExpHeapAllocatableSize(m_heap_handle, alignof(s32));
     }
 
     HeapState &GetHeapState() {

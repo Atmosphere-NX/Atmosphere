@@ -143,7 +143,7 @@ namespace ams::tipc {
 
                     void RegisterPort(s32 index, os::NativeHandle port_handle) {
                         /* Set our port number. */
-                        this->m_port_number = index;
+                        m_port_number = index;
 
                         /* Create an object holder for the port. */
                         tipc::ObjectHolder object;

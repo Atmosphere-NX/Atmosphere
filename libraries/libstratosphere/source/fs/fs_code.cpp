@@ -251,11 +251,11 @@ namespace ams::fs {
 
         class SdCardRedirectionCodeFileSystem : public OpenFileOnlyFileSystem {
             private:
-                util::optional<ReadOnlyFileSystem> sd_content_fs;
-                ReadOnlyFileSystem code_fs;
-                bool is_redirect;
+                util::optional<ReadOnlyFileSystem> m_sd_content_fs;
+                ReadOnlyFileSystem m_code_fs;
+                bool m_is_redirect;
             public:
-                SdCardRedirectionCodeFileSystem(std::unique_ptr<fsa::IFileSystem> &&code, ncm::ProgramId program_id, bool redirect) : code_fs(std::move(code)), is_redirect(redirect) {
+                SdCardRedirectionCodeFileSystem(std::unique_ptr<fsa::IFileSystem> &&code, ncm::ProgramId program_id, bool redirect) : m_code_fs(std::move(code)), m_is_redirect(redirect) {
                     if (!cfg::IsSdCardInitialized()) {
                         return;
                     }
@@ -275,12 +275,12 @@ namespace ams::fs {
                         return;
                     }
 
-                    sd_content_fs.emplace(std::move(subdir_fs));
+                    m_sd_content_fs.emplace(std::move(subdir_fs));
                 }
             private:
                 bool IsFileStubbed(const char *path) {
                     /* If we don't have an sd content fs, nothing is stubbed. */
-                    if (!this->sd_content_fs) {
+                    if (!m_sd_content_fs) {
                         return false;
                     }
 
@@ -290,7 +290,7 @@ namespace ams::fs {
 
                     /* Query whether we have the file. */
                     bool has_file;
-                    if (R_FAILED(fssystem::HasFile(std::addressof(has_file), std::addressof(*this->sd_content_fs), stub_path))) {
+                    if (R_FAILED(fssystem::HasFile(std::addressof(has_file), std::addressof(*m_sd_content_fs), stub_path))) {
                         return false;
                     }
 
@@ -302,70 +302,70 @@ namespace ams::fs {
                     R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
                     /* If we support redirection, we'd like to prefer a file from the sd card. */
-                    if (this->is_redirect) {
-                        R_SUCCEED_IF(R_SUCCEEDED(this->sd_content_fs->OpenFile(out_file, path, mode)));
+                    if (m_is_redirect) {
+                        R_SUCCEED_IF(R_SUCCEEDED(m_sd_content_fs->OpenFile(out_file, path, mode)));
                     }
 
                     /* Otherwise, check if the file is stubbed. */
                     R_UNLESS(!this->IsFileStubbed(path), fs::ResultPathNotFound());
 
                     /* Open a file from the base code fs. */
-                    return this->code_fs.OpenFile(out_file, path, mode);
+                    return m_code_fs.OpenFile(out_file, path, mode);
                 }
         };
 
         class AtmosphereCodeFileSystem : public OpenFileOnlyFileSystem {
             private:
-                util::optional<SdCardRedirectionCodeFileSystem> code_fs;
-                util::optional<ReadOnlyFileSystem> hbl_fs;
-                ncm::ProgramId program_id;
-                bool initialized;
+                util::optional<SdCardRedirectionCodeFileSystem> m_code_fs;
+                util::optional<ReadOnlyFileSystem> m_hbl_fs;
+                ncm::ProgramId m_program_id;
+                bool m_initialized;
             public:
-                AtmosphereCodeFileSystem() : initialized(false) { /* ... */ }
+                AtmosphereCodeFileSystem() : m_initialized(false) { /* ... */ }
 
                 Result Initialize(CodeVerificationData *out_verification_data, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
-                    AMS_ABORT_UNLESS(!this->initialized);
+                    AMS_ABORT_UNLESS(!m_initialized);
 
                     /* If we're hbl, we need to open a hbl fs. */
                     if (is_hbl) {
                         std::unique_ptr<fsa::IFileSystem> fsa;
                         R_TRY(OpenHblCodeFileSystemImpl(std::addressof(fsa)));
-                        this->hbl_fs.emplace(std::move(fsa));
+                        m_hbl_fs.emplace(std::move(fsa));
                     }
 
                     /* Open the code filesystem. */
                     std::unique_ptr<fsa::IFileSystem> fsa;
                     R_TRY(OpenSdCardCodeOrStratosphereCodeOrCodeFileSystemImpl(out_verification_data, std::addressof(fsa), path, program_id));
-                    this->code_fs.emplace(std::move(fsa), program_id, is_specific);
+                    m_code_fs.emplace(std::move(fsa), program_id, is_specific);
 
-                    this->program_id = program_id;
-                    this->initialized = true;
+                    m_program_id = program_id;
+                    m_initialized = true;
 
                     return ResultSuccess();
                 }
             private:
                 virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
                     /* Ensure that we're initialized. */
-                    R_UNLESS(this->initialized, fs::ResultNotInitialized());
+                    R_UNLESS(m_initialized, fs::ResultNotInitialized());
 
                     /* Only allow opening files with mode = read. */
                     R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
                     /* First, check if there's an external code. */
                     {
-                        fsa::IFileSystem *ecs = fssystem::GetExternalCodeFileSystem(this->program_id);
+                        fsa::IFileSystem *ecs = fssystem::GetExternalCodeFileSystem(m_program_id);
                         if (ecs != nullptr) {
                             return ecs->OpenFile(out_file, path, mode);
                         }
                     }
 
                     /* If we're hbl, open from the hbl fs. */
-                    if (this->hbl_fs) {
-                        return this->hbl_fs->OpenFile(out_file, path, mode);
+                    if (m_hbl_fs) {
+                        return m_hbl_fs->OpenFile(out_file, path, mode);
                     }
 
                     /* If we're not hbl, fall back to our code filesystem. */
-                    return this->code_fs->OpenFile(out_file, path, mode);
+                    return m_code_fs->OpenFile(out_file, path, mode);
                 }
         };
 

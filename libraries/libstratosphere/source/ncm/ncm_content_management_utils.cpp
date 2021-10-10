@@ -80,7 +80,7 @@ namespace ams::ncm {
         ncm::ContentMetaReader meta_reader(meta.get(), meta_size);
 
         /* Insert the new metas into the database. */
-        R_TRY(this->db->Set(package_meta_reader.GetKey(), meta_reader.GetData(), meta_reader.GetSize()));
+        R_TRY(m_db->Set(package_meta_reader.GetKey(), meta_reader.GetData(), meta_reader.GetSize()));
 
         /* We're done. */
         return ResultSuccess();
@@ -123,7 +123,7 @@ namespace ams::ncm {
         }
 
         /* Commit our changes. */
-        return this->db->Commit();
+        return m_db->Commit();
     }
 
     Result ContentMetaDatabaseBuilder::BuildFromPackage(const char *package_root_path) {
@@ -148,7 +148,7 @@ namespace ams::ncm {
         }));
 
         /* Commit our changes. */
-        return this->db->Commit();
+        return m_db->Commit();
     }
 
     Result ContentMetaDatabaseBuilder::Cleanup() {
@@ -157,11 +157,11 @@ namespace ams::ncm {
             /* List as many keys as we can. */
             constexpr s32 MaxKeys = 64;
             ContentMetaKey keys[MaxKeys];
-            auto list_count = this->db->ListContentMeta(keys, MaxKeys);
+            auto list_count = m_db->ListContentMeta(keys, MaxKeys);
 
             /* Remove the listed keys. */
             for (auto i = 0; i < list_count.written; i++) {
-                R_TRY(this->db->Remove(keys[i]));
+                R_TRY(m_db->Remove(keys[i]));
             }
 
             /* If there aren't more keys to read, we're done. */
@@ -171,7 +171,7 @@ namespace ams::ncm {
         }
 
         /* Commit our deletions. */
-        return this->db->Commit();
+        return m_db->Commit();
     }
 
     Result ListApplicationPackage(s32 *out_count, ApplicationId *out_ids, size_t max_out_ids, const char *package_root_path) {

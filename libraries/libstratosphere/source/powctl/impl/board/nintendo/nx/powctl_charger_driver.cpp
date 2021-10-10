@@ -43,16 +43,16 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
     }
 
-    ChargerDevice::ChargerDevice(bool ev) : gpio_pad_session(), watchdog_timer_enabled(false), watchdog_timer_timeout(0), use_event_handler(ev), event_handler() {
-        if (this->use_event_handler) {
+    ChargerDevice::ChargerDevice(bool ev) : m_gpio_pad_session(), m_watchdog_timer_enabled(false), m_watchdog_timer_timeout(0), m_use_event_handler(ev), m_event_handler() {
+        if (m_use_event_handler) {
             /* Create the system event. */
-            os::CreateSystemEvent(std::addressof(this->system_event), os::EventClearMode_ManualClear, true);
+            os::CreateSystemEvent(std::addressof(m_system_event), os::EventClearMode_ManualClear, true);
 
             /* Create the handler. */
-            this->event_handler.emplace(this);
+            m_event_handler.emplace(this);
 
             /* Register the event handler. */
-            powctl::impl::RegisterInterruptHandler(std::addressof(*this->event_handler));
+            powctl::impl::RegisterInterruptHandler(std::addressof(*m_event_handler));
         }
     }
 

@@ -32,23 +32,23 @@ namespace ams::creport {
                 u64  end_address;
             };
         private:
-            os::NativeHandle debug_handle;
-            size_t num_modules;
-            ModuleInfo modules[ModuleCountMax];
+            os::NativeHandle m_debug_handle;
+            size_t m_num_modules;
+            ModuleInfo m_modules[ModuleCountMax];
 
             /* For pretty-printing. */
-            char address_str_buf[0x280];
+            char m_address_str_buf[0x280];
         public:
-            ModuleList() : debug_handle(os::InvalidNativeHandle), num_modules(0) {
-                std::memset(this->modules, 0, sizeof(this->modules));
+            ModuleList() : m_debug_handle(os::InvalidNativeHandle), m_num_modules(0) {
+                std::memset(m_modules, 0, sizeof(m_modules));
             }
 
             size_t GetModuleCount() const {
-                return this->num_modules;
+                return m_num_modules;
             }
 
             u64 GetModuleStartAddress(size_t i) const {
-                return this->modules[i].start_address;
+                return m_modules[i].start_address;
             }
 
             void FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread);

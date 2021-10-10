@@ -22,14 +22,14 @@ namespace ams::mem::impl::heap {
 
     class TlsHeapCentral;
 
-    #define FOREACH_TLS_HEAP_CACHE_FUNC(HANDLER)                                                    \
-        HANDLER(void *,  Allocate,          allocate,            size_t size);                      \
-        HANDLER(void *,  AllocateAligned,   allocate_aligned,    size_t size, size_t align);        \
-        HANDLER(errno_t, Free,              free,                void *ptr);                        \
-        HANDLER(errno_t, FreeWithSize,      free_with_size,      void *ptr, size_t size);           \
-        HANDLER(size_t,  GetAllocationSize, get_allocation_size, const void *ptr);                  \
-        HANDLER(errno_t, Reallocate,        reallocate,          void *ptr, size_t size, void **p); \
-        HANDLER(errno_t, Shrink,            shrink,              void *ptr, size_t size);
+    #define FOREACH_TLS_HEAP_CACHE_FUNC(HANDLER)                                                      \
+        HANDLER(void *,  Allocate,          m_allocate,            size_t size);                      \
+        HANDLER(void *,  AllocateAligned,   m_allocate_aligned,    size_t size, size_t align);        \
+        HANDLER(errno_t, Free,              m_free,                void *ptr);                        \
+        HANDLER(errno_t, FreeWithSize,      m_free_with_size,      void *ptr, size_t size);           \
+        HANDLER(size_t,  GetAllocationSize, m_get_allocation_size, const void *ptr);                  \
+        HANDLER(errno_t, Reallocate,        m_reallocate,          void *ptr, size_t size, void **p); \
+        HANDLER(errno_t, Shrink,            m_shrink,              void *ptr, size_t size);
 
     class TlsHeapCache {
         public:
@@ -49,21 +49,21 @@ namespace ams::mem::impl::heap {
 
             #undef TLS_HEAP_CACHE_DECLARE_MEMBER
 
-            uintptr_t        mangle_val;
-            TlsHeapCentral  *central;
-            size_t           total_heap_size;
-            u32              heap_option;
-            s32              total_cached_size;
-            s32              largest_class;
-            void            *small_mem_lists[TlsHeapStatic::NumClassInfo];
-            s32              cached_size[TlsHeapStatic::NumClassInfo];
-            u8               chunk_count[TlsHeapStatic::NumClassInfo];
+            uintptr_t        m_mangle_val;
+            TlsHeapCentral  *m_central;
+            size_t           m_total_heap_size;
+            u32              m_heap_option;
+            s32              m_total_cached_size;
+            s32              m_largest_class;
+            void            *m_small_mem_lists[TlsHeapStatic::NumClassInfo];
+            s32              m_cached_size[TlsHeapStatic::NumClassInfo];
+            u8               m_chunk_count[TlsHeapStatic::NumClassInfo];
         public:
             TlsHeapCache(TlsHeapCentral *central, u32 option);
             void Finalize();
 
             void *ManglePointer(void *ptr) const {
-                return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(ptr) ^ this->mangle_val);
+                return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(ptr) ^ m_mangle_val);
             }
 
             bool CheckCache() const;
@@ -71,16 +71,16 @@ namespace ams::mem::impl::heap {
 
         public:
             /* TODO: Better handler with type info to macro this? */
-            ALWAYS_INLINE void    *Allocate(size_t size)                       { return this->allocate(this, size); }
-            ALWAYS_INLINE void    *Allocate(size_t size, size_t align)         { return this->allocate_aligned(this, size, align); }
-            ALWAYS_INLINE errno_t Free(void *ptr)                              { return this->free(this, ptr); }
-            ALWAYS_INLINE errno_t FreeWithSize(void *ptr, size_t size)         { return this->free_with_size(this, ptr, size); }
-            ALWAYS_INLINE size_t  GetAllocationSize(const void *ptr)           { return this->get_allocation_size(this, ptr); }
-            ALWAYS_INLINE errno_t Reallocate(void *ptr, size_t size, void **p) { return this->reallocate(this, ptr, size, p); }
-            ALWAYS_INLINE errno_t Shrink(void *ptr, size_t size)               { return this->shrink(this, ptr, size); }
+            ALWAYS_INLINE void    *Allocate(size_t size)                       { return m_allocate(this, size); }
+            ALWAYS_INLINE void    *Allocate(size_t size, size_t align)         { return m_allocate_aligned(this, size, align); }
+            ALWAYS_INLINE errno_t Free(void *ptr)                              { return m_free(this, ptr); }
+            ALWAYS_INLINE errno_t FreeWithSize(void *ptr, size_t size)         { return m_free_with_size(this, ptr, size); }
+            ALWAYS_INLINE size_t  GetAllocationSize(const void *ptr)           { return m_get_allocation_size(this, ptr); }
+            ALWAYS_INLINE errno_t Reallocate(void *ptr, size_t size, void **p) { return m_reallocate(this, ptr, size, p); }
+            ALWAYS_INLINE errno_t Shrink(void *ptr, size_t size)               { return m_shrink(this, ptr, size); }
         private:
             #define TLS_HEAP_CACHE_DECLARE_TEMPLATE(RETURN, NAME, MEMBER_NAME, ...) \
-            template<bool Cache> static RETURN NAME##Impl(TlsHeapCache *_this, ## __VA_ARGS__ )
+            template<bool Cache> static RETURN NAME##Impl(TlsHeapCache *tls_heap_cache, ## __VA_ARGS__ )
 
             FOREACH_TLS_HEAP_CACHE_FUNC(TLS_HEAP_CACHE_DECLARE_TEMPLATE)
 
@@ -90,9 +90,9 @@ namespace ams::mem::impl::heap {
             errno_t ShrinkCommonImpl(void *ptr, size_t size) const;
     };
 
-    #define TLS_HEAP_CACHE_DECLARE_INSTANTIATION(RETURN, NAME, MEMBER_NAME, ...)                             \
-        template<> RETURN TlsHeapCache::NAME##Impl<false>(TlsHeapCache *_this, ##__VA_ARGS__);  \
-        template<> RETURN TlsHeapCache::NAME##Impl<true>(TlsHeapCache *_this, ##__VA_ARGS__)
+    #define TLS_HEAP_CACHE_DECLARE_INSTANTIATION(RETURN, NAME, MEMBER_NAME, ...)                        \
+        template<> RETURN TlsHeapCache::NAME##Impl<false>(TlsHeapCache *tls_heap_cache, ##__VA_ARGS__); \
+        template<> RETURN TlsHeapCache::NAME##Impl<true>(TlsHeapCache *tls_heap_cache, ##__VA_ARGS__)
 
     FOREACH_TLS_HEAP_CACHE_FUNC(TLS_HEAP_CACHE_DECLARE_INSTANTIATION)
 

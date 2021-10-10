@@ -34,9 +34,9 @@ namespace ams::kvdb {
                 static constexpr size_t FileSize = sizeof(LruHeader) + BufferSize;
                 using Path = FileKeyValueStore::Path;
             private:
-                Path file_path;
-                Key *keys;
-                LruHeader header;
+                Path m_file_path;
+                Key *m_keys;
+                LruHeader m_header;
             public:
                 static Result CreateNewList(const char *path) {
                     /* Create new lru_list.dat. */
@@ -56,40 +56,40 @@ namespace ams::kvdb {
             private:
                 void RemoveIndex(size_t i) {
                     AMS_ABORT_UNLESS(i < this->GetCount());
-                    std::memmove(this->keys + i, this->keys + i + 1, sizeof(*this->keys) * (this->GetCount() - (i + 1)));
+                    std::memmove(m_keys + i, m_keys + i + 1, sizeof(*m_keys) * (this->GetCount() - (i + 1)));
                     this->DecrementCount();
                 }
 
                 void IncrementCount() {
-                    this->header.entry_count++;
+                    m_header.entry_count++;
                 }
 
                 void DecrementCount() {
-                    this->header.entry_count--;
+                    m_header.entry_count--;
                 }
             public:
-                LruList() : keys(nullptr), header({}) { /* ... */ }
+                LruList() : m_keys(nullptr), m_header() { /* ... */ }
 
                 Result Initialize(const char *path, void *buf, size_t size) {
                     /* Only initialize once, and ensure we have sufficient memory. */
-                    AMS_ABORT_UNLESS(this->keys == nullptr);
+                    AMS_ABORT_UNLESS(m_keys == nullptr);
                     AMS_ABORT_UNLESS(size >= BufferSize);
 
                     /* Setup member variables. */
-                    this->keys = static_cast<Key *>(buf);
-                    this->file_path.Set(path);
-                    std::memset(this->keys, 0, BufferSize);
+                    m_keys = static_cast<Key *>(buf);
+                    m_file_path.Set(path);
+                    std::memset(m_keys, 0, BufferSize);
 
                     /* Open file. */
                     fs::FileHandle file;
-                    R_TRY(fs::OpenFile(std::addressof(file), this->file_path, fs::OpenMode_Read));
+                    R_TRY(fs::OpenFile(std::addressof(file), m_file_path, fs::OpenMode_Read));
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
 
                     /* Read header. */
-                    R_TRY(fs::ReadFile(file, 0, std::addressof(this->header), sizeof(this->header)));
+                    R_TRY(fs::ReadFile(file, 0, std::addressof(m_header), sizeof(m_header)));
 
                     /* Read entries. */
-                    R_TRY(fs::ReadFile(file, sizeof(this->header), this->keys, BufferSize));
+                    R_TRY(fs::ReadFile(file, sizeof(m_header), m_keys, BufferSize));
 
                     return ResultSuccess();
                 }
@@ -97,14 +97,14 @@ namespace ams::kvdb {
                 Result Save() {
                     /* Open file. */
                     fs::FileHandle file;
-                    R_TRY(fs::OpenFile(std::addressof(file), this->file_path, fs::OpenMode_Read));
+                    R_TRY(fs::OpenFile(std::addressof(file), m_file_path, fs::OpenMode_Read));
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
 
                     /* Write header. */
-                    R_TRY(fs::WriteFile(file, 0, std::addressof(this->header), sizeof(this->header), fs::WriteOption::None));
+                    R_TRY(fs::WriteFile(file, 0, std::addressof(m_header), sizeof(m_header), fs::WriteOption::None));
 
                     /* Write entries. */
-                    R_TRY(fs::WriteFile(file, sizeof(this->header), this->keys, BufferSize, fs::WriteOption::None));
+                    R_TRY(fs::WriteFile(file, sizeof(m_header), m_keys, BufferSize, fs::WriteOption::None));
 
                     /* Flush. */
                     R_TRY(fs::FlushFile(file));
@@ -113,7 +113,7 @@ namespace ams::kvdb {
                 }
 
                 size_t GetCount() const {
-                    return this->header.entry_count;
+                    return m_header.entry_count;
                 }
 
                 bool IsEmpty() const {
@@ -126,7 +126,7 @@ namespace ams::kvdb {
 
                 Key Get(size_t i) const {
                     AMS_ABORT_UNLESS(i < this->GetCount());
-                    return this->keys[i];
+                    return m_keys[i];
                 }
 
                 Key Peek() const {
@@ -136,7 +136,7 @@ namespace ams::kvdb {
 
                 void Push(const Key &key) {
                     AMS_ABORT_UNLESS(!this->IsFull());
-                    this->keys[this->GetCount()] = key;
+                    m_keys[this->GetCount()] = key;
                     this->IncrementCount();
                 }
 
@@ -150,7 +150,7 @@ namespace ams::kvdb {
 
                     /* Iterate over the list, removing the last entry that matches the key. */
                     for (size_t i = 0; i < count; i++) {
-                        if (this->keys[count - 1 - i] == key) {
+                        if (m_keys[count - 1 - i] == key) {
                             this->RemoveIndex(count - 1 - i);
                             return true;
                         }
@@ -164,7 +164,7 @@ namespace ams::kvdb {
 
                     /* Iterate over the list, checking to see if we have the key. */
                     for (size_t i = 0; i < count; i++) {
-                        if (this->keys[count - 1 - i] == key) {
+                        if (m_keys[count - 1 - i] == key) {
                             return true;
                         }
                     }
@@ -196,8 +196,8 @@ namespace ams::kvdb {
             /* as FileKeyValueStore paths are limited to 0x100 anyway. */
             using Path = typename LeastRecentlyUsedList::Path;
         private:
-            FileKeyValueStore kvs;
-            LeastRecentlyUsedList lru_list;
+            FileKeyValueStore m_kvs;
+            LeastRecentlyUsedList m_lru_list;
         private:
             static constexpr Path GetLeastRecentlyUsedListPath(const char *dir) {
                 return Path::MakeFormat("%s/%s", dir, "lru_list.dat");
@@ -258,14 +258,14 @@ namespace ams::kvdb {
             }
         private:
             void RemoveOldestKey() {
-                const Key &oldest_key = this->lru_list.Peek();
-                this->lru_list.Pop();
-                this->kvs.Remove(oldest_key);
+                const Key &oldest_key = m_lru_list.Peek();
+                m_lru_list.Pop();
+                m_kvs.Remove(oldest_key);
             }
         public:
             Result Initialize(const char *dir, void *buf, size_t size) {
                 /* Initialize list. */
-                R_TRY(this->lru_list.Initialize(GetLeastRecentlyUsedListPath(dir), buf, size));
+                R_TRY(m_lru_list.Initialize(GetLeastRecentlyUsedListPath(dir), buf, size));
 
                 /* Initialize kvs. */
                 /* NOTE: Despite creating the kvs folder and returning an error if it does not exist, */
@@ -274,13 +274,13 @@ namespace ams::kvdb {
                 /* instead of in the same directory as a folder containing the store's .val files. */
                 /* This is probably a Nintendo bug, but because system saves contain data in the wrong */
                 /* layout it can't really be fixed without breaking existing devices... */
-                R_TRY(this->kvs.Initialize(dir));
+                R_TRY(m_kvs.Initialize(dir));
 
                 return ResultSuccess();
             }
 
             size_t GetCount() const {
-                return this->lru_list.GetCount();
+                return m_lru_list.GetCount();
             }
 
             size_t GetCapacity() const {
@@ -288,53 +288,53 @@ namespace ams::kvdb {
             }
 
             Key GetKey(size_t i) const {
-                return this->lru_list.Get(i);
+                return m_lru_list.Get(i);
             }
 
             bool Contains(const Key &key) const {
-                return this->lru_list.Contains(key);
+                return m_lru_list.Contains(key);
             }
 
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
                 /* Note that we accessed the key. */
-                this->lru_list.Update(key);
-                return this->kvs.Get(out_size, out_value, max_out_size, key);
+                m_lru_list.Update(key);
+                return m_kvs.Get(out_size, out_value, max_out_size, key);
             }
 
             template<typename Value>
             Result Get(Value *out_value, const Key &key) {
                 /* Note that we accessed the key. */
-                this->lru_list.Update(key);
-                return this->kvs.Get(out_value, key);
+                m_lru_list.Update(key);
+                return m_kvs.Get(out_value, key);
             }
 
             Result GetSize(size_t *out_size, const Key &key) {
-                return this->kvs.GetSize(out_size, key);
+                return m_kvs.GetSize(out_size, key);
             }
 
             Result Set(const Key &key, const void *value, size_t value_size) {
-                if (this->lru_list.Update(key)) {
+                if (m_lru_list.Update(key)) {
                     /* If an entry for the key exists, delete the existing value file. */
-                    this->kvs.Remove(key);
+                    m_kvs.Remove(key);
                 } else {
                     /* If the list is full, we need to remove the oldest key. */
-                    if (this->lru_list.IsFull()) {
+                    if (m_lru_list.IsFull()) {
                         this->RemoveOldestKey();
                     }
 
                     /* Add the key to the list. */
-                    this->lru_list.Push(key);
+                    m_lru_list.Push(key);
                 }
 
                 /* Loop, trying to save the new value to disk. */
                 while (true) {
                     /* Try to set the key. */
-                    R_TRY_CATCH(this->kvs.Set(key, value, value_size)) {
+                    R_TRY_CATCH(m_kvs.Set(key, value, value_size)) {
                         R_CATCH(fs::ResultNotEnoughFreeSpace) {
                             /* If our entry is the only thing in the Lru list, remove it. */
-                            if (this->lru_list.GetCount() == 1) {
-                                this->lru_list.Pop();
-                                R_TRY(this->lru_list.Save());
+                            if (m_lru_list.GetCount() == 1) {
+                                m_lru_list.Pop();
+                                R_TRY(m_lru_list.Save());
                                 return fs::ResultNotEnoughFreeSpace();
                             }
 
@@ -349,7 +349,7 @@ namespace ams::kvdb {
                 }
 
                 /* Save the list. */
-                R_TRY(this->lru_list.Save());
+                R_TRY(m_lru_list.Save());
 
                 return ResultSuccess();
             }
@@ -361,19 +361,19 @@ namespace ams::kvdb {
 
             Result Remove(const Key &key) {
                 /* Remove the key. */
-                this->lru_list.Remove(key);
-                R_TRY(this->kvs.Remove(key));
-                R_TRY(this->lru_list.Save());
+                m_lru_list.Remove(key);
+                R_TRY(m_kvs.Remove(key));
+                R_TRY(m_lru_list.Save());
 
                 return ResultSuccess();
             }
 
             Result RemoveAll() {
                 /* TODO: Nintendo doesn't check errors here. Should we? */
-                while (!this->lru_list.IsEmpty()) {
+                while (!m_lru_list.IsEmpty()) {
                     this->RemoveOldestKey();
                 }
-                R_TRY(this->lru_list.Save());
+                R_TRY(m_lru_list.Save());
 
                 return ResultSuccess();
             }

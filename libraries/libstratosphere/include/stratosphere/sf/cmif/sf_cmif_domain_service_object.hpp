@@ -33,50 +33,50 @@ namespace ams::sf::cmif {
 
     class DomainServiceObjectProcessor : public ServerMessageProcessor {
         private:
-            ServerMessageProcessor *impl_processor;
-            ServerDomainBase *domain;
-            DomainObjectId *in_object_ids;
-            DomainObjectId *out_object_ids;
-            size_t num_in_objects;
-            ServerMessageRuntimeMetadata impl_metadata;
+            ServerMessageProcessor *m_impl_processor;
+            ServerDomainBase *m_domain;
+            DomainObjectId *m_in_object_ids;
+            DomainObjectId *m_out_object_ids;
+            size_t m_num_in_objects;
+            ServerMessageRuntimeMetadata m_impl_metadata;
         public:
-            DomainServiceObjectProcessor(ServerDomainBase *d, DomainObjectId *in_obj_ids, size_t num_in_objs) : domain(d), in_object_ids(in_obj_ids), num_in_objects(num_in_objs) {
-                AMS_ABORT_UNLESS(this->domain != nullptr);
-                AMS_ABORT_UNLESS(this->in_object_ids != nullptr);
-                this->impl_processor = nullptr;
-                this->out_object_ids = nullptr;
-                this->impl_metadata = {};
+            DomainServiceObjectProcessor(ServerDomainBase *d, DomainObjectId *in_obj_ids, size_t num_in_objs) : m_domain(d), m_in_object_ids(in_obj_ids), m_num_in_objects(num_in_objs) {
+                AMS_ABORT_UNLESS(m_domain != nullptr);
+                AMS_ABORT_UNLESS(m_in_object_ids != nullptr);
+                m_impl_processor = nullptr;
+                m_out_object_ids = nullptr;
+                m_impl_metadata = {};
             }
 
             constexpr size_t GetInObjectCount() const {
-                return this->num_in_objects;
+                return m_num_in_objects;
             }
 
             constexpr size_t GetOutObjectCount() const {
-                return this->impl_metadata.GetOutObjectCount();
+                return m_impl_metadata.GetOutObjectCount();
             }
 
             constexpr size_t GetImplOutHeadersSize() const {
-                return this->impl_metadata.GetOutHeadersSize();
+                return m_impl_metadata.GetOutHeadersSize();
             }
 
             constexpr size_t GetImplOutDataTotalSize() const {
-                return this->impl_metadata.GetOutDataSize() + this->impl_metadata.GetOutHeadersSize();
+                return m_impl_metadata.GetOutDataSize() + m_impl_metadata.GetOutHeadersSize();
             }
         public:
             /* Used to enabled templated message processors. */
             virtual void SetImplementationProcessor(ServerMessageProcessor *impl) override final {
-                if (this->impl_processor == nullptr) {
-                    this->impl_processor = impl;
+                if (m_impl_processor == nullptr) {
+                    m_impl_processor = impl;
                 } else {
-                    this->impl_processor->SetImplementationProcessor(impl);
+                    m_impl_processor->SetImplementationProcessor(impl);
                 }
 
-                this->impl_metadata = this->impl_processor->GetRuntimeMetadata();
+                m_impl_metadata = m_impl_processor->GetRuntimeMetadata();
             }
 
             virtual const ServerMessageRuntimeMetadata GetRuntimeMetadata() const override final {
-                const auto runtime_metadata = this->impl_processor->GetRuntimeMetadata();
+                const auto runtime_metadata = m_impl_processor->GetRuntimeMetadata();
 
                 return ServerMessageRuntimeMetadata {
                     .in_data_size      = static_cast<u16>(runtime_metadata.GetInDataSize()  + runtime_metadata.GetInObjectCount() * sizeof(DomainObjectId)),

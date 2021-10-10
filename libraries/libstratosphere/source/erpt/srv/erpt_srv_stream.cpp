@@ -50,7 +50,7 @@ namespace ams::erpt::srv {
         return fs::GetFileSize(out, file);
     }
 
-    Stream::Stream() : buffer_size(0), file_position(0), buffer_count(0), buffer(nullptr), stream_mode(StreamMode_Invalid), initialized(false) {
+    Stream::Stream() : m_buffer_size(0), m_file_position(0), m_buffer_count(0), m_buffer(nullptr), m_stream_mode(StreamMode_Invalid), m_initialized(false) {
         /* ... */
     }
 
@@ -60,8 +60,8 @@ namespace ams::erpt::srv {
     }
 
     Result Stream::OpenStream(const char *path, StreamMode mode, u32 buffer_size) {
-        R_UNLESS(s_can_access_fs,                       erpt::ResultInvalidPowerState());
-        R_UNLESS(!this->initialized,                    erpt::ResultAlreadyInitialized());
+        R_UNLESS(s_can_access_fs,                   erpt::ResultInvalidPowerState());
+        R_UNLESS(!m_initialized,                    erpt::ResultAlreadyInitialized());
 
         auto lock_guard = SCOPE_GUARD {
             if (s_fs_commit_mutex.IsLockedByCurrentThread()) {
@@ -73,7 +73,7 @@ namespace ams::erpt::srv {
             s_fs_commit_mutex.Lock();
 
             while (true) {
-                R_TRY_CATCH(fs::OpenFile(std::addressof(this->file_handle), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend)) {
+                R_TRY_CATCH(fs::OpenFile(std::addressof(m_file_handle), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend)) {
                     R_CATCH(fs::ResultPathNotFound) {
                         R_TRY(fs::CreateFile(path, 0));
                         continue;
@@ -81,31 +81,31 @@ namespace ams::erpt::srv {
                 } R_END_TRY_CATCH;
                 break;
             }
-            fs::SetFileSize(this->file_handle, 0);
+            fs::SetFileSize(m_file_handle, 0);
         } else {
             R_UNLESS(mode == StreamMode_Read, erpt::ResultInvalidArgument());
 
-            R_TRY(fs::OpenFile(std::addressof(this->file_handle), path, fs::OpenMode_Read));
+            R_TRY(fs::OpenFile(std::addressof(m_file_handle), path, fs::OpenMode_Read));
         }
-        auto file_guard = SCOPE_GUARD { fs::CloseFile(this->file_handle); };
+        auto file_guard = SCOPE_GUARD { fs::CloseFile(m_file_handle); };
 
-        std::strncpy(this->file_name, path, sizeof(this->file_name));
-        this->file_name[sizeof(this->file_name) - 1] = '\x00';
+        std::strncpy(m_file_name, path, sizeof(m_file_name));
+        m_file_name[sizeof(m_file_name) - 1] = '\x00';
 
         if (buffer_size > 0) {
-            this->buffer = reinterpret_cast<u8 *>(Allocate(buffer_size));
-            AMS_ASSERT(this->buffer != nullptr);
+            m_buffer = reinterpret_cast<u8 *>(Allocate(buffer_size));
+            AMS_ASSERT(m_buffer != nullptr);
         } else {
-            this->buffer = nullptr;
+            m_buffer = nullptr;
         }
 
 
-        this->buffer_size     = this->buffer != nullptr ? buffer_size : 0;
-        this->buffer_count    = 0;
-        this->buffer_position = 0;
-        this->file_position   = 0;
-        this->stream_mode     = mode;
-        this->initialized     = true;
+        m_buffer_size     = m_buffer != nullptr ? buffer_size : 0;
+        m_buffer_count    = 0;
+        m_buffer_position = 0;
+        m_file_position   = 0;
+        m_stream_mode     = mode;
+        m_initialized     = true;
 
         file_guard.Cancel();
         lock_guard.Cancel();
@@ -113,11 +113,11 @@ namespace ams::erpt::srv {
     }
 
     Result Stream::ReadStream(u32 *out, u8 *dst, u32 dst_size) {
-        R_UNLESS(s_can_access_fs,                       erpt::ResultInvalidPowerState());
-        R_UNLESS(this->initialized,                     erpt::ResultNotInitialized());
-        R_UNLESS(this->stream_mode == StreamMode_Read,  erpt::ResultNotInitialized());
-        R_UNLESS(out != nullptr,                        erpt::ResultInvalidArgument());
-        R_UNLESS(dst != nullptr,                        erpt::ResultInvalidArgument());
+        R_UNLESS(s_can_access_fs,                   erpt::ResultInvalidPowerState());
+        R_UNLESS(m_initialized,                     erpt::ResultNotInitialized());
+        R_UNLESS(m_stream_mode == StreamMode_Read,  erpt::ResultNotInitialized());
+        R_UNLESS(out != nullptr,                    erpt::ResultInvalidArgument());
+        R_UNLESS(dst != nullptr,                    erpt::ResultInvalidArgument());
 
         size_t fs_read_size;
         u32 read_count = 0;
@@ -126,30 +126,30 @@ namespace ams::erpt::srv {
             *out = read_count;
         };
 
-        if (this->buffer != nullptr) {
+        if (m_buffer != nullptr) {
             while (dst_size > 0) {
-                if (u32 cur = std::min<u32>(this->buffer_count - this->buffer_position, dst_size); cur > 0) {
-                    std::memcpy(dst, this->buffer + this->buffer_position, cur);
-                    this->buffer_position += cur;
-                    dst                   += cur;
-                    dst_size              -= cur;
-                    read_count            += cur;
+                if (u32 cur = std::min<u32>(m_buffer_count - m_buffer_position, dst_size); cur > 0) {
+                    std::memcpy(dst, m_buffer + m_buffer_position, cur);
+                    m_buffer_position += cur;
+                    dst               += cur;
+                    dst_size          -= cur;
+                    read_count        += cur;
                 } else {
-                    R_TRY(fs::ReadFile(std::addressof(fs_read_size), this->file_handle, this->file_position, this->buffer, this->buffer_size));
+                    R_TRY(fs::ReadFile(std::addressof(fs_read_size), m_file_handle, m_file_position, m_buffer, m_buffer_size));
 
-                    this->buffer_position = 0;
-                    this->file_position += static_cast<u32>(fs_read_size);
-                    this->buffer_count = static_cast<u32>(fs_read_size);
+                    m_buffer_position = 0;
+                    m_file_position += static_cast<u32>(fs_read_size);
+                    m_buffer_count = static_cast<u32>(fs_read_size);
 
-                    if (this->buffer_count == 0) {
+                    if (m_buffer_count == 0) {
                         break;
                     }
                 }
             }
         } else {
-            R_TRY(fs::ReadFile(std::addressof(fs_read_size), this->file_handle, this->file_position, dst, dst_size));
+            R_TRY(fs::ReadFile(std::addressof(fs_read_size), m_file_handle, m_file_position, dst, dst_size));
 
-            this->file_position += static_cast<u32>(fs_read_size);
+            m_file_position += static_cast<u32>(fs_read_size);
             read_count = static_cast<u32>(fs_read_size);
         }
 
@@ -157,47 +157,47 @@ namespace ams::erpt::srv {
     }
 
     Result Stream::WriteStream(const u8 *src, u32 src_size) {
-        R_UNLESS(s_can_access_fs,                       erpt::ResultInvalidPowerState());
-        R_UNLESS(this->initialized,                     erpt::ResultNotInitialized());
-        R_UNLESS(this->stream_mode == StreamMode_Write, erpt::ResultNotInitialized());
-        R_UNLESS(src != nullptr || src_size == 0,       erpt::ResultInvalidArgument());
+        R_UNLESS(s_can_access_fs,                   erpt::ResultInvalidPowerState());
+        R_UNLESS(m_initialized,                     erpt::ResultNotInitialized());
+        R_UNLESS(m_stream_mode == StreamMode_Write, erpt::ResultNotInitialized());
+        R_UNLESS(src != nullptr || src_size == 0,   erpt::ResultInvalidArgument());
 
-        if (this->buffer != nullptr) {
+        if (m_buffer != nullptr) {
             while (src_size > 0) {
-                if (u32 cur = std::min<u32>(this->buffer_size - this->buffer_count, src_size); cur > 0) {
-                    std::memcpy(this->buffer + this->buffer_count, src, cur);
-                    this->buffer_count += cur;
-                    src                += cur;
-                    src_size           -= cur;
+                if (u32 cur = std::min<u32>(m_buffer_size - m_buffer_count, src_size); cur > 0) {
+                    std::memcpy(m_buffer + m_buffer_count, src, cur);
+                    m_buffer_count += cur;
+                    src            += cur;
+                    src_size       -= cur;
                 }
 
-                if (this->buffer_count == this->buffer_size) {
+                if (m_buffer_count == m_buffer_size) {
                     R_TRY(this->Flush());
                 }
             }
         } else {
-            R_TRY(fs::WriteFile(this->file_handle, this->file_position, src, src_size, fs::WriteOption::None));
-            this->file_position += src_size;
+            R_TRY(fs::WriteFile(m_file_handle, m_file_position, src, src_size, fs::WriteOption::None));
+            m_file_position += src_size;
         }
 
         return ResultSuccess();
     }
 
     void Stream::CloseStream() {
-        if (this->initialized) {
+        if (m_initialized) {
             if (s_can_access_fs) {
-                if (this->stream_mode == StreamMode_Write) {
+                if (m_stream_mode == StreamMode_Write) {
                     this->Flush();
-                    fs::FlushFile(this->file_handle);
+                    fs::FlushFile(m_file_handle);
                 }
-                fs::CloseFile(this->file_handle);
+                fs::CloseFile(m_file_handle);
             }
 
-            if (this->buffer != nullptr) {
-                Deallocate(this->buffer);
+            if (m_buffer != nullptr) {
+                Deallocate(m_buffer);
             }
 
-            this->initialized = false;
+            m_initialized = false;
 
             if (s_fs_commit_mutex.IsLockedByCurrentThread()) {
                 s_fs_commit_mutex.Unlock();
@@ -206,17 +206,17 @@ namespace ams::erpt::srv {
     }
 
     Result Stream::GetStreamSize(s64 *out) const {
-        return GetStreamSize(out, this->file_name);
+        return GetStreamSize(out, m_file_name);
     }
 
     Result Stream::Flush() {
         AMS_ASSERT(s_fs_commit_mutex.IsLockedByCurrentThread());
 
-        R_SUCCEED_IF(this->buffer_count == 0);
-        R_TRY(fs::WriteFile(this->file_handle, this->file_position, this->buffer, this->buffer_count, fs::WriteOption::None));
+        R_SUCCEED_IF(m_buffer_count == 0);
+        R_TRY(fs::WriteFile(m_file_handle, m_file_position, m_buffer, m_buffer_count, fs::WriteOption::None));
 
-        this->file_position += this->buffer_count;
-        this->buffer_count = 0;
+        m_file_position += m_buffer_count;
+        m_buffer_count = 0;
         return ResultSuccess();
     }
 

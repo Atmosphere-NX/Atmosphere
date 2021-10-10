@@ -73,12 +73,12 @@ namespace ams::os::impl {
         manager.CleanupThread();
     }
 
-    ThreadManager::ThreadManager() : impl(std::addressof(main_thread)), total_thread_stack_size(0), num_created_threads(0) {
-        this->main_thread.state = ThreadType::State_Started;
+    ThreadManager::ThreadManager() : m_impl(std::addressof(m_main_thread)), m_total_thread_stack_size(0), m_num_created_threads(0) {
+        m_main_thread.state = ThreadType::State_Started;
 
-        this->SetCurrentThread(std::addressof(this->main_thread));
+        this->SetCurrentThread(std::addressof(m_main_thread));
 
-        this->PlaceThreadObjectUnderThreadManagerSafe(std::addressof(this->main_thread));
+        this->PlaceThreadObjectUnderThreadManagerSafe(std::addressof(m_main_thread));
     }
 
     void ThreadManager::CleanupThread() {
@@ -98,7 +98,7 @@ namespace ams::os::impl {
         SetupThreadObjectUnsafe(thread, nullptr, function, argument, stack, stack_size, priority);
 
         auto guard = SCOPE_GUARD { thread->state = ThreadType::State_NotInitialized; };
-        R_TRY(this->impl.CreateThread(thread, ideal_core));
+        R_TRY(m_impl.CreateThread(thread, ideal_core));
         guard.Cancel();
 
         this->PlaceThreadObjectUnderThreadManagerSafe(thread);
@@ -107,7 +107,7 @@ namespace ams::os::impl {
     }
 
     Result ThreadManager::CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority) {
-        return this->CreateThread(thread, function, argument, stack, stack_size, priority, this->impl.GetDefaultCoreNumber());
+        return this->CreateThread(thread, function, argument, stack, stack_size, priority, m_impl.GetDefaultCoreNumber());
     }
 
     void ThreadManager::DestroyThread(ThreadType *thread) {
@@ -116,12 +116,12 @@ namespace ams::os::impl {
 
             if (thread->state == ThreadType::State_Initialized) {
                 thread->state = ThreadType::State_DestroyedBeforeStarted;
-                this->impl.StartThread(thread);
+                m_impl.StartThread(thread);
                 GetReference(thread->cv_thread).Signal();
             }
         }
 
-        this->impl.WaitForThreadExit(thread);
+        m_impl.WaitForThreadExit(thread);
 
         AMS_ASSERT(thread->state == ThreadType::State_Initialized);
 
@@ -130,7 +130,7 @@ namespace ams::os::impl {
 
             /* NOTE: Here Nintendo would cleanup the alias stack. */
 
-            this->impl.DestroyThreadUnsafe(thread);
+            m_impl.DestroyThreadUnsafe(thread);
 
             thread->state = ThreadType::State_NotInitialized;
 
@@ -140,7 +140,7 @@ namespace ams::os::impl {
             thread->magic = 0xCCCC;
 
             {
-                std::scoped_lock tlk(this->cs);
+                std::scoped_lock tlk(m_cs);
                 this->EraseFromAllThreadsListUnsafe(thread);
             }
         }
@@ -151,14 +151,14 @@ namespace ams::os::impl {
 
         AMS_ASSERT(thread->state == ThreadType::State_Initialized);
 
-        this->impl.StartThread(thread);
+        m_impl.StartThread(thread);
         thread->state = ThreadType::State_Started;
 
         GetReference(thread->cv_thread).Signal();
     }
 
     void ThreadManager::WaitThread(ThreadType *thread) {
-        this->impl.WaitForThreadExit(thread);
+        m_impl.WaitForThreadExit(thread);
 
         {
             std::scoped_lock lk(GetReference(thread->cs_thread));
@@ -168,7 +168,7 @@ namespace ams::os::impl {
     }
 
     bool ThreadManager::TryWaitThread(ThreadType *thread) {
-        const bool result = this->impl.TryWaitForThreadExit(thread);
+        const bool result = m_impl.TryWaitForThreadExit(thread);
 
         if (result) {
             std::scoped_lock lk(GetReference(thread->cs_thread));
@@ -187,7 +187,7 @@ namespace ams::os::impl {
         thread->suspend_count = prev_suspend_count + 1;
 
         if (prev_suspend_count == 0) {
-            this->impl.SuspendThreadUnsafe(thread);
+            m_impl.SuspendThreadUnsafe(thread);
         }
         return prev_suspend_count;
     }
@@ -199,7 +199,7 @@ namespace ams::os::impl {
         if (prev_suspend_count > 0) {
             thread->suspend_count = prev_suspend_count - 1;
             if (prev_suspend_count == 1) {
-                this->impl.ResumeThreadUnsafe(thread);
+                m_impl.ResumeThreadUnsafe(thread);
             }
         }
         return prev_suspend_count;
@@ -208,7 +208,7 @@ namespace ams::os::impl {
     void ThreadManager::CancelThreadSynchronization(ThreadType *thread) {
         std::scoped_lock lk(GetReference(thread->cs_thread));
 
-        this->impl.CancelThreadSynchronizationUnsafe(thread);
+        m_impl.CancelThreadSynchronizationUnsafe(thread);
     }
 
     /* TODO void ThreadManager::GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
@@ -221,7 +221,7 @@ namespace ams::os::impl {
     }
 
     void ThreadManager::SetInitialThreadNameUnsafe(ThreadType *thread) {
-        if (thread == std::addressof(this->main_thread)) {
+        if (thread == std::addressof(m_main_thread)) {
             static_assert(sizeof(thread->name_buffer) >= sizeof(MainThreadName));
             static_assert(MainThreadName[sizeof(MainThreadName) - 1] == '\x00');
             std::memcpy(thread->name_buffer, MainThreadName, sizeof(MainThreadName));

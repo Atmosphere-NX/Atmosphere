@@ -42,17 +42,17 @@ namespace ams::kvdb {
 
             class Cache {
                 private:
-                    u8 *backing_buffer = nullptr;
-                    size_t backing_buffer_size = 0;
-                    size_t backing_buffer_free_offset = 0;
-                    Entry *entries = nullptr;
-                    size_t count = 0;
-                    size_t capacity = 0;
+                    u8 *m_backing_buffer = nullptr;
+                    size_t m_backing_buffer_size = 0;
+                    size_t m_backing_buffer_free_offset = 0;
+                    Entry *m_entries = nullptr;
+                    size_t m_count = 0;
+                    size_t m_capacity = 0;
                 private:
                     void *Allocate(size_t size);
 
                     bool HasEntries() const {
-                        return this->entries != nullptr && this->capacity != 0;
+                        return m_entries != nullptr && m_capacity != 0;
                     }
                 public:
                     Result Initialize(void *buffer, size_t buffer_size, size_t capacity);
@@ -63,14 +63,14 @@ namespace ams::kvdb {
                     bool Contains(const void *key, size_t key_size);
             };
         private:
-            os::SdkMutex lock;
-            Path dir_path;
-            Cache cache;
+            os::SdkMutex m_lock;
+            Path m_dir_path;
+            Cache m_cache;
         private:
             Path GetPath(const void *key, size_t key_size);
             Result GetKey(size_t *out_size, void *out_key, size_t max_out_size, const FileName &file_name);
         public:
-            FileKeyValueStore() : lock() { /* ... */ }
+            FileKeyValueStore() : m_lock() { /* ... */ }
 
             /* Basic accessors. */
             Result Initialize(const char *dir);

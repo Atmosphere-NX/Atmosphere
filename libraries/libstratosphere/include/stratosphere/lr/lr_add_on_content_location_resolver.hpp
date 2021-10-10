@@ -23,13 +23,13 @@ namespace ams::lr {
     class AddOnContentLocationResolver {
         NON_COPYABLE(AddOnContentLocationResolver);
         private:
-            sf::SharedPointer<IAddOnContentLocationResolver> interface;
+            sf::SharedPointer<IAddOnContentLocationResolver> m_interface;
         public:
             AddOnContentLocationResolver() { /* ... */ }
-            explicit AddOnContentLocationResolver(sf::SharedPointer<IAddOnContentLocationResolver> intf) : interface(intf) { /* ... */ }
+            explicit AddOnContentLocationResolver(sf::SharedPointer<IAddOnContentLocationResolver> intf) : m_interface(intf) { /* ... */ }
 
             AddOnContentLocationResolver(AddOnContentLocationResolver &&rhs) {
-                this->interface = std::move(rhs.interface);
+                m_interface = std::move(rhs.m_interface);
             }
 
             AddOnContentLocationResolver &operator=(AddOnContentLocationResolver &&rhs) {
@@ -38,37 +38,37 @@ namespace ams::lr {
             }
 
             void Swap(AddOnContentLocationResolver &rhs) {
-                std::swap(this->interface, rhs.interface);
+                std::swap(m_interface, rhs.m_interface);
             }
         public:
             /* Actual commands. */
             Result ResolveAddOnContentPath(Path *out, ncm::DataId id) {
-                AMS_ASSERT(this->interface);
-                return this->interface->ResolveAddOnContentPath(out, id);
+                AMS_ASSERT(m_interface);
+                return m_interface->ResolveAddOnContentPath(out, id);
             }
 
             Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
-                AMS_ASSERT(this->interface);
+                AMS_ASSERT(m_interface);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
-                    return this->interface->RegisterAddOnContentStorage(id, application_id, storage_id);
+                    return m_interface->RegisterAddOnContentStorage(id, application_id, storage_id);
                 } else {
-                    return this->interface->RegisterAddOnContentStorageDeprecated(id, storage_id);
+                    return m_interface->RegisterAddOnContentStorageDeprecated(id, storage_id);
                 }
             }
 
             Result UnregisterAllAddOnContentPath() {
-                AMS_ASSERT(this->interface);
-                return this->interface->UnregisterAllAddOnContentPath();
+                AMS_ASSERT(m_interface);
+                return m_interface->UnregisterAllAddOnContentPath();
             }
 
             Result RefreshApplicationAddOnContent(const ncm::ApplicationId *ids, size_t num_ids) {
-                AMS_ASSERT(this->interface);
-                return this->interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids));
+                AMS_ASSERT(m_interface);
+                return m_interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids));
             }
 
             Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) {
-                AMS_ASSERT(this->interface);
-                return this->interface->UnregisterApplicationAddOnContent(id);
+                AMS_ASSERT(m_interface);
+                return m_interface->UnregisterApplicationAddOnContent(id);
             }
     };
 

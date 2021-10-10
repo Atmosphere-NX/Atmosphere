@@ -81,12 +81,12 @@ namespace ams::fs::RomPathTool {
 
     class PathParser {
         private:
-            const RomPathChar *prev_path_start;
-            const RomPathChar *prev_path_end;
-            const RomPathChar *next_path;
-            bool finished;
+            const RomPathChar *m_prev_path_start;
+            const RomPathChar *m_prev_path_end;
+            const RomPathChar *m_next_path;
+            bool m_finished;
         public:
-            constexpr PathParser() : prev_path_start(), prev_path_end(), next_path(), finished() { /* ... */ }
+            constexpr PathParser() : m_prev_path_start(), m_prev_path_end(), m_next_path(), m_finished() { /* ... */ }
 
             Result Initialize(const RomPathChar *path);
             void Finalize();

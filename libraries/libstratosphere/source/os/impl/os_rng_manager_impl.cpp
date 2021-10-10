@@ -19,13 +19,13 @@
 namespace ams::os::impl {
 
     u64 RngManager::GenerateRandomU64() {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
 
-        if (AMS_UNLIKELY(!this->initialized)) {
+        if (AMS_UNLIKELY(!m_initialized)) {
             this->Initialize();
         }
 
-        return this->mt.GenerateRandomU64();
+        return m_mt.GenerateRandomU64();
     }
 
 }

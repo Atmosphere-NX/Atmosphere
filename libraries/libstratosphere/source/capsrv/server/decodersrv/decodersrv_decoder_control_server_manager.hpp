@@ -31,11 +31,11 @@ namespace ams::capsrv::server {
             using ServerOptions = sf::hipc::DefaultServerManagerOptions;
             using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
         private:
-            util::optional<ServiceHolderType> service_holder;
-            util::optional<ServerManager> server_manager_holder;
-            os::EventType idle_event;
+            util::optional<ServiceHolderType> m_service_holder;
+            util::optional<ServerManager> m_server_manager_holder;
+            os::EventType m_idle_event;
         public:
-            constexpr DecoderControlServerManager() : service_holder(), server_manager_holder(), idle_event{} { /* ... */ }
+            constexpr DecoderControlServerManager() : m_service_holder(), m_server_manager_holder(), m_idle_event{} { /* ... */ }
 
             Result Initialize();
             void   Finalize();

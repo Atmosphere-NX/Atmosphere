@@ -23,16 +23,16 @@ namespace ams::ncm {
         private:
             using PackagePath = kvdb::BoundedString<256>;
         private:
-            PackagePath package_root;
-            void *buffer;
-            size_t buffer_size;
+            PackagePath m_package_root;
+            void *m_buffer;
+            size_t m_buffer_size;
         public:
-            PackageInstallTaskBase() : package_root() { /* ... */ }
+            PackageInstallTaskBase() : m_package_root() { /* ... */ }
 
             Result Initialize(const char *package_root_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config);
         protected:
             const char *GetPackageRootPath() {
-                return this->package_root.Get();
+                return m_package_root.Get();
             }
         private:
             virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) override;

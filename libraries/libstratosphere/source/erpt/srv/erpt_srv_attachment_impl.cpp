@@ -19,7 +19,7 @@
 
 namespace ams::erpt::srv {
 
-    AttachmentImpl::AttachmentImpl() : attachment(nullptr) {
+    AttachmentImpl::AttachmentImpl() : m_attachment(nullptr) {
         /* ... */
     }
 
@@ -28,52 +28,52 @@ namespace ams::erpt::srv {
     }
 
     Result AttachmentImpl::Open(const AttachmentId &attachment_id) {
-        R_UNLESS(this->attachment == nullptr, erpt::ResultAlreadyInitialized());
+        R_UNLESS(m_attachment == nullptr, erpt::ResultAlreadyInitialized());
 
         JournalRecord<AttachmentInfo> *record = Journal::Retrieve(attachment_id);
         R_UNLESS(record != nullptr, erpt::ResultNotFound());
 
-        this->attachment = new Attachment(record);
-        R_UNLESS(this->attachment != nullptr, erpt::ResultOutOfMemory());
-        auto attachment_guard = SCOPE_GUARD { delete this->attachment; this->attachment = nullptr; };
+        m_attachment = new Attachment(record);
+        R_UNLESS(m_attachment != nullptr, erpt::ResultOutOfMemory());
+        auto attachment_guard = SCOPE_GUARD { delete m_attachment; m_attachment = nullptr; };
 
-        R_TRY(this->attachment->Open(AttachmentOpenType_Read));
+        R_TRY(m_attachment->Open(AttachmentOpenType_Read));
         attachment_guard.Cancel();
 
         return ResultSuccess();
     }
 
     Result AttachmentImpl::Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)  {
-        R_UNLESS(this->attachment != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return this->attachment->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize()));
+        return m_attachment->Read(out_count.GetPointer(), static_cast<u8 *>(out_buffer.GetPointer()), static_cast<u32>(out_buffer.GetSize()));
     }
 
     Result AttachmentImpl::SetFlags(AttachmentFlagSet flags)  {
-        R_UNLESS(this->attachment != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return this->attachment->SetFlags(flags);
+        return m_attachment->SetFlags(flags);
     }
 
     Result AttachmentImpl::GetFlags(ams::sf::Out<AttachmentFlagSet> out)  {
-        R_UNLESS(this->attachment != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return this->attachment->GetFlags(out.GetPointer());
+        return m_attachment->GetFlags(out.GetPointer());
     }
 
     Result AttachmentImpl::Close()  {
-        if (this->attachment != nullptr) {
-            this->attachment->Close();
-            delete this->attachment;
-            this->attachment = nullptr;
+        if (m_attachment != nullptr) {
+            m_attachment->Close();
+            delete m_attachment;
+            m_attachment = nullptr;
         }
         return ResultSuccess();
     }
 
     Result AttachmentImpl::GetSize(ams::sf::Out<s64> out)  {
-        R_UNLESS(this->attachment != nullptr, erpt::ResultNotInitialized());
+        R_UNLESS(m_attachment != nullptr, erpt::ResultNotInitialized());
 
-        return this->attachment->GetSize(out.GetPointer());
+        return m_attachment->GetSize(out.GetPointer());
     }
 
 }

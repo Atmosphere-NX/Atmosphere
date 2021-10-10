@@ -33,38 +33,38 @@ namespace ams::fssystem {
         class BufferHolder {
             NON_COPYABLE(BufferHolder);
             private:
-                MemoryResource *allocator;
-                char *buffer;
-                size_t buffer_size;
+                MemoryResource *m_allocator;
+                char *m_buffer;
+                size_t m_buffer_size;
             public:
-                BufferHolder() : allocator(), buffer(), buffer_size() { /* ... */ }
-                BufferHolder(MemoryResource *a, size_t sz) : allocator(a), buffer(static_cast<char *>(a->Allocate(sz))), buffer_size(sz) { /* ... */ }
+                BufferHolder() : m_allocator(), m_buffer(), m_buffer_size() { /* ... */ }
+                BufferHolder(MemoryResource *a, size_t sz) : m_allocator(a), m_buffer(static_cast<char *>(a->Allocate(sz))), m_buffer_size(sz) { /* ... */ }
                 ~BufferHolder() {
-                    if (this->buffer != nullptr) {
-                        this->allocator->Deallocate(this->buffer, this->buffer_size);
-                        this->buffer = nullptr;
+                    if (m_buffer != nullptr) {
+                        m_allocator->Deallocate(m_buffer, m_buffer_size);
+                        m_buffer = nullptr;
                     }
                 }
 
-                BufferHolder(BufferHolder &&rhs) : allocator(rhs.allocator), buffer(rhs.buffer), buffer_size(rhs.buffer_size) {
-                    rhs.buffer = nullptr;
+                BufferHolder(BufferHolder &&rhs) : m_allocator(rhs.m_allocator), m_buffer(rhs.m_buffer), m_buffer_size(rhs.m_buffer_size) {
+                    rhs.m_buffer = nullptr;
                 }
 
                 BufferHolder &operator=(BufferHolder &&rhs) {
                     if (this != std::addressof(rhs)) {
-                        AMS_ASSERT(this->buffer == nullptr);
-                        this->allocator   = rhs.allocator;
-                        this->buffer      = rhs.buffer;
-                        this->buffer_size = rhs.buffer_size;
+                        AMS_ASSERT(m_buffer == nullptr);
+                        m_allocator   = rhs.m_allocator;
+                        m_buffer      = rhs.m_buffer;
+                        m_buffer_size = rhs.m_buffer_size;
 
-                        rhs.buffer        = nullptr;
+                        rhs.m_buffer  = nullptr;
                     }
                     return *this;
                 }
 
-                bool IsValid() const { return this->buffer != nullptr; }
-                char *Get() const { return this->buffer; }
-                size_t GetSize() const { return this->buffer_size; }
+                bool IsValid() const { return m_buffer != nullptr; }
+                char *Get() const { return m_buffer; }
+                size_t GetSize() const { return m_buffer_size; }
         };
 
         template<typename Base, typename Sequence>
@@ -79,24 +79,24 @@ namespace ams::fssystem {
                 template<size_t N>
                 using IndexedStoragePointer = StoragePointer;
             private:
-                std::shared_ptr<NcaReader> nca_reader;
-                std::array<StoragePointer, sizeof...(Is)> storages;
+                std::shared_ptr<NcaReader> m_nca_reader;
+                std::array<StoragePointer, sizeof...(Is)> m_storages;
             private:
 
                 template<size_t N>
                 void SetImpl(IndexedStoragePointer<N> &&ptr) {
                     static_assert(N < sizeof...(Is));
-                    this->storages[N] = std::move(ptr);
+                    m_storages[N] = std::move(ptr);
                 }
             public:
-                DerivedStorageHolderImpl() : Base(), nca_reader(), storages() { /* ... */ }
-                explicit DerivedStorageHolderImpl(std::shared_ptr<NcaReader> nr) : Base(), nca_reader(nr), storages() { /* ... */ }
+                DerivedStorageHolderImpl() : Base(), m_nca_reader(), m_storages() { /* ... */ }
+                explicit DerivedStorageHolderImpl(std::shared_ptr<NcaReader> nr) : Base(), m_nca_reader(nr), m_storages() { /* ... */ }
 
-                #define DEFINE_CONSTRUCTORS(n)                                                                                                                                                                                   \
-                template<AMS_UTIL_VARIADIC_TEMPLATE_PARAMETERS##n (T)>                                                                                                                                                           \
-                explicit DerivedStorageHolderImpl(AMS_UTIL_VARIADIC_TEMPLATE_ARGUMENTS##n (T, t)) : Base(AMS_UTIL_VARIADIC_TEMPLATE_FORWARDS##n (T, t)), nca_reader(), storages() { /* ... */ }                                  \
-                template<AMS_UTIL_VARIADIC_TEMPLATE_PARAMETERS##n (T)>                                                                                                                                                           \
-                explicit DerivedStorageHolderImpl(AMS_UTIL_VARIADIC_TEMPLATE_ARGUMENTS##n (T, t), std::shared_ptr<NcaReader> nr) : Base(AMS_UTIL_VARIADIC_TEMPLATE_FORWARDS##n (T, t)), nca_reader(nr), storages() { /* ... */ }
+                #define DEFINE_CONSTRUCTORS(n)                                                                                                                                                                                       \
+                template<AMS_UTIL_VARIADIC_TEMPLATE_PARAMETERS##n (T)>                                                                                                                                                               \
+                explicit DerivedStorageHolderImpl(AMS_UTIL_VARIADIC_TEMPLATE_ARGUMENTS##n (T, t)) : Base(AMS_UTIL_VARIADIC_TEMPLATE_FORWARDS##n (T, t)), m_nca_reader(), m_storages() { /* ... */ }                                  \
+                template<AMS_UTIL_VARIADIC_TEMPLATE_PARAMETERS##n (T)>                                                                                                                                                               \
+                explicit DerivedStorageHolderImpl(AMS_UTIL_VARIADIC_TEMPLATE_ARGUMENTS##n (T, t), std::shared_ptr<NcaReader> nr) : Base(AMS_UTIL_VARIADIC_TEMPLATE_FORWARDS##n (T, t)), m_nca_reader(nr), m_storages() { /* ... */ }
 
                 AMS_UTIL_VARIADIC_INVOKE_MACRO(DEFINE_CONSTRUCTORS)
 
@@ -116,17 +116,17 @@ namespace ams::fssystem {
             private:
                 using BaseHolder = DerivedStorageHolder<Base, N>;
             private:
-                BufferHolder buffer;
+                BufferHolder m_buffer;
             public:
-                DerivedStorageHolderWithBuffer() : BaseHolder(), buffer() { /* ... */ }
+                DerivedStorageHolderWithBuffer() : BaseHolder(), m_buffer() { /* ... */ }
 
                 template<typename... Args>
-                DerivedStorageHolderWithBuffer(Args &&... args) : BaseHolder(std::forward<Args>(args)...), buffer() { /* ... */ }
+                DerivedStorageHolderWithBuffer(Args &&... args) : BaseHolder(std::forward<Args>(args)...), m_buffer() { /* ... */ }
 
                 using BaseHolder::Set;
 
                 void Set(BufferHolder &&buf) {
-                    this->buffer = std::move(buf);
+                    m_buffer = std::move(buf);
                 }
         };
 
@@ -138,21 +138,21 @@ namespace ams::fssystem {
                 static constexpr size_t KeySize   = crypto::Aes128CtrEncryptor::KeySize;
                 static constexpr size_t IvSize    = crypto::Aes128CtrEncryptor::IvSize;
             private:
-                IStorage * const base_storage;
-                u8 iv[IvSize];
-                DecryptAesCtrFunction decrypt_function;
-                s32 key_index;
-                u8 encrypted_key[KeySize];
+                IStorage * const m_base_storage;
+                u8 m_iv[IvSize];
+                DecryptAesCtrFunction m_decrypt_function;
+                s32 m_key_index;
+                u8 m_encrypted_key[KeySize];
             public:
-                AesCtrStorageExternal(fs::IStorage *bs, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, DecryptAesCtrFunction df, s32 kidx) : base_storage(bs), decrypt_function(df), key_index(kidx) {
+                AesCtrStorageExternal(fs::IStorage *bs, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, DecryptAesCtrFunction df, s32 kidx) : m_base_storage(bs), m_decrypt_function(df), m_key_index(kidx) {
                     AMS_ASSERT(bs != nullptr);
                     AMS_ASSERT(enc_key_size == KeySize);
                     AMS_ASSERT(iv != nullptr);
                     AMS_ASSERT(iv_size == IvSize);
                     AMS_UNUSED(iv_size);
 
-                    std::memcpy(this->iv, iv, IvSize);
-                    std::memcpy(this->encrypted_key, enc_key, enc_key_size);
+                    std::memcpy(m_iv, iv, IvSize);
+                    std::memcpy(m_encrypted_key, enc_key, enc_key_size);
                 }
 
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
@@ -166,7 +166,7 @@ namespace ams::fssystem {
                     R_UNLESS(util::IsAligned(size,   BlockSize), fs::ResultInvalidArgument());
 
                     /* Read the data. */
-                    R_TRY(this->base_storage->Read(offset, buffer, size));
+                    R_TRY(m_base_storage->Read(offset, buffer, size));
 
                     /* Temporarily increase our thread priority. */
                     ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
@@ -178,7 +178,7 @@ namespace ams::fssystem {
 
                     /* Setup the counter. */
                     u8 ctr[IvSize];
-                    std::memcpy(ctr, this->iv, IvSize);
+                    std::memcpy(ctr, m_iv, IvSize);
                     AddCounter(ctr, IvSize, offset / BlockSize);
 
                     /* Setup tracking. */
@@ -191,7 +191,7 @@ namespace ams::fssystem {
                         char *dst = static_cast<char *>(buffer) + cur_offset;
 
                         /* Decrypt into the temporary buffer */
-                        this->decrypt_function(pooled_buffer.GetBuffer(), cur_size, this->key_index, this->encrypted_key, KeySize, ctr, IvSize, dst, cur_size);
+                        m_decrypt_function(pooled_buffer.GetBuffer(), cur_size, m_key_index, m_encrypted_key, KeySize, ctr, IvSize, dst, cur_size);
 
                         /* Copy to the destination. */
                         std::memcpy(dst, pooled_buffer.GetBuffer(), cur_size);
@@ -216,12 +216,12 @@ namespace ams::fssystem {
                                 R_UNLESS(dst_size == sizeof(fs::QueryRangeInfo), fs::ResultInvalidSize());
 
                                 /* Operate on our base storage. */
-                                R_TRY(this->base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                                R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
 
                                 /* Add in new flags. */
                                 fs::QueryRangeInfo new_info;
                                 new_info.Clear();
-                                new_info.aes_ctr_key_type = static_cast<s32>(this->key_index >= 0 ? fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes);
+                                new_info.aes_ctr_key_type = static_cast<s32>(m_key_index >= 0 ? fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes);
 
                                 /* Merge the new info in. */
                                 reinterpret_cast<fs::QueryRangeInfo *>(dst)->Merge(new_info);
@@ -230,14 +230,14 @@ namespace ams::fssystem {
                         default:
                             {
                                 /* Operate on our base storage. */
-                                R_TRY(this->base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                                R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                                 return ResultSuccess();
                             }
                     }
                 }
 
                 virtual Result GetSize(s64 *out) override {
-                    return this->base_storage->GetSize(out);
+                    return m_base_storage->GetSize(out);
                 }
 
                 virtual Result Flush() override {
@@ -260,15 +260,15 @@ namespace ams::fssystem {
             NON_COPYABLE(SwitchStorage);
             NON_MOVEABLE(SwitchStorage);
             private:
-                std::unique_ptr<fs::IStorage> true_storage;
-                std::unique_ptr<fs::IStorage> false_storage;
-                F truth_function;
+                std::unique_ptr<fs::IStorage> m_true_storage;
+                std::unique_ptr<fs::IStorage> m_false_storage;
+                F m_truth_function;
             private:
                 ALWAYS_INLINE std::unique_ptr<fs::IStorage> &SelectStorage() {
-                    return this->truth_function() ? this->true_storage : this->false_storage;
+                    return m_truth_function() ? m_true_storage : m_false_storage;
                 }
             public:
-                SwitchStorage(std::unique_ptr<fs::IStorage> &&t, std::unique_ptr<fs::IStorage> &&f, F func) : true_storage(std::move(t)), false_storage(std::move(f)), truth_function(func) { /* ... */ }
+                SwitchStorage(std::unique_ptr<fs::IStorage> &&t, std::unique_ptr<fs::IStorage> &&f, F func) : m_true_storage(std::move(t)), m_false_storage(std::move(f)), m_truth_function(func) { /* ... */ }
 
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
                     return this->SelectStorage()->Read(offset, buffer, size);
@@ -278,8 +278,8 @@ namespace ams::fssystem {
                     switch (op_id) {
                         case fs::OperationId::Invalidate:
                             {
-                                R_TRY(this->true_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                                R_TRY(this->false_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                                R_TRY(m_true_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                                R_TRY(m_false_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                                 return ResultSuccess();
                             }
                         case fs::OperationId::QueryRange:
@@ -344,15 +344,15 @@ namespace ams::fssystem {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(0 <= fs_index && fs_index < NcaHeader::FsCountMax);
-        AMS_ASSERT(this->reader != nullptr);
+        AMS_ASSERT(m_reader != nullptr);
 
         /* Get storage extents. */
-        const auto storage_offset = GetFsOffset(*this->reader, fs_index);
-        const auto storage_size   = GetFsEndOffset(*this->reader, fs_index) - storage_offset;
+        const auto storage_offset = GetFsOffset(*m_reader, fs_index);
+        const auto storage_size   = GetFsEndOffset(*m_reader, fs_index) - storage_offset;
         R_UNLESS(storage_size > 0, fs::ResultInvalidNcaHeader());
 
         /* Allocate a substorage. */
-        *out = AllocateShared<DerivedStorageHolder<fs::SubStorage, 0>>(this->reader->GetBodyStorage(), storage_offset, storage_size, this->reader);
+        *out = AllocateShared<DerivedStorageHolder<fs::SubStorage, 0>>(m_reader->GetBodyStorage(), storage_offset, storage_size, m_reader);
         R_UNLESS(*out != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         return ResultSuccess();
@@ -375,15 +375,15 @@ namespace ams::fssystem {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(option != nullptr);
-        AMS_ASSERT(this->reader != nullptr);
+        AMS_ASSERT(m_reader != nullptr);
 
         /* Get and validate fs index. */
         const auto fs_index = option->GetFsIndex();
-        R_UNLESS(this->reader->HasFsInfo(fs_index), fs::ResultPartitionNotFound());
+        R_UNLESS(m_reader->HasFsInfo(fs_index), fs::ResultPartitionNotFound());
 
         /* Initialize a reader for the fs header. */
         auto &header_reader = option->GetHeaderReader();
-        R_TRY(header_reader.Initialize(*this->reader, fs_index));
+        R_TRY(header_reader.Initialize(*m_reader, fs_index));
 
         /* Create the storage. */
         std::unique_ptr<fs::IStorage> storage;
@@ -404,16 +404,16 @@ namespace ams::fssystem {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(option != nullptr);
-        AMS_ASSERT(this->reader != nullptr);
+        AMS_ASSERT(m_reader != nullptr);
 
         /* Get and validate fs index. */
         const auto fs_index = option->GetFsIndex();
-        R_UNLESS(this->reader->HasFsInfo(fs_index), fs::ResultPartitionNotFound());
+        R_UNLESS(m_reader->HasFsInfo(fs_index), fs::ResultPartitionNotFound());
 
         /* Initialize a reader for the fs header. */
         auto &header_reader = option->GetHeaderReader();
         if (!header_reader.IsInitialized()) {
-            R_TRY(header_reader.Initialize(*this->reader, fs_index));
+            R_TRY(header_reader.Initialize(*m_reader, fs_index));
         }
 
         /* Create the storage. */
@@ -476,8 +476,8 @@ namespace ams::fssystem {
         const auto &header_reader = option->GetHeaderReader();
 
         /* Get storage extents. */
-        const auto storage_offset = GetFsOffset(*this->reader, fs_index);
-        const auto storage_size   = GetFsEndOffset(*this->reader, fs_index) - storage_offset;
+        const auto storage_offset = GetFsOffset(*m_reader, fs_index);
+        const auto storage_size   = GetFsEndOffset(*m_reader, fs_index) - storage_offset;
         R_UNLESS(storage_size > 0, fs::ResultInvalidNcaHeader());
 
         /* Set up the sparse storage if we need to, otherwise use body storage directly. */
@@ -490,7 +490,7 @@ namespace ams::fssystem {
             R_TRY(header.Verify());
 
             /* Create a new holder for the storages. */
-            std::unique_ptr storage = std::make_unique<DerivedStorageHolder<SparseStorage, 2>>(this->reader);
+            std::unique_ptr storage = std::make_unique<DerivedStorageHolder<SparseStorage, 2>>(m_reader);
             R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
             /* If there are no entries, there's nothing to actually do. */
@@ -498,7 +498,7 @@ namespace ams::fssystem {
                 storage->Initialize(storage_size);
             } else {
                 /* Prepare to create the decryptable storage. */
-                const auto raw_storage        = this->reader->GetBodyStorage();
+                const auto raw_storage        = m_reader->GetBodyStorage();
                 const auto raw_storage_offset = sparse_info.physical_offset;
                 const auto raw_storage_size   = sparse_info.GetPhysicalSize();
 
@@ -521,7 +521,7 @@ namespace ams::fssystem {
                 R_UNLESS(table_storage != nullptr, fs::ResultAllocationFailureInNew());
 
                 /* Initialize the table storage. */
-                R_TRY(table_storage->Initialize(fs::SubStorage(decryptable_storage.get(), 0, raw_storage_size), this->buffer_manager, SparseTableCacheBlockSize, SparseTableCacheCount));
+                R_TRY(table_storage->Initialize(fs::SubStorage(decryptable_storage.get(), 0, raw_storage_size), m_buffer_manager, SparseTableCacheBlockSize, SparseTableCacheCount));
 
                 /* Determine storage extents. */
                 const auto node_offset = sparse_info.bucket.offset;
@@ -530,7 +530,7 @@ namespace ams::fssystem {
                 const auto entry_size   = SparseStorage::QueryEntryStorageSize(header.entry_count);
 
                 /* Initialize the storage. */
-                R_TRY(storage->Initialize(this->allocator, fs::SubStorage(table_storage.get(), node_offset, node_size), fs::SubStorage(table_storage.get(), entry_offset, entry_size), header.entry_count));
+                R_TRY(storage->Initialize(m_allocator, fs::SubStorage(table_storage.get(), node_offset, node_size), fs::SubStorage(table_storage.get(), entry_offset, entry_size), header.entry_count));
 
                 /* Set the data/decryptable storage. */
                 storage->SetDataStorage(raw_storage, raw_storage_offset, node_offset);
@@ -545,11 +545,11 @@ namespace ams::fssystem {
         } else {
             /* Validate that we're within range. */
             s64 body_storage_size;
-            R_TRY(this->reader->GetBodyStorage()->GetSize(std::addressof(body_storage_size)));
+            R_TRY(m_reader->GetBodyStorage()->GetSize(std::addressof(body_storage_size)));
             R_UNLESS(storage_offset + storage_size <= body_storage_size, fs::ResultNcaBaseStorageOutOfRangeB());
 
             /* Set the out storage. */
-            out->SetStorage(this->reader->GetBodyStorage(), storage_offset, storage_size);
+            out->SetStorage(m_reader->GetBodyStorage(), storage_offset, storage_size);
         }
 
         /* Set the crypto variables. */
@@ -604,13 +604,13 @@ namespace ams::fssystem {
         R_UNLESS(raw_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Make the aes xts storage. */
-        const auto *key1 = this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesXts1);
-        const auto *key2 = this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesXts2);
+        const auto *key1 = m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesXts1);
+        const auto *key2 = m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesXts2);
         std::unique_ptr xts_storage = std::make_unique<AesXtsStorage>(raw_storage.get(), key1, key2, AesXtsStorage::KeySize, iv, AesXtsStorage::IvSize, NcaHeader::XtsBlockSize);
         R_UNLESS(xts_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Make the out storage. */
-        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignmentMatchingStorage<NcaHeader::XtsBlockSize, 1>, 2>>(xts_storage.get(), this->reader);
+        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignmentMatchingStorage<NcaHeader::XtsBlockSize, 1>, 2>>(xts_storage.get(), m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Set the substorages. */
@@ -634,22 +634,22 @@ namespace ams::fssystem {
         std::unique_ptr raw_storage = base_storage->MakeStorage();
 
         /* Create the decrypt storage. */
-        const bool has_external_key = reader->HasExternalDecryptionKey();
+        const bool has_external_key = m_reader->HasExternalDecryptionKey();
         std::unique_ptr<fs::IStorage> decrypt_storage;
         if (has_external_key) {
-            decrypt_storage = std::make_unique<AesCtrStorageExternal>(raw_storage.get(), this->reader->GetExternalDecryptionKey(), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, this->reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1);
+            decrypt_storage = std::make_unique<AesCtrStorageExternal>(raw_storage.get(), m_reader->GetExternalDecryptionKey(), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1);
             R_UNLESS(decrypt_storage != nullptr, fs::ResultAllocationFailureInNew());
         } else {
             /* Check if we have a hardware key. */
-            const bool has_hardware_key = this->reader->HasInternalDecryptionKeyForAesHardwareSpeedEmulation();
+            const bool has_hardware_key = m_reader->HasInternalDecryptionKeyForAesHardwareSpeedEmulation();
 
             /* Create the software decryption storage. */
-            std::unique_ptr<fs::IStorage> aes_ctr_sw_storage = std::make_unique<AesCtrStorage>(raw_storage.get(), this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtr), AesCtrStorage::KeySize, iv, AesCtrStorage::IvSize);
+            std::unique_ptr<fs::IStorage> aes_ctr_sw_storage = std::make_unique<AesCtrStorage>(raw_storage.get(), m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtr), AesCtrStorage::KeySize, iv, AesCtrStorage::IvSize);
             R_UNLESS(aes_ctr_sw_storage != nullptr, fs::ResultAllocationFailureInNew());
 
             /* If we have a hardware key and should use it, make the hardware decryption storage. */
-            if (has_hardware_key && !this->reader->IsSoftwareAesPrioritized()) {
-                std::unique_ptr<fs::IStorage> aes_ctr_hw_storage = std::make_unique<AesCtrStorageExternal>(raw_storage.get(), this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, this->reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(this->reader->GetKeyIndex(), this->reader->GetKeyGeneration()));
+            if (has_hardware_key && !m_reader->IsSoftwareAesPrioritized()) {
+                std::unique_ptr<fs::IStorage> aes_ctr_hw_storage = std::make_unique<AesCtrStorageExternal>(raw_storage.get(), m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(m_reader->GetKeyIndex(), m_reader->GetKeyGeneration()));
                 R_UNLESS(aes_ctr_hw_storage != nullptr, fs::ResultAllocationFailureInNew());
 
                 /* Create the selection storage. */
@@ -662,7 +662,7 @@ namespace ams::fssystem {
         }
 
         /* Create the storage holder. */
-        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignmentMatchingStorage<NcaHeader::CtrBlockSize, 1>, 2>>(decrypt_storage.get(), this->reader);
+        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignmentMatchingStorage<NcaHeader::CtrBlockSize, 1>, 2>>(decrypt_storage.get(), m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Set the storage holder's storages. */
@@ -716,7 +716,7 @@ namespace ams::fssystem {
         R_UNLESS(buffered_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Initialize the buffered storage. */
-        R_TRY(buffered_storage->Initialize(fs::SubStorage(table_storage.get(), 0, table_size), this->buffer_manager, AesCtrExTableCacheBlockSize, AesCtrExTableCacheCount));
+        R_TRY(buffered_storage->Initialize(fs::SubStorage(table_storage.get(), 0, table_size), m_buffer_manager, AesCtrExTableCacheBlockSize, AesCtrExTableCacheCount));
 
         /* Create an aligned storage for the buffered storage. */
         using AlignedStorage = AlignmentMatchingStorage<NcaHeader::CtrBlockSize, 1>;
@@ -742,18 +742,18 @@ namespace ams::fssystem {
 
         /* Create the aes ctr ex storage. */
         std::unique_ptr<fs::IStorage> aes_ctr_ex_storage;
-        const bool has_external_key = this->reader->HasExternalDecryptionKey();
+        const bool has_external_key = m_reader->HasExternalDecryptionKey();
         if (has_external_key) {
             /* Create the decryptor. */
             std::unique_ptr<AesCtrCounterExtendedStorage::IDecryptor> decryptor;
-            R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(decryptor), this->reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1));
+            R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(decryptor), m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1));
 
             /* Create the aes ctr ex storage. */
             std::unique_ptr impl_storage = std::make_unique<AesCtrCounterExtendedStorage>();
             R_UNLESS(impl_storage != nullptr, fs::ResultAllocationFailureInNew());
 
             /* Initialize the aes ctr ex storage. */
-            R_TRY(impl_storage->Initialize(this->allocator, this->reader->GetExternalDecryptionKey(), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(decryptor)));
+            R_TRY(impl_storage->Initialize(m_allocator, m_reader->GetExternalDecryptionKey(), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(decryptor)));
 
             /* Set the option's aes ctr ex storage. */
             option->SetAesCtrExStorageRaw(impl_storage.get());
@@ -761,7 +761,7 @@ namespace ams::fssystem {
             aes_ctr_ex_storage = std::move(impl_storage);
         } else {
             /* Check if we have a hardware key. */
-            const bool has_hardware_key = this->reader->HasInternalDecryptionKeyForAesHardwareSpeedEmulation();
+            const bool has_hardware_key = m_reader->HasInternalDecryptionKeyForAesHardwareSpeedEmulation();
 
             /* Create the software decryptor. */
             std::unique_ptr<AesCtrCounterExtendedStorage::IDecryptor> sw_decryptor;
@@ -772,23 +772,23 @@ namespace ams::fssystem {
             R_UNLESS(sw_storage != nullptr, fs::ResultAllocationFailureInNew());
 
             /* Initialize the software storage. */
-            R_TRY(sw_storage->Initialize(this->allocator, this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtr), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(sw_decryptor)));
+            R_TRY(sw_storage->Initialize(m_allocator, m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtr), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(sw_decryptor)));
 
             /* Set the option's aes ctr ex storage. */
             option->SetAesCtrExStorageRaw(sw_storage.get());
 
             /* If we have a hardware key and should use it, make the hardware decryption storage. */
-            if (has_hardware_key && !this->reader->IsSoftwareAesPrioritized()) {
+            if (has_hardware_key && !m_reader->IsSoftwareAesPrioritized()) {
                 /* Create the hardware decryptor. */
                 std::unique_ptr<AesCtrCounterExtendedStorage::IDecryptor> hw_decryptor;
-                R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(hw_decryptor), this->reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(this->reader->GetKeyIndex(), this->reader->GetKeyGeneration())));
+                R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(hw_decryptor), m_reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(m_reader->GetKeyIndex(), m_reader->GetKeyGeneration())));
 
                 /* Create the hardware storage. */
                 std::unique_ptr hw_storage = std::make_unique<AesCtrCounterExtendedStorage>();
                 R_UNLESS(hw_storage != nullptr, fs::ResultAllocationFailureInNew());
 
                 /* Initialize the hardware storage. */
-                R_TRY(hw_storage->Initialize(this->allocator, this->reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(hw_decryptor)));
+                R_TRY(hw_storage->Initialize(m_allocator, m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorage::KeySize, secure_value, base_storage_offset, data_storage, node_storage, entry_storage, entry_count, std::move(hw_decryptor)));
 
                 /* Create the selection storage. */
                 std::unique_ptr switch_storage = std::make_unique<SwitchStorage<bool (*)()>>(std::move(hw_storage), std::move(sw_storage), IsUsingHardwareAesCtrForSpeedEmulation);
@@ -803,7 +803,7 @@ namespace ams::fssystem {
         }
 
         /* Create the storage holder. */
-        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignedStorage, 5>>(aes_ctr_ex_storage.get(), this->reader);
+        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<AlignedStorage, 5>>(aes_ctr_ex_storage.get(), m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Set the aes ctr ex storages in the option. */
@@ -848,11 +848,11 @@ namespace ams::fssystem {
         {
             const s32 fs_index = header_reader.GetFsIndex();
 
-            if (this->original_reader != nullptr && this->original_reader->HasFsInfo(fs_index)) {
+            if (m_original_reader != nullptr && m_original_reader->HasFsInfo(fs_index)) {
                 NcaFsHeaderReader original_header_reader;
-                R_TRY(original_header_reader.Initialize(*this->original_reader, fs_index));
+                R_TRY(original_header_reader.Initialize(*m_original_reader, fs_index));
 
-                NcaFileSystemDriver original_driver(this->original_reader, this->allocator, this->buffer_manager);
+                NcaFileSystemDriver original_driver(m_original_reader, m_allocator, m_buffer_manager);
                 StorageOption original_option(std::addressof(original_header_reader), fs_index);
 
                 BaseStorage original_base_storage;
@@ -877,21 +877,21 @@ namespace ams::fssystem {
         R_UNLESS(indirect_table_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Initialize the indirect table storage. */
-        R_TRY(indirect_table_storage->Initialize(fs::SubStorage(base_storage.get(), indirect_data_size, node_size + entry_size), this->buffer_manager, IndirectTableCacheBlockSize, IndirectTableCacheCount));
+        R_TRY(indirect_table_storage->Initialize(fs::SubStorage(base_storage.get(), indirect_data_size, node_size + entry_size), m_buffer_manager, IndirectTableCacheBlockSize, IndirectTableCacheCount));
 
         /* Create the indirect data storage. */
         std::unique_ptr indirect_data_storage = std::make_unique<save::BufferedStorage>();
         R_UNLESS(indirect_data_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Initialize the indirect data storage. */
-        R_TRY(indirect_data_storage->Initialize(fs::SubStorage(base_storage.get(), 0, indirect_data_size), this->buffer_manager, IndirectDataCacheBlockSize, IndirectDataCacheCount));
+        R_TRY(indirect_data_storage->Initialize(fs::SubStorage(base_storage.get(), 0, indirect_data_size), m_buffer_manager, IndirectDataCacheBlockSize, IndirectDataCacheCount));
 
         /* Create the storage holder. */
-        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<IndirectStorage, 4>>(this->reader);
+        std::unique_ptr storage = std::make_unique<DerivedStorageHolder<IndirectStorage, 4>>(m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Initialize the storage holder. */
-        R_TRY(storage->Initialize(this->allocator, fs::SubStorage(indirect_table_storage.get(), 0, node_size), fs::SubStorage(indirect_table_storage.get(), node_size, entry_size), header.entry_count));
+        R_TRY(storage->Initialize(m_allocator, fs::SubStorage(indirect_table_storage.get(), 0, node_size), fs::SubStorage(indirect_table_storage.get(), node_size, entry_size), header.entry_count));
 
         /* Set the storage holder's storages. */
         storage->SetStorage(0, original_storage.get(), 0, original_data_size);
@@ -955,7 +955,7 @@ namespace ams::fssystem {
         const auto total_buffer_size = hash_buffer_size + cache_buffer_size;
 
         /* Make a buffer holder. */
-        BufferHolder buffer_holder(this->allocator, total_buffer_size);
+        BufferHolder buffer_holder(m_allocator, total_buffer_size);
         R_UNLESS(buffer_holder.IsValid(), fs::ResultAllocationFailureInNcaFileSystemDriverI());
 
         /* Make the data storage. */
@@ -983,7 +983,7 @@ namespace ams::fssystem {
         R_UNLESS(cache_storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Make the storage holder. */
-        std::unique_ptr storage = std::make_unique<StorageHolder>(cache_storage.get(), hash_data.hash_block_size, this->reader);
+        std::unique_ptr storage = std::make_unique<StorageHolder>(cache_storage.get(), hash_data.hash_block_size, m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Set the storage holder's data. */
@@ -1026,11 +1026,11 @@ namespace ams::fssystem {
         storage_info.SetDataStorage(fs::SubStorage(base_storage.get(), layer_info.offset, layer_info.size));
 
         /* Make the storage holder. */
-        std::unique_ptr storage = std::make_unique<StorageHolder>(this->reader);
+        std::unique_ptr storage = std::make_unique<StorageHolder>(m_reader);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInNew());
 
         /* Initialize the integrity storage. */
-        R_TRY(storage->Initialize(level_hash_info, hash_data.master_hash, storage_info, this->buffer_manager));
+        R_TRY(storage->Initialize(level_hash_info, hash_data.master_hash, storage_info, m_buffer_manager));
 
         /* Set the storage holder's data. */
         storage->Set(std::move(base_storage));

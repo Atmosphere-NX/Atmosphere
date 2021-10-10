@@ -21,15 +21,15 @@ namespace ams::fssrv::fscreator {
 
         class RomFileSystemWithBuffer : public ::ams::fssystem::RomFsFileSystem {
             private:
-                void *meta_cache_buffer;
-                size_t meta_cache_buffer_size;
-                MemoryResource *allocator;
+                void *m_meta_cache_buffer;
+                size_t m_meta_cache_buffer_size;
+                MemoryResource *m_allocator;
             public:
-                explicit RomFileSystemWithBuffer(MemoryResource *mr) : meta_cache_buffer(nullptr), allocator(mr) { /* ... */ }
+                explicit RomFileSystemWithBuffer(MemoryResource *mr) : m_meta_cache_buffer(nullptr), m_allocator(mr) { /* ... */ }
 
                 ~RomFileSystemWithBuffer() {
-                    if (this->meta_cache_buffer != nullptr) {
-                        this->allocator->Deallocate(this->meta_cache_buffer, this->meta_cache_buffer_size);
+                    if (m_meta_cache_buffer != nullptr) {
+                        m_allocator->Deallocate(m_meta_cache_buffer, m_meta_cache_buffer_size);
                     }
                 }
 
@@ -41,14 +41,14 @@ namespace ams::fssrv::fscreator {
                     }
 
                     /* Allocate a buffer. */
-                    this->meta_cache_buffer = this->allocator->Allocate(buffer_size);
-                    if (this->meta_cache_buffer == nullptr) {
+                    m_meta_cache_buffer = m_allocator->Allocate(buffer_size);
+                    if (m_meta_cache_buffer == nullptr) {
                         return RomFsFileSystem::Initialize(std::move(storage), nullptr, 0, false);
                     }
 
                     /* Initialize with cache buffer. */
-                    this->meta_cache_buffer_size = buffer_size;
-                    return RomFsFileSystem::Initialize(std::move(storage), this->meta_cache_buffer, this->meta_cache_buffer_size, true);
+                    m_meta_cache_buffer_size = buffer_size;
+                    return RomFsFileSystem::Initialize(std::move(storage), m_meta_cache_buffer, m_meta_cache_buffer_size, true);
                 }
         };
 
@@ -56,7 +56,7 @@ namespace ams::fssrv::fscreator {
 
     Result RomFileSystemCreator::Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) {
         /* Allocate a filesystem. */
-        std::shared_ptr fs = fssystem::AllocateShared<RomFileSystemWithBuffer>(this->allocator);
+        std::shared_ptr fs = fssystem::AllocateShared<RomFileSystemWithBuffer>(m_allocator);
         R_UNLESS(fs != nullptr, fs::ResultAllocationFailureInRomFileSystemCreatorA());
 
         /* Initialize the filesystem. */

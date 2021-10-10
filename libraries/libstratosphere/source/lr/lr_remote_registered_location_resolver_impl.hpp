@@ -21,15 +21,15 @@ namespace ams::lr {
 
     class RemoteRegisteredLocationResolverImpl {
         private:
-            ::LrRegisteredLocationResolver srv;
+            ::LrRegisteredLocationResolver m_srv;
         public:
-            RemoteRegisteredLocationResolverImpl(::LrRegisteredLocationResolver &l) : srv(l) { /* ... */ }
+            RemoteRegisteredLocationResolverImpl(::LrRegisteredLocationResolver &l) : m_srv(l) { /* ... */ }
 
-            ~RemoteRegisteredLocationResolverImpl() { ::serviceClose(std::addressof(srv.s)); }
+            ~RemoteRegisteredLocationResolverImpl() { ::serviceClose(std::addressof(m_srv.s)); }
         public:
             /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-                return ::lrRegLrResolveProgramPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+                return ::lrRegLrResolveProgramPath(std::addressof(m_srv), id.value, out->str);
             }
 
             Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {

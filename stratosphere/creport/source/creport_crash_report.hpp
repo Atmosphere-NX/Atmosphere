@@ -25,66 +25,66 @@ namespace ams::creport {
             static constexpr size_t MemoryHeapSize = 512_KB;
             static_assert(MemoryHeapSize >= DyingMessageSizeMax + sizeof(ModuleList) + sizeof(ThreadList) + os::MemoryPageSize);
         private:
-            os::NativeHandle debug_handle = os::InvalidNativeHandle;
-            bool has_extra_info = true;
-            Result result = creport::ResultIncompleteReport();
+            os::NativeHandle m_debug_handle = os::InvalidNativeHandle;
+            bool m_has_extra_info = true;
+            Result m_result = creport::ResultIncompleteReport();
 
             /* Meta, used for building module/thread list. */
-            ThreadTlsMap thread_tls_map = {};
+            ThreadTlsMap m_thread_tls_map = {};
 
             /* Attach process info. */
-            svc::DebugInfoCreateProcess process_info = {};
-            u64 dying_message_address = 0;
-            u64 dying_message_size = 0;
-            u8 *dying_message = nullptr;
+            svc::DebugInfoCreateProcess m_process_info = {};
+            u64 m_dying_message_address = 0;
+            u64 m_dying_message_size = 0;
+            u8 *m_dying_message = nullptr;
 
             /* Exception info. */
-            svc::DebugInfoException exception_info = {};
-            u64 module_base_address = 0;
-            u64 crashed_thread_id = 0;
-            ThreadInfo crashed_thread;
+            svc::DebugInfoException m_exception_info = {};
+            u64 m_module_base_address = 0;
+            u64 m_crashed_thread_id = 0;
+            ThreadInfo m_crashed_thread;
 
             /* Lists. */
-            ModuleList *module_list = nullptr;
-            ThreadList *thread_list = nullptr;
+            ModuleList *m_module_list = nullptr;
+            ThreadList *m_thread_list = nullptr;
 
             /* Memory heap. */
-            lmem::HeapHandle heap_handle = nullptr;
-            u8 heap_storage[MemoryHeapSize] = {};
+            lmem::HeapHandle m_heap_handle = nullptr;
+            u8 m_heap_storage[MemoryHeapSize] = {};
         public:
             constexpr CrashReport() = default;
 
             Result GetResult() const {
-                return this->result;
+                return m_result;
             }
 
             bool IsComplete() const {
-                return !ResultIncompleteReport::Includes(this->result);
+                return !ResultIncompleteReport::Includes(m_result);
             }
 
             bool IsOpen() const {
-                return this->debug_handle != os::InvalidNativeHandle;
+                return m_debug_handle != os::InvalidNativeHandle;
             }
 
             bool IsApplication() const {
-                return (this->process_info.flags & svc::CreateProcessFlag_IsApplication) != 0;
+                return (m_process_info.flags & svc::CreateProcessFlag_IsApplication) != 0;
             }
 
             bool Is64Bit() const {
-                return (this->process_info.flags & svc::CreateProcessFlag_Is64Bit) != 0;
+                return (m_process_info.flags & svc::CreateProcessFlag_Is64Bit) != 0;
             }
 
             bool IsUserBreak() const {
-                return this->exception_info.type == svc::DebugException_UserBreak;
+                return m_exception_info.type == svc::DebugException_UserBreak;
             }
 
             bool OpenProcess(os::ProcessId process_id) {
-                return R_SUCCEEDED(svc::DebugActiveProcess(std::addressof(this->debug_handle), process_id.value));
+                return R_SUCCEEDED(svc::DebugActiveProcess(std::addressof(m_debug_handle), process_id.value));
             }
 
             void Close() {
-                os::CloseNativeHandle(this->debug_handle);
-                this->debug_handle = os::InvalidNativeHandle;
+                os::CloseNativeHandle(m_debug_handle);
+                m_debug_handle = os::InvalidNativeHandle;
             }
 
             void Initialize();

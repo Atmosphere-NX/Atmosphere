@@ -35,9 +35,9 @@ namespace ams::fssystem {
 
     void IndirectStorage::Finalize() {
         if (this->IsInitialized()) {
-            this->table.Finalize();
+            m_table.Finalize();
             for (auto i = 0; i < StorageCount; i++) {
-                this->data_storage[i] = fs::SubStorage();
+                m_data_storage[i] = fs::SubStorage();
             }
         }
     }
@@ -59,14 +59,14 @@ namespace ams::fssystem {
         R_UNLESS(out_entries != nullptr || entry_count == 0, fs::ResultNullptrArgument());
 
         /* Check that our range is valid. */
-        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
 
         /* Find the offset in our tree. */
         BucketTree::Visitor visitor;
-        R_TRY(this->table.Find(std::addressof(visitor), offset));
+        R_TRY(m_table.Find(std::addressof(visitor), offset));
         {
             const auto entry_offset = visitor.Get<Entry>()->GetVirtualOffset();
-            R_UNLESS(0 <= entry_offset && this->table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
+            R_UNLESS(0 <= entry_offset && m_table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
         }
 
         /* Prepare to loop over entries. */
@@ -124,10 +124,10 @@ namespace ams::fssystem {
                 {
                     if (size > 0) {
                         /* Validate arguments. */
-                        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
-                        if (!this->table.IsEmpty()) {
+                        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
+                        if (!m_table.IsEmpty()) {
                             /* Invalidate our table's cache. */
-                            R_TRY(this->table.InvalidateCache());
+                            R_TRY(m_table.InvalidateCache());
 
                             /* Operate on our entries. */
                             R_TRY(this->OperatePerEntry<false>(offset, size,  [=](fs::IStorage *storage, s64 data_offset, s64 cur_offset, s64 cur_size) -> Result {
@@ -148,8 +148,8 @@ namespace ams::fssystem {
 
                     if (size > 0) {
                         /* Validate arguments. */
-                        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
-                        if (!this->table.IsEmpty()) {
+                        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
+                        if (!m_table.IsEmpty()) {
                             /* Create a new info. */
                             fs::QueryRangeInfo merged_info;
                             merged_info.Clear();

@@ -73,8 +73,8 @@ namespace ams::gpio::driver::impl {
         auto ev_guard = SCOPE_GUARD { os::DestroySystemEvent(event); };
 
         /* Attach the event to our holder. */
-        this->event_holder.AttachEvent(event);
-        auto hl_guard = SCOPE_GUARD { this->event_holder.DetachEvent(); };
+        m_event_holder.AttachEvent(event);
+        auto hl_guard = SCOPE_GUARD { m_event_holder.DetachEvent(); };
 
         /* Update interrupt needed. */
         R_TRY(this->UpdateDriverInterruptEnabled());
@@ -97,7 +97,7 @@ namespace ams::gpio::driver::impl {
         }
 
         /* Detach and destroy the event */
-        os::DestroySystemEvent(this->event_holder.DetachEvent());
+        os::DestroySystemEvent(m_event_holder.DetachEvent());
 
         /* Update interrupt needed. */
         R_ABORT_UNLESS(this->UpdateDriverInterruptEnabled());
@@ -143,7 +143,7 @@ namespace ams::gpio::driver::impl {
         AMS_ASSERT(driver.GetInterruptControlMutex(pad).IsLockedByCurrentThread());
         AMS_UNUSED(pad, driver);
 
-        if (auto *event = this->event_holder.GetSystemEvent(); event != nullptr) {
+        if (auto *event = m_event_holder.GetSystemEvent(); event != nullptr) {
             os::SignalSystemEvent(event);
         }
     }

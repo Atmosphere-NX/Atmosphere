@@ -34,14 +34,14 @@ namespace ams::mitm::fs {
             static constexpr s64 FakeSecureSize        = static_cast<s64>(SecureCalibrationBinaryBackupSize);
             static constexpr s64 FakeSecureEndOffset   = FakeSecureStartOffset + FakeSecureSize;
         private:
-            sm::MitmProcessInfo client_info;
-            bool read_blank;
-            bool allow_writes;
+            sm::MitmProcessInfo m_client_info;
+            bool m_read_blank;
+            bool m_allow_writes;
         public:
             CalibrationBinaryStorage(FsStorage &s,  const sm::MitmProcessInfo &c)
-                : Base(s), client_info(c),
-                  read_blank(mitm::ShouldReadBlankCalibrationBinary()),
-                  allow_writes(mitm::IsWriteToCalibrationBinaryAllowed())
+                : Base(s), m_client_info(c),
+                  m_read_blank(mitm::ShouldReadBlankCalibrationBinary()),
+                  m_allow_writes(mitm::IsWriteToCalibrationBinaryAllowed())
             {
                 /* ... */
             }

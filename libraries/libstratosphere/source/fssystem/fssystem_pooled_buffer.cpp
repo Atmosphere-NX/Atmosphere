@@ -21,40 +21,40 @@ namespace ams::fssystem {
 
         class AdditionalDeviceAddressEntry {
             private:
-                os::SdkMutex mutex;
-                bool is_registered;
-                uintptr_t address;
-                size_t size;
+                os::SdkMutex m_mutex;
+                bool m_is_registered;
+                uintptr_t m_address;
+                size_t m_size;
             public:
-                constexpr AdditionalDeviceAddressEntry() : mutex(), is_registered(), address(), size() { /* ... */ }
+                constexpr AdditionalDeviceAddressEntry() : m_mutex(), m_is_registered(), m_address(), m_size() { /* ... */ }
 
                 void Register(uintptr_t addr, size_t sz) {
-                    std::scoped_lock lk(this->mutex);
+                    std::scoped_lock lk(m_mutex);
 
-                    AMS_ASSERT(!this->is_registered);
-                    if (!this->is_registered) {
-                        this->is_registered = true;
-                        this->address       = addr;
-                        this->size          = sz;
+                    AMS_ASSERT(!m_is_registered);
+                    if (!m_is_registered) {
+                        m_is_registered = true;
+                        m_address       = addr;
+                        m_size          = sz;
                     }
                 }
 
                 void Unregister(uintptr_t addr) {
-                    std::scoped_lock lk(this->mutex);
+                    std::scoped_lock lk(m_mutex);
 
-                    if (this->is_registered && this->address == addr) {
-                        this->is_registered = false;
-                        this->address       = 0;
-                        this->size          = 0;
+                    if (m_is_registered && m_address == addr) {
+                        m_is_registered = false;
+                        m_address       = 0;
+                        m_size          = 0;
                     }
                 }
 
                 bool Includes(const void *ptr) {
-                    std::scoped_lock lk(this->mutex);
+                    std::scoped_lock lk(m_mutex);
 
-                    if (this->is_registered) {
+                    if (m_is_registered) {
                         const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-                        return this->address <= addr && addr < this->address + this->size;
+                        return m_address <= addr && addr < m_address + m_size;
                     } else {
                         return false;
                     }
@@ -97,7 +97,7 @@ namespace ams::fssystem {
     void PooledBuffer::AllocateCore(size_t ideal_size, size_t required_size, bool large) {
         /* Ensure preconditions. */
         AMS_ASSERT(g_heap_buffer != nullptr);
-        AMS_ASSERT(this->buffer == nullptr);
+        AMS_ASSERT(m_buffer == nullptr);
         AMS_ASSERT(g_heap.GetBlockSize() == HeapBlockSize);
 
         /* Check that we can allocate this size. */
@@ -123,13 +123,13 @@ namespace ams::fssystem {
                     const auto order = g_heap.GetOrderFromBytes(std::min(target_size, allocatable_size));
 
                     /* Allocate and get the size. */
-                    this->buffer = reinterpret_cast<char *>(g_heap.AllocateByOrder(order));
-                    this->size   = g_heap.GetBytesFromOrder(order);
+                    m_buffer = reinterpret_cast<char *>(g_heap.AllocateByOrder(order));
+                    m_size   = g_heap.GetBytesFromOrder(order);
                 }
             }
 
             /* Check if we allocated. */
-            if (this->buffer != nullptr) {
+            if (m_buffer != nullptr) {
                 /* If we need to trim the end, do so. */
                 if (this->GetSize() >= target_size + HeapAllocatableSizeTrim) {
                     this->Shrink(util::AlignUp(target_size, HeapAllocatableSizeTrim));
@@ -163,9 +163,9 @@ namespace ams::fssystem {
         AMS_ASSERT(ideal_size <= GetAllocatableSizeMaxCore(true));
 
         /* Check if we actually need to shrink. */
-        if (this->size > ideal_size) {
+        if (m_size > ideal_size) {
             /* If we do, we need to have a buffer allocated from the heap. */
-            AMS_ASSERT(this->buffer != nullptr);
+            AMS_ASSERT(m_buffer != nullptr);
             AMS_ASSERT(g_heap.GetBlockSize() == HeapBlockSize);
 
             const size_t new_size = util::AlignUp(ideal_size, HeapBlockSize);
@@ -174,10 +174,10 @@ namespace ams::fssystem {
             {
                 std::scoped_lock lk(g_heap_mutex);
 
-                while (new_size < this->size) {
+                while (new_size < m_size) {
                     /* Determine the size and order to free. */
-                    const size_t tail_align = util::LeastSignificantOneBit(this->size);
-                    const size_t free_size  = std::min(util::FloorPowerOfTwo(this->size - new_size), tail_align);
+                    const size_t tail_align = util::LeastSignificantOneBit(m_size);
+                    const size_t free_size  = std::min(util::FloorPowerOfTwo(m_size - new_size), tail_align);
                     const s32 free_order    = g_heap.GetOrderFromBytes(free_size);
 
                     /* Ensure we determined size correctly. */
@@ -185,14 +185,14 @@ namespace ams::fssystem {
                     AMS_ASSERT(free_size == g_heap.GetBytesFromOrder(free_order));
 
                     /* Actually free the memory. */
-                    g_heap.Free(this->buffer + this->size - free_size, free_order);
-                    this->size -= free_size;
+                    g_heap.Free(m_buffer + m_size - free_size, free_order);
+                    m_size -= free_size;
                 }
             }
 
             /* Shrinking to zero means that we have no buffer. */
-            if (this->size == 0) {
-                this->buffer = nullptr;
+            if (m_size == 0) {
+                m_buffer = nullptr;
             }
         }
     }

@@ -34,13 +34,13 @@ namespace ams::mitm::ns {
 
     class NsDocumentService {
         private:
-            sm::MitmProcessInfo client_info;
-            std::unique_ptr<::NsDocumentInterface> srv;
+            sm::MitmProcessInfo m_client_info;
+            std::unique_ptr<::NsDocumentInterface> m_srv;
         public:
-            NsDocumentService(const sm::MitmProcessInfo &cl, std::unique_ptr<::NsDocumentInterface> s) : client_info(cl), srv(std::move(s)) { /* .. */ }
+            NsDocumentService(const sm::MitmProcessInfo &cl, std::unique_ptr<::NsDocumentInterface> s) : m_client_info(cl), m_srv(std::move(s)) { /* .. */ }
 
             virtual ~NsDocumentService() {
-                nsDocumentInterfaceClose(this->srv.get());
+                nsDocumentInterfaceClose(m_srv.get());
             }
         public:
             /* Actual command API. */

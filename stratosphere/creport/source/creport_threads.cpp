@@ -61,67 +61,67 @@ namespace ams::creport {
     }
 
     void ThreadList::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("Number of Threads:               %02zu\n", this->thread_count);
-        for (size_t i = 0; i < this->thread_count; i++) {
+        file.WriteFormat("Number of Threads:               %02zu\n", m_thread_count);
+        for (size_t i = 0; i < m_thread_count; i++) {
             file.WriteFormat("Threads[%02zu]:\n", i);
-            this->threads[i].SaveToFile(file);
+            m_threads[i].SaveToFile(file);
         }
     }
 
     void ThreadInfo::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("    Thread ID:                   %016lx\n", this->thread_id);
-        if (std::strcmp(this->name, "") != 0) {
-            file.WriteFormat("    Thread Name:                 %s\n", this->name);
+        file.WriteFormat("    Thread ID:                   %016lx\n", m_thread_id);
+        if (std::strcmp(m_name, "") != 0) {
+            file.WriteFormat("    Thread Name:                 %s\n", m_name);
         }
-        if (this->stack_top != 0) {
-            file.WriteFormat("    Stack Region:                %016lx-%016lx\n", this->stack_bottom, this->stack_top);
+        if (m_stack_top != 0) {
+            file.WriteFormat("    Stack Region:                %016lx-%016lx\n", m_stack_bottom, m_stack_top);
         }
         file.WriteFormat("    Registers:\n");
         {
             for (unsigned int i = 0; i <= 28; i++) {
-                file.WriteFormat("        X[%02u]:                   %s\n", i, this->module_list->GetFormattedAddressString(this->context.r[i]));
+                file.WriteFormat("        X[%02u]:                   %s\n", i, m_module_list->GetFormattedAddressString(m_context.r[i]));
             }
-            file.WriteFormat("        FP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.fp));
-            file.WriteFormat("        LR:                      %s\n", this->module_list->GetFormattedAddressString(this->context.lr));
-            file.WriteFormat("        SP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.sp));
-            file.WriteFormat("        PC:                      %s\n", this->module_list->GetFormattedAddressString(this->context.pc));
+            file.WriteFormat("        FP:                      %s\n", m_module_list->GetFormattedAddressString(m_context.fp));
+            file.WriteFormat("        LR:                      %s\n", m_module_list->GetFormattedAddressString(m_context.lr));
+            file.WriteFormat("        SP:                      %s\n", m_module_list->GetFormattedAddressString(m_context.sp));
+            file.WriteFormat("        PC:                      %s\n", m_module_list->GetFormattedAddressString(m_context.pc));
         }
-        if (this->stack_trace_size != 0) {
+        if (m_stack_trace_size != 0) {
             file.WriteFormat("    Stack Trace:\n");
-            for (size_t i = 0; i < this->stack_trace_size; i++) {
-                file.WriteFormat("        ReturnAddress[%02zu]:       %s\n", i, this->module_list->GetFormattedAddressString(this->stack_trace[i]));
+            for (size_t i = 0; i < m_stack_trace_size; i++) {
+                file.WriteFormat("        ReturnAddress[%02zu]:       %s\n", i, m_module_list->GetFormattedAddressString(m_stack_trace[i]));
             }
         }
-        if (this->stack_dump_base != 0) {
+        if (m_stack_dump_base != 0) {
             file.WriteFormat("    Stack Dump:                               00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
             for (size_t i = 0; i < 0x10; i++) {
                 const size_t ofs = i * 0x10;
                 file.WriteFormat("                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-                    this->stack_dump_base + ofs, this->stack_dump[ofs + 0], this->stack_dump[ofs + 1], this->stack_dump[ofs + 2], this->stack_dump[ofs + 3], this->stack_dump[ofs + 4], this->stack_dump[ofs + 5], this->stack_dump[ofs + 6], this->stack_dump[ofs + 7],
-                    this->stack_dump[ofs + 8], this->stack_dump[ofs + 9], this->stack_dump[ofs + 10], this->stack_dump[ofs + 11], this->stack_dump[ofs + 12], this->stack_dump[ofs + 13], this->stack_dump[ofs + 14], this->stack_dump[ofs + 15]);
+                    m_stack_dump_base + ofs, m_stack_dump[ofs + 0], m_stack_dump[ofs + 1], m_stack_dump[ofs + 2], m_stack_dump[ofs + 3], m_stack_dump[ofs + 4], m_stack_dump[ofs + 5], m_stack_dump[ofs + 6], m_stack_dump[ofs + 7],
+                    m_stack_dump[ofs + 8], m_stack_dump[ofs + 9], m_stack_dump[ofs + 10], m_stack_dump[ofs + 11], m_stack_dump[ofs + 12], m_stack_dump[ofs + 13], m_stack_dump[ofs + 14], m_stack_dump[ofs + 15]);
             }
         }
-        if (this->tls_address != 0) {
-            file.WriteFormat("    TLS Address:                 %016lx\n", this->tls_address);
+        if (m_tls_address != 0) {
+            file.WriteFormat("    TLS Address:                 %016lx\n", m_tls_address);
             file.WriteFormat("    TLS Dump:                                 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
             for (size_t i = 0; i < 0x10; i++) {
                 const size_t ofs = i * 0x10;
                 file.WriteFormat("                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-                    this->tls_address + ofs, this->tls[ofs + 0], this->tls[ofs + 1], this->tls[ofs + 2], this->tls[ofs + 3], this->tls[ofs + 4], this->tls[ofs + 5], this->tls[ofs + 6], this->tls[ofs + 7],
-                    this->tls[ofs + 8], this->tls[ofs + 9], this->tls[ofs + 10], this->tls[ofs + 11], this->tls[ofs + 12], this->tls[ofs + 13], this->tls[ofs + 14], this->tls[ofs + 15]);
+                    m_tls_address + ofs, m_tls[ofs + 0], m_tls[ofs + 1], m_tls[ofs + 2], m_tls[ofs + 3], m_tls[ofs + 4], m_tls[ofs + 5], m_tls[ofs + 6], m_tls[ofs + 7],
+                    m_tls[ofs + 8], m_tls[ofs + 9], m_tls[ofs + 10], m_tls[ofs + 11], m_tls[ofs + 12], m_tls[ofs + 13], m_tls[ofs + 14], m_tls[ofs + 15]);
             }
         }
     }
 
     bool ThreadInfo::ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit) {
         /* Set thread id. */
-        this->thread_id = thread_id;
+        m_thread_id = thread_id;
 
         /* Verify that the thread is running or waiting. */
         {
             u64 _;
             u32 _thread_state;
-            if (R_FAILED(svc::GetDebugThreadParam(&_, &_thread_state, debug_handle, this->thread_id, svc::DebugThreadParam_State))) {
+            if (R_FAILED(svc::GetDebugThreadParam(&_, &_thread_state, debug_handle, m_thread_id, svc::DebugThreadParam_State))) {
                 return false;
             }
 
@@ -132,24 +132,24 @@ namespace ams::creport {
         }
 
         /* Get the thread context. */
-        if (R_FAILED(svc::GetDebugThreadContext(std::addressof(this->context), debug_handle, this->thread_id, svc::ThreadContextFlag_All))) {
+        if (R_FAILED(svc::GetDebugThreadContext(std::addressof(m_context), debug_handle, m_thread_id, svc::ThreadContextFlag_All))) {
             return false;
         }
 
         /* In aarch32 mode svc::GetDebugThreadContext does not set the LR, FP, and SP registers correctly. */
         if (!is_64_bit) {
-            this->context.fp = this->context.r[11];
-            this->context.sp = this->context.r[13];
-            this->context.lr = this->context.r[14];
+            m_context.fp = m_context.r[11];
+            m_context.sp = m_context.r[13];
+            m_context.lr = m_context.r[14];
         }
 
         /* Read TLS, if present. */
         /* TODO: struct definitions for nnSdk's ThreadType/TLS Layout? */
-        this->tls_address = 0;
-        if (tls_map.GetThreadTls(std::addressof(this->tls_address), thread_id)) {
+        m_tls_address = 0;
+        if (tls_map.GetThreadTls(std::addressof(m_tls_address), thread_id)) {
             u8 thread_tls[sizeof(svc::ThreadLocalRegion)];
-            if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_tls), debug_handle, this->tls_address, sizeof(thread_tls)))) {
-                std::memcpy(this->tls, thread_tls, sizeof(this->tls));
+            if (R_SUCCEEDED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(thread_tls), debug_handle, m_tls_address, sizeof(thread_tls)))) {
+                std::memcpy(m_tls, thread_tls, sizeof(m_tls));
                 /* Try to detect libnx threads, and skip name parsing then. */
                 if (*(reinterpret_cast<u32 *>(std::addressof(thread_tls[0x1E0]))) != LibnxThreadVarMagic) {
                     u8 thread_type[0x1C0];
@@ -161,12 +161,12 @@ namespace ams::creport {
                             /* Check thread name is actually at thread name. */
                             static_assert(0x1A8 - 0x188 == NameLengthMax, "NameLengthMax definition!");
                             if (*(reinterpret_cast<u64 *>(std::addressof(thread_type[0x1A8]))) == thread_type_addr + 0x188) {
-                                std::memcpy(this->name, thread_type + 0x188, NameLengthMax);
+                                std::memcpy(m_name, thread_type + 0x188, NameLengthMax);
                             }
                         } else if (thread_version == 1) {
                             static_assert(0x1A0 - 0x180 == NameLengthMax, "NameLengthMax definition!");
                             if (*(reinterpret_cast<u64 *>(std::addressof(thread_type[0x1A0]))) == thread_type_addr + 0x180) {
-                                std::memcpy(this->name, thread_type + 0x180, NameLengthMax);
+                                std::memcpy(m_name, thread_type + 0x180, NameLengthMax);
                             }
                         }
                     }
@@ -179,9 +179,9 @@ namespace ams::creport {
 
         /* Dump stack trace. */
         if (is_64_bit) {
-            ReadStackTrace<u64>(std::addressof(this->stack_trace_size), this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
+            ReadStackTrace<u64>(std::addressof(m_stack_trace_size), m_stack_trace, StackTraceSizeMax, debug_handle, m_context.fp);
         } else {
-            ReadStackTrace<u32>(std::addressof(this->stack_trace_size), this->stack_trace, StackTraceSizeMax, debug_handle, this->context.fp);
+            ReadStackTrace<u32>(std::addressof(m_stack_trace_size), m_stack_trace, StackTraceSizeMax, debug_handle, m_context.fp);
         }
 
         return true;
@@ -191,7 +191,7 @@ namespace ams::creport {
         /* Query stack region. */
         svc::MemoryInfo mi;
         svc::PageInfo pi;
-        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, this->context.sp))) {
+        if (R_FAILED(svc::QueryDebugProcessMemory(std::addressof(mi), std::addressof(pi), debug_handle, m_context.sp))) {
             return;
         }
 
@@ -204,56 +204,56 @@ namespace ams::creport {
         }
 
         /* Save stack extents. */
-        this->stack_bottom = mi.base_address;
-        this->stack_top    = mi.base_address + mi.size;
+        m_stack_bottom = mi.base_address;
+        m_stack_top    = mi.base_address + mi.size;
 
         /* We always want to dump 0x100 of stack, starting from the lowest 0x10-byte aligned address below the stack pointer. */
         /* Note: if the stack pointer is below the stack bottom, we will start dumping from the stack bottom. */
-        this->stack_dump_base = std::min(std::max(this->context.sp & ~0xFul, this->stack_bottom), this->stack_top - sizeof(this->stack_dump));
+        m_stack_dump_base = std::min(std::max(m_context.sp & ~0xFul, m_stack_bottom), m_stack_top - sizeof(m_stack_dump));
 
         /* Try to read stack. */
-        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(this->stack_dump), debug_handle, this->stack_dump_base, sizeof(this->stack_dump)))) {
-            this->stack_dump_base = 0;
+        if (R_FAILED(svc::ReadDebugProcessMemory(reinterpret_cast<uintptr_t>(m_stack_dump), debug_handle, m_stack_dump_base, sizeof(m_stack_dump)))) {
+            m_stack_dump_base = 0;
         }
     }
 
     void ThreadInfo::DumpBinary(ScopedFile &file) {
         /* Dump id and context. */
-        file.Write(std::addressof(this->thread_id), sizeof(this->thread_id));
-        file.Write(std::addressof(this->context), sizeof(this->context));
+        file.Write(std::addressof(m_thread_id), sizeof(m_thread_id));
+        file.Write(std::addressof(m_context), sizeof(m_context));
 
         /* Dump TLS info and name. */
-        file.Write(std::addressof(this->tls_address), sizeof(this->tls_address));
-        file.Write(std::addressof(this->tls), sizeof(this->tls));
-        file.Write(std::addressof(this->name), sizeof(this->name));
+        file.Write(std::addressof(m_tls_address), sizeof(m_tls_address));
+        file.Write(std::addressof(m_tls), sizeof(m_tls));
+        file.Write(std::addressof(m_name), sizeof(m_name));
 
         /* Dump stack extents and stack dump. */
-        file.Write(std::addressof(this->stack_bottom), sizeof(this->stack_bottom));
-        file.Write(std::addressof(this->stack_top), sizeof(this->stack_top));
-        file.Write(std::addressof(this->stack_dump_base), sizeof(this->stack_dump_base));
-        file.Write(std::addressof(this->stack_dump), sizeof(this->stack_dump));
+        file.Write(std::addressof(m_stack_bottom), sizeof(m_stack_bottom));
+        file.Write(std::addressof(m_stack_top), sizeof(m_stack_top));
+        file.Write(std::addressof(m_stack_dump_base), sizeof(m_stack_dump_base));
+        file.Write(std::addressof(m_stack_dump), sizeof(m_stack_dump));
 
         /* Dump stack trace. */
         {
-            const u64 sts = this->stack_trace_size;
+            const u64 sts = m_stack_trace_size;
             file.Write(std::addressof(sts), sizeof(sts));
         }
-        file.Write(this->stack_trace, this->stack_trace_size);
+        file.Write(m_stack_trace, m_stack_trace_size);
     }
 
     void ThreadList::DumpBinary(ScopedFile &file, u64 crashed_thread_id) {
         const u32 magic = DumpedThreadInfoMagic;
-        const u32 count = this->thread_count;
+        const u32 count = m_thread_count;
         file.Write(std::addressof(magic), sizeof(magic));
         file.Write(std::addressof(count), sizeof(count));
         file.Write(std::addressof(crashed_thread_id), sizeof(crashed_thread_id));
-        for (size_t i = 0; i < this->thread_count; i++) {
-            this->threads[i].DumpBinary(file);
+        for (size_t i = 0; i < m_thread_count; i++) {
+            m_threads[i].DumpBinary(file);
         }
     }
 
     void ThreadList::ReadFromProcess(os::NativeHandle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit) {
-        this->thread_count = 0;
+        m_thread_count = 0;
 
         /* Get thread list. */
         s32 num_threads;
@@ -267,8 +267,8 @@ namespace ams::creport {
 
         /* Parse thread infos. */
         for (s32 i = 0; i < num_threads; i++) {
-            if (this->threads[this->thread_count].ReadFromProcess(debug_handle, tls_map, thread_ids[i], is_64_bit)) {
-                this->thread_count++;
+            if (m_threads[m_thread_count].ReadFromProcess(debug_handle, tls_map, thread_ids[i], is_64_bit)) {
+                m_thread_count++;
             }
         }
     }

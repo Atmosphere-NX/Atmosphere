@@ -20,9 +20,9 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfHandle : public MultiWaitHolderOfKernelObject {
         private:
-            NativeHandle handle;
+            NativeHandle m_handle;
         public:
-            explicit MultiWaitHolderOfHandle(NativeHandle h) : handle(h) { /* ... */ }
+            explicit MultiWaitHolderOfHandle(NativeHandle h) : m_handle(h) { /* ... */ }
 
             /* IsSignaled, GetHandle both implemented. */
             virtual TriBool IsSignaled() const override {
@@ -30,7 +30,7 @@ namespace ams::os::impl {
             }
 
             virtual NativeHandle GetHandle() const override {
-                return this->handle;
+                return m_handle;
             }
     };
 

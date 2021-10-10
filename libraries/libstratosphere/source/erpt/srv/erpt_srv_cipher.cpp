@@ -18,7 +18,7 @@
 
 namespace ams::erpt::srv {
 
-    u8 Cipher::s_key[crypto::Aes128CtrEncryptor::KeySize + crypto::Aes128CtrEncryptor::IvSize + crypto::Aes128CtrEncryptor::BlockSize];
-    bool Cipher::s_need_to_store_cipher = false;
+    constinit u8 Cipher::s_key[crypto::Aes128CtrEncryptor::KeySize + crypto::Aes128CtrEncryptor::IvSize + crypto::Aes128CtrEncryptor::BlockSize];
+    constinit bool Cipher::s_need_to_store_cipher = false;
 
 }

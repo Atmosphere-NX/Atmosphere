@@ -20,10 +20,10 @@ namespace ams::mitm::fs {
 
     class ReadOnlyLayeredFileSystem : public ams::fs::fsa::IFileSystem {
         private:
-            ams::fs::ReadOnlyFileSystem fs_1;
-            ams::fs::ReadOnlyFileSystem fs_2;
+            ams::fs::ReadOnlyFileSystem m_fs_1;
+            ams::fs::ReadOnlyFileSystem m_fs_2;
         public:
-            explicit ReadOnlyLayeredFileSystem(std::unique_ptr<ams::fs::fsa::IFileSystem> a, std::unique_ptr<ams::fs::fsa::IFileSystem> b) : fs_1(std::move(a)), fs_2(std::move(b)) { /* ... */ }
+            explicit ReadOnlyLayeredFileSystem(std::unique_ptr<ams::fs::fsa::IFileSystem> a, std::unique_ptr<ams::fs::fsa::IFileSystem> b) : m_fs_1(std::move(a)), m_fs_2(std::move(b)) { /* ... */ }
 
             virtual ~ReadOnlyLayeredFileSystem() { /* ... */ }
         private:
@@ -63,18 +63,18 @@ namespace ams::mitm::fs {
             }
 
             virtual Result DoGetEntryType(ams::fs::DirectoryEntryType *out, const char *path) override final {
-                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.GetEntryType(out, path)));
-                return this->fs_2.GetEntryType(out, path);
+                R_SUCCEED_IF(R_SUCCEEDED(m_fs_1.GetEntryType(out, path)));
+                return m_fs_2.GetEntryType(out, path);
             }
 
             virtual Result DoOpenFile(std::unique_ptr<ams::fs::fsa::IFile> *out_file, const char *path, ams::fs::OpenMode mode) override final {
-                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.OpenFile(out_file, path, mode)));
-                return this->fs_2.OpenFile(out_file, path, mode);
+                R_SUCCEED_IF(R_SUCCEEDED(m_fs_1.OpenFile(out_file, path, mode)));
+                return m_fs_2.OpenFile(out_file, path, mode);
             }
 
             virtual Result DoOpenDirectory(std::unique_ptr<ams::fs::fsa::IDirectory> *out_dir, const char *path, ams::fs::OpenDirectoryMode mode) override final {
-                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.OpenDirectory(out_dir, path, mode)));
-                return this->fs_2.OpenDirectory(out_dir, path, mode);
+                R_SUCCEED_IF(R_SUCCEEDED(m_fs_1.OpenDirectory(out_dir, path, mode)));
+                return m_fs_2.OpenDirectory(out_dir, path, mode);
             }
 
             virtual Result DoCommit() override final {
@@ -97,8 +97,8 @@ namespace ams::mitm::fs {
             }
 
             virtual Result DoGetFileTimeStampRaw(ams::fs::FileTimeStampRaw *out, const char *path) {
-                R_SUCCEED_IF(R_SUCCEEDED(this->fs_1.GetFileTimeStampRaw(out, path)));
-                return this->fs_2.GetFileTimeStampRaw(out, path);
+                R_SUCCEED_IF(R_SUCCEEDED(m_fs_1.GetFileTimeStampRaw(out, path)));
+                return m_fs_2.GetFileTimeStampRaw(out, path);
             }
     };
 

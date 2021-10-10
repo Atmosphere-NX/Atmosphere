@@ -33,28 +33,28 @@ namespace ams::ncm {
                     u64 last_accessed;
             };
         private:
-            Entry entries[MaxEntries];
-            u64 counter;
-            os::SdkMutex mutex;
+            Entry m_entries[MaxEntries];
+            u64 m_counter;
+            os::SdkMutex m_mutex;
         public:
-            RightsIdCache() : mutex() {
+            RightsIdCache() : m_mutex() {
                 this->Invalidate();
             }
 
             void Invalidate() {
-                this->counter = 2;
+                m_counter = 2;
                 for (size_t i = 0; i < MaxEntries; i++) {
-                    this->entries[i].last_accessed = 1;
+                    m_entries[i].last_accessed = 1;
                 }
             }
 
             void Store(ContentId content_id, ncm::RightsId rights_id) {
-                std::scoped_lock lk(this->mutex);
-                Entry *eviction_candidate = std::addressof(this->entries[0]);
+                std::scoped_lock lk(m_mutex);
+                Entry *eviction_candidate = std::addressof(m_entries[0]);
 
                 /* Find a suitable existing entry to store our new one at. */
                 for (size_t i = 1; i < MaxEntries; i++) {
-                    Entry *entry = std::addressof(this->entries[i]);
+                    Entry *entry = std::addressof(m_entries[i]);
 
                     /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
                     if (content_id == entry->uuid || (content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
@@ -65,19 +65,19 @@ namespace ams::ncm {
                 /* Update the cache. */
                 eviction_candidate->uuid = content_id.uuid;
                 eviction_candidate->rights_id = rights_id;
-                eviction_candidate->last_accessed = this->counter++;
+                eviction_candidate->last_accessed = m_counter++;
             }
 
             bool Find(ncm::RightsId *out_rights_id, ContentId content_id) {
-                std::scoped_lock lk(this->mutex);
+                std::scoped_lock lk(m_mutex);
 
                 /* Attempt to locate the content id in the cache. */
                 for (size_t i = 0; i < MaxEntries; i++) {
-                    Entry *entry = std::addressof(this->entries[i]);
+                    Entry *entry = std::addressof(m_entries[i]);
 
                     if (entry->last_accessed != 1 && content_id == entry->uuid) {
-                        entry->last_accessed = this->counter;
-                        this->counter++;
+                        entry->last_accessed = m_counter;
+                        m_counter++;
                         *out_rights_id = entry->rights_id;
                         return true;
                     }

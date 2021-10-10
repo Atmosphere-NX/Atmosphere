@@ -23,11 +23,13 @@ namespace ams::os::impl {
         public:
             static constexpr size_t MaximumHandleCount = static_cast<size_t>(ams::svc::ArgumentHandleCountMax);
         private:
-            NativeHandle handle;
+            NativeHandle m_handle;
         private:
             Result WaitSynchronizationN(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns);
             Result ReplyAndReceiveN(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns, NativeHandle reply_target);
         public:
+            constexpr MultiWaitHorizonImpl() : m_handle(os::InvalidNativeHandle) { /* ... */ }
+
             void CancelWait();
 
             Result WaitAny(s32 *out_index, NativeHandle arr[], s32 array_size, s32 num) {
@@ -55,11 +57,11 @@ namespace ams::os::impl {
             }
 
             void SetCurrentThreadHandleForCancelWait() {
-                this->handle = GetCurrentThreadHandle();
+                m_handle = GetCurrentThreadHandle();
             }
 
             void ClearCurrentThreadHandleForCancelWait() {
-                this->handle = os::InvalidNativeHandle;
+                m_handle = os::InvalidNativeHandle;
             }
     };
 

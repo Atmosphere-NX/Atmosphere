@@ -55,8 +55,8 @@ namespace ams::ncm {
 
     Result ReadOnlyContentStorageImpl::Initialize(const char *path, MakeContentPathFunction content_path_func) {
         R_TRY(this->EnsureEnabled());
-        this->root_path.Set(path);
-        this->make_content_path_func = content_path_func;
+        m_root_path.Set(path);
+        m_make_content_path_func = content_path_func;
         return ResultSuccess();
     }
 
@@ -100,7 +100,7 @@ namespace ams::ncm {
 
         /* Make the content path. */
         PathString content_path;
-        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
+        MakeContentPath(std::addressof(content_path), content_id, m_make_content_path_func, m_root_path);
 
         /* Check if the file exists. */
         bool has;
@@ -108,7 +108,7 @@ namespace ams::ncm {
 
         /* If the file is absent, make the path for game card content meta and check presence again. */
         if (!has) {
-            MakeGameCardContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
+            MakeGameCardContentMetaPath(std::addressof(content_path), content_id, m_make_content_path_func, m_root_path);
             R_TRY(fs::HasFile(std::addressof(has), content_path));
         }
 
@@ -121,7 +121,7 @@ namespace ams::ncm {
 
         /* Make the path for game card content meta. */
         PathString content_path;
-        MakeGameCardContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
+        MakeGameCardContentMetaPath(std::addressof(content_path), content_id, m_make_content_path_func, m_root_path);
 
         /* Check if the file exists. */
         bool has_file;
@@ -129,7 +129,7 @@ namespace ams::ncm {
 
         /* If the file is absent, make the path for regular content. */
         if (!has_file) {
-            MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
+            MakeContentPath(std::addressof(content_path), content_id, m_make_content_path_func, m_root_path);
         }
 
         /* Substitute mount name with the common mount name. */
@@ -169,7 +169,7 @@ namespace ams::ncm {
 
         /* Open the file for the content id. */
         fs::FileHandle file;
-        R_TRY(OpenContentIdFileImpl(std::addressof(file), content_id, this->make_content_path_func, this->root_path));
+        R_TRY(OpenContentIdFileImpl(std::addressof(file), content_id, m_make_content_path_func, m_root_path));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Determine the file size. */
@@ -181,7 +181,7 @@ namespace ams::ncm {
     }
 
     Result ReadOnlyContentStorageImpl::DisableForcibly() {
-        this->disabled = true;
+        m_disabled = true;
         return ResultSuccess();
     }
 
@@ -202,7 +202,7 @@ namespace ams::ncm {
 
         /* Open the file for the content id. */
         fs::FileHandle file;
-        R_TRY(OpenContentIdFileImpl(std::addressof(file), content_id, this->make_content_path_func, this->root_path));
+        R_TRY(OpenContentIdFileImpl(std::addressof(file), content_id, m_make_content_path_func, m_root_path));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Read from the given offset up to the given size. */

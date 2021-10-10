@@ -76,15 +76,15 @@ namespace ams::fssystem {
 
             using PartitionEntry = typename Format::PartitionEntry;
         protected:
-            bool initialized;
-            PartitionFileSystemHeader *header;
-            PartitionEntry *entries;
-            char *name_table;
-            size_t meta_data_size;
-            MemoryResource *allocator;
-            char *buffer;
+            bool m_initialized;
+            PartitionFileSystemHeader *m_header;
+            PartitionEntry *m_entries;
+            char *m_name_table;
+            size_t m_meta_data_size;
+            MemoryResource *m_allocator;
+            char *m_buffer;
         public:
-            PartitionFileSystemMetaCore() : initialized(false), allocator(nullptr), buffer(nullptr) { /* ... */ }
+            PartitionFileSystemMetaCore() : m_initialized(false), m_allocator(nullptr), m_buffer(nullptr) { /* ... */ }
             ~PartitionFileSystemMetaCore();
 
             Result Initialize(fs::IStorage *storage, MemoryResource *allocator);

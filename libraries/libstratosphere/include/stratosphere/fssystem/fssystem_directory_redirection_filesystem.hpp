@@ -24,10 +24,10 @@ namespace ams::fssystem {
             using PathResolutionFileSystem = impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
             friend class impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
         private:
-            char *before_dir;
-            size_t before_dir_len;
-            char *after_dir;
-            size_t after_dir_len;
+            char *m_before_dir;
+            size_t m_before_dir_len;
+            char *m_after_dir;
+            size_t m_after_dir_len;
         public:
             DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
             DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);

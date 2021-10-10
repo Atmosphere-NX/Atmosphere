@@ -29,12 +29,12 @@ namespace ams::fssystem {
             class PartitionFile;
             class PartitionDirectory;
         private:
-            fs::IStorage *base_storage;
-            MetaType *meta_data;
-            bool initialized;
-            size_t meta_data_size;
-            std::unique_ptr<MetaType> unique_meta_data;
-            std::shared_ptr<fs::IStorage> shared_storage;
+            fs::IStorage *m_base_storage;
+            MetaType *m_meta_data;
+            bool m_initialized;
+            size_t m_meta_data_size;
+            std::unique_ptr<MetaType> m_unique_meta_data;
+            std::shared_ptr<fs::IStorage> m_shared_storage;
         private:
             Result Initialize(fs::IStorage *base_storage, MemoryResource *allocator);
         public:

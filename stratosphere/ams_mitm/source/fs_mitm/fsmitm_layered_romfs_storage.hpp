@@ -22,16 +22,16 @@ namespace ams::mitm::fs {
 
     class LayeredRomfsStorage : public std::enable_shared_from_this<LayeredRomfsStorage>, public ams::fs::IStorage {
         private:
-            std::vector<romfs::SourceInfo> source_infos;
-            std::unique_ptr<ams::fs::IStorage> storage_romfs;
-            std::unique_ptr<ams::fs::IStorage> file_romfs;
-            os::Event initialize_event;
-            ncm::ProgramId program_id;
-            bool is_initialized;
-            bool started_initialize;
+            std::vector<romfs::SourceInfo> m_source_infos;
+            std::unique_ptr<ams::fs::IStorage> m_storage_romfs;
+            std::unique_ptr<ams::fs::IStorage> m_file_romfs;
+            os::Event m_initialize_event;
+            ncm::ProgramId m_program_id;
+            bool m_is_initialized;
+            bool m_started_initialize;
         protected:
             inline s64 GetSize() const {
-                const auto &back = this->source_infos.back();
+                const auto &back = m_source_infos.back();
                 return back.virtual_offset + back.size;
             }
         public:

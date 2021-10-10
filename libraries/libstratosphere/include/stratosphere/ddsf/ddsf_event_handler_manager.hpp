@@ -28,41 +28,41 @@ namespace ams::ddsf {
         private:
             struct LoopControlCommandParameters;
         private:
-            bool is_initialized;
-            bool is_looping;
-            os::SdkConditionVariable is_looping_cv;
-            os::MultiWaitType multi_wait;
-            os::ThreadType *loop_thread;
-            os::Event loop_control_event;
-            os::MultiWaitHolderType loop_control_event_holder;
-            LoopControlCommandParameters *loop_control_command_params;
-            os::LightEvent loop_control_command_done_event;
-            os::SdkMutex loop_control_lock;
+            bool m_is_initialized;
+            bool m_is_looping;
+            os::SdkConditionVariable m_is_looping_cv;
+            os::MultiWaitType m_multi_wait;
+            os::ThreadType *m_loop_thread;
+            os::Event m_loop_control_event;
+            os::MultiWaitHolderType m_loop_control_event_holder;
+            LoopControlCommandParameters *m_loop_control_command_params;
+            os::LightEvent m_loop_control_command_done_event;
+            os::SdkMutex m_loop_control_lock;
         private:
             void ProcessControlCommand(LoopControlCommandParameters *params);
             void ProcessControlCommandImpl(LoopControlCommandParameters *params);
         public:
             EventHandlerManager()
-                : is_initialized(false), is_looping(false), is_looping_cv(), multi_wait(),
-                  loop_thread(), loop_control_event(os::EventClearMode_AutoClear), loop_control_event_holder(),
-                  loop_control_command_params(), loop_control_command_done_event(os::EventClearMode_AutoClear),
-                  loop_control_lock()
+                : m_is_initialized(false), m_is_looping(false), m_is_looping_cv(), m_multi_wait(),
+                  m_loop_thread(), m_loop_control_event(os::EventClearMode_AutoClear), m_loop_control_event_holder(),
+                  m_loop_control_command_params(), m_loop_control_command_done_event(os::EventClearMode_AutoClear),
+                  m_loop_control_lock()
             {
                 this->Initialize();
             }
 
             ~EventHandlerManager() {
-                if (this->is_looping) {
+                if (m_is_looping) {
                     AMS_ASSERT(!this->IsRunningOnLoopThread());
                     this->RequestStop();
                 }
-                if (this->is_initialized) {
+                if (m_is_initialized) {
                     this->Finalize();
                 }
             }
 
-            bool IsRunningOnLoopThread() const { return this->loop_thread == os::GetCurrentThread(); }
-            bool IsLooping() const { return this->is_looping; }
+            bool IsRunningOnLoopThread() const { return m_loop_thread == os::GetCurrentThread(); }
+            bool IsLooping() const { return m_is_looping; }
 
             void Initialize();
             void Finalize();

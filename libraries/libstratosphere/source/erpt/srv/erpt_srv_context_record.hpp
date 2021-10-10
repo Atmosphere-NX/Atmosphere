@@ -30,7 +30,7 @@ namespace ams::erpt::srv {
                 return s_record_count;
             }
         private:
-            ContextEntry ctx;
+            ContextEntry m_ctx;
         private:
             Result Add(FieldId field_id, const void *arr, u32 size, FieldType type);
         public:
@@ -39,7 +39,7 @@ namespace ams::erpt::srv {
             ~ContextRecord();
 
             const ContextEntry *GetContextEntryPtr() const {
-                return std::addressof(this->ctx);
+                return std::addressof(m_ctx);
             }
 
             Result Initialize(const ContextEntry *ctx_ptr, const u8 *data, u32 data_size);

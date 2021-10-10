@@ -24,24 +24,24 @@ namespace ams::os {
         NON_COPYABLE(ThreadLocalStorage);
         NON_MOVEABLE(ThreadLocalStorage);
         private:
-            TlsSlot tls_slot;
+            TlsSlot m_tls_slot;
         public:
             ThreadLocalStorage() {
-                R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(this->tls_slot), nullptr));
+                R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(m_tls_slot), nullptr));
             }
 
             explicit ThreadLocalStorage(TlsDestructor destructor) {
-                R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(this->tls_slot), destructor));
+                R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(m_tls_slot), destructor));
             }
 
             ~ThreadLocalStorage() {
-                os::FreeTlsSlot(this->tls_slot);
+                os::FreeTlsSlot(m_tls_slot);
             }
 
-            uintptr_t GetValue() const { return os::GetTlsValue(this->tls_slot); }
-            void SetValue(uintptr_t value) { return os::SetTlsValue(this->tls_slot, value); }
+            uintptr_t GetValue() const { return os::GetTlsValue(m_tls_slot); }
+            void SetValue(uintptr_t value) { return os::SetTlsValue(m_tls_slot, value); }
 
-            TlsSlot GetTlsSlot() const { return this->tls_slot; }
+            TlsSlot GetTlsSlot() const { return m_tls_slot; }
     };
 
 }

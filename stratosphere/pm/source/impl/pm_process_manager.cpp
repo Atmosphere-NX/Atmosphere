@@ -78,27 +78,27 @@ namespace ams::pm::impl {
             NON_MOVEABLE(ProcessInfoAllocator);
             static_assert(MaxProcessInfos >= 0x40, "MaxProcessInfos is too small.");
             private:
-                util::TypedStorage<ProcessInfo> process_info_storages[MaxProcessInfos]{};
-                bool process_info_allocated[MaxProcessInfos]{};
-                os::SdkMutex lock{};
+                util::TypedStorage<ProcessInfo> m_process_info_storages[MaxProcessInfos]{};
+                bool m_process_info_allocated[MaxProcessInfos]{};
+                os::SdkMutex m_lock{};
             private:
                 constexpr inline size_t GetProcessInfoIndex(ProcessInfo *process_info) const {
-                    return process_info - GetPointer(this->process_info_storages[0]);
+                    return process_info - GetPointer(m_process_info_storages[0]);
                 }
             public:
                 constexpr ProcessInfoAllocator() = default;
 
                 template<typename... Args>
                 ProcessInfo *AllocateProcessInfo(Args &&... args) {
-                    std::scoped_lock lk(this->lock);
+                    std::scoped_lock lk(m_lock);
 
                     for (size_t i = 0; i < MaxProcessInfos; i++) {
-                        if (!this->process_info_allocated[i]) {
-                            this->process_info_allocated[i] = true;
+                        if (!m_process_info_allocated[i]) {
+                            m_process_info_allocated[i] = true;
 
-                            std::memset(this->process_info_storages + i, 0, sizeof(this->process_info_storages[i]));
+                            std::memset(m_process_info_storages + i, 0, sizeof(m_process_info_storages[i]));
 
-                            return util::ConstructAt(this->process_info_storages[i], std::forward<Args>(args)...);
+                            return util::ConstructAt(m_process_info_storages[i], std::forward<Args>(args)...);
                         }
                     }
 
@@ -106,14 +106,14 @@ namespace ams::pm::impl {
                 }
 
                 void FreeProcessInfo(ProcessInfo *process_info) {
-                    std::scoped_lock lk(this->lock);
+                    std::scoped_lock lk(m_lock);
 
                     const size_t index = this->GetProcessInfoIndex(process_info);
                     AMS_ABORT_UNLESS(index < MaxProcessInfos);
-                    AMS_ABORT_UNLESS(this->process_info_allocated[index]);
+                    AMS_ABORT_UNLESS(m_process_info_allocated[index]);
 
-                    util::DestroyAt(this->process_info_storages[index]);
-                    this->process_info_allocated[index] = false;
+                    util::DestroyAt(m_process_info_storages[index]);
+                    m_process_info_allocated[index] = false;
                 }
         };
 

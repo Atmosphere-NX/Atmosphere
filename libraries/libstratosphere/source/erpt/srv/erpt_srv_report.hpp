@@ -30,8 +30,8 @@ namespace ams::erpt::srv {
 
     class Report : public Allocator, public Stream {
         private:
-            JournalRecord<ReportInfo> *record;
-            bool redirect_to_sd_card;
+            JournalRecord<ReportInfo> *m_record;
+            bool m_redirect_to_sd_card;
         private:
             ReportFileName FileName() const;
         public:

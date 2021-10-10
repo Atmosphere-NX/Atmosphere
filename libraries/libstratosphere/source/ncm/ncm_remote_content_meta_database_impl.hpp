@@ -20,11 +20,11 @@ namespace ams::ncm {
 
     class RemoteContentMetaDatabaseImpl {
         private:
-            ::NcmContentMetaDatabase srv;
+            ::NcmContentMetaDatabase m_srv;
         public:
-            RemoteContentMetaDatabaseImpl(::NcmContentMetaDatabase &db) : srv(db) { /* ... */ }
+            RemoteContentMetaDatabaseImpl(::NcmContentMetaDatabase &db) : m_srv(db) { /* ... */ }
 
-            ~RemoteContentMetaDatabaseImpl() { ::ncmContentMetaDatabaseClose(std::addressof(srv)); }
+            ~RemoteContentMetaDatabaseImpl() { ::ncmContentMetaDatabaseClose(std::addressof(m_srv)); }
         private:
             ALWAYS_INLINE ::NcmContentMetaKey *Convert(ContentMetaKey *k) {
                 static_assert(sizeof(ContentMetaKey) == sizeof(::NcmContentMetaKey));
@@ -72,88 +72,88 @@ namespace ams::ncm {
             }
         public:
             Result Set(const ContentMetaKey &key, const sf::InBuffer &value) {
-                return ncmContentMetaDatabaseSet(std::addressof(this->srv), Convert(key), value.GetPointer(), value.GetSize());
+                return ncmContentMetaDatabaseSet(std::addressof(m_srv), Convert(key), value.GetPointer(), value.GetSize());
             }
 
             Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) {
-                return ncmContentMetaDatabaseGet(std::addressof(this->srv), Convert(key), out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize());
+                return ncmContentMetaDatabaseGet(std::addressof(m_srv), Convert(key), out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize());
             }
 
             Result Remove(const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseRemove(std::addressof(this->srv), Convert(key));
+                return ncmContentMetaDatabaseRemove(std::addressof(m_srv), Convert(key));
             }
 
             Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
-                return ncmContentMetaDatabaseGetContentIdByType(std::addressof(this->srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type));
+                return ncmContentMetaDatabaseGetContentIdByType(std::addressof(m_srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type));
             }
 
             Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) {
-                return ncmContentMetaDatabaseListContentInfo(std::addressof(this->srv), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), Convert(key), offset);
+                return ncmContentMetaDatabaseListContentInfo(std::addressof(m_srv), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), Convert(key), offset);
             }
 
             Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) {
-                return ncmContentMetaDatabaseList(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), static_cast<::NcmContentMetaType>(meta_type), application_id.value, min, max, static_cast<::NcmContentInstallType>(install_type));
+                return ncmContentMetaDatabaseList(std::addressof(m_srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), static_cast<::NcmContentMetaType>(meta_type), application_id.value, min, max, static_cast<::NcmContentInstallType>(install_type));
             }
 
             Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
-                return ncmContentMetaDatabaseGetLatestContentMetaKey(std::addressof(this->srv), Convert(out_key.GetPointer()), static_cast<u64>(id));
+                return ncmContentMetaDatabaseGetLatestContentMetaKey(std::addressof(m_srv), Convert(out_key.GetPointer()), static_cast<u64>(id));
             }
 
             Result ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) {
-                return ncmContentMetaDatabaseListApplication(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_keys.GetPointer()), out_keys.GetSize(), static_cast<::NcmContentMetaType>(meta_type));
+                return ncmContentMetaDatabaseListApplication(std::addressof(m_srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_keys.GetPointer()), out_keys.GetSize(), static_cast<::NcmContentMetaType>(meta_type));
             }
 
             Result Has(sf::Out<bool> out, const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseHas(std::addressof(this->srv), out.GetPointer(), Convert(key));
+                return ncmContentMetaDatabaseHas(std::addressof(m_srv), out.GetPointer(), Convert(key));
             }
 
             Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) {
-                return ncmContentMetaDatabaseHasAll(std::addressof(this->srv), out.GetPointer(), Convert(keys.GetPointer()), keys.GetSize());
+                return ncmContentMetaDatabaseHasAll(std::addressof(m_srv), out.GetPointer(), Convert(keys.GetPointer()), keys.GetSize());
             }
 
             Result GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseGetSize(std::addressof(this->srv), out_size.GetPointer(), Convert(key));
+                return ncmContentMetaDatabaseGetSize(std::addressof(m_srv), out_size.GetPointer(), Convert(key));
             }
 
             Result GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseGetRequiredSystemVersion(std::addressof(this->srv), out_version.GetPointer(), Convert(key));
+                return ncmContentMetaDatabaseGetRequiredSystemVersion(std::addressof(m_srv), out_version.GetPointer(), Convert(key));
             }
 
             Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseGetPatchId(std::addressof(this->srv), reinterpret_cast<u64 *>(out_patch_id.GetPointer()), Convert(key));
+                return ncmContentMetaDatabaseGetPatchId(std::addressof(m_srv), reinterpret_cast<u64 *>(out_patch_id.GetPointer()), Convert(key));
             }
 
             Result DisableForcibly() {
-                return ncmContentMetaDatabaseDisableForcibly(std::addressof(this->srv));
+                return ncmContentMetaDatabaseDisableForcibly(std::addressof(m_srv));
             }
 
             Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
-                return ncmContentMetaDatabaseLookupOrphanContent(std::addressof(this->srv), out_orphaned.GetPointer(), Convert(content_ids.GetPointer()), std::min(out_orphaned.GetSize(), content_ids.GetSize()));
+                return ncmContentMetaDatabaseLookupOrphanContent(std::addressof(m_srv), out_orphaned.GetPointer(), Convert(content_ids.GetPointer()), std::min(out_orphaned.GetSize(), content_ids.GetSize()));
             }
 
             Result Commit() {
-                return ncmContentMetaDatabaseCommit(std::addressof(this->srv));
+                return ncmContentMetaDatabaseCommit(std::addressof(m_srv));
             }
 
             Result HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
-                return ncmContentMetaDatabaseHasContent(std::addressof(this->srv), out.GetPointer(), Convert(key), Convert(content_id));
+                return ncmContentMetaDatabaseHasContent(std::addressof(m_srv), out.GetPointer(), Convert(key), Convert(content_id));
             }
 
             Result ListContentMetaInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, s32 offset) {
-                return ncmContentMetaDatabaseListContentMetaInfo(std::addressof(this->srv), out_entries_written.GetPointer(), out_meta_info.GetPointer(), out_meta_info.GetSize(), Convert(key), offset);
+                return ncmContentMetaDatabaseListContentMetaInfo(std::addressof(m_srv), out_entries_written.GetPointer(), out_meta_info.GetPointer(), out_meta_info.GetSize(), Convert(key), offset);
             }
 
             Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) {
                 static_assert(sizeof(ContentMetaAttribute) == sizeof(u8));
-                return ncmContentMetaDatabaseGetAttributes(std::addressof(this->srv), Convert(key), out_attributes.GetPointer());
+                return ncmContentMetaDatabaseGetAttributes(std::addressof(m_srv), Convert(key), out_attributes.GetPointer());
             }
 
             Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
-                return ncmContentMetaDatabaseGetRequiredApplicationVersion(std::addressof(this->srv), out_version.GetPointer(), Convert(key));
+                return ncmContentMetaDatabaseGetRequiredApplicationVersion(std::addressof(m_srv), out_version.GetPointer(), Convert(key));
             }
 
             Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
-                return ncmContentMetaDatabaseGetContentIdByTypeAndIdOffset(std::addressof(this->srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type), id_offset);
+                return ncmContentMetaDatabaseGetContentIdByTypeAndIdOffset(std::addressof(m_srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type), id_offset);
             }
 
             Result GetCount(sf::Out<u32> out_count) {

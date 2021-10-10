@@ -29,22 +29,22 @@ namespace ams::os {
 
     class Tick {
         private:
-            s64 tick;
+            s64 m_tick;
         public:
-            constexpr explicit Tick(s64 t = 0) : tick(t) { /* ... */ }
-            Tick(TimeSpan ts) : tick(ConvertToTick(ts).GetInt64Value()) { /* ... */ }
+            constexpr explicit Tick(s64 t = 0) : m_tick(t) { /* ... */ }
+            Tick(TimeSpan ts) : m_tick(ConvertToTick(ts).GetInt64Value()) { /* ... */ }
         public:
-            constexpr s64 GetInt64Value() const { return this->tick; }
+            constexpr s64 GetInt64Value() const { return m_tick; }
             TimeSpan ToTimeSpan() const { return ConvertToTimeSpan(*this); }
 
             /* Tick arithmetic. */
-            constexpr Tick &operator+=(Tick rhs) { this->tick += rhs.tick; return *this; }
-            constexpr Tick &operator-=(Tick rhs) { this->tick -= rhs.tick; return *this; }
+            constexpr Tick &operator+=(Tick rhs) { m_tick += rhs.m_tick; return *this; }
+            constexpr Tick &operator-=(Tick rhs) { m_tick -= rhs.m_tick; return *this; }
             constexpr Tick operator+(Tick rhs) const { Tick r(*this); return r += rhs; }
             constexpr Tick operator-(Tick rhs) const { Tick r(*this); return r -= rhs; }
 
             constexpr bool operator==(const Tick &rhs) const {
-                return this->tick == rhs.tick;
+                return m_tick == rhs.m_tick;
             }
 
             constexpr bool operator!=(const Tick &rhs) const {
@@ -52,7 +52,7 @@ namespace ams::os {
             }
 
             constexpr bool operator<(const Tick &rhs) const {
-                return this->tick < rhs.tick;
+                return m_tick < rhs.m_tick;
             }
 
             constexpr bool operator>=(const Tick &rhs) const {
@@ -60,7 +60,7 @@ namespace ams::os {
             }
 
             constexpr bool operator>(const Tick &rhs) const {
-                return this->tick > rhs.tick;
+                return m_tick > rhs.m_tick;
             }
 
             constexpr bool operator<=(const Tick &rhs) const {

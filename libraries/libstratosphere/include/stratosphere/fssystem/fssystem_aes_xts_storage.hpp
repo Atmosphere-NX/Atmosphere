@@ -29,11 +29,11 @@ namespace ams::fssystem {
             static constexpr size_t KeySize      = crypto::Aes128XtsEncryptor::KeySize;
             static constexpr size_t IvSize       = crypto::Aes128XtsEncryptor::IvSize;
         private:
-            IStorage * const base_storage;
-            char key[2][KeySize];
-            char iv[IvSize];
-            const size_t block_size;
-            os::SdkMutex mutex;
+            IStorage * const m_base_storage;
+            char m_key[2][KeySize];
+            char m_iv[IvSize];
+            const size_t m_block_size;
+            os::SdkMutex m_mutex;
         public:
             AesXtsStorage(IStorage *base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size);
 

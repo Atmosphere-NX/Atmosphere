@@ -22,19 +22,19 @@ namespace ams::sf {
 
     class StandardAllocatorMemoryResource : public MemoryResource {
         private:
-            mem::StandardAllocator *standard_allocator;
+            mem::StandardAllocator *m_standard_allocator;
         public:
-            explicit StandardAllocatorMemoryResource(mem::StandardAllocator *sa) : standard_allocator(sa) { /* ... */ }
+            explicit StandardAllocatorMemoryResource(mem::StandardAllocator *sa) : m_standard_allocator(sa) { /* ... */ }
 
-            mem::StandardAllocator *GetAllocator() const { return this->standard_allocator; }
+            mem::StandardAllocator *GetAllocator() const { return m_standard_allocator; }
         private:
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
-                return this->standard_allocator->Allocate(size, alignment);
+                return m_standard_allocator->Allocate(size, alignment);
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
                 AMS_UNUSED(size, alignment);
-                return this->standard_allocator->Free(buffer);
+                return m_standard_allocator->Free(buffer);
             }
 
             virtual bool IsEqualImpl(const MemoryResource &resource) const {

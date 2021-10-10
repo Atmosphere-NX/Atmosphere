@@ -44,36 +44,36 @@ namespace ams::tipc {
         class OutHandleImpl : public OutHandleTag {
             static_assert(std::is_base_of<InHandleTag, T>::value, "OutHandleImpl requires InHandle base");
             private:
-                T *ptr;
+                T *m_ptr;
             public:
-                constexpr OutHandleImpl(T *p) : ptr(p) { /* ... */ }
+                constexpr OutHandleImpl(T *p) : m_ptr(p) { /* ... */ }
 
                 constexpr void SetValue(const os::NativeHandle &value) {
-                    *this->ptr = value;
+                    *m_ptr = value;
                 }
 
                 constexpr void SetValue(const T &value) {
-                    *this->ptr = value;
+                    *m_ptr = value;
                 }
 
                 constexpr const T &GetValue() const {
-                    return *this->ptr;
+                    return *m_ptr;
                 }
 
                 constexpr T *GetPointer() const {
-                    return this->ptr;
+                    return m_ptr;
                 }
 
                 constexpr os::NativeHandle *GetHandlePointer() const {
-                    return &this->ptr->handle;
+                    return &m_ptr->handle;
                 }
 
                 constexpr T &operator *() const {
-                    return *this->ptr;
+                    return *m_ptr;
                 }
 
                 constexpr T *operator ->() const {
-                    return this->ptr;
+                    return m_ptr;
                 }
         };
 

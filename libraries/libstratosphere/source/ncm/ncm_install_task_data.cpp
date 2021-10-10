@@ -76,13 +76,13 @@ namespace ams::ncm {
     Result MemoryInstallTaskData::GetProgress(InstallProgress *out_progress) {
         /* Initialize install progress. */
         InstallProgress install_progress = {
-            .state = this->state,
+            .state = m_state,
         };
-        install_progress.SetLastResult(this->last_result);
+        install_progress.SetLastResult(m_last_result);
 
         /* Only states after prepared are allowed. */
-        if (this->state != InstallProgressState::NotPrepared && this->state != InstallProgressState::DataPrepared) {
-            for (auto &data_holder : this->data_list) {
+        if (m_state != InstallProgressState::NotPrepared && m_state != InstallProgressState::DataPrepared) {
+            for (auto &data_holder : m_data_list) {
                 const InstallContentMetaReader reader = data_holder.GetReader();
 
                 /* Sum the sizes from this entry's content infos. */
@@ -99,22 +99,22 @@ namespace ams::ncm {
     }
 
     Result MemoryInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
-        *out_info = this->system_update_task_apply_info;
+        *out_info = m_system_update_task_apply_info;
         return ResultSuccess();
     }
 
     Result MemoryInstallTaskData::SetState(InstallProgressState state) {
-        this->state = state;
+        m_state = state;
         return ResultSuccess();
     }
 
     Result MemoryInstallTaskData::SetLastResult(Result result) {
-        this->last_result = result;
+        m_last_result = result;
         return ResultSuccess();
     }
 
     Result MemoryInstallTaskData::SetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo info) {
-        this->system_update_task_apply_info = info;
+        m_system_update_task_apply_info = info;
         return ResultSuccess();
     }
 
@@ -132,7 +132,7 @@ namespace ams::ncm {
         std::memcpy(holder->data.get(), data, size);
 
         /* Put the data holder into the data list. */
-        this->data_list.push_back(*holder);
+        m_data_list.push_back(*holder);
 
         /* Relinquish control over the memory allocated to the data holder. */
         holder.release();
@@ -141,14 +141,14 @@ namespace ams::ncm {
     }
 
     Result MemoryInstallTaskData::Count(s32 *out) {
-        *out = this->data_list.size();
+        *out = m_data_list.size();
         return ResultSuccess();
     }
 
     Result MemoryInstallTaskData::GetSize(size_t *out_size, s32 index) {
         /* Find the correct entry in the list. */
         s32 count = 0;
-        for (auto &data_holder : this->data_list) {
+        for (auto &data_holder : m_data_list) {
             if (index == count++) {
                 *out_size = data_holder.size;
                 return ResultSuccess();
@@ -161,7 +161,7 @@ namespace ams::ncm {
     Result MemoryInstallTaskData::Get(s32 index, void *out, size_t out_size) {
         /* Find the correct entry in the list. */
         s32 count = 0;
-        for (auto &data_holder : this->data_list) {
+        for (auto &data_holder : m_data_list) {
             if (index == count++) {
                 R_UNLESS(out_size >= data_holder.size, ncm::ResultBufferInsufficient());
                 std::memcpy(out, data_holder.data.get(), data_holder.size);
@@ -175,7 +175,7 @@ namespace ams::ncm {
     Result MemoryInstallTaskData::Update(s32 index, const void *data, size_t data_size) {
         /* Find the correct entry in the list. */
         s32 count = 0;
-        for (auto &data_holder : this->data_list) {
+        for (auto &data_holder : m_data_list) {
             if (index == count++) {
                 R_UNLESS(data_size == data_holder.size, ncm::ResultBufferInsufficient());
                 std::memcpy(data_holder.data.get(), data, data_size);
@@ -191,9 +191,9 @@ namespace ams::ncm {
             const auto &key = keys[i];
 
             /* Find and remove matching data from the list. */
-            for (auto &data_holder : this->data_list) {
+            for (auto &data_holder : m_data_list) {
                 if (key == data_holder.GetReader().GetKey()) {
-                    this->data_list.erase(this->data_list.iterator_to(data_holder));
+                    m_data_list.erase(m_data_list.iterator_to(data_holder));
                     delete std::addressof(data_holder);
                     break;
                 }
@@ -204,9 +204,9 @@ namespace ams::ncm {
     }
 
     Result MemoryInstallTaskData::Cleanup() {
-        while (!this->data_list.empty()) {
-            auto *data_holder = std::addressof(this->data_list.front());
-            this->data_list.pop_front();
+        while (!m_data_list.empty()) {
+            auto *data_holder = std::addressof(m_data_list.front());
+            m_data_list.pop_front();
             delete data_holder;
         }
         return ResultSuccess();
@@ -227,21 +227,21 @@ namespace ams::ncm {
     }
 
     Result FileInstallTaskData::Initialize(const char *path) {
-        std::strncpy(this->path, path, sizeof(this->path));
-        this->path[sizeof(this->path) - 1] = '\x00';
-        return this->Read(std::addressof(this->header), sizeof(Header), 0);
+        std::strncpy(m_path, path, sizeof(m_path));
+        m_path[sizeof(m_path) - 1] = '\x00';
+        return this->Read(std::addressof(m_header), sizeof(Header), 0);
     }
 
     Result FileInstallTaskData::GetProgress(InstallProgress *out_progress) {
         /* Initialize install progress. */
         InstallProgress install_progress = {
-            .state = this->header.progress_state,
+            .state = m_header.progress_state,
         };
-        install_progress.SetLastResult(this->header.last_result);
+        install_progress.SetLastResult(m_header.last_result);
 
         /* Only states after prepared are allowed. */
-        if (this->header.progress_state != InstallProgressState::NotPrepared && this->header.progress_state != InstallProgressState::DataPrepared) {
-            for (size_t i = 0; i < this->header.count; i++) {
+        if (m_header.progress_state != InstallProgressState::NotPrepared && m_header.progress_state != InstallProgressState::DataPrepared) {
+            for (size_t i = 0; i < m_header.count; i++) {
                 /* Obtain the content meta for this entry. */
                 InstallContentMeta content_meta;
                 R_TRY(InstallTaskDataBase::Get(std::addressof(content_meta), i));
@@ -261,47 +261,47 @@ namespace ams::ncm {
     }
 
     Result FileInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
-        *out_info = this->header.system_update_task_apply_info;
+        *out_info = m_header.system_update_task_apply_info;
         return ResultSuccess();
     }
 
     Result FileInstallTaskData::SetState(InstallProgressState state) {
-        this->header.progress_state = state;
+        m_header.progress_state = state;
         return this->WriteHeader();
     }
 
     Result FileInstallTaskData::SetLastResult(Result result) {
-        this->header.last_result = result;
+        m_header.last_result = result;
         return this->WriteHeader();
     }
 
     Result FileInstallTaskData::SetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo info) {
-        this->header.system_update_task_apply_info = info;
+        m_header.system_update_task_apply_info = info;
         return this->WriteHeader();
     }
 
     Result FileInstallTaskData::Push(const void *data, size_t data_size) {
-        R_UNLESS(this->header.count < this->header.max_entries, ncm::ResultBufferInsufficient());
+        R_UNLESS(m_header.count < m_header.max_entries, ncm::ResultBufferInsufficient());
 
         /* Create a new entry info. Data of the given size will be stored at the end of the file. */
-        const EntryInfo entry_info = { this->header.last_data_offset, static_cast<s64>(data_size) };
+        const EntryInfo entry_info = { m_header.last_data_offset, static_cast<s64>(data_size) };
 
         /* Write the new entry info. */
-        R_TRY(this->Write(std::addressof(entry_info), sizeof(EntryInfo), GetEntryInfoOffset(this->header.count)));
+        R_TRY(this->Write(std::addressof(entry_info), sizeof(EntryInfo), GetEntryInfoOffset(m_header.count)));
 
         /* Write the data to the offset in the entry info. */
         R_TRY(this->Write(data, data_size, entry_info.offset));
 
         /* Update the header for the new entry. */
-        this->header.last_data_offset += data_size;
-        this->header.count++;
+        m_header.last_data_offset += data_size;
+        m_header.count++;
 
         /* Write the updated header. */
         return this->WriteHeader();
     }
 
     Result FileInstallTaskData::Count(s32 *out) {
-        *out = this->header.count;
+        *out = m_header.count;
         return ResultSuccess();
     }
 
@@ -334,12 +334,12 @@ namespace ams::ncm {
 
     Result FileInstallTaskData::Delete(const ContentMetaKey *keys, s32 num_keys) {
         /* Create the path for the temporary data. */
-        BoundedPath tmp_path(this->path);
+        BoundedPath tmp_path(m_path);
         tmp_path.Append(".tmp");
 
         /* Create a new temporary install task data. */
         FileInstallTaskData install_task_data;
-        R_TRY(FileInstallTaskData::Create(tmp_path, this->header.max_entries));
+        R_TRY(FileInstallTaskData::Create(tmp_path, m_header.max_entries));
         R_TRY(install_task_data.Initialize(tmp_path));
 
         /* Get the number of entries. */
@@ -361,37 +361,37 @@ namespace ams::ncm {
         }
 
         /* Change from our current data to the new data. */
-        this->header = install_task_data.header;
-        R_TRY(fs::DeleteFile(this->path));
-        return fs::RenameFile(tmp_path, this->path);
+        m_header = install_task_data.m_header;
+        R_TRY(fs::DeleteFile(m_path));
+        return fs::RenameFile(tmp_path, m_path);
     }
 
     Result FileInstallTaskData::Cleanup() {
-        this->header = MakeInitialHeader(this->header.max_entries);
+        m_header = MakeInitialHeader(m_header.max_entries);
         return this->WriteHeader();
     }
 
     Result FileInstallTaskData::GetEntryInfo(EntryInfo *out_entry_info, s32 index) {
-        AMS_ABORT_UNLESS(static_cast<u32>(index) < this->header.count);
+        AMS_ABORT_UNLESS(static_cast<u32>(index) < m_header.count);
         return this->Read(out_entry_info, sizeof(EntryInfo), GetEntryInfoOffset(index));
     }
 
     Result FileInstallTaskData::Write(const void *data, size_t size, s64 offset) {
         fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
+        R_TRY(fs::OpenFile(std::addressof(file), m_path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
         return fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush);
     }
 
     Result FileInstallTaskData::Read(void *out, size_t out_size, s64 offset) {
         fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Read));
+        R_TRY(fs::OpenFile(std::addressof(file), m_path, fs::OpenMode_Read));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
         return fs::ReadFile(file, offset, out, out_size);
     }
 
     Result FileInstallTaskData::WriteHeader() {
-        return this->Write(std::addressof(this->header), sizeof(Header), 0);
+        return this->Write(std::addressof(m_header), sizeof(Header), 0);
     }
 
 }

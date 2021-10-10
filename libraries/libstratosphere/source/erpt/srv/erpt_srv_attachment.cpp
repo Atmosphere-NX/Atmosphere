@@ -28,20 +28,20 @@ namespace ams::erpt::srv {
         return attachment_name;
     }
 
-    Attachment::Attachment(JournalRecord<AttachmentInfo> *r) : record(r) {
-        this->record->AddReference();
+    Attachment::Attachment(JournalRecord<AttachmentInfo> *r) : m_record(r) {
+        m_record->AddReference();
     }
 
     Attachment::~Attachment() {
         this->CloseStream();
-        if (this->record->RemoveReference()) {
+        if (m_record->RemoveReference()) {
             this->DeleteStream(this->FileName().name);
-            delete this->record;
+            delete m_record;
         }
     }
 
     AttachmentFileName Attachment::FileName() const {
-        return FileName(this->record->info.attachment_id);
+        return FileName(m_record->m_info.attachment_id);
     }
 
     Result Attachment::Open(AttachmentOpenType type) {
@@ -65,13 +65,13 @@ namespace ams::erpt::srv {
     }
 
     Result Attachment::GetFlags(AttachmentFlagSet *out) const {
-        *out = this->record->info.flags;
+        *out = m_record->m_info.flags;
         return ResultSuccess();
     }
 
     Result Attachment::SetFlags(AttachmentFlagSet flags) {
-        if (((~this->record->info.flags) & flags).IsAnySet()) {
-            this->record->info.flags |= flags;
+        if (((~m_record->m_info.flags) & flags).IsAnySet()) {
+            m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
         return ResultSuccess();

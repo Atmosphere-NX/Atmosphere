@@ -36,17 +36,17 @@ namespace ams::boot {
 
     Result PmicDriver::GetOnOffIrq(u8 *out) {
         const u8 addr = 0x0B;
-        return ReadI2cRegister(this->i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
     }
 
     Result PmicDriver::GetPowerStatus(u8 *out) {
         const u8 addr = 0x15;
-        return ReadI2cRegister(this->i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
     }
 
     Result PmicDriver::GetNvErc(u8 *out) {
         const u8 addr = 0x0C;
-        return ReadI2cRegister(this->i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
+        return ReadI2cRegister(m_i2c_session, out, sizeof(*out), std::addressof(addr), sizeof(addr));
     }
 
     Result PmicDriver::GetPowerButtonPressed(bool *out) {
@@ -62,17 +62,17 @@ namespace ams::boot {
 
         /* Get value, set or clear software reset mask. */
         u8 on_off_2_val = 0;
-        R_ABORT_UNLESS(ReadI2cRegister(this->i2c_session, std::addressof(on_off_2_val), sizeof(on_off_2_val), std::addressof(on_off_2_addr), sizeof(on_off_2_addr)));
+        R_ABORT_UNLESS(ReadI2cRegister(m_i2c_session, std::addressof(on_off_2_val), sizeof(on_off_2_val), std::addressof(on_off_2_addr), sizeof(on_off_2_addr)));
         if (reboot) {
             on_off_2_val |= 0x80;
         } else {
             on_off_2_val &= ~0x80;
         }
-        R_ABORT_UNLESS(WriteI2cRegister(this->i2c_session, std::addressof(on_off_2_val), sizeof(on_off_2_val), std::addressof(on_off_2_addr), sizeof(on_off_2_addr)));
+        R_ABORT_UNLESS(WriteI2cRegister(m_i2c_session, std::addressof(on_off_2_val), sizeof(on_off_2_val), std::addressof(on_off_2_addr), sizeof(on_off_2_addr)));
 
         /* Get value, set software reset mask. */
         u8 on_off_1_val = 0;
-        R_ABORT_UNLESS(ReadI2cRegister(this->i2c_session, std::addressof(on_off_1_val), sizeof(on_off_1_val), std::addressof(on_off_1_addr), sizeof(on_off_1_addr)));
+        R_ABORT_UNLESS(ReadI2cRegister(m_i2c_session, std::addressof(on_off_1_val), sizeof(on_off_1_val), std::addressof(on_off_1_addr), sizeof(on_off_1_addr)));
         on_off_1_val |= 0x80;
 
         /* Finalize the battery on non-Calcio. */
@@ -82,7 +82,7 @@ namespace ams::boot {
         }
 
         /* Actually write the value to trigger shutdown/reset. */
-        R_ABORT_UNLESS(WriteI2cRegister(this->i2c_session, std::addressof(on_off_1_val), sizeof(on_off_1_val), std::addressof(on_off_1_addr), sizeof(on_off_1_addr)));
+        R_ABORT_UNLESS(WriteI2cRegister(m_i2c_session, std::addressof(on_off_1_val), sizeof(on_off_1_val), std::addressof(on_off_1_addr), sizeof(on_off_1_addr)));
 
         /* Allow up to 5 seconds for shutdown/reboot to take place. */
         os::SleepThread(TimeSpan::FromSeconds(5));

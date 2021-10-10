@@ -25,33 +25,33 @@ namespace ams::ddsf {
 
     class DeviceCodeEntryManager {
         private:
-            ams::MemoryResource *memory_resource;
-            ddsf::DeviceCodeEntryHolder::List entry_list;
-            mutable os::SdkMutex entry_list_lock;
+            ams::MemoryResource *m_memory_resource;
+            ddsf::DeviceCodeEntryHolder::List m_entry_list;
+            mutable os::SdkMutex m_entry_list_lock;
         private:
             void DestroyAllEntries() {
-                auto it = this->entry_list.begin();
-                while (it != this->entry_list.end()) {
+                auto it = m_entry_list.begin();
+                while (it != m_entry_list.end()) {
                     ddsf::DeviceCodeEntryHolder *entry = std::addressof(*it);
-                    it = this->entry_list.erase(it);
+                    it = m_entry_list.erase(it);
 
                     AMS_ASSERT(entry->IsConstructed());
                     if (entry->IsConstructed()) {
                         entry->Destroy();
                     }
 
-                    this->memory_resource->Deallocate(entry, sizeof(*entry));
+                    m_memory_resource->Deallocate(entry, sizeof(*entry));
                 }
             }
         public:
-            DeviceCodeEntryManager(ams::MemoryResource *mr) : memory_resource(mr), entry_list(), entry_list_lock() { /* ... */ }
+            DeviceCodeEntryManager(ams::MemoryResource *mr) : m_memory_resource(mr), m_entry_list(), m_entry_list_lock() { /* ... */ }
 
             ~DeviceCodeEntryManager() {
                 this->DestroyAllEntries();
             }
 
             void Reset() {
-                std::scoped_lock lk(this->entry_list_lock);
+                std::scoped_lock lk(m_entry_list_lock);
                 this->DestroyAllEntries();
             }
 
@@ -66,7 +66,7 @@ namespace ams::ddsf {
 
             template<typename F>
             int ForEachEntry(F f) {
-                return impl::ForEach(this->entry_list_lock, this->entry_list, [&](DeviceCodeEntryHolder &holder) -> bool {
+                return impl::ForEach(m_entry_list_lock, m_entry_list, [&](DeviceCodeEntryHolder &holder) -> bool {
                     AMS_ASSERT(holder.IsConstructed());
                     return f(holder.Get());
                 });
@@ -74,7 +74,7 @@ namespace ams::ddsf {
 
             template<typename F>
             int ForEachEntry(F f) const {
-                return impl::ForEach(this->entry_list_lock, this->entry_list, [&](const DeviceCodeEntryHolder &holder) -> bool {
+                return impl::ForEach(m_entry_list_lock, m_entry_list, [&](const DeviceCodeEntryHolder &holder) -> bool {
                     AMS_ASSERT(holder.IsConstructed());
                     return f(holder.Get());
                 });

@@ -33,7 +33,7 @@ namespace ams::sf::hipc {
     }
 
     void ServerManagerBase::RegisterServerSessionToWait(ServerSession *session) {
-        session->has_received = false;
+        session->m_has_received = false;
 
         /* Set user data tag. */
         os::SetMultiWaitHolderUserData(session, static_cast<uintptr_t>(UserDataTag::Session));
@@ -42,25 +42,25 @@ namespace ams::sf::hipc {
     }
 
     void ServerManagerBase::LinkToDeferredList(os::MultiWaitHolderType *holder) {
-        std::scoped_lock lk(this->deferred_list_mutex);
-        os::LinkMultiWaitHolder(std::addressof(this->deferred_list), holder);
-        this->notify_event.Signal();
+        std::scoped_lock lk(m_deferred_list_mutex);
+        os::LinkMultiWaitHolder(std::addressof(m_deferred_list), holder);
+        m_notify_event.Signal();
     }
 
     void ServerManagerBase::LinkDeferred() {
-        std::scoped_lock lk(this->deferred_list_mutex);
-        os::MoveAllMultiWaitHolder(std::addressof(this->multi_wait), std::addressof(this->deferred_list));
+        std::scoped_lock lk(m_deferred_list_mutex);
+        os::MoveAllMultiWaitHolder(std::addressof(m_multi_wait), std::addressof(m_deferred_list));
     }
 
     os::MultiWaitHolderType *ServerManagerBase::WaitSignaled() {
-        std::scoped_lock lk(this->selection_mutex);
+        std::scoped_lock lk(m_selection_mutex);
         while (true) {
             this->LinkDeferred();
-            auto selected = os::WaitAny(std::addressof(this->multi_wait));
-            if (selected == std::addressof(this->request_stop_event_holder)) {
+            auto selected = os::WaitAny(std::addressof(m_multi_wait));
+            if (selected == std::addressof(m_request_stop_event_holder)) {
                 return nullptr;
-            } else if (selected == std::addressof(this->notify_event_holder)) {
-                this->notify_event.Clear();
+            } else if (selected == std::addressof(m_notify_event_holder)) {
+                m_notify_event.Clear();
             } else {
                 os::UnlinkMultiWaitHolder(selected);
                 return selected;
@@ -69,11 +69,11 @@ namespace ams::sf::hipc {
     }
 
     void ServerManagerBase::ResumeProcessing() {
-        this->request_stop_event.Clear();
+        m_request_stop_event.Clear();
     }
 
     void ServerManagerBase::RequestStopProcessing() {
-        this->request_stop_event.Signal();
+        m_request_stop_event.Signal();
     }
 
     void ServerManagerBase::AddUserMultiWaitHolder(os::MultiWaitHolderType *holder) {
@@ -91,10 +91,10 @@ namespace ams::sf::hipc {
         ON_SCOPE_EXIT { this->LinkToDeferredList(server); };
 
         /* Create new session. */
-        if (server->static_object) {
-            return this->AcceptSession(server->port_handle, server->static_object.Clone());
+        if (server->m_static_object) {
+            return this->AcceptSession(server->m_port_handle, server->m_static_object.Clone());
         } else {
-            return this->OnNeedsToAccept(server->index, server);
+            return this->OnNeedsToAccept(server->m_index, server);
         }
     }
 
@@ -105,7 +105,7 @@ namespace ams::sf::hipc {
         ON_SCOPE_EXIT { this->LinkToDeferredList(server); };
 
         /* Create resources for new session. */
-        return this->OnNeedsToAccept(server->index, server);
+        return this->OnNeedsToAccept(server->m_index, server);
     }
 
     Result ServerManagerBase::ProcessForSession(os::MultiWaitHolderType *holder) {
@@ -114,11 +114,11 @@ namespace ams::sf::hipc {
         ServerSession *session = static_cast<ServerSession *>(holder);
 
         cmif::PointerAndSize tls_message(svc::GetThreadLocalRegion()->message_buffer, hipc::TlsMessageBufferSize);
-        const cmif::PointerAndSize &saved_message = session->saved_message;
+        const cmif::PointerAndSize &saved_message = session->m_saved_message;
         AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
-        if (!session->has_received) {
+        if (!session->m_has_received) {
             R_TRY(this->ReceiveRequest(session, tls_message));
-            session->has_received = true;
+            session->m_has_received = true;
             std::memcpy(saved_message.GetPointer(), tls_message.GetPointer(), tls_message.GetSize());
         } else {
             /* We were deferred and are re-receiving, so just memcpy. */

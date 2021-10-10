@@ -22,15 +22,15 @@ namespace ams::os::impl {
 
     Result MultiWaitImpl::WaitAnyImpl(MultiWaitHolderBase **out, bool infinite, TimeSpan timeout, bool reply, NativeHandle reply_target) {
         /* Prepare for processing. */
-        this->signaled_holder = nullptr;
-        this->target_impl.SetCurrentThreadHandleForCancelWait();
+        m_signaled_holder = nullptr;
+        m_target_impl.SetCurrentThreadHandleForCancelWait();
         MultiWaitHolderBase *holder = this->LinkHoldersToObjectList();
 
         /* Check if we've been signaled. */
         {
-            std::scoped_lock lk(this->cs_wait);
-            if (this->signaled_holder != nullptr) {
-                holder = this->signaled_holder;
+            std::scoped_lock lk(m_cs_wait);
+            if (m_signaled_holder != nullptr) {
+                holder = m_signaled_holder;
             }
         }
 
@@ -39,7 +39,7 @@ namespace ams::os::impl {
         if (holder != nullptr) {
             if (reply && reply_target != os::InvalidNativeHandle) {
                 s32 index;
-                wait_result = this->target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0));
+                wait_result = m_target_impl.TimedReplyAndReceive(std::addressof(index), nullptr, 0, 0, reply_target, TimeSpan::FromNanoSeconds(0));
                 if (R_FAILED(wait_result)) {
                     holder = nullptr;
                 }
@@ -51,7 +51,7 @@ namespace ams::os::impl {
         /* Unlink holders from the current object list. */
         this->UnlinkHoldersFromObjectList();
 
-        this->target_impl.ClearCurrentThreadHandleForCancelWait();
+        m_target_impl.ClearCurrentThreadHandleForCancelWait();
 
         /* Set output holder. */
         *out = holder;
@@ -67,7 +67,7 @@ namespace ams::os::impl {
         const TimeSpan end_time = infinite ? TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()) : GetCurrentTick().ToTimeSpan() + timeout;
 
         while (true) {
-            this->current_time = GetCurrentTick().ToTimeSpan();
+            m_current_time = GetCurrentTick().ToTimeSpan();
 
             TimeSpan min_timeout = 0;
             MultiWaitHolderBase *min_timeout_object = this->RecalculateNextTimeout(std::addressof(min_timeout), end_time);
@@ -76,17 +76,17 @@ namespace ams::os::impl {
             Result wait_result = ResultSuccess();
             if (reply) {
                 if (infinite && min_timeout_object == nullptr) {
-                    wait_result = this->target_impl.ReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target);
+                    wait_result = m_target_impl.ReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target);
                 } else {
-                    wait_result = this->target_impl.TimedReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target, min_timeout);
+                    wait_result = m_target_impl.TimedReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target, min_timeout);
                 }
             } else if (infinite && min_timeout_object == nullptr) {
-                wait_result = this->target_impl.WaitAny(std::addressof(index), object_handles, MaximumHandleCount, count);
+                wait_result = m_target_impl.WaitAny(std::addressof(index), object_handles, MaximumHandleCount, count);
             } else {
                 if (count == 0 && min_timeout == 0) {
                     index = WaitTimedOut;
                 } else {
-                    wait_result = this->target_impl.TimedWaitAny(std::addressof(index), object_handles, MaximumHandleCount, count, min_timeout);
+                    wait_result = m_target_impl.TimedWaitAny(std::addressof(index), object_handles, MaximumHandleCount, count, min_timeout);
                     AMS_ABORT_UNLESS(index != WaitInvalid);
                 }
             }
@@ -99,11 +99,11 @@ namespace ams::os::impl {
             switch (index) {
                 case WaitTimedOut:
                     if (min_timeout_object) {
-                        this->current_time = GetCurrentTick().ToTimeSpan();
+                        m_current_time = GetCurrentTick().ToTimeSpan();
                         if (min_timeout_object->IsSignaled() == TriBool::True) {
-                            std::scoped_lock lk(this->cs_wait);
-                            this->signaled_holder = min_timeout_object;
-                            *out                  = min_timeout_object;
+                            std::scoped_lock lk(m_cs_wait);
+                            m_signaled_holder = min_timeout_object;
+                            *out              = min_timeout_object;
                             return wait_result;
                         }
                     } else {
@@ -113,9 +113,9 @@ namespace ams::os::impl {
                     break;
                 case WaitCancelled:
                     {
-                        std::scoped_lock lk(this->cs_wait);
-                        if (this->signaled_holder) {
-                            *out = this->signaled_holder;
+                        std::scoped_lock lk(m_cs_wait);
+                        if (m_signaled_holder) {
+                            *out = m_signaled_holder;
                             return wait_result;
                         }
                     }
@@ -124,9 +124,9 @@ namespace ams::os::impl {
                     {
                         AMS_ASSERT(0 <= index && index < static_cast<s32>(MaximumHandleCount));
 
-                        std::scoped_lock lk(this->cs_wait);
-                        this->signaled_holder = objects[index];
-                        *out                  = objects[index];
+                        std::scoped_lock lk(m_cs_wait);
+                        m_signaled_holder = objects[index];
+                        *out              = objects[index];
                         return wait_result;
                     }
                     break;
@@ -139,7 +139,7 @@ namespace ams::os::impl {
     s32 MultiWaitImpl::BuildHandleArray(NativeHandle out_handles[], MultiWaitHolderBase *out_objects[], s32 num) {
         s32 count = 0;
 
-        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
+        for (MultiWaitHolderBase &holder_base : m_multi_wait_list) {
             if (auto handle = holder_base.GetHandle(); handle != os::InvalidNativeHandle) {
                 AMS_ABORT_UNLESS(count < num);
 
@@ -155,7 +155,7 @@ namespace ams::os::impl {
     MultiWaitHolderBase *MultiWaitImpl::LinkHoldersToObjectList() {
         MultiWaitHolderBase *signaled_holder = nullptr;
 
-        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
+        for (MultiWaitHolderBase &holder_base : m_multi_wait_list) {
             TriBool is_signaled = holder_base.LinkToObjectList();
 
             if (signaled_holder == nullptr && is_signaled == TriBool::True) {
@@ -167,7 +167,7 @@ namespace ams::os::impl {
     }
 
     void MultiWaitImpl::UnlinkHoldersFromObjectList() {
-        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
+        for (MultiWaitHolderBase &holder_base : m_multi_wait_list) {
             holder_base.UnlinkFromObjectList();
         }
     }
@@ -176,27 +176,27 @@ namespace ams::os::impl {
         MultiWaitHolderBase *min_timeout_holder = nullptr;
         TimeSpan min_time = end_time;
 
-        for (MultiWaitHolderBase &holder_base : this->multi_wait_list) {
+        for (MultiWaitHolderBase &holder_base : m_multi_wait_list) {
             if (const TimeSpan cur_time = holder_base.GetAbsoluteWakeupTime(); cur_time < min_time) {
                 min_timeout_holder = std::addressof(holder_base);
                 min_time = cur_time;
             }
         }
 
-        if (min_time < this->current_time) {
+        if (min_time < m_current_time) {
             *out_min_timeout = 0;
         } else {
-            *out_min_timeout = min_time - this->current_time;
+            *out_min_timeout = min_time - m_current_time;
         }
         return min_timeout_holder;
     }
 
     void MultiWaitImpl::SignalAndWakeupThread(MultiWaitHolderBase *holder_base) {
-        std::scoped_lock lk(this->cs_wait);
+        std::scoped_lock lk(m_cs_wait);
 
-        if (this->signaled_holder == nullptr) {
-            this->signaled_holder = holder_base;
-            this->target_impl.CancelWait();
+        if (m_signaled_holder == nullptr) {
+            m_signaled_holder = holder_base;
+            m_target_impl.CancelWait();
         }
     }
 

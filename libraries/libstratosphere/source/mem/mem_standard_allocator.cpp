@@ -66,9 +66,9 @@ namespace ams::mem {
 
     }
 
-    StandardAllocator::StandardAllocator() : initialized(false), enable_thread_cache(false), unused(0) {
-        static_assert(sizeof(impl::heap::CentralHeap) <= sizeof(this->central_heap_storage));
-        std::construct_at(GetCentral(this->central_heap_storage));
+    StandardAllocator::StandardAllocator() : m_initialized(false), m_enable_thread_cache(false), m_unused(0) {
+        static_assert(sizeof(impl::heap::CentralHeap) <= sizeof(m_central_heap_storage));
+        std::construct_at(GetCentral(m_central_heap_storage));
     }
 
     StandardAllocator::StandardAllocator(void *mem, size_t size) : StandardAllocator() {
@@ -84,7 +84,7 @@ namespace ams::mem {
     }
 
     void StandardAllocator::Initialize(void *mem, size_t size, bool enable_cache) {
-        AMS_ABORT_UNLESS(!this->initialized);
+        AMS_ABORT_UNLESS(!m_initialized);
 
         const uintptr_t aligned_start = util::AlignUp(reinterpret_cast<uintptr_t>(mem), impl::heap::TlsHeapStatic::PageSize);
         const uintptr_t aligned_end   = util::AlignDown(reinterpret_cast<uintptr_t>(mem) + size, impl::heap::TlsHeapStatic::PageSize);
@@ -92,47 +92,47 @@ namespace ams::mem {
 
         if (mem == nullptr) {
             AMS_ABORT_UNLESS(os::IsVirtualAddressMemoryEnabled());
-            AMS_ABORT_UNLESS(GetCentral(this->central_heap_storage)->Initialize(nullptr, size, 0) == 0);
+            AMS_ABORT_UNLESS(GetCentral(m_central_heap_storage)->Initialize(nullptr, size, 0) == 0);
         } else {
             AMS_ABORT_UNLESS(aligned_start < aligned_end);
             AMS_ABORT_UNLESS(aligned_size >= MinimumAllocatorSize);
-            AMS_ABORT_UNLESS(GetCentral(this->central_heap_storage)->Initialize(reinterpret_cast<void *>(aligned_start), aligned_size, 0) == 0);
+            AMS_ABORT_UNLESS(GetCentral(m_central_heap_storage)->Initialize(reinterpret_cast<void *>(aligned_start), aligned_size, 0) == 0);
         }
 
-        this->enable_thread_cache = enable_cache;
-        if (this->enable_thread_cache) {
-            R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(this->tls_slot), ThreadDestroy));
+        m_enable_thread_cache = enable_cache;
+        if (m_enable_thread_cache) {
+            R_ABORT_UNLESS(os::AllocateTlsSlot(std::addressof(m_tls_slot), ThreadDestroy));
         }
 
-        this->initialized = true;
+        m_initialized = true;
     }
 
     void StandardAllocator::Finalize() {
-        AMS_ABORT_UNLESS(this->initialized);
+        AMS_ABORT_UNLESS(m_initialized);
 
-        if (this->enable_thread_cache) {
-            os::FreeTlsSlot(this->tls_slot);
+        if (m_enable_thread_cache) {
+            os::FreeTlsSlot(m_tls_slot);
         }
 
-        GetCentral(this->central_heap_storage)->Finalize();
+        GetCentral(m_central_heap_storage)->Finalize();
 
-        this->initialized = false;
+        m_initialized = false;
     }
 
     void *StandardAllocator::Allocate(size_t size) {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
         return this->Allocate(size, DefaultAlignment);
     }
 
     void *StandardAllocator::Allocate(size_t size, size_t alignment) {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         impl::heap::TlsHeapCache *heap_cache = nullptr;
-        if (this->enable_thread_cache) {
-            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             if (!heap_cache) {
-                GetCache(GetCentral(this->central_heap_storage), this->tls_slot);
-                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+                GetCache(GetCentral(m_central_heap_storage), m_tls_slot);
+                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             }
         }
 
@@ -146,34 +146,34 @@ namespace ams::mem {
             impl::heap::CachedHeap cache;
             cache.Reset(heap_cache);
             cache.Query(impl::AllocQuery_FinalizeCache);
-            os::SetTlsValue(this->tls_slot, 0);
+            os::SetTlsValue(m_tls_slot, 0);
         }
 
-        return GetCentral(this->central_heap_storage)->Allocate(size, alignment);
+        return GetCentral(m_central_heap_storage)->Allocate(size, alignment);
     }
 
     void StandardAllocator::Free(void *ptr) {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         if (ptr == nullptr) {
             return;
         }
 
-        if (this->enable_thread_cache) {
-            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             if (heap_cache) {
                 heap_cache->Free(ptr);
                 return;
             }
         }
 
-        const auto err = GetCentral(this->central_heap_storage)->Free(ptr);
+        const auto err = GetCentral(m_central_heap_storage)->Free(ptr);
         AMS_ASSERT(err == 0);
         AMS_UNUSED(err);
     }
 
     void *StandardAllocator::Reallocate(void *ptr, size_t new_size) {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         if (new_size > impl::MaxSize) {
             return nullptr;
@@ -192,11 +192,11 @@ namespace ams::mem {
 
 
         impl::heap::TlsHeapCache *heap_cache = nullptr;
-        if (this->enable_thread_cache) {
-            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             if (!heap_cache) {
-                GetCache(GetCentral(this->central_heap_storage), this->tls_slot);
-                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+                GetCache(GetCentral(m_central_heap_storage), m_tls_slot);
+                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             }
         }
 
@@ -205,7 +205,7 @@ namespace ams::mem {
         if (heap_cache) {
             err = heap_cache->Reallocate(ptr, aligned_new_size, std::addressof(p));
         } else {
-            err = GetCentral(this->central_heap_storage)->Reallocate(ptr, aligned_new_size, std::addressof(p));
+            err = GetCentral(m_central_heap_storage)->Reallocate(ptr, aligned_new_size, std::addressof(p));
         }
 
         if (err == 0) {
@@ -216,10 +216,10 @@ namespace ams::mem {
     }
 
     size_t StandardAllocator::Shrink(void *ptr, size_t new_size) {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
-        if (this->enable_thread_cache) {
-            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             if (heap_cache) {
                 if (heap_cache->Shrink(ptr, new_size) == 0) {
                     return heap_cache->GetAllocationSize(ptr);
@@ -229,16 +229,16 @@ namespace ams::mem {
             }
         }
 
-        if (GetCentral(this->central_heap_storage)->Shrink(ptr, new_size) == 0) {
-            return GetCentral(this->central_heap_storage)->GetAllocationSize(ptr);
+        if (GetCentral(m_central_heap_storage)->Shrink(ptr, new_size) == 0) {
+            return GetCentral(m_central_heap_storage)->GetAllocationSize(ptr);
         } else {
             return 0;
         }
     }
 
     void StandardAllocator::ClearThreadCache() const {
-        if (this->enable_thread_cache) {
-            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            impl::heap::TlsHeapCache *heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             impl::heap::CachedHeap cache;
             cache.Reset(heap_cache);
             cache.Query(impl::AllocQuery_ClearCache);
@@ -247,42 +247,42 @@ namespace ams::mem {
     }
 
     void StandardAllocator::CleanUpManagementArea() const {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
-        const auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_UnifyFreeList);
+        const auto err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_UnifyFreeList);
         AMS_ASSERT(err == 0);
         AMS_UNUSED(err);
     }
 
     size_t StandardAllocator::GetSizeOf(const void *ptr) const {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         if (!util::IsAligned(reinterpret_cast<uintptr_t>(ptr), DefaultAlignment)) {
             return 0;
         }
 
         impl::heap::TlsHeapCache *heap_cache = nullptr;
-        if (this->enable_thread_cache) {
-            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+        if (m_enable_thread_cache) {
+            heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             if (!heap_cache) {
-                GetCache(GetCentral(this->central_heap_storage), this->tls_slot);
-                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(this->tls_slot));
+                GetCache(GetCentral(m_central_heap_storage), m_tls_slot);
+                heap_cache = reinterpret_cast<impl::heap::TlsHeapCache *>(os::GetTlsValue(m_tls_slot));
             }
         }
 
         if (heap_cache) {
             return heap_cache->GetAllocationSize(ptr);
         } else {
-            return GetCentral(this->central_heap_storage)->GetAllocationSize(ptr);
+            return GetCentral(m_central_heap_storage)->GetAllocationSize(ptr);
         }
     }
 
     size_t StandardAllocator::GetTotalFreeSize() const {
         size_t size = 0;
 
-        auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_FreeSizeMapped, std::addressof(size));
+        auto err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_FreeSizeMapped, std::addressof(size));
         if (err != 0) {
-            err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_FreeSize, std::addressof(size));
+            err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_FreeSize, std::addressof(size));
         }
         AMS_ASSERT(err == 0);
 
@@ -292,9 +292,9 @@ namespace ams::mem {
     size_t StandardAllocator::GetAllocatableSize() const {
         size_t size = 0;
 
-        auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSizeMapped, std::addressof(size));
+        auto err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSizeMapped, std::addressof(size));
         if (err != 0) {
-            err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSize, std::addressof(size));
+            err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSize, std::addressof(size));
         }
         AMS_ASSERT(err == 0);
 
@@ -302,26 +302,26 @@ namespace ams::mem {
     }
 
     void StandardAllocator::WalkAllocatedBlocks(WalkCallback callback, void *user_data) const {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
         this->ClearThreadCache();
-        GetCentral(this->central_heap_storage)->WalkAllocatedPointers(callback, user_data);
+        GetCentral(m_central_heap_storage)->WalkAllocatedPointers(callback, user_data);
     }
 
     void StandardAllocator::Dump() const {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         size_t tmp;
-        auto err = GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSizeMapped, std::addressof(tmp));
+        auto err = GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_MaxAllocatableSizeMapped, std::addressof(tmp));
 
         if (err == 0) {
-            GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_Dump, impl::DumpMode_Spans | impl::DumpMode_Pointers, 1);
+            GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_Dump, impl::DumpMode_Spans | impl::DumpMode_Pointers, 1);
         } else {
-            GetCentral(this->central_heap_storage)->Query(impl::AllocQuery_Dump, impl::DumpMode_All, 1);
+            GetCentral(m_central_heap_storage)->Query(impl::AllocQuery_Dump, impl::DumpMode_All, 1);
         }
     }
 
     StandardAllocator::AllocatorHash StandardAllocator::Hash() const {
-        AMS_ASSERT(this->initialized);
+        AMS_ASSERT(m_initialized);
 
         AllocatorHash alloc_hash;
         {

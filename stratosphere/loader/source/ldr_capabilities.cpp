@@ -59,15 +59,15 @@ namespace ams::ldr::caps {
                 using IdBits   = CapabilityField<0, static_cast<size_t>(Id) + 1>;                                               \
                 static constexpr u32 IdBitsValue = (static_cast<u32>(1) << static_cast<size_t>(Id)) - 1;                        \
             private:                                                                                                            \
-                util::BitPack32 value;                                                                                          \
+                util::BitPack32 m_value;                                                                                        \
             private:                                                                                                            \
                 template<typename FieldType>                                                                                    \
-                constexpr ALWAYS_INLINE typename FieldType::Type Get() const { return this->value.Get<FieldType>(); }           \
+                constexpr ALWAYS_INLINE typename FieldType::Type Get() const { return m_value.Get<FieldType>(); }               \
                 template<typename FieldType>                                                                                    \
-                constexpr ALWAYS_INLINE void Set(typename FieldType::Type fv) { this->value.Set<FieldType>(fv); }               \
-                constexpr ALWAYS_INLINE u32 GetValue() const { return this->value.value; }                                      \
+                constexpr ALWAYS_INLINE void Set(typename FieldType::Type fv) { m_value.Set<FieldType>(fv); }                   \
+                constexpr ALWAYS_INLINE u32 GetValue() const { return m_value.value; }                                          \
             public:                                                                                                             \
-                constexpr ALWAYS_INLINE CAPABILITY_CLASS_NAME(id)(util::BitPack32 v) : value{v} { /* ... */ }                   \
+                constexpr ALWAYS_INLINE CAPABILITY_CLASS_NAME(id)(util::BitPack32 v) : m_value{v} { /* ... */ }                 \
                                                                                                                                 \
                 static constexpr CAPABILITY_CLASS_NAME(id) Decode(util::BitPack32 v) { return CAPABILITY_CLASS_NAME(id)(v); }   \
                                                                                                                                 \

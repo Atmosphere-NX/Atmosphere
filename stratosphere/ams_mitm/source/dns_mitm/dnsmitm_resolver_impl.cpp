@@ -91,14 +91,14 @@ namespace ams::mitm::socket::resolver {
 
         const char *hostname = reinterpret_cast<const char *>(name.GetPointer());
 
-        LogDebug("[%016lx]: GetHostByNameRequest(%s)\n", this->client_info.program_id.value, hostname);
+        LogDebug("[%016lx]: GetHostByNameRequest(%s)\n", m_client_info.program_id.value, hostname);
 
         R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
 
-        LogDebug("[%016lx]: Redirecting %s to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
+        LogDebug("[%016lx]: Redirecting %s to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
         const auto size = SerializeRedirectedHostEnt(out_hostent.GetPointer(), out_hostent.GetSize(), hostname, redirect_addr);
 
         *out_host_error = 0;
@@ -113,7 +113,7 @@ namespace ams::mitm::socket::resolver {
 
         const char *hostname = reinterpret_cast<const char *>(node.GetPointer());
 
-        LogDebug("[%016lx]: GetAddrInfoRequest(%s, %s)\n", this->client_info.program_id.value, reinterpret_cast<const char *>(node.GetPointer()), reinterpret_cast<const char *>(srv.GetPointer()));
+        LogDebug("[%016lx]: GetAddrInfoRequest(%s, %s)\n", m_client_info.program_id.value, reinterpret_cast<const char *>(node.GetPointer()), reinterpret_cast<const char *>(srv.GetPointer()));
 
         R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
@@ -129,7 +129,7 @@ namespace ams::mitm::socket::resolver {
             }
         }
 
-        LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
+        LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
 
         const bool use_hint = serialized_hint.GetPointer() != nullptr;
         struct addrinfo hint = {};
@@ -152,14 +152,14 @@ namespace ams::mitm::socket::resolver {
 
         const char *hostname = reinterpret_cast<const char *>(name.GetPointer());
 
-        LogDebug("[%016lx]: GetHostByNameRequestWithOptions(%s)\n", this->client_info.program_id.value, hostname);
+        LogDebug("[%016lx]: GetHostByNameRequestWithOptions(%s)\n", m_client_info.program_id.value, hostname);
 
         R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
         ams::socket::InAddrT redirect_addr = {};
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
 
-        LogDebug("[%016lx]: Redirecting %s to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
+        LogDebug("[%016lx]: Redirecting %s to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
         const auto size = SerializeRedirectedHostEnt(out_hostent.GetPointer(), out_hostent.GetSize(), hostname, redirect_addr);
 
         *out_host_error = 0;
@@ -174,7 +174,7 @@ namespace ams::mitm::socket::resolver {
 
         const char *hostname = reinterpret_cast<const char *>(node.GetPointer());
 
-        LogDebug("[%016lx]: GetAddrInfoRequestWithOptions(%s, %s)\n", this->client_info.program_id.value, hostname, reinterpret_cast<const char *>(srv.GetPointer()));
+        LogDebug("[%016lx]: GetAddrInfoRequestWithOptions(%s, %s)\n", m_client_info.program_id.value, hostname, reinterpret_cast<const char *>(srv.GetPointer()));
 
         R_UNLESS(hostname != nullptr, sm::mitm::ResultShouldForwardToSession());
 
@@ -190,7 +190,7 @@ namespace ams::mitm::socket::resolver {
             }
         }
 
-        LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
+        LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", m_client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
 
         const bool use_hint = serialized_hint.GetPointer() != nullptr;
         struct addrinfo hint = {};

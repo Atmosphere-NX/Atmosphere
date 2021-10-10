@@ -29,28 +29,28 @@ namespace ams::os::impl {
 
     class TickManager {
         private:
-            TickManagerImpl impl;
+            TickManagerImpl m_impl;
         public:
-            constexpr TickManager() : impl() { /* ... */ }
+            constexpr TickManager() : m_impl() { /* ... */ }
 
             ALWAYS_INLINE Tick GetTick() const {
-                return this->impl.GetTick();
+                return m_impl.GetTick();
             }
 
             ALWAYS_INLINE Tick GetSystemTickOrdered() const {
-                return this->impl.GetSystemTickOrdered();
+                return m_impl.GetSystemTickOrdered();
             }
 
             ALWAYS_INLINE s64 GetTickFrequency() const {
-                return this->impl.GetTickFrequency();
+                return m_impl.GetTickFrequency();
             }
 
             ALWAYS_INLINE s64 GetMaxTick() const {
-                return this->impl.GetMaxTick();
+                return m_impl.GetMaxTick();
             }
 
             ALWAYS_INLINE s64 GetMaxTimeSpanNs() const {
-                return this->impl.GetMaxTimeSpanNs();
+                return m_impl.GetMaxTimeSpanNs();
             }
 
             TimeSpan ConvertToTimeSpan(Tick tick) const;

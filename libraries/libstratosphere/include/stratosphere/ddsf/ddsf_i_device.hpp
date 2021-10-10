@@ -32,57 +32,57 @@ namespace ams::ddsf {
         public:
             AMS_DDSF_CASTABLE_ROOT_TRAITS(ams::ddsf::IDevice);
         private:
-            util::IntrusiveListNode list_node;
-            IDriver *driver;
-            ISession::List session_list;
-            mutable os::SdkMutex session_list_lock;
-            bool is_exclusive_write;
+            util::IntrusiveListNode m_list_node;
+            IDriver *m_driver;
+            ISession::List m_session_list;
+            mutable os::SdkMutex m_session_list_lock;
+            bool m_is_exclusive_write;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::list_node>;
+            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<IDevice, util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::list_node>>;
+            friend class util::IntrusiveList<IDevice, util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::m_list_node>>;
         private:
             Result AttachSession(ISession *session) {
                 AMS_ASSERT(session != nullptr);
-                std::scoped_lock lk(this->session_list_lock);
+                std::scoped_lock lk(m_session_list_lock);
 
                 /* Check if we're allowed to attach the session. */
-                if (this->is_exclusive_write && session->CheckExclusiveWrite()) {
-                    for (const auto &attached : this->session_list) {
+                if (m_is_exclusive_write && session->CheckExclusiveWrite()) {
+                    for (const auto &attached : m_session_list) {
                         R_UNLESS(!attached.CheckAccess(AccessMode_Write), ddsf::ResultAccessModeDenied());
                     }
                 }
 
                 /* Attach the session. */
-                this->session_list.push_back(*session);
+                m_session_list.push_back(*session);
                 return ResultSuccess();
             }
 
             void DetachSession(ISession *session) {
                 AMS_ASSERT(session != nullptr);
-                std::scoped_lock lk(this->session_list_lock);
-                this->session_list.erase(this->session_list.iterator_to(*session));
+                std::scoped_lock lk(m_session_list_lock);
+                m_session_list.erase(m_session_list.iterator_to(*session));
             }
 
             void AttachDriver(IDriver *drv) {
                 AMS_ASSERT(drv != nullptr);
                 AMS_ASSERT(!this->IsDriverAttached());
-                this->driver = drv;
+                m_driver = drv;
                 AMS_ASSERT(this->IsDriverAttached());
             }
 
             void DetachDriver() {
                 AMS_ASSERT(this->IsDriverAttached());
-                this->driver = nullptr;
+                m_driver = nullptr;
                 AMS_ASSERT(!this->IsDriverAttached());
             }
         public:
-            IDevice(bool exclusive_write) : list_node(), driver(nullptr), session_list(), session_list_lock(), is_exclusive_write(exclusive_write) {
-                this->session_list.clear();
+            IDevice(bool exclusive_write) : m_list_node(), m_driver(nullptr), m_session_list(), m_session_list_lock(), m_is_exclusive_write(exclusive_write) {
+                m_session_list.clear();
             }
         protected:
             ~IDevice() {
-                this->session_list.clear();
+                m_session_list.clear();
             }
         public:
             void AddTo(List &list) {
@@ -94,45 +94,45 @@ namespace ams::ddsf {
             }
 
             bool IsLinkedToList() const {
-                return this->list_node.IsLinked();
+                return m_list_node.IsLinked();
             }
 
             IDriver &GetDriver() {
                 AMS_ASSERT(this->IsDriverAttached());
-                return *this->driver;
+                return *m_driver;
             }
 
             const IDriver &GetDriver() const {
                 AMS_ASSERT(this->IsDriverAttached());
-                return *this->driver;
+                return *m_driver;
             }
 
             bool IsDriverAttached() const {
-                return this->driver != nullptr;
+                return m_driver != nullptr;
             }
 
             template<typename F>
             Result ForEachSession(F f, bool return_on_fail) {
-                return impl::ForEach(this->session_list_lock, this->session_list, f, return_on_fail);
+                return impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail);
             }
 
             template<typename F>
             Result ForEachSession(F f, bool return_on_fail) const {
-                return impl::ForEach(this->session_list_lock, this->session_list, f, return_on_fail);
+                return impl::ForEach(m_session_list_lock, m_session_list, f, return_on_fail);
             }
 
             template<typename F>
             int ForEachSession(F f) {
-                return impl::ForEach(this->session_list_lock, this->session_list, f);
+                return impl::ForEach(m_session_list_lock, m_session_list, f);
             }
 
             template<typename F>
             int ForEachSession(F f) const {
-                return impl::ForEach(this->session_list_lock, this->session_list, f);
+                return impl::ForEach(m_session_list_lock, m_session_list, f);
             }
 
             bool HasAnyOpenSession() const {
-                return !this->session_list.empty();
+                return !m_session_list.empty();
             }
     };
     static_assert(IDevice::ListTraits::IsValid());

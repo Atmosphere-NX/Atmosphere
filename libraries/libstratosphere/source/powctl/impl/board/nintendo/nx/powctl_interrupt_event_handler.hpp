@@ -22,41 +22,41 @@ namespace ams::powctl::impl::board::nintendo::nx {
     template<typename Derived>
     class InterruptEventHandler : public ddsf::IEventHandler {
         private:
-            IDevice *device;
-            gpio::GpioPadSession gpio_session;
-            os::SystemEventType gpio_system_event;
-            os::SdkMutex mutex;
+            IDevice *m_device;
+            gpio::GpioPadSession m_gpio_session;
+            os::SystemEventType m_gpio_system_event;
+            os::SdkMutex m_mutex;
         public:
-            InterruptEventHandler(IDevice *dv) : IEventHandler(), device(dv), mutex() {
+            InterruptEventHandler(IDevice *dv) : IEventHandler(), m_device(dv), m_mutex() {
                 /* Initialize the gpio session. */
-                Derived::Initialize(std::addressof(this->gpio_session), std::addressof(this->gpio_system_event));
+                Derived::Initialize(std::addressof(m_gpio_session), std::addressof(m_gpio_system_event));
 
                 /* Initialize ourselves as an event handler. */
-                IEventHandler::Initialize(std::addressof(this->gpio_system_event));
+                IEventHandler::Initialize(std::addressof(m_gpio_system_event));
             }
 
             os::SystemEventType *GetSystemEvent() {
-                return std::addressof(this->gpio_system_event);
+                return std::addressof(m_gpio_system_event);
             }
 
             void SetInterruptEnabled(bool en) {
-                std::scoped_lock lk(this->mutex);
+                std::scoped_lock lk(m_mutex);
 
-                gpio::SetInterruptEnable(std::addressof(this->gpio_session), en);
+                gpio::SetInterruptEnable(std::addressof(m_gpio_session), en);
             }
 
             virtual void HandleEvent() override final {
                 /* Acquire exclusive access to ourselves. */
-                std::scoped_lock lk(this->mutex);
+                std::scoped_lock lk(m_mutex);
 
                 /* Clear our interrupt status. */
-                gpio::ClearInterruptStatus(std::addressof(this->gpio_session));
+                gpio::ClearInterruptStatus(std::addressof(m_gpio_session));
 
                 /* Clear our system event. */
-                os::ClearSystemEvent(std::addressof(this->gpio_system_event));
+                os::ClearSystemEvent(std::addressof(m_gpio_system_event));
 
                 /* Signal the event. */
-                static_cast<Derived *>(this)->SignalEvent(this->device);
+                static_cast<Derived *>(this)->SignalEvent(m_device);
             }
     };
 

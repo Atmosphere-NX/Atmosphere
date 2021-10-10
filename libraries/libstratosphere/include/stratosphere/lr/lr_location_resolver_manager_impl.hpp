@@ -24,11 +24,11 @@ namespace ams::lr {
     class LocationResolverManagerImpl {
         private:
             /* Resolver storage. */
-            ncm::BoundedMap<ncm::StorageId, sf::SharedPointer<ILocationResolver>, 5> location_resolvers;
-            sf::SharedPointer<IRegisteredLocationResolver> registered_location_resolver = nullptr;
-            sf::SharedPointer<IAddOnContentLocationResolver> add_on_content_location_resolver = nullptr;
+            ncm::BoundedMap<ncm::StorageId, sf::SharedPointer<ILocationResolver>, 5> m_location_resolvers{};
+            sf::SharedPointer<IRegisteredLocationResolver> m_registered_location_resolver = nullptr;
+            sf::SharedPointer<IAddOnContentLocationResolver> m_add_on_content_location_resolver = nullptr;
 
-            os::SdkMutex mutex{};
+            os::SdkMutex m_mutex{};
         public:
             /* Actual commands. */
             Result OpenLocationResolver(sf::Out<sf::SharedPointer<ILocationResolver>> out, ncm::StorageId storage_id);

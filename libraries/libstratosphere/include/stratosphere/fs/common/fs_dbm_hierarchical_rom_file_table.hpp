@@ -135,8 +135,8 @@ namespace ams::fs {
             using DirectoryEntryMapTable = EntryMapTable<RomEntryKey, EntryKey, RomDirectoryEntry>;
             using FileEntryMapTable      = EntryMapTable<RomEntryKey, EntryKey, RomFileEntry>;
         private:
-            DirectoryEntryMapTable dir_table;
-            FileEntryMapTable file_table;
+            DirectoryEntryMapTable m_dir_table;
+            FileEntryMapTable m_file_table;
         public:
             static s64 QueryDirectoryEntryBucketStorageSize(s64 count);
             static size_t QueryDirectoryEntrySize(size_t aux_size);
@@ -148,11 +148,11 @@ namespace ams::fs {
             HierarchicalRomFileTable();
 
             constexpr u32 GetDirectoryEntryCount() const {
-                return this->dir_table.GetEntryCount();
+                return m_dir_table.GetEntryCount();
             }
 
             constexpr u32 GetFileEntryCount() const {
-                return this->file_table.GetEntryCount();
+                return m_file_table.GetEntryCount();
             }
 
             Result Initialize(SubStorage dir_bucket, SubStorage dir_entry, SubStorage file_bucket, SubStorage file_entry);

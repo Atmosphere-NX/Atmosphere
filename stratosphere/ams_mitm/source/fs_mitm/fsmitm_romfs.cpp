@@ -72,26 +72,26 @@ namespace ams::mitm::fs {
                     static constexpr size_t MaxCachedSize = (1_MB / 4);
                     static constexpr size_t FallbackCacheSize = 1_KB;
                 private:
-                    ams::fs::IStorage *storage;
-                    size_t offset;
-                    size_t size;
-                    size_t cache_idx;
-                    void *cache;
-                    u8 fallback_cache[FallbackCacheSize];
+                    ams::fs::IStorage *m_storage;
+                    size_t m_offset;
+                    size_t m_size;
+                    size_t m_cache_idx;
+                    void *m_cache;
+                    u8 m_fallback_cache[FallbackCacheSize];
                 private:
                     ALWAYS_INLINE void Read(size_t ofs, void *dst, size_t size) {
-                        R_ABORT_UNLESS(this->storage->Read(this->offset + ofs, dst, size));
+                        R_ABORT_UNLESS(m_storage->Read(m_offset + ofs, dst, size));
                     }
                     ALWAYS_INLINE void ReloadCacheImpl(size_t idx) {
                         const size_t rel_ofs = idx * MaxCachedSize;
-                        AMS_ABORT_UNLESS(rel_ofs < this->size);
-                        const size_t new_cache_size = std::min(this->size - rel_ofs, MaxCachedSize);
-                        this->Read(rel_ofs, this->cache, new_cache_size);
-                        this->cache_idx = idx;
+                        AMS_ABORT_UNLESS(rel_ofs < m_size);
+                        const size_t new_cache_size = std::min(m_size - rel_ofs, MaxCachedSize);
+                        this->Read(rel_ofs, m_cache, new_cache_size);
+                        m_cache_idx = idx;
                     }
 
                     ALWAYS_INLINE void ReloadCache(size_t idx) {
-                        if (this->cache_idx != idx) {
+                        if (m_cache_idx != idx) {
                             this->ReloadCacheImpl(idx);
                         }
                     }
@@ -100,14 +100,14 @@ namespace ams::mitm::fs {
                         return ofs / MaxCachedSize;
                     }
                 public:
-                    TableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : storage(s), offset(ofs), size(sz), cache_idx(0) {
-                        this->cache = std::malloc(std::min(sz, MaxCachedSize));
-                        AMS_ABORT_UNLESS(this->cache != nullptr);
+                    TableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : m_storage(s), m_offset(ofs), m_size(sz), m_cache_idx(0) {
+                        m_cache = std::malloc(std::min(sz, MaxCachedSize));
+                        AMS_ABORT_UNLESS(m_cache != nullptr);
                         this->ReloadCacheImpl(0);
                     }
 
                     ~TableReader() {
-                        std::free(this->cache);
+                        std::free(m_cache);
                     }
 
                     const Entry *GetEntry(u32 entry_offset) {
@@ -115,10 +115,10 @@ namespace ams::mitm::fs {
 
                         const size_t ofs = entry_offset % MaxCachedSize;
 
-                        const Entry *entry = reinterpret_cast<const Entry *>(reinterpret_cast<uintptr_t>(this->cache) + ofs);
+                        const Entry *entry = reinterpret_cast<const Entry *>(reinterpret_cast<uintptr_t>(m_cache) + ofs);
                         if (AMS_UNLIKELY(this->GetCacheIndex(entry_offset) != this->GetCacheIndex(entry_offset + sizeof(Entry) + entry->name_size + sizeof(u32)))) {
-                            this->Read(entry_offset, this->fallback_cache, std::min(this->size - entry_offset, FallbackCacheSize));
-                            entry = reinterpret_cast<const Entry *>(this->fallback_cache);
+                            this->Read(entry_offset, m_fallback_cache, std::min(m_size - entry_offset, FallbackCacheSize));
+                            entry = reinterpret_cast<const Entry *>(m_fallback_cache);
                         }
                         return entry;
                     }
@@ -132,38 +132,38 @@ namespace ams::mitm::fs {
                     static constexpr size_t MaxCachedSize = (1_MB / 4);
                     static constexpr size_t FallbackCacheSize = 1_KB;
                 private:
-                    ::FsFile *file;
-                    size_t offset;
-                    size_t size;
-                    size_t cache_idx;
-                    void *cache;
-                    u8 fallback_cache[FallbackCacheSize];
-                    size_t fallback_cache_entry_offset;
-                    size_t fallback_cache_entry_size;
-                    bool cache_dirty;
-                    bool fallback_cache_dirty;
+                    ::FsFile *m_file;
+                    size_t m_offset;
+                    size_t m_size;
+                    size_t m_cache_idx;
+                    void *m_cache;
+                    u8 m_fallback_cache[FallbackCacheSize];
+                    size_t m_fallback_cache_entry_offset;
+                    size_t m_fallback_cache_entry_size;
+                    bool m_cache_dirty;
+                    bool m_fallback_cache_dirty;
                 private:
                     ALWAYS_INLINE void Read(size_t ofs, void *dst, size_t sz) {
                         u64 read_size;
-                        R_ABORT_UNLESS(fsFileRead(this->file, this->offset + ofs, dst, sz, 0, std::addressof(read_size)));
+                        R_ABORT_UNLESS(fsFileRead(m_file, m_offset + ofs, dst, sz, 0, std::addressof(read_size)));
                         AMS_ABORT_UNLESS(read_size == sz);
                     }
 
                     ALWAYS_INLINE void Write(size_t ofs, const void *src, size_t sz) {
-                        R_ABORT_UNLESS(fsFileWrite(this->file, this->offset + ofs, src, sz, FsWriteOption_None));
+                        R_ABORT_UNLESS(fsFileWrite(m_file, m_offset + ofs, src, sz, FsWriteOption_None));
                     }
 
                     ALWAYS_INLINE void Flush() {
-                        AMS_ABORT_UNLESS(!(this->cache_dirty && this->fallback_cache_dirty));
+                        AMS_ABORT_UNLESS(!(m_cache_dirty && m_fallback_cache_dirty));
 
-                        if (this->cache_dirty) {
-                            const size_t ofs = this->cache_idx * MaxCachedSize;
-                            this->Write(ofs, this->cache, std::min(this->size - ofs, MaxCachedSize));
-                            this->cache_dirty = false;
+                        if (m_cache_dirty) {
+                            const size_t ofs = m_cache_idx * MaxCachedSize;
+                            this->Write(ofs, m_cache, std::min(m_size - ofs, MaxCachedSize));
+                            m_cache_dirty = false;
                         }
-                        if (this->fallback_cache_dirty) {
-                            this->Write(this->fallback_cache_entry_offset, this->fallback_cache, this->fallback_cache_entry_size);
-                            this->fallback_cache_dirty = false;
+                        if (m_fallback_cache_dirty) {
+                            this->Write(m_fallback_cache_entry_offset, m_fallback_cache, m_fallback_cache_entry_size);
+                            m_fallback_cache_dirty = false;
                         }
                     }
 
@@ -172,32 +172,32 @@ namespace ams::mitm::fs {
                     }
 
                     ALWAYS_INLINE void RefreshCacheImpl() {
-                        const size_t cur_cache = this->cache_idx * MaxCachedSize;
-                        this->Read(cur_cache, this->cache, std::min(this->size - cur_cache, MaxCachedSize));
+                        const size_t cur_cache = m_cache_idx * MaxCachedSize;
+                        this->Read(cur_cache, m_cache, std::min(m_size - cur_cache, MaxCachedSize));
                     }
 
                     ALWAYS_INLINE void RefreshCache(u32 entry_offset) {
-                        if (size_t idx = this->GetCacheIndex(entry_offset); idx != this->cache_idx || this->fallback_cache_dirty) {
+                        if (size_t idx = this->GetCacheIndex(entry_offset); idx != m_cache_idx || m_fallback_cache_dirty) {
                             this->Flush();
-                            this->cache_idx = idx;
+                            m_cache_idx = idx;
                             this->RefreshCacheImpl();
                         }
                     }
                 public:
-                    TableWriter(::FsFile *f, size_t ofs, size_t sz) : file(f), offset(ofs), size(sz), cache_idx(0), fallback_cache_entry_offset(), fallback_cache_entry_size(), cache_dirty(), fallback_cache_dirty() {
+                    TableWriter(::FsFile *f, size_t ofs, size_t sz) : m_file(f), m_offset(ofs), m_size(sz), m_cache_idx(0), m_fallback_cache_entry_offset(), m_fallback_cache_entry_size(), m_cache_dirty(), m_fallback_cache_dirty() {
                         const size_t cache_size = std::min(sz, MaxCachedSize);
-                        this->cache = std::malloc(cache_size);
-                        AMS_ABORT_UNLESS(this->cache != nullptr);
-                        std::memset(this->cache, 0, cache_size);
-                        std::memset(this->fallback_cache, 0, sizeof(this->fallback_cache));
-                        for (size_t cur = 0; cur < this->size; cur += MaxCachedSize) {
-                            this->Write(cur, this->cache, std::min(this->size - cur, MaxCachedSize));
+                        m_cache = std::malloc(cache_size);
+                        AMS_ABORT_UNLESS(m_cache != nullptr);
+                        std::memset(m_cache, 0, cache_size);
+                        std::memset(m_fallback_cache, 0, sizeof(m_fallback_cache));
+                        for (size_t cur = 0; cur < m_size; cur += MaxCachedSize) {
+                            this->Write(cur, m_cache, std::min(m_size - cur, MaxCachedSize));
                         }
                     }
 
                     ~TableWriter() {
                         this->Flush();
-                        std::free(this->cache);
+                        std::free(m_cache);
                     }
 
                     Entry *GetEntry(u32 entry_offset, u32 name_len) {
@@ -205,18 +205,18 @@ namespace ams::mitm::fs {
 
                         const size_t ofs = entry_offset % MaxCachedSize;
 
-                        Entry *entry = reinterpret_cast<Entry *>(reinterpret_cast<uintptr_t>(this->cache) + ofs);
+                        Entry *entry = reinterpret_cast<Entry *>(reinterpret_cast<uintptr_t>(m_cache) + ofs);
                         if (ofs + sizeof(Entry) + util::AlignUp(name_len, sizeof(u32)) > MaxCachedSize) {
                             this->Flush();
 
-                            this->fallback_cache_entry_offset = entry_offset;
-                            this->fallback_cache_entry_size   = sizeof(Entry) + util::AlignUp(name_len, sizeof(u32));
-                            this->Read(this->fallback_cache_entry_offset, this->fallback_cache, this->fallback_cache_entry_size);
+                            m_fallback_cache_entry_offset = entry_offset;
+                            m_fallback_cache_entry_size   = sizeof(Entry) + util::AlignUp(name_len, sizeof(u32));
+                            this->Read(m_fallback_cache_entry_offset, m_fallback_cache, m_fallback_cache_entry_size);
 
-                            entry = reinterpret_cast<Entry *>(this->fallback_cache);
-                            this->fallback_cache_dirty = true;
+                            entry = reinterpret_cast<Entry *>(m_fallback_cache);
+                            m_fallback_cache_dirty = true;
                         } else {
-                            this->cache_dirty = true;
+                            m_cache_dirty = true;
                         }
 
                         return entry;
@@ -269,12 +269,12 @@ namespace ams::mitm::fs {
 
         }
 
-        Builder::Builder(ncm::ProgramId pr_id) : program_id(pr_id), num_dirs(0), num_files(0), dir_table_size(0), file_table_size(0), dir_hash_table_size(0), file_hash_table_size(0), file_partition_size(0) {
-            auto res = this->directories.emplace(std::make_unique<BuildDirectoryContext>(BuildDirectoryContext::RootTag{}));
+        Builder::Builder(ncm::ProgramId pr_id) : m_program_id(pr_id), m_num_dirs(0), m_num_files(0), m_dir_table_size(0), m_file_table_size(0), m_dir_hash_table_size(0), m_file_hash_table_size(0), m_file_partition_size(0) {
+            auto res = m_directories.emplace(std::make_unique<BuildDirectoryContext>(BuildDirectoryContext::RootTag{}));
             AMS_ABORT_UNLESS(res.second);
-            this->root = res.first->get();
-            this->num_dirs = 1;
-            this->dir_table_size = 0x18;
+            m_root = res.first->get();
+            m_num_dirs = 1;
+            m_dir_table_size = 0x18;
         }
 
         void Builder::AddDirectory(BuildDirectoryContext **out, BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildDirectoryContext> child_ctx) {
@@ -282,18 +282,18 @@ namespace ams::mitm::fs {
             child_ctx->parent = parent_ctx;
 
             /* Check if the directory already exists. */
-            auto existing = this->directories.find(child_ctx);
-            if (existing != this->directories.end()) {
+            auto existing = m_directories.find(child_ctx);
+            if (existing != m_directories.end()) {
                 *out = existing->get();
                 return;
             }
 
             /* Add a new directory. */
-            this->num_dirs++;
-            this->dir_table_size += sizeof(DirectoryEntry) + util::AlignUp(child_ctx->path_len, 4);
+            m_num_dirs++;
+            m_dir_table_size += sizeof(DirectoryEntry) + util::AlignUp(child_ctx->path_len, 4);
 
             *out = child_ctx.get();
-            this->directories.emplace(std::move(child_ctx));
+            m_directories.emplace(std::move(child_ctx));
         }
 
         void Builder::AddFile(BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildFileContext> file_ctx) {
@@ -301,14 +301,14 @@ namespace ams::mitm::fs {
             file_ctx->parent = parent_ctx;
 
             /* Check if the file already exists. */
-            if (this->files.find(file_ctx) != this->files.end()) {
+            if (m_files.find(file_ctx) != m_files.end()) {
                 return;
             }
 
             /* Add a new file. */
-            this->num_files++;
-            this->file_table_size += sizeof(FileEntry) + util::AlignUp(file_ctx->path_len, 4);
-            this->files.emplace(std::move(file_ctx));
+            m_num_files++;
+            m_file_table_size += sizeof(FileEntry) + util::AlignUp(file_ctx->path_len, 4);
+            m_files.emplace(std::move(file_ctx));
         }
 
         void Builder::VisitDirectory(FsFileSystem *fs, BuildDirectoryContext *parent) {
@@ -317,7 +317,7 @@ namespace ams::mitm::fs {
             /* Get number of child directories. */
             s64 num_child_dirs = 0;
             {
-                OpenFileSystemRomfsDirectory(std::addressof(dir), this->program_id, parent, OpenDirectoryMode_Directory, fs);
+                OpenFileSystemRomfsDirectory(std::addressof(dir), m_program_id, parent, OpenDirectoryMode_Directory, fs);
                 ON_SCOPE_EXIT { fsDirClose(std::addressof(dir)); };
                 R_ABORT_UNLESS(fsDirGetEntryCount(std::addressof(dir), std::addressof(num_child_dirs)));
             }
@@ -330,27 +330,27 @@ namespace ams::mitm::fs {
 
                 s64 cur_child_dir_ind = 0;
                 {
-                    OpenFileSystemRomfsDirectory(std::addressof(dir), this->program_id, parent, OpenDirectoryMode_All, fs);
+                    OpenFileSystemRomfsDirectory(std::addressof(dir), m_program_id, parent, OpenDirectoryMode_All, fs);
                     ON_SCOPE_EXIT { fsDirClose(std::addressof(dir)); };
 
                     s64 read_entries = 0;
                     while (true) {
-                        R_ABORT_UNLESS(fsDirRead(std::addressof(dir), std::addressof(read_entries), 1, std::addressof(this->dir_entry)));
+                        R_ABORT_UNLESS(fsDirRead(std::addressof(dir), std::addressof(read_entries), 1, std::addressof(m_dir_entry)));
                         if (read_entries != 1) {
                             break;
                         }
 
-                        AMS_ABORT_UNLESS(this->dir_entry.type == FsDirEntryType_Dir || this->dir_entry.type == FsDirEntryType_File);
-                        if (this->dir_entry.type == FsDirEntryType_Dir) {
+                        AMS_ABORT_UNLESS(m_dir_entry.type == FsDirEntryType_Dir || m_dir_entry.type == FsDirEntryType_File);
+                        if (m_dir_entry.type == FsDirEntryType_Dir) {
                             AMS_ABORT_UNLESS(child_dirs != nullptr);
 
                             BuildDirectoryContext *real_child = nullptr;
-                            this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(this->dir_entry.name, strlen(this->dir_entry.name)));
+                            this->AddDirectory(std::addressof(real_child), parent, std::make_unique<BuildDirectoryContext>(m_dir_entry.name, strlen(m_dir_entry.name)));
                             AMS_ABORT_UNLESS(real_child != nullptr);
                             child_dirs[cur_child_dir_ind++] = real_child;
                             AMS_ABORT_UNLESS(cur_child_dir_ind <= num_child_dirs);
-                        } else /* if (this->dir_entry.type == FsDirEntryType_File) */ {
-                            this->AddFile(parent, std::make_unique<BuildFileContext>(this->dir_entry.name, strlen(this->dir_entry.name), this->dir_entry.file_size, 0, this->cur_source_type));
+                        } else /* if (m_dir_entry.type == FsDirEntryType_File) */ {
+                            this->AddFile(parent, std::make_unique<BuildFileContext>(m_dir_entry.name, strlen(m_dir_entry.name), m_dir_entry.file_size, 0, m_cur_source_type));
                         }
                     }
                 }
@@ -380,7 +380,7 @@ namespace ams::mitm::fs {
             while (cur_file_offset != EmptyEntry) {
                 const FileEntry *cur_file = file_table.GetEntry(cur_file_offset);
 
-                this->AddFile(parent, std::make_unique<BuildFileContext>(cur_file->name, cur_file->name_size, cur_file->size, cur_file->offset, this->cur_source_type));
+                this->AddFile(parent, std::make_unique<BuildFileContext>(cur_file->name, cur_file->name_size, cur_file->size, cur_file->offset, m_cur_source_type));
 
                 cur_file_offset = cur_file->sibling;
             }
@@ -415,14 +415,14 @@ namespace ams::mitm::fs {
             /* If there is no romfs folder on the SD, don't bother continuing. */
             {
                 FsDir dir;
-                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), this->program_id, this->root->path.get(), OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
+                if (R_FAILED(mitm::fs::OpenAtmosphereRomfsDirectory(std::addressof(dir), m_program_id, m_root->path.get(), OpenDirectoryMode_Directory, std::addressof(sd_filesystem)))) {
                     return;
                 }
                 fsDirClose(std::addressof(dir));
             }
 
-            this->cur_source_type = DataSourceType::LooseSdFile;
-            this->VisitDirectory(std::addressof(sd_filesystem), this->root);
+            m_cur_source_type = DataSourceType::LooseSdFile;
+            this->VisitDirectory(std::addressof(sd_filesystem), m_root);
         }
 
         void Builder::AddStorageFiles(ams::fs::IStorage *storage, DataSourceType source_type) {
@@ -434,8 +434,8 @@ namespace ams::mitm::fs {
             DirectoryTableReader dir_table(storage, header.dir_table_ofs, header.dir_table_size);
             FileTableReader file_table(storage, header.file_table_ofs, header.file_table_size);
 
-            this->cur_source_type = source_type;
-            this->VisitDirectory(this->root, 0x0, dir_table, file_table);
+            m_cur_source_type = source_type;
+            this->VisitDirectory(m_root, 0x0, dir_table, file_table);
         }
 
         void Builder::Build(std::vector<SourceInfo> *out_infos) {
@@ -448,19 +448,19 @@ namespace ams::mitm::fs {
             ON_SCOPE_EXIT { fsFsClose(std::addressof(sd_filesystem)); };
 
             /* Calculate hash table sizes. */
-            const size_t num_dir_hash_table_entries  = GetHashTableSize(this->num_dirs);
-            const size_t num_file_hash_table_entries = GetHashTableSize(this->num_files);
-            this->dir_hash_table_size  = sizeof(u32) * num_dir_hash_table_entries;
-            this->file_hash_table_size = sizeof(u32) * num_file_hash_table_entries;
+            const size_t num_dir_hash_table_entries  = GetHashTableSize(m_num_dirs);
+            const size_t num_file_hash_table_entries = GetHashTableSize(m_num_files);
+            m_dir_hash_table_size  = sizeof(u32) * num_dir_hash_table_entries;
+            m_file_hash_table_size = sizeof(u32) * num_file_hash_table_entries;
 
             /* Allocate metadata, make pointers. */
             Header *header = reinterpret_cast<Header *>(std::malloc(sizeof(Header)));
             std::memset(header, 0x00, sizeof(*header));
 
             /* Open metadata file. */
-            const size_t metadata_size = this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size + this->file_table_size;
+            const size_t metadata_size = m_dir_hash_table_size + m_dir_table_size + m_file_hash_table_size + m_file_table_size;
             FsFile metadata_file;
-            R_ABORT_UNLESS(mitm::fs::CreateAndOpenAtmosphereSdFile(std::addressof(metadata_file), this->program_id, "romfs_metadata.bin", metadata_size));
+            R_ABORT_UNLESS(mitm::fs::CreateAndOpenAtmosphereSdFile(std::addressof(metadata_file), m_program_id, "romfs_metadata.bin", metadata_size));
 
             /* Ensure later hash tables will have correct defaults. */
             static_assert(EmptyEntry == 0xFFFFFFFF);
@@ -473,25 +473,25 @@ namespace ams::mitm::fs {
                 u32 entry_offset = 0;
                 BuildFileContext *cur_file = nullptr;
                 BuildFileContext *prev_file = nullptr;
-                for (const auto &it : this->files) {
+                for (const auto &it : m_files) {
                     cur_file = it.get();
 
                     /* By default, pad to 0x10 alignment. */
-                    this->file_partition_size = util::AlignUp(this->file_partition_size, 0x10);
+                    m_file_partition_size = util::AlignUp(m_file_partition_size, 0x10);
 
                     /* Check if extra padding is present in original source, preserve it to make our life easier. */
                     const bool is_storage_or_file = cur_file->source_type == DataSourceType::Storage || cur_file->source_type == DataSourceType::File;
                     if (prev_file != nullptr && prev_file->source_type == cur_file->source_type && is_storage_or_file) {
-                        const s64 expected = this->file_partition_size - prev_file->offset + prev_file->orig_offset;
+                        const s64 expected = m_file_partition_size - prev_file->offset + prev_file->orig_offset;
                         if (expected != cur_file->orig_offset) {
                             AMS_ABORT_UNLESS(expected <= cur_file->orig_offset);
-                            this->file_partition_size += cur_file->orig_offset - expected;
+                            m_file_partition_size += cur_file->orig_offset - expected;
                         }
                     }
 
                     /* Calculate offsets. */
-                    cur_file->offset = this->file_partition_size;
-                    this->file_partition_size += cur_file->size;
+                    cur_file->offset = m_file_partition_size;
+                    m_file_partition_size += cur_file->size;
                     cur_file->entry_offset = entry_offset;
                     entry_offset += sizeof(FileEntry) + util::AlignUp(cur_file->path_len, 4);
 
@@ -499,7 +499,7 @@ namespace ams::mitm::fs {
                     prev_file = cur_file;
                 }
                 /* Assign deferred parent/sibling ownership. */
-                for (auto it = this->files.rbegin(); it != this->files.rend(); it++) {
+                for (auto it = m_files.rbegin(); it != m_files.rend(); it++) {
                     cur_file = it->get();
                     cur_file->sibling = cur_file->parent->file;
                     cur_file->parent->file = cur_file;
@@ -510,15 +510,15 @@ namespace ams::mitm::fs {
             {
                 u32 entry_offset = 0;
                 BuildDirectoryContext *cur_dir = nullptr;
-                for (const auto &it : this->directories) {
+                for (const auto &it : m_directories) {
                     cur_dir = it.get();
                     cur_dir->entry_offset = entry_offset;
                     entry_offset += sizeof(DirectoryEntry) + util::AlignUp(cur_dir->path_len, 4);
                 }
                 /* Assign deferred parent/sibling ownership. */
-                for (auto it = this->directories.rbegin(); it != this->directories.rend(); it++) {
+                for (auto it = m_directories.rbegin(); it != m_directories.rend(); it++) {
                     cur_dir = it->get();
-                    if (cur_dir == this->root) {
+                    if (cur_dir == m_root) {
                         continue;
                     }
                     cur_dir->sibling = cur_dir->parent->child;
@@ -529,20 +529,20 @@ namespace ams::mitm::fs {
             /* Populate file tables. */
             {
                 /* Allocate the hash table. */
-                void *fht_buf = std::malloc(this->file_hash_table_size);
+                void *fht_buf = std::malloc(m_file_hash_table_size);
                 AMS_ABORT_UNLESS(fht_buf != nullptr);
                 u32 *file_hash_table = reinterpret_cast<u32 *>(fht_buf);
-                std::memset(file_hash_table, 0xFF, this->file_hash_table_size);
+                std::memset(file_hash_table, 0xFF, m_file_hash_table_size);
                 ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), this->dir_hash_table_size + this->dir_table_size, file_hash_table, this->file_hash_table_size, FsWriteOption_None));
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size, file_hash_table, m_file_hash_table_size, FsWriteOption_None));
                     std::free(fht_buf);
                 };
 
                 /* Write the file table. */
                 {
-                    FileTableWriter file_table(std::addressof(metadata_file), this->dir_hash_table_size + this->dir_table_size + this->file_hash_table_size, this->file_table_size);
+                    FileTableWriter file_table(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size + m_file_hash_table_size, m_file_table_size);
 
-                    for (const auto &it : this->files) {
+                    for (const auto &it : m_files) {
                         BuildFileContext *cur_file = it.get();
                         FileEntry *cur_entry = file_table.GetEntry(cur_file->entry_offset, cur_file->path_len);
 
@@ -597,25 +597,25 @@ namespace ams::mitm::fs {
             /* Populate directory tables. */
             {
                 /* Allocate the hash table. */
-                void *dht_buf = std::malloc(this->dir_hash_table_size);
+                void *dht_buf = std::malloc(m_dir_hash_table_size);
                 AMS_ABORT_UNLESS(dht_buf != nullptr);
                 u32 *dir_hash_table = reinterpret_cast<u32 *>(dht_buf);
-                std::memset(dir_hash_table, 0xFF, this->dir_hash_table_size);
+                std::memset(dir_hash_table, 0xFF, m_dir_hash_table_size);
                 ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), 0, dir_hash_table, this->dir_hash_table_size, FsWriteOption_None));
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), 0, dir_hash_table, m_dir_hash_table_size, FsWriteOption_None));
                     std::free(dht_buf);
                 };
 
                 /* Write the file table. */
                 {
-                    DirectoryTableWriter dir_table(std::addressof(metadata_file), this->dir_hash_table_size, this->dir_table_size);
+                    DirectoryTableWriter dir_table(std::addressof(metadata_file), m_dir_hash_table_size, m_dir_table_size);
 
-                    for (const auto &it : this->directories) {
+                    for (const auto &it : m_directories) {
                         BuildDirectoryContext *cur_dir = it.get();
                         DirectoryEntry *cur_entry = dir_table.GetEntry(cur_dir->entry_offset, cur_dir->path_len);
 
                         /* Set entry fields. */
-                        cur_entry->parent = cur_dir == this->root ? 0 : cur_dir->parent->entry_offset;
+                        cur_entry->parent = cur_dir == m_root ? 0 : cur_dir->parent->entry_offset;
                         cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
                         cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
                         cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
@@ -639,21 +639,21 @@ namespace ams::mitm::fs {
             }
 
             /* Delete maps. */
-            this->root = nullptr;
-            this->directories.clear();
-            this->files.clear();
+            m_root = nullptr;
+            m_directories.clear();
+            m_files.clear();
 
             /* Set header fields. */
-            header->header_size = sizeof(*header);
-            header->file_hash_table_size = this->file_hash_table_size;
-            header->file_table_size = this->file_table_size;
-            header->dir_hash_table_size = this->dir_hash_table_size;
-            header->dir_table_size = this->dir_table_size;
-            header->file_partition_ofs = FilePartitionOffset;
-            header->dir_hash_table_ofs = util::AlignUp(FilePartitionOffset + this->file_partition_size, 4);
-            header->dir_table_ofs = header->dir_hash_table_ofs + header->dir_hash_table_size;
-            header->file_hash_table_ofs = header->dir_table_ofs + header->dir_table_size;
-            header->file_table_ofs = header->file_hash_table_ofs + header->file_hash_table_size;
+            header->header_size          = sizeof(*header);
+            header->file_hash_table_size = m_file_hash_table_size;
+            header->file_table_size      = m_file_table_size;
+            header->dir_hash_table_size  = m_dir_hash_table_size;
+            header->dir_table_size       = m_dir_table_size;
+            header->file_partition_ofs   = FilePartitionOffset;
+            header->dir_hash_table_ofs   = util::AlignUp(FilePartitionOffset + m_file_partition_size, 4);
+            header->dir_table_ofs        = header->dir_hash_table_ofs + header->dir_hash_table_size;
+            header->file_hash_table_ofs  = header->dir_table_ofs + header->dir_table_size;
+            header->file_table_ofs       = header->file_hash_table_ofs + header->file_hash_table_size;
 
             /* Save metadata to the SD card, to save on memory space. */
             {

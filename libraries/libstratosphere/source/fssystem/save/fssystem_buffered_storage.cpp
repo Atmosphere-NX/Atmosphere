@@ -33,18 +33,18 @@ namespace ams::fssystem::save {
             };
             static_assert(util::is_pod<FetchParameter>::value);
         private:
-            BufferedStorage *buffered_storage;
-            std::pair<uintptr_t, size_t> memory_range;
-            IBufferManager::CacheHandle cache_handle;
-            s64 offset;
-            std::atomic<bool> is_valid;
-            std::atomic<bool> is_dirty;
-            u8 reserved[2];
-            s32 reference_count;
-            Cache *next;
-            Cache *prev;
+            BufferedStorage *m_buffered_storage;
+            std::pair<uintptr_t, size_t> m_memory_range;
+            IBufferManager::CacheHandle m_cache_handle;
+            s64 m_offset;
+            std::atomic<bool> m_is_valid;
+            std::atomic<bool> m_is_dirty;
+            u8 m_reserved[2];
+            s32 m_reference_count;
+            Cache *m_next;
+            Cache *m_prev;
         public:
-            Cache() : buffered_storage(nullptr), memory_range(InvalidAddress, 0), cache_handle(), offset(InvalidOffset), is_valid(false), is_dirty(false), reference_count(1), next(nullptr), prev(nullptr) {
+            Cache() : m_buffered_storage(nullptr), m_memory_range(InvalidAddress, 0), m_cache_handle(), m_offset(InvalidOffset), m_is_valid(false), m_is_dirty(false), m_reference_count(1), m_next(nullptr), m_prev(nullptr) {
                 /* ... */
             }
 
@@ -54,142 +54,142 @@ namespace ams::fssystem::save {
 
             void Initialize(BufferedStorage *bs) {
                 AMS_ASSERT(bs != nullptr);
-                AMS_ASSERT(this->buffered_storage == nullptr);
+                AMS_ASSERT(m_buffered_storage == nullptr);
 
-                this->buffered_storage = bs;
+                m_buffered_storage = bs;
                 this->Link();
             }
 
             void Finalize() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->reference_count == 0);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_reference_count == 0);
 
                 /* If we're valid, acquire our cache handle and free our buffer. */
                 if (this->IsValid()) {
-                    const auto buffer_manager = this->buffered_storage->buffer_manager;
-                    if (!this->is_dirty) {
-                        AMS_ASSERT(this->memory_range.first == InvalidAddress);
-                        this->memory_range = buffer_manager->AcquireCache(this->cache_handle);
+                    const auto buffer_manager = m_buffered_storage->m_buffer_manager;
+                    if (!m_is_dirty) {
+                        AMS_ASSERT(m_memory_range.first == InvalidAddress);
+                        m_memory_range = buffer_manager->AcquireCache(m_cache_handle);
                     }
-                    if (this->memory_range.first != InvalidAddress) {
-                        buffer_manager->DeallocateBuffer(this->memory_range.first, this->memory_range.second);
-                        this->memory_range.first  = InvalidAddress;
-                        this->memory_range.second = 0;
+                    if (m_memory_range.first != InvalidAddress) {
+                        buffer_manager->DeallocateBuffer(m_memory_range.first, m_memory_range.second);
+                        m_memory_range.first  = InvalidAddress;
+                        m_memory_range.second = 0;
                     }
                 }
 
                 /* Clear all our members. */
-                this->buffered_storage = nullptr;
-                this->offset           = InvalidOffset;
-                this->is_valid         = false;
-                this->is_dirty         = false;
-                this->next             = nullptr;
-                this->prev             = nullptr;
+                m_buffered_storage = nullptr;
+                m_offset           = InvalidOffset;
+                m_is_valid         = false;
+                m_is_dirty         = false;
+                m_next             = nullptr;
+                m_prev             = nullptr;
             }
 
             void Link() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->reference_count > 0);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_reference_count > 0);
 
-                if ((--this->reference_count) == 0) {
-                    AMS_ASSERT(this->next == nullptr);
-                    AMS_ASSERT(this->prev == nullptr);
+                if ((--m_reference_count) == 0) {
+                    AMS_ASSERT(m_next == nullptr);
+                    AMS_ASSERT(m_prev == nullptr);
 
-                    if (this->buffered_storage->next_fetch_cache == nullptr) {
-                        this->buffered_storage->next_fetch_cache = this;
-                        this->next = this;
-                        this->prev = this;
+                    if (m_buffered_storage->m_next_fetch_cache == nullptr) {
+                        m_buffered_storage->m_next_fetch_cache = this;
+                        m_next = this;
+                        m_prev = this;
                     } else {
                         /* Check against a cache being registered twice. */
                         {
-                            auto cache = this->buffered_storage->next_fetch_cache;
+                            auto cache = m_buffered_storage->m_next_fetch_cache;
                             do {
-                                if (cache->IsValid() && this->Hits(cache->offset, this->buffered_storage->block_size)) {
-                                    this->is_valid = false;
+                                if (cache->IsValid() && this->Hits(cache->m_offset, m_buffered_storage->m_block_size)) {
+                                    m_is_valid = false;
                                     break;
                                 }
-                                cache = cache->next;
-                            } while (cache != this->buffered_storage->next_fetch_cache);
+                                cache = cache->m_next;
+                            } while (cache != m_buffered_storage->m_next_fetch_cache);
                         }
 
                         /* Link into the fetch list. */
                         {
-                            AMS_ASSERT(this->buffered_storage->next_fetch_cache->prev != nullptr);
-                            AMS_ASSERT(this->buffered_storage->next_fetch_cache->prev->next == this->buffered_storage->next_fetch_cache);
-                            this->next = this->buffered_storage->next_fetch_cache;
-                            this->prev = this->buffered_storage->next_fetch_cache->prev;
-                            this->next->prev = this;
-                            this->prev->next = this;
+                            AMS_ASSERT(m_buffered_storage->m_next_fetch_cache->m_prev != nullptr);
+                            AMS_ASSERT(m_buffered_storage->m_next_fetch_cache->m_prev->m_next == m_buffered_storage->m_next_fetch_cache);
+                            m_next = m_buffered_storage->m_next_fetch_cache;
+                            m_prev = m_buffered_storage->m_next_fetch_cache->m_prev;
+                            m_next->m_prev = this;
+                            m_prev->m_next = this;
                         }
 
                         /* Insert invalid caches at the start of the list. */
                         if (!this->IsValid()) {
-                            this->buffered_storage->next_fetch_cache = this;
+                            m_buffered_storage->m_next_fetch_cache = this;
                         }
                     }
 
                     /* If we're not valid, clear our offset. */
                     if (!this->IsValid()) {
-                        this->offset = InvalidOffset;
-                        this->is_dirty = false;
+                        m_offset = InvalidOffset;
+                        m_is_dirty = false;
                     }
 
                     /* Ensure our buffer state is coherent. */
-                    if (this->memory_range.first != InvalidAddress && !this->is_dirty) {
+                    if (m_memory_range.first != InvalidAddress && !m_is_dirty) {
                         if (this->IsValid()) {
-                            this->cache_handle = this->buffered_storage->buffer_manager->RegisterCache(this->memory_range.first, this->memory_range.second, IBufferManager::BufferAttribute());
+                            m_cache_handle = m_buffered_storage->m_buffer_manager->RegisterCache(m_memory_range.first, m_memory_range.second, IBufferManager::BufferAttribute());
                         } else {
-                            this->buffered_storage->buffer_manager->DeallocateBuffer(this->memory_range.first, this->memory_range.second);
+                            m_buffered_storage->m_buffer_manager->DeallocateBuffer(m_memory_range.first, m_memory_range.second);
                         }
-                        this->memory_range.first = InvalidAddress;
-                        this->memory_range.second = 0;
+                        m_memory_range.first = InvalidAddress;
+                        m_memory_range.second = 0;
                     }
                 }
             }
 
             void Unlink() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->reference_count >= 0);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_reference_count >= 0);
 
-                if ((++this->reference_count) == 1) {
-                    AMS_ASSERT(this->next != nullptr);
-                    AMS_ASSERT(this->prev != nullptr);
-                    AMS_ASSERT(this->next->prev == this);
-                    AMS_ASSERT(this->prev->next == this);
+                if ((++m_reference_count) == 1) {
+                    AMS_ASSERT(m_next != nullptr);
+                    AMS_ASSERT(m_prev != nullptr);
+                    AMS_ASSERT(m_next->m_prev == this);
+                    AMS_ASSERT(m_prev->m_next == this);
 
-                    if (this->buffered_storage->next_fetch_cache == this) {
-                        if (this->next != this) {
-                            this->buffered_storage->next_fetch_cache = this->next;
+                    if (m_buffered_storage->m_next_fetch_cache == this) {
+                        if (m_next != this) {
+                            m_buffered_storage->m_next_fetch_cache = m_next;
                         } else {
-                            this->buffered_storage->next_fetch_cache = nullptr;
+                            m_buffered_storage->m_next_fetch_cache = nullptr;
                         }
                     }
 
-                    this->buffered_storage->next_acquire_cache = this;
+                    m_buffered_storage->m_next_acquire_cache = this;
 
-                    this->next->prev = this->prev;
-                    this->prev->next = this->next;
-                    this->next = nullptr;
-                    this->prev = nullptr;
+                    m_next->m_prev = m_prev;
+                    m_prev->m_next = m_next;
+                    m_next = nullptr;
+                    m_prev = nullptr;
                 } else {
-                    AMS_ASSERT(this->next == nullptr);
-                    AMS_ASSERT(this->prev == nullptr);
+                    AMS_ASSERT(m_next == nullptr);
+                    AMS_ASSERT(m_prev == nullptr);
                 }
             }
 
             void Read(s64 offset, void *buffer, size_t size) const {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(this->IsValid());
                 AMS_ASSERT(this->Hits(offset, 1));
-                AMS_ASSERT(this->memory_range.first != InvalidAddress);
+                AMS_ASSERT(m_memory_range.first != InvalidAddress);
 
-                const auto read_offset         = offset - this->offset;
-                const auto readable_offset_max = this->buffered_storage->block_size - size;
-                const auto cache_buffer        = reinterpret_cast<u8 *>(this->memory_range.first) + read_offset;
+                const auto read_offset         = offset - m_offset;
+                const auto readable_offset_max = m_buffered_storage->m_block_size - size;
+                const auto cache_buffer        = reinterpret_cast<u8 *>(m_memory_range.first) + read_offset;
                 AMS_ASSERT(read_offset >= 0);
                 AMS_ASSERT(static_cast<size_t>(read_offset) <= readable_offset_max);
                 AMS_UNUSED(readable_offset_max);
@@ -198,42 +198,42 @@ namespace ams::fssystem::save {
             }
 
             void Write(s64 offset, const void *buffer, size_t size) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(this->IsValid());
                 AMS_ASSERT(this->Hits(offset, 1));
-                AMS_ASSERT(this->memory_range.first != InvalidAddress);
+                AMS_ASSERT(m_memory_range.first != InvalidAddress);
 
-                const auto write_offset        = offset - this->offset;
-                const auto writable_offset_max = this->buffered_storage->block_size - size;
-                const auto cache_buffer        = reinterpret_cast<u8 *>(this->memory_range.first) + write_offset;
+                const auto write_offset        = offset - m_offset;
+                const auto writable_offset_max = m_buffered_storage->m_block_size - size;
+                const auto cache_buffer        = reinterpret_cast<u8 *>(m_memory_range.first) + write_offset;
                 AMS_ASSERT(write_offset >= 0);
                 AMS_ASSERT(static_cast<size_t>(write_offset) <= writable_offset_max);
                 AMS_UNUSED(writable_offset_max);
 
                 std::memcpy(cache_buffer, buffer, size);
-                this->is_dirty = true;
+                m_is_dirty = true;
             }
 
             Result Flush() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(this->IsValid());
 
-                if (this->is_dirty) {
-                    AMS_ASSERT(this->memory_range.first != InvalidAddress);
+                if (m_is_dirty) {
+                    AMS_ASSERT(m_memory_range.first != InvalidAddress);
 
-                    const auto base_size  = this->buffered_storage->base_storage_size;
-                    const auto block_size = static_cast<s64>(this->buffered_storage->block_size);
-                    const auto flush_size = static_cast<size_t>(std::min(block_size, base_size - this->offset));
+                    const auto base_size  = m_buffered_storage->m_base_storage_size;
+                    const auto block_size = static_cast<s64>(m_buffered_storage->m_block_size);
+                    const auto flush_size = static_cast<size_t>(std::min(block_size, base_size - m_offset));
 
-                    auto &base_storage = this->buffered_storage->base_storage;
-                    const auto cache_buffer = reinterpret_cast<void *>(this->memory_range.first);
+                    auto &base_storage = m_buffered_storage->m_base_storage;
+                    const auto cache_buffer = reinterpret_cast<void *>(m_memory_range.first);
 
-                    R_TRY(base_storage.Write(this->offset, cache_buffer, flush_size));
-                    this->is_dirty = false;
+                    R_TRY(base_storage.Write(m_offset, cache_buffer, flush_size));
+                    m_is_dirty = false;
 
                     buffers::EnableBlockingBufferManagerAllocation();
                 }
@@ -242,19 +242,19 @@ namespace ams::fssystem::save {
             }
 
             const std::pair<Result, bool> PrepareFetch() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(this->IsValid());
-                AMS_ASSERT(this->buffered_storage->mutex.IsLockedByCurrentThread());
+                AMS_ASSERT(m_buffered_storage->m_mutex.IsLockedByCurrentThread());
 
                 std::pair<Result, bool> result(ResultSuccess(), false);
-                if (this->reference_count == 1) {
+                if (m_reference_count == 1) {
                     result.first = this->Flush();
                     if (R_SUCCEEDED(result.first)) {
-                        this->is_valid = false;
-                        this->reference_count = 0;
+                        m_is_valid = false;
+                        m_reference_count = 0;
                         result.second = true;
                     }
                 }
@@ -263,51 +263,51 @@ namespace ams::fssystem::save {
             }
 
             void UnprepareFetch() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(!this->IsValid());
-                AMS_ASSERT(!this->is_dirty);
-                AMS_ASSERT(this->buffered_storage->mutex.IsLockedByCurrentThread());
+                AMS_ASSERT(!m_is_dirty);
+                AMS_ASSERT(m_buffered_storage->m_mutex.IsLockedByCurrentThread());
 
-                this->is_valid = true;
-                this->reference_count = 1;
+                m_is_valid = true;
+                m_reference_count = 1;
             }
 
             Result Fetch(s64 offset) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(!this->IsValid());
-                AMS_ASSERT(!this->is_dirty);
+                AMS_ASSERT(!m_is_dirty);
 
-                if (this->memory_range.first == InvalidAddress) {
+                if (m_memory_range.first == InvalidAddress) {
                     R_TRY(this->AllocateFetchBuffer());
                 }
 
                 FetchParameter fetch_param = {};
                 this->CalcFetchParameter(std::addressof(fetch_param), offset);
 
-                auto &base_storage = this->buffered_storage->base_storage;
+                auto &base_storage = m_buffered_storage->m_base_storage;
                 R_TRY(base_storage.Read(fetch_param.offset, fetch_param.buffer, fetch_param.size));
-                this->offset = fetch_param.offset;
+                m_offset = fetch_param.offset;
                 AMS_ASSERT(this->Hits(offset, 1));
 
                 return ResultSuccess();
             }
 
             Result FetchFromBuffer(s64 offset, const void *buffer, size_t buffer_size) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
-                AMS_ASSERT(this->next == nullptr);
-                AMS_ASSERT(this->prev == nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
+                AMS_ASSERT(m_next == nullptr);
+                AMS_ASSERT(m_prev == nullptr);
                 AMS_ASSERT(!this->IsValid());
-                AMS_ASSERT(!this->is_dirty);
-                AMS_ASSERT(util::IsAligned(offset, this->buffered_storage->block_size));
+                AMS_ASSERT(!m_is_dirty);
+                AMS_ASSERT(util::IsAligned(offset, m_buffered_storage->m_block_size));
 
-                if (this->memory_range.first == InvalidAddress) {
+                if (m_memory_range.first == InvalidAddress) {
                     R_TRY(this->AllocateFetchBuffer());
                 }
 
@@ -318,53 +318,53 @@ namespace ams::fssystem::save {
                 AMS_UNUSED(buffer_size);
 
                 std::memcpy(fetch_param.buffer, buffer, fetch_param.size);
-                this->offset = fetch_param.offset;
+                m_offset = fetch_param.offset;
                 AMS_ASSERT(this->Hits(offset, 1));
 
                 return ResultSuccess();
             }
 
             bool TryAcquireCache() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                AMS_ASSERT(this->buffered_storage->buffer_manager != nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage->m_buffer_manager != nullptr);
                 AMS_ASSERT(this->IsValid());
 
-                if (this->memory_range.first != InvalidAddress) {
+                if (m_memory_range.first != InvalidAddress) {
                     return true;
                 } else {
-                    this->memory_range = this->buffered_storage->buffer_manager->AcquireCache(this->cache_handle);
-                    this->is_valid = this->memory_range.first != InvalidAddress;
-                    return this->is_valid;
+                    m_memory_range = m_buffered_storage->m_buffer_manager->AcquireCache(m_cache_handle);
+                    m_is_valid = m_memory_range.first != InvalidAddress;
+                    return m_is_valid;
                 }
             }
 
             void Invalidate() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                this->is_valid = false;
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                m_is_valid = false;
             }
 
             bool IsValid() const {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                return this->is_valid || this->reference_count > 0;
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                return m_is_valid || m_reference_count > 0;
             }
 
             bool IsDirty() const {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                return this->is_dirty;
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                return m_is_dirty;
             }
 
             bool Hits(s64 offset, s64 size) const {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                const auto block_size = static_cast<s64>(this->buffered_storage->block_size);
-                return (offset < this->offset + block_size) && (this->offset < offset + size);
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                const auto block_size = static_cast<s64>(m_buffered_storage->m_block_size);
+                return (offset < m_offset + block_size) && (m_offset < offset + size);
             }
         private:
             Result AllocateFetchBuffer() {
-                IBufferManager *buffer_manager = this->buffered_storage->buffer_manager;
-                AMS_ASSERT(buffer_manager->AcquireCache(this->cache_handle).first == InvalidAddress);
+                IBufferManager *buffer_manager = m_buffered_storage->m_buffer_manager;
+                AMS_ASSERT(buffer_manager->AcquireCache(m_cache_handle).first == InvalidAddress);
 
-                auto range_guard = SCOPE_GUARD { this->memory_range.first = InvalidAddress; };
-                R_TRY(buffers::AllocateBufferUsingBufferManagerContext(std::addressof(this->memory_range), buffer_manager, this->buffered_storage->block_size, IBufferManager::BufferAttribute(), [](const std::pair<uintptr_t, size_t> &buffer) {
+                auto range_guard = SCOPE_GUARD { m_memory_range.first = InvalidAddress; };
+                R_TRY(buffers::AllocateBufferUsingBufferManagerContext(std::addressof(m_memory_range), buffer_manager, m_buffered_storage->m_block_size, IBufferManager::BufferAttribute(), [](const std::pair<uintptr_t, size_t> &buffer) {
                     return buffer.first != 0;
                 }, AMS_CURRENT_FUNCTION_NAME));
 
@@ -375,11 +375,11 @@ namespace ams::fssystem::save {
             void CalcFetchParameter(FetchParameter *out, s64 offset) const {
                 AMS_ASSERT(out != nullptr);
 
-                const auto block_size   = static_cast<s64>(this->buffered_storage->block_size);
-                const auto cache_offset = util::AlignDown(offset, this->buffered_storage->block_size);
-                const auto base_size    = this->buffered_storage->base_storage_size;
+                const auto block_size   = static_cast<s64>(m_buffered_storage->m_block_size);
+                const auto cache_offset = util::AlignDown(offset, m_buffered_storage->m_block_size);
+                const auto base_size    = m_buffered_storage->m_base_storage_size;
                 const auto cache_size   = static_cast<size_t>(std::min(block_size, base_size - cache_offset));
-                const auto cache_buffer = reinterpret_cast<void *>(this->memory_range.first);
+                const auto cache_buffer = reinterpret_cast<void *>(m_memory_range.first);
                 AMS_ASSERT(offset >= 0);
                 AMS_ASSERT(offset < base_size);
 
@@ -394,149 +394,149 @@ namespace ams::fssystem::save {
         NON_MOVEABLE(SharedCache);
         friend class UniqueCache;
         private:
-            Cache *cache;
-            Cache *start_cache;
-            BufferedStorage *buffered_storage;
+            Cache *m_cache;
+            Cache *m_start_cache;
+            BufferedStorage *m_buffered_storage;
         public:
-            explicit SharedCache(BufferedStorage *bs) : cache(nullptr), start_cache(bs->next_acquire_cache), buffered_storage(bs) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
+            explicit SharedCache(BufferedStorage *bs) : m_cache(nullptr), m_start_cache(bs->m_next_acquire_cache), m_buffered_storage(bs) {
+                AMS_ASSERT(m_buffered_storage != nullptr);
             }
 
             ~SharedCache() {
-                std::scoped_lock lk(buffered_storage->mutex);
+                std::scoped_lock lk(m_buffered_storage->m_mutex);
                 this->Release();
             }
 
             bool AcquireNextOverlappedCache(s64 offset, s64 size) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
 
-                auto is_first = this->cache == nullptr;
-                const auto start    = is_first ? this->start_cache : this->cache + 1;
+                auto is_first    = m_cache == nullptr;
+                const auto start = is_first ? m_start_cache : m_cache + 1;
 
-                AMS_ASSERT(start >= this->buffered_storage->caches.get());
-                AMS_ASSERT(start <= this->buffered_storage->caches.get() + this->buffered_storage->cache_count);
+                AMS_ASSERT(start >= m_buffered_storage->m_caches.get());
+                AMS_ASSERT(start <= m_buffered_storage->m_caches.get() + m_buffered_storage->m_cache_count);
 
-                std::scoped_lock lk(this->buffered_storage->mutex);
+                std::scoped_lock lk(m_buffered_storage->m_mutex);
 
                 this->Release();
-                AMS_ASSERT(this->cache == nullptr);
+                AMS_ASSERT(m_cache == nullptr);
 
                 for (auto cache = start; true; ++cache) {
-                    if (this->buffered_storage->caches.get() + this->buffered_storage->cache_count <= cache) {
-                        cache = this->buffered_storage->caches.get();
+                    if (m_buffered_storage->m_caches.get() + m_buffered_storage->m_cache_count <= cache) {
+                        cache = m_buffered_storage->m_caches.get();
                     }
-                    if (!is_first && cache == this->start_cache) {
+                    if (!is_first && cache == m_start_cache) {
                         break;
                     }
                     if (cache->IsValid() && cache->Hits(offset, size) && cache->TryAcquireCache()) {
                         cache->Unlink();
-                        this->cache = cache;
+                        m_cache = cache;
                         return true;
                     }
                     is_first = false;
                 }
 
-                this->cache = nullptr;
+                m_cache = nullptr;
                 return false;
             }
 
             bool AcquireNextDirtyCache() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                const auto start = this->cache != nullptr ? this->cache + 1 : this->buffered_storage->caches.get();
-                const auto end   = this->buffered_storage->caches.get() + this->buffered_storage->cache_count;
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                const auto start = m_cache != nullptr ? m_cache + 1 : m_buffered_storage->m_caches.get();
+                const auto end   = m_buffered_storage->m_caches.get() + m_buffered_storage->m_cache_count;
 
-                AMS_ASSERT(start >= this->buffered_storage->caches.get());
+                AMS_ASSERT(start >= m_buffered_storage->m_caches.get());
                 AMS_ASSERT(start <= end);
 
                 this->Release();
-                AMS_ASSERT(this->cache == nullptr);
+                AMS_ASSERT(m_cache == nullptr);
 
                 for (auto cache = start; cache < end; ++cache) {
                     if (cache->IsValid() && cache->IsDirty() && cache->TryAcquireCache()) {
                         cache->Unlink();
-                        this->cache = cache;
+                        m_cache = cache;
                         return true;
                     }
                 }
 
-                this->cache = nullptr;
+                m_cache = nullptr;
                 return false;
             }
 
             bool AcquireNextValidCache() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
-                const auto start = this->cache != nullptr ? this->cache + 1 : this->buffered_storage->caches.get();
-                const auto end   = this->buffered_storage->caches.get() + this->buffered_storage->cache_count;
+                AMS_ASSERT(m_buffered_storage != nullptr);
+                const auto start = m_cache != nullptr ? m_cache + 1 : m_buffered_storage->m_caches.get();
+                const auto end   = m_buffered_storage->m_caches.get() + m_buffered_storage->m_cache_count;
 
-                AMS_ASSERT(start >= this->buffered_storage->caches.get());
+                AMS_ASSERT(start >= m_buffered_storage->m_caches.get());
                 AMS_ASSERT(start <= end);
 
                 this->Release();
-                AMS_ASSERT(this->cache == nullptr);
+                AMS_ASSERT(m_cache == nullptr);
 
                 for (auto cache = start; cache < end; ++cache) {
                     if (cache->IsValid() && cache->TryAcquireCache()) {
                         cache->Unlink();
-                        this->cache = cache;
+                        m_cache = cache;
                         return true;
                     }
                 }
 
-                this->cache = nullptr;
+                m_cache = nullptr;
                 return false;
             }
 
             bool AcquireFetchableCache() {
-                AMS_ASSERT(this->buffered_storage != nullptr);
+                AMS_ASSERT(m_buffered_storage != nullptr);
 
-                std::scoped_lock lk(this->buffered_storage->mutex);
+                std::scoped_lock lk(m_buffered_storage->m_mutex);
 
                 this->Release();
-                AMS_ASSERT(this->cache == nullptr);
+                AMS_ASSERT(m_cache == nullptr);
 
-                this->cache = this->buffered_storage->next_fetch_cache;
-                if (this->cache != nullptr) {
-                    if (this->cache->IsValid()) {
-                        this->cache->TryAcquireCache();
+                m_cache = m_buffered_storage->m_next_fetch_cache;
+                if (m_cache != nullptr) {
+                    if (m_cache->IsValid()) {
+                        m_cache->TryAcquireCache();
                     }
-                    this->cache->Unlink();
+                    m_cache->Unlink();
                 }
 
-                return this->cache != nullptr;
+                return m_cache != nullptr;
             }
 
             void Read(s64 offset, void *buffer, size_t size) {
-                AMS_ASSERT(this->cache != nullptr);
-                this->cache->Read(offset, buffer, size);
+                AMS_ASSERT(m_cache != nullptr);
+                m_cache->Read(offset, buffer, size);
             }
 
             void Write(s64 offset, const void *buffer, size_t size) {
-                AMS_ASSERT(this->cache != nullptr);
-                this->cache->Write(offset, buffer, size);
+                AMS_ASSERT(m_cache != nullptr);
+                m_cache->Write(offset, buffer, size);
             }
 
             Result Flush() {
-                AMS_ASSERT(this->cache != nullptr);
-                return this->cache->Flush();
+                AMS_ASSERT(m_cache != nullptr);
+                return m_cache->Flush();
             }
 
             void Invalidate() {
-                AMS_ASSERT(this->cache != nullptr);
-                return this->cache->Invalidate();
+                AMS_ASSERT(m_cache != nullptr);
+                return m_cache->Invalidate();
             }
 
             bool Hits(s64 offset, s64 size) const {
-                AMS_ASSERT(this->cache != nullptr);
-                return this->cache->Hits(offset, size);
+                AMS_ASSERT(m_cache != nullptr);
+                return m_cache->Hits(offset, size);
             }
         private:
             void Release() {
-                if (this->cache != nullptr) {
-                    AMS_ASSERT(this->buffered_storage->caches.get() <= this->cache);
-                    AMS_ASSERT(this->cache <= this->buffered_storage->caches.get() + this->buffered_storage->cache_count);
+                if (m_cache != nullptr) {
+                    AMS_ASSERT(m_buffered_storage->m_caches.get() <= m_cache);
+                    AMS_ASSERT(m_cache <= m_buffered_storage->m_caches.get() + m_buffered_storage->m_cache_count);
 
-                    this->cache->Link();
-                    this->cache = nullptr;
+                    m_cache->Link();
+                    m_cache = nullptr;
                 }
             }
     };
@@ -545,45 +545,45 @@ namespace ams::fssystem::save {
         NON_COPYABLE(UniqueCache);
         NON_MOVEABLE(UniqueCache);
         private:
-            Cache *cache;
-            BufferedStorage *buffered_storage;
+            Cache *m_cache;
+            BufferedStorage *m_buffered_storage;
         public:
-            explicit UniqueCache(BufferedStorage *bs) : cache(nullptr), buffered_storage(bs) {
-                AMS_ASSERT(this->buffered_storage != nullptr);
+            explicit UniqueCache(BufferedStorage *bs) : m_cache(nullptr), m_buffered_storage(bs) {
+                AMS_ASSERT(m_buffered_storage != nullptr);
             }
 
             ~UniqueCache() {
-                if (this->cache != nullptr) {
-                    std::scoped_lock lk(this->buffered_storage->mutex);
-                    this->cache->UnprepareFetch();
+                if (m_cache != nullptr) {
+                    std::scoped_lock lk(m_buffered_storage->m_mutex);
+                    m_cache->UnprepareFetch();
                 }
             }
 
             const std::pair<Result, bool> Upgrade(const SharedCache &shared_cache) {
-                AMS_ASSERT(this->buffered_storage == shared_cache.buffered_storage);
-                AMS_ASSERT(shared_cache.cache != nullptr);
+                AMS_ASSERT(m_buffered_storage == shared_cache.m_buffered_storage);
+                AMS_ASSERT(shared_cache.m_cache != nullptr);
 
-                std::scoped_lock lk(this->buffered_storage->mutex);
-                const auto result = shared_cache.cache->PrepareFetch();
+                std::scoped_lock lk(m_buffered_storage->m_mutex);
+                const auto result = shared_cache.m_cache->PrepareFetch();
                 if (R_SUCCEEDED(result.first) && result.second) {
-                    this->cache = shared_cache.cache;
+                    m_cache = shared_cache.m_cache;
                 }
                 return result;
             }
 
             Result Fetch(s64 offset) {
-                AMS_ASSERT(this->cache != nullptr);
-                return this->cache->Fetch(offset);
+                AMS_ASSERT(m_cache != nullptr);
+                return m_cache->Fetch(offset);
             }
 
             Result FetchFromBuffer(s64 offset, const void *buffer, size_t buffer_size) {
-                AMS_ASSERT(this->cache != nullptr);
-                R_TRY(this->cache->FetchFromBuffer(offset, buffer, buffer_size));
+                AMS_ASSERT(m_cache != nullptr);
+                R_TRY(m_cache->FetchFromBuffer(offset, buffer, buffer_size));
                 return ResultSuccess();
             }
     };
 
-    BufferedStorage::BufferedStorage() : base_storage(), buffer_manager(), block_size(), base_storage_size(), caches(), cache_count(), next_acquire_cache(), next_fetch_cache(), mutex(), bulk_read_enabled() {
+    BufferedStorage::BufferedStorage() : m_base_storage(), m_buffer_manager(), m_block_size(), m_base_storage_size(), m_caches(), m_cache_count(), m_next_acquire_cache(), m_next_fetch_cache(), m_mutex(), m_bulk_read_enabled() {
         /* ... */
     }
 
@@ -598,33 +598,33 @@ namespace ams::fssystem::save {
         AMS_ASSERT(buffer_count > 0);
 
         /* Get the base storage size. */
-        R_TRY(base_storage.GetSize(std::addressof(this->base_storage_size)));
+        R_TRY(base_storage.GetSize(std::addressof(m_base_storage_size)));
 
         /* Set members. */
-        this->base_storage   = base_storage;
-        this->buffer_manager = buffer_manager;
-        this->block_size     = block_size;
-        this->cache_count    = buffer_count;
+        m_base_storage   = base_storage;
+        m_buffer_manager = buffer_manager;
+        m_block_size     = block_size;
+        m_cache_count    = buffer_count;
 
         /* Allocate the caches. */
-        this->caches.reset(new Cache[buffer_count]);
-        R_UNLESS(this->caches != nullptr, fs::ResultAllocationFailureInBufferedStorageA());
+        m_caches.reset(new Cache[buffer_count]);
+        R_UNLESS(m_caches != nullptr, fs::ResultAllocationFailureInBufferedStorageA());
 
         /* Initialize the caches. */
         for (auto i = 0; i < buffer_count; i++) {
-            this->caches[i].Initialize(this);
+            m_caches[i].Initialize(this);
         }
 
-        this->next_acquire_cache = std::addressof(this->caches[0]);
+        m_next_acquire_cache = std::addressof(m_caches[0]);
         return ResultSuccess();
     }
 
     void BufferedStorage::Finalize() {
-        this->base_storage = fs::SubStorage();
-        this->base_storage_size = 0;
-        this->caches.reset();
-        this->cache_count = 0;
-        this->next_fetch_cache = nullptr;
+        m_base_storage = fs::SubStorage();
+        m_base_storage_size = 0;
+        m_caches.reset();
+        m_cache_count = 0;
+        m_next_fetch_cache = nullptr;
     }
 
     Result BufferedStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -659,16 +659,16 @@ namespace ams::fssystem::save {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(this->IsInitialized());
 
-        *out = this->base_storage_size;
+        *out = m_base_storage_size;
         return ResultSuccess();
     }
 
     Result BufferedStorage::SetSize(s64 size) {
         AMS_ASSERT(this->IsInitialized());
-        const s64 prev_size = this->base_storage_size;
+        const s64 prev_size = m_base_storage_size;
         if (prev_size < size) {
             /* Prepare to expand. */
-            if (!util::IsAligned(prev_size, this->block_size)) {
+            if (!util::IsAligned(prev_size, m_block_size)) {
                 SharedCache cache(this);
                 const auto invalidate_offset = prev_size;
                 const auto invalidate_size   = size - prev_size;
@@ -683,7 +683,7 @@ namespace ams::fssystem::save {
             SharedCache cache(this);
             const auto invalidate_offset = prev_size;
             const auto invalidate_size   = size - prev_size;
-            const auto is_fragment       = util::IsAligned(size, this->block_size);
+            const auto is_fragment       = util::IsAligned(size, m_block_size);
             while (cache.AcquireNextOverlappedCache(invalidate_offset, invalidate_size)) {
                 if (is_fragment && cache.Hits(invalidate_offset, 1)) {
                     R_TRY(cache.Flush());
@@ -693,13 +693,13 @@ namespace ams::fssystem::save {
         }
 
         /* Set the size. */
-        R_TRY(this->base_storage.SetSize(size));
+        R_TRY(m_base_storage.SetSize(size));
 
         /* Get our new size. */
         s64 new_size = 0;
-        R_TRY(this->base_storage.GetSize(std::addressof(new_size)));
+        R_TRY(m_base_storage.GetSize(std::addressof(new_size)));
 
-        this->base_storage_size = new_size;
+        m_base_storage_size = new_size;
         return ResultSuccess();
     }
 
@@ -713,7 +713,7 @@ namespace ams::fssystem::save {
         }
 
         /* Flush the base storage. */
-        R_TRY(this->base_storage.Flush());
+        R_TRY(m_base_storage.Flush());
         return ResultSuccess();
     }
 
@@ -728,7 +728,7 @@ namespace ams::fssystem::save {
             }
         }
 
-        return this->base_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+        return m_base_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
     }
 
     void BufferedStorage::InvalidateCaches() {
@@ -741,16 +741,16 @@ namespace ams::fssystem::save {
     }
 
     Result BufferedStorage::PrepareAllocation() {
-        const auto flush_threshold = this->buffer_manager->GetTotalSize() / 8;
-        if (this->buffer_manager->GetTotalAllocatableSize() < flush_threshold) {
+        const auto flush_threshold = m_buffer_manager->GetTotalSize() / 8;
+        if (m_buffer_manager->GetTotalAllocatableSize() < flush_threshold) {
             R_TRY(this->Flush());
         }
         return ResultSuccess();
     }
 
     Result BufferedStorage::ControlDirtiness() {
-        const auto flush_threshold = this->buffer_manager->GetTotalSize() / 4;
-        if (this->buffer_manager->GetTotalAllocatableSize() < flush_threshold) {
+        const auto flush_threshold = m_buffer_manager->GetTotalSize() / 4;
+        if (m_buffer_manager->GetTotalAllocatableSize() < flush_threshold) {
             s32 dirty_count = 0;
             SharedCache cache(this);
             while (cache.AcquireNextDirtyCache()) {
@@ -764,11 +764,11 @@ namespace ams::fssystem::save {
     }
 
     Result BufferedStorage::ReadCore(s64 offset, void *buffer, size_t size) {
-        AMS_ASSERT(this->caches != nullptr);
+        AMS_ASSERT(m_caches != nullptr);
         AMS_ASSERT(buffer != nullptr);
 
         /* Validate the offset. */
-        const auto base_storage_size = this->base_storage_size;
+        const auto base_storage_size = m_base_storage_size;
         R_UNLESS(offset >= 0,                 fs::ResultInvalidOffset());
         R_UNLESS(offset <= base_storage_size, fs::ResultInvalidOffset());
 
@@ -778,7 +778,7 @@ namespace ams::fssystem::save {
         s64 buf_offset        = 0;
 
         /* Determine what caches are needed, if we have bulk read set. */
-        if (this->bulk_read_enabled) {
+        if (m_bulk_read_enabled) {
             /* Check head cache. */
             const auto head_cache_needed = this->ReadHeadCache(std::addressof(cur_offset), buffer, std::addressof(remaining_size), std::addressof(buf_offset));
             R_SUCCEED_IF(remaining_size == 0);
@@ -811,16 +811,16 @@ namespace ams::fssystem::save {
             auto *cur_dst = static_cast<u8 *>(buffer) + buf_offset;
             size_t cur_size = 0;
 
-            if (!util::IsAligned(cur_offset, this->block_size)) {
-                const size_t aligned_size = this->block_size - (cur_offset & (this->block_size - 1));
+            if (!util::IsAligned(cur_offset, m_block_size)) {
+                const size_t aligned_size = m_block_size - (cur_offset & (m_block_size - 1));
                 cur_size = std::min(aligned_size, remaining_size);
-            } else if (remaining_size < this->block_size) {
+            } else if (remaining_size < m_block_size) {
                 cur_size = remaining_size;
             } else {
-                cur_size = util::AlignDown(remaining_size, this->block_size);
+                cur_size = util::AlignDown(remaining_size, m_block_size);
             }
 
-            if (cur_size <= this->block_size) {
+            if (cur_size <= m_block_size) {
                 SharedCache cache(this);
                 if (!cache.AcquireNextOverlappedCache(cur_offset, cur_size)) {
                     R_TRY(this->PrepareAllocation());
@@ -846,7 +846,7 @@ namespace ams::fssystem::save {
                         cache.Invalidate();
                     }
                 }
-                R_TRY(this->base_storage.Read(cur_offset, cur_dst, cur_size));
+                R_TRY(m_base_storage.Read(cur_offset, cur_dst, cur_size));
             }
 
             remaining_size -= cur_size;
@@ -863,18 +863,18 @@ namespace ams::fssystem::save {
         AMS_ASSERT(size          != nullptr);
         AMS_ASSERT(buffer_offset != nullptr);
 
-        bool is_cache_needed = !util::IsAligned(*offset, this->block_size);
+        bool is_cache_needed = !util::IsAligned(*offset, m_block_size);
 
         while (*size > 0) {
             size_t cur_size = 0;
 
-            if (!util::IsAligned(*offset, this->block_size)) {
-                const s64 aligned_size = util::AlignUp(*offset, this->block_size) - *offset;
+            if (!util::IsAligned(*offset, m_block_size)) {
+                const s64 aligned_size = util::AlignUp(*offset, m_block_size) - *offset;
                 cur_size = std::min(aligned_size, static_cast<s64>(*size));
-            } else if (*size < this->block_size) {
+            } else if (*size < m_block_size) {
                 cur_size = *size;
             } else {
-                cur_size = this->block_size;
+                cur_size = m_block_size;
             }
 
             SharedCache cache(this);
@@ -896,19 +896,19 @@ namespace ams::fssystem::save {
         AMS_ASSERT(buffer        != nullptr);
         AMS_ASSERT(size          != nullptr);
 
-        bool is_cache_needed = !util::IsAligned(offset + *size, this->block_size);
+        bool is_cache_needed = !util::IsAligned(offset + *size, m_block_size);
 
         while (*size > 0) {
             const s64 cur_offset_end = offset + *size;
             size_t cur_size = 0;
 
-            if (!util::IsAligned(cur_offset_end, this->block_size)) {
-                const s64 aligned_size = cur_offset_end - util::AlignDown(cur_offset_end, this->block_size);
+            if (!util::IsAligned(cur_offset_end, m_block_size)) {
+                const s64 aligned_size = cur_offset_end - util::AlignDown(cur_offset_end, m_block_size);
                 cur_size = std::min(aligned_size, static_cast<s64>(*size));
-            } else if (*size < this->block_size) {
+            } else if (*size < m_block_size) {
                 cur_size = *size;
             } else {
-                cur_size = this->block_size;
+                cur_size = m_block_size;
             }
 
             const s64 cur_offset = cur_offset_end - static_cast<s64>(cur_size);
@@ -929,8 +929,8 @@ namespace ams::fssystem::save {
 
     Result BufferedStorage::BulkRead(s64 offset, void *buffer, size_t size, bool head_cache_needed, bool tail_cache_needed) {
         /* Determine aligned extents. */
-        const s64 aligned_offset     = util::AlignDown(offset, this->block_size);
-        const s64 aligned_offset_end = std::min(util::AlignUp(offset + static_cast<s64>(size), this->block_size), this->base_storage_size);
+        const s64 aligned_offset     = util::AlignDown(offset, m_block_size);
+        const s64 aligned_offset_end = std::min(util::AlignUp(offset + static_cast<s64>(size), m_block_size), m_base_storage_size);
         const s64 aligned_size       = aligned_offset_end - aligned_offset;
 
         /* Allocate a work buffer. */
@@ -954,7 +954,7 @@ namespace ams::fssystem::save {
         }
 
         /* Read from the base storage. */
-        R_TRY(this->base_storage.Read(aligned_offset, work_buffer, static_cast<size_t>(aligned_size)));
+        R_TRY(m_base_storage.Read(aligned_offset, work_buffer, static_cast<size_t>(aligned_size)));
         if (work_buffer != static_cast<char *>(buffer)) {
             std::memcpy(buffer, work_buffer + offset - aligned_offset, size);
         }
@@ -982,7 +982,7 @@ namespace ams::fssystem::save {
         }
 
         /* Handle tail cache if needed. */
-        if (tail_cache_needed && (!head_cache_needed || aligned_size > static_cast<s64>(this->block_size))) {
+        if (tail_cache_needed && (!head_cache_needed || aligned_size > static_cast<s64>(m_block_size))) {
             if (!cached) {
                 R_TRY(this->PrepareAllocation());
             }
@@ -995,7 +995,7 @@ namespace ams::fssystem::save {
                 const auto upgrade_result = fetch_cache.Upgrade(cache);
                 R_TRY(upgrade_result.first);
                 if (upgrade_result.second) {
-                    const s64 tail_cache_offset  = util::AlignDown(offset + static_cast<s64>(size), this->block_size);
+                    const s64 tail_cache_offset  = util::AlignDown(offset + static_cast<s64>(size), m_block_size);
                     const size_t tail_cache_size = static_cast<size_t>(aligned_size - tail_cache_offset + aligned_offset);
                     R_TRY(fetch_cache.FetchFromBuffer(tail_cache_offset, work_buffer + tail_cache_offset - aligned_offset, tail_cache_size));
                     break;
@@ -1011,11 +1011,11 @@ namespace ams::fssystem::save {
     }
 
     Result BufferedStorage::WriteCore(s64 offset, const void *buffer, size_t size) {
-        AMS_ASSERT(this->caches != nullptr);
+        AMS_ASSERT(m_caches != nullptr);
         AMS_ASSERT(buffer != nullptr);
 
         /* Validate the offset. */
-        const auto base_storage_size = this->base_storage_size;
+        const auto base_storage_size = m_base_storage_size;
         R_UNLESS(offset >= 0,                 fs::ResultInvalidOffset());
         R_UNLESS(offset <= base_storage_size, fs::ResultInvalidOffset());
 
@@ -1030,16 +1030,16 @@ namespace ams::fssystem::save {
             const auto *cur_src = static_cast<const u8 *>(buffer) + buf_offset;
             size_t cur_size = 0;
 
-            if (!util::IsAligned(cur_offset, this->block_size)) {
-                const size_t aligned_size = this->block_size - (cur_offset & (this->block_size - 1));
+            if (!util::IsAligned(cur_offset, m_block_size)) {
+                const size_t aligned_size = m_block_size - (cur_offset & (m_block_size - 1));
                 cur_size = std::min(aligned_size, remaining_size);
-            } else if (remaining_size < this->block_size) {
+            } else if (remaining_size < m_block_size) {
                 cur_size = remaining_size;
             } else {
-                cur_size = util::AlignDown(remaining_size, this->block_size);
+                cur_size = util::AlignDown(remaining_size, m_block_size);
             }
 
-            if (cur_size <= this->block_size) {
+            if (cur_size <= m_block_size) {
                 SharedCache cache(this);
                 if (!cache.AcquireNextOverlappedCache(cur_offset, cur_size)) {
                     R_TRY(this->PrepareAllocation());
@@ -1069,7 +1069,7 @@ namespace ams::fssystem::save {
                     }
                 }
 
-                R_TRY(this->base_storage.Write(cur_offset, cur_src, cur_size));
+                R_TRY(m_base_storage.Write(cur_offset, cur_src, cur_size));
 
                 buffers::EnableBlockingBufferManagerAllocation();
             }

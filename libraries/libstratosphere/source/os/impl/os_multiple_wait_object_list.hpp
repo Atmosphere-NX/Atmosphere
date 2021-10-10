@@ -21,32 +21,32 @@ namespace ams::os::impl {
 
     class MultiWaitObjectList {
         public:
-            using ListType = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::object_list_node>::ListType;
+            using ListType = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::m_object_list_node>::ListType;
         private:
-            ListType object_list;
+            ListType m_object_list;
         public:
             void SignalAllThreads() {
-                for (MultiWaitHolderBase &holder_base : this->object_list) {
+                for (MultiWaitHolderBase &holder_base : m_object_list) {
                     holder_base.GetMultiWait()->SignalAndWakeupThread(std::addressof(holder_base));
                 }
             }
 
             void BroadcastAllThreads() {
-                for (MultiWaitHolderBase &holder_base : this->object_list) {
+                for (MultiWaitHolderBase &holder_base : m_object_list) {
                     holder_base.GetMultiWait()->SignalAndWakeupThread(nullptr);
                 }
             }
 
             bool IsEmpty() const {
-                return this->object_list.empty();
+                return m_object_list.empty();
             }
 
             void LinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
-                this->object_list.push_back(holder_base);
+                m_object_list.push_back(holder_base);
             }
 
             void UnlinkMultiWaitHolder(MultiWaitHolderBase &holder_base) {
-                this->object_list.erase(this->object_list.iterator_to(holder_base));
+                m_object_list.erase(m_object_list.iterator_to(holder_base));
             }
     };
 

@@ -21,20 +21,20 @@ namespace ams::kvdb {
     class AutoBuffer {
         NON_COPYABLE(AutoBuffer);
         private:
-            u8 *buffer;
-            size_t size;
+            u8 *m_buffer;
+            size_t m_size;
         public:
-            AutoBuffer() : buffer(nullptr), size(0) { /* ... */ }
+            AutoBuffer() : m_buffer(nullptr), m_size(0) { /* ... */ }
 
             ~AutoBuffer() {
                 this->Reset();
             }
 
             AutoBuffer(AutoBuffer &&rhs) {
-                this->buffer = rhs.buffer;
-                this->size = rhs.size;
-                rhs.buffer = nullptr;
-                rhs.size = 0;
+                m_buffer = rhs.m_buffer;
+                m_size = rhs.m_size;
+                rhs.m_buffer = nullptr;
+                rhs.m_size = 0;
             }
 
             AutoBuffer &operator=(AutoBuffer &&rhs) {
@@ -43,35 +43,35 @@ namespace ams::kvdb {
             }
 
             void Swap(AutoBuffer &rhs) {
-                std::swap(this->buffer, rhs.buffer);
-                std::swap(this->size, rhs.size);
+                std::swap(m_buffer, rhs.m_buffer);
+                std::swap(m_size, rhs.m_size);
             }
 
             void Reset() {
-                if (this->buffer != nullptr) {
-                    delete[] this->buffer;
-                    this->buffer = nullptr;
-                    this->size = 0;
+                if (m_buffer != nullptr) {
+                    delete[] m_buffer;
+                    m_buffer = nullptr;
+                    m_size = 0;
                 }
             }
 
             u8 *Get() const {
-                return this->buffer;
+                return m_buffer;
             }
 
             size_t GetSize() const {
-                return this->size;
+                return m_size;
             }
 
             Result Initialize(size_t size) {
                 /* Check that we're not already initialized. */
-                AMS_ABORT_UNLESS(this->buffer == nullptr);
+                AMS_ABORT_UNLESS(m_buffer == nullptr);
 
                 /* Allocate a buffer. */
-                this->buffer = new (std::nothrow) u8[size];
-                R_UNLESS(this->buffer != nullptr, kvdb::ResultAllocationFailed());
+                m_buffer = new (std::nothrow) u8[size];
+                R_UNLESS(m_buffer != nullptr, kvdb::ResultAllocationFailed());
 
-                this->size = size;
+                m_size = size;
                 return ResultSuccess();
             }
 
@@ -80,7 +80,7 @@ namespace ams::kvdb {
                 R_TRY(this->Initialize(size));
 
                 /* Copy the input data in. */
-                std::memcpy(this->buffer, buf, size);
+                std::memcpy(m_buffer, buf, size);
 
                 return ResultSuccess();
             }

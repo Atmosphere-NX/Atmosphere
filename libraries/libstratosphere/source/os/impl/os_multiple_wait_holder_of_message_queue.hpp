@@ -23,15 +23,15 @@ namespace ams::os::impl {
     class MultiWaitHolderOfMessageQueue : public MultiWaitHolderOfUserObject {
         static_assert(WaitType == MessageQueueWaitType::ForNotEmpty || WaitType == MessageQueueWaitType::ForNotFull);
         private:
-            MessageQueueType *mq;
+            MessageQueueType *m_mq;
         private:
             constexpr inline TriBool IsSignaledImpl() const {
                 if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
                     /* ForNotEmpty. */
-                    return this->mq->count > 0 ? TriBool::True : TriBool::False;
+                    return m_mq->count > 0 ? TriBool::True : TriBool::False;
                 } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
                     /* ForNotFull */
-                    return this->mq->count < this->mq->capacity ? TriBool::True : TriBool::False;
+                    return m_mq->count < m_mq->capacity ? TriBool::True : TriBool::False;
                 } else {
                     static_assert(WaitType != WaitType);
                 }
@@ -39,31 +39,31 @@ namespace ams::os::impl {
 
             constexpr inline MultiWaitObjectList &GetObjectList() const {
                 if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
-                    return GetReference(this->mq->waitlist_not_empty);
+                    return GetReference(m_mq->waitlist_not_empty);
                 } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
-                    return GetReference(this->mq->waitlist_not_full);
+                    return GetReference(m_mq->waitlist_not_full);
                 } else {
                     static_assert(WaitType != WaitType);
                 }
             }
         public:
-            explicit MultiWaitHolderOfMessageQueue(MessageQueueType *mq) : mq(mq) { /* ... */ }
+            explicit MultiWaitHolderOfMessageQueue(MessageQueueType *mq) : m_mq(mq) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->mq->cs_queue));
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->mq->cs_queue));
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
 
                 this->GetObjectList().LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->mq->cs_queue));
+                std::scoped_lock lk(GetReference(m_mq->cs_queue));
 
                 this->GetObjectList().UnlinkMultiWaitHolder(*this);
             }

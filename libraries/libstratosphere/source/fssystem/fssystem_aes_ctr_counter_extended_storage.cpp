@@ -31,15 +31,15 @@ namespace ams::fssystem {
                 static constexpr size_t KeySize   = AesCtrCounterExtendedStorage::KeySize;
                 static constexpr size_t IvSize    = AesCtrCounterExtendedStorage::IvSize;
             private:
-                AesCtrCounterExtendedStorage::DecryptFunction decrypt_function;
-                s32 key_index;
+                AesCtrCounterExtendedStorage::DecryptFunction m_decrypt_function;
+                s32 m_key_index;
             public:
-                ExternalDecryptor(AesCtrCounterExtendedStorage::DecryptFunction df, s32 key_idx) : decrypt_function(df), key_index(key_idx) {
-                    AMS_ASSERT(this->decrypt_function != nullptr);
+                ExternalDecryptor(AesCtrCounterExtendedStorage::DecryptFunction df, s32 key_idx) : m_decrypt_function(df), m_key_index(key_idx) {
+                    AMS_ASSERT(m_decrypt_function != nullptr);
                 }
             public:
                 virtual void Decrypt(void *buf, size_t buf_size, const void *enc_key, size_t enc_key_size, void *iv, size_t iv_size) override final;
-                virtual bool HasExternalDecryptionKey() const override final { return this->key_index < 0; }
+                virtual bool HasExternalDecryptionKey() const override final { return m_key_index < 0; }
         };
 
     }
@@ -86,22 +86,22 @@ namespace ams::fssystem {
         AMS_ASSERT(decryptor != nullptr);
 
         /* Initialize the bucket tree table. */
-        R_TRY(this->table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count));
+        R_TRY(m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count));
 
         /* Set members. */
-        this->data_storage = data_storage;
-        std::memcpy(this->key, key, key_size);
-        this->secure_value = secure_value;
-        this->counter_offset = counter_offset;
-        this->decryptor = std::move(decryptor);
+        m_data_storage   = data_storage;
+        std::memcpy(m_key, key, key_size);
+        m_secure_value   = secure_value;
+        m_counter_offset = counter_offset;
+        m_decryptor      = std::move(decryptor);
 
         return ResultSuccess();
     }
 
     void AesCtrCounterExtendedStorage::Finalize() {
         if (this->IsInitialized()) {
-            this->table.Finalize();
-            this->data_storage = fs::SubStorage();
+            m_table.Finalize();
+            m_data_storage = fs::SubStorage();
         }
     }
 
@@ -117,21 +117,21 @@ namespace ams::fssystem {
         R_UNLESS(buffer != nullptr,                  fs::ResultNullptrArgument());
         R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
         R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+        R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
 
         /* Read the data. */
-        R_TRY(this->data_storage.Read(offset, buffer, size));
+        R_TRY(m_data_storage.Read(offset, buffer, size));
 
         /* Temporarily increase our thread priority. */
         ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
         /* Find the offset in our tree. */
         BucketTree::Visitor visitor;
-        R_TRY(this->table.Find(std::addressof(visitor), offset));
+        R_TRY(m_table.Find(std::addressof(visitor), offset));
         {
             const auto entry_offset = visitor.Get<Entry>()->GetOffset();
-            R_UNLESS(util::IsAligned(entry_offset, BlockSize),                fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
-            R_UNLESS(0 <= entry_offset && this->table.Includes(entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+            R_UNLESS(util::IsAligned(entry_offset, BlockSize),            fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+            R_UNLESS(0 <= entry_offset && m_table.Includes(entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
         }
 
         /* Prepare to read in chunks. */
@@ -152,9 +152,9 @@ namespace ams::fssystem {
             if (visitor.CanMoveNext()) {
                 R_TRY(visitor.MoveNext());
                 next_entry_offset = visitor.Get<Entry>()->GetOffset();
-                R_UNLESS(this->table.Includes(next_entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+                R_UNLESS(m_table.Includes(next_entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
             } else {
-                next_entry_offset = this->table.GetEnd();
+                next_entry_offset = m_table.GetEnd();
             }
             R_UNLESS(util::IsAligned(next_entry_offset, BlockSize), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
             R_UNLESS(cur_offset < next_entry_offset,                fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
@@ -170,14 +170,14 @@ namespace ams::fssystem {
             AMS_ASSERT(cur_size <= size);
 
             /* Make the CTR for the data we're decrypting. */
-            const auto counter_offset = this->counter_offset + cur_entry_offset + data_offset;
-            NcaAesCtrUpperIv upper_iv = { .part = { .generation = static_cast<u32>(cur_entry.generation), .secure_value = this->secure_value } };
+            const auto counter_offset = m_counter_offset + cur_entry_offset + data_offset;
+            NcaAesCtrUpperIv upper_iv = { .part = { .generation = static_cast<u32>(cur_entry.generation), .secure_value = m_secure_value } };
 
             u8 iv[IvSize];
             AesCtrStorage::MakeIv(iv, IvSize, upper_iv.value, counter_offset);
 
             /* Decrypt. */
-            this->decryptor->Decrypt(cur_data, cur_size, this->key, KeySize, iv, IvSize);
+            m_decryptor->Decrypt(cur_data, cur_size, m_key, KeySize, iv, IvSize);
 
             /* Advance. */
             cur_data   += cur_size;
@@ -201,13 +201,13 @@ namespace ams::fssystem {
                     /* Validate arguments. */
                     R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
                     R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-                    R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+                    R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
 
                     /* Invalidate our table's cache. */
-                    R_TRY(this->table.InvalidateCache());
+                    R_TRY(m_table.InvalidateCache());
 
                     /* Operate on our data storage. */
-                    R_TRY(this->data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
 
                     return ResultSuccess();
                 }
@@ -230,15 +230,15 @@ namespace ams::fssystem {
                     /* Validate arguments. */
                     R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
                     R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-                    R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+                    R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
 
                     /* Operate on our data storage. */
-                    R_TRY(this->data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
 
                     /* Add in new flags. */
                     fs::QueryRangeInfo new_info;
                     new_info.Clear();
-                    new_info.aes_ctr_key_type = static_cast<s32>(this->decryptor->HasExternalDecryptionKey() ? fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes);
+                    new_info.aes_ctr_key_type = static_cast<s32>(m_decryptor->HasExternalDecryptionKey() ? fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes);
 
                     /*  Merge in the new info. */
                     reinterpret_cast<fs::QueryRangeInfo *>(dst)->Merge(new_info);
@@ -281,7 +281,7 @@ namespace ams::fssystem {
             size_t cur_size = std::min(pooled_buffer.GetSize(), remaining_size);
             u8 *dst = static_cast<u8 *>(buf) + cur_offset;
 
-            this->decrypt_function(pooled_buffer.GetBuffer(), cur_size, this->key_index, enc_key, enc_key_size, ctr, IvSize, dst, cur_size);
+            m_decrypt_function(pooled_buffer.GetBuffer(), cur_size, m_key_index, enc_key, enc_key_size, ctr, IvSize, dst, cur_size);
 
             std::memcpy(dst, pooled_buffer.GetBuffer(), cur_size);
 

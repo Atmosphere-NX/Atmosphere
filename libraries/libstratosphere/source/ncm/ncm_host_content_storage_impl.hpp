@@ -20,12 +20,12 @@ namespace ams::ncm {
 
     class HostContentStorageImpl {
         protected:
-            RegisteredHostContent *registered_content;
-            bool disabled;
+            RegisteredHostContent *m_registered_content;
+            bool m_disabled;
         protected:
             /* Helpers. */
             Result EnsureEnabled() const {
-                R_UNLESS(!this->disabled, ncm::ResultInvalidContentStorage());
+                R_UNLESS(!m_disabled, ncm::ResultInvalidContentStorage());
                 return ResultSuccess();
             }
 
@@ -39,7 +39,7 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
         public:
-            HostContentStorageImpl(RegisteredHostContent *registered_content) : registered_content(registered_content), disabled(false) { /* ... */ }
+            HostContentStorageImpl(RegisteredHostContent *registered_content) : m_registered_content(registered_content), m_disabled(false) { /* ... */ }
         public:
             /* Actual commands. */
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out);

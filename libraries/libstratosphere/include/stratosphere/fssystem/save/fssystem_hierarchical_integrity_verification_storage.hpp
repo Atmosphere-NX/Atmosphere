@@ -82,8 +82,8 @@ namespace ams::fssystem::save {
             };
             static_assert(util::is_pod<InputParam>::value);
         private:
-            fs::SubStorage storage;
-            HierarchicalIntegrityVerificationMetaInformation meta;
+            fs::SubStorage m_storage;
+            HierarchicalIntegrityVerificationMetaInformation m_meta;
         public:
             static Result QuerySize(HierarchicalIntegrityVerificationSizeSet *out, const InputParam &input_param, s32 layer_count, s64 data_size);
             /* TODO Format */
@@ -94,10 +94,10 @@ namespace ams::fssystem::save {
             Result Initialize(fs::SubStorage meta_storage);
             void Finalize();
 
-            u32 GetMasterHashSize() const { return this->meta.master_hash_size; }
+            u32 GetMasterHashSize() const { return m_meta.master_hash_size; }
             void GetLevelHashInfo(HierarchicalIntegrityVerificationInformation *out) {
                 AMS_ASSERT(out != nullptr);
-                *out = this->meta.level_hash_info;
+                *out = m_meta.level_hash_info;
             }
     };
 
@@ -124,19 +124,19 @@ namespace ams::fssystem::save {
                         DataStorage   = 6,
                     };
                 private:
-                    fs::SubStorage storages[DataStorage + 1];
+                    fs::SubStorage m_storages[DataStorage + 1];
                 public:
-                    void SetMasterHashStorage(fs::SubStorage s) { this->storages[MasterStorage] = s; }
-                    void SetLayer1HashStorage(fs::SubStorage s) { this->storages[Layer1Storage] = s; }
-                    void SetLayer2HashStorage(fs::SubStorage s) { this->storages[Layer2Storage] = s; }
-                    void SetLayer3HashStorage(fs::SubStorage s) { this->storages[Layer3Storage] = s; }
-                    void SetLayer4HashStorage(fs::SubStorage s) { this->storages[Layer4Storage] = s; }
-                    void SetLayer5HashStorage(fs::SubStorage s) { this->storages[Layer5Storage] = s; }
-                    void SetDataStorage(fs::SubStorage s)       { this->storages[DataStorage] = s; }
+                    void SetMasterHashStorage(fs::SubStorage s) { m_storages[MasterStorage] = s; }
+                    void SetLayer1HashStorage(fs::SubStorage s) { m_storages[Layer1Storage] = s; }
+                    void SetLayer2HashStorage(fs::SubStorage s) { m_storages[Layer2Storage] = s; }
+                    void SetLayer3HashStorage(fs::SubStorage s) { m_storages[Layer3Storage] = s; }
+                    void SetLayer4HashStorage(fs::SubStorage s) { m_storages[Layer4Storage] = s; }
+                    void SetLayer5HashStorage(fs::SubStorage s) { m_storages[Layer5Storage] = s; }
+                    void SetDataStorage(fs::SubStorage s)       { m_storages[DataStorage] = s; }
 
                     fs::SubStorage &operator[](s32 index) {
                         AMS_ASSERT(MasterStorage <= index && index <= DataStorage);
-                        return this->storages[index];
+                        return m_storages[index];
                     }
             };
         private:
@@ -146,15 +146,15 @@ namespace ams::fssystem::save {
                 s_generate_random = func;
             }
         private:
-            FileSystemBufferManagerSet *buffers;
-            os::SdkRecursiveMutex *mutex;
-            IntegrityVerificationStorage verify_storages[MaxLayers - 1];
-            BlockCacheBufferedStorage    buffer_storages[MaxLayers - 1];
-            s64 data_size;
-            s32 max_layers;
-            bool is_written_for_rollback;
+            FileSystemBufferManagerSet *m_buffers;
+            os::SdkRecursiveMutex *m_mutex;
+            IntegrityVerificationStorage m_verify_storages[MaxLayers - 1];
+            BlockCacheBufferedStorage    m_buffer_storages[MaxLayers - 1];
+            s64 m_data_size;
+            s32 m_max_layers;
+            bool m_is_written_for_rollback;
         public:
-            HierarchicalIntegrityVerificationStorage() : buffers(nullptr), mutex(nullptr), data_size(-1), is_written_for_rollback(false) { /* ... */ }
+            HierarchicalIntegrityVerificationStorage() : m_buffers(nullptr), m_mutex(nullptr), m_data_size(-1), m_is_written_for_rollback(false) { /* ... */ }
             virtual ~HierarchicalIntegrityVerificationStorage() override { this->Finalize(); }
 
             Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type);
@@ -175,30 +175,30 @@ namespace ams::fssystem::save {
             Result OnRollback();
 
             bool IsInitialized() const {
-                return this->data_size >= 0;
+                return m_data_size >= 0;
             }
 
             bool IsWrittenForRollback() const {
-                return this->is_written_for_rollback;
+                return m_is_written_for_rollback;
             }
 
             FileSystemBufferManagerSet *GetBuffers() {
-                return this->buffers;
+                return m_buffers;
             }
 
             void GetParameters(HierarchicalIntegrityVerificationStorageControlArea::InputParam *out) const {
                 AMS_ASSERT(out != nullptr);
-                for (auto level = 0; level <= this->max_layers - 2; ++level) {
-                    out->level_block_size[level] = static_cast<size_t>(this->verify_storages[level].GetBlockSize());
+                for (auto level = 0; level <= m_max_layers - 2; ++level) {
+                    out->level_block_size[level] = static_cast<size_t>(m_verify_storages[level].GetBlockSize());
                 }
             }
 
             s64 GetL1HashVerificationBlockSize() const {
-                return this->verify_storages[this->max_layers - 2].GetBlockSize();
+                return m_verify_storages[m_max_layers - 2].GetBlockSize();
             }
 
             fs::SubStorage GetL1HashStorage() {
-                return fs::SubStorage(std::addressof(this->buffer_storages[this->max_layers - 3]), 0, util::DivideUp(this->data_size, this->GetL1HashVerificationBlockSize()));
+                return fs::SubStorage(std::addressof(m_buffer_storages[m_max_layers - 3]), 0, util::DivideUp(m_data_size, this->GetL1HashVerificationBlockSize()));
             }
     };
 

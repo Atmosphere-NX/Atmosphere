@@ -34,32 +34,32 @@ namespace ams::fssystem {
                 private:
                     class Entry {
                         private:
-                            CacheHandle handle;
-                            uintptr_t address;
-                            size_t size;
-                            BufferAttribute attr;
+                            CacheHandle m_handle;
+                            uintptr_t m_address;
+                            size_t m_size;
+                            BufferAttribute m_attr;
                         public:
                             constexpr void Initialize(CacheHandle h, uintptr_t a, size_t sz, BufferAttribute t) {
-                                this->handle  = h;
-                                this->address = a;
-                                this->size    = sz;
-                                this->attr    = t;
+                                m_handle  = h;
+                                m_address = a;
+                                m_size    = sz;
+                                m_attr    = t;
                             }
 
                             constexpr CacheHandle GetHandle() const {
-                                return this->handle;
+                                return m_handle;
                             }
 
                             constexpr uintptr_t GetAddress() const {
-                                return this->address;
+                                return m_address;
                             }
 
                             constexpr size_t GetSize() const {
-                                return this->size;
+                                return m_size;
                             }
 
                             constexpr BufferAttribute GetBufferAttribute() const {
-                                return this->attr;
+                                return m_attr;
                             }
                     };
 
@@ -67,41 +67,41 @@ namespace ams::fssystem {
                         NON_COPYABLE(AttrInfo);
                         NON_MOVEABLE(AttrInfo);
                         private:
-                            s32 level;
-                            s32 cache_count;
-                            size_t cache_size;
+                            s32 m_level;
+                            s32 m_cache_count;
+                            size_t m_cache_size;
                         public:
-                            constexpr AttrInfo(s32 l, s32 cc, size_t cs) : level(l), cache_count(cc), cache_size(cs) {
+                            constexpr AttrInfo(s32 l, s32 cc, size_t cs) : m_level(l), m_cache_count(cc), m_cache_size(cs) {
                                 /* ... */
                             }
 
                             constexpr s32 GetLevel() const {
-                                return this->level;
+                                return m_level;
                             }
 
                             constexpr s32 GetCacheCount() const {
-                                return this->cache_count;
+                                return m_cache_count;
                             }
 
                             constexpr void IncrementCacheCount() {
-                                ++this->cache_count;
+                                ++m_cache_count;
                             }
 
                             constexpr void DecrementCacheCount() {
-                                --this->cache_count;
+                                --m_cache_count;
                             }
 
                             constexpr size_t GetCacheSize() const {
-                                return this->cache_size;
+                                return m_cache_size;
                             }
 
                             constexpr void AddCacheSize(size_t diff) {
-                                this->cache_size += diff;
+                                m_cache_size += diff;
                             }
 
                             constexpr void SubtractCacheSize(size_t diff) {
-                                AMS_ASSERT(this->cache_size >= diff);
-                                this->cache_size -= diff;
+                                AMS_ASSERT(m_cache_size >= diff);
+                                m_cache_size -= diff;
                             }
 
                             using Newable::operator new;
@@ -114,19 +114,19 @@ namespace ams::fssystem {
                     using AttrListTraits = util::IntrusiveListBaseTraits<AttrInfo>;
                     using AttrList       = typename AttrListTraits::ListType;
                 private:
-                    std::unique_ptr<char[], ::ams::fs::impl::Deleter> internal_entry_buffer;
-                    char *external_entry_buffer;
-                    size_t entry_buffer_size;
-                    Entry *entries;
-                    s32 entry_count;
-                    s32 entry_count_max;
-                    AttrList attr_list;
-                    char *external_attr_info_buffer;
-                    s32 external_attr_info_count;
-                    s32 cache_count_min;
-                    size_t cache_size_min;
-                    size_t total_cache_size;
-                    CacheHandle current_handle;
+                    std::unique_ptr<char[], ::ams::fs::impl::Deleter> m_internal_entry_buffer;
+                    char *m_external_entry_buffer;
+                    size_t m_entry_buffer_size;
+                    Entry *m_entries;
+                    s32 m_entry_count;
+                    s32 m_entry_count_max;
+                    AttrList m_attr_list;
+                    char *m_external_attr_info_buffer;
+                    s32 m_external_attr_info_count;
+                    s32 m_cache_count_min;
+                    size_t m_cache_size_min;
+                    size_t m_total_cache_size;
+                    CacheHandle m_current_handle;
                 public:
                     static constexpr size_t QueryWorkBufferSize(s32 max_cache_count) {
                         AMS_ASSERT(max_cache_count > 0);
@@ -135,7 +135,7 @@ namespace ams::fssystem {
                         return util::AlignUp(entry_size + attr_list_size + alignof(Entry) + alignof(AttrInfo), 8);
                     }
                 public:
-                    CacheHandleTable() : internal_entry_buffer(), external_entry_buffer(), entry_buffer_size(), entries(), entry_count(), entry_count_max(), attr_list(), external_attr_info_buffer(), external_attr_info_count(), cache_count_min(), cache_size_min(), total_cache_size(), current_handle() {
+                    CacheHandleTable() : m_internal_entry_buffer(), m_external_entry_buffer(), m_entry_buffer_size(), m_entries(), m_entry_count(), m_entry_count_max(), m_attr_list(), m_external_attr_info_buffer(), m_external_attr_info_count(), m_cache_count_min(), m_cache_size_min(), m_total_cache_size(), m_current_handle() {
                         /* ... */
                     }
 
@@ -146,13 +146,13 @@ namespace ams::fssystem {
                     Result Initialize(s32 max_cache_count);
                     Result Initialize(s32 max_cache_count, void *work, size_t work_size) {
                         const auto aligned_entry_buf = util::AlignUp(reinterpret_cast<uintptr_t>(work), alignof(Entry));
-                        this->external_entry_buffer  = reinterpret_cast<char *>(aligned_entry_buf);
-                        this->entry_buffer_size      = sizeof(Entry) * max_cache_count;
+                        m_external_entry_buffer  = reinterpret_cast<char *>(aligned_entry_buf);
+                        m_entry_buffer_size      = sizeof(Entry) * max_cache_count;
 
-                        const auto aligned_attr_info_buf = util::AlignUp(reinterpret_cast<uintptr_t>(this->external_entry_buffer + this->entry_buffer_size), alignof(AttrInfo));
+                        const auto aligned_attr_info_buf = util::AlignUp(reinterpret_cast<uintptr_t>(m_external_entry_buffer + m_entry_buffer_size), alignof(AttrInfo));
                         const auto work_end              = reinterpret_cast<uintptr_t>(work) + work_size;
-                        this->external_attr_info_buffer  = reinterpret_cast<char *>(aligned_attr_info_buf);
-                        this->external_attr_info_count   = static_cast<s32>((work_end - aligned_attr_info_buf) / sizeof(AttrInfo));
+                        m_external_attr_info_buffer  = reinterpret_cast<char *>(aligned_attr_info_buf);
+                        m_external_attr_info_count   = static_cast<s32>((work_end - aligned_attr_info_buf) / sizeof(AttrInfo));
 
                         return ResultSuccess();
                     }
@@ -179,22 +179,22 @@ namespace ams::fssystem {
 
                     s32 GetCacheCountMin(const BufferAttribute &attr) {
                         AMS_UNUSED(attr);
-                        return this->cache_count_min;
+                        return m_cache_count_min;
                     }
 
                     size_t GetCacheSizeMin(const BufferAttribute &attr) {
                         AMS_UNUSED(attr);
-                        return this->cache_size_min;
+                        return m_cache_size_min;
                     }
             };
         private:
-            BuddyHeap buddy_heap;
-            CacheHandleTable cache_handle_table;
-            size_t total_size;
-            size_t peak_free_size;
-            size_t peak_total_allocatable_size;
-            size_t retried_count;
-            mutable os::SdkRecursiveMutex mutex;
+            BuddyHeap m_buddy_heap;
+            CacheHandleTable m_cache_handle_table;
+            size_t m_total_size;
+            size_t m_peak_free_size;
+            size_t m_peak_total_allocatable_size;
+            size_t m_retried_count;
+            mutable os::SdkRecursiveMutex m_mutex;
         public:
             static constexpr size_t QueryWorkBufferSize(s32 max_cache_count, s32 max_order) {
                 const auto buddy_size = FileSystemBuddyHeap::QueryWorkBufferSize(max_order);
@@ -202,30 +202,30 @@ namespace ams::fssystem {
                 return buddy_size + table_size;
             }
         public:
-            FileSystemBufferManager() : total_size(), peak_free_size(), peak_total_allocatable_size(), retried_count(), mutex() { /* ... */ }
+            FileSystemBufferManager() : m_total_size(), m_peak_free_size(), m_peak_total_allocatable_size(), m_retried_count(), m_mutex() { /* ... */ }
 
             virtual ~FileSystemBufferManager() { /* ... */ }
 
             Result Initialize(s32 max_cache_count, uintptr_t address, size_t buffer_size, size_t block_size) {
                 AMS_ASSERT(buffer_size > 0);
-                R_TRY(this->cache_handle_table.Initialize(max_cache_count));
-                R_TRY(this->buddy_heap.Initialize(address, buffer_size, block_size));
+                R_TRY(m_cache_handle_table.Initialize(max_cache_count));
+                R_TRY(m_buddy_heap.Initialize(address, buffer_size, block_size));
 
-                this->total_size                  = this->buddy_heap.GetTotalFreeSize();
-                this->peak_free_size              = this->total_size;
-                this->peak_total_allocatable_size = this->total_size;
+                m_total_size                  = m_buddy_heap.GetTotalFreeSize();
+                m_peak_free_size              = m_total_size;
+                m_peak_total_allocatable_size = m_total_size;
 
                 return ResultSuccess();
             }
 
             Result Initialize(s32 max_cache_count, uintptr_t address, size_t buffer_size, size_t block_size, s32 max_order) {
                 AMS_ASSERT(buffer_size > 0);
-                R_TRY(this->cache_handle_table.Initialize(max_cache_count));
-                R_TRY(this->buddy_heap.Initialize(address, buffer_size, block_size, max_order));
+                R_TRY(m_cache_handle_table.Initialize(max_cache_count));
+                R_TRY(m_buddy_heap.Initialize(address, buffer_size, block_size, max_order));
 
-                this->total_size                  = this->buddy_heap.GetTotalFreeSize();
-                this->peak_free_size              = this->total_size;
-                this->peak_total_allocatable_size = this->total_size;
+                m_total_size                  = m_buddy_heap.GetTotalFreeSize();
+                m_peak_free_size              = m_total_size;
+                m_peak_total_allocatable_size = m_total_size;
 
                 return ResultSuccess();
             }
@@ -237,12 +237,12 @@ namespace ams::fssystem {
                 const auto table_buffer = static_cast<char *>(work);
                 const auto buddy_buffer = table_buffer + table_size;
 
-                R_TRY(this->cache_handle_table.Initialize(max_cache_count, table_buffer, table_size));
-                R_TRY(this->buddy_heap.Initialize(address, buffer_size, block_size, buddy_buffer, buddy_size));
+                R_TRY(m_cache_handle_table.Initialize(max_cache_count, table_buffer, table_size));
+                R_TRY(m_buddy_heap.Initialize(address, buffer_size, block_size, buddy_buffer, buddy_size));
 
-                this->total_size                  = this->buddy_heap.GetTotalFreeSize();
-                this->peak_free_size              = this->total_size;
-                this->peak_total_allocatable_size = this->total_size;
+                m_total_size                  = m_buddy_heap.GetTotalFreeSize();
+                m_peak_free_size              = m_total_size;
+                m_peak_total_allocatable_size = m_total_size;
 
                 return ResultSuccess();
             }
@@ -254,19 +254,19 @@ namespace ams::fssystem {
                 const auto table_buffer = static_cast<char *>(work);
                 const auto buddy_buffer = table_buffer + table_size;
 
-                R_TRY(this->cache_handle_table.Initialize(max_cache_count, table_buffer, table_size));
-                R_TRY(this->buddy_heap.Initialize(address, buffer_size, block_size, max_order, buddy_buffer, buddy_size));
+                R_TRY(m_cache_handle_table.Initialize(max_cache_count, table_buffer, table_size));
+                R_TRY(m_buddy_heap.Initialize(address, buffer_size, block_size, max_order, buddy_buffer, buddy_size));
 
-                this->total_size                  = this->buddy_heap.GetTotalFreeSize();
-                this->peak_free_size              = this->total_size;
-                this->peak_total_allocatable_size = this->total_size;
+                m_total_size                  = m_buddy_heap.GetTotalFreeSize();
+                m_peak_free_size              = m_total_size;
+                m_peak_total_allocatable_size = m_total_size;
 
                 return ResultSuccess();
             }
 
             void Finalize() {
-                this->buddy_heap.Finalize();
-                this->cache_handle_table.Finalize();
+                m_buddy_heap.Finalize();
+                m_cache_handle_table.Finalize();
             }
         private:
             virtual const std::pair<uintptr_t, size_t> AllocateBufferImpl(size_t size, const BufferAttribute &attr) override;

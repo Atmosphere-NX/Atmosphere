@@ -29,15 +29,15 @@ namespace ams::erpt::srv {
             static bool s_can_access_fs;
             static os::SdkMutex s_fs_commit_mutex;
         private:
-            u32 buffer_size;
-            u32 file_position;
-            u32 buffer_position;
-            u32 buffer_count;
-            u8 *buffer;
-            StreamMode stream_mode;
-            bool initialized;
-            fs::FileHandle file_handle;
-            char file_name[ReportFileNameLength];
+            u32 m_buffer_size;
+            u32 m_file_position;
+            u32 m_buffer_position;
+            u32 m_buffer_count;
+            u8 *m_buffer;
+            StreamMode m_stream_mode;
+            bool m_initialized;
+            fs::FileHandle m_file_handle;
+            char m_file_name[ReportFileNameLength];
         public:
             Stream();
             ~Stream();

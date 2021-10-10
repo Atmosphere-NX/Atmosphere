@@ -27,7 +27,7 @@ namespace ams::mem::impl::heap {
         }
 
         /* Don't allow initializing twice. */
-        if (this->start) {
+        if (m_start) {
             return EEXIST;
         }
 
@@ -39,17 +39,17 @@ namespace ams::mem::impl::heap {
                 return EINVAL;
             }
 
-            this->start  = aligned_start;
-            this->end    = aligned_end;
-            this->option = option;
-            this->tls_heap_central = std::construct_at(reinterpret_cast<TlsHeapCentral *>(this->start));
-            if (auto err = this->tls_heap_central->Initialize(this->start, this->end - this->start, false); err != 0) {
-                std::destroy_at(this->tls_heap_central);
-                this->tls_heap_central = nullptr;
+            m_start  = aligned_start;
+            m_end    = aligned_end;
+            m_option = option;
+            m_tls_heap_central = std::construct_at(reinterpret_cast<TlsHeapCentral *>(m_start));
+            if (auto err = m_tls_heap_central->Initialize(m_start, m_end - m_start, false); err != 0) {
+                std::destroy_at(m_tls_heap_central);
+                m_tls_heap_central = nullptr;
                 AMS_ASSERT(err == 0);
                 return err;
             }
-            this->use_virtual_memory = false;
+            m_use_virtual_memory = false;
         } else {
             /* We were not provided with a region to use as backing. */
             void *mem = nullptr;
@@ -63,39 +63,39 @@ namespace ams::mem::impl::heap {
                     return err;
                 }
             }
-            this->start  = static_cast<u8 *>(mem);
-            this->end    = this->start + size;
-            this->option = option;
+            m_start  = static_cast<u8 *>(mem);
+            m_end    = m_start + size;
+            m_option = option;
             void *central = reinterpret_cast<void *>(util::AlignUp(reinterpret_cast<uintptr_t>(mem), PageSize));
             if (auto err = AllocatePhysicalMemory(central, sizeof(TlsHeapCentral)); err != 0) {
                 return err;
             }
-            this->tls_heap_central = std::construct_at(static_cast<TlsHeapCentral *>(central));
-            if (auto err = this->tls_heap_central->Initialize(central, size, true); err != 0) {
-                std::destroy_at(this->tls_heap_central);
-                this->tls_heap_central = nullptr;
+            m_tls_heap_central = std::construct_at(static_cast<TlsHeapCentral *>(central));
+            if (auto err = m_tls_heap_central->Initialize(central, size, true); err != 0) {
+                std::destroy_at(m_tls_heap_central);
+                m_tls_heap_central = nullptr;
                 AMS_ASSERT(err == 0);
                 return err;
             }
-            this->use_virtual_memory = true;
+            m_use_virtual_memory = true;
         }
 
         return 0;
     }
 
     void CentralHeap::Finalize() {
-        if (this->tls_heap_central) {
-            std::destroy_at(this->tls_heap_central);
+        if (m_tls_heap_central) {
+            std::destroy_at(m_tls_heap_central);
         }
-        if (this->use_virtual_memory) {
-            mem::impl::physical_free(util::AlignUp(static_cast<void *>(this->start), PageSize), this->end - this->start);
-            mem::impl::virtual_free(this->start, this->end - this->start);
+        if (m_use_virtual_memory) {
+            mem::impl::physical_free(util::AlignUp(static_cast<void *>(m_start), PageSize), m_end - m_start);
+            mem::impl::virtual_free(m_start, m_end - m_start);
         }
-        this->tls_heap_central   = nullptr;
-        this->use_virtual_memory = false;
-        this->option             = 0;
-        this->start              = nullptr;
-        this->end                = nullptr;
+        m_tls_heap_central   = nullptr;
+        m_use_virtual_memory = false;
+        m_option             = 0;
+        m_start              = nullptr;
+        m_end                = nullptr;
     }
 
     void *CentralHeap::Allocate(size_t n, size_t align) {
@@ -106,23 +106,23 @@ namespace ams::mem::impl::heap {
             return nullptr;
         }
         if (align > PageSize) {
-            return this->tls_heap_central->CacheLargeMemoryWithBigAlign(util::AlignUp(n, PageSize), align);
+            return m_tls_heap_central->CacheLargeMemoryWithBigAlign(util::AlignUp(n, PageSize), align);
         }
 
         const size_t real_size = TlsHeapStatic::GetRealSizeFromSizeAndAlignment(util::AlignUp(n, align), align);
         const auto cls = TlsHeapStatic::GetClassFromSize(real_size);
         if (!cls) {
-            return this->tls_heap_central->CacheLargeMemory(real_size);
+            return m_tls_heap_central->CacheLargeMemory(real_size);
         }
         if (real_size == 0) {
             return nullptr;
         }
         AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
-        return this->tls_heap_central->CacheSmallMemory(cls, align);
+        return m_tls_heap_central->CacheSmallMemory(cls, align);
     }
 
     size_t CentralHeap::GetAllocationSize(const void *ptr) {
-        const auto cls = this->tls_heap_central->GetClassFromPointer(ptr);
+        const auto cls = m_tls_heap_central->GetClassFromPointer(ptr);
         if (cls > 0) {
             /* Check that the pointer has alignment from out allocator. */
             if (!util::IsAligned(reinterpret_cast<uintptr_t>(ptr), MinimumAlignment)) {
@@ -131,7 +131,7 @@ namespace ams::mem::impl::heap {
             AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
             return TlsHeapStatic::GetChunkSize(cls);
         } else if (ptr != nullptr) {
-            return this->tls_heap_central->GetAllocationSize(ptr);
+            return m_tls_heap_central->GetAllocationSize(ptr);
         } else {
             return 0;
         }
@@ -149,13 +149,13 @@ namespace ams::mem::impl::heap {
             return EFAULT;
         }
 
-        const auto cls = this->tls_heap_central->GetClassFromPointer(ptr);
+        const auto cls = m_tls_heap_central->GetClassFromPointer(ptr);
         if (cls >= 0) {
             AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
             if (cls) {
-                return this->tls_heap_central->UncacheSmallMemory(ptr);
+                return m_tls_heap_central->UncacheSmallMemory(ptr);
             } else {
-                return this->tls_heap_central->UncacheLargeMemory(ptr);
+                return m_tls_heap_central->UncacheLargeMemory(ptr);
             }
         } else {
             AMS_ASSERT(cls >= 0);
@@ -165,9 +165,9 @@ namespace ams::mem::impl::heap {
 
     errno_t CentralHeap::FreeWithSize(void *ptr, size_t size) {
         if (TlsHeapStatic::GetClassFromSize(size)) {
-            return this->tls_heap_central->UncacheSmallMemory(ptr);
+            return m_tls_heap_central->UncacheSmallMemory(ptr);
         } else {
-            return this->tls_heap_central->UncacheLargeMemory(ptr);
+            return m_tls_heap_central->UncacheLargeMemory(ptr);
         }
     }
 
@@ -181,7 +181,7 @@ namespace ams::mem::impl::heap {
         }
 
         const auto cls_from_size = TlsHeapStatic::GetClassFromSize(size);
-        const auto cls_from_ptr  = this->tls_heap_central->GetClassFromPointer(ptr);
+        const auto cls_from_ptr  = m_tls_heap_central->GetClassFromPointer(ptr);
         if (cls_from_ptr) {
             if (cls_from_ptr <= 0) {
                 return EFAULT;
@@ -193,7 +193,7 @@ namespace ams::mem::impl::heap {
                 *p = this->Allocate(new_chunk_size);
                 if (*p)  {
                     std::memcpy(*p, ptr, size);
-                    return this->tls_heap_central->UncacheSmallMemory(ptr);
+                    return m_tls_heap_central->UncacheSmallMemory(ptr);
                 } else {
                     return ENOMEM;
                 }
@@ -202,12 +202,12 @@ namespace ams::mem::impl::heap {
             *p = this->Allocate(size);
             if (*p)  {
                 std::memcpy(*p, ptr, size);
-                return this->tls_heap_central->UncacheLargeMemory(ptr);
+                return m_tls_heap_central->UncacheLargeMemory(ptr);
             } else {
                 return ENOMEM;
             }
         } else {
-            return this->tls_heap_central->ReallocateLargeMemory(ptr, size, p);
+            return m_tls_heap_central->ReallocateLargeMemory(ptr, size, p);
         }
     }
 
@@ -221,7 +221,7 @@ namespace ams::mem::impl::heap {
         }
 
         const auto cls_from_size = TlsHeapStatic::GetClassFromSize(size);
-        const auto cls_from_ptr  = this->tls_heap_central->GetClassFromPointer(ptr);
+        const auto cls_from_ptr  = m_tls_heap_central->GetClassFromPointer(ptr);
         if (cls_from_ptr) {
             if (cls_from_ptr <= 0) {
                 return EFAULT;
@@ -231,9 +231,9 @@ namespace ams::mem::impl::heap {
                 return EINVAL;
             }
         } else if (cls_from_size) {
-            return this->tls_heap_central->ShrinkLargeMemory(ptr, PageSize);
+            return m_tls_heap_central->ShrinkLargeMemory(ptr, PageSize);
         } else {
-            return this->tls_heap_central->ShrinkLargeMemory(ptr, size);
+            return m_tls_heap_central->ShrinkLargeMemory(ptr, size);
         }
     }
 
@@ -242,16 +242,16 @@ namespace ams::mem::impl::heap {
             return false;
         }
 
-        AMS_ASSERT(this->tls_heap_central != nullptr);
+        AMS_ASSERT(m_tls_heap_central != nullptr);
         const auto cls = TlsHeapStatic::GetClassFromSize(sizeof(*cached_heap));
-        void *tls_heap_cache = this->tls_heap_central->CacheSmallMemoryForSystem(cls);
+        void *tls_heap_cache = m_tls_heap_central->CacheSmallMemoryForSystem(cls);
         if (tls_heap_cache == nullptr) {
             return false;
         }
 
-        std::construct_at(static_cast<TlsHeapCache *>(tls_heap_cache), this->tls_heap_central, this->option);
-        if (this->tls_heap_central->AddThreadCache(reinterpret_cast<TlsHeapCache *>(tls_heap_cache)) != 0) {
-            this->tls_heap_central->UncacheSmallMemory(tls_heap_cache);
+        std::construct_at(static_cast<TlsHeapCache *>(tls_heap_cache), m_tls_heap_central, m_option);
+        if (m_tls_heap_central->AddThreadCache(reinterpret_cast<TlsHeapCache *>(tls_heap_cache)) != 0) {
+            m_tls_heap_central->UncacheSmallMemory(tls_heap_cache);
             return false;
         }
 
@@ -260,10 +260,10 @@ namespace ams::mem::impl::heap {
     }
 
     errno_t CentralHeap::WalkAllocatedPointers(HeapWalkCallback callback, void *user_data) {
-        if (!callback || !this->tls_heap_central) {
+        if (!callback || !m_tls_heap_central) {
             return EINVAL;
         }
-        return this->tls_heap_central->WalkAllocatedPointers(callback, user_data);
+        return m_tls_heap_central->WalkAllocatedPointers(callback, user_data);
     }
 
     errno_t CentralHeap::QueryV(int query, std::va_list vl) {
@@ -286,8 +286,8 @@ namespace ams::mem::impl::heap {
             {
                 auto dump_mode = static_cast<DumpMode>(va_arg(*vl_ptr, int));
                 auto fd = va_arg(*vl_ptr, int);
-                if (this->tls_heap_central) {
-                    this->tls_heap_central->Dump(dump_mode, fd, query == AllocQuery_DumpJson);
+                if (m_tls_heap_central) {
+                    m_tls_heap_central->Dump(dump_mode, fd, query == AllocQuery_DumpJson);
                 }
                 return 0;
             }
@@ -308,12 +308,12 @@ namespace ams::mem::impl::heap {
                 if (!out) {
                     return 0;
                 }
-                if (!this->tls_heap_central) {
+                if (!m_tls_heap_central) {
                     *out = 0;
                     return 0;
                 }
                 TlsHeapMemStats stats;
-                this->tls_heap_central->GetMemStats(std::addressof(stats));
+                m_tls_heap_central->GetMemStats(std::addressof(stats));
                 switch (query) {
                     case AllocQuery_AllocatedSize:
                     default:
@@ -335,7 +335,7 @@ namespace ams::mem::impl::heap {
             {
                 int *out = va_arg(*vl_ptr, int *);
                 if (out) {
-                    *out = !this->tls_heap_central || this->tls_heap_central->IsClean();
+                    *out = !m_tls_heap_central || m_tls_heap_central->IsClean();
                 }
                 return 0;
             }
@@ -343,8 +343,8 @@ namespace ams::mem::impl::heap {
             {
                 HeapHash *out = va_arg(*vl_ptr, HeapHash *);
                 if (out) {
-                    if (this->tls_heap_central) {
-                        this->tls_heap_central->CalculateHeapHash(out);
+                    if (m_tls_heap_central) {
+                        m_tls_heap_central->CalculateHeapHash(out);
                     } else {
                         *out = {};
                     }
@@ -353,28 +353,28 @@ namespace ams::mem::impl::heap {
             }
             case AllocQuery_UnifyFreeList:
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                this->tls_heap_central->IsClean();
+                m_tls_heap_central->IsClean();
                 return 0;
             case AllocQuery_SetColor:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
                 void *ptr = va_arg(*vl_ptr, void *);
                 int color = va_arg(*vl_ptr, int);
-                return this->tls_heap_central->SetColor(ptr, color);
+                return m_tls_heap_central->SetColor(ptr, color);
             }
             case AllocQuery_GetColor:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
                 void *ptr = va_arg(*vl_ptr, void *);
                 int *out = va_arg(*vl_ptr, int *);
-                return this->tls_heap_central->GetColor(ptr, out);
+                return m_tls_heap_central->GetColor(ptr, out);
             }
             case AllocQuery_SetName:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
                 void *ptr = va_arg(*vl_ptr, void *);
                 const char *name = va_arg(*vl_ptr, const char *);
-                return this->tls_heap_central->SetName(ptr, name);
+                return m_tls_heap_central->SetName(ptr, name);
             }
             case AllocQuery_GetName:
             {
@@ -382,7 +382,7 @@ namespace ams::mem::impl::heap {
                 void *ptr = va_arg(*vl_ptr, void *);
                 char *dst = va_arg(*vl_ptr, char *);
                 size_t dst_size = va_arg(*vl_ptr, size_t);
-                return this->tls_heap_central->GetName(ptr, dst, dst_size);
+                return m_tls_heap_central->GetName(ptr, dst, dst_size);
             }
             case AllocQuery_FreeSizeMapped:
             case AllocQuery_MaxAllocatableSizeMapped:
@@ -391,7 +391,7 @@ namespace ams::mem::impl::heap {
                 size_t *out = va_arg(*vl_ptr, size_t *);
                 size_t free_size;
                 size_t max_allocatable_size;
-                auto err = this->tls_heap_central->GetMappedMemStats(std::addressof(free_size), std::addressof(max_allocatable_size));
+                auto err = m_tls_heap_central->GetMappedMemStats(std::addressof(free_size), std::addressof(max_allocatable_size));
                 if (err == 0) {
                     if (query == AllocQuery_FreeSizeMapped) {
                         *out = free_size;

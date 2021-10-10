@@ -28,20 +28,20 @@ namespace ams::i2c {
         NON_COPYABLE(CommandListFormatter);
         NON_MOVEABLE(CommandListFormatter);
         private:
-            size_t current_index;
-            size_t command_list_length;
-            void *command_list;
+            size_t m_current_index;
+            size_t m_command_list_length;
+            void *m_command_list;
         private:
             Result IsEnqueueAble(size_t sz) const;
         public:
-            CommandListFormatter(void *p, size_t sz) : current_index(0), command_list_length(sz), command_list(p) {
-                AMS_ABORT_UNLESS(this->command_list_length <= CommandListLengthMax);
+            CommandListFormatter(void *p, size_t sz) : m_current_index(0), m_command_list_length(sz), m_command_list(p) {
+                AMS_ABORT_UNLESS(m_command_list_length <= CommandListLengthMax);
             }
 
-            ~CommandListFormatter() { this->command_list = nullptr; }
+            ~CommandListFormatter() { m_command_list = nullptr; }
 
-            size_t GetCurrentLength() const { return this->current_index; }
-            const void *GetListHead() const { return this->command_list; }
+            size_t GetCurrentLength() const { return m_current_index; }
+            const void *GetListHead() const { return m_command_list; }
 
             Result EnqueueReceiveCommand(i2c::TransactionOption option, size_t size);
             Result EnqueueSendCommand(i2c::TransactionOption option, const void *src, size_t size);

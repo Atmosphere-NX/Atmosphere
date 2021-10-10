@@ -112,10 +112,10 @@ namespace ams::ncm {
     template<typename MemberTypePointer, typename DataTypePointer>
     class PatchMetaExtendedDataReaderWriterBase {
         private:
-            MemberTypePointer data;
-            const size_t size;
+            MemberTypePointer m_data;
+            const size_t m_size;
         public:
-            PatchMetaExtendedDataReaderWriterBase(MemberTypePointer d, size_t sz) : data(d), size(sz) { /* ... */ }
+            PatchMetaExtendedDataReaderWriterBase(MemberTypePointer d, size_t sz) : m_data(d), m_size(sz) { /* ... */ }
         protected:
             s32 CountFragmentSet(s32 delta_index) const {
                 auto delta_header = this->GetPatchDeltaHeader(0);
@@ -154,7 +154,7 @@ namespace ams::ncm {
             }
 
             DataTypePointer GetHeaderAddress() const {
-                return reinterpret_cast<DataTypePointer>(this->data);
+                return reinterpret_cast<DataTypePointer>(m_data);
             }
 
             DataTypePointer GetPatchHistoryHeaderAddress(s32 index) const {
@@ -307,15 +307,15 @@ namespace ams::ncm {
 
     class SystemUpdateMetaExtendedDataReaderWriterBase {
         private:
-            void *data;
-            const size_t size;
-            bool is_header_valid;
+            void *m_data;
+            const size_t m_size;
+            bool m_is_header_valid;
         protected:
-            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(const void *d, size_t sz) : data(const_cast<void *>(d)), size(sz), is_header_valid(true) { /* ... */ }
-            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(void *d, size_t sz) : data(d), size(sz), is_header_valid(false) { /* ... */ }
+            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(const void *d, size_t sz) : m_data(const_cast<void *>(d)), m_size(sz), m_is_header_valid(true) { /* ... */ }
+            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(void *d, size_t sz) : m_data(d), m_size(sz), m_is_header_valid(false) { /* ... */ }
 
             uintptr_t GetHeaderAddress() const {
-                return reinterpret_cast<uintptr_t>(this->data);
+                return reinterpret_cast<uintptr_t>(m_data);
             }
 
             uintptr_t GetFirmwareVariationIdStartAddress() const {
@@ -343,7 +343,7 @@ namespace ams::ncm {
             }
         public:
             const SystemUpdateMetaExtendedDataHeader *GetHeader() const {
-                AMS_ABORT_UNLESS(this->is_header_valid);
+                AMS_ABORT_UNLESS(m_is_header_valid);
                 return reinterpret_cast<const SystemUpdateMetaExtendedDataHeader *>(this->GetHeaderAddress());
             }
 

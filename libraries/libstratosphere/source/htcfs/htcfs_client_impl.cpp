@@ -1301,7 +1301,7 @@ namespace ams::htcfs {
         Header request, response;
 
         /* Create header for the request. */
-        m_header_factory.MakeWriteFileHeader(std::addressof(request), buffer_size, handle, option.value, offset);
+        m_header_factory.MakeWriteFileHeader(std::addressof(request), buffer_size, handle, option._value, offset);
 
         /* Send the request to the host. */
         R_TRY(this->SendRequest(request, buffer, buffer_size));
@@ -1335,7 +1335,7 @@ namespace ams::htcfs {
         Header request, response;
 
         /* Create header for the request. */
-        m_header_factory.MakeWriteFileLargeHeader(std::addressof(request), handle, option.value, offset, buffer_size, DataChannelId);
+        m_header_factory.MakeWriteFileLargeHeader(std::addressof(request), handle, option._value, offset, buffer_size, DataChannelId);
 
         /* Send the request to the host. */
         R_TRY(this->SendRequest(request));

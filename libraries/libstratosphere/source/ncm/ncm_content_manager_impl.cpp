@@ -133,15 +133,15 @@ namespace ams::ncm {
     }
 
     ContentManagerImpl::~ContentManagerImpl() {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Disable and unmount all content storage roots. */
-        for (auto &root : this->content_storage_roots) {
+        for (auto &root : m_content_storage_roots) {
             this->InactivateContentStorage(root.storage_id);
         }
 
         /* Disable and unmount all content meta database roots. */
-        for (auto &root : this->content_meta_database_roots) {
+        for (auto &root : m_content_meta_database_roots) {
             this->InactivateContentMetaDatabase(root.storage_id);
         }
     }
@@ -171,7 +171,7 @@ namespace ams::ncm {
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
         /* Find a root with a matching storage id. */
-        for (auto &root : this->content_storage_roots) {
+        for (auto &root : m_content_storage_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
                 return ResultSuccess();
@@ -186,7 +186,7 @@ namespace ams::ncm {
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
         /* Find a root with a matching storage id. */
-        for (auto &root : this->content_meta_database_roots) {
+        for (auto &root : m_content_meta_database_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
                 return ResultSuccess();
@@ -247,7 +247,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
@@ -316,29 +316,29 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::Initialize(const ContentManagerConfig &config) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Check if we've already initialized. */
-        R_SUCCEED_IF(this->initialized);
+        R_SUCCEED_IF(m_initialized);
 
         /* Clear storage id for all roots. */
-        for (auto &root : this->content_storage_roots) {
+        for (auto &root : m_content_storage_roots) {
             root.storage_id = StorageId::None;
         }
 
-        for (auto &root : this->content_meta_database_roots) {
+        for (auto &root : m_content_meta_database_roots) {
             root.storage_id = StorageId::None;
         }
 
         /* First, setup the BuiltInSystem storage entry. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[this->num_content_storage_entries++]), StorageId::BuiltInSystem, fs::ContentStorageId::System));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), StorageId::BuiltInSystem, fs::ContentStorageId::System));
         if (R_FAILED(this->VerifyContentStorage(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentStorage(StorageId::BuiltInSystem));
         }
         R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
         /* Next, the BuiltInSystem content meta entry. */
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[this->num_content_meta_entries++]), StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
 
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
@@ -365,26 +365,26 @@ namespace ams::ncm {
         R_TRY(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
         /* Now for BuiltInUser's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[this->num_content_storage_entries++]), StorageId::BuiltInUser, fs::ContentStorageId::User));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[this->num_content_meta_entries++]), StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[m_num_content_storage_entries++]), StorageId::BuiltInUser, fs::ContentStorageId::User));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[m_num_content_meta_entries++]), StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* Beyond this point, N uses hardcoded indices. */
 
         /* Next SdCard's content storage and content meta entries. */
-        R_TRY(this->InitializeContentStorageRoot(std::addressof(this->content_storage_roots[2]), StorageId::SdCard, fs::ContentStorageId::SdCard));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[2]), StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentStorageRoot(std::addressof(m_content_storage_roots[2]), StorageId::SdCard, fs::ContentStorageId::SdCard));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[2]), StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* GameCard's content storage and content meta entries. */
         /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
-        R_TRY(this->InitializeGameCardContentStorageRoot(std::addressof(this->content_storage_roots[3])));
-        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(std::addressof(this->content_meta_database_roots[3]), GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
+        R_TRY(this->InitializeGameCardContentStorageRoot(std::addressof(m_content_storage_roots[3])));
+        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[3]), GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
 
-        this->initialized = true;
+        m_initialized = true;
         return ResultSuccess();
     }
 
     Result ContentManagerImpl::CreateContentStorage(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content storage root. */
         ContentStorageRoot *root;
@@ -402,7 +402,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::CreateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
 
@@ -422,7 +422,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::VerifyContentStorage(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content storage root. */
         ContentStorageRoot *root;
@@ -445,7 +445,7 @@ namespace ams::ncm {
         /* Game card content meta databases will always be valid. */
         R_SUCCEED_IF(storage_id == StorageId::GameCard);
 
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
@@ -467,7 +467,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content storage root. */
         ContentStorageRoot *root;
@@ -488,7 +488,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
@@ -517,7 +517,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::CleanupContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Disable and unmount content meta database root. */
         R_TRY(this->InactivateContentMetaDatabase(storage_id));
@@ -531,7 +531,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::ActivateContentStorage(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content storage root. */
         ContentStorageRoot *root;
@@ -554,7 +554,7 @@ namespace ams::ncm {
 
         if (storage_id == StorageId::Host) {
             /* Create a host content storage. */
-            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, HostContentStorageImpl>(std::addressof(this->registered_host_content));
+            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, HostContentStorageImpl>(std::addressof(m_registered_host_content));
             root->content_storage = std::move(content_storage);
         } else if (storage_id == StorageId::GameCard) {
             /* Game card content storage is read only. */
@@ -568,13 +568,13 @@ namespace ams::ncm {
             /* Initialize content storage with an appropriate path function. */
             switch (storage_id) {
                 case StorageId::BuiltInSystem:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(m_rights_id_cache)));
                     break;
                 case StorageId::SdCard:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(m_rights_id_cache)));
                     break;
                 default:
-                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(m_rights_id_cache)));
                     break;
             }
 
@@ -587,7 +587,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::InactivateContentStorage(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content storage root. */
         ContentStorageRoot *root;
@@ -600,7 +600,7 @@ namespace ams::ncm {
             root->content_storage = nullptr;
 
             if (storage_id == StorageId::Host) {
-                this->registered_host_content.ClearPaths();
+                m_registered_host_content.ClearPaths();
             } else {
                 fs::Unmount(root->mount_name);
             }
@@ -610,7 +610,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::ActivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
@@ -648,7 +648,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::InactivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
         /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
@@ -671,7 +671,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::InvalidateRightsIdCache() {
-        this->rights_id_cache.Invalidate();
+        m_rights_id_cache.Invalidate();
         return ResultSuccess();
     }
 

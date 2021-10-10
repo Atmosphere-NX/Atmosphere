@@ -25,23 +25,23 @@ namespace ams::ldr {
     }
 
     /* ScopedCodeMount functionality. */
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : lk(g_scoped_code_mount_lock), has_status(false), mounted_ams(false), mounted_sd_or_code(false), mounted_code(false) {
-        this->result = this->Initialize(loc);
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : m_lk(g_scoped_code_mount_lock), m_has_status(false), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
+        m_result = this->Initialize(loc);
     }
 
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o) : lk(g_scoped_code_mount_lock), override_status(o), has_status(true), mounted_ams(false), mounted_sd_or_code(false), mounted_code(false) {
-        this->result = this->Initialize(loc);
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o) : m_lk(g_scoped_code_mount_lock), m_override_status(o), m_has_status(true), m_mounted_ams(false), m_mounted_sd_or_code(false), m_mounted_code(false) {
+        m_result = this->Initialize(loc);
     }
 
     ScopedCodeMount::~ScopedCodeMount() {
         /* Unmount filesystems. */
-        if (this->mounted_ams) {
+        if (m_mounted_ams) {
             fs::Unmount(AtmosphereCodeMountName);
         }
-        if (this->mounted_sd_or_code) {
+        if (m_mounted_sd_or_code) {
             fs::Unmount(SdOrCodeMountName);
         }
-        if (this->mounted_code) {
+        if (m_mounted_code) {
             fs::Unmount(CodeMountName);
         }
     }
@@ -49,7 +49,7 @@ namespace ams::ldr {
     Result ScopedCodeMount::Initialize(const ncm::ProgramLocation &loc) {
         /* Capture override status, if necessary. */
         this->EnsureOverrideStatus(loc);
-        AMS_ABORT_UNLESS(this->has_status);
+        AMS_ABORT_UNLESS(m_has_status);
 
         /* Get the content path. */
         char content_path[fs::EntryNameLengthMax + 1] = "/";
@@ -58,27 +58,27 @@ namespace ams::ldr {
         }
 
         /* Mount the atmosphere code file system. */
-        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(this->ams_code_verification_data), AtmosphereCodeMountName, content_path, loc.program_id, this->override_status.IsHbl(), this->override_status.IsProgramSpecific()));
-        this->mounted_ams = true;
+        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(m_ams_code_verification_data), AtmosphereCodeMountName, content_path, loc.program_id, m_override_status.IsHbl(), m_override_status.IsProgramSpecific()));
+        m_mounted_ams = true;
 
         /* Mount the sd or base code file system. */
-        R_TRY(fs::MountCodeForAtmosphere(std::addressof(this->sd_or_base_code_verification_data), SdOrCodeMountName, content_path, loc.program_id));
-        this->mounted_sd_or_code = true;
+        R_TRY(fs::MountCodeForAtmosphere(std::addressof(m_sd_or_base_code_verification_data), SdOrCodeMountName, content_path, loc.program_id));
+        m_mounted_sd_or_code = true;
 
         /* Mount the base code file system. */
-        if (R_SUCCEEDED(fs::MountCode(std::addressof(this->base_code_verification_data), CodeMountName, content_path, loc.program_id))) {
-            this->mounted_code = true;
+        if (R_SUCCEEDED(fs::MountCode(std::addressof(m_base_code_verification_data), CodeMountName, content_path, loc.program_id))) {
+            m_mounted_code = true;
         }
 
         return ResultSuccess();
     }
 
     void ScopedCodeMount::EnsureOverrideStatus(const ncm::ProgramLocation &loc) {
-        if (this->has_status) {
+        if (m_has_status) {
             return;
         }
-        this->override_status = cfg::CaptureOverrideStatus(loc.program_id);
-        this->has_status = true;
+        m_override_status = cfg::CaptureOverrideStatus(loc.program_id);
+        m_has_status = true;
     }
 
     /* Redirection API. */

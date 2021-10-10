@@ -20,7 +20,7 @@ namespace ams::ncm {
 
     class PackageInstallTask : public PackageInstallTaskBase {
         private:
-            MemoryInstallTaskData data;
+            MemoryInstallTaskData m_data;
         public:
             Result Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
         protected:

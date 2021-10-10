@@ -41,21 +41,21 @@ namespace ams::fssystem {
         AMS_UNUSED(layer_count);
 
         /* Set size tracking members. */
-        this->hash_target_block_size = htbs;
-        this->log_size_ratio         = Log2(this->hash_target_block_size / HashSize);
+        m_hash_target_block_size = htbs;
+        m_log_size_ratio         = Log2(m_hash_target_block_size / HashSize);
 
         /* Get the base storage size. */
-        R_TRY(base_storages[2]->GetSize(std::addressof(this->base_storage_size)));
+        R_TRY(base_storages[2]->GetSize(std::addressof(m_base_storage_size)));
         {
-            auto size_guard = SCOPE_GUARD { this->base_storage_size = 0; };
-            R_UNLESS(this->base_storage_size <= static_cast<s64>(HashSize) << log_size_ratio << log_size_ratio, fs::ResultHierarchicalSha256BaseStorageTooLarge());
+            auto size_guard = SCOPE_GUARD { m_base_storage_size = 0; };
+            R_UNLESS(m_base_storage_size <= static_cast<s64>(HashSize) << m_log_size_ratio << m_log_size_ratio, fs::ResultHierarchicalSha256BaseStorageTooLarge());
             size_guard.Cancel();
         }
 
         /* Set hash buffer tracking members. */
-        this->base_storage     = base_storages[2];
-        this->hash_buffer      = static_cast<char *>(hash_buf);
-        this->hash_buffer_size = hash_buf_size;
+        m_base_storage     = base_storages[2];
+        m_hash_buffer      = static_cast<char *>(hash_buf);
+        m_hash_buffer_size = hash_buf_size;
 
         /* Read the master hash. */
         u8 master_hash[HashSize];
@@ -65,14 +65,14 @@ namespace ams::fssystem {
         s64 hash_storage_size;
         R_TRY(base_storages[1]->GetSize(std::addressof(hash_storage_size)));
         AMS_ASSERT(util::IsAligned(hash_storage_size, HashSize));
-        AMS_ASSERT(hash_storage_size <= this->hash_target_block_size);
-        AMS_ASSERT(hash_storage_size <= static_cast<s64>(this->hash_buffer_size));
+        AMS_ASSERT(hash_storage_size <= m_hash_target_block_size);
+        AMS_ASSERT(hash_storage_size <= static_cast<s64>(m_hash_buffer_size));
 
-        R_TRY(base_storages[1]->Read(0, this->hash_buffer, static_cast<size_t>(hash_storage_size)));
+        R_TRY(base_storages[1]->Read(0, m_hash_buffer, static_cast<size_t>(hash_storage_size)));
 
         /* Calculate and verify the master hash. */
         u8 calc_hash[HashSize];
-        crypto::GenerateSha256Hash(calc_hash, sizeof(calc_hash), this->hash_buffer, static_cast<size_t>(hash_storage_size));
+        crypto::GenerateSha256Hash(calc_hash, sizeof(calc_hash), m_hash_buffer, static_cast<size_t>(hash_storage_size));
         R_UNLESS(crypto::IsSameBytes(master_hash, calc_hash, HashSize), fs::ResultHierarchicalSha256HashVerificationFailed());
 
         return ResultSuccess();
@@ -86,12 +86,12 @@ namespace ams::fssystem {
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
 
         /* Validate preconditions. */
-        R_UNLESS(util::IsAligned(offset, this->hash_target_block_size), fs::ResultInvalidArgument());
-        R_UNLESS(util::IsAligned(size,   this->hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(offset, m_hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Read the data. */
-        const size_t reduced_size = static_cast<size_t>(std::min<s64>(this->base_storage_size, util::AlignUp(offset + size, this->hash_target_block_size) - offset));
-        R_TRY(this->base_storage->Read(offset, buffer, reduced_size));
+        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset));
+        R_TRY(m_base_storage->Read(offset, buffer, reduced_size));
 
         /* Temporarily increase our thread priority. */
         ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
@@ -102,17 +102,17 @@ namespace ams::fssystem {
         while (remaining_size > 0) {
             /* Generate the hash of the region we're validating. */
             u8 hash[HashSize];
-            const auto cur_size = static_cast<size_t>(std::min<s64>(this->hash_target_block_size, remaining_size));
+            const auto cur_size = static_cast<size_t>(std::min<s64>(m_hash_target_block_size, remaining_size));
             crypto::GenerateSha256Hash(hash, sizeof(hash), static_cast<u8 *>(buffer) + (cur_offset - offset), cur_size);
 
-            AMS_ASSERT(static_cast<size_t>(cur_offset >> this->log_size_ratio) < this->hash_buffer_size);
+            AMS_ASSERT(static_cast<size_t>(cur_offset >> m_log_size_ratio) < m_hash_buffer_size);
 
             /* Check the hash. */
             {
-                std::scoped_lock lk(this->mutex);
+                std::scoped_lock lk(m_mutex);
                 auto clear_guard = SCOPE_GUARD { std::memset(buffer, 0, size); };
 
-                R_UNLESS(crypto::IsSameBytes(hash, std::addressof(this->hash_buffer[cur_offset >> this->log_size_ratio]), HashSize), fs::ResultHierarchicalSha256HashVerificationFailed());
+                R_UNLESS(crypto::IsSameBytes(hash, std::addressof(m_hash_buffer[cur_offset >> m_log_size_ratio]), HashSize), fs::ResultHierarchicalSha256HashVerificationFailed());
 
                 clear_guard.Cancel();
             }
@@ -133,17 +133,17 @@ namespace ams::fssystem {
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
 
         /* Validate preconditions. */
-        R_UNLESS(util::IsAligned(offset, this->hash_target_block_size), fs::ResultInvalidArgument());
-        R_UNLESS(util::IsAligned(size,   this->hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(offset, m_hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Setup tracking variables. */
-        const size_t reduced_size = static_cast<size_t>(std::min<s64>(this->base_storage_size, util::AlignUp(offset + size, this->hash_target_block_size) - offset));
+        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset));
         auto cur_offset     = offset;
         auto remaining_size = reduced_size;
         while (remaining_size > 0) {
             /* Generate the hash of the region we're validating. */
             u8 hash[HashSize];
-            const auto cur_size = static_cast<size_t>(std::min<s64>(this->hash_target_block_size, remaining_size));
+            const auto cur_size = static_cast<size_t>(std::min<s64>(m_hash_target_block_size, remaining_size));
             {
                 /* Temporarily increase our thread priority. */
                 ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
@@ -151,12 +151,12 @@ namespace ams::fssystem {
             }
 
             /* Write the data. */
-            R_TRY(this->base_storage->Write(cur_offset, static_cast<const u8 *>(buffer) + (cur_offset - offset), cur_size));
+            R_TRY(m_base_storage->Write(cur_offset, static_cast<const u8 *>(buffer) + (cur_offset - offset), cur_size));
 
             /* Write the hash. */
             {
-                std::scoped_lock lk(this->mutex);
-                std::memcpy(std::addressof(this->hash_buffer[cur_offset >> this->log_size_ratio]), hash, HashSize);
+                std::scoped_lock lk(m_mutex);
+                std::memcpy(std::addressof(m_hash_buffer[cur_offset >> m_log_size_ratio]), hash, HashSize);
             }
 
             /* Advance. */
@@ -172,14 +172,14 @@ namespace ams::fssystem {
         R_SUCCEED_IF(size == 0);
 
         /* Validate preconditions. */
-        R_UNLESS(util::IsAligned(offset, this->hash_target_block_size), fs::ResultInvalidArgument());
-        R_UNLESS(util::IsAligned(size,   this->hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(offset, m_hash_target_block_size), fs::ResultInvalidArgument());
+        R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Determine size to use. */
-        const auto reduced_size = std::min<s64>(this->base_storage_size, util::AlignUp(offset + size, this->hash_target_block_size) - offset);
+        const auto reduced_size = std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset);
 
         /* Operate on the base storage. */
-        return this->base_storage->OperateRange(dst, dst_size, op_id, offset, reduced_size, src, src_size);
+        return m_base_storage->OperateRange(dst, dst_size, op_id, offset, reduced_size, src, src_size);
     }
 
 }

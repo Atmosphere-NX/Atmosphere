@@ -27,21 +27,21 @@ namespace ams::ddsf {
         public:
             AMS_DDSF_CASTABLE_ROOT_TRAITS(ams::ddsf::IDriver);
         private:
-            util::IntrusiveListNode list_node;
-            IDevice::List device_list;
-            mutable os::SdkMutex device_list_lock;
+            util::IntrusiveListNode m_list_node;
+            IDevice::List m_device_list;
+            mutable os::SdkMutex m_device_list_lock;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::list_node>;
+            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<IDriver, util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::list_node>>;
+            friend class util::IntrusiveList<IDriver, util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::m_list_node>>;
         private:
         public:
-            IDriver() : list_node(), device_list(), device_list_lock() {
-                this->device_list.clear();
+            IDriver() : m_list_node(), m_device_list(), m_device_list_lock() {
+                m_device_list.clear();
             }
         protected:
             ~IDriver() {
-                this->device_list.clear();
+                m_device_list.clear();
             }
         public:
             void AddTo(List &list) {
@@ -53,45 +53,45 @@ namespace ams::ddsf {
             }
 
             bool IsLinkedToList() const {
-                return this->list_node.IsLinked();
+                return m_list_node.IsLinked();
             }
 
             bool HasAnyDevice() const {
-                return !this->device_list.empty();
+                return !m_device_list.empty();
             }
 
             void RegisterDevice(IDevice *dev) {
                 AMS_ASSERT(dev != nullptr);
-                std::scoped_lock lk(this->device_list_lock);
+                std::scoped_lock lk(m_device_list_lock);
                 dev->AttachDriver(this);
-                this->device_list.push_back(*dev);
+                m_device_list.push_back(*dev);
             }
 
             void UnregisterDevice(IDevice *dev) {
                 AMS_ASSERT(dev != nullptr);
-                std::scoped_lock lk(this->device_list_lock);
-                this->device_list.erase(this->device_list.iterator_to(*dev));
+                std::scoped_lock lk(m_device_list_lock);
+                m_device_list.erase(m_device_list.iterator_to(*dev));
                 dev->DetachDriver();
             }
 
             template<typename F>
             Result ForEachDevice(F f, bool return_on_fail) {
-                return impl::ForEach(this->device_list_lock, this->device_list, f, return_on_fail);
+                return impl::ForEach(m_device_list_lock, m_device_list, f, return_on_fail);
             }
 
             template<typename F>
             Result ForEachDevice(F f, bool return_on_fail) const {
-                return impl::ForEach(this->device_list_lock, this->device_list, f, return_on_fail);
+                return impl::ForEach(m_device_list_lock, m_device_list, f, return_on_fail);
             }
 
             template<typename F>
             int ForEachDevice(F f) {
-                return impl::ForEach(this->device_list_lock, this->device_list, f);
+                return impl::ForEach(m_device_list_lock, m_device_list, f);
             }
 
             template<typename F>
             int ForEachDevice(F f) const {
-                return impl::ForEach(this->device_list_lock, this->device_list, f);
+                return impl::ForEach(m_device_list_lock, m_device_list, f);
             }
     };
     static_assert(IDriver::ListTraits::IsValid());

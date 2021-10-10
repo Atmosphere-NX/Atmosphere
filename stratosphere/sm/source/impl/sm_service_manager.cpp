@@ -122,20 +122,20 @@ namespace ams::sm::impl {
 
         class InitialProcessIdLimits {
             private:
-                os::ProcessId min;
-                os::ProcessId max;
+                os::ProcessId m_min;
+                os::ProcessId m_max;
             public:
                 InitialProcessIdLimits() {
                     /* Retrieve process limits. */
-                    cfg::GetInitialProcessRange(std::addressof(this->min), std::addressof(this->max));
+                    cfg::GetInitialProcessRange(std::addressof(m_min), std::addressof(m_max));
 
                     /* Ensure range is sane. */
-                    AMS_ABORT_UNLESS(this->min <= this->max);
+                    AMS_ABORT_UNLESS(m_min <= m_max);
                 }
 
                 bool IsInitialProcess(os::ProcessId process_id) const {
                     AMS_ABORT_UNLESS(process_id != os::InvalidProcessId);
-                    return this->min <= process_id && process_id <= this->max;
+                    return m_min <= process_id && process_id <= m_max;
                 }
         };
 

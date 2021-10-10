@@ -30,13 +30,13 @@ namespace ams::fs {
 
         class Deleter {
             private:
-                size_t size;
+                size_t m_size;
             public:
-                Deleter() : size() { /* ... */ }
-                explicit Deleter(size_t sz) : size(sz) { /* ... */ }
+                Deleter() : m_size() { /* ... */ }
+                explicit Deleter(size_t sz) : m_size(sz) { /* ... */ }
 
                 void operator()(void *ptr) const {
-                    ::ams::fs::impl::Deallocate(ptr, this->size);
+                    ::ams::fs::impl::Deallocate(ptr, m_size);
                 }
         };
 

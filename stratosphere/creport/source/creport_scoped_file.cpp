@@ -90,8 +90,8 @@ namespace ams::creport {
         }
 
         /* Advance, if we write successfully. */
-        if (R_SUCCEEDED(fs::WriteFile(this->file, this->offset, data, size, fs::WriteOption::Flush))) {
-            this->offset += size;
+        if (R_SUCCEEDED(fs::WriteFile(m_file, m_offset, data, size, fs::WriteOption::Flush))) {
+            m_offset += size;
         }
     }
 

@@ -53,17 +53,17 @@ namespace ams::os::impl {
 
             using AllThreadsList = ThreadListTraits::ListType;
         private:
-            ThreadManagerImpl impl;
-            ThreadType main_thread;
-            InternalCriticalSection cs;
-            AllThreadsList all_threads_list;
-            size_t total_thread_stack_size;
-            s32 num_created_threads;
+            ThreadManagerImpl m_impl;
+            ThreadType m_main_thread;
+            InternalCriticalSection m_cs;
+            AllThreadsList m_all_threads_list;
+            size_t m_total_thread_stack_size;
+            s32 m_num_created_threads;
         public:
             ThreadManager();
 
             void CleanupThread();
-            s32 GetThreadCountForDebug() const { return this->num_created_threads; }
+            s32 GetThreadCountForDebug() const { return m_num_created_threads; }
 
             Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority, s32 ideal_core);
             Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority);
@@ -73,11 +73,11 @@ namespace ams::os::impl {
             void WaitThread(ThreadType *thread);
             bool TryWaitThread(ThreadType *thread);
 
-            void YieldThread() { return this->impl.YieldThread(); }
+            void YieldThread() { return m_impl.YieldThread(); }
 
-            bool ChangePriority(ThreadType *thread, s32 priority) { return this->impl.ChangePriority(thread, priority); }
-            s32 GetCurrentPriority(const ThreadType *thread) const { return this->impl.GetCurrentPriority(thread); }
-            ThreadType *GetCurrentThread() const { return this->impl.GetCurrentThread(); }
+            bool ChangePriority(ThreadType *thread, s32 priority) { return m_impl.ChangePriority(thread, priority); }
+            s32 GetCurrentPriority(const ThreadType *thread) const { return m_impl.GetCurrentPriority(thread); }
+            ThreadType *GetCurrentThread() const { return m_impl.GetCurrentThread(); }
 
             s32 SuspendThread(ThreadType *thread);
             s32 ResumeThread(ThreadType *thread);
@@ -88,39 +88,39 @@ namespace ams::os::impl {
 
             void SetInitialThreadNameUnsafe(ThreadType *thread);
 
-            void NotifyThreadNameChanged(const ThreadType *thread) const { return this->impl.NotifyThreadNameChangedImpl(thread); }
-            void SetCurrentThread(ThreadType *thread) const { return this->impl.SetCurrentThread(thread); }
-            s32 GetCurrentCoreNumber() const { return this->impl.GetCurrentCoreNumber(); }
-            void SetThreadCoreMask(ThreadType *thread, s32 ideal_core, u64 affinity_mask) const { return this->impl.SetThreadCoreMask(thread, ideal_core, affinity_mask); }
-            void GetThreadCoreMask(s32 *out_ideal_core, u64 *out_affinity_mask, const ThreadType *thread) const { return this->impl.GetThreadCoreMask(out_ideal_core, out_affinity_mask, thread); }
-            u64 GetThreadAvailableCoreMask() const { return this->impl.GetThreadAvailableCoreMask(); }
+            void NotifyThreadNameChanged(const ThreadType *thread) const { return m_impl.NotifyThreadNameChangedImpl(thread); }
+            void SetCurrentThread(ThreadType *thread) const { return m_impl.SetCurrentThread(thread); }
+            s32 GetCurrentCoreNumber() const { return m_impl.GetCurrentCoreNumber(); }
+            void SetThreadCoreMask(ThreadType *thread, s32 ideal_core, u64 affinity_mask) const { return m_impl.SetThreadCoreMask(thread, ideal_core, affinity_mask); }
+            void GetThreadCoreMask(s32 *out_ideal_core, u64 *out_affinity_mask, const ThreadType *thread) const { return m_impl.GetThreadCoreMask(out_ideal_core, out_affinity_mask, thread); }
+            u64 GetThreadAvailableCoreMask() const { return m_impl.GetThreadAvailableCoreMask(); }
 
             void PushBackToAllThreadsListUnsafe(ThreadType *thread) {
-                this->all_threads_list.push_back(*thread);
-                ++this->num_created_threads;
-                this->total_thread_stack_size += thread->stack_size;
+                m_all_threads_list.push_back(*thread);
+                ++m_num_created_threads;
+                m_total_thread_stack_size += thread->stack_size;
             }
 
             void EraseFromAllThreadsListUnsafe(ThreadType *thread) {
-                this->all_threads_list.erase(this->all_threads_list.iterator_to(*thread));
-                --this->num_created_threads;
-                this->total_thread_stack_size -= thread->stack_size;
+                m_all_threads_list.erase(m_all_threads_list.iterator_to(*thread));
+                --m_num_created_threads;
+                m_total_thread_stack_size -= thread->stack_size;
             }
 
             void PushBackToAllThreadsListSafe(ThreadType *thread) {
-                std::scoped_lock lk(this->cs);
+                std::scoped_lock lk(m_cs);
                 this->PushBackToAllThreadsListUnsafe(thread);
             }
 
             void EraseFromAllThreadsListSafe(ThreadType *thread) {
-                std::scoped_lock lk(this->cs);
+                std::scoped_lock lk(m_cs);
                 this->EraseFromAllThreadsListUnsafe(thread);
             }
 
             void PlaceThreadObjectUnderThreadManagerSafe(ThreadType *thread) {
                 SetInitialThreadNameUnsafe(thread);
                 {
-                    std::scoped_lock lk(this->cs);
+                    std::scoped_lock lk(m_cs);
                     this->PushBackToAllThreadsListUnsafe(thread);
                 }
             }
@@ -134,15 +134,15 @@ namespace ams::os::impl {
             }
 
             const ThreadType *GetMainThread() const {
-                return std::addressof(this->main_thread);
+                return std::addressof(m_main_thread);
             }
 
             size_t GetTotalThreadStackSize() const {
-                return this->total_thread_stack_size;
+                return m_total_thread_stack_size;
             }
 
             ThreadId GetThreadId(const ThreadType *thread) {
-                return this->impl.GetThreadId(thread);
+                return m_impl.GetThreadId(thread);
             }
         public:
             static void InvokeThread(ThreadType *thread);

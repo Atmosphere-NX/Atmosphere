@@ -25,14 +25,14 @@ namespace ams::os {
         NON_COPYABLE(TransferMemory);
         NON_MOVEABLE(TransferMemory);
         private:
-            TransferMemoryType tmem;
+            TransferMemoryType m_tmem;
         public:
-            constexpr TransferMemory() : tmem{ .state = TransferMemoryType::State_NotInitialized } {
+            constexpr TransferMemory() : m_tmem{ .state = TransferMemoryType::State_NotInitialized } {
                 /* ... */
             }
 
             TransferMemory(void *address, size_t size, MemoryPermission perm) {
-                R_ABORT_UNLESS(CreateTransferMemory(std::addressof(this->tmem), address, size, perm));
+                R_ABORT_UNLESS(CreateTransferMemory(std::addressof(m_tmem), address, size, perm));
             }
 
             TransferMemory(size_t size, NativeHandle handle, bool managed) {
@@ -40,38 +40,38 @@ namespace ams::os {
             }
 
             ~TransferMemory() {
-                if (this->tmem.state == TransferMemoryType::State_NotInitialized) {
+                if (m_tmem.state == TransferMemoryType::State_NotInitialized) {
                     return;
                 }
-                DestroyTransferMemory(std::addressof(this->tmem));
+                DestroyTransferMemory(std::addressof(m_tmem));
             }
 
             void Attach(size_t size, NativeHandle handle, bool managed) {
-                AttachTransferMemory(std::addressof(this->tmem), size, handle, managed);
+                AttachTransferMemory(std::addressof(m_tmem), size, handle, managed);
             }
 
             NativeHandle Detach() {
-                return DetachTransferMemory(std::addressof(this->tmem));
+                return DetachTransferMemory(std::addressof(m_tmem));
             }
 
             Result Map(void **out, MemoryPermission owner_perm) {
-                return MapTransferMemory(out, std::addressof(this->tmem), owner_perm);
+                return MapTransferMemory(out, std::addressof(m_tmem), owner_perm);
             }
 
             void Unmap() {
-                UnmapTransferMemory(std::addressof(this->tmem));
+                UnmapTransferMemory(std::addressof(m_tmem));
             }
 
             operator TransferMemoryType &() {
-                return this->tmem;
+                return m_tmem;
             }
 
             operator const TransferMemoryType &() const {
-                return this->tmem;
+                return m_tmem;
             }
 
             TransferMemoryType *GetBase() {
-                return std::addressof(this->tmem);
+                return std::addressof(m_tmem);
             }
     };
 

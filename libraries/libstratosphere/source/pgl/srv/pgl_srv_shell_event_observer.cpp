@@ -19,35 +19,35 @@
 
 namespace ams::pgl::srv {
 
-    ShellEventObserverImpl::ShellEventObserverImpl() : message_queue(queue_buffer, QueueCapacity), event(os::EventClearMode_AutoClear, true) {
-        this->heap_handle = lmem::CreateUnitHeap(this->event_info_data, sizeof(this->event_info_data), sizeof(this->event_info_data[0]), lmem::CreateOption_ThreadSafe, 8, GetPointer(this->heap_head));
+    ShellEventObserverImpl::ShellEventObserverImpl() : m_message_queue(m_queue_buffer, QueueCapacity), m_event(os::EventClearMode_AutoClear, true) {
+        m_heap_handle = lmem::CreateUnitHeap(m_event_info_data, sizeof(m_event_info_data), sizeof(m_event_info_data[0]), lmem::CreateOption_ThreadSafe, 8, GetPointer(m_heap_head));
 
-        RegisterShellEventObserver(util::ConstructAt(this->holder, this));
+        RegisterShellEventObserver(util::ConstructAt(m_holder, this));
     }
 
     ShellEventObserverImpl::~ShellEventObserverImpl() {
-        UnregisterShellEventObserver(GetPointer(this->holder));
-        util::DestroyAt(this->holder);
+        UnregisterShellEventObserver(GetPointer(m_holder));
+        util::DestroyAt(m_holder);
     }
 
     Result ShellEventObserverImpl::PopEventInfo(pm::ProcessEventInfo *out) {
         /* Receive an info from the queue. */
         uintptr_t info_address;
-        R_UNLESS(this->message_queue.TryReceive(std::addressof(info_address)), pgl::ResultNotAvailable());
+        R_UNLESS(m_message_queue.TryReceive(std::addressof(info_address)), pgl::ResultNotAvailable());
         pm::ProcessEventInfo *info = reinterpret_cast<pm::ProcessEventInfo *>(info_address);
 
         /* Set the output. */
         *out = *info;
 
         /* Free the received info. */
-        lmem::FreeToUnitHeap(this->heap_handle, info);
+        lmem::FreeToUnitHeap(m_heap_handle, info);
 
         return ResultSuccess();
     }
 
     void ShellEventObserverImpl::Notify(const pm::ProcessEventInfo &info) {
         /* Allocate a new info. */
-        auto allocated = reinterpret_cast<pm::ProcessEventInfo *>(lmem::AllocateFromUnitHeap(this->heap_handle));
+        auto allocated = reinterpret_cast<pm::ProcessEventInfo *>(lmem::AllocateFromUnitHeap(m_heap_handle));
         if (!allocated) {
             return;
         }
@@ -56,13 +56,13 @@ namespace ams::pgl::srv {
         *allocated = info;
 
         /* Try to send it. */
-        if (!this->message_queue.TrySend(reinterpret_cast<uintptr_t>(allocated))) {
-            lmem::FreeToUnitHeap(this->heap_handle, allocated);
+        if (!m_message_queue.TrySend(reinterpret_cast<uintptr_t>(allocated))) {
+            lmem::FreeToUnitHeap(m_heap_handle, allocated);
             return;
         }
 
         /* Notify that we have a new info available. */
-        this->event.Signal();
+        m_event.Signal();
     }
 
     Result ShellEventObserverCmif::GetProcessEventHandle(ams::sf::OutCopyHandle out) {

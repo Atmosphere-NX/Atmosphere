@@ -351,26 +351,26 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         private:
             using Base = ::ams::gpio::driver::Pad;
         private:
-            util::IntrusiveListNode interrupt_list_node;
-            PadInfo info;
-            PadStatus status;
+            util::IntrusiveListNode m_interrupt_list_node;
+            PadInfo m_info;
+            PadStatus m_status;
         public:
-            using InterruptListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::interrupt_list_node>;
+            using InterruptListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::m_interrupt_list_node>;
             using InterruptList       = typename InterruptListTraits::ListType;
-            friend class util::IntrusiveList<TegraPad, util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::interrupt_list_node>>;
+            friend class util::IntrusiveList<TegraPad, util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::m_interrupt_list_node>>;
         public:
-            TegraPad() : Pad(), interrupt_list_node(), info(), status() { /* ... */ }
+            TegraPad() : Pad(), m_interrupt_list_node(), m_info(), m_status() { /* ... */ }
 
-            const PadInfo &GetInfo() const { return this->info; }
-            PadStatus &GetStatus() { return this->status; }
+            const PadInfo &GetInfo() const { return m_info; }
+            PadStatus &GetStatus() { return m_status; }
 
             void SetParameters(int pad, const PadInfo &i) {
                 Base::SetPadNumber(pad);
-                this->info = i;
+                m_info = i;
             }
 
             bool IsLinkedToInterruptBoundPadList() const {
-                return this->interrupt_list_node.IsLinked();
+                return m_interrupt_list_node.IsLinked();
             }
     };
 

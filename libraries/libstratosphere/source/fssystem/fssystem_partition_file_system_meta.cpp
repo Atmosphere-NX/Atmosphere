@@ -38,16 +38,16 @@ namespace ams::fssystem {
         AMS_ASSERT(allocator != nullptr);
 
         /* Determine the meta data size. */
-        R_TRY(this->QueryMetaDataSize(std::addressof(this->meta_data_size), storage));
+        R_TRY(this->QueryMetaDataSize(std::addressof(m_meta_data_size), storage));
 
         /* Deallocate any old meta buffer and allocate a new one. */
         this->DeallocateBuffer();
-        this->allocator = allocator;
-        this->buffer = static_cast<char *>(this->allocator->Allocate(this->meta_data_size));
-        R_UNLESS(this->buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaA());
+        m_allocator = allocator;
+        m_buffer = static_cast<char *>(m_allocator->Allocate(m_meta_data_size));
+        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaA());
 
         /* Perform regular initialization. */
-        return this->Initialize(storage, this->buffer, this->meta_data_size);
+        return this->Initialize(storage, m_buffer, m_meta_data_size);
     }
 
     template <typename Format>
@@ -59,46 +59,46 @@ namespace ams::fssystem {
         R_TRY(storage->Read(0, meta, sizeof(PartitionFileSystemHeader)));
 
         /* Set and validate the header. */
-        this->header = reinterpret_cast<PartitionFileSystemHeader *>(meta);
-        R_UNLESS(crypto::IsSameBytes(this->header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
+        m_header = reinterpret_cast<PartitionFileSystemHeader *>(meta);
+        R_UNLESS(crypto::IsSameBytes(m_header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
 
         /* Setup entries and name table. */
-        const size_t entries_size = this->header->entry_count * sizeof(typename Format::PartitionEntry);
-        this->entries = reinterpret_cast<PartitionEntry *>(static_cast<u8 *>(meta) + sizeof(PartitionFileSystemHeader));
-        this->name_table = static_cast<char *>(meta) + sizeof(PartitionFileSystemHeader) + entries_size;
+        const size_t entries_size = m_header->entry_count * sizeof(typename Format::PartitionEntry);
+        m_entries = reinterpret_cast<PartitionEntry *>(static_cast<u8 *>(meta) + sizeof(PartitionFileSystemHeader));
+        m_name_table = static_cast<char *>(meta) + sizeof(PartitionFileSystemHeader) + entries_size;
 
         /* Validate size for header + entries + name table. */
-        R_UNLESS(meta_size >= sizeof(PartitionFileSystemHeader) + entries_size + this->header->name_table_size, fs::ResultInvalidSize());
+        R_UNLESS(meta_size >= sizeof(PartitionFileSystemHeader) + entries_size + m_header->name_table_size, fs::ResultInvalidSize());
 
         /* Read entries and name table. */
-        R_TRY(storage->Read(sizeof(PartitionFileSystemHeader), this->entries, entries_size + this->header->name_table_size));
+        R_TRY(storage->Read(sizeof(PartitionFileSystemHeader), m_entries, entries_size + m_header->name_table_size));
 
         /* Mark as initialized. */
-        this->initialized = true;
+        m_initialized = true;
         return ResultSuccess();
     }
 
     template <typename Format>
     void PartitionFileSystemMetaCore<Format>::DeallocateBuffer() {
-        if (this->buffer != nullptr) {
-            AMS_ABORT_UNLESS(this->allocator != nullptr);
-            this->allocator->Deallocate(this->buffer, this->meta_data_size);
-            this->buffer = nullptr;
+        if (m_buffer != nullptr) {
+            AMS_ABORT_UNLESS(m_allocator != nullptr);
+            m_allocator->Deallocate(m_buffer, m_meta_data_size);
+            m_buffer = nullptr;
         }
     }
 
     template <typename Format>
     const typename Format::PartitionEntry *PartitionFileSystemMetaCore<Format>::GetEntry(s32 index) const {
-        if (this->initialized && 0 <= index && index < static_cast<s32>(this->header->entry_count)) {
-            return std::addressof(this->entries[index]);
+        if (m_initialized && 0 <= index && index < static_cast<s32>(m_header->entry_count)) {
+            return std::addressof(m_entries[index]);
         }
         return nullptr;
     }
 
     template <typename Format>
     s32 PartitionFileSystemMetaCore<Format>::GetEntryCount() const {
-        if (this->initialized) {
-            return this->header->entry_count;
+        if (m_initialized) {
+            return m_header->entry_count;
         }
         return 0;
     }
@@ -106,21 +106,21 @@ namespace ams::fssystem {
     template <typename Format>
     s32 PartitionFileSystemMetaCore<Format>::GetEntryIndex(const char *name) const {
         /* Fail if not initialized. */
-        if (!this->initialized) {
+        if (!m_initialized) {
             return 0;
         }
 
-        for (s32 i = 0; i < static_cast<s32>(this->header->entry_count); i++) {
-            const auto &entry = this->entries[i];
+        for (s32 i = 0; i < static_cast<s32>(m_header->entry_count); i++) {
+            const auto &entry = m_entries[i];
 
             /* Name offset is invalid. */
-            if (entry.name_offset >= this->header->name_table_size) {
+            if (entry.name_offset >= m_header->name_table_size) {
                 return 0;
             }
 
             /* Compare to input name. */
-            const s32 max_name_len = this->header->name_table_size - entry.name_offset;
-            if (std::strncmp(std::addressof(this->name_table[entry.name_offset]), name, max_name_len) == 0) {
+            const s32 max_name_len = m_header->name_table_size - entry.name_offset;
+            if (std::strncmp(std::addressof(m_name_table[entry.name_offset]), name, max_name_len) == 0) {
                 return i;
             }
         }
@@ -131,8 +131,8 @@ namespace ams::fssystem {
 
     template <typename Format>
     const char *PartitionFileSystemMetaCore<Format>::GetEntryName(s32 index) const {
-        if (this->initialized && index < static_cast<s32>(this->header->entry_count)) {
-            return std::addressof(this->name_table[this->GetEntry(index)->name_offset]);
+        if (m_initialized && index < static_cast<s32>(m_header->entry_count)) {
+            return std::addressof(m_name_table[this->GetEntry(index)->name_offset]);
         }
         return nullptr;
     }
@@ -144,7 +144,7 @@ namespace ams::fssystem {
 
     template <typename Format>
     size_t PartitionFileSystemMetaCore<Format>::GetMetaDataSize() const {
-        return this->meta_data_size;
+        return m_meta_data_size;
     }
 
     template <typename Format>
@@ -167,25 +167,25 @@ namespace ams::fssystem {
         R_UNLESS(hash_size == crypto::Sha256Generator::HashSize, fs::ResultPreconditionViolation());
 
         /* Get metadata size. */
-        R_TRY(QueryMetaDataSize(std::addressof(this->meta_data_size), base_storage));
+        R_TRY(QueryMetaDataSize(std::addressof(m_meta_data_size), base_storage));
 
         /* Ensure we have no buffer. */
         this->DeallocateBuffer();
 
         /* Set allocator and allocate buffer. */
-        this->allocator = allocator;
-        this->buffer = static_cast<char *>(this->allocator->Allocate(this->meta_data_size));
-        R_UNLESS(this->buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaB());
+        m_allocator = allocator;
+        m_buffer = static_cast<char *>(m_allocator->Allocate(m_meta_data_size));
+        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaB());
 
         /* Read metadata. */
-        R_TRY(base_storage->Read(0, this->buffer, this->meta_data_size));
+        R_TRY(base_storage->Read(0, m_buffer, m_meta_data_size));
 
         /* Calculate hash. */
         char calc_hash[crypto::Sha256Generator::HashSize];
         {
             crypto::Sha256Generator generator;
             generator.Initialize();
-            generator.Update(this->buffer, this->meta_data_size);
+            generator.Update(m_buffer, m_meta_data_size);
             if (suffix) {
                 u8 suffix_val = *suffix;
                 generator.Update(std::addressof(suffix_val), 1);
@@ -200,19 +200,19 @@ namespace ams::fssystem {
         using Format = impl::Sha256PartitionFileSystemFormat;
 
         /* Set header. */
-        this->header = reinterpret_cast<PartitionFileSystemHeader *>(this->buffer);
-        R_UNLESS(crypto::IsSameBytes(this->header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
+        m_header = reinterpret_cast<PartitionFileSystemHeader *>(m_buffer);
+        R_UNLESS(crypto::IsSameBytes(m_header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
 
         /* Validate size for entries and name table. */
-        const size_t entries_size = this->header->entry_count * sizeof(typename Format::PartitionEntry);
-        R_UNLESS(this->meta_data_size >= sizeof(PartitionFileSystemHeader) + entries_size + this->header->name_table_size, fs::ResultInvalidSha256PartitionMetaDataSize());
+        const size_t entries_size = m_header->entry_count * sizeof(typename Format::PartitionEntry);
+        R_UNLESS(m_meta_data_size >= sizeof(PartitionFileSystemHeader) + entries_size + m_header->name_table_size, fs::ResultInvalidSha256PartitionMetaDataSize());
 
         /* Set entries and name table. */
-        this->entries = reinterpret_cast<PartitionEntry *>(this->buffer + sizeof(PartitionFileSystemHeader));
-        this->name_table = this->buffer + sizeof(PartitionFileSystemHeader) + entries_size;
+        m_entries = reinterpret_cast<PartitionEntry *>(m_buffer + sizeof(PartitionFileSystemHeader));
+        m_name_table = m_buffer + sizeof(PartitionFileSystemHeader) + entries_size;
 
         /* We initialized. */
-        this->initialized = true;
+        m_initialized = true;
         return ResultSuccess();
     }
 

@@ -25,48 +25,48 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         private:
             using T = typename ListType::value_type;
         private:
-            ams::MemoryResource *memory_resource;
-            ListType list;
-            mutable os::SdkMutex list_lock;
+            ams::MemoryResource *m_memory_resource;
+            ListType m_list;
+            mutable os::SdkMutex m_list_lock;
         public:
-            IAllocator(ams::MemoryResource *mr) : memory_resource(mr), list(), list_lock() { /* ... */ }
+            IAllocator(ams::MemoryResource *mr) : m_memory_resource(mr), m_list(), m_list_lock() { /* ... */ }
 
             ~IAllocator() {
-                std::scoped_lock lk(this->list_lock);
+                std::scoped_lock lk(m_list_lock);
 
                 /* Remove all entries. */
-                auto it = this->list.begin();
-                while (it != this->list.end()) {
+                auto it = m_list.begin();
+                while (it != m_list.end()) {
                     T *obj = std::addressof(*it);
-                    it = this->list.erase(it);
+                    it = m_list.erase(it);
 
                     std::destroy_at(obj);
-                    this->memory_resource->Deallocate(obj, sizeof(T));
+                    m_memory_resource->Deallocate(obj, sizeof(T));
                 }
             }
 
             template<typename ...Args>
             T *Allocate(Args &&...args) {
-                std::scoped_lock lk(this->list_lock);
+                std::scoped_lock lk(m_list_lock);
 
                 /* Allocate space for the object. */
-                void *storage = this->memory_resource->Allocate(sizeof(T), alignof(T));
+                void *storage = m_memory_resource->Allocate(sizeof(T), alignof(T));
                 AMS_ABORT_UNLESS(storage != nullptr);
 
                 /* Construct the object. */
                 T *t = std::construct_at(static_cast<T *>(storage), std::forward<Args>(args)...);
 
                 /* Link the object into our list. */
-                this->list.push_back(*t);
+                m_list.push_back(*t);
 
                 return t;
             }
 
             template<typename F>
             T *Find(F f) {
-                std::scoped_lock lk(this->list_lock);
+                std::scoped_lock lk(m_list_lock);
 
-                for (T &it : this->list) {
+                for (T &it : m_list) {
                     if (f(static_cast<const T &>(it))) {
                         return std::addressof(it);
                     }

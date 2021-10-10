@@ -25,10 +25,10 @@ namespace ams::erpt::srv {
 
     class Context : public Allocator, public util::IntrusiveListBaseNode<Context> {
         private:
-            const CategoryId category;
-            const u32 max_record_count;
-            u32 record_count;
-            util::IntrusiveListBaseTraits<ContextRecord>::ListType record_list;
+            const CategoryId m_category;
+            const u32 m_max_record_count;
+            u32 m_record_count;
+            util::IntrusiveListBaseTraits<ContextRecord>::ListType m_record_list;
         public:
             Context(CategoryId cat, u32 max_records);
             ~Context();

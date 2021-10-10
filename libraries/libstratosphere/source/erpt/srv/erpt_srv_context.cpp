@@ -25,11 +25,11 @@ namespace ams::erpt::srv {
 
         using ContextList = util::IntrusiveListBaseTraits<Context>::ListType;
 
-        ContextList g_category_list;
+        constinit ContextList g_category_list;
 
     }
 
-    Context::Context(CategoryId cat, u32 max_records) : category(cat), max_record_count(max_records), record_count(0) {
+    Context::Context(CategoryId cat, u32 max_records) : m_category(cat), m_max_record_count(max_records), m_record_count(0) {
         g_category_list.push_front(*this);
     }
 
@@ -38,12 +38,12 @@ namespace ams::erpt::srv {
     }
 
     Result Context::AddCategoryToReport(Report *report) {
-        R_SUCCEED_IF(this->record_list.empty());
+        R_SUCCEED_IF(m_record_list.empty());
 
-        for (auto it = this->record_list.begin(); it != this->record_list.end(); it++) {
-            for (u32 i = 0; i < it->ctx.field_count; i++) {
-                auto *field = std::addressof(it->ctx.fields[i]);
-                u8 *arr_buf = it->ctx.array_buffer;
+        for (auto it = m_record_list.begin(); it != m_record_list.end(); it++) {
+            for (u32 i = 0; i < it->m_ctx.field_count; i++) {
+                auto *field = std::addressof(it->m_ctx.fields[i]);
+                u8 *arr_buf = it->m_ctx.array_buffer;
 
                 switch (field->type) {
                     case FieldType_Bool:       R_TRY(Cipher::AddField(report, field->id, field->value_bool));  break;
@@ -81,13 +81,13 @@ namespace ams::erpt::srv {
     }
 
     Result Context::AddContextRecordToCategory(std::unique_ptr<ContextRecord> record) {
-        if (this->record_count < this->max_record_count) {
-            this->record_list.push_front(*record.release());
-            this->record_count++;
+        if (m_record_count < m_max_record_count) {
+            m_record_list.push_front(*record.release());
+            m_record_count++;
         } else {
-            ContextRecord *back = std::addressof(this->record_list.back());
-            this->record_list.pop_back();
-            this->record_list.push_front(*record.release());
+            ContextRecord *back = std::addressof(m_record_list.back());
+            m_record_list.pop_back();
+            m_record_list.push_front(*record.release());
             delete back;
         }
 
@@ -96,7 +96,7 @@ namespace ams::erpt::srv {
 
     Result Context::SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size) {
         auto it = util::range::find_if(g_category_list, [&](const Context &cur) {
-            return cur.category == entry->category;
+            return cur.m_category == entry->category;
         });
         R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
 
@@ -105,7 +105,7 @@ namespace ams::erpt::srv {
 
     Result Context::SubmitContextRecord(std::unique_ptr<ContextRecord> record) {
         auto it = util::range::find_if(g_category_list, [&](const Context &cur) {
-            return cur.category == record->ctx.category;
+            return cur.m_category == record->m_ctx.category;
         });
         R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
 

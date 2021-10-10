@@ -90,20 +90,20 @@ namespace ams::sf {
             public:
                 static constexpr u32 AdditionalAttributes = 0;
             private:
-                const cmif::PointerAndSize pas;
+                const cmif::PointerAndSize m_pas;
             protected:
                 constexpr uintptr_t GetAddressImpl() const {
-                    return this->pas.GetAddress();
+                    return m_pas.GetAddress();
                 }
 
                 template<typename Entry>
                 constexpr inline size_t GetSizeImpl() const {
-                    return this->pas.GetSize() / sizeof(Entry);
+                    return m_pas.GetSize() / sizeof(Entry);
                 }
             public:
-                constexpr BufferBase() : pas() { /* ... */ }
-                constexpr BufferBase(const cmif::PointerAndSize &_pas) : pas(_pas) { /* ... */ }
-                constexpr BufferBase(uintptr_t ptr, size_t sz) : pas(ptr, sz) { /* ... */ }
+                constexpr BufferBase() : m_pas() { /* ... */ }
+                constexpr BufferBase(const cmif::PointerAndSize &pas) : m_pas(pas) { /* ... */ }
+                constexpr BufferBase(uintptr_t ptr, size_t sz) : m_pas(ptr, sz) { /* ... */ }
         };
 
         class InBufferBase : public BufferBase {
@@ -113,7 +113,7 @@ namespace ams::sf {
                                                             SfBufferAttr_In;
             public:
                 constexpr InBufferBase() : BaseType() { /* ... */ }
-                constexpr InBufferBase(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr InBufferBase(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr InBufferBase(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
                 constexpr InBufferBase(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
@@ -127,7 +127,7 @@ namespace ams::sf {
                                                             SfBufferAttr_Out;
             public:
                 constexpr OutBufferBase() : BaseType() { /* ... */ }
-                constexpr OutBufferBase(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr OutBufferBase(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr OutBufferBase(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
                 constexpr OutBufferBase(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
@@ -143,7 +143,7 @@ namespace ams::sf {
                                                             ExtraAttributes;
             public:
                 constexpr InBufferImpl() : BaseType() { /* ... */ }
-                constexpr InBufferImpl(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr InBufferImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr InBufferImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
                 constexpr InBufferImpl(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
@@ -167,7 +167,7 @@ namespace ams::sf {
                                                             ExtraAttributes;
             public:
                 constexpr OutBufferImpl() : BaseType() { /* ... */ }
-                constexpr OutBufferImpl(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr OutBufferImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr OutBufferImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
                 constexpr OutBufferImpl(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
@@ -190,7 +190,7 @@ namespace ams::sf {
                 static constexpr u32 AdditionalAttributes = BaseType::AdditionalAttributes;
             public:
                 constexpr InArrayImpl() : BaseType() { /* ... */ }
-                constexpr InArrayImpl(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr InArrayImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr InArrayImpl(const T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr const T *GetPointer() const {
@@ -222,7 +222,7 @@ namespace ams::sf {
                 static constexpr u32 AdditionalAttributes = BaseType::AdditionalAttributes;
             public:
                 constexpr OutArrayImpl() : BaseType() { /* ... */ }
-                constexpr OutArrayImpl(const cmif::PointerAndSize &_pas) : BaseType(_pas) { /* ... */ }
+                constexpr OutArrayImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr OutArrayImpl(T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr T *GetPointer() const {

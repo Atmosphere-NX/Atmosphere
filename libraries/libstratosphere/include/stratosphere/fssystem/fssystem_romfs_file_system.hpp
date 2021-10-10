@@ -27,14 +27,14 @@ namespace ams::fssystem {
         public:
             using RomFileTable = fs::HierarchicalRomFileTable;
         private:
-            RomFileTable rom_file_table;
-            fs::IStorage *base_storage;
-            std::shared_ptr<fs::IStorage> shared_storage;
-            std::unique_ptr<fs::IStorage> dir_bucket_storage;
-            std::unique_ptr<fs::IStorage> dir_entry_storage;
-            std::unique_ptr<fs::IStorage> file_bucket_storage;
-            std::unique_ptr<fs::IStorage> file_entry_storage;
-            s64 entry_size;
+            RomFileTable m_rom_file_table;
+            fs::IStorage *m_base_storage;
+            std::shared_ptr<fs::IStorage> m_shared_storage;
+            std::unique_ptr<fs::IStorage> m_dir_bucket_storage;
+            std::unique_ptr<fs::IStorage> m_dir_entry_storage;
+            std::unique_ptr<fs::IStorage> m_file_bucket_storage;
+            std::unique_ptr<fs::IStorage> m_file_entry_storage;
+            s64 m_entry_size;
         private:
             Result GetFileInfo(RomFileTable::FileInfo *out, const char *path);
         public:

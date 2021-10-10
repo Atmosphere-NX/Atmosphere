@@ -144,8 +144,8 @@ namespace ams::i2c::driver::impl {
             /* If we timed out, retry up to our max retry count. */
             R_TRY_CATCH(result) {
                 R_CATCH(i2c::ResultTimeout) {
-                    if ((++retry_count) <= this->max_retry_count) {
-                        os::SleepThread(this->retry_interval);
+                    if ((++retry_count) <= m_max_retry_count) {
+                        os::SleepThread(m_retry_interval);
                         continue;
                     }
                     return i2c::ResultBusBusy();
@@ -197,8 +197,8 @@ namespace ams::i2c::driver::impl {
     }
 
     Result I2cSessionImpl::SetRetryPolicy(int mr, int interval_us) {
-        this->max_retry_count = mr;
-        this->retry_interval  = TimeSpan::FromMicroSeconds(interval_us);
+        m_max_retry_count = mr;
+        m_retry_interval  = TimeSpan::FromMicroSeconds(interval_us);
         return ResultSuccess();
     }
 

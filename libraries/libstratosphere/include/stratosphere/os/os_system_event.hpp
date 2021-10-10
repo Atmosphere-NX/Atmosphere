@@ -25,88 +25,88 @@ namespace ams::os {
         NON_COPYABLE(SystemEvent);
         NON_MOVEABLE(SystemEvent);
         private:
-            SystemEventType system_event;
+            SystemEventType m_system_event;
         public:
             SystemEvent() {
-                this->system_event.state = SystemEventType::State_NotInitialized;
+                m_system_event.state = SystemEventType::State_NotInitialized;
             }
 
             explicit SystemEvent(EventClearMode clear_mode, bool inter_process) {
-                R_ABORT_UNLESS(CreateSystemEvent(std::addressof(this->system_event), clear_mode, inter_process));
+                R_ABORT_UNLESS(CreateSystemEvent(std::addressof(m_system_event), clear_mode, inter_process));
             }
 
             explicit SystemEvent(NativeHandle read_handle, bool manage_read_handle, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
-                AttachSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
+                AttachSystemEvent(std::addressof(m_system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
             }
 
             ~SystemEvent() {
-                if (this->system_event.state == SystemEventType::State_NotInitialized) {
+                if (m_system_event.state == SystemEventType::State_NotInitialized) {
                     return;
                 }
-                DestroySystemEvent(std::addressof(this->system_event));
+                DestroySystemEvent(std::addressof(m_system_event));
             }
 
             void Attach(NativeHandle read_handle, bool manage_read_handle, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
-                AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
-                return AttachSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
+                AMS_ABORT_UNLESS(m_system_event.state == SystemEventType::State_NotInitialized);
+                return AttachSystemEvent(std::addressof(m_system_event), read_handle, manage_read_handle, write_handle, manage_write_handle, clear_mode);
             }
 
             void AttachReadableHandle(NativeHandle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
-                AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
-                return AttachReadableHandleToSystemEvent(std::addressof(this->system_event), read_handle, manage_read_handle, clear_mode);
+                AMS_ABORT_UNLESS(m_system_event.state == SystemEventType::State_NotInitialized);
+                return AttachReadableHandleToSystemEvent(std::addressof(m_system_event), read_handle, manage_read_handle, clear_mode);
             }
 
             void AttachWritableHandle(NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
-                AMS_ABORT_UNLESS(this->system_event.state == SystemEventType::State_NotInitialized);
-                return AttachWritableHandleToSystemEvent(std::addressof(this->system_event), write_handle, manage_write_handle, clear_mode);
+                AMS_ABORT_UNLESS(m_system_event.state == SystemEventType::State_NotInitialized);
+                return AttachWritableHandleToSystemEvent(std::addressof(m_system_event), write_handle, manage_write_handle, clear_mode);
             }
 
             NativeHandle DetachReadableHandle() {
-                return DetachReadableHandleOfSystemEvent(std::addressof(this->system_event));
+                return DetachReadableHandleOfSystemEvent(std::addressof(m_system_event));
             }
 
             NativeHandle DetachWritableHandle() {
-                return DetachWritableHandleOfSystemEvent(std::addressof(this->system_event));
+                return DetachWritableHandleOfSystemEvent(std::addressof(m_system_event));
             }
 
             void Wait() {
-                return WaitSystemEvent(std::addressof(this->system_event));
+                return WaitSystemEvent(std::addressof(m_system_event));
             }
 
             bool TryWait() {
-                return TryWaitSystemEvent(std::addressof(this->system_event));
+                return TryWaitSystemEvent(std::addressof(m_system_event));
             }
 
             bool TimedWait(TimeSpan timeout) {
-                return TimedWaitSystemEvent(std::addressof(this->system_event), timeout);
+                return TimedWaitSystemEvent(std::addressof(m_system_event), timeout);
             }
 
             void Signal() {
-                return SignalSystemEvent(std::addressof(this->system_event));
+                return SignalSystemEvent(std::addressof(m_system_event));
             }
 
             void Clear() {
-                return ClearSystemEvent(std::addressof(this->system_event));
+                return ClearSystemEvent(std::addressof(m_system_event));
             }
 
             NativeHandle GetReadableHandle() const {
-                return GetReadableHandleOfSystemEvent(std::addressof(this->system_event));
+                return GetReadableHandleOfSystemEvent(std::addressof(m_system_event));
             }
 
             NativeHandle GetWritableHandle() const {
-                return GetWritableHandleOfSystemEvent(std::addressof(this->system_event));
+                return GetWritableHandleOfSystemEvent(std::addressof(m_system_event));
             }
 
             operator SystemEventType &() {
-                return this->system_event;
+                return m_system_event;
             }
 
             operator const SystemEventType &() const {
-                return this->system_event;
+                return m_system_event;
             }
 
             SystemEventType *GetBase() {
-                return std::addressof(this->system_event);
+                return std::addressof(m_system_event);
             }
     };
 

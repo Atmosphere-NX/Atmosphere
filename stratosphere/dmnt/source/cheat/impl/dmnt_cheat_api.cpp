@@ -83,28 +83,28 @@ namespace ams::dmnt::cheat::impl {
             private:
                 static constexpr size_t ThreadStackSize = 0x4000;
             private:
-                os::SdkMutex cheat_lock;
-                os::Event unsafe_break_event;
-                os::Event debug_events_event; /* Autoclear. */
-                os::ThreadType detect_thread, debug_events_thread;
-                os::SystemEvent cheat_process_event;
-                os::NativeHandle cheat_process_debug_handle = os::InvalidNativeHandle;
-                CheatProcessMetadata cheat_process_metadata = {};
+                os::SdkMutex m_cheat_lock;
+                os::Event m_unsafe_break_event;
+                os::Event m_debug_events_event; /* Autoclear. */
+                os::ThreadType m_detect_thread, m_debug_events_thread;
+                os::SystemEvent m_cheat_process_event;
+                os::NativeHandle m_cheat_process_debug_handle = os::InvalidNativeHandle;
+                CheatProcessMetadata m_cheat_process_metadata = {};
 
-                os::ThreadType vm_thread;
-                bool broken_unsafe = false;
-                bool needs_reload_vm = false;
-                CheatVirtualMachine cheat_vm;
+                os::ThreadType m_vm_thread;
+                bool m_broken_unsafe = false;
+                bool m_needs_reload_vm = false;
+                CheatVirtualMachine m_cheat_vm;
 
-                bool enable_cheats_by_default = true;
-                bool always_save_cheat_toggles = false;
-                bool should_save_cheat_toggles = false;
-                CheatEntry cheat_entries[MaxCheatCount] = {};
-                FrozenAddressMap frozen_addresses_map = {};
+                bool m_enable_cheats_by_default = true;
+                bool m_always_save_cheat_toggles = false;
+                bool m_should_save_cheat_toggles = false;
+                CheatEntry m_cheat_entries[MaxCheatCount] = {};
+                FrozenAddressMap m_frozen_addresses_map = {};
 
-                alignas(os::MemoryPageSize) u8 detect_thread_stack[ThreadStackSize] = {};
-                alignas(os::MemoryPageSize) u8 debug_events_thread_stack[ThreadStackSize] = {};
-                alignas(os::MemoryPageSize) u8 vm_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 m_detect_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 m_debug_events_thread_stack[ThreadStackSize] = {};
+                alignas(os::MemoryPageSize) u8 m_vm_thread_stack[ThreadStackSize] = {};
             private:
                 static void DetectLaunchThread(void *_this);
                 static void VirtualMachineThread(void *_this);
@@ -119,18 +119,18 @@ namespace ams::dmnt::cheat::impl {
                 void SaveCheatToggles(const ncm::ProgramId program_id);
 
                 bool GetNeedsReloadVm() const {
-                    return this->needs_reload_vm;
+                    return m_needs_reload_vm;
                 }
 
                 void SetNeedsReloadVm(bool reload) {
-                    this->needs_reload_vm = reload;
+                    m_needs_reload_vm = reload;
                 }
 
 
                 void ResetCheatEntry(size_t i) {
                     if (i < MaxCheatCount) {
-                        std::memset(this->cheat_entries + i, 0, sizeof(this->cheat_entries[i]));
-                        this->cheat_entries[i].cheat_id = i;
+                        std::memset(m_cheat_entries + i, 0, sizeof(m_cheat_entries[i]));
+                        m_cheat_entries[i].cheat_id = i;
 
                         this->SetNeedsReloadVm(true);
                     }
@@ -141,12 +141,12 @@ namespace ams::dmnt::cheat::impl {
                         this->ResetCheatEntry(i);
                     }
 
-                    this->cheat_vm.ResetStaticRegisters();
+                    m_cheat_vm.ResetStaticRegisters();
                 }
 
                 CheatEntry *GetCheatEntryById(size_t i) {
                     if (i < MaxCheatCount) {
-                        return this->cheat_entries + i;
+                        return m_cheat_entries + i;
                     }
 
                     return nullptr;
@@ -155,8 +155,8 @@ namespace ams::dmnt::cheat::impl {
                 CheatEntry *GetCheatEntryByReadableName(const char *readable_name) {
                     /* Check all non-master cheats for match. */
                     for (size_t i = 1; i < MaxCheatCount; i++) {
-                        if (std::strncmp(this->cheat_entries[i].definition.readable_name, readable_name, sizeof(this->cheat_entries[i].definition.readable_name)) == 0) {
-                            return this->cheat_entries + i;
+                        if (std::strncmp(m_cheat_entries[i].definition.readable_name, readable_name, sizeof(m_cheat_entries[i].definition.readable_name)) == 0) {
+                            return m_cheat_entries + i;
                         }
                     }
 
@@ -166,8 +166,8 @@ namespace ams::dmnt::cheat::impl {
                 CheatEntry *GetFreeCheatEntry() {
                     /* Check all non-master cheats for availability. */
                     for (size_t i = 1; i < MaxCheatCount; i++) {
-                        if (this->cheat_entries[i].definition.num_opcodes == 0) {
-                            return this->cheat_entries + i;
+                        if (m_cheat_entries[i].definition.num_opcodes == 0) {
+                            return m_cheat_entries + i;
                         }
                     }
 
@@ -175,53 +175,53 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 void CloseActiveCheatProcess() {
-                    if (this->cheat_process_debug_handle != os::InvalidNativeHandle) {
+                    if (m_cheat_process_debug_handle != os::InvalidNativeHandle) {
                         /* We don't need to do any unsafe brekaing. */
-                        this->broken_unsafe = false;
-                        this->unsafe_break_event.Signal();
+                        m_broken_unsafe = false;
+                        m_unsafe_break_event.Signal();
 
                         /* Knock out the debug events thread. */
-                        os::CancelThreadSynchronization(std::addressof(this->debug_events_thread));
+                        os::CancelThreadSynchronization(std::addressof(m_debug_events_thread));
 
                         /* Close resources. */
-                        R_ABORT_UNLESS(svc::CloseHandle(this->cheat_process_debug_handle));
-                        this->cheat_process_debug_handle = os::InvalidNativeHandle;
+                        R_ABORT_UNLESS(svc::CloseHandle(m_cheat_process_debug_handle));
+                        m_cheat_process_debug_handle = os::InvalidNativeHandle;
 
                         /* Save cheat toggles. */
-                        if (this->always_save_cheat_toggles || this->should_save_cheat_toggles) {
-                            this->SaveCheatToggles(this->cheat_process_metadata.program_id);
-                            this->should_save_cheat_toggles = false;
+                        if (m_always_save_cheat_toggles || m_should_save_cheat_toggles) {
+                            this->SaveCheatToggles(m_cheat_process_metadata.program_id);
+                            m_should_save_cheat_toggles = false;
                         }
 
                         /* Clear metadata. */
-                        static_assert(util::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
-                        std::memset(std::addressof(this->cheat_process_metadata), 0, sizeof(this->cheat_process_metadata));
+                        static_assert(util::is_pod<decltype(m_cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
+                        std::memset(std::addressof(m_cheat_process_metadata), 0, sizeof(m_cheat_process_metadata));
 
                         /* Clear cheat list. */
                         this->ResetAllCheatEntries();
 
                         /* Clear frozen addresses. */
                         {
-                            auto it = this->frozen_addresses_map.begin();
-                            while (it != this->frozen_addresses_map.end()) {
+                            auto it = m_frozen_addresses_map.begin();
+                            while (it != m_frozen_addresses_map.end()) {
                                 FrozenAddressMapEntry *entry = std::addressof(*it);
-                                it = this->frozen_addresses_map.erase(it);
+                                it = m_frozen_addresses_map.erase(it);
                                 DeallocateFrozenAddress(entry);
                             }
                         }
 
                         /* Signal to our fans. */
-                        this->cheat_process_event.Signal();
+                        m_cheat_process_event.Signal();
                     }
                 }
 
                 bool HasActiveCheatProcess() {
                     /* Note: This function *MUST* be called only with the cheat lock held. */
                     os::ProcessId pid;
-                    bool has_cheat_process = this->cheat_process_debug_handle != os::InvalidNativeHandle;
-                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(std::addressof(pid), this->cheat_process_debug_handle));
+                    bool has_cheat_process = m_cheat_process_debug_handle != os::InvalidNativeHandle;
+                    has_cheat_process &= R_SUCCEEDED(os::GetProcessId(std::addressof(pid), m_cheat_process_debug_handle));
                     has_cheat_process &= R_SUCCEEDED(pm::dmnt::GetApplicationProcessId(std::addressof(pid)));
-                    has_cheat_process &= (pid == this->cheat_process_metadata.process_id);
+                    has_cheat_process &= (pid == m_cheat_process_metadata.process_id);
 
                     if (!has_cheat_process) {
                         this->CloseActiveCheatProcess();
@@ -236,7 +236,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 os::NativeHandle GetCheatProcessHandle() const {
-                    return this->cheat_process_debug_handle;
+                    return m_cheat_process_debug_handle;
                 }
 
                 os::NativeHandle HookToCreateApplicationProcess() const {
@@ -250,50 +250,50 @@ namespace ams::dmnt::cheat::impl {
                 }
 
             public:
-                CheatProcessManager() : cheat_lock(), unsafe_break_event(os::EventClearMode_ManualClear), debug_events_event(os::EventClearMode_AutoClear), cheat_process_event(os::EventClearMode_AutoClear, true) {
+                CheatProcessManager() : m_cheat_lock(), m_unsafe_break_event(os::EventClearMode_ManualClear), m_debug_events_event(os::EventClearMode_AutoClear), m_cheat_process_event(os::EventClearMode_AutoClear, true) {
                     /* Learn whether we should enable cheats by default. */
                     {
                         u8 en = 0;
                         if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "dmnt_cheats_enabled_by_default") == sizeof(en)) {
-                            this->enable_cheats_by_default = (en != 0);
+                            m_enable_cheats_by_default = (en != 0);
                         }
 
                         en = 0;
                         if (settings::fwdbg::GetSettingsItemValue( std::addressof(en), sizeof(en), "atmosphere", "dmnt_always_save_cheat_toggles") == sizeof(en)) {
-                            this->always_save_cheat_toggles = (en != 0);
+                            m_always_save_cheat_toggles = (en != 0);
                         }
                     }
 
                     /* Spawn application detection thread, spawn cheat vm thread. */
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->detect_thread), DetectLaunchThread, this, this->detect_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDetect)));
-                    os::SetThreadNamePointer(std::addressof(this->detect_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDetect));
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->vm_thread), VirtualMachineThread, this, this->vm_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatVirtualMachine)));
-                    os::SetThreadNamePointer(std::addressof(this->vm_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatVirtualMachine));
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->debug_events_thread), DebugEventsThread, this, this->debug_events_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDebugEvents)));
-                    os::SetThreadNamePointer(std::addressof(this->debug_events_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDebugEvents));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(m_detect_thread), DetectLaunchThread, this, m_detect_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDetect)));
+                    os::SetThreadNamePointer(std::addressof(m_detect_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDetect));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(m_vm_thread), VirtualMachineThread, this, m_vm_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatVirtualMachine)));
+                    os::SetThreadNamePointer(std::addressof(m_vm_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatVirtualMachine));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(m_debug_events_thread), DebugEventsThread, this, m_debug_events_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDebugEvents)));
+                    os::SetThreadNamePointer(std::addressof(m_debug_events_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDebugEvents));
 
                     /* Start threads. */
-                    os::StartThread(std::addressof(this->detect_thread));
-                    os::StartThread(std::addressof(this->vm_thread));
-                    os::StartThread(std::addressof(this->debug_events_thread));
+                    os::StartThread(std::addressof(m_detect_thread));
+                    os::StartThread(std::addressof(m_vm_thread));
+                    os::StartThread(std::addressof(m_debug_events_thread));
                 }
 
                 bool GetHasActiveCheatProcess() {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     return this->HasActiveCheatProcess();
                 }
 
                 os::NativeHandle GetCheatProcessEventHandle() const {
-                    return this->cheat_process_event.GetReadableHandle();
+                    return m_cheat_process_event.GetReadableHandle();
                 }
 
                 Result GetCheatProcessMetadata(CheatProcessMetadata *out) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    std::memcpy(out, std::addressof(this->cheat_process_metadata), sizeof(*out));
+                    std::memcpy(out, std::addressof(m_cheat_process_metadata), sizeof(*out));
                     return ResultSuccess();
                 }
 
@@ -313,7 +313,7 @@ namespace ams::dmnt::cheat::impl {
                 Result WriteCheatProcessMemoryUnsafe(u64 proc_addr, const void *data, size_t size) {
                     R_TRY(svc::WriteDebugProcessMemory(this->GetCheatProcessHandle(), reinterpret_cast<uintptr_t>(data), proc_addr, size));
 
-                    for (auto &entry : this->frozen_addresses_map) {
+                    for (auto &entry : m_frozen_addresses_map) {
                         /* Get address/value. */
                         const u64 address = entry.GetAddress();
                         auto &value = entry.GetValue();
@@ -335,20 +335,20 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result PauseCheatProcessUnsafe() {
-                    this->broken_unsafe = true;
-                    this->unsafe_break_event.Clear();
+                    m_broken_unsafe = true;
+                    m_unsafe_break_event.Clear();
                     return svc::BreakDebugProcess(this->GetCheatProcessHandle());
                 }
 
                 Result ResumeCheatProcessUnsafe() {
-                    this->broken_unsafe = false;
-                    this->unsafe_break_event.Signal();
+                    m_broken_unsafe = false;
+                    m_unsafe_break_event.Signal();
                     dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle());
                     return ResultSuccess();
                 }
 
                 Result GetCheatProcessMappingCount(u64 *out_count) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -372,7 +372,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result GetCheatProcessMappings(svc::MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -399,7 +399,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -407,7 +407,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -415,7 +415,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result QueryCheatProcessMemory(svc::MemoryInfo *mapping, u64 address) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -424,7 +424,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result PauseCheatProcess() {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -432,7 +432,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result ResumeCheatProcess() {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -440,13 +440,13 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result GetCheatCount(u64 *out_count) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
                     size_t count = 0;
                     for (size_t i = 0; i < MaxCheatCount; i++) {
-                        if (this->cheat_entries[i].definition.num_opcodes) {
+                        if (m_cheat_entries[i].definition.num_opcodes) {
                             count++;
                         }
                     }
@@ -456,16 +456,16 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result GetCheats(CheatEntry *out_cheats, size_t max_count, u64 *out_count, u64 offset) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
                     size_t count = 0, total_count = 0;
                     for (size_t i = 0; i < MaxCheatCount && count < max_count; i++) {
-                        if (this->cheat_entries[i].definition.num_opcodes) {
+                        if (m_cheat_entries[i].definition.num_opcodes) {
                             total_count++;
                             if (total_count > offset) {
-                                out_cheats[count++] = this->cheat_entries[i];
+                                out_cheats[count++] = m_cheat_entries[i];
                             }
                         }
                     }
@@ -475,7 +475,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -488,7 +488,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result ToggleCheat(u32 cheat_id) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -507,7 +507,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
@@ -530,7 +530,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result RemoveCheat(u32 cheat_id) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
                     R_UNLESS(cheat_id < MaxCheatCount, dmnt::cheat::ResultCheatUnknownId());
@@ -544,14 +544,14 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result SetMasterCheat(const CheatDefinition &def) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
                     R_UNLESS(def.num_opcodes != 0,                       dmnt::cheat::ResultCheatInvalid());
                     R_UNLESS(def.num_opcodes <= util::size(def.opcodes), dmnt::cheat::ResultCheatInvalid());
 
-                    CheatEntry *master_entry = this->cheat_entries + 0;
+                    CheatEntry *master_entry = m_cheat_entries + 0;
 
                     master_entry->enabled    = true;
                     master_entry->definition = def;
@@ -563,50 +563,50 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result ReadStaticRegister(u64 *out, size_t which) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
                     R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
-                    *out = this->cheat_vm.GetStaticRegister(which);
+                    *out = m_cheat_vm.GetStaticRegister(which);
                     return ResultSuccess();
                 }
 
                 Result WriteStaticRegister(size_t which, u64 value) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
                     R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
-                    this->cheat_vm.SetStaticRegister(which, value);
+                    m_cheat_vm.SetStaticRegister(which, value);
                     return ResultSuccess();
                 }
 
                 Result ResetStaticRegisters() {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    this->cheat_vm.ResetStaticRegisters();
+                    m_cheat_vm.ResetStaticRegisters();
                     return ResultSuccess();
                 }
 
                 Result GetFrozenAddressCount(u64 *out_count) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    *out_count = std::distance(this->frozen_addresses_map.begin(), this->frozen_addresses_map.end());
+                    *out_count = std::distance(m_frozen_addresses_map.begin(), m_frozen_addresses_map.end());
                     return ResultSuccess();
                 }
 
                 Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
                     u64 total_count = 0, written_count = 0;
-                    for (const auto &entry : this->frozen_addresses_map) {
+                    for (const auto &entry : m_frozen_addresses_map) {
                         if (written_count >= max_count) {
                             break;
                         }
@@ -624,12 +624,12 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it != this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
+                    const auto it = m_frozen_addresses_map.find_key(address);
+                    R_UNLESS(it != m_frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
 
                     frz_addr->address = it->GetAddress();
                     frz_addr->value   = it->GetValue();
@@ -637,12 +637,12 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result EnableFrozenAddress(u64 *out_value, u64 address, u64 width) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it == this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressAlreadyExists());
+                    const auto it = m_frozen_addresses_map.find_key(address);
+                    R_UNLESS(it == m_frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressAlreadyExists());
 
                     FrozenAddressValue value = {};
                     value.width = width;
@@ -651,21 +651,21 @@ namespace ams::dmnt::cheat::impl {
                     FrozenAddressMapEntry *entry = AllocateFrozenAddress(address, value);
                     R_UNLESS(entry != nullptr, dmnt::cheat::ResultFrozenAddressOutOfResource());
 
-                    this->frozen_addresses_map.insert(*entry);
+                    m_frozen_addresses_map.insert(*entry);
                     *out_value = value.value;
                     return ResultSuccess();
                 }
 
                 Result DisableFrozenAddress(u64 address) {
-                    std::scoped_lock lk(this->cheat_lock);
+                    std::scoped_lock lk(m_cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    const auto it = this->frozen_addresses_map.find_key(address);
-                    R_UNLESS(it != this->frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
+                    const auto it = m_frozen_addresses_map.find_key(address);
+                    R_UNLESS(it != m_frozen_addresses_map.end(), dmnt::cheat::ResultFrozenAddressNotFound());
 
                     FrozenAddressMapEntry *entry = std::addressof(*it);
-                    this->frozen_addresses_map.erase(it);
+                    m_frozen_addresses_map.erase(it);
                     DeallocateFrozenAddress(entry);
 
                     return ResultSuccess();
@@ -674,37 +674,37 @@ namespace ams::dmnt::cheat::impl {
         };
 
         void CheatProcessManager::DetectLaunchThread(void *_this) {
-            CheatProcessManager *this_ptr = reinterpret_cast<CheatProcessManager *>(_this);
+            CheatProcessManager *manager = reinterpret_cast<CheatProcessManager *>(_this);
             Event hook;
             while (true) {
-                eventLoadRemote(std::addressof(hook), this_ptr->HookToCreateApplicationProcess(), true);
+                eventLoadRemote(std::addressof(hook), manager->HookToCreateApplicationProcess(), true);
                 if (R_SUCCEEDED(eventWait(std::addressof(hook), std::numeric_limits<u64>::max()))) {
-                    this_ptr->AttachToApplicationProcess(true);
+                    manager->AttachToApplicationProcess(true);
                 }
                 eventClose(std::addressof(hook));
             }
         }
 
         void CheatProcessManager::DebugEventsThread(void *_this) {
-            CheatProcessManager *this_ptr = reinterpret_cast<CheatProcessManager *>(_this);
+            CheatProcessManager *manager = reinterpret_cast<CheatProcessManager *>(_this);
             while (true) {
                 /* Atomically wait (and clear) signal for new process. */
-                this_ptr->debug_events_event.Wait();
+                manager->m_debug_events_event.Wait();
                 while (true) {
-                    os::NativeHandle cheat_process_handle = this_ptr->GetCheatProcessHandle();
+                    os::NativeHandle cheat_process_handle = manager->GetCheatProcessHandle();
                     s32 dummy;
                     while (cheat_process_handle != os::InvalidNativeHandle && R_SUCCEEDED(svc::WaitSynchronization(std::addressof(dummy), std::addressof(cheat_process_handle), 1, std::numeric_limits<u64>::max()))) {
-                        this_ptr->cheat_lock.Lock();
-                        ON_SCOPE_EXIT { this_ptr->cheat_lock.Unlock(); };
+                        manager->m_cheat_lock.Lock();
+                        ON_SCOPE_EXIT { manager->m_cheat_lock.Unlock(); };
                         {
-                            ON_SCOPE_EXIT { cheat_process_handle = this_ptr->GetCheatProcessHandle(); };
+                            ON_SCOPE_EXIT { cheat_process_handle = manager->GetCheatProcessHandle(); };
 
                             /* If we did an unsafe break, wait until we're not broken. */
-                            if (this_ptr->broken_unsafe) {
-                                this_ptr->cheat_lock.Unlock();
-                                this_ptr->unsafe_break_event.Wait();
-                                this_ptr->cheat_lock.Lock();
-                                if (this_ptr->GetCheatProcessHandle() != os::InvalidNativeHandle) {
+                            if (manager->m_broken_unsafe) {
+                                manager->m_cheat_lock.Unlock();
+                                manager->m_unsafe_break_event.Wait();
+                                manager->m_cheat_lock.Lock();
+                                if (manager->GetCheatProcessHandle() != os::InvalidNativeHandle) {
                                     continue;
                                 } else {
                                     break;
@@ -712,10 +712,10 @@ namespace ams::dmnt::cheat::impl {
                             }
 
                             /* Handle any pending debug events. */
-                            if (this_ptr->HasActiveCheatProcess()) {
-                                R_TRY_CATCH(dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle())) {
+                            if (manager->HasActiveCheatProcess()) {
+                                R_TRY_CATCH(dmnt::cheat::impl::ContinueCheatProcess(manager->GetCheatProcessHandle())) {
                                     R_CATCH(svc::ResultProcessTerminated) {
-                                        this_ptr->CloseActiveCheatProcess();
+                                        manager->CloseActiveCheatProcess();
                                         break;
                                     }
                                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
@@ -725,8 +725,8 @@ namespace ams::dmnt::cheat::impl {
 
                     /* WaitSynchronization failed. This means someone canceled our synchronization, possibly us. */
                     /* Let's check if we should quit! */
-                    std::scoped_lock lk(this_ptr->cheat_lock);
-                    if (!this_ptr->HasActiveCheatProcess()) {
+                    std::scoped_lock lk(manager->m_cheat_lock);
+                    if (!manager->HasActiveCheatProcess()) {
                         break;
                     }
                 }
@@ -734,30 +734,30 @@ namespace ams::dmnt::cheat::impl {
         }
 
         void CheatProcessManager::VirtualMachineThread(void *_this) {
-            CheatProcessManager *this_ptr = reinterpret_cast<CheatProcessManager *>(_this);
+            CheatProcessManager *manager = reinterpret_cast<CheatProcessManager *>(_this);
             while (true) {
                 /* Apply cheats. */
                 {
-                    std::scoped_lock lk(this_ptr->cheat_lock);
+                    std::scoped_lock lk(manager->m_cheat_lock);
 
-                    if (this_ptr->HasActiveCheatProcess()) {
+                    if (manager->HasActiveCheatProcess()) {
                         /* Execute VM. */
-                        if (!this_ptr->GetNeedsReloadVm() || this_ptr->cheat_vm.LoadProgram(this_ptr->cheat_entries, util::size(this_ptr->cheat_entries))) {
-                            this_ptr->SetNeedsReloadVm(false);
+                        if (!manager->GetNeedsReloadVm() || manager->m_cheat_vm.LoadProgram(manager->m_cheat_entries, util::size(manager->m_cheat_entries))) {
+                            manager->SetNeedsReloadVm(false);
 
                             /* Execute program only if it has opcodes. */
-                            if (this_ptr->cheat_vm.GetProgramSize()) {
-                                this_ptr->cheat_vm.Execute(std::addressof(this_ptr->cheat_process_metadata));
+                            if (manager->m_cheat_vm.GetProgramSize()) {
+                                manager->m_cheat_vm.Execute(std::addressof(manager->m_cheat_process_metadata));
                             }
                         }
 
                         /* Apply frozen addresses. */
-                        for (const auto &entry : this_ptr->frozen_addresses_map) {
+                        for (const auto &entry : manager->m_frozen_addresses_map) {
                             const auto address = entry.GetAddress();
                             const auto &value  = entry.GetValue();
 
                             /* Use Write SVC directly, to avoid the usual frozen address update logic. */
-                            svc::WriteDebugProcessMemory(this_ptr->GetCheatProcessHandle(), reinterpret_cast<uintptr_t>(std::addressof(value.value)), address, value.width);
+                            svc::WriteDebugProcessMemory(manager->GetCheatProcessHandle(), reinterpret_cast<uintptr_t>(std::addressof(value.value)), address, value.width);
                         }
                     }
                 }
@@ -778,7 +778,7 @@ namespace ams::dmnt::cheat::impl {
             }
 
         Result CheatProcessManager::AttachToApplicationProcess(bool on_process_launch) {
-            std::scoped_lock lk(this->cheat_lock);
+            std::scoped_lock lk(m_cheat_lock);
 
             /* Close the active process, if needed. */
             {
@@ -792,12 +792,12 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Get the application process's ID. */
-            R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::GetApplicationProcessId(std::addressof(this->cheat_process_metadata.process_id)));
+            R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::GetApplicationProcessId(std::addressof(m_cheat_process_metadata.process_id)));
             auto proc_guard = SCOPE_GUARD {
                 if (on_process_launch) {
-                    this->StartProcess(this->cheat_process_metadata.process_id);
+                    this->StartProcess(m_cheat_process_metadata.process_id);
                 }
-                this->cheat_process_metadata.process_id = os::ProcessId{};
+                m_cheat_process_metadata.process_id = os::ProcessId{};
             };
 
             /* Get process handle, use it to learn memory extents. */
@@ -806,17 +806,17 @@ namespace ams::dmnt::cheat::impl {
                 ncm::ProgramLocation loc = {};
                 cfg::OverrideStatus status = {};
 
-                R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(std::addressof(proc_h), std::addressof(loc), std::addressof(status), this->cheat_process_metadata.process_id));
+                R_ABORT_UNLESS_IF_NEW_PROCESS(pm::dmnt::AtmosphereGetProcessInfo(std::addressof(proc_h), std::addressof(loc), std::addressof(status), m_cheat_process_metadata.process_id));
                 ON_SCOPE_EXIT { os::CloseNativeHandle(proc_h); };
 
-                this->cheat_process_metadata.program_id = loc.program_id;
+                m_cheat_process_metadata.program_id = loc.program_id;
 
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.base),  svc::InfoType_HeapRegionAddress,  proc_h, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.heap_extents.size),  svc::InfoType_HeapRegionSize,     proc_h, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.base), svc::InfoType_AliasRegionAddress, proc_h, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.alias_extents.size), svc::InfoType_AliasRegionSize,    proc_h, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.base),  svc::InfoType_AslrRegionAddress,  proc_h, 0));
-                R_ABORT_UNLESS(svc::GetInfo(std::addressof(this->cheat_process_metadata.aslr_extents.size),  svc::InfoType_AslrRegionSize,     proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.heap_extents.base),  svc::InfoType_HeapRegionAddress,  proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.heap_extents.size),  svc::InfoType_HeapRegionSize,     proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.alias_extents.base), svc::InfoType_AliasRegionAddress, proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.alias_extents.size), svc::InfoType_AliasRegionSize,    proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.aslr_extents.base),  svc::InfoType_AslrRegionAddress,  proc_h, 0));
+                R_ABORT_UNLESS(svc::GetInfo(std::addressof(m_cheat_process_metadata.aslr_extents.size),  svc::InfoType_AslrRegionSize,     proc_h, 0));
 
                 /* If new process launch, we may not want to actually attach. */
                 if (on_process_launch) {
@@ -830,7 +830,7 @@ namespace ams::dmnt::cheat::impl {
                 s32 num_modules;
 
                 /* TODO: ldr::dmnt:: */
-                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(this->cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), std::addressof(num_modules)));
+                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(m_cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), std::addressof(num_modules)));
 
                 /* All applications must have two modules. */
                 /* Only accept one (which means we're attaching to HBL) */
@@ -844,42 +844,42 @@ namespace ams::dmnt::cheat::impl {
                     return dmnt::cheat::ResultCheatNotAttached();
                 }
 
-                this->cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
-                this->cheat_process_metadata.main_nso_extents.size = proc_module->size;
-                std::memcpy(this->cheat_process_metadata.main_nso_build_id, proc_module->build_id, sizeof(this->cheat_process_metadata.main_nso_build_id));
+                m_cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
+                m_cheat_process_metadata.main_nso_extents.size = proc_module->size;
+                std::memcpy(m_cheat_process_metadata.main_nso_build_id, proc_module->build_id, sizeof(m_cheat_process_metadata.main_nso_build_id));
             }
 
             /* Read cheats off the SD. */
-            if (!this->LoadCheats(this->cheat_process_metadata.program_id, this->cheat_process_metadata.main_nso_build_id) ||
-                !this->LoadCheatToggles(this->cheat_process_metadata.program_id)) {
+            if (!this->LoadCheats(m_cheat_process_metadata.program_id, m_cheat_process_metadata.main_nso_build_id) ||
+                !this->LoadCheatToggles(m_cheat_process_metadata.program_id)) {
                 /* If new process launch, require success. */
                 R_UNLESS(!on_process_launch, dmnt::cheat::ResultCheatNotAttached());
             }
 
             /* Open a debug handle. */
             svc::Handle debug_handle = svc::InvalidHandle;
-            R_ABORT_UNLESS_IF_NEW_PROCESS(svc::DebugActiveProcess(std::addressof(debug_handle), this->cheat_process_metadata.process_id.value));
+            R_ABORT_UNLESS_IF_NEW_PROCESS(svc::DebugActiveProcess(std::addressof(debug_handle), m_cheat_process_metadata.process_id.value));
 
             /* Set our debug handle. */
-            this->cheat_process_debug_handle = debug_handle;
+            m_cheat_process_debug_handle = debug_handle;
 
             /* Cancel process guard. */
             proc_guard.Cancel();
 
             /* Reset broken state. */
-            this->broken_unsafe = false;
-            this->unsafe_break_event.Signal();
+            m_broken_unsafe = false;
+            m_unsafe_break_event.Signal();
 
             /* If new process, start the process. */
             if (on_process_launch) {
-                this->StartProcess(this->cheat_process_metadata.process_id);
+                this->StartProcess(m_cheat_process_metadata.process_id);
             }
 
             /* Signal to the debug events thread. */
-            this->debug_events_event.Signal();
+            m_debug_events_event.Signal();
 
             /* Signal to our fans. */
-            this->cheat_process_event.Signal();
+            m_cheat_process_event.Signal();
 
             return ResultSuccess();
         }
@@ -922,7 +922,7 @@ namespace ams::dmnt::cheat::impl {
                     i = j + 1;
                 } else if (s[i] == '{') {
                     /* We're parsing a master cheat. */
-                    cur_entry = std::addressof(this->cheat_entries[0]);
+                    cur_entry = std::addressof(m_cheat_entries[0]);
 
                     /* There can only be one master cheat. */
                     if (cur_entry->definition.num_opcodes > 0) {
@@ -978,14 +978,14 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Master cheat can't be disabled. */
-            if (this->cheat_entries[0].definition.num_opcodes > 0) {
-                this->cheat_entries[0].enabled = true;
+            if (m_cheat_entries[0].definition.num_opcodes > 0) {
+                m_cheat_entries[0].enabled = true;
             }
 
             /* Enable all entries we parsed. */
             for (size_t i = 1; i < MaxCheatCount; i++) {
-                if (this->cheat_entries[i].definition.num_opcodes > 0) {
-                    this->cheat_entries[i].enabled = this->enable_cheats_by_default;
+                if (m_cheat_entries[i].definition.num_opcodes > 0) {
+                    m_cheat_entries[i].enabled = m_enable_cheats_by_default;
                 }
             }
 
@@ -1098,7 +1098,7 @@ namespace ams::dmnt::cheat::impl {
 
         bool CheatProcessManager::LoadCheatToggles(const ncm::ProgramId program_id) {
             /* Unless we successfully parse, don't save toggles on close. */
-            this->should_save_cheat_toggles = false;
+            m_should_save_cheat_toggles = false;
 
             /* Open the file for program_id. */
             fs::FileHandle file;
@@ -1130,8 +1130,8 @@ namespace ams::dmnt::cheat::impl {
             g_text_file_buffer[file_size] = '\x00';
 
             /* Parse toggle buffer. */
-            this->should_save_cheat_toggles = this->ParseCheatToggles(g_text_file_buffer, std::strlen(g_text_file_buffer));
-            return this->should_save_cheat_toggles;
+            m_should_save_cheat_toggles = this->ParseCheatToggles(g_text_file_buffer, std::strlen(g_text_file_buffer));
+            return m_should_save_cheat_toggles;
         }
 
         void CheatProcessManager::SaveCheatToggles(const ncm::ProgramId program_id) {
@@ -1153,14 +1153,14 @@ namespace ams::dmnt::cheat::impl {
 
             /* Save all non-master cheats. */
             for (size_t i = 1; i < MaxCheatCount; i++) {
-                if (this->cheat_entries[i].definition.num_opcodes != 0) {
-                    util::SNPrintf(buf, sizeof(buf), "[%s]\n", this->cheat_entries[i].definition.readable_name);
+                if (m_cheat_entries[i].definition.num_opcodes != 0) {
+                    util::SNPrintf(buf, sizeof(buf), "[%s]\n", m_cheat_entries[i].definition.readable_name);
                     const size_t name_len = std::strlen(buf);
                     if (R_SUCCEEDED(fs::WriteFile(file, offset, buf, name_len, fs::WriteOption::Flush))) {
                         offset += name_len;
                     }
 
-                    const char *entry = this->cheat_entries[i].enabled ? "true\n" : "false\n";
+                    const char *entry = m_cheat_entries[i].enabled ? "true\n" : "false\n";
                     const size_t entry_len = std::strlen(entry);
                     if (R_SUCCEEDED(fs::WriteFile(file, offset, entry, entry_len, fs::WriteOption::Flush))) {
                         offset += entry_len;

@@ -21,13 +21,13 @@ namespace ams::lr {
 
     class ContentLocationResolverImpl : public LocationResolverImplBase {
         private:
-            ncm::StorageId storage_id;
+            ncm::StorageId m_storage_id;
 
             /* Objects for this storage type. */
-            ncm::ContentMetaDatabase content_meta_database;
-            ncm::ContentStorage content_storage;
+            ncm::ContentMetaDatabase m_content_meta_database;
+            ncm::ContentStorage m_content_storage;
         public:
-            ContentLocationResolverImpl(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
+            ContentLocationResolverImpl(ncm::StorageId storage_id) : m_storage_id(storage_id) { /* ... */ }
 
             ~ContentLocationResolverImpl();
         private:

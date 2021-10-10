@@ -74,206 +74,277 @@ namespace ams::ro::impl {
         };
 
         struct ProcessContext {
-            bool nro_in_use[MaxNroInfos];
-            bool nrr_in_use[MaxNrrInfos];
-            NroInfo nro_infos[MaxNroInfos];
-            NrrInfo nrr_infos[MaxNrrInfos];
-            os::NativeHandle process_handle;
-            os::ProcessId process_id;
-            bool in_use;
+            private:
+                bool m_nro_in_use[MaxNroInfos]{};
+                bool m_nrr_in_use[MaxNrrInfos]{};
+                NroInfo m_nro_infos[MaxNroInfos]{};
+                NrrInfo m_nrr_infos[MaxNrrInfos]{};
+                os::NativeHandle m_process_handle = os::InvalidNativeHandle;
+                os::ProcessId m_process_id = os::InvalidProcessId;
+                bool m_in_use{};
+            public:
+                constexpr ProcessContext() = default;
 
-            ncm::ProgramId GetProgramId(os::NativeHandle other_process_h) const {
-                /* Automatically select a handle, allowing for override. */
-                if (other_process_h != os::InvalidNativeHandle) {
-                    return os::GetProgramId(other_process_h);
-                } else {
-                    return os::GetProgramId(this->process_handle);
+                void Initialize(os::NativeHandle process_handle, os::ProcessId process_id) {
+                    AMS_ABORT_UNLESS(!m_in_use);
+
+                    std::memset(m_nro_in_use, 0, sizeof(m_nro_in_use));
+                    std::memset(m_nrr_in_use, 0, sizeof(m_nrr_in_use));
+                    std::memset(m_nro_infos, 0, sizeof(m_nro_infos));
+                    std::memset(m_nrr_infos, 0, sizeof(m_nrr_infos));
+
+                    m_process_handle = process_handle;
+                    m_process_id     = process_id;
+                    m_in_use         = true;
                 }
-            }
 
-            Result GetNrrInfoByAddress(NrrInfo **out, u64 nrr_heap_address) {
-                for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (this->nrr_in_use[i] && this->nrr_infos[i].nrr_heap_address == nrr_heap_address) {
-                        if (out != nullptr) {
-                            *out = this->nrr_infos + i;
+                void Finalize() {
+                    AMS_ABORT_UNLESS(m_in_use);
+
+                    if (m_process_handle != os::InvalidNativeHandle) {
+                        for (size_t i = 0; i < MaxNrrInfos; i++) {
+                            if (m_nrr_in_use[i]) {
+                                UnmapNrr(m_process_handle, m_nrr_infos[i].mapped_header, m_nrr_infos[i].nrr_heap_address, m_nrr_infos[i].nrr_heap_size, m_nrr_infos[i].mapped_code_address);
+                            }
                         }
+                        os::CloseNativeHandle(m_process_handle);
+                    }
+
+                    std::memset(m_nro_in_use, 0, sizeof(m_nro_in_use));
+                    std::memset(m_nrr_in_use, 0, sizeof(m_nrr_in_use));
+                    std::memset(m_nro_infos, 0, sizeof(m_nro_infos));
+                    std::memset(m_nrr_infos, 0, sizeof(m_nrr_infos));
+
+                    m_process_handle = os::InvalidNativeHandle;
+                    m_process_id     = os::InvalidProcessId;
+
+                    m_in_use         = false;
+                }
+
+                os::NativeHandle GetProcessHandle() const {
+                    return m_process_handle;
+                }
+
+                os::ProcessId GetProcessId() const {
+                    return m_process_id;
+                }
+
+                bool IsFree() const {
+                    return !m_in_use;
+                }
+
+                ncm::ProgramId GetProgramId(os::NativeHandle other_process_h) const {
+                    /* Automatically select a handle, allowing for override. */
+                    if (other_process_h != os::InvalidNativeHandle) {
+                        return os::GetProgramId(other_process_h);
+                    } else {
+                        return os::GetProgramId(m_process_handle);
+                    }
+                }
+
+                Result GetNrrInfoByAddress(NrrInfo **out, u64 nrr_heap_address) {
+                    for (size_t i = 0; i < MaxNrrInfos; i++) {
+                        if (m_nrr_in_use[i] && m_nrr_infos[i].nrr_heap_address == nrr_heap_address) {
+                            if (out != nullptr) {
+                                *out = m_nrr_infos + i;
+                            }
+                            return ResultSuccess();
+                        }
+                    }
+                    return ro::ResultNotRegistered();
+                }
+
+                Result GetFreeNrrInfo(NrrInfo **out) {
+                    for (size_t i = 0; i < MaxNrrInfos; i++) {
+                        if (!m_nrr_in_use[i]) {
+                            if (out != nullptr) {
+                                *out = m_nrr_infos + i;
+                            }
+                            return ResultSuccess();
+                        }
+                    }
+                    return ro::ResultTooManyNrr();
+                }
+
+                Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
+                    for (size_t i = 0; i < MaxNroInfos; i++) {
+                        if (m_nro_in_use[i] && m_nro_infos[i].base_address == nro_address) {
+                            if (out != nullptr) {
+                                *out = m_nro_infos + i;
+                            }
+                            return ResultSuccess();
+                        }
+                    }
+                    return ro::ResultNotLoaded();
+                }
+
+                Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
+                    for (size_t i = 0; i < MaxNroInfos; i++) {
+                        if (m_nro_in_use[i] && std::memcmp(std::addressof(m_nro_infos[i].module_id), module_id, sizeof(*module_id)) == 0) {
+                            if (out != nullptr) {
+                                *out = m_nro_infos + i;
+                            }
+                            return ResultSuccess();
+                        }
+                    }
+                    return ro::ResultNotLoaded();
+                }
+
+                Result GetFreeNroInfo(NroInfo **out) {
+                    for (size_t i = 0; i < MaxNroInfos; i++) {
+                        if (!m_nro_in_use[i]) {
+                            if (out != nullptr) {
+                                *out = m_nro_infos + i;
+                            }
+                            return ResultSuccess();
+                        }
+                    }
+                    return ro::ResultTooManyNro();
+                }
+
+                Result ValidateHasNroHash(const NroHeader *nro_header) const {
+                    /* Calculate hash. */
+                    Sha256Hash hash;
+                    crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), nro_header, nro_header->GetSize());
+
+                    for (size_t i = 0; i < MaxNrrInfos; i++) {
+                        /* Ensure we only check NRRs that are used. */
+                        if (!m_nrr_in_use[i]) {
+                            continue;
+                        }
+
+                        /* Get the mapped header, ensure that it has hashes. */
+                        const NrrHeader *mapped_nrr_header = m_nrr_infos[i].mapped_header;
+                        const size_t mapped_num_hashes = mapped_nrr_header->GetNumHashes();
+                        if (mapped_num_hashes == 0) {
+                            continue;
+                        }
+
+                        /* Locate the hash within the mapped array. */
+                        const Sha256Hash *mapped_nro_hashes_start = reinterpret_cast<const Sha256Hash *>(mapped_nrr_header->GetHashes());
+                        const Sha256Hash *mapped_nro_hashes_end   = mapped_nro_hashes_start + mapped_nrr_header->GetNumHashes();
+
+                        const Sha256Hash *mapped_lower_bound = std::lower_bound(mapped_nro_hashes_start, mapped_nro_hashes_end, hash);
+                        if (mapped_lower_bound == mapped_nro_hashes_end || (*mapped_lower_bound != hash)) {
+                            continue;
+                        }
+
+                        /* Check that the hash entry is valid, since our heuristic passed. */
+                        const void *nrr_hash          = std::addressof(m_nrr_infos[i].signed_area_hash);
+                        const void *signed_area       = m_nrr_infos[i].cached_signed_area;
+                        const size_t signed_area_size = m_nrr_infos[i].cached_signed_area_size;
+                        const size_t hashes_offset    = m_nrr_infos[i].cached_hashes_offset;
+                        const size_t num_hashes       = m_nrr_infos[i].cached_num_hashes;
+                        const u8 *hash_table          = reinterpret_cast<const u8 *>(mapped_nro_hashes_start);
+                        if (!ValidateNrrHashTableEntry(signed_area, signed_area_size, hashes_offset, num_hashes, nrr_hash, hash_table, std::addressof(hash))) {
+                            continue;
+                        }
+
+                        /* The hash is valid! */
                         return ResultSuccess();
                     }
+
+                    return ro::ResultNotAuthorized();
                 }
-                return ro::ResultNotRegistered();
-            }
 
-            Result GetFreeNrrInfo(NrrInfo **out) {
-                for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (!this->nrr_in_use[i]) {
-                        if (out != nullptr) {
-                            *out = this->nrr_infos + i;
-                        }
-                        return ResultSuccess();
-                    }
-                }
-                return ro::ResultTooManyNrr();
-            }
+                Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
+                    /* Find space to map the NRO. */
+                    uintptr_t map_address;
+                    R_UNLESS(R_SUCCEEDED(SearchFreeRegion(std::addressof(map_address), expected_nro_size)), ro::ResultOutOfAddressSpace());
 
-            Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
-                for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (this->nro_in_use[i] && this->nro_infos[i].base_address == nro_address) {
-                        if (out != nullptr) {
-                            *out = this->nro_infos + i;
-                        }
-                        return ResultSuccess();
-                    }
-                }
-                return ro::ResultNotLoaded();
-            }
+                    /* Actually map the NRO. */
+                    AutoCloseMap nro_map(map_address, m_process_handle, base_address, expected_nro_size);
+                    R_TRY(nro_map.GetResult());
 
-            Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
-                for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (this->nro_in_use[i] && std::memcmp(std::addressof(this->nro_infos[i].module_id), module_id, sizeof(*module_id)) == 0) {
-                        if (out != nullptr) {
-                            *out = this->nro_infos + i;
-                        }
-                        return ResultSuccess();
-                    }
-                }
-                return ro::ResultNotLoaded();
-            }
+                    /* Validate header. */
+                    const NroHeader *header = reinterpret_cast<const NroHeader *>(map_address);
+                    R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
 
-            Result GetFreeNroInfo(NroInfo **out) {
-                for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (!this->nro_in_use[i]) {
-                        if (out != nullptr) {
-                            *out = this->nro_infos + i;
-                        }
-                        return ResultSuccess();
-                    }
-                }
-                return ro::ResultTooManyNro();
-            }
+                    /* Read sizes from header. */
+                    const u64 nro_size = header->GetSize();
+                    const u64 text_ofs = header->GetTextOffset();
+                    const u64 text_size = header->GetTextSize();
+                    const u64 ro_ofs = header->GetRoOffset();
+                    const u64 ro_size = header->GetRoSize();
+                    const u64 rw_ofs = header->GetRwOffset();
+                    const u64 rw_size = header->GetRwSize();
+                    const u64 bss_size = header->GetBssSize();
 
-            Result ValidateHasNroHash(const NroHeader *nro_header) const {
-                /* Calculate hash. */
-                Sha256Hash hash;
-                crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), nro_header, nro_header->GetSize());
+                    /* Validate sizes meet expected. */
+                    R_UNLESS(nro_size == expected_nro_size, ro::ResultInvalidNro());
+                    R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidNro());
 
-                for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    /* Ensure we only check NRRs that are used. */
-                    if (!this->nrr_in_use[i]) {
-                        continue;
-                    }
+                    /* Validate all sizes are aligned. */
+                    R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ro::ResultInvalidNro());
+                    R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ro::ResultInvalidNro());
+                    R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ro::ResultInvalidNro());
+                    R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ro::ResultInvalidNro());
 
-                    /* Get the mapped header, ensure that it has hashes. */
-                    const NrrHeader *mapped_nrr_header = this->nrr_infos[i].mapped_header;
-                    const size_t mapped_num_hashes = mapped_nrr_header->GetNumHashes();
-                    if (mapped_num_hashes == 0) {
-                        continue;
-                    }
+                    /* Validate sections are in order. */
+                    R_UNLESS(text_ofs <= ro_ofs, ro::ResultInvalidNro());
+                    R_UNLESS(ro_ofs   <= rw_ofs, ro::ResultInvalidNro());
 
-                    /* Locate the hash within the mapped array. */
-                    const Sha256Hash *mapped_nro_hashes_start = reinterpret_cast<const Sha256Hash *>(mapped_nrr_header->GetHashes());
-                    const Sha256Hash *mapped_nro_hashes_end   = mapped_nro_hashes_start + mapped_nrr_header->GetNumHashes();
+                    /* Validate sections are sequential and contiguous. */
+                    R_UNLESS(text_ofs == 0,                    ro::ResultInvalidNro());
+                    R_UNLESS(text_ofs + text_size == ro_ofs,   ro::ResultInvalidNro());
+                    R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ro::ResultInvalidNro());
+                    R_UNLESS(rw_ofs + rw_size     == nro_size, ro::ResultInvalidNro());
 
-                    const Sha256Hash *mapped_lower_bound = std::lower_bound(mapped_nro_hashes_start, mapped_nro_hashes_end, hash);
-                    if (mapped_lower_bound == mapped_nro_hashes_end || (*mapped_lower_bound != hash)) {
-                        continue;
-                    }
+                    /* Verify NRO hash. */
+                    R_TRY(this->ValidateHasNroHash(header));
 
-                    /* Check that the hash entry is valid, since our heuristic passed. */
-                    const void *nrr_hash          = std::addressof(this->nrr_infos[i].signed_area_hash);
-                    const void *signed_area       = this->nrr_infos[i].cached_signed_area;
-                    const size_t signed_area_size = this->nrr_infos[i].cached_signed_area_size;
-                    const size_t hashes_offset    = this->nrr_infos[i].cached_hashes_offset;
-                    const size_t num_hashes       = this->nrr_infos[i].cached_num_hashes;
-                    const u8 *hash_table          = reinterpret_cast<const u8 *>(mapped_nro_hashes_start);
-                    if (!ValidateNrrHashTableEntry(signed_area, signed_area_size, hashes_offset, num_hashes, nrr_hash, hash_table, std::addressof(hash))) {
-                        continue;
-                    }
+                    /* Check if NRO has already been loaded. */
+                    const ModuleId *module_id = header->GetModuleId();
+                    R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ro::ResultAlreadyLoaded());
 
-                    /* The hash is valid! */
+                    /* Apply patches to NRO. */
+                    LocateAndApplyIpsPatchesToModule(module_id, reinterpret_cast<u8 *>(map_address), nro_size);
+
+                    /* Copy to output. */
+                    *out_module_id = *module_id;
+                    *out_rx_size = text_size;
+                    *out_ro_size = ro_size;
+                    *out_rw_size = rw_size;
                     return ResultSuccess();
                 }
 
-                return ro::ResultNotAuthorized();
-            }
+                void SetNrrInfoInUse(const NrrInfo *info, bool in_use) {
+                    AMS_ASSERT(std::addressof(m_nrr_infos[0]) <= info && info <= std::addressof(m_nrr_infos[MaxNrrInfos - 1]));
+                    const size_t index = info - std::addressof(m_nrr_infos[0]);
+                    m_nrr_in_use[index] = in_use;
+                }
 
-            Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
-                /* Find space to map the NRO. */
-                uintptr_t map_address;
-                R_UNLESS(R_SUCCEEDED(SearchFreeRegion(std::addressof(map_address), expected_nro_size)), ro::ResultOutOfAddressSpace());
+                void SetNroInfoInUse(const NroInfo *info, bool in_use) {
+                    AMS_ASSERT(std::addressof(m_nro_infos[0]) <= info && info <= std::addressof(m_nro_infos[MaxNroInfos - 1]));
+                    const size_t index = info - std::addressof(m_nro_infos[0]);
+                    m_nro_in_use[index] = in_use;
+                }
 
-                /* Actually map the NRO. */
-                AutoCloseMap nro_map(map_address, this->process_handle, base_address, expected_nro_size);
-                R_TRY(nro_map.GetResult());
+                void GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count) const {
+                    size_t count = 0;
 
-                /* Validate header. */
-                const NroHeader *header = reinterpret_cast<const NroHeader *>(map_address);
-                R_UNLESS(header->IsMagicValid(), ro::ResultInvalidNro());
+                    for (size_t i = 0; i < MaxNroInfos && count < max_out_count; i++) {
+                        if (!m_nro_in_use[i]) {
+                            continue;
+                        }
 
-                /* Read sizes from header. */
-                const u64 nro_size = header->GetSize();
-                const u64 text_ofs = header->GetTextOffset();
-                const u64 text_size = header->GetTextSize();
-                const u64 ro_ofs = header->GetRoOffset();
-                const u64 ro_size = header->GetRoSize();
-                const u64 rw_ofs = header->GetRwOffset();
-                const u64 rw_size = header->GetRwSize();
-                const u64 bss_size = header->GetBssSize();
+                        const NroInfo *nro_info = m_nro_infos + i;
 
-                /* Validate sizes meet expected. */
-                R_UNLESS(nro_size == expected_nro_size, ro::ResultInvalidNro());
-                R_UNLESS(bss_size == expected_bss_size, ro::ResultInvalidNro());
+                        /* Just copy out the info. */
+                        LoaderModuleInfo *out_info = std::addressof(out_infos[count++]);
+                        memcpy(out_info->build_id, std::addressof(nro_info->module_id), sizeof(nro_info->module_id));
+                        out_info->base_address = nro_info->base_address;
+                        out_info->size = nro_info->nro_heap_size + nro_info->bss_heap_size;
+                    }
 
-                /* Validate all sizes are aligned. */
-                R_UNLESS(util::IsAligned(text_size, os::MemoryPageSize), ro::ResultInvalidNro());
-                R_UNLESS(util::IsAligned(ro_size,   os::MemoryPageSize), ro::ResultInvalidNro());
-                R_UNLESS(util::IsAligned(rw_size,   os::MemoryPageSize), ro::ResultInvalidNro());
-                R_UNLESS(util::IsAligned(bss_size,  os::MemoryPageSize), ro::ResultInvalidNro());
-
-                /* Validate sections are in order. */
-                R_UNLESS(text_ofs <= ro_ofs, ro::ResultInvalidNro());
-                R_UNLESS(ro_ofs   <= rw_ofs, ro::ResultInvalidNro());
-
-                /* Validate sections are sequential and contiguous. */
-                R_UNLESS(text_ofs == 0,                    ro::ResultInvalidNro());
-                R_UNLESS(text_ofs + text_size == ro_ofs,   ro::ResultInvalidNro());
-                R_UNLESS(ro_ofs + ro_size     == rw_ofs,   ro::ResultInvalidNro());
-                R_UNLESS(rw_ofs + rw_size     == nro_size, ro::ResultInvalidNro());
-
-                /* Verify NRO hash. */
-                R_TRY(this->ValidateHasNroHash(header));
-
-                /* Check if NRO has already been loaded. */
-                const ModuleId *module_id = header->GetModuleId();
-                R_UNLESS(R_FAILED(this->GetNroInfoByModuleId(nullptr, module_id)), ro::ResultAlreadyLoaded());
-
-                /* Apply patches to NRO. */
-                LocateAndApplyIpsPatchesToModule(module_id, reinterpret_cast<u8 *>(map_address), nro_size);
-
-                /* Copy to output. */
-                *out_module_id = *module_id;
-                *out_rx_size = text_size;
-                *out_ro_size = ro_size;
-                *out_rw_size = rw_size;
-                return ResultSuccess();
-            }
-
-            void SetNrrInfoInUse(const NrrInfo *info, bool in_use) {
-                AMS_ASSERT(std::addressof(this->nrr_infos[0]) <= info && info <= std::addressof(this->nrr_infos[MaxNrrInfos - 1]));
-                const size_t index = info - std::addressof(this->nrr_infos[0]);
-                this->nrr_in_use[index] = in_use;
-            }
-
-            void SetNroInfoInUse(const NroInfo *info, bool in_use) {
-                AMS_ASSERT(std::addressof(this->nro_infos[0]) <= info && info <= std::addressof(this->nro_infos[MaxNroInfos - 1]));
-                const size_t index = info - std::addressof(this->nro_infos[0]);
-                this->nro_in_use[index] = in_use;
-            }
+                    *out_count = static_cast<u32>(count);
+                }
         };
 
         /* Globals. */
-        ProcessContext g_process_contexts[MaxSessions] = {};
-        bool g_is_development_hardware = false;
-        bool g_is_development_function_enabled = false;
+        constinit ProcessContext g_process_contexts[MaxSessions] = {};
+        constinit bool g_is_development_hardware = false;
+        constinit bool g_is_development_function_enabled = false;
 
         /* Context Helpers. */
         ProcessContext *GetContextById(size_t context_id) {
@@ -287,7 +358,7 @@ namespace ams::ro::impl {
 
         ProcessContext *GetContextByProcessId(os::ProcessId process_id) {
             for (size_t i = 0; i < MaxSessions; i++) {
-                if (g_process_contexts[i].process_id == process_id) {
+                if (g_process_contexts[i].GetProcessId() == process_id) {
                     return g_process_contexts + i;
                 }
             }
@@ -299,11 +370,8 @@ namespace ams::ro::impl {
             for (size_t i = 0; i < MaxSessions; i++) {
                 ProcessContext *context = g_process_contexts + i;
 
-                if (!context->in_use) {
-                    std::memset(context, 0, sizeof(*context));
-                    context->process_id = process_id;
-                    context->process_handle = process_handle;
-                    context->in_use = true;
+                if (context->IsFree()) {
+                    context->Initialize(process_handle, process_id);
                     return i;
                 }
             }
@@ -312,18 +380,8 @@ namespace ams::ro::impl {
         }
 
         void FreeContext(size_t context_id) {
-            ProcessContext *context = GetContextById(context_id);
-            if (context != nullptr) {
-                if (context->process_handle != os::InvalidNativeHandle) {
-                    for (size_t i = 0; i < MaxNrrInfos; i++) {
-                        if (context->nrr_in_use[i]) {
-                            UnmapNrr(context->process_handle, context->nrr_infos[i].mapped_header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
-                        }
-                    }
-                    os::CloseNativeHandle(context->process_handle);
-                }
-                std::memset(context, 0, sizeof(*context));
-                context->in_use = false;
+            if (ProcessContext *context = GetContextById(context_id); context != nullptr) {
+                context->Finalize();
             }
         }
 
@@ -397,8 +455,8 @@ namespace ams::ro::impl {
 
     Result ValidateProcess(size_t context_id, os::ProcessId process_id) {
         const ProcessContext *ctx = GetContextById(context_id);
-        R_UNLESS(ctx != nullptr,                ro::ResultInvalidProcess());
-        R_UNLESS(ctx->process_id == process_id, ro::ResultInvalidProcess());
+        R_UNLESS(ctx != nullptr,                    ro::ResultInvalidProcess());
+        R_UNLESS(ctx->GetProcessId() == process_id, ro::ResultInvalidProcess());
         return ResultSuccess();
     }
 
@@ -429,7 +487,7 @@ namespace ams::ro::impl {
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(std::addressof(header), std::addressof(mapped_code_address), std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
+        R_TRY(MapAndValidateNrr(std::addressof(header), std::addressof(mapped_code_address), std::addressof(signed_area_hash), sizeof(signed_area_hash), context->GetProcessHandle(), program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
 
         /* Set NRR info. */
         context->SetNrrInfoInUse(nrr_info, true);
@@ -467,7 +525,7 @@ namespace ams::ro::impl {
             context->SetNrrInfoInUse(nrr_info, false);
             std::memset(nrr_info, 0, sizeof(*nrr_info));
         }
-        return UnmapNrr(context->process_handle, nrr_backup.mapped_header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
+        return UnmapNrr(context->GetProcessHandle(), nrr_backup.mapped_header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
     }
 
     Result MapManualLoadModuleMemory(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
@@ -492,20 +550,20 @@ namespace ams::ro::impl {
         nro_info->bss_heap_size = bss_size;
 
         /* Map the NRO. */
-        R_TRY(MapNro(std::addressof(nro_info->base_address), context->process_handle, nro_address, nro_size, bss_address, bss_size));
+        R_TRY(MapNro(std::addressof(nro_info->base_address), context->GetProcessHandle(), nro_address, nro_size, bss_address, bss_size));
 
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
         {
-            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
+            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
             R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
             unmap_guard.Cancel();
         }
 
         /* Set NRO perms. */
         {
-            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->process_handle, nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
-            R_TRY(SetNroPerms(context->process_handle, nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
+            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
+            R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
             unmap_guard.Cancel();
         }
 
@@ -535,30 +593,15 @@ namespace ams::ro::impl {
             context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
-        return UnmapNro(context->process_handle, nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size);
+        return UnmapNro(context->GetProcessHandle(), nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size);
     }
 
     /* Debug service implementations. */
     Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id) {
-        size_t count = 0;
-        const ProcessContext *context = GetContextByProcessId(process_id);
-        if (context != nullptr) {
-            for (size_t i = 0; i < MaxNroInfos && count < max_out_count; i++) {
-                if (!context->nro_in_use[i]) {
-                    continue;
-                }
-
-                const NroInfo *nro_info = context->nro_infos + i;
-
-                /* Just copy out the info. */
-                LoaderModuleInfo *out_info = std::addressof(out_infos[count++]);
-                memcpy(out_info->build_id, std::addressof(nro_info->module_id), sizeof(nro_info->module_id));
-                out_info->base_address = nro_info->base_address;
-                out_info->size = nro_info->nro_heap_size + nro_info->bss_heap_size;
-            }
+        if (const ProcessContext *context = GetContextByProcessId(process_id); context != nullptr) {
+            context->GetProcessModuleInfo(out_count, out_infos, max_out_count);
         }
 
-        *out_count = static_cast<u32>(count);
         return ResultSuccess();
     }
 

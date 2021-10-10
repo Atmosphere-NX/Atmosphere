@@ -90,7 +90,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetSysMitmService::GetFirmwareVersion(sf::Out<settings::FirmwareVersion> out) {
-        R_TRY(GetFirmwareVersionImpl(out.GetPointer(), this->client_info));
+        R_TRY(GetFirmwareVersionImpl(out.GetPointer(), m_client_info));
 
         /* GetFirmwareVersion sanitizes the revision fields. */
         out.GetPointer()->revision_major = 0;
@@ -99,7 +99,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetSysMitmService::GetFirmwareVersion2(sf::Out<settings::FirmwareVersion> out) {
-        return GetFirmwareVersionImpl(out.GetPointer(), this->client_info);
+        return GetFirmwareVersionImpl(out.GetPointer(), m_client_info);
     }
 
     Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
@@ -122,7 +122,7 @@ namespace ams::mitm::settings {
 
     Result SetSysMitmService::GetDebugModeFlag(sf::Out<bool> out) {
         /* If we're not processing for am, just return the real flag value. */
-        R_UNLESS(this->client_info.program_id == ncm::SystemProgramId::Am, sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(m_client_info.program_id == ncm::SystemProgramId::Am, sm::mitm::ResultShouldForwardToSession());
 
         /* Retrieve the user configuration. */
         u8 en = 0;

@@ -28,10 +28,10 @@ namespace ams::ncm {
         private:
             using RegisteredPathList = ams::util::IntrusiveListBaseTraits<RegisteredPath>::ListType;
         private:
-            os::SdkMutex mutex;
-            RegisteredPathList path_list;
+            os::SdkMutex m_mutex;
+            RegisteredPathList m_path_list;
         public:
-            RegisteredHostContent() : mutex(), path_list() { /* ... */ }
+            RegisteredHostContent() : m_mutex(), m_path_list() { /* ... */ }
             ~RegisteredHostContent();
 
             Result RegisterPath(const ncm::ContentId &content_id, const ncm::Path &path);

@@ -23,7 +23,7 @@ namespace ams::mitm::fs {
     class SectoredStorageAdapter : public Base {
         static_assert(std::is_base_of<ams::fs::IStorage, Base>::value);
         private:
-            u8  sector_buf[SectorSize];
+            u8 m_sector_buf[SectorSize];
         public:
             /* Inherit constructors. */
             using Base::Base;
@@ -44,15 +44,15 @@ namespace ams::mitm::fs {
                     return Base::Read(offset, buffer, size);
                 }
 
-                R_TRY(Base::Read(seek, this->sector_buf, SectorSize));
+                R_TRY(Base::Read(seek, m_sector_buf, SectorSize));
 
                 if (size + sector_ofs <= SectorSize) {
                     /* Staying within the sector. */
-                    std::memcpy(buffer, this->sector_buf + sector_ofs, size);
+                    std::memcpy(buffer, m_sector_buf + sector_ofs, size);
                 } else {
                     /* Leaving the sector. */
                     const size_t size_in_sector = SectorSize - sector_ofs;
-                    std::memcpy(buffer, this->sector_buf + sector_ofs, size_in_sector);
+                    std::memcpy(buffer, m_sector_buf + sector_ofs, size_in_sector);
                     size -= size_in_sector;
 
                     /* Read as many guaranteed aligned sectors as we can. */
@@ -64,8 +64,8 @@ namespace ams::mitm::fs {
 
                     /* Read any leftover data. */
                     if (size) {
-                        R_TRY(Base::Read(offset + size_in_sector + aligned_remaining_size, this->sector_buf, SectorSize));
-                        std::memcpy(buffer + size_in_sector + aligned_remaining_size, this->sector_buf, size);
+                        R_TRY(Base::Read(offset + size_in_sector + aligned_remaining_size, m_sector_buf, SectorSize));
+                        std::memcpy(buffer + size_in_sector + aligned_remaining_size, m_sector_buf, size);
                     }
                 }
 
@@ -89,17 +89,17 @@ namespace ams::mitm::fs {
                 }
 
                 /* Load existing sector data. */
-                R_TRY(Base::Read(seek, this->sector_buf, SectorSize));
+                R_TRY(Base::Read(seek, m_sector_buf, SectorSize));
 
                 if (size + sector_ofs <= SectorSize) {
                     /* Staying within the sector. */
-                    std::memcpy(this->sector_buf + sector_ofs, buffer, size);
-                    R_TRY(Base::Write(seek, this->sector_buf, SectorSize));
+                    std::memcpy(m_sector_buf + sector_ofs, buffer, size);
+                    R_TRY(Base::Write(seek, m_sector_buf, SectorSize));
                 } else {
                     /* Leaving the sector. */
                     const size_t size_in_sector = SectorSize - sector_ofs;
-                    std::memcpy(this->sector_buf + sector_ofs, buffer, size_in_sector);
-                    R_TRY(Base::Write(seek, this->sector_buf, SectorSize));
+                    std::memcpy(m_sector_buf + sector_ofs, buffer, size_in_sector);
+                    R_TRY(Base::Write(seek, m_sector_buf, SectorSize));
                     size -= size_in_sector;
 
                     /* Write as many guaranteed aligned sectors as we can. */
@@ -111,9 +111,9 @@ namespace ams::mitm::fs {
 
                     /* Write any leftover data. */
                     if (size) {
-                        R_TRY(Base::Read(offset + size_in_sector + aligned_remaining_size, this->sector_buf, SectorSize));
-                        std::memcpy(this->sector_buf, buffer + size_in_sector + aligned_remaining_size, size);
-                        R_TRY(Base::Write(offset + size_in_sector + aligned_remaining_size, this->sector_buf, SectorSize));
+                        R_TRY(Base::Read(offset + size_in_sector + aligned_remaining_size, m_sector_buf, SectorSize));
+                        std::memcpy(m_sector_buf, buffer + size_in_sector + aligned_remaining_size, size);
+                        R_TRY(Base::Write(offset + size_in_sector + aligned_remaining_size, m_sector_buf, SectorSize));
                     }
                 }
 
@@ -136,11 +136,11 @@ namespace ams::mitm::fs {
             static constexpr s64 EksSize = static_cast<s64>(ams::updater::EksSize);
             static constexpr s64 EksEnd = EksStart + EksSize;
         private:
-            sm::MitmProcessInfo client_info;
+            sm::MitmProcessInfo m_client_info;
         private:
             bool CanModifyBctPublicKey();
         public:
-            Boot0Storage(FsStorage &s, const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
+            Boot0Storage(FsStorage &s, const sm::MitmProcessInfo &c) : Base(s), m_client_info(c) { /* ... */ }
         public:
             virtual Result Read(s64 offset, void *_buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *_buffer, size_t size) override;
@@ -150,8 +150,8 @@ namespace ams::mitm::fs {
         public:
             using Base = SectoredStorageAdapter<ams::fs::RemoteStorage, 0x200>;
         private:
-            sm::MitmProcessInfo client_info;
-            spl::SocType soc_type;
+            sm::MitmProcessInfo m_client_info;
+            spl::SocType m_soc_type;
         public:
             CustomPublicKeyBoot0Storage(FsStorage &s, const sm::MitmProcessInfo &c, spl::SocType soc);
         public:

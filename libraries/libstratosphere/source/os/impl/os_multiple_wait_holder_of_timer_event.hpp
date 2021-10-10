@@ -23,44 +23,44 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfTimerEvent : public MultiWaitHolderOfUserObject {
         private:
-            TimerEventType *event;
+            TimerEventType *m_event;
         private:
             TriBool IsSignaledImpl() const {
                 TimeSpan cur_time = this->GetMultiWait()->GetCurrentTime();
-                UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(this->event, cur_time);
-                return this->event->signaled ? TriBool::True : TriBool::False;
+                UpdateSignalStateAndRecalculateNextTimeToWakeupUnsafe(m_event, cur_time);
+                return m_event->signaled ? TriBool::True : TriBool::False;
             }
         public:
-            explicit MultiWaitHolderOfTimerEvent(TimerEventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfTimerEvent(TimerEventType *e) : m_event(e) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->event->cs_timer_event));
+                std::scoped_lock lk(GetReference(m_event->cs_timer_event));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_timer_event));
+                std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                GetReference(this->event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->event->cs_timer_event));
+                std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                GetReference(this->event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
+                GetReference(m_event->multi_wait_object_list_storage).UnlinkMultiWaitHolder(*this);
             }
 
             /* Gets the amount of time remaining until this wakes up. */
             virtual TimeSpan GetAbsoluteWakeupTime() const override {
-                std::scoped_lock lk(GetReference(this->event->cs_timer_event));
+                std::scoped_lock lk(GetReference(m_event->cs_timer_event));
 
-                if (this->event->timer_state == TimerEventType::TimerState_Stop) {
+                if (m_event->timer_state == TimerEventType::TimerState_Stop) {
                     return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
                 }
 
-                return GetReference(this->event->next_time_to_wakeup);
+                return GetReference(m_event->next_time_to_wakeup);
             }
     };
 

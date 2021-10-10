@@ -32,9 +32,9 @@ namespace ams::lr {
         private:
             using RedirectionList = ams::util::IntrusiveListBaseTraits<Redirection>::ListType;
         private:
-            RedirectionList redirection_list;
+            RedirectionList m_redirection_list;
         public:
-            LocationRedirector() { /* ... */ }
+            LocationRedirector() : m_redirection_list() { /* ... */ }
             ~LocationRedirector() { this->ClearRedirections(); }
 
             /* API. */

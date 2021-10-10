@@ -31,18 +31,18 @@ namespace ams::fs {
 
         class GameCardCommonMountNameGenerator : public fsa::ICommonMountNameGenerator, public impl::Newable {
             private:
-                const GameCardHandle handle;
-                const GameCardPartition partition;
+                const GameCardHandle m_handle;
+                const GameCardPartition m_partition;
             public:
-                explicit GameCardCommonMountNameGenerator(GameCardHandle h, GameCardPartition p) : handle(h), partition(p) { /* ... */ }
+                explicit GameCardCommonMountNameGenerator(GameCardHandle h, GameCardPartition p) : m_handle(h), m_partition(p) { /* ... */ }
 
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
-                    const size_t needed_size = strnlen(impl::GameCardFileSystemMountName, MountNameLengthMax) + strnlen(GetGameCardMountNameSuffix(this->partition), MountNameLengthMax) + sizeof(GameCardHandle) * 2 + 2;
+                    const size_t needed_size = strnlen(impl::GameCardFileSystemMountName, MountNameLengthMax) + strnlen(GetGameCardMountNameSuffix(m_partition), MountNameLengthMax) + sizeof(GameCardHandle) * 2 + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
-                    const auto size = util::SNPrintf(dst, dst_size, "%s%s%08x:", impl::GameCardFileSystemMountName, GetGameCardMountNameSuffix(this->partition), this->handle);
+                    const auto size = util::SNPrintf(dst, dst_size, "%s%s%08x:", impl::GameCardFileSystemMountName, GetGameCardMountNameSuffix(m_partition), m_handle);
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
                     AMS_UNUSED(size);
 

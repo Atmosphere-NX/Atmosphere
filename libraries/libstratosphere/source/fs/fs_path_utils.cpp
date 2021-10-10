@@ -21,14 +21,14 @@ namespace ams::fs {
 
         class PathVerifier {
             private:
-                u32 invalid_chars[6];
-                u32 separators[2];
+                u32 m_invalid_chars[6];
+                u32 m_separators[2];
             public:
                 PathVerifier() {
                     /* Convert all invalid characters. */
-                    u32 *dst_invalid = this->invalid_chars;
+                    u32 *dst_invalid = m_invalid_chars;
                     for (const char *cur = ":*?<>|"; *cur != '\x00'; ++cur) {
-                        AMS_ASSERT(dst_invalid < std::end(this->invalid_chars));
+                        AMS_ASSERT(dst_invalid < std::end(m_invalid_chars));
 
                         const auto result = util::ConvertCharacterUtf8ToUtf32(dst_invalid, cur);
                         AMS_ASSERT(result == util::CharacterEncodingResult_Success);
@@ -36,12 +36,12 @@ namespace ams::fs {
 
                         ++dst_invalid;
                     }
-                    AMS_ASSERT(dst_invalid == std::end(this->invalid_chars));
+                    AMS_ASSERT(dst_invalid == std::end(m_invalid_chars));
 
                     /* Convert all separators. */
-                    u32 *dst_sep = this->separators;
+                    u32 *dst_sep = m_separators;
                     for (const char *cur = "/\\"; *cur != '\x00'; ++cur) {
-                        AMS_ASSERT(dst_sep < std::end(this->separators));
+                        AMS_ASSERT(dst_sep < std::end(m_separators));
 
                         const auto result = util::ConvertCharacterUtf8ToUtf32(dst_sep, cur);
                         AMS_ASSERT(result == util::CharacterEncodingResult_Success);
@@ -49,7 +49,7 @@ namespace ams::fs {
 
                         ++dst_sep;
                     }
-                    AMS_ASSERT(dst_sep == std::end(this->separators));
+                    AMS_ASSERT(dst_sep == std::end(m_separators));
                 }
 
                 Result Verify(const char *path, int max_path_len, int max_name_len) const {
@@ -74,7 +74,7 @@ namespace ams::fs {
                         R_UNLESS(result == util::CharacterEncodingResult_Success, fs::ResultInvalidCharacter());
 
                         /* Check if the character is invalid. */
-                        for (const auto invalid : this->invalid_chars) {
+                        for (const auto invalid : m_invalid_chars) {
                             R_UNLESS(path_char != invalid, fs::ResultInvalidCharacter());
                         }
 
@@ -82,7 +82,7 @@ namespace ams::fs {
                         ++name_len;
 
                         /* Check for separator. */
-                        for (const auto sep : this->separators) {
+                        for (const auto sep : m_separators) {
                             if (path_char == sep) {
                                 name_len = 0;
                                 break;

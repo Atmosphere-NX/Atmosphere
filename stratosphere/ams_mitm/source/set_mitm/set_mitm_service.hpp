@@ -26,11 +26,11 @@ namespace ams::mitm::settings {
 
     class SetMitmService : public sf::MitmServiceImplBase {
         private:
-            os::SdkMutex lock{};
-            cfg::OverrideLocale locale;
-            bool got_locale = false;
-            bool is_valid_language = false;
-            bool is_valid_region   = false;
+            os::SdkMutex m_lock{};
+            cfg::OverrideLocale m_locale;
+            bool m_got_locale = false;
+            bool m_is_valid_language = false;
+            bool m_is_valid_region   = false;
         public:
             SetMitmService(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c);
         public:

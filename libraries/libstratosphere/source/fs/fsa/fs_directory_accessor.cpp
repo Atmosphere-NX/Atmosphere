@@ -19,21 +19,21 @@
 
 namespace ams::fs::impl {
 
-    DirectoryAccessor::DirectoryAccessor(std::unique_ptr<fsa::IDirectory>&& d, FileSystemAccessor &p) : impl(std::move(d)), parent(p) {
+    DirectoryAccessor::DirectoryAccessor(std::unique_ptr<fsa::IDirectory>&& d, FileSystemAccessor &p) : m_impl(std::move(d)), m_parent(p) {
         /* ... */
     }
 
     DirectoryAccessor::~DirectoryAccessor() {
-        this->impl.reset();
-        this->parent.NotifyCloseDirectory(this);
+        m_impl.reset();
+        m_parent.NotifyCloseDirectory(this);
     }
 
     Result DirectoryAccessor::Read(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) {
-        return this->impl->Read(out_count, out_entries, max_entries);
+        return m_impl->Read(out_count, out_entries, max_entries);
     }
 
     Result DirectoryAccessor::GetEntryCount(s64 *out) {
-        return this->impl->GetEntryCount(out);
+        return m_impl->GetEntryCount(out);
     }
 
 }

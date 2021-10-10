@@ -34,30 +34,30 @@ namespace ams::updater {
         AMS_ABORT_UNLESS(util::IsAligned(reinterpret_cast<uintptr_t>(work_buffer), os::MemoryPageSize));
         AMS_ABORT_UNLESS(util::IsAligned(work_buffer_size, 0x200));
 
-        R_TRY(this->accessor.Initialize());
-        this->save_buffer = work_buffer;
+        R_TRY(m_accessor.Initialize());
+        m_save_buffer = work_buffer;
         return ResultSuccess();
     }
 
     void BisSave::Finalize() {
-        this->accessor.Finalize();
+        m_accessor.Finalize();
     }
 
     Result BisSave::Load() {
         size_t read_size;
-        return this->accessor.Read(&read_size, this->save_buffer, SaveSize, Boot0Partition::BctSave);
+        return m_accessor.Read(std::addressof(read_size), m_save_buffer, SaveSize, Boot0Partition::BctSave);
     }
 
     Result BisSave::Save() {
-        return this->accessor.Write(this->save_buffer, SaveSize, Boot0Partition::BctSave);
+        return m_accessor.Write(m_save_buffer, SaveSize, Boot0Partition::BctSave);
     }
 
     bool BisSave::GetNeedsVerification(BootModeType mode) {
-        return reinterpret_cast<const u8 *>(this->save_buffer)[GetVerificationFlagOffset(mode)] != 0;
+        return reinterpret_cast<const u8 *>(m_save_buffer)[GetVerificationFlagOffset(mode)] != 0;
     }
 
     void BisSave::SetNeedsVerification(BootModeType mode, bool needs_verification) {
-        reinterpret_cast<u8 *>(this->save_buffer)[GetVerificationFlagOffset(mode)] = needs_verification ? 1 : 0;
+        reinterpret_cast<u8 *>(m_save_buffer)[GetVerificationFlagOffset(mode)] = needs_verification ? 1 : 0;
     }
 
 }

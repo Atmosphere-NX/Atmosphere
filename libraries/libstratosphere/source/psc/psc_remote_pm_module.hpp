@@ -22,11 +22,11 @@ namespace ams::psc {
         NON_COPYABLE(RemotePmModule);
         NON_MOVEABLE(RemotePmModule);
         private:
-            ::PscPmModule module;
+            ::PscPmModule m_module;
         public:
-            constexpr RemotePmModule(const ::PscPmModule &m) : module(m) { /* ... */ }
+            constexpr RemotePmModule(const ::PscPmModule &m) : m_module(m) { /* ... */ }
             ~RemotePmModule() {
-                ::pscPmModuleClose(std::addressof(this->module));
+                ::pscPmModuleClose(std::addressof(m_module));
             }
 
             Result Initialize(ams::sf::OutCopyHandle out, psc::PmModuleId module_id, const ams::sf::InBuffer &child_list) {
@@ -38,21 +38,21 @@ namespace ams::psc {
             Result GetRequest(ams::sf::Out<PmState> out_state, ams::sf::Out<PmFlagSet> out_flags) {
                 static_assert(sizeof(PmState) == sizeof(::PscPmState));
                 static_assert(sizeof(PmFlagSet) == sizeof(u32));
-                return ::pscPmModuleGetRequest(std::addressof(this->module), reinterpret_cast<::PscPmState *>(out_state.GetPointer()), reinterpret_cast<u32 *>(out_flags.GetPointer()));
+                return ::pscPmModuleGetRequest(std::addressof(m_module), reinterpret_cast<::PscPmState *>(out_state.GetPointer()), reinterpret_cast<u32 *>(out_flags.GetPointer()));
             }
 
             Result Acknowledge() {
                 /* NOTE: libnx does not separate acknowledge/acknowledgeEx. */
-                return ::pscPmModuleAcknowledge(std::addressof(this->module), static_cast<::PscPmState>(0));
+                return ::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(0));
             }
 
             Result Finalize() {
-                return ::pscPmModuleFinalize(std::addressof(this->module));
+                return ::pscPmModuleFinalize(std::addressof(m_module));
             }
 
             Result AcknowledgeEx(PmState state) {
                 static_assert(sizeof(state) == sizeof(::PscPmState));
-                return ::pscPmModuleAcknowledge(std::addressof(this->module), static_cast<::PscPmState>(state));
+                return ::pscPmModuleAcknowledge(std::addressof(m_module), static_cast<::PscPmState>(state));
             }
     };
     static_assert(psc::sf::IsIPmModule<RemotePmModule>);

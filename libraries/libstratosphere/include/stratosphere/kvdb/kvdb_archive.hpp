@@ -21,10 +21,10 @@ namespace ams::kvdb {
     /* Functionality for parsing/generating a key value archive. */
     class ArchiveReader {
         private:
-            AutoBuffer &buffer;
-            size_t offset;
+            AutoBuffer &m_buffer;
+            size_t m_offset;
         public:
-            ArchiveReader(AutoBuffer &b) : buffer(b), offset(0) { /* ... */ }
+            ArchiveReader(AutoBuffer &b) : m_buffer(b), m_offset(0) { /* ... */ }
         private:
             Result Peek(void *dst, size_t size);
             Result Read(void *dst, size_t size);
@@ -36,10 +36,10 @@ namespace ams::kvdb {
 
     class ArchiveWriter {
         private:
-            AutoBuffer &buffer;
-            size_t offset;
+            AutoBuffer &m_buffer;
+            size_t m_offset;
         public:
-            ArchiveWriter(AutoBuffer &b) : buffer(b), offset(0) { /* ... */ }
+            ArchiveWriter(AutoBuffer &b) : m_buffer(b), m_offset(0) { /* ... */ }
         private:
             Result Write(const void *src, size_t size);
         public:
@@ -49,14 +49,14 @@ namespace ams::kvdb {
 
     class ArchiveSizeHelper {
         private:
-            size_t size;
+            size_t m_size;
         public:
             ArchiveSizeHelper();
 
             void AddEntry(size_t key_size, size_t value_size);
 
             size_t GetSize() const {
-                return this->size;
+                return m_size;
             }
     };
 

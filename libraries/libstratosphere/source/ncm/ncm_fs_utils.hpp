@@ -22,9 +22,9 @@ namespace ams::ncm::impl {
 
     class PathView {
         private:
-            util::string_view path;
+            util::string_view m_path;
         public:
-            PathView(util::string_view p) : path(p) { /* ...*/ }
+            PathView(util::string_view p) : m_path(p) { /* ...*/ }
             bool HasPrefix(util::string_view prefix) const;
             bool HasSuffix(util::string_view suffix) const;
             util::string_view GetFileName() const;

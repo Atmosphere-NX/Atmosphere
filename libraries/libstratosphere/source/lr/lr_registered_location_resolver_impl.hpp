@@ -36,16 +36,16 @@ namespace ams::lr {
             }
         private:
             /* Redirection and registered location storage. */
-            LocationRedirector program_redirector;
-            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_program_locations;
-            LocationRedirector html_docs_redirector;
-            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
+            LocationRedirector m_program_redirector;
+            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> m_registered_program_locations;
+            LocationRedirector m_html_docs_redirector;
+            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> m_registered_html_docs_locations;
         private:
             /* Helper functions. */
             void ClearRedirections(u32 flags = RedirectionFlags_None);
             Result RefreshImpl(const ncm::ProgramId *excluding_ids, size_t num_ids);
         public:
-            RegisteredLocationResolverImpl() : registered_program_locations(GetMaxRegisteredLocations()), registered_html_docs_locations(GetMaxRegisteredLocations()) { /* ... */ }
+            RegisteredLocationResolverImpl() : m_registered_program_locations(GetMaxRegisteredLocations()), m_registered_html_docs_locations(GetMaxRegisteredLocations()) { /* ... */ }
             ~RegisteredLocationResolverImpl();
         public:
             /* Actual commands. */

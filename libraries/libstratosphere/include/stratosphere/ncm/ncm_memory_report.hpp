@@ -40,13 +40,13 @@ namespace ams::ncm {
 
     class HeapState {
         private:
-            os::SdkMutex mutex;
-            lmem::HeapHandle heap_handle;
-            size_t total_alloc_size;
-            size_t peak_total_alloc_size;
-            size_t peak_alloc_size;
+            os::SdkMutex m_mutex;
+            lmem::HeapHandle m_heap_handle;
+            size_t m_total_alloc_size;
+            size_t m_peak_total_alloc_size;
+            size_t m_peak_alloc_size;
         public:
-            constexpr HeapState() : mutex(), heap_handle(nullptr), total_alloc_size(0), peak_total_alloc_size(0), peak_alloc_size(0) { /* ... */ }
+            constexpr HeapState() : m_mutex(), m_heap_handle(nullptr), m_total_alloc_size(0), m_peak_total_alloc_size(0), m_peak_alloc_size(0) { /* ... */ }
 
             void Initialize(lmem::HeapHandle heap_handle);
             void Allocate(size_t size);

@@ -45,32 +45,32 @@ namespace ams::sf::hipc {
         NON_COPYABLE(ServerSession);
         NON_MOVEABLE(ServerSession);
         private:
-            cmif::ServiceObjectHolder srv_obj_holder;
-            cmif::PointerAndSize pointer_buffer;
-            cmif::PointerAndSize saved_message;
-            std::shared_ptr<::Service> forward_service;
-            os::NativeHandle session_handle;
-            bool is_closed;
-            bool has_received;
+            cmif::ServiceObjectHolder m_srv_obj_holder;
+            cmif::PointerAndSize m_pointer_buffer;
+            cmif::PointerAndSize m_saved_message;
+            std::shared_ptr<::Service> m_forward_service;
+            os::NativeHandle m_session_handle;
+            bool m_is_closed;
+            bool m_has_received;
         public:
-            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj) : srv_obj_holder(std::move(obj)), session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj) : m_srv_obj_holder(std::move(obj)), m_session_handle(h) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
-                this->is_closed = false;
-                this->has_received = false;
-                this->forward_service = nullptr;
+                m_is_closed = false;
+                m_has_received = false;
+                m_forward_service = nullptr;
                 AMS_ABORT_UNLESS(!this->IsMitmSession());
             }
 
-            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : srv_obj_holder(std::move(obj)), session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : m_srv_obj_holder(std::move(obj)), m_session_handle(h) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
-                this->is_closed = false;
-                this->has_received = false;
-                this->forward_service = std::move(fsrv);
+                m_is_closed = false;
+                m_has_received = false;
+                m_forward_service = std::move(fsrv);
                 AMS_ABORT_UNLESS(this->IsMitmSession());
             }
 
             bool IsMitmSession() const {
-                return this->forward_service != nullptr;
+                return m_forward_service != nullptr;
             }
 
             Result ForwardRequest(const cmif::ServiceDispatchContext &ctx) const;

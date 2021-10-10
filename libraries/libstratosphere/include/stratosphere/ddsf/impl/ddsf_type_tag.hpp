@@ -37,21 +37,21 @@ namespace ams::ddsf::impl {
 
     class TypeTag {
         private:
-            const char * const class_name;
-            const TypeTag * const base;
+            const char * const m_class_name;
+            const TypeTag * const m_base;
         public:
             #if !(defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING))
-                constexpr TypeTag() : class_name(nullptr), base(nullptr) { /* ... */}
-                constexpr TypeTag(const TypeTag &b) : class_name(nullptr), base(std::addressof(b)) { AMS_ASSERT(this != this->base); }
+                constexpr TypeTag() : m_class_name(nullptr), m_base(nullptr) { /* ... */}
+                constexpr TypeTag(const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { AMS_ASSERT(this != m_base); }
 
-                constexpr TypeTag(const char *c) : class_name(nullptr), base(nullptr) { AMS_UNUSED(c); }
-                constexpr TypeTag(const char *c, const TypeTag &b) : class_name(nullptr), base(std::addressof(b)) { AMS_UNUSED(c); AMS_ASSERT(this != this->base); }
+                constexpr TypeTag(const char *c) : m_class_name(nullptr), m_base(nullptr) { AMS_UNUSED(c); }
+                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { AMS_UNUSED(c); AMS_ASSERT(this != m_base); }
             #else
-                constexpr TypeTag(const char *c) : class_name(c), base(nullptr) { /* ... */ }
-                constexpr TypeTag(const char *c, const TypeTag &b) : class_name(c), base(std::addressof(b)) { AMS_ASSERT(this != this->base); }
+                constexpr TypeTag(const char *c) : m_class_name(c), m_base(nullptr) { /* ... */ }
+                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(c), m_base(std::addressof(b)) { AMS_ASSERT(this != m_base); }
             #endif
 
-            constexpr const char * GetClassName() const { return this->class_name; }
+            constexpr const char * GetClassName() const { return m_class_name; }
 
             constexpr bool Is(const TypeTag &rhs) const { return this == std::addressof(rhs); }
 
@@ -61,7 +61,7 @@ namespace ams::ddsf::impl {
                     if (cur == std::addressof(rhs)) {
                         return true;
                     }
-                    cur = cur->base;
+                    cur = cur->m_base;
                 }
                 return false;
             }

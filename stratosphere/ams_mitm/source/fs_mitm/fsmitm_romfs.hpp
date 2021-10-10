@@ -202,7 +202,7 @@ namespace ams::mitm::fs::romfs {
     class DirectoryTableReader;
     class FileTableReader;
 
-    struct Builder {
+    class Builder {
         NON_COPYABLE(Builder);
         NON_MOVEABLE(Builder);
         private:
@@ -230,20 +230,20 @@ namespace ams::mitm::fs::romfs {
             template<typename T>
             using ContextSet = std::set<std::unique_ptr<T>, Comparator<T>>;
         private:
-            ncm::ProgramId program_id;
-            BuildDirectoryContext *root;
-            ContextSet<BuildDirectoryContext> directories;
-            ContextSet<BuildFileContext> files;
-            size_t num_dirs;
-            size_t num_files;
-            size_t dir_table_size;
-            size_t file_table_size;
-            size_t dir_hash_table_size;
-            size_t file_hash_table_size;
-            size_t file_partition_size;
+            ncm::ProgramId m_program_id;
+            BuildDirectoryContext *m_root;
+            ContextSet<BuildDirectoryContext> m_directories;
+            ContextSet<BuildFileContext> m_files;
+            size_t m_num_dirs;
+            size_t m_num_files;
+            size_t m_dir_table_size;
+            size_t m_file_table_size;
+            size_t m_dir_hash_table_size;
+            size_t m_file_hash_table_size;
+            size_t m_file_partition_size;
 
-            ams::fs::DirectoryEntry dir_entry;
-            DataSourceType cur_source_type;
+            ams::fs::DirectoryEntry m_dir_entry;
+            DataSourceType m_cur_source_type;
         private:
             void VisitDirectory(FsFileSystem *fs, BuildDirectoryContext *parent);
             void VisitDirectory(BuildDirectoryContext *parent, u32 parent_offset, DirectoryTableReader &dir_table, FileTableReader &file_table);

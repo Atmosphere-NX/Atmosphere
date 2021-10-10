@@ -40,9 +40,9 @@ namespace ams::fssrv::impl {
     class FileInterfaceAdapter {
         NON_COPYABLE(FileInterfaceAdapter);
         private:
-            ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
-            std::unique_ptr<fs::fsa::IFile> base_file;
-            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> m_parent_filesystem;
+            std::unique_ptr<fs::fsa::IFile> m_base_file;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
         public:
             FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~FileInterfaceAdapter();
@@ -63,9 +63,9 @@ namespace ams::fssrv::impl {
     class DirectoryInterfaceAdapter {
         NON_COPYABLE(DirectoryInterfaceAdapter);
         private:
-            ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
-            std::unique_ptr<fs::fsa::IDirectory> base_dir;
-            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> m_parent_filesystem;
+            std::unique_ptr<fs::fsa::IDirectory> m_base_dir;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
         public:
             DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~DirectoryInterfaceAdapter();
@@ -79,11 +79,11 @@ namespace ams::fssrv::impl {
     class FileSystemInterfaceAdapter : public ams::sf::ISharedObject {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         private:
-            std::shared_ptr<fs::fsa::IFileSystem> base_fs;
-            util::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
-            os::ReaderWriterLock invalidation_lock;
-            bool open_count_limited;
-            bool deep_retry_enabled = false;
+            std::shared_ptr<fs::fsa::IFileSystem> m_base_fs;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_mount_count_semaphore;
+            os::ReaderWriterLock m_invalidation_lock;
+            bool m_open_count_limited;
+            bool m_deep_retry_enabled = false;
         public:
             FileSystemInterfaceAdapter(std::shared_ptr<fs::fsa::IFileSystem> &&fs, bool open_limited);
             /* TODO: Other constructors. */

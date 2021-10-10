@@ -267,25 +267,25 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetPreChargeCurrentLimit(int ma) {
-        return ReadWriteRegister(this->i2c_session, bq24193::PreChargeTerminationCurrentControl, 0xF0, bq24193::EncodePreChargeCurrentLimit(ma));
+        return ReadWriteRegister(m_i2c_session, bq24193::PreChargeTerminationCurrentControl, 0xF0, bq24193::EncodePreChargeCurrentLimit(ma));
     }
 
     Result Bq24193Driver::SetTerminationCurrentLimit(int ma) {
-        return ReadWriteRegister(this->i2c_session, bq24193::PreChargeTerminationCurrentControl, 0x0F, bq24193::EncodeTerminationCurrentLimit(ma));
+        return ReadWriteRegister(m_i2c_session, bq24193::PreChargeTerminationCurrentControl, 0x0F, bq24193::EncodeTerminationCurrentLimit(ma));
     }
 
     Result Bq24193Driver::SetMinimumSystemVoltageLimit(int mv) {
-        return ReadWriteRegister(this->i2c_session, bq24193::PowerOnConfiguration, 0x0E, bq24193::EncodeMinimumSystemVoltageLimit(mv));
+        return ReadWriteRegister(m_i2c_session, bq24193::PowerOnConfiguration, 0x0E, bq24193::EncodeMinimumSystemVoltageLimit(mv));
     }
 
     Result Bq24193Driver::SetChargingSafetyTimerEnabled(bool en) {
-        return ReadWriteRegister(this->i2c_session, bq24193::ChargeTerminationTimerControl, 0x08, en ? 0x08 : 0x00);
+        return ReadWriteRegister(m_i2c_session, bq24193::ChargeTerminationTimerControl, 0x08, en ? 0x08 : 0x00);
     }
 
     Result Bq24193Driver::GetForce20PercentChargeCurrent(bool *out) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::ChargeCurrentControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::ChargeCurrentControl, std::addressof(val)));
 
         /* Extract the value. */
         *out = (val & 0x01) != 0;
@@ -293,13 +293,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetForce20PercentChargeCurrent(bool en) {
-        return ReadWriteRegister(this->i2c_session, bq24193::ChargeCurrentControl, 0x01, en ? 0x01 : 0x00);
+        return ReadWriteRegister(m_i2c_session, bq24193::ChargeCurrentControl, 0x01, en ? 0x01 : 0x00);
     }
 
     Result Bq24193Driver::GetFastChargeCurrentLimit(int *out_ma) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::ChargeCurrentControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::ChargeCurrentControl, std::addressof(val)));
 
         /* Extract the value. */
         *out_ma = bq24193::DecodeFastChargeCurrentLimit(val);
@@ -307,13 +307,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetFastChargeCurrentLimit(int ma) {
-        return ReadWriteRegister(this->i2c_session, bq24193::ChargeCurrentControl, 0xFC, bq24193::EncodeFastChargeCurrentLimit(ma));
+        return ReadWriteRegister(m_i2c_session, bq24193::ChargeCurrentControl, 0xFC, bq24193::EncodeFastChargeCurrentLimit(ma));
     }
 
     Result Bq24193Driver::GetChargeVoltageLimit(int *out_mv) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::ChargeVoltageControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::ChargeVoltageControl, std::addressof(val)));
 
         /* Extract the value. */
         *out_mv = bq24193::DecodeChargeVoltageLimit(val);
@@ -321,17 +321,17 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetChargeVoltageLimit(int mv) {
-        return ReadWriteRegister(this->i2c_session, bq24193::ChargeVoltageControl, 0xFC, bq24193::EncodeChargeVoltageLimit(mv));
+        return ReadWriteRegister(m_i2c_session, bq24193::ChargeVoltageControl, 0xFC, bq24193::EncodeChargeVoltageLimit(mv));
     }
 
     Result Bq24193Driver::SetChargerConfiguration(bq24193::ChargerConfiguration cfg) {
-        return ReadWriteRegister(this->i2c_session, bq24193::PowerOnConfiguration, 0x30, bq24193::EncodeChargerConfiguration(cfg));
+        return ReadWriteRegister(m_i2c_session, bq24193::PowerOnConfiguration, 0x30, bq24193::EncodeChargerConfiguration(cfg));
     }
 
     Result Bq24193Driver::IsHiZEnabled(bool *out) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::InputSourceControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::InputSourceControl, std::addressof(val)));
 
         /* Extract the value. */
         *out = (val & 0x80) != 0;
@@ -339,13 +339,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetHiZEnabled(bool en) {
-        return ReadWriteRegister(this->i2c_session, bq24193::InputSourceControl, 0x80, en ? 0x80 : 0x00);
+        return ReadWriteRegister(m_i2c_session, bq24193::InputSourceControl, 0x80, en ? 0x80 : 0x00);
     }
 
     Result Bq24193Driver::GetInputCurrentLimit(int *out_ma) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::InputSourceControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::InputSourceControl, std::addressof(val)));
 
         /* Extract the value. */
         *out_ma = bq24193::DecodeInputCurrentLimit(val);
@@ -353,21 +353,21 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetInputCurrentLimit(int ma) {
-        return ReadWriteRegister(this->i2c_session, bq24193::InputSourceControl, 0x07, bq24193::EncodeInputCurrentLimit(ma));
+        return ReadWriteRegister(m_i2c_session, bq24193::InputSourceControl, 0x07, bq24193::EncodeInputCurrentLimit(ma));
     }
 
     Result Bq24193Driver::SetInputVoltageLimit(int mv) {
-        return ReadWriteRegister(this->i2c_session, bq24193::InputSourceControl, 0x78, bq24193::EncodeInputVoltageLimit(mv));
+        return ReadWriteRegister(m_i2c_session, bq24193::InputSourceControl, 0x78, bq24193::EncodeInputVoltageLimit(mv));
     }
 
     Result Bq24193Driver::SetBoostModeCurrentLimit(int ma) {
-        return ReadWriteRegister(this->i2c_session, bq24193::PowerOnConfiguration, 0x01, bq24193::EncodeBoostModeCurrentLimit(ma));
+        return ReadWriteRegister(m_i2c_session, bq24193::PowerOnConfiguration, 0x01, bq24193::EncodeBoostModeCurrentLimit(ma));
     }
 
     Result Bq24193Driver::GetChargerStatus(bq24193::ChargerStatus *out) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::SystemStatus, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::SystemStatus, std::addressof(val)));
 
         /* Extract the value. */
         *out = bq24193::DecodeChargerStatus(val);
@@ -375,17 +375,17 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::ResetWatchdogTimer() {
-        return ReadWriteRegister(this->i2c_session, bq24193::PowerOnConfiguration, 0x40, 0x40);
+        return ReadWriteRegister(m_i2c_session, bq24193::PowerOnConfiguration, 0x40, 0x40);
     }
 
     Result Bq24193Driver::SetWatchdogTimerSetting(int seconds) {
-        return ReadWriteRegister(this->i2c_session, bq24193::ChargeTerminationTimerControl, 0x30, bq24193::EncodeWatchdogTimerSetting(seconds));
+        return ReadWriteRegister(m_i2c_session, bq24193::ChargeTerminationTimerControl, 0x30, bq24193::EncodeWatchdogTimerSetting(seconds));
     }
 
     Result Bq24193Driver::GetBatteryCompensation(int *out_mo) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::IrCompensationThermalRegulationControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::IrCompensationThermalRegulationControl, std::addressof(val)));
 
         /* Extract the value. */
         *out_mo = bq24193::DecodeBatteryCompensation(val);
@@ -393,13 +393,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetBatteryCompensation(int mo) {
-        return ReadWriteRegister(this->i2c_session, bq24193::IrCompensationThermalRegulationControl, 0xE0, bq24193::EncodeBatteryCompensation(mo));
+        return ReadWriteRegister(m_i2c_session, bq24193::IrCompensationThermalRegulationControl, 0xE0, bq24193::EncodeBatteryCompensation(mo));
     }
 
     Result Bq24193Driver::GetVoltageClamp(int *out_mv) {
         /* Get the register. */
         u8 val;
-        R_TRY(i2c::ReadSingleRegister(this->i2c_session, bq24193::IrCompensationThermalRegulationControl, std::addressof(val)));
+        R_TRY(i2c::ReadSingleRegister(m_i2c_session, bq24193::IrCompensationThermalRegulationControl, std::addressof(val)));
 
         /* Extract the value. */
         *out_mv = bq24193::DecodeVoltageClamp(val);
@@ -407,7 +407,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
     }
 
     Result Bq24193Driver::SetVoltageClamp(int mv) {
-        return ReadWriteRegister(this->i2c_session, bq24193::IrCompensationThermalRegulationControl, 0x1C, bq24193::EncodeVoltageClamp(mv));
+        return ReadWriteRegister(m_i2c_session, bq24193::IrCompensationThermalRegulationControl, 0x1C, bq24193::EncodeVoltageClamp(mv));
     }
 
 }

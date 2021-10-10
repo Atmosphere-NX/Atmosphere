@@ -82,18 +82,18 @@ namespace ams::ncm {
         NON_COPYABLE(InstallTaskBase);
         NON_MOVEABLE(InstallTaskBase);
         private:
-            crypto::Sha256Generator sha256_generator;
-            StorageId install_storage;
-            InstallTaskDataBase *data;
-            InstallProgress progress;
-            os::SdkMutex progress_mutex;
-            u32 config;
-            os::SdkMutex cancel_mutex;
-            bool cancel_requested;
-            InstallThroughput throughput;
-            TimeSpan throughput_start_time;
-            os::SdkMutex throughput_mutex;
-            FirmwareVariationId firmware_variation_id;
+            crypto::Sha256Generator m_sha256_generator;
+            StorageId m_install_storage;
+            InstallTaskDataBase *m_data;
+            InstallProgress m_progress;
+            os::SdkMutex m_progress_mutex;
+            u32 m_config;
+            os::SdkMutex m_cancel_mutex;
+            bool m_cancel_requested;
+            InstallThroughput m_throughput;
+            TimeSpan m_throughput_start_time;
+            os::SdkMutex m_throughput_mutex;
+            FirmwareVariationId m_firmware_variation_id;
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
                 if (R_FAILED(result)) {
@@ -102,7 +102,7 @@ namespace ams::ncm {
                 return result;
             }
         public:
-            InstallTaskBase() : data(), progress(), progress_mutex(), cancel_mutex(), cancel_requested(), throughput_mutex() { /* ... */ }
+            InstallTaskBase() : m_data(), m_progress(), m_progress_mutex(), m_cancel_mutex(), m_cancel_requested(), m_throughput_mutex() { /* ... */ }
             virtual ~InstallTaskBase() { /* ... */ };
         public:
             virtual void Cancel();
@@ -144,10 +144,10 @@ namespace ams::ncm {
             virtual Result PrepareDependency();
             Result PrepareSystemUpdateDependency();
             virtual Result PrepareContentMetaIfLatest(const ContentMetaKey &key); /* NOTE: This is not virtual in Nintendo's code. We do so to facilitate downgrades. */
-            u32 GetConfig() const { return this->config; }
+            u32 GetConfig() const { return m_config; }
             Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, util::optional<bool> is_temporary);
 
-            StorageId GetInstallStorage() const { return this->install_storage; }
+            StorageId GetInstallStorage() const { return m_install_storage; }
 
             virtual Result OnPrepareComplete() { return ResultSuccess(); }
 
@@ -196,7 +196,7 @@ namespace ams::ncm {
         public:
             virtual Result CheckInstallable() { return ResultSuccess(); }
 
-            void SetFirmwareVariationId(FirmwareVariationId id) { this->firmware_variation_id = id; }
+            void SetFirmwareVariationId(FirmwareVariationId id) { m_firmware_variation_id = id; }
             Result ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset);
     };
 

@@ -277,15 +277,15 @@ namespace ams::dmnt::cheat::impl {
             constexpr static size_t NumWritableStaticRegisters = 0x80;
             constexpr static size_t NumStaticRegisters = NumReadableStaticRegisters + NumWritableStaticRegisters;
         private:
-            size_t num_opcodes = 0;
-            size_t instruction_ptr = 0;
-            size_t condition_depth = 0;
-            bool decode_success = false;
-            u32 program[MaximumProgramOpcodeCount] = {0};
-            u64 registers[NumRegisters] = {0};
-            u64 saved_values[NumRegisters] = {0};
-            u64 static_registers[NumStaticRegisters] = {0};
-            size_t loop_tops[NumRegisters] = {0};
+            size_t m_num_opcodes = 0;
+            size_t m_instruction_ptr = 0;
+            size_t m_condition_depth = 0;
+            bool m_decode_success = false;
+            u32 m_program[MaximumProgramOpcodeCount] = {0};
+            u64 m_registers[NumRegisters] = {0};
+            u64 m_saved_values[NumRegisters] = {0};
+            u64 m_static_registers[NumStaticRegisters] = {0};
+            size_t m_loop_tops[NumRegisters] = {0};
         private:
             bool DecodeNextOpcode(CheatVmOpcode *out);
             void SkipConditionalBlock(bool is_if);
@@ -303,32 +303,32 @@ namespace ams::dmnt::cheat::impl {
             static u64 GetVmInt(VmInt value, u32 bit_width);
             static u64 GetCheatProcessAddress(const CheatProcessMetadata* metadata, MemoryAccessType mem_type, u64 rel_address);
         public:
-            CheatVirtualMachine() { }
+            constexpr CheatVirtualMachine() = default;
 
             size_t GetProgramSize() {
-                return this->num_opcodes;
+                return m_num_opcodes;
             }
 
             bool LoadProgram(const CheatEntry *cheats, size_t num_cheats);
             void Execute(const CheatProcessMetadata *metadata);
 
             u64 GetStaticRegister(size_t which) const {
-                return this->static_registers[which];
+                return m_static_registers[which];
             }
 
             void SetStaticRegister(size_t which, u64 value) {
-                this->static_registers[which] = value;
+                m_static_registers[which] = value;
             }
 
             void ResetStaticRegisters() {
-                std::memset(this->static_registers, 0, sizeof(this->static_registers));
+                std::memset(m_static_registers, 0, sizeof(m_static_registers));
             }
     #ifdef DMNT_CHEAT_VM_DEBUG_LOG
         private:
-            fs::FileHandle debug_log_file;
-            s64 debug_log_file_offset;
-            bool has_debug_log_file;
-            char debug_log_format_buf[0x100];
+            fs::FileHandle m_debug_log_file = {};
+            s64 m_debug_log_file_offset = 0;
+            bool m_has_debug_log_file = false;
+            char m_debug_log_format_buf[0x100] = {0};
     #endif
     };
 

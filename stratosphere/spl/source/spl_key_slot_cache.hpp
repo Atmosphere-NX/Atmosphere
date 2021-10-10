@@ -26,25 +26,25 @@ namespace ams::spl {
         public:
             static constexpr size_t KeySize = crypto::AesDecryptor128::KeySize;
         private:
-            const s32 slot_index;
-            s32 virtual_slot;
+            const s32 m_slot_index;
+            s32 m_virtual_slot;
         public:
-            explicit KeySlotCacheEntry(s32 idx) : slot_index(idx), virtual_slot(-1) { /* ... */ }
+            explicit KeySlotCacheEntry(s32 idx) : m_slot_index(idx), m_virtual_slot(-1) { /* ... */ }
 
             bool Contains(s32 virtual_slot) const {
-                return virtual_slot == this->virtual_slot;
+                return virtual_slot == m_virtual_slot;
             }
 
-            s32 GetPhysicalKeySlotIndex() const { return this->slot_index; }
+            s32 GetPhysicalKeySlotIndex() const { return m_slot_index; }
 
-            s32 GetVirtualKeySlotIndex() const { return this->virtual_slot; }
+            s32 GetVirtualKeySlotIndex() const { return m_virtual_slot; }
 
             void SetVirtualSlot(s32 virtual_slot) {
-                this->virtual_slot = virtual_slot;
+                m_virtual_slot = virtual_slot;
             }
 
             void ClearVirtualSlot() {
-                this->virtual_slot = -1;
+                m_virtual_slot = -1;
             }
     };
 
@@ -54,16 +54,16 @@ namespace ams::spl {
         private:
             using KeySlotCacheEntryList = util::IntrusiveListBaseTraits<KeySlotCacheEntry>::ListType;
         private:
-            KeySlotCacheEntryList mru_list;
+            KeySlotCacheEntryList m_mru_list;
         public:
-            constexpr KeySlotCache() : mru_list() { /* ... */ }
+            constexpr KeySlotCache() : m_mru_list() { /* ... */ }
 
             s32 Allocate(s32 virtual_slot) {
                 return this->AllocateFromLru(virtual_slot);
             }
 
             bool Find(s32 *out, s32 virtual_slot) {
-                for (auto it = this->mru_list.begin(); it != this->mru_list.end(); ++it) {
+                for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
                     if (it->Contains(virtual_slot)) {
                         *out = it->GetPhysicalKeySlotIndex();
 
@@ -76,7 +76,7 @@ namespace ams::spl {
             }
 
             bool Release(s32 *out, s32 virtual_slot) {
-                for (auto it = this->mru_list.begin(); it != this->mru_list.end(); ++it) {
+                for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
                     if (it->Contains(virtual_slot)) {
                         *out = it->GetPhysicalKeySlotIndex();
                         it->ClearVirtualSlot();
@@ -90,7 +90,7 @@ namespace ams::spl {
             }
 
             bool FindPhysical(s32 physical_slot) {
-                for (auto it = this->mru_list.begin(); it != this->mru_list.end(); ++it) {
+                for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
                     if (it->GetPhysicalKeySlotIndex() == physical_slot) {
                         this->UpdateMru(it);
 
@@ -106,32 +106,32 @@ namespace ams::spl {
             }
 
             void AddEntry(KeySlotCacheEntry *entry) {
-                this->mru_list.push_front(*entry);
+                m_mru_list.push_front(*entry);
             }
         private:
             s32 AllocateFromLru(s32 virtual_slot) {
-                AMS_ASSERT(!this->mru_list.empty());
+                AMS_ASSERT(!m_mru_list.empty());
 
-                auto it = this->mru_list.rbegin();
+                auto it = m_mru_list.rbegin();
                 it->SetVirtualSlot(virtual_slot);
 
                 auto *entry = std::addressof(*it);
-                this->mru_list.pop_back();
-                this->mru_list.push_front(*entry);
+                m_mru_list.pop_back();
+                m_mru_list.push_front(*entry);
 
                 return entry->GetPhysicalKeySlotIndex();
             }
 
             void UpdateMru(KeySlotCacheEntryList::iterator it) {
                 auto *entry = std::addressof(*it);
-                this->mru_list.erase(it);
-                this->mru_list.push_front(*entry);
+                m_mru_list.erase(it);
+                m_mru_list.push_front(*entry);
             }
 
             void UpdateLru(KeySlotCacheEntryList::iterator it) {
                 auto *entry = std::addressof(*it);
-                this->mru_list.erase(it);
-                this->mru_list.push_back(*entry);
+                m_mru_list.erase(it);
+                m_mru_list.push_back(*entry);
             }
     };
 

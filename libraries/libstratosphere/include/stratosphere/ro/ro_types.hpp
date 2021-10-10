@@ -48,47 +48,47 @@ namespace ams::ro {
         public:
             static constexpr u32 Magic = util::FourCC<'N','R','R','0'>::Code;
         private:
-            u32 magic;
-            u32 key_generation;
-            u8  reserved_08[0x08];
-            NrrCertification certification;
-            u8  signature[0x100];
-            ncm::ProgramId program_id;
-            u32 size;
-            u8  nrr_kind; /* 7.0.0+ */
-            u8  reserved_33D[3];
-            u32 hashes_offset;
-            u32 num_hashes;
-            u8  reserved_348[8];
+            u32 m_magic;
+            u32 m_key_generation;
+            u8  m_reserved_08[0x08];
+            NrrCertification m_certification;
+            u8  m_signature[0x100];
+            ncm::ProgramId m_program_id;
+            u32 m_size;
+            u8  m_nrr_kind; /* 7.0.0+ */
+            u8  m_reserved_33D[3];
+            u32 m_hashes_offset;
+            u32 m_num_hashes;
+            u8  m_reserved_348[8];
         public:
             bool IsMagicValid() const {
-                return this->magic == Magic;
+                return m_magic == Magic;
             }
 
             bool IsProgramIdValid() const {
-                return (static_cast<u64>(this->program_id) & this->certification.program_id_mask) == this->certification.program_id_pattern;
+                return (static_cast<u64>(m_program_id) & m_certification.program_id_mask) == m_certification.program_id_pattern;
             }
 
             NrrKind GetNrrKind() const {
-                const NrrKind kind = static_cast<NrrKind>(this->nrr_kind);
+                const NrrKind kind = static_cast<NrrKind>(m_nrr_kind);
                 AMS_ABORT_UNLESS(kind < NrrKind_Count);
                 return kind;
             }
 
             ncm::ProgramId GetProgramId() const {
-                return this->program_id;
+                return m_program_id;
             }
 
             u32 GetSize() const {
-                return this->size;
+                return m_size;
             }
 
             u32 GetNumHashes() const {
-                return this->num_hashes;
+                return m_num_hashes;
             }
 
             size_t GetHashesOffset() const {
-                return this->hashes_offset;
+                return m_hashes_offset;
             }
 
             uintptr_t GetHashes() const {
@@ -96,31 +96,31 @@ namespace ams::ro {
             }
 
             u32 GetKeyGeneration() const {
-                return this->key_generation;
+                return m_key_generation;
             }
 
             const u8 *GetCertificationSignature() const {
-                return this->certification.signature;
+                return m_certification.signature;
             }
 
             const u8 *GetCertificationSignedArea() const {
-                return reinterpret_cast<const u8 *>(std::addressof(this->certification));
+                return reinterpret_cast<const u8 *>(std::addressof(m_certification));
             }
 
             const u8 *GetCertificationModulus() const {
-                return this->certification.modulus;
+                return m_certification.modulus;
             }
 
             const u8 *GetSignature() const {
-                return this->signature;
+                return m_signature;
             }
 
             const u8 *GetSignedArea() const {
-                return reinterpret_cast<const u8 *>(std::addressof(this->program_id));
+                return reinterpret_cast<const u8 *>(std::addressof(m_program_id));
             }
 
             size_t GetSignedAreaSize() const {
-                return this->size - GetSignedAreaOffset();
+                return m_size - GetSignedAreaOffset();
             }
 
             static constexpr size_t GetSignedAreaOffset();
@@ -128,69 +128,69 @@ namespace ams::ro {
     static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader definition!");
 
     constexpr size_t NrrHeader::GetSignedAreaOffset() {
-        return OFFSETOF(NrrHeader, program_id);
+        return OFFSETOF(NrrHeader, m_program_id);
     }
 
     class NroHeader {
         public:
             static constexpr u32 Magic = util::FourCC<'N','R','O','0'>::Code;
         private:
-            u32 entrypoint_insn;
-            u32 mod_offset;
-            u8  reserved_08[0x8];
-            u32 magic;
-            u8  reserved_14[0x4];
-            u32 size;
-            u8  reserved_1C[0x4];
-            u32 text_offset;
-            u32 text_size;
-            u32 ro_offset;
-            u32 ro_size;
-            u32 rw_offset;
-            u32 rw_size;
-            u32 bss_size;
-            u8  reserved_3C[0x4];
-            ModuleId module_id;
-            u8  reserved_60[0x20];
+            u32 m_entrypoint_insn;
+            u32 m_mod_offset;
+            u8  m_reserved_08[0x8];
+            u32 m_magic;
+            u8  m_reserved_14[0x4];
+            u32 m_size;
+            u8  m_reserved_1C[0x4];
+            u32 m_text_offset;
+            u32 m_text_size;
+            u32 m_ro_offset;
+            u32 m_ro_size;
+            u32 m_rw_offset;
+            u32 m_rw_size;
+            u32 m_bss_size;
+            u8  m_reserved_3C[0x4];
+            ModuleId m_module_id;
+            u8  m_reserved_60[0x20];
         public:
             bool IsMagicValid() const {
-                return this->magic == Magic;
+                return m_magic == Magic;
             }
 
             u32 GetSize() const {
-                return this->size;
+                return m_size;
             }
 
             u32 GetTextOffset() const {
-                return this->text_offset;
+                return m_text_offset;
             }
 
             u32 GetTextSize() const {
-                return this->text_size;
+                return m_text_size;
             }
 
             u32 GetRoOffset() const {
-                return this->ro_offset;
+                return m_ro_offset;
             }
 
             u32 GetRoSize() const {
-                return this->ro_size;
+                return m_ro_size;
             }
 
             u32 GetRwOffset() const {
-                return this->rw_offset;
+                return m_rw_offset;
             }
 
             u32 GetRwSize() const {
-                return this->rw_size;
+                return m_rw_size;
             }
 
             u32 GetBssSize() const {
-                return this->bss_size;
+                return m_bss_size;
             }
 
             const ModuleId *GetModuleId() const {
-                return std::addressof(this->module_id);
+                return std::addressof(m_module_id);
             }
     };
     static_assert(sizeof(NroHeader) == 0x80, "NroHeader definition!");

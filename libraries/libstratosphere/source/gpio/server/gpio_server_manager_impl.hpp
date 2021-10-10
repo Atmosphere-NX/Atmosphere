@@ -24,9 +24,9 @@ namespace ams::gpio::server {
             using Allocator = ams::sf::ExpHeapAllocator;
             using Factory   = ams::sf::ObjectFactory<Allocator::Policy>;
         private:
-            lmem::HeapHandle heap_handle;
-            Allocator pad_allocator;
-            u8 heap_buffer[12_KB];
+            lmem::HeapHandle m_heap_handle;
+            Allocator m_pad_allocator;
+            u8 m_heap_buffer[12_KB];
         public:
             ManagerImpl();
 

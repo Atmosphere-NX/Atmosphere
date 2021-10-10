@@ -22,20 +22,20 @@
 namespace ams::fs::impl {
 
     FileAccessor::FileAccessor(std::unique_ptr<fsa::IFile>&& f, FileSystemAccessor *p, OpenMode mode)
-        : impl(std::move(f)), parent(p), write_state(WriteState::None), write_result(ResultSuccess()), open_mode(mode)
+        : m_impl(std::move(f)), m_parent(p), m_write_state(WriteState::None), m_write_result(ResultSuccess()), m_open_mode(mode)
     {
         /* ... */
     }
 
     FileAccessor::~FileAccessor() {
         /* Ensure that all files are flushed. */
-        if (R_SUCCEEDED(this->write_result)) {
-            AMS_FS_ABORT_UNLESS_WITH_RESULT(this->write_state != WriteState::NeedsFlush, fs::ResultNeedFlush());
+        if (R_SUCCEEDED(m_write_result)) {
+            AMS_FS_ABORT_UNLESS_WITH_RESULT(m_write_state != WriteState::NeedsFlush, fs::ResultNeedFlush());
         }
-        this->impl.reset();
+        m_impl.reset();
 
-        if (this->parent != nullptr) {
-            this->parent->NotifyCloseFile(this);
+        if (m_parent != nullptr) {
+            m_parent->NotifyCloseFile(this);
         }
     }
 
@@ -46,7 +46,7 @@ namespace ams::fs::impl {
     }
 
     Result FileAccessor::ReadWithoutCacheAccessLog(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option) {
-        return this->impl->Read(out, offset, buf, size, option);
+        return m_impl->Read(out, offset, buf, size, option);
     }
 
     Result FileAccessor::Read(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option) {
@@ -54,11 +54,11 @@ namespace ams::fs::impl {
         FileHandle handle = { this };
 
         /* Fail after a write fails. */
-        R_UNLESS(R_SUCCEEDED(this->write_result), AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(this->write_result, handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size)));
+        R_UNLESS(R_SUCCEEDED(m_write_result), AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(m_write_result, handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size)));
 
         /* TODO: Support cache. */
-        const bool use_path_cache = this->parent != nullptr && this->file_path_hash != nullptr;
-        const bool use_data_cache = /* TODO */false && this->parent != nullptr && this->parent->IsFileDataCacheAttachable();
+        const bool use_path_cache = m_parent != nullptr && m_file_path_hash != nullptr;
+        const bool use_data_cache = /* TODO */false && m_parent != nullptr && m_parent->IsFileDataCacheAttachable();
 
         if (use_path_cache && use_data_cache && false) {
             /* TODO */
@@ -70,14 +70,14 @@ namespace ams::fs::impl {
 
     Result FileAccessor::Write(s64 offset, const void *buf, size_t size, const WriteOption &option) {
         /* Fail after a write fails. */
-        R_TRY(this->write_result);
+        R_TRY(m_write_result);
 
-        auto setter = MakeScopedSetter(this->write_state, WriteState::Failed);
-        if (this->file_path_hash != nullptr && /* TODO */ false) {
+        auto setter = MakeScopedSetter(m_write_state, WriteState::Failed);
+        if (m_file_path_hash != nullptr && /* TODO */ false) {
             /* TODO */
             AMS_ABORT();
         } else {
-            R_TRY(this->UpdateLastResult(this->impl->Write(offset, buf, size, option)));
+            R_TRY(this->UpdateLastResult(m_impl->Write(offset, buf, size, option)));
         }
 
         setter.Set(option.HasFlushFlag() ? WriteState::None : WriteState::NeedsFlush);
@@ -87,10 +87,10 @@ namespace ams::fs::impl {
 
     Result FileAccessor::Flush() {
         /* Fail after a write fails. */
-        R_TRY(this->write_result);
+        R_TRY(m_write_result);
 
-        auto setter = MakeScopedSetter(this->write_state, WriteState::Failed);
-        R_TRY(this->UpdateLastResult(this->impl->Flush()));
+        auto setter = MakeScopedSetter(m_write_state, WriteState::Failed);
+        R_TRY(this->UpdateLastResult(m_impl->Flush()));
         setter.Set(WriteState::None);
 
         return ResultSuccess();
@@ -98,14 +98,14 @@ namespace ams::fs::impl {
 
     Result FileAccessor::SetSize(s64 size) {
         /* Fail after a write fails. */
-        R_TRY(this->write_result);
+        R_TRY(m_write_result);
 
-        const WriteState old_write_state = this->write_state;
-        auto setter = MakeScopedSetter(this->write_state, WriteState::Failed);
+        const WriteState old_write_state = m_write_state;
+        auto setter = MakeScopedSetter(m_write_state, WriteState::Failed);
 
-        R_TRY(this->UpdateLastResult(this->impl->SetSize(size)));
+        R_TRY(this->UpdateLastResult(m_impl->SetSize(size)));
 
-        if (this->file_path_hash != nullptr) {
+        if (m_file_path_hash != nullptr) {
             /* TODO: invalidate path cache */
         }
 
@@ -115,13 +115,13 @@ namespace ams::fs::impl {
 
     Result FileAccessor::GetSize(s64 *out) {
         /* Fail after a write fails. */
-        R_TRY(this->write_result);
+        R_TRY(m_write_result);
 
-        return this->impl->GetSize(out);
+        return m_impl->GetSize(out);
     }
 
     Result FileAccessor::OperateRange(void *dst, size_t dst_size, OperationId operation, s64 offset, s64 size, const void *src, size_t src_size) {
-        return this->impl->OperateRange(dst, dst_size, operation, offset, size, src, src_size);
+        return m_impl->OperateRange(dst, dst_size, operation, offset, size, src, src_size);
     }
 
 }

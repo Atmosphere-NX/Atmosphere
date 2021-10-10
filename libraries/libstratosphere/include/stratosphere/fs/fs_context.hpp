@@ -28,13 +28,13 @@ namespace ams::fs {
 
     class FsContext {
         private:
-            ResultHandler handler;
+            ResultHandler m_handler;
         public:
-            constexpr explicit FsContext(ResultHandler h) : handler(h) { /* ... */ }
+            constexpr explicit FsContext(ResultHandler h) : m_handler(h) { /* ... */ }
 
-            constexpr void SetHandler(ResultHandler h) { this->handler = h; }
+            constexpr void SetHandler(ResultHandler h) { m_handler = h; }
 
-            constexpr AbortSpecifier HandleResult(Result result) const { return this->handler(result); }
+            constexpr AbortSpecifier HandleResult(Result result) const { return m_handler(result); }
     };
 
     void SetDefaultFsContextResultHandler(const ResultHandler handler);
@@ -44,24 +44,24 @@ namespace ams::fs {
 
     class ScopedFsContext {
         private:
-            const FsContext * const prev_context;
+            const FsContext * const m_prev_context;
         public:
-            ALWAYS_INLINE ScopedFsContext(const FsContext &ctx) : prev_context(GetCurrentThreadFsContext()) {
+            ALWAYS_INLINE ScopedFsContext(const FsContext &ctx) : m_prev_context(GetCurrentThreadFsContext()) {
                 SetCurrentThreadFsContext(std::addressof(ctx));
             }
 
             ALWAYS_INLINE ~ScopedFsContext() {
-                SetCurrentThreadFsContext(this->prev_context);
+                SetCurrentThreadFsContext(m_prev_context);
             }
     };
 
     class ScopedAutoAbortDisabler {
         private:
-            const FsContext * const prev_context;
+            const FsContext * const m_prev_context;
         public:
             ScopedAutoAbortDisabler();
             ALWAYS_INLINE ~ScopedAutoAbortDisabler() {
-                SetCurrentThreadFsContext(this->prev_context);
+                SetCurrentThreadFsContext(m_prev_context);
             }
     };
 

@@ -20,31 +20,31 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfThread : public MultiWaitHolderOfUserObject {
         private:
-            ThreadType *thread;
+            ThreadType *m_thread;
         private:
             TriBool IsSignaledImpl() const {
-                return this->thread->state == ThreadType::State_Terminated ? TriBool::True : TriBool::False;
+                return m_thread->state == ThreadType::State_Terminated ? TriBool::True : TriBool::False;
             }
         public:
-            explicit MultiWaitHolderOfThread(ThreadType *t) : thread(t) { /* ... */ }
+            explicit MultiWaitHolderOfThread(ThreadType *t) : m_thread(t) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(m_thread->cs_thread));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(m_thread->cs_thread));
 
-                GetReference(this->thread->waitlist).LinkMultiWaitHolder(*this);
+                GetReference(m_thread->waitlist).LinkMultiWaitHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                std::scoped_lock lk(GetReference(m_thread->cs_thread));
 
-                GetReference(this->thread->waitlist).UnlinkMultiWaitHolder(*this);
+                GetReference(m_thread->waitlist).UnlinkMultiWaitHolder(*this);
             }
     };
 

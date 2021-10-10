@@ -20,18 +20,18 @@ namespace ams::os::impl {
 
     TargetTimeSpan TimeoutHelper::GetTimeLeftOnTarget() const {
         /* If the absolute tick is zero, we're expired. */
-        if (this->absolute_end_tick.GetInt64Value() == 0) {
+        if (m_absolute_end_tick.GetInt64Value() == 0) {
             return 0;
         }
 
         /* Check if we've expired. */
         const Tick cur_tick = impl::GetTickManager().GetTick();
-        if (cur_tick >= this->absolute_end_tick) {
+        if (cur_tick >= m_absolute_end_tick) {
             return 0;
         }
 
         /* Return the converted difference as a timespan. */
-        return TimeoutHelperImpl::ConvertToImplTime(this->absolute_end_tick - cur_tick);
+        return TimeoutHelperImpl::ConvertToImplTime(m_absolute_end_tick - cur_tick);
     }
 
 }

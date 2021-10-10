@@ -35,27 +35,27 @@ namespace ams::sf::cmif {
         u8 out_object_count;
 
         constexpr size_t GetInDataSize() const {
-            return size_t(this->in_data_size);
+            return static_cast<size_t>(this->in_data_size);
         }
 
         constexpr size_t GetOutDataSize() const {
-            return size_t(this->out_data_size);
+            return static_cast<size_t>(this->out_data_size);
         }
 
         constexpr size_t GetInHeadersSize() const {
-            return size_t(this->in_headers_size);
+            return static_cast<size_t>(this->in_headers_size);
         }
 
         constexpr size_t GetOutHeadersSize() const {
-            return size_t(this->out_headers_size);
+            return static_cast<size_t>(this->out_headers_size);
         }
 
         constexpr size_t GetInObjectCount() const {
-            return size_t(this->in_object_count);
+            return static_cast<size_t>(this->in_object_count);
         }
 
         constexpr size_t GetOutObjectCount() const {
-            return size_t(this->out_object_count);
+            return static_cast<size_t>(this->out_object_count);
         }
 
         constexpr size_t GetUnfixedOutPointerSizeOffset() const {

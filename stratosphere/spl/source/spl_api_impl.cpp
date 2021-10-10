@@ -186,25 +186,25 @@ namespace ams::spl::impl {
         /* Type definitions. */
         class ScopedAesKeySlot {
             private:
-                s32 slot;
-                bool has_slot;
+                s32 m_slot;
+                bool m_has_slot;
             public:
-                ScopedAesKeySlot() : slot(-1), has_slot(false) {
+                ScopedAesKeySlot() : m_slot(-1), m_has_slot(false) {
                     /* ... */
                 }
                 ~ScopedAesKeySlot() {
-                    if (this->has_slot) {
-                        DeallocateAesKeySlot(slot, this);
+                    if (m_has_slot) {
+                        DeallocateAesKeySlot(m_slot, this);
                     }
                 }
 
                 u32 GetKeySlot() const {
-                    return this->slot;
+                    return m_slot;
                 }
 
                 Result Allocate() {
-                    R_TRY(AllocateAesKeySlot(std::addressof(this->slot), this));
-                    this->has_slot = true;
+                    R_TRY(AllocateAesKeySlot(std::addressof(m_slot), this));
+                    m_has_slot = true;
                     return ResultSuccess();
                 }
         };
@@ -222,17 +222,17 @@ namespace ams::spl::impl {
 
         class DeviceAddressSpaceMapHelper {
             private:
-                os::NativeHandle das_hnd;
-                u64 dst_addr;
-                u64 src_addr;
-                size_t size;
-                svc::MemoryPermission perm;
+                os::NativeHandle m_handle;
+                u64 m_dst_addr;
+                u64 m_src_addr;
+                size_t m_size;
+                svc::MemoryPermission m_perm;
             public:
-                DeviceAddressSpaceMapHelper(os::NativeHandle h, u64 dst, u64 src, size_t sz, svc::MemoryPermission p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
-                    R_ABORT_UNLESS(svc::MapDeviceAddressSpaceAligned(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr, this->perm));
+                DeviceAddressSpaceMapHelper(os::NativeHandle h, u64 dst, u64 src, size_t sz, svc::MemoryPermission p) : m_handle(h), m_dst_addr(dst), m_src_addr(src), m_size(sz), m_perm(p) {
+                    R_ABORT_UNLESS(svc::MapDeviceAddressSpaceAligned(m_handle, dd::GetCurrentProcessHandle(), m_src_addr, m_size, m_dst_addr, m_perm));
                 }
                 ~DeviceAddressSpaceMapHelper() {
-                    R_ABORT_UNLESS(svc::UnmapDeviceAddressSpace(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr));
+                    R_ABORT_UNLESS(svc::UnmapDeviceAddressSpace(m_handle, dd::GetCurrentProcessHandle(), m_src_addr, m_size, m_dst_addr));
                 }
         };
 

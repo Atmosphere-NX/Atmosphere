@@ -25,15 +25,15 @@ namespace ams::fssystem {
             static constexpr s32 LayerCount  = 3;
             static constexpr size_t HashSize = crypto::Sha256Generator::HashSize;
         private:
-            os::SdkMutex mutex;
-            IStorage *base_storage;
-            s64 base_storage_size;
-            char *hash_buffer;
-            size_t hash_buffer_size;
-            s32 hash_target_block_size;
-            s32 log_size_ratio;
+            os::SdkMutex m_mutex;
+            IStorage *m_base_storage;
+            s64 m_base_storage_size;
+            char *m_hash_buffer;
+            size_t m_hash_buffer_size;
+            s32 m_hash_target_block_size;
+            s32 m_log_size_ratio;
         public:
-            HierarchicalSha256Storage() : mutex() { /* ... */ }
+            HierarchicalSha256Storage() : m_mutex() { /* ... */ }
 
             Result Initialize(IStorage **base_storages, s32 layer_count, size_t htbs, void *hash_buf, size_t hash_buf_size);
 
@@ -42,7 +42,7 @@ namespace ams::fssystem {
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
 
             virtual Result GetSize(s64 *out) override {
-                return this->base_storage->GetSize(out);
+                return m_base_storage->GetSize(out);
             }
 
             virtual Result Flush() override {

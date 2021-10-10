@@ -69,7 +69,7 @@ namespace ams::fs {
         g_context_tls.SetValue(reinterpret_cast<uintptr_t>(context));
     }
 
-    ScopedAutoAbortDisabler::ScopedAutoAbortDisabler() : prev_context(GetCurrentThreadFsContext()) {
+    ScopedAutoAbortDisabler::ScopedAutoAbortDisabler() : m_prev_context(GetCurrentThreadFsContext()) {
         SetCurrentThreadFsContext(std::addressof(g_always_return_context));
     }
 

@@ -25,28 +25,28 @@ namespace ams::powctl::impl::board::nintendo::nx {
         NON_MOVEABLE(ChargerDevice);
         AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::ChargerDevice, ::ams::powctl::impl::IDevice);
         private:
-            gpio::GpioPadSession gpio_pad_session;
-            bool watchdog_timer_enabled;
-            TimeSpan watchdog_timer_timeout;
-            bool use_event_handler;
-            util::optional<ChargerInterruptEventHandler> event_handler;
-            os::SystemEventType system_event;
+            gpio::GpioPadSession m_gpio_pad_session;
+            bool m_watchdog_timer_enabled;
+            TimeSpan m_watchdog_timer_timeout;
+            bool m_use_event_handler;
+            util::optional<ChargerInterruptEventHandler> m_event_handler;
+            os::SystemEventType m_system_event;
         public:
             ChargerDevice(bool ev);
 
-            bool IsWatchdogTimerEnabled() const { return this->watchdog_timer_enabled; }
-            void SetWatchdogTimerEnabled(bool en) { this->watchdog_timer_enabled = en; }
+            bool IsWatchdogTimerEnabled() const { return m_watchdog_timer_enabled; }
+            void SetWatchdogTimerEnabled(bool en) { m_watchdog_timer_enabled = en; }
 
-            TimeSpan GetWatchdogTimerTimeout() const { return this->watchdog_timer_timeout; }
-            void SetWatchdogTimerTimeout(TimeSpan ts) { this->watchdog_timer_timeout = ts; }
+            TimeSpan GetWatchdogTimerTimeout() const { return m_watchdog_timer_timeout; }
+            void SetWatchdogTimerTimeout(TimeSpan ts) { m_watchdog_timer_timeout = ts; }
 
-            gpio::GpioPadSession *GetPadSession() { return std::addressof(this->gpio_pad_session); }
+            gpio::GpioPadSession *GetPadSession() { return std::addressof(m_gpio_pad_session); }
 
-            os::SystemEventType *GetSystemEvent() { return std::addressof(this->system_event); }
+            os::SystemEventType *GetSystemEvent() { return std::addressof(m_system_event); }
 
             void SetInterruptEnabled(bool en) {
-                if (this->use_event_handler) {
-                    this->event_handler->SetInterruptEnabled(en);
+                if (m_use_event_handler) {
+                    m_event_handler->SetInterruptEnabled(en);
                 }
             }
     };

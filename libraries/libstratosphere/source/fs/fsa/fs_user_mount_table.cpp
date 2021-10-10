@@ -22,7 +22,7 @@ namespace ams::fs::impl {
 
     namespace {
 
-        MountTable g_mount_table;
+        constinit MountTable g_mount_table;
 
     }
 

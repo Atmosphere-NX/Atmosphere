@@ -30,13 +30,13 @@ namespace ams::sf::hipc {
 
         class HipcManagerImpl {
             private:
-                ServerDomainSessionManager *manager;
-                ServerSession *session;
-                bool is_mitm_session;
+                ServerDomainSessionManager *m_manager;
+                ServerSession *m_session;
+                bool m_is_mitm_session;
             private:
                 Result CloneCurrentObjectImpl(sf::OutMoveHandle &out_client_handle, ServerSessionManager *tagged_manager) {
                     /* Clone the object. */
-                    cmif::ServiceObjectHolder &&clone = this->session->srv_obj_holder.Clone();
+                    cmif::ServiceObjectHolder &&clone = m_session->m_srv_obj_holder.Clone();
                     R_UNLESS(clone, sf::hipc::ResultDomainObjectNotFound());
 
                     /* Create new session handles. */
@@ -44,12 +44,12 @@ namespace ams::sf::hipc {
                     R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                     /* Register with manager. */
-                    if (!is_mitm_session) {
+                    if (!m_is_mitm_session) {
                         R_ABORT_UNLESS(tagged_manager->RegisterSession(server_handle, std::move(clone)));
                     } else {
                         /* Clone the forward service. */
                         std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
-                        R_ABORT_UNLESS(serviceClone(this->session->forward_service.get(), new_forward_service.get()));
+                        R_ABORT_UNLESS(serviceClone(m_session->m_forward_service.get(), new_forward_service.get()));
                         R_ABORT_UNLESS(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
 
@@ -58,34 +58,34 @@ namespace ams::sf::hipc {
                     return ResultSuccess();
                 }
             public:
-                explicit HipcManagerImpl(ServerDomainSessionManager *m, ServerSession *s) : manager(m), session(s), is_mitm_session(s->forward_service != nullptr) {
+                explicit HipcManagerImpl(ServerDomainSessionManager *m, ServerSession *s) : m_manager(m), m_session(s), m_is_mitm_session(s->m_forward_service != nullptr) {
                     /* ... */
                 }
 
                 Result ConvertCurrentObjectToDomain(sf::Out<cmif::DomainObjectId> out) {
                     /* Allocate a domain. */
-                    auto domain = this->manager->AllocateDomainServiceObject();
+                    auto domain = m_manager->AllocateDomainServiceObject();
                     R_UNLESS(domain, sf::hipc::ResultOutOfDomains());
 
                     /* Set up the new domain object. */
                     cmif::DomainObjectId object_id = cmif::InvalidDomainObjectId;
-                    if (this->is_mitm_session) {
+                    if (m_is_mitm_session) {
                         /* Make a new shared pointer to manage the allocated domain. */
                         SharedPointer<cmif::MitmDomainServiceObject> cmif_domain(static_cast<cmif::MitmDomainServiceObject *>(domain), false);
 
                         /* Convert the remote session to domain. */
-                        AMS_ABORT_UNLESS(session->forward_service->own_handle);
-                        R_TRY(serviceConvertToDomain(session->forward_service.get()));
+                        AMS_ABORT_UNLESS(m_session->m_forward_service->own_handle);
+                        R_TRY(serviceConvertToDomain(m_session->m_forward_service.get()));
 
                         /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
-                        object_id = cmif::DomainObjectId{session->forward_service->object_id};
+                        object_id = cmif::DomainObjectId{m_session->m_forward_service->object_id};
                         domain->ReserveSpecificIds(std::addressof(object_id), 1);
 
                         /* Register the object. */
-                        domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
+                        domain->RegisterObject(object_id, std::move(m_session->m_srv_obj_holder));
 
                         /* Set the new object holder. */
-                        session->srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
+                        m_session->m_srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
                     } else {
                         /* Make a new shared pointer to manage the allocated domain. */
                         SharedPointer<cmif::DomainServiceObject> cmif_domain(domain, false);
@@ -94,10 +94,10 @@ namespace ams::sf::hipc {
                         R_TRY(domain->ReserveIds(std::addressof(object_id), 1));
 
                         /* Register the object. */
-                        domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
+                        domain->RegisterObject(object_id, std::move(m_session->m_srv_obj_holder));
 
                         /* Set the new object holder. */
-                        session->srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
+                        m_session->m_srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
                     }
 
                     /* Return the allocated id. */
@@ -108,35 +108,35 @@ namespace ams::sf::hipc {
 
                 Result CopyFromCurrentDomain(sf::OutMoveHandle out, cmif::DomainObjectId object_id) {
                     /* Get domain. */
-                    auto domain = this->session->srv_obj_holder.GetServiceObject<cmif::DomainServiceObject>();
+                    auto domain = m_session->m_srv_obj_holder.GetServiceObject<cmif::DomainServiceObject>();
                     R_UNLESS(domain != nullptr, sf::hipc::ResultTargetNotDomain());
 
                     /* Get domain object. */
                     auto &&object = domain->GetObject(object_id);
                     if (!object) {
-                        R_UNLESS(this->is_mitm_session, sf::hipc::ResultDomainObjectNotFound());
+                        R_UNLESS(m_is_mitm_session, sf::hipc::ResultDomainObjectNotFound());
 
                         os::NativeHandle handle;
-                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, std::addressof(handle)));
+                        R_TRY(cmifCopyFromCurrentDomain(m_session->m_forward_service->session, object_id.value, std::addressof(handle)));
 
                         out.SetValue(handle, false);
                         return ResultSuccess();
                     }
 
-                    if (!this->is_mitm_session || object_id.value != serviceGetObjectId(this->session->forward_service.get())) {
+                    if (!m_is_mitm_session || object_id.value != serviceGetObjectId(m_session->m_forward_service.get())) {
                         /* Create new session handles. */
                         os::NativeHandle server_handle, client_handle;
                         R_ABORT_UNLESS(hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
 
                         /* Register. */
-                        R_ABORT_UNLESS(this->manager->RegisterSession(server_handle, std::move(object)));
+                        R_ABORT_UNLESS(m_manager->RegisterSession(server_handle, std::move(object)));
 
                         /* Set output client handle. */
                         out.SetValue(client_handle, false);
                     } else {
                         /* Copy from the target domain. */
                         os::NativeHandle new_forward_target;
-                        R_TRY(cmifCopyFromCurrentDomain(this->session->forward_service->session, object_id.value, std::addressof(new_forward_target)));
+                        R_TRY(cmifCopyFromCurrentDomain(m_session->m_forward_service->session, object_id.value, std::addressof(new_forward_target)));
 
                         /* Create new session handles. */
                         os::NativeHandle server_handle, client_handle;
@@ -145,7 +145,7 @@ namespace ams::sf::hipc {
                         /* Register. */
                         std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
                         serviceCreate(new_forward_service.get(), new_forward_target);
-                        R_ABORT_UNLESS(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
+                        R_ABORT_UNLESS(m_manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
 
                         /* Set output client handle. */
                         out.SetValue(client_handle, false);
@@ -155,15 +155,15 @@ namespace ams::sf::hipc {
                 }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {
-                    return this->CloneCurrentObjectImpl(out, this->manager);
+                    return this->CloneCurrentObjectImpl(out, m_manager);
                 }
 
                 void QueryPointerBufferSize(sf::Out<u16> out) {
-                    out.SetValue(this->session->pointer_buffer.GetSize());
+                    out.SetValue(m_session->m_pointer_buffer.GetSize());
                 }
 
                 Result CloneCurrentObjectEx(sf::OutMoveHandle out, u32 tag) {
-                    return this->CloneCurrentObjectImpl(out, this->manager->GetSessionManagerByTag(tag));
+                    return this->CloneCurrentObjectImpl(out, m_manager->GetSessionManagerByTag(tag));
                 }
         };
         static_assert(IsIHipcManager<HipcManagerImpl>);

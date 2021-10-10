@@ -26,17 +26,17 @@ namespace ams::lmem::impl {
         NON_COPYABLE(ScopedHeapLock);
         NON_MOVEABLE(ScopedHeapLock);
         private:
-            HeapHandle handle;
+            HeapHandle m_handle;
         public:
-            explicit ScopedHeapLock(HeapHandle h) : handle(h) {
-                if (this->handle->option & CreateOption_ThreadSafe) {
-                    os::LockSdkMutex(std::addressof(this->handle->mutex));
+            explicit ScopedHeapLock(HeapHandle h) : m_handle(h) {
+                if (m_handle->option & CreateOption_ThreadSafe) {
+                    os::LockSdkMutex(std::addressof(m_handle->mutex));
                 }
             }
 
             ~ScopedHeapLock() {
-                if (this->handle->option & CreateOption_ThreadSafe) {
-                    os::UnlockSdkMutex(std::addressof(this->handle->mutex));
+                if (m_handle->option & CreateOption_ThreadSafe) {
+                    os::UnlockSdkMutex(std::addressof(m_handle->mutex));
                 }
             }
     };

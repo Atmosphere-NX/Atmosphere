@@ -56,13 +56,13 @@ namespace ams::mitm::sysupdater {
 
     class SystemUpdateService {
         private:
-            SystemUpdateApplyManager apply_manager;
-            util::optional<ncm::PackageSystemDowngradeTask> update_task;
-            util::optional<os::TransferMemory> update_transfer_memory;
-            bool setup_update;
-            bool requested_update;
+            SystemUpdateApplyManager m_apply_manager;
+            util::optional<ncm::PackageSystemDowngradeTask> m_update_task;
+            util::optional<os::TransferMemory> m_update_transfer_memory;
+            bool m_setup_update;
+            bool m_requested_update;
         public:
-            constexpr SystemUpdateService() : apply_manager(), update_task(), update_transfer_memory(), setup_update(false), requested_update(false) { /* ... */ }
+            constexpr SystemUpdateService() : m_apply_manager(), m_update_task(), m_update_transfer_memory(), m_setup_update(false), m_requested_update(false) { /* ... */ }
         private:
             Result SetupUpdateImpl(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
             Result InitializeUpdateTask(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);

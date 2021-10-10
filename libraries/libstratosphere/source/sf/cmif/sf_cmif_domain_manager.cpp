@@ -18,87 +18,87 @@
 namespace ams::sf::cmif {
 
     ServerDomainManager::Domain::~Domain() {
-        while (!this->entries.empty()) {
-            Entry *entry = std::addressof(this->entries.front());
+        while (!m_entries.empty()) {
+            Entry *entry = std::addressof(m_entries.front());
             {
-                std::scoped_lock lk(this->manager->entry_owner_lock);
+                std::scoped_lock lk(m_manager->m_entry_owner_lock);
                 AMS_ABORT_UNLESS(entry->owner == this);
                 entry->owner = nullptr;
             }
             entry->object.Reset();
-            this->entries.pop_front();
-            this->manager->entry_manager.FreeEntry(entry);
+            m_entries.pop_front();
+            m_manager->m_entry_manager.FreeEntry(entry);
         }
     }
 
     void ServerDomainManager::Domain::DisposeImpl() {
-        ServerDomainManager *manager = this->manager;
+        ServerDomainManager *manager = m_manager;
         std::destroy_at(this);
         manager->FreeDomain(this);
     }
 
     Result ServerDomainManager::Domain::ReserveIds(DomainObjectId *out_ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
-            Entry *entry = this->manager->entry_manager.AllocateEntry();
+            Entry *entry = m_manager->m_entry_manager.AllocateEntry();
             R_UNLESS(entry != nullptr, sf::cmif::ResultOutOfDomainEntries());
             AMS_ABORT_UNLESS(entry->owner == nullptr);
-            out_ids[i] = this->manager->entry_manager.GetId(entry);
+            out_ids[i] = m_manager->m_entry_manager.GetId(entry);
         }
         return ResultSuccess();
     }
 
     void ServerDomainManager::Domain::ReserveSpecificIds(const DomainObjectId *ids, size_t count) {
-        this->manager->entry_manager.AllocateSpecificEntries(ids, count);
+        m_manager->m_entry_manager.AllocateSpecificEntries(ids, count);
     }
 
     void ServerDomainManager::Domain::UnreserveIds(const DomainObjectId *ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
-            Entry *entry = this->manager->entry_manager.GetEntry(ids[i]);
+            Entry *entry = m_manager->m_entry_manager.GetEntry(ids[i]);
             AMS_ABORT_UNLESS(entry != nullptr);
             AMS_ABORT_UNLESS(entry->owner == nullptr);
-            this->manager->entry_manager.FreeEntry(entry);
+            m_manager->m_entry_manager.FreeEntry(entry);
         }
     }
 
     void ServerDomainManager::Domain::RegisterObject(DomainObjectId id, ServiceObjectHolder &&obj) {
-        Entry *entry = this->manager->entry_manager.GetEntry(id);
+        Entry *entry = m_manager->m_entry_manager.GetEntry(id);
         AMS_ABORT_UNLESS(entry != nullptr);
         {
-            std::scoped_lock lk(this->manager->entry_owner_lock);
+            std::scoped_lock lk(m_manager->m_entry_owner_lock);
             AMS_ABORT_UNLESS(entry->owner == nullptr);
             entry->owner = this;
-            this->entries.push_back(*entry);
+            m_entries.push_back(*entry);
         }
         entry->object = std::move(obj);
     }
 
     ServiceObjectHolder ServerDomainManager::Domain::UnregisterObject(DomainObjectId id) {
         ServiceObjectHolder obj;
-        Entry *entry = this->manager->entry_manager.GetEntry(id);
+        Entry *entry = m_manager->m_entry_manager.GetEntry(id);
         if (entry == nullptr) {
             return ServiceObjectHolder();
         }
         {
-            std::scoped_lock lk(this->manager->entry_owner_lock);
+            std::scoped_lock lk(m_manager->m_entry_owner_lock);
             if (entry->owner != this) {
                 return ServiceObjectHolder();
             }
             entry->owner = nullptr;
             obj = std::move(entry->object);
-            this->entries.erase(this->entries.iterator_to(*entry));
+            m_entries.erase(m_entries.iterator_to(*entry));
         }
-        this->manager->entry_manager.FreeEntry(entry);
+        m_manager->m_entry_manager.FreeEntry(entry);
         return obj;
     }
 
     ServiceObjectHolder ServerDomainManager::Domain::GetObject(DomainObjectId id) {
-        Entry *entry = this->manager->entry_manager.GetEntry(id);
+        Entry *entry = m_manager->m_entry_manager.GetEntry(id);
         if (entry == nullptr) {
             return ServiceObjectHolder();
         }
 
         {
-            std::scoped_lock lk(this->manager->entry_owner_lock);
+            std::scoped_lock lk(m_manager->m_entry_owner_lock);
             if (entry->owner != this) {
                 return ServiceObjectHolder();
             }
@@ -106,41 +106,41 @@ namespace ams::sf::cmif {
         return entry->object.Clone();
     }
 
-    ServerDomainManager::EntryManager::EntryManager(DomainEntryStorage *entry_storage, size_t entry_count) : lock() {
-        this->entries = reinterpret_cast<Entry *>(entry_storage);
-        this->num_entries = entry_count;
-        for (size_t i = 0; i < this->num_entries; i++) {
-            this->free_list.push_back(*std::construct_at(this->entries + i));
+    ServerDomainManager::EntryManager::EntryManager(DomainEntryStorage *entry_storage, size_t entry_count) : m_lock() {
+        m_entries = reinterpret_cast<Entry *>(entry_storage);
+        m_num_entries = entry_count;
+        for (size_t i = 0; i < m_num_entries; i++) {
+            m_free_list.push_back(*std::construct_at(m_entries + i));
         }
     }
 
     ServerDomainManager::EntryManager::~EntryManager() {
-        for (size_t i = 0; i < this->num_entries; i++) {
-            std::destroy_at(this->entries + i);
+        for (size_t i = 0; i < m_num_entries; i++) {
+            std::destroy_at(m_entries + i);
         }
     }
 
     ServerDomainManager::Entry *ServerDomainManager::EntryManager::AllocateEntry() {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
 
-        if (this->free_list.empty()) {
+        if (m_free_list.empty()) {
             return nullptr;
         }
 
-        Entry *e = std::addressof(this->free_list.front());
-        this->free_list.pop_front();
+        Entry *e = std::addressof(m_free_list.front());
+        m_free_list.pop_front();
         return e;
     }
 
     void ServerDomainManager::EntryManager::FreeEntry(Entry *entry) {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
         AMS_ABORT_UNLESS(entry->owner == nullptr);
         AMS_ABORT_UNLESS(!entry->object);
-        this->free_list.push_front(*entry);
+        m_free_list.push_front(*entry);
     }
 
     void ServerDomainManager::EntryManager::AllocateSpecificEntries(const DomainObjectId *ids, size_t count) {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(m_lock);
 
         /* Allocate new IDs. */
         for (size_t i = 0; i < count; i++) {
@@ -149,7 +149,7 @@ namespace ams::sf::cmif {
             if (id != InvalidDomainObjectId) {
                 AMS_ABORT_UNLESS(entry != nullptr);
                 AMS_ABORT_UNLESS(entry->owner == nullptr);
-                this->free_list.erase(this->free_list.iterator_to(*entry));
+                m_free_list.erase(m_free_list.iterator_to(*entry));
             }
         }
     }

@@ -37,18 +37,18 @@ namespace ams::fssystem::save {
             };
             static_assert(util::is_pod<BlockHash>::value);
         private:
-            fs::SubStorage hash_storage;
-            fs::SubStorage data_storage;
-            s64 verification_block_size;
-            s64 verification_block_order;
-            s64 upper_layer_verification_block_size;
-            s64 upper_layer_verification_block_order;
-            IBufferManager *buffer_manager;
-            fs::HashSalt salt;
-            bool is_real_data;
-            fs::StorageType storage_type;
+            fs::SubStorage m_hash_storage;
+            fs::SubStorage m_data_storage;
+            s64 m_verification_block_size;
+            s64 m_verification_block_order;
+            s64 m_upper_layer_verification_block_size;
+            s64 m_upper_layer_verification_block_order;
+            IBufferManager *m_buffer_manager;
+            fs::HashSalt m_salt;
+            bool m_is_real_data;
+            fs::StorageType m_storage_type;
         public:
-            IntegrityVerificationStorage() : verification_block_size(0), verification_block_order(0), upper_layer_verification_block_size(0), upper_layer_verification_block_order(0), buffer_manager(nullptr) { /* ... */ }
+            IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
             Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
@@ -68,7 +68,7 @@ namespace ams::fssystem::save {
             void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const;
 
             s64 GetBlockSize() const {
-                return this->verification_block_size;
+                return m_verification_block_size;
             }
         private:
             Result ReadBlockSignature(void *dst, size_t dst_size, s64 offset, size_t size);
@@ -76,7 +76,7 @@ namespace ams::fssystem::save {
             Result VerifyHash(const void *buf, BlockHash *hash);
 
             void CalcBlockHash(BlockHash *out, const void *buffer) const {
-                return this->CalcBlockHash(out, buffer, static_cast<size_t>(this->verification_block_size));
+                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size));
             }
 
             Result IsCleared(bool *is_cleared, const BlockHash &hash);

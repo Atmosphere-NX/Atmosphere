@@ -18,22 +18,22 @@
 namespace ams::fssystem {
 
     FileSystemBuddyHeap::PageEntry *FileSystemBuddyHeap::PageList::PopFront() {
-        AMS_ASSERT(this->entry_count > 0);
+        AMS_ASSERT(m_entry_count > 0);
 
         /* Get the first entry. */
-        auto page_entry = this->first_page_entry;
+        auto page_entry = m_first_page_entry;
 
         /* Advance our list. */
-        this->first_page_entry = page_entry->next;
+        m_first_page_entry = page_entry->next;
         page_entry->next = nullptr;
 
         /* Decrement our count. */
-        --this->entry_count;
-        AMS_ASSERT(this->entry_count >= 0);
+        --m_entry_count;
+        AMS_ASSERT(m_entry_count >= 0);
 
         /* If this was our last page, clear our last entry. */
-        if (this->entry_count == 0) {
-            this->last_page_entry = nullptr;
+        if (m_entry_count == 0) {
+            m_last_page_entry = nullptr;
         }
 
         return page_entry;
@@ -44,20 +44,20 @@ namespace ams::fssystem {
 
         /* If we're empty, we want to set the first page entry. */
         if (this->IsEmpty()) {
-            this->first_page_entry = page_entry;
+            m_first_page_entry = page_entry;
         } else {
             /* We're not empty, so push the page to the back. */
-            AMS_ASSERT(this->last_page_entry != page_entry);
-            this->last_page_entry->next = page_entry;
+            AMS_ASSERT(m_last_page_entry != page_entry);
+            m_last_page_entry->next = page_entry;
         }
 
         /* Set our last page entry to be this one, and link it to the list. */
-        this->last_page_entry = page_entry;
-        this->last_page_entry->next = nullptr;
+        m_last_page_entry = page_entry;
+        m_last_page_entry->next = nullptr;
 
         /* Increment our entry count. */
-        ++this->entry_count;
-        AMS_ASSERT(this->entry_count > 0);
+        ++m_entry_count;
+        AMS_ASSERT(m_entry_count > 0);
     }
 
     bool FileSystemBuddyHeap::PageList::Remove(PageEntry *page_entry) {
@@ -70,18 +70,18 @@ namespace ams::fssystem {
 
         /* We're going to loop over all pages to find this one, then unlink it. */
         PageEntry *prev_entry = nullptr;
-        PageEntry *cur_entry  = this->first_page_entry;
+        PageEntry *cur_entry  = m_first_page_entry;
 
         while (true) {
             /* Check if we found the page. */
             if (cur_entry == page_entry) {
-                if (cur_entry == this->first_page_entry) {
+                if (cur_entry == m_first_page_entry) {
                     /* If it's the first page, we just set our first. */
-                    this->first_page_entry = cur_entry->next;
-                } else if (cur_entry == this->last_page_entry) {
+                    m_first_page_entry = cur_entry->next;
+                } else if (cur_entry == m_last_page_entry) {
                     /* If it's the last page, we set our last. */
-                    this->last_page_entry = prev_entry;
-                    this->last_page_entry->next = nullptr;
+                    m_last_page_entry = prev_entry;
+                    m_last_page_entry->next = nullptr;
                 } else {
                     /* If it's in the middle, we just unlink. */
                     prev_entry->next = cur_entry->next;
@@ -91,8 +91,8 @@ namespace ams::fssystem {
                 cur_entry->next = nullptr;
 
                 /* Update our entry count. */
-                --this->entry_count;
-                AMS_ASSERT(this->entry_count >= 0);
+                --m_entry_count;
+                AMS_ASSERT(m_entry_count >= 0);
 
                 return true;
             }
@@ -110,7 +110,7 @@ namespace ams::fssystem {
 
     Result FileSystemBuddyHeap::Initialize(uintptr_t address, size_t size, size_t block_size, s32 order_max) {
         /* Ensure our preconditions. */
-        AMS_ASSERT(this->free_lists == nullptr);
+        AMS_ASSERT(m_free_lists == nullptr);
         AMS_ASSERT(address != 0);
         AMS_ASSERT(util::IsAligned(address, BufferAlignment));
         AMS_ASSERT(block_size >= BlockSizeMin);
@@ -120,74 +120,74 @@ namespace ams::fssystem {
         AMS_ASSERT(order_max < OrderUpperLimit);
 
         /* Set up our basic member variables */
-        this->block_size = block_size;
-        this->order_max  = order_max;
-        this->heap_start = address;
-        this->heap_size  = (size / this->block_size) * this->block_size;
+        m_block_size = block_size;
+        m_order_max  = order_max;
+        m_heap_start = address;
+        m_heap_size  = (size / m_block_size) * m_block_size;
 
-        this->total_free_size = 0;
+        m_total_free_size = 0;
 
         /* Determine page sizes. */
-        const auto max_page_size  = this->block_size << this->order_max;
-        const auto max_page_count = util::AlignUp(this->heap_size, max_page_size) / max_page_size;
+        const auto max_page_size  = m_block_size << m_order_max;
+        const auto max_page_count = util::AlignUp(m_heap_size, max_page_size) / max_page_size;
         AMS_ASSERT(max_page_count > 0);
 
         /* Setup the free lists. */
-        if (this->external_free_lists != nullptr) {
-            AMS_ASSERT(this->internal_free_lists == nullptr);
-            this->free_lists = this->external_free_lists;
+        if (m_external_free_lists != nullptr) {
+            AMS_ASSERT(m_internal_free_lists == nullptr);
+            m_free_lists = m_external_free_lists;
         } else {
-            this->internal_free_lists.reset(new PageList[this->order_max + 1]);
-            this->free_lists = this->internal_free_lists.get();
-            R_UNLESS(this->free_lists != nullptr, fs::ResultAllocationFailureInFileSystemBuddyHeapA());
+            m_internal_free_lists.reset(new PageList[m_order_max + 1]);
+            m_free_lists = m_internal_free_lists.get();
+            R_UNLESS(m_free_lists != nullptr, fs::ResultAllocationFailureInFileSystemBuddyHeapA());
         }
 
         /* All but the last page region should go to the max order. */
         for (size_t i = 0; i < max_page_count - 1; i++) {
-            auto page_entry = this->GetPageEntryFromAddress(this->heap_start + i * max_page_size);
-            this->free_lists[this->order_max].PushBack(page_entry);
+            auto page_entry = this->GetPageEntryFromAddress(m_heap_start + i * max_page_size);
+            m_free_lists[m_order_max].PushBack(page_entry);
         }
-        this->total_free_size += this->free_lists[this->order_max].GetSize() * this->GetBytesFromOrder(this->order_max);
+        m_total_free_size += m_free_lists[m_order_max].GetSize() * this->GetBytesFromOrder(m_order_max);
 
         /* Allocate remaining space to smaller orders as possible. */
         {
-            auto remaining   = this->heap_size  - (max_page_count - 1) * max_page_size;
-            auto cur_address = this->heap_start + (max_page_count - 1) * max_page_size;
-            AMS_ASSERT(util::IsAligned(remaining, this->block_size));
+            auto remaining   = m_heap_size  - (max_page_count - 1) * max_page_size;
+            auto cur_address = m_heap_start + (max_page_count - 1) * max_page_size;
+            AMS_ASSERT(util::IsAligned(remaining, m_block_size));
 
             do {
                 /* Determine what order we can use. */
                 auto order = GetOrderFromBytes(remaining + 1);
                 if (order < 0) {
-                    AMS_ASSERT(GetOrderFromBytes(remaining) == this->order_max);
-                    order = this->order_max + 1;
+                    AMS_ASSERT(GetOrderFromBytes(remaining) == m_order_max);
+                    order = m_order_max + 1;
                 }
                 AMS_ASSERT(0 < order);
-                AMS_ASSERT(order <= this->order_max + 1);
+                AMS_ASSERT(order <= m_order_max + 1);
 
                 /* Add to the correct free list. */
-                this->free_lists[order - 1].PushBack(GetPageEntryFromAddress(cur_address));
-                this->total_free_size += GetBytesFromOrder(order - 1);
+                m_free_lists[order - 1].PushBack(GetPageEntryFromAddress(cur_address));
+                m_total_free_size += GetBytesFromOrder(order - 1);
 
                 /* Move on to the next order. */
                 const auto page_size = GetBytesFromOrder(order - 1);
                 cur_address += page_size;
                 remaining   -= page_size;
-            } while (this->block_size <= remaining);
+            } while (m_block_size <= remaining);
         }
 
         return ResultSuccess();
     }
 
     void FileSystemBuddyHeap::Finalize() {
-        AMS_ASSERT(this->free_lists != nullptr);
-        this->free_lists = nullptr;
-        this->external_free_lists = nullptr;
-        this->internal_free_lists.reset();
+        AMS_ASSERT(m_free_lists != nullptr);
+        m_free_lists = nullptr;
+        m_external_free_lists = nullptr;
+        m_internal_free_lists.reset();
     }
 
     void *FileSystemBuddyHeap::AllocateByOrder(s32 order) {
-        AMS_ASSERT(this->free_lists != nullptr);
+        AMS_ASSERT(m_free_lists != nullptr);
         AMS_ASSERT(order >= 0);
         AMS_ASSERT(order <= this->GetOrderMax());
 
@@ -204,7 +204,7 @@ namespace ams::fssystem {
     }
 
     void FileSystemBuddyHeap::Free(void *ptr, s32 order) {
-        AMS_ASSERT(this->free_lists != nullptr);
+        AMS_ASSERT(m_free_lists != nullptr);
         AMS_ASSERT(order >= 0);
         AMS_ASSERT(order <= this->GetOrderMax());
 
@@ -214,7 +214,7 @@ namespace ams::fssystem {
         }
 
         /* Ensure the pointer is block aligned. */
-        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(ptr) - this->heap_start, this->GetBlockSize()));
+        AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(ptr) - m_heap_start, this->GetBlockSize()));
 
         /* Get the page entry. */
         auto page_entry = this->GetPageEntryFromAddress(reinterpret_cast<uintptr_t>(ptr));
@@ -225,16 +225,16 @@ namespace ams::fssystem {
     }
 
     size_t FileSystemBuddyHeap::GetTotalFreeSize() const {
-        AMS_ASSERT(this->free_lists != nullptr);
-        return this->total_free_size;
+        AMS_ASSERT(m_free_lists != nullptr);
+        return m_total_free_size;
     }
 
     size_t FileSystemBuddyHeap::GetAllocatableSizeMax() const {
-        AMS_ASSERT(this->free_lists != nullptr);
+        AMS_ASSERT(m_free_lists != nullptr);
 
         /* The maximum allocatable size is a chunk from the biggest non-empty order. */
         for (s32 order = this->GetOrderMax(); order >= 0; --order) {
-            if (!this->free_lists[order].IsEmpty()) {
+            if (!m_free_lists[order].IsEmpty()) {
                 return this->GetBytesFromOrder(order);
             }
         }
@@ -244,7 +244,7 @@ namespace ams::fssystem {
     }
 
     void FileSystemBuddyHeap::Dump() const {
-        AMS_ASSERT(this->free_lists != nullptr);
+        AMS_ASSERT(m_free_lists != nullptr);
         /* TODO: Support logging metrics. */
     }
 
@@ -263,8 +263,8 @@ namespace ams::fssystem {
             auto divided_entry = this->GetPageEntryFromAddress(address);
 
             /* Push back to the list. */
-            this->free_lists[order - 1].PushBack(divided_entry);
-            this->total_free_size += this->GetBytesFromOrder(order - 1);
+            m_free_lists[order - 1].PushBack(divided_entry);
+            m_total_free_size += this->GetBytesFromOrder(order - 1);
         }
     }
 
@@ -281,8 +281,8 @@ namespace ams::fssystem {
             const auto buddy_entry = this->GetBuddy(cur_entry, cur_order);
 
             /* Check whether the buddy is in the relevant free list. */
-            if (buddy_entry != nullptr && this->free_lists[cur_order].Remove(buddy_entry)) {
-                this->total_free_size -= GetBytesFromOrder(cur_order);
+            if (buddy_entry != nullptr && m_free_lists[cur_order].Remove(buddy_entry)) {
+                m_total_free_size -= GetBytesFromOrder(cur_order);
 
                 /* Ensure we coalesce with the correct buddy when page is aligned */
                 if (!this->IsAlignedToOrder(cur_entry, cur_order + 1)) {
@@ -297,8 +297,8 @@ namespace ams::fssystem {
         }
 
         /* Insert the coalesced entry into the free list. */
-        this->free_lists[cur_order].PushBack(cur_entry);
-        this->total_free_size += this->GetBytesFromOrder(cur_order);
+        m_free_lists[cur_order].PushBack(cur_entry);
+        m_total_free_size += this->GetBytesFromOrder(cur_order);
     }
 
     FileSystemBuddyHeap::PageEntry *FileSystemBuddyHeap::GetBuddy(PageEntry *page_entry, s32 order) {
@@ -311,10 +311,10 @@ namespace ams::fssystem {
 
         if (this->IsAlignedToOrder(page_entry, order + 1)) {
             /* If the page entry is aligned to the next order, return the buddy block to the right of the current entry. */
-            return (address + offset < this->heap_start + this->heap_size) ? GetPageEntryFromAddress(address + offset) : nullptr;
+            return (address + offset < m_heap_start + m_heap_size) ? GetPageEntryFromAddress(address + offset) : nullptr;
         } else {
             /* If the page entry isn't aligned, return the buddy block to the left of the current entry. */
-            return (this->heap_start <= address - offset) ? GetPageEntryFromAddress(address - offset) : nullptr;
+            return (m_heap_start <= address - offset) ? GetPageEntryFromAddress(address - offset) : nullptr;
         }
     }
 
@@ -324,13 +324,13 @@ namespace ams::fssystem {
 
         /* Try orders from low to high until we find a free page entry. */
         for (auto cur_order = order; cur_order <= this->GetOrderMax(); cur_order++) {
-            if (auto &free_list = this->free_lists[cur_order]; !free_list.IsEmpty()) {
+            if (auto &free_list = m_free_lists[cur_order]; !free_list.IsEmpty()) {
                 /* The current list isn't empty, so grab an entry from it. */
                 PageEntry *page_entry = free_list.PopFront();
                 AMS_ASSERT(page_entry != nullptr);
 
                 /* Update size bookkeeping. */
-                this->total_free_size -= GetBytesFromOrder(cur_order);
+                m_total_free_size -= GetBytesFromOrder(cur_order);
 
                 /* If we allocated more memory than needed, free the unneeded portion. */
                 this->DivideBuddies(page_entry, order, cur_order);

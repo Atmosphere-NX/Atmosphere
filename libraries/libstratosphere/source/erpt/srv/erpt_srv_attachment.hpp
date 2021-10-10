@@ -30,7 +30,7 @@ namespace ams::erpt::srv {
 
     class Attachment : public Allocator, public Stream {
         private:
-            JournalRecord<AttachmentInfo> *record;
+            JournalRecord<AttachmentInfo> *m_record;
         private:
             AttachmentFileName FileName() const;
         public:

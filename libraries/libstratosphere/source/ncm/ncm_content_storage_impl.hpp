@@ -31,12 +31,12 @@ namespace ams::ncm {
                 static constexpr size_t MaxDirectoryEntries = 0x10;
 
                 public:
-                    fs::DirectoryHandle handles[MaxDirectoryHandles]{};
-                    size_t depth{};
-                    size_t max_depth{};
-                    PathString path{};
-                    fs::DirectoryEntry entries[MaxDirectoryEntries]{};
-                    s64 entry_count{};
+                    fs::DirectoryHandle m_handles[MaxDirectoryHandles]{};
+                    size_t m_depth{};
+                    size_t m_max_depth{};
+                    PathString m_path{};
+                    fs::DirectoryEntry m_entries[MaxDirectoryEntries]{};
+                    s64 m_entry_count{};
                 public:
                    constexpr ContentIterator() = default;
                     ~ContentIterator();
@@ -49,18 +49,18 @@ namespace ams::ncm {
                     Result LoadEntries();
             };
         protected:
-            PlaceHolderAccessor placeholder_accessor;
-            ContentId cached_content_id;
-            fs::FileHandle cached_file_handle;
-            RightsIdCache *rights_id_cache;
-            util::optional<ContentIterator> content_iterator;
-            util::optional<s32> last_content_offset;
+            PlaceHolderAccessor m_placeholder_accessor;
+            ContentId m_cached_content_id;
+            fs::FileHandle m_cached_file_handle;
+            RightsIdCache *m_rights_id_cache;
+            util::optional<ContentIterator> m_content_iterator;
+            util::optional<s32> m_last_content_offset;
         public:
             static Result InitializeBase(const char *root_path);
             static Result CleanupBase(const char *root_path);
             static Result VerifyBase(const char *root_path);
         public:
-            ContentStorageImpl() : placeholder_accessor(), cached_content_id(InvalidContentId), cached_file_handle(), rights_id_cache(nullptr), content_iterator(util::nullopt), last_content_offset(util::nullopt) { /* ... */ }
+            ContentStorageImpl() : m_placeholder_accessor(), m_cached_content_id(InvalidContentId), m_cached_file_handle(), m_rights_id_cache(nullptr), m_content_iterator(util::nullopt), m_last_content_offset(util::nullopt) { /* ... */ }
             ~ContentStorageImpl();
 
             Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);

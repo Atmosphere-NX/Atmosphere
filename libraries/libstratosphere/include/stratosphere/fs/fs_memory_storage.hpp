@@ -22,21 +22,21 @@ namespace ams::fs {
 
     class MemoryStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
-            u8 * const buf;
-            const s64 size;
+            u8 * const m_buf;
+            const s64 m_size;
         public:
-            MemoryStorage(void *b, s64 sz) : buf(static_cast<u8 *>(b)), size(sz) { /* .. */ }
+            MemoryStorage(void *b, s64 sz) : m_buf(static_cast<u8 *>(b)), m_size(sz) { /* .. */ }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
                 /* Succeed immediately on zero-sized read. */
                 R_SUCCEED_IF(size == 0);
 
                 /* Validate arguments. */
-                R_UNLESS(buffer != nullptr,                                    fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
 
                 /* Copy from memory. */
-                std::memcpy(buffer, this->buf + offset, size);
+                std::memcpy(buffer, m_buf + offset, size);
                 return ResultSuccess();
             }
 
@@ -45,11 +45,11 @@ namespace ams::fs {
                 R_SUCCEED_IF(size == 0);
 
                 /* Validate arguments. */
-                R_UNLESS(buffer != nullptr,                                    fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
 
                 /* Copy to memory. */
-                std::memcpy(this->buf + offset, buffer, size);
+                std::memcpy(m_buf + offset, buffer, size);
                 return ResultSuccess();
             }
 
@@ -58,7 +58,7 @@ namespace ams::fs {
             }
 
             virtual Result GetSize(s64 *out) override {
-                *out = this->size;
+                *out = m_size;
                 return ResultSuccess();
             }
 

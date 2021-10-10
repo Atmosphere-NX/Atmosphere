@@ -25,29 +25,29 @@ namespace ams::gpio::driver {
         NON_MOVEABLE(Pad);
         AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::Pad, ::ams::ddsf::IDevice);
         private:
-            int pad_number;
-            bool is_interrupt_enabled;
+            int m_pad_number;
+            bool m_is_interrupt_enabled;
         public:
-            explicit Pad(int pad) : IDevice(true), pad_number(pad), is_interrupt_enabled(false) { /* ... */ }
+            explicit Pad(int pad) : IDevice(true), m_pad_number(pad), m_is_interrupt_enabled(false) { /* ... */ }
 
             Pad() : Pad(0) { /* ... */ }
 
             virtual ~Pad() { /* ... */ }
 
             int GetPadNumber() const {
-                return this->pad_number;
+                return m_pad_number;
             }
 
             void SetPadNumber(int p) {
-                this->pad_number = p;
+                m_pad_number = p;
             }
 
             bool IsInterruptEnabled() const {
-                return this->is_interrupt_enabled;
+                return m_is_interrupt_enabled;
             }
 
             void SetInterruptEnabled(bool en) {
-                this->is_interrupt_enabled = en;
+                m_is_interrupt_enabled = en;
             }
 
             bool IsInterruptRequiredForDriver() const {

@@ -26,32 +26,32 @@ namespace ams::os::impl {
 
     class InterruptEventImpl {
         private:
-            InterruptEventTargetImpl impl;
+            InterruptEventTargetImpl m_impl;
         public:
-            explicit InterruptEventImpl(InterruptName name, EventClearMode clear_mode) : impl(name, clear_mode) { /* ... */ }
+            explicit InterruptEventImpl(InterruptName name, EventClearMode clear_mode) : m_impl(name, clear_mode) { /* ... */ }
 
             void Clear() {
-                return this->impl.Clear();
+                return m_impl.Clear();
             }
 
             void Wait() {
-                return this->impl.Wait();
+                return m_impl.Wait();
             }
 
             bool TryWait() {
-                return this->impl.TryWait();
+                return m_impl.TryWait();
             }
 
             bool TimedWait(TimeSpan timeout) {
-                return this->impl.TimedWait(timeout);
+                return m_impl.TimedWait(timeout);
             }
 
             TriBool IsSignaled() {
-                return this->impl.IsSignaled();
+                return m_impl.IsSignaled();
             }
 
             NativeHandle GetHandle() const {
-                return this->impl.GetHandle();
+                return m_impl.GetHandle();
             }
     };
 

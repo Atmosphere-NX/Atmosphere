@@ -33,7 +33,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
     }
 
-    PwmDriverImpl::PwmDriverImpl(dd::PhysicalAddress paddr, size_t sz, const ChannelDefinition *c, size_t nc) : registers_phys_addr(paddr), registers_size(sz), channels(c), num_channels(nc), registers(0) {
+    PwmDriverImpl::PwmDriverImpl(dd::PhysicalAddress paddr, size_t sz, const ChannelDefinition *c, size_t nc) : m_registers_phys_addr(paddr), m_registers_size(sz), m_channels(c), m_num_channels(nc), m_registers(0) {
         /* ... */
     }
 
@@ -60,8 +60,8 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
     void PwmDriverImpl::InitializeDriver() {
         /* Get the registers virtual address. */
-        this->registers = dd::QueryIoMapping(this->registers_phys_addr, this->registers_size);
-        AMS_ABORT_UNLESS(this->registers != 0);
+        m_registers = dd::QueryIoMapping(m_registers_phys_addr, m_registers_size);
+        AMS_ABORT_UNLESS(m_registers != 0);
 
         /* Setup power to pwm. */
         this->PowerOn();

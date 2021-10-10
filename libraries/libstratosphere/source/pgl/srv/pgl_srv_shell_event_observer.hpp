@@ -25,12 +25,12 @@ namespace ams::pgl::srv {
 
     class ShellEventObserverHolder : public util::IntrusiveListBaseNode<ShellEventObserverHolder> {
         private:
-            IShellEventObserver *observer;
+            IShellEventObserver *m_observer;
         public:
-            explicit ShellEventObserverHolder(IShellEventObserver *observer) : observer(observer) { /* ... */ }
+            explicit ShellEventObserverHolder(IShellEventObserver *observer) : m_observer(observer) { /* ... */ }
 
             void Notify(const pm::ProcessEventInfo &info) {
-                this->observer->Notify(info);
+                m_observer->Notify(info);
             }
     };
 
@@ -38,19 +38,19 @@ namespace ams::pgl::srv {
         private:
             static constexpr size_t QueueCapacity = 0x20;
         private:
-            os::MessageQueue message_queue;
-            uintptr_t queue_buffer[QueueCapacity];
-            os::SystemEvent event;
-            util::TypedStorage<lmem::HeapCommonHead> heap_head;
-            lmem::HeapHandle heap_handle;
-            pm::ProcessEventInfo event_info_data[QueueCapacity];
-            util::TypedStorage<ShellEventObserverHolder> holder;
+            os::MessageQueue m_message_queue;
+            uintptr_t m_queue_buffer[QueueCapacity];
+            os::SystemEvent m_event;
+            util::TypedStorage<lmem::HeapCommonHead> m_heap_head;
+            lmem::HeapHandle m_heap_handle;
+            pm::ProcessEventInfo m_event_info_data[QueueCapacity];
+            util::TypedStorage<ShellEventObserverHolder> m_holder;
         public:
             ShellEventObserverImpl();
             ~ShellEventObserverImpl();
 
             os::SystemEvent &GetEvent() {
-                return this->event;
+                return m_event;
             }
 
             Result PopEventInfo(pm::ProcessEventInfo *out);

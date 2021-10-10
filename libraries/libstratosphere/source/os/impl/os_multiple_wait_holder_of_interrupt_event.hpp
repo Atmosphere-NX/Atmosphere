@@ -20,9 +20,9 @@ namespace ams::os::impl {
 
     class MultiWaitHolderOfInterruptEvent : public MultiWaitHolderOfKernelObject {
         private:
-            InterruptEventType *event;
+            InterruptEventType *m_event;
         public:
-            explicit MultiWaitHolderOfInterruptEvent(InterruptEventType *e) : event(e) { /* ... */ }
+            explicit MultiWaitHolderOfInterruptEvent(InterruptEventType *e) : m_event(e) { /* ... */ }
 
             /* IsSignaled, GetHandle both implemented. */
             virtual TriBool IsSignaled() const override {

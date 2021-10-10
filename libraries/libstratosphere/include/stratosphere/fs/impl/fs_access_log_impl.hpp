@@ -66,7 +66,7 @@ namespace ams::fs::impl {
 
     class IdString {
         private:
-            char buffer[0x20];
+            char m_buffer[0x20];
         private:
             const char *ToValueString(int id);
         public:

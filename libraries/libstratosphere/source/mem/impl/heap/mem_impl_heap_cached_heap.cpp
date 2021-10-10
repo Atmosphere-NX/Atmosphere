@@ -21,43 +21,43 @@
 namespace ams::mem::impl::heap {
 
     void *CachedHeap::Allocate(size_t n) {
-        return this->tls_heap_cache->Allocate(n);
+        return m_tls_heap_cache->Allocate(n);
     }
 
     void *CachedHeap::Allocate(size_t n, size_t align) {
-        return this->tls_heap_cache->Allocate(n, align);
+        return m_tls_heap_cache->Allocate(n, align);
     }
 
     size_t  CachedHeap::GetAllocationSize(const void *ptr) {
-        return this->tls_heap_cache->GetAllocationSize(ptr);
+        return m_tls_heap_cache->GetAllocationSize(ptr);
     }
 
     errno_t CachedHeap::Free(void *p) {
-        return this->tls_heap_cache->Free(p);
+        return m_tls_heap_cache->Free(p);
     }
 
     errno_t CachedHeap::FreeWithSize(void *p, size_t size) {
-        return this->tls_heap_cache->FreeWithSize(p, size);
+        return m_tls_heap_cache->FreeWithSize(p, size);
     }
 
     errno_t CachedHeap::Reallocate(void *ptr, size_t size, void **p) {
-        return this->tls_heap_cache->Reallocate(ptr, size, p);
+        return m_tls_heap_cache->Reallocate(ptr, size, p);
     }
 
     errno_t CachedHeap::Shrink(void *ptr, size_t size) {
-        return this->tls_heap_cache->Shrink(ptr, size);
+        return m_tls_heap_cache->Shrink(ptr, size);
     }
 
     void CachedHeap::ReleaseAllCache() {
-        if (this->tls_heap_cache) {
-            this->tls_heap_cache->ReleaseAllCache();
+        if (m_tls_heap_cache) {
+            m_tls_heap_cache->ReleaseAllCache();
         }
     }
 
     void CachedHeap::Finalize() {
-        if (this->tls_heap_cache) {
-            this->tls_heap_cache->Finalize();
-            this->tls_heap_cache = nullptr;
+        if (m_tls_heap_cache) {
+            m_tls_heap_cache->Finalize();
+            m_tls_heap_cache = nullptr;
         }
     }
 
@@ -78,7 +78,7 @@ namespace ams::mem::impl::heap {
             {
                 bool *out = va_arg(vl, bool *);
                 if (out) {
-                    *out = (this->tls_heap_cache == nullptr) || this->tls_heap_cache->CheckCache();
+                    *out = (m_tls_heap_cache == nullptr) || m_tls_heap_cache->CheckCache();
                 }
                 return 0;
             }
@@ -107,12 +107,12 @@ namespace ams::mem::impl::heap {
 
     void CachedHeap::Reset(TlsHeapCache *thc) {
         this->Finalize();
-        this->tls_heap_cache = thc;
+        m_tls_heap_cache = thc;
     }
 
     TlsHeapCache *CachedHeap::Release() {
-        TlsHeapCache *ret = this->tls_heap_cache;
-        this->tls_heap_cache = nullptr;
+        TlsHeapCache *ret = m_tls_heap_cache;
+        m_tls_heap_cache = nullptr;
         return ret;
     }
 

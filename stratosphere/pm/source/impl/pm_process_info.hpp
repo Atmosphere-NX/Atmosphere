@@ -38,26 +38,26 @@ namespace ams::pm::impl {
                 Flag_UnhandledException     = (1 << 9),
             };
         private:
-            util::IntrusiveListNode list_node;
-            const os::ProcessId process_id;
-            const ldr::PinId pin_id;
-            const ncm::ProgramLocation loc;
-            const cfg::OverrideStatus status;
-            os::NativeHandle handle;
-            svc::ProcessState state;
-            u32 flags;
-            os::MultiWaitHolderType multi_wait_holder;
+            util::IntrusiveListNode m_list_node;
+            const os::ProcessId m_process_id;
+            const ldr::PinId m_pin_id;
+            const ncm::ProgramLocation m_loc;
+            const cfg::OverrideStatus m_status;
+            os::NativeHandle m_handle;
+            svc::ProcessState m_state;
+            u32 m_flags;
+            os::MultiWaitHolderType m_multi_wait_holder;
         private:
             void SetFlag(Flag flag) {
-                this->flags |= flag;
+                m_flags |= flag;
             }
 
             void ClearFlag(Flag flag) {
-                this->flags &= ~flag;
+                m_flags &= ~flag;
             }
 
             bool HasFlag(Flag flag) const {
-                return (this->flags & flag);
+                return (m_flags & flag);
             }
         public:
             ProcessInfo(os::NativeHandle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s);
@@ -65,43 +65,43 @@ namespace ams::pm::impl {
             void Cleanup();
 
             void LinkToMultiWait(os::MultiWaitType &multi_wait) {
-                os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(this->multi_wait_holder));
+                os::LinkMultiWaitHolder(std::addressof(multi_wait), std::addressof(m_multi_wait_holder));
             }
 
             os::NativeHandle GetHandle() const {
-                return this->handle;
+                return m_handle;
             }
 
             os::ProcessId GetProcessId() const {
-                return this->process_id;
+                return m_process_id;
             }
 
             ldr::PinId GetPinId() const {
-                return this->pin_id;
+                return m_pin_id;
             }
 
             const ncm::ProgramLocation &GetProgramLocation() const {
-                return this->loc;
+                return m_loc;
             }
 
             const cfg::OverrideStatus &GetOverrideStatus() const {
-                return this->status;
+                return m_status;
             }
 
             svc::ProcessState GetState() const {
-                return this->state;
+                return m_state;
             }
 
             void SetState(svc::ProcessState state) {
-                this->state = state;
+                m_state = state;
             }
 
             bool HasStarted() const {
-                return this->state != svc::ProcessState_Created && this->state != svc::ProcessState_CreatedAttached;
+                return m_state != svc::ProcessState_Created && m_state != svc::ProcessState_CreatedAttached;
             }
 
             bool HasTerminated() const {
-                return this->state == svc::ProcessState_Terminated;
+                return m_state == svc::ProcessState_Terminated;
             }
 
 #define DEFINE_FLAG_SET(flag) \
@@ -165,18 +165,18 @@ namespace ams::pm::impl {
 #undef DEFINE_FLAG_CLEAR
     };
 
-    class ProcessList final : public util::IntrusiveListMemberTraits<&ProcessInfo::list_node>::ListType {
+    class ProcessList final : public util::IntrusiveListMemberTraits<&ProcessInfo::m_list_node>::ListType {
         private:
-            os::SdkMutex lock;
+            os::SdkMutex m_lock;
         public:
-            constexpr ProcessList() : lock() { /* ... */ }
+            constexpr ProcessList() : m_lock() { /* ... */ }
 
             void Lock() {
-                this->lock.Lock();
+                m_lock.Lock();
             }
 
             void Unlock() {
-                this->lock.Unlock();
+                m_lock.Unlock();
             }
 
             void Remove(ProcessInfo *process_info) {
@@ -184,18 +184,18 @@ namespace ams::pm::impl {
             }
 
             ProcessInfo *Find(os::ProcessId process_id) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if ((*it).GetProcessId() == process_id) {
-                        return std::addressof(*it);
+                for (auto &info : *this) {
+                    if (info.GetProcessId() == process_id) {
+                        return std::addressof(info);
                     }
                 }
                 return nullptr;
             }
 
             ProcessInfo *Find(ncm::ProgramId program_id) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if ((*it).GetProgramLocation().program_id == program_id) {
-                        return std::addressof(*it);
+                for (auto &info : *this) {
+                    if (info.GetProgramLocation().program_id == program_id) {
+                        return std::addressof(info);
                     }
                 }
                 return nullptr;
@@ -205,30 +205,30 @@ namespace ams::pm::impl {
 
     class ProcessListAccessor final {
         private:
-            ProcessList &list;
+            ProcessList &m_list;
         public:
-            explicit ProcessListAccessor(ProcessList &l) : list(l) {
-                this->list.Lock();
+            explicit ProcessListAccessor(ProcessList &l) : m_list(l) {
+                m_list.Lock();
             }
 
             ~ProcessListAccessor() {
-                this->list.Unlock();
+                m_list.Unlock();
             }
 
             ProcessList *operator->() {
-                return std::addressof(this->list);
+                return std::addressof(m_list);
             }
 
             const ProcessList *operator->() const {
-                return std::addressof(this->list);
+                return std::addressof(m_list);
             }
 
             ProcessList &operator*() {
-                return this->list;
+                return m_list;
             }
 
             const ProcessList &operator*() const {
-                return this->list;
+                return m_list;
             }
     };
 

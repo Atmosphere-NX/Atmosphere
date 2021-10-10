@@ -27,38 +27,38 @@ namespace ams::os {
         NON_COPYABLE(ConditionVariable);
         NON_MOVEABLE(ConditionVariable);
         private:
-            ConditionVariableType cv;
+            ConditionVariableType m_cv;
         public:
-            constexpr ConditionVariable() : cv{::ams::os::ConditionVariableType::State_Initialized, {{0}}} { /* ... */ }
+            constexpr ConditionVariable() : m_cv{::ams::os::ConditionVariableType::State_Initialized, {{0}}} { /* ... */ }
 
-            ~ConditionVariable() { FinalizeConditionVariable(std::addressof(this->cv)); }
+            ~ConditionVariable() { FinalizeConditionVariable(std::addressof(m_cv)); }
 
             void Signal() {
-                SignalConditionVariable(std::addressof(this->cv));
+                SignalConditionVariable(std::addressof(m_cv));
             }
 
             void Broadcast() {
-                BroadcastConditionVariable(std::addressof(this->cv));
+                BroadcastConditionVariable(std::addressof(m_cv));
             }
 
             void Wait(ams::os::MutexType &mutex) {
-                WaitConditionVariable(std::addressof(this->cv), std::addressof(mutex));
+                WaitConditionVariable(std::addressof(m_cv), std::addressof(mutex));
             }
 
             ConditionVariableStatus TimedWait(ams::os::MutexType &mutex, TimeSpan timeout) {
-                return TimedWaitConditionVariable(std::addressof(this->cv), std::addressof(mutex), timeout);
+                return TimedWaitConditionVariable(std::addressof(m_cv), std::addressof(mutex), timeout);
             }
 
             operator ConditionVariableType &() {
-                return this->cv;
+                return m_cv;
             }
 
             operator const ConditionVariableType &() const {
-                return this->cv;
+                return m_cv;
             }
 
             ConditionVariableType *GetBase() {
-                return std::addressof(this->cv);
+                return std::addressof(m_cv);
             }
     };
 

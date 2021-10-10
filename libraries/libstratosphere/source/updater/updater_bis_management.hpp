@@ -24,10 +24,10 @@ namespace ams::updater {
         public:
             static constexpr size_t SectorAlignment = 0x200;
         private:
-            std::unique_ptr<fs::IStorage> storage;
-            const fs::BisPartitionId partition_id;
+            std::unique_ptr<fs::IStorage> m_storage;
+            const fs::BisPartitionId m_partition_id;
         public:
-            explicit BisAccessor(fs::BisPartitionId id) : partition_id(id) { /* ... */ }
+            explicit BisAccessor(fs::BisPartitionId id) : m_partition_id(id) { /* ... */ }
 
         public:
             Result Initialize();

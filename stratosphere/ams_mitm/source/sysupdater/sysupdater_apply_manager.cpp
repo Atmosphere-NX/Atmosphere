@@ -79,7 +79,7 @@ namespace ams::mitm::sysupdater {
 
     Result SystemUpdateApplyManager::ApplyPackageTask(ncm::PackageSystemDowngradeTask *task) {
         /* Lock the apply mutex. */
-        std::scoped_lock lk(this->apply_mutex);
+        std::scoped_lock lk(m_apply_mutex);
 
         /* NOTE: Here, Nintendo creates a system report for the update. */
 

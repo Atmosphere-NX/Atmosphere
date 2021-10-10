@@ -27,42 +27,42 @@ namespace ams::os {
         NON_COPYABLE(InterruptEvent);
         NON_MOVEABLE(InterruptEvent);
         private:
-            InterruptEventType event;
+            InterruptEventType m_event;
         public:
             explicit InterruptEvent(InterruptName name, EventClearMode clear_mode) {
-                InitializeInterruptEvent(std::addressof(this->event), name, clear_mode);
+                InitializeInterruptEvent(std::addressof(m_event), name, clear_mode);
             }
 
             ~InterruptEvent() {
-                FinalizeInterruptEvent(std::addressof(this->event));
+                FinalizeInterruptEvent(std::addressof(m_event));
             }
 
             void Wait() {
-                return WaitInterruptEvent(std::addressof(this->event));
+                return WaitInterruptEvent(std::addressof(m_event));
             }
 
             bool TryWait() {
-                return TryWaitInterruptEvent(std::addressof(this->event));
+                return TryWaitInterruptEvent(std::addressof(m_event));
             }
 
             bool TimedWait(TimeSpan timeout) {
-                return TimedWaitInterruptEvent(std::addressof(this->event), timeout);
+                return TimedWaitInterruptEvent(std::addressof(m_event), timeout);
             }
 
             void Clear() {
-                return ClearInterruptEvent(std::addressof(this->event));
+                return ClearInterruptEvent(std::addressof(m_event));
             }
 
             operator InterruptEventType &() {
-                return this->event;
+                return m_event;
             }
 
             operator const InterruptEventType &() const {
-                return this->event;
+                return m_event;
             }
 
             InterruptEventType *GetBase() {
-                return std::addressof(this->event);
+                return std::addressof(m_event);
             }
     };
 

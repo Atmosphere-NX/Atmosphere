@@ -24,22 +24,22 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->program_redirector.FindRedirection(out.GetPointer(), id), lr::ResultProgramNotFound());
+        R_UNLESS(m_program_redirector.FindRedirection(out.GetPointer(), id), lr::ResultProgramNotFound());
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectProgramPath(const Path &path, ncm::ProgramId id) {
-        this->program_redirector.SetRedirection(id, path);
+        m_program_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->app_control_redirector.FindRedirection(out.GetPointer(), id), lr::ResultControlNotFound());
+        R_UNLESS(m_app_control_redirector.FindRedirection(out.GetPointer(), id), lr::ResultControlNotFound());
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->html_docs_redirector.FindRedirection(out.GetPointer(), id), lr::ResultHtmlDocumentNotFound());
+        R_UNLESS(m_html_docs_redirector.FindRedirection(out.GetPointer(), id), lr::ResultHtmlDocumentNotFound());
         return ResultSuccess();
     }
 
@@ -49,37 +49,37 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->app_control_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_app_control_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->app_control_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_app_control_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->html_docs_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_html_docs_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->html_docs_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_html_docs_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->legal_info_redirector.FindRedirection(out.GetPointer(), id), lr::ResultLegalInformationNotFound());
+        R_UNLESS(m_legal_info_redirector.FindRedirection(out.GetPointer(), id), lr::ResultLegalInformationNotFound());
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->legal_info_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_legal_info_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->legal_info_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_legal_info_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
@@ -89,12 +89,12 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
@@ -109,52 +109,52 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverImpl::EraseProgramRedirection(ncm::ProgramId id) {
-        this->program_redirector.EraseRedirection(id);
+        m_program_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::EraseApplicationControlRedirection(ncm::ProgramId id) {
-        this->app_control_redirector.EraseRedirection(id);
+        m_app_control_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) {
-        this->html_docs_redirector.EraseRedirection(id);
+        m_html_docs_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::EraseApplicationLegalInformationRedirection(ncm::ProgramId id) {
-        this->legal_info_redirector.EraseRedirection(id);
+        m_legal_info_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
         /* If a debug program redirection is present, use it. */
-        R_SUCCEED_IF(this->debug_program_redirector.FindRedirection(out.GetPointer(), id));
+        R_SUCCEED_IF(m_debug_program_redirector.FindRedirection(out.GetPointer(), id));
 
         /* Otherwise, try to find a normal program redirection. */
-        R_UNLESS(this->program_redirector.FindRedirection(out.GetPointer(), id), lr::ResultDebugProgramNotFound());
+        R_UNLESS(m_program_redirector.FindRedirection(out.GetPointer(), id), lr::ResultDebugProgramNotFound());
 
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) {
-        this->debug_program_redirector.SetRedirection(id, path);
+        m_debug_program_redirector.SetRedirection(id, path);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) {
-        this->debug_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
+        m_debug_program_redirector.SetRedirection(id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->debug_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
+        m_debug_program_redirector.SetRedirection(id, owner_id, path, RedirectionFlags_Application);
         return ResultSuccess();
     }
 
     Result RedirectOnlyLocationResolverImpl::EraseProgramRedirectionForDebug(ncm::ProgramId id) {
-        this->debug_program_redirector.EraseRedirection(id);
+        m_debug_program_redirector.EraseRedirection(id);
         return ResultSuccess();
     }
 

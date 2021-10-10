@@ -31,18 +31,18 @@ namespace ams::mem {
                 size_t hash;
             };
         private:
-            bool initialized;
-            bool enable_thread_cache;
-            uintptr_t unused;
-            os::TlsSlot tls_slot;
-            impl::InternalCentralHeapStorage central_heap_storage;
+            bool m_initialized;
+            bool m_enable_thread_cache;
+            uintptr_t m_unused;
+            os::TlsSlot m_tls_slot;
+            impl::InternalCentralHeapStorage m_central_heap_storage;
         public:
             StandardAllocator();
             StandardAllocator(void *mem, size_t size);
             StandardAllocator(void *mem, size_t size, bool enable_cache);
 
             ~StandardAllocator() {
-                if (this->initialized) {
+                if (m_initialized) {
                     this->Finalize();
                 }
             }

@@ -27,7 +27,7 @@ namespace ams::fssystem {
         /* Validate our preconditions. */
         AMS_ASSERT(this->IsInitialized());
         AMS_ASSERT(out_info != nullptr);
-        AMS_ASSERT(this->entry_size == sizeof(EntryType));
+        AMS_ASSERT(m_entry_size == sizeof(EntryType));
 
         /* Reset the output. */
         out_info->Reset();
@@ -44,14 +44,14 @@ namespace ams::fssystem {
         R_UNLESS(entry.GetVirtualOffset() <= cur_offset, fs::ResultOutOfRange());
 
         /* Create a pooled buffer for our scan. */
-        PooledBuffer pool(this->node_size, 1);
+        PooledBuffer pool(m_node_size, 1);
         char *buffer = nullptr;
 
         /* Read the node. */
-        if (this->node_size <= pool.GetSize()) {
+        if (m_node_size <= pool.GetSize()) {
             buffer = pool.GetBuffer();
-            const auto ofs = param.entry_set.index * static_cast<s64>(this->node_size);
-            R_TRY(this->entry_storage.Read(ofs, buffer, this->node_size));
+            const auto ofs = param.entry_set.index * static_cast<s64>(m_node_size);
+            R_TRY(m_entry_storage.Read(ofs, buffer, m_node_size));
         }
 
         /* Calculate extents. */
@@ -81,11 +81,11 @@ namespace ams::fssystem {
 
             if (entry_index + 1 < entry_count) {
                 if (buffer != nullptr) {
-                    const auto ofs = impl::GetBucketTreeEntryOffset(0, this->entry_size, entry_index + 1);
-                    std::memcpy(std::addressof(next_entry), buffer + ofs, this->entry_size);
+                    const auto ofs = impl::GetBucketTreeEntryOffset(0, m_entry_size, entry_index + 1);
+                    std::memcpy(std::addressof(next_entry), buffer + ofs, m_entry_size);
                 } else {
-                    const auto ofs = impl::GetBucketTreeEntryOffset(param.entry_set.index, this->node_size, this->entry_size, entry_index + 1);
-                    R_TRY(this->entry_storage.Read(ofs, std::addressof(next_entry), this->entry_size));
+                    const auto ofs = impl::GetBucketTreeEntryOffset(param.entry_set.index, m_node_size, m_entry_size, entry_index + 1);
+                    R_TRY(m_entry_storage.Read(ofs, std::addressof(next_entry), m_entry_size));
                 }
 
                 next_entry_offset = next_entry.GetVirtualOffset();
@@ -154,12 +154,12 @@ namespace ams::fssystem {
 
         /* Create our parameters. */
         ContinuousReadingParam<EntryType> param = {
-            offset, size, this->entry_set.header, this->entry_index
+            offset, size, m_entry_set.header, m_entry_index
         };
-        std::memcpy(std::addressof(param.entry), this->entry, sizeof(EntryType));
+        std::memcpy(std::addressof(param.entry), m_entry, sizeof(EntryType));
 
         /* Scan. */
-        return this->tree->ScanContinuousReading<EntryType>(out_info, param);
+        return m_tree->ScanContinuousReading<EntryType>(out_info, param);
     }
 
 }

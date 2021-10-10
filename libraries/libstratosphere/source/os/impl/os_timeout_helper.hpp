@@ -27,12 +27,12 @@ namespace ams::os::impl {
 
     class TimeoutHelper {
         private:
-            Tick absolute_end_tick;
+            Tick m_absolute_end_tick;
         public:
             explicit TimeoutHelper(TimeSpan timeout) {
                 if (timeout == 0) {
                     /* If timeout is zero, don't do relative tick calculations. */
-                    this->absolute_end_tick = Tick(0);
+                    m_absolute_end_tick = Tick(0);
                 } else {
                     const auto &tick_manager = impl::GetTickManager();
 
@@ -40,7 +40,7 @@ namespace ams::os::impl {
                     const u64 timeout_tick = tick_manager.ConvertToTick(timeout).GetInt64Value();
                     const u64 end_tick     = cur_tick + timeout_tick + 1;
 
-                    this->absolute_end_tick = Tick(std::min<u64>(std::numeric_limits<s64>::max(), end_tick));
+                    m_absolute_end_tick = Tick(std::min<u64>(std::numeric_limits<s64>::max(), end_tick));
                 }
             }
 
@@ -49,13 +49,13 @@ namespace ams::os::impl {
             }
 
             bool TimedOut() const {
-                if (this->absolute_end_tick.GetInt64Value() == 0) {
+                if (m_absolute_end_tick.GetInt64Value() == 0) {
                     return true;
                 }
 
                 const Tick cur_tick = impl::GetTickManager().GetTick();
 
-                return cur_tick >= this->absolute_end_tick;
+                return cur_tick >= m_absolute_end_tick;
             }
 
             TargetTimeSpan GetTimeLeftOnTarget() const;

@@ -22,8 +22,8 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */
-        const auto it = this->kvs->lower_bound(key);
-        R_UNLESS(it != this->kvs->end(),    ncm::ResultContentMetaNotFound());
+        const auto it = m_kvs->lower_bound(key);
+        R_UNLESS(it != m_kvs->end(),        ncm::ResultContentMetaNotFound());
         R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
 
         const auto found_key = it->GetKey();
@@ -51,7 +51,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::Set(const ContentMetaKey &key, const sf::InBuffer &value) {
         R_TRY(this->EnsureEnabled());
-        return this->kvs->Set(key, value.GetPointer(), value.GetSize());
+        return m_kvs->Set(key, value.GetPointer(), value.GetSize());
     }
 
     Result ContentMetaDatabaseImpl::Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) {
@@ -59,7 +59,7 @@ namespace ams::ncm {
 
         /* Get the entry from our key-value store. */
         size_t size;
-        R_TRY_CATCH(this->kvs->Get(std::addressof(size), out_value.GetPointer(), out_value.GetSize(), key)) {
+        R_TRY_CATCH(m_kvs->Get(std::addressof(size), out_value.GetPointer(), out_value.GetSize(), key)) {
             R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
         } R_END_TRY_CATCH;
 
@@ -70,7 +70,7 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::Remove(const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
-        R_TRY_CATCH(this->kvs->Remove(key)) {
+        R_TRY_CATCH(m_kvs->Remove(key)) {
             R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
         } R_END_TRY_CATCH;
 
@@ -110,7 +110,7 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto &entry : *this->kvs) {
+        for (auto &entry : *m_kvs) {
             const ContentMetaKey key = entry.GetKey();
 
             /* Check if this entry matches the given filters. */
@@ -152,7 +152,7 @@ namespace ams::ncm {
         util::optional<ContentMetaKey> found_key = util::nullopt;
 
         /* Find the last key with the desired program id. */
-        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
+        for (auto entry = m_kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != m_kvs->end(); entry++) {
             /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != id) {
                 break;
@@ -178,7 +178,7 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto &entry : *this->kvs) {
+        for (auto &entry : *m_kvs) {
             const ContentMetaKey key = entry.GetKey();
 
             /* Check if this entry matches the given filters. */
@@ -210,7 +210,7 @@ namespace ams::ncm {
 
         /* Check if key is present. */
         size_t size;
-        R_TRY_CATCH(this->kvs->GetValueSize(&size, key)) {
+        R_TRY_CATCH(m_kvs->GetValueSize(&size, key)) {
             R_CONVERT(kvdb::ResultKeyNotFound, ResultSuccess());
         } R_END_TRY_CATCH;
 
@@ -295,7 +295,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::DisableForcibly() {
-        this->disabled = true;
+        m_disabled = true;
         return ResultSuccess();
     }
 
@@ -320,7 +320,7 @@ namespace ams::ncm {
         };
 
         /* Iterate over all entries. */
-        for (auto &entry : *this->kvs) {
+        for (auto &entry : *m_kvs) {
             ContentMetaReader reader(entry.GetValuePointer(), entry.GetValueSize());
 
             /* Check if any of this entry's content infos matches one of the content ids for lookup. */
@@ -339,8 +339,8 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         /* Save and commit. */
-        R_TRY(this->kvs->Save());
-        return fs::CommitSaveData(this->mount_name);
+        R_TRY(m_kvs->Save());
+        return fs::CommitSaveData(m_mount_name);
     }
 
     Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
@@ -440,7 +440,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::GetCount(sf::Out<u32> out_count) {
         R_TRY(this->EnsureEnabled());
-        out_count.SetValue(this->kvs->GetCount());
+        out_count.SetValue(m_kvs->GetCount());
         return ResultSuccess();
     }
 

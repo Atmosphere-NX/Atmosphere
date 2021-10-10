@@ -29,14 +29,14 @@ namespace ams::fssystem {
         R_SUCCEED_IF(size == 0);
 
         /* Validate arguments. */
-        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
 
         /* Find the offset in our tree. */
         BucketTree::Visitor visitor;
-        R_TRY(this->table.Find(std::addressof(visitor), offset));
+        R_TRY(m_table.Find(std::addressof(visitor), offset));
         {
             const auto entry_offset = visitor.Get<Entry>()->GetVirtualOffset();
-            R_UNLESS(0 <= entry_offset && this->table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
+            R_UNLESS(0 <= entry_offset && m_table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
         }
 
         /* Prepare to operate in chunks. */
@@ -69,7 +69,7 @@ namespace ams::fssystem {
 
                     /* Get the current data storage's size. */
                     s64 cur_data_storage_size;
-                    R_TRY(this->data_storage[0].GetSize(std::addressof(cur_data_storage_size)));
+                    R_TRY(m_data_storage[0].GetSize(std::addressof(cur_data_storage_size)));
 
                     /* Ensure that we remain within range. */
                     const auto data_offset           = cur_offset - cur_entry_offset;
@@ -79,7 +79,7 @@ namespace ams::fssystem {
                     R_UNLESS(cur_entry_phys_offset + data_offset + cur_size <= cur_data_storage_size,      fs::ResultInvalidIndirectStorageSize());
 
                     /* Operate. */
-                    R_TRY(func(std::addressof(this->data_storage[0]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
+                    R_TRY(func(std::addressof(m_data_storage[0]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
 
                     /* Mark as done. */
                     cr_info.Done();
@@ -91,9 +91,9 @@ namespace ams::fssystem {
             if (visitor.CanMoveNext()) {
                 R_TRY(visitor.MoveNext());
                 next_entry_offset = visitor.Get<Entry>()->GetVirtualOffset();
-                R_UNLESS(this->table.Includes(next_entry_offset), fs::ResultInvalidIndirectEntryOffset());
+                R_UNLESS(m_table.Includes(next_entry_offset), fs::ResultInvalidIndirectEntryOffset());
             } else {
-                next_entry_offset = this->table.GetEnd();
+                next_entry_offset = m_table.GetEnd();
             }
             R_UNLESS(cur_offset < next_entry_offset, fs::ResultInvalidIndirectEntryOffset());
 
@@ -118,14 +118,14 @@ namespace ams::fssystem {
             if (needs_operate) {
                 /* Get the current data storage's size. */
                 s64 cur_data_storage_size;
-                R_TRY(this->data_storage[cur_entry.storage_index].GetSize(std::addressof(cur_data_storage_size)));
+                R_TRY(m_data_storage[cur_entry.storage_index].GetSize(std::addressof(cur_data_storage_size)));
 
                 /* Ensure that we remain within range. */
                 const auto cur_entry_phys_offset = cur_entry.GetPhysicalOffset();
                 R_UNLESS(0 <= cur_entry_phys_offset && cur_entry_phys_offset <= cur_data_storage_size, fs::ResultIndirectStorageCorrupted());
                 R_UNLESS(cur_entry_phys_offset + data_offset + cur_size <= cur_data_storage_size,      fs::ResultIndirectStorageCorrupted());
 
-                R_TRY(func(std::addressof(this->data_storage[cur_entry.storage_index]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
+                R_TRY(func(std::addressof(m_data_storage[cur_entry.storage_index]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
             }
 
             cur_offset += cur_size;

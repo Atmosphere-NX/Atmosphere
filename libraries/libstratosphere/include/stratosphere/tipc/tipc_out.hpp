@@ -40,31 +40,31 @@ namespace ams::tipc {
         public:
             static constexpr size_t TypeSize = sizeof(T);
         private:
-            T *ptr;
+            T *m_ptr;
         public:
-            constexpr Out(uintptr_t p) : ptr(reinterpret_cast<T *>(p)) { /* ... */ }
-            constexpr Out(T *p) : ptr(p) { /* ... */ }
-            constexpr Out(const tipc::PointerAndSize &pas) : ptr(reinterpret_cast<T *>(pas.GetAddress())) { /* TODO: Is AMS_ABORT_UNLESS(pas.GetSize() >= sizeof(T)); necessary? */ }
+            constexpr Out(uintptr_t p) : m_ptr(reinterpret_cast<T *>(p)) { /* ... */ }
+            constexpr Out(T *p) : m_ptr(p) { /* ... */ }
+            constexpr Out(const tipc::PointerAndSize &pas) : m_ptr(reinterpret_cast<T *>(pas.GetAddress())) { /* TODO: Is AMS_ABORT_UNLESS(pas.GetSize() >= sizeof(T)); necessary? */ }
 
             ALWAYS_INLINE void SetValue(const T& value) const {
-                *this->ptr = value;
+                *m_ptr = value;
             }
 
             ALWAYS_INLINE const T &GetValue() const {
-                return *this->ptr;
+                return *m_ptr;
             }
 
             ALWAYS_INLINE T *GetPointer() const {
-                return this->ptr;
+                return m_ptr;
             }
 
             /* Convenience operators. */
             ALWAYS_INLINE T &operator*() const {
-                return *this->ptr;
+                return *m_ptr;
             }
 
             ALWAYS_INLINE T *operator->() const {
-                return this->ptr;
+                return m_ptr;
             }
     };
 

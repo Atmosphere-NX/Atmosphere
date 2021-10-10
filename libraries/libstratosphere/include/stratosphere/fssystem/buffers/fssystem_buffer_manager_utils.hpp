@@ -56,13 +56,13 @@ namespace ams::fssystem::buffers {
 
     class BufferManagerContext {
         private:
-            bool needs_blocking;
+            bool m_needs_blocking;
         public:
-            constexpr BufferManagerContext() : needs_blocking(false) { /* ... */ }
+            constexpr BufferManagerContext() : m_needs_blocking(false) { /* ... */ }
         public:
-            bool IsNeedBlocking() const { return this->needs_blocking; }
+            bool IsNeedBlocking() const { return m_needs_blocking; }
 
-            void SetNeedBlocking(bool need) { this->needs_blocking = need; }
+            void SetNeedBlocking(bool need) { m_needs_blocking = need; }
     };
 
     void RegisterBufferManagerContext(const BufferManagerContext *context);
@@ -71,19 +71,19 @@ namespace ams::fssystem::buffers {
 
     class ScopedBufferManagerContextRegistration {
         private:
-            BufferManagerContext cur_context;
-            const BufferManagerContext *old_context;
+            BufferManagerContext m_cur_context;
+            const BufferManagerContext *m_old_context;
         public:
             ALWAYS_INLINE explicit ScopedBufferManagerContextRegistration() {
-                this->old_context = GetBufferManagerContext();
-                if (this->old_context != nullptr) {
-                    this->cur_context = *this->old_context;
+                m_old_context = GetBufferManagerContext();
+                if (m_old_context != nullptr) {
+                    m_cur_context = *m_old_context;
                 }
-                RegisterBufferManagerContext(std::addressof(this->cur_context));
+                RegisterBufferManagerContext(std::addressof(m_cur_context));
             }
 
             ALWAYS_INLINE ~ScopedBufferManagerContextRegistration() {
-                RegisterBufferManagerContext(this->old_context);
+                RegisterBufferManagerContext(m_old_context);
             }
     };
 

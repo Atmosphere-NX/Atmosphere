@@ -25,26 +25,26 @@ namespace ams::os {
         NON_COPYABLE(Mutex);
         NON_MOVEABLE(Mutex);
         private:
-            MutexType mutex;
+            MutexType m_mutex;
         public:
-            constexpr explicit Mutex(bool recursive) : mutex{::ams::os::MutexType::State_Initialized, recursive, 0, 0, nullptr, {{0}}} { /* ... */ }
+            constexpr explicit Mutex(bool recursive) : m_mutex{::ams::os::MutexType::State_Initialized, recursive, 0, 0, nullptr, {{0}}} { /* ... */ }
 
-            ~Mutex() { FinalizeMutex(std::addressof(this->mutex)); }
+            ~Mutex() { FinalizeMutex(std::addressof(m_mutex)); }
 
             void lock() {
-                return LockMutex(std::addressof(this->mutex));
+                return LockMutex(std::addressof(m_mutex));
             }
 
             void unlock() {
-                return UnlockMutex(std::addressof(this->mutex));
+                return UnlockMutex(std::addressof(m_mutex));
             }
 
             bool try_lock() {
-                return TryLockMutex(std::addressof(this->mutex));
+                return TryLockMutex(std::addressof(m_mutex));
             }
 
             bool IsLockedByCurrentThread() const {
-                return IsMutexLockedByCurrentThread(std::addressof(this->mutex));
+                return IsMutexLockedByCurrentThread(std::addressof(m_mutex));
             }
 
             ALWAYS_INLINE void Lock() {
@@ -60,15 +60,15 @@ namespace ams::os {
             }
 
             operator MutexType &() {
-                return this->mutex;
+                return m_mutex;
             }
 
             operator const MutexType &() const {
-                return this->mutex;
+                return m_mutex;
             }
 
             MutexType *GetBase() {
-                return std::addressof(this->mutex);
+                return std::addressof(m_mutex);
             }
     };
 

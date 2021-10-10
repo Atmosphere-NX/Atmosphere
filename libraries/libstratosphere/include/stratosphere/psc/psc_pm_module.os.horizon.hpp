@@ -26,11 +26,11 @@ namespace ams::psc {
         NON_COPYABLE(PmModule);
         NON_MOVEABLE(PmModule);
         private:
-            ams::sf::SharedPointer<psc::sf::IPmModule> intf;
-            os::SystemEvent system_event;
-            bool initialized;
-            PmModuleId module_id;
-            uintptr_t reserved;
+            ams::sf::SharedPointer<psc::sf::IPmModule> m_intf;
+            os::SystemEvent m_system_event;
+            bool m_initialized;
+            PmModuleId m_module_id;
+            uintptr_t m_reserved;
         public:
             PmModule();
             ~PmModule();
@@ -38,7 +38,7 @@ namespace ams::psc {
             Result Initialize(const PmModuleId mid, const PmModuleId *dependencies, u32 dependency_count, os::EventClearMode clear_mode);
             Result Finalize();
 
-            constexpr PmModuleId GetId() const { return this->module_id; }
+            constexpr PmModuleId GetId() const { return m_module_id; }
 
             Result GetRequest(PmState *out_state, PmFlagSet *out_flags);
             Result Acknowledge(PmState state, Result res);

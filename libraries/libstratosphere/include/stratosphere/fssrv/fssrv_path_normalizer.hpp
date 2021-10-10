@@ -33,34 +33,34 @@ namespace ams::fssrv {
         private:
             using Buffer = std::unique_ptr<char[], fs::impl::Deleter>;
         private:
-            Buffer buffer;
-            const char *path;
-            Result result;
+            Buffer m_buffer;
+            const char *m_path;
+            Result m_result;
         private:
             static Result Normalize(const char **out_path, Buffer *out_buf, const char *path, bool preserve_unc, bool preserve_tail_sep, bool has_mount_name);
         public:
             /* TODO: Remove non-option constructor. */
-            explicit PathNormalizer(const char *p) : buffer(), path(nullptr), result(ResultSuccess()) {
-                this->result = Normalize(std::addressof(this->path), std::addressof(this->buffer), p, false, false, false);
+            explicit PathNormalizer(const char *p) : m_buffer(), m_path(nullptr), m_result(ResultSuccess()) {
+                m_result = Normalize(std::addressof(m_path), std::addressof(m_buffer), p, false, false, false);
             }
 
-            PathNormalizer(const char *p, u32 option) : buffer(), path(nullptr), result(ResultSuccess()) {
+            PathNormalizer(const char *p, u32 option) : m_buffer(), m_path(nullptr), m_result(ResultSuccess()) {
                 if ((option & Option_AcceptEmpty) && p[0] == '\x00') {
-                    this->path = path;
+                    m_path = p;
                 } else {
                     const bool preserve_unc      = (option & Option_PreserveUnc);
                     const bool preserve_tail_sep = (option & Option_PreserveTailSeparator);
                     const bool has_mount_name    = (option & Option_HasMountName);
-                    this->result = Normalize(std::addressof(this->path), std::addressof(this->buffer), p, preserve_unc, preserve_tail_sep, has_mount_name);
+                    m_result = Normalize(std::addressof(m_path), std::addressof(m_buffer), p, preserve_unc, preserve_tail_sep, has_mount_name);
                 }
             }
 
             Result GetResult() const {
-                return this->result;
+                return m_result;
             }
 
             const char *GetPath() const {
-                return this->path;
+                return m_path;
             }
     };
 

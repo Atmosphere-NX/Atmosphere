@@ -23,26 +23,26 @@ namespace ams::gpio::driver::impl {
         NON_COPYABLE(EventHolder);
         NON_MOVEABLE(EventHolder);
         private:
-            os::SystemEventType *event;
+            os::SystemEventType *m_event;
         public:
-            constexpr EventHolder() : event(nullptr) { /* ... */ }
+            constexpr EventHolder() : m_event(nullptr) { /* ... */ }
 
             void AttachEvent(os::SystemEventType *event) {
-                this->event = event;
+                m_event = event;
             }
 
             os::SystemEventType *DetachEvent() {
-                auto ev = this->event;
-                this->event = nullptr;
+                auto ev = m_event;
+                m_event = nullptr;
                 return ev;
             }
 
             os::SystemEventType *GetSystemEvent() {
-                return this->event;
+                return m_event;
             }
 
             bool IsBound() const {
-                return this->event != nullptr;
+                return m_event != nullptr;
             }
     };
 

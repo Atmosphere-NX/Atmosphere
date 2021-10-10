@@ -20,10 +20,10 @@ namespace ams::fatal::srv {
 
     class ITask {
         protected:
-            const ThrowContext *context = nullptr;
+            const ThrowContext *m_context = nullptr;
         public:
             void Initialize(const ThrowContext *context) {
-                this->context = context;
+                m_context = context;
             }
 
             virtual Result Run() = 0;
@@ -38,10 +38,10 @@ namespace ams::fatal::srv {
             static constexpr size_t StackSize = _StackSize;
             static_assert(util::IsAligned(StackSize, os::MemoryPageSize), "StackSize alignment");
         protected:
-            alignas(os::MemoryPageSize) u8 stack_mem[StackSize] = {};
+            alignas(os::MemoryPageSize) u8 m_stack_mem[StackSize] = {};
         public:
             virtual u8 *GetStack() override final {
-                return this->stack_mem;
+                return m_stack_mem;
             }
 
             virtual size_t GetStackSize() const override final {

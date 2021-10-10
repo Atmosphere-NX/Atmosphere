@@ -33,26 +33,26 @@ namespace ams::ncm {
 
     class ContentMetaMemoryResource : public MemoryResource {
         private:
-            mem::StandardAllocator allocator;
-            size_t peak_total_alloc_size;
-            size_t peak_alloc_size;
+            mem::StandardAllocator m_allocator;
+            size_t m_peak_total_alloc_size;
+            size_t m_peak_alloc_size;
         public:
-            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : allocator(heap, heap_size) { /* ... */ }
+            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : m_allocator(heap, heap_size), m_peak_alloc_size(0), m_peak_total_alloc_size(0) { /* ... */ }
 
-            mem::StandardAllocator *GetAllocator() { return std::addressof(this->allocator); }
-            size_t GetPeakTotalAllocationSize() const { return this->peak_total_alloc_size; }
-            size_t GetPeakAllocationSize() const { return this->peak_alloc_size; }
+            mem::StandardAllocator *GetAllocator() { return std::addressof(m_allocator); }
+            size_t GetPeakTotalAllocationSize() const { return m_peak_total_alloc_size; }
+            size_t GetPeakAllocationSize() const { return m_peak_alloc_size; }
         private:
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
-                void *mem = this->allocator.Allocate(size, alignment);
-                this->peak_total_alloc_size = std::max(this->allocator.Hash().allocated_size, this->peak_total_alloc_size);
-                this->peak_alloc_size = std::max(size, this->peak_alloc_size);
+                void *mem = m_allocator.Allocate(size, alignment);
+                m_peak_total_alloc_size = std::max(m_allocator.Hash().allocated_size, m_peak_total_alloc_size);
+                m_peak_alloc_size = std::max(size, m_peak_alloc_size);
                 return mem;
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
                 AMS_UNUSED(size, alignment);
-                return this->allocator.Free(buffer);
+                return m_allocator.Free(buffer);
             }
 
             virtual bool IsEqualImpl(const MemoryResource &resource) const override {
@@ -103,16 +103,16 @@ namespace ams::ncm {
                 ContentMetaDatabaseRoot() { /* ... */ }
             };
         private:
-            os::SdkRecursiveMutex mutex;
-            bool initialized;
-            ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
-            ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
-            u32 num_content_storage_entries;
-            u32 num_content_meta_entries;
-            RightsIdCache rights_id_cache;
-            RegisteredHostContent registered_host_content;
+            os::SdkRecursiveMutex m_mutex;
+            bool m_initialized;
+            ContentStorageRoot m_content_storage_roots[MaxContentStorageRoots];
+            ContentMetaDatabaseRoot m_content_meta_database_roots[MaxContentMetaDatabaseRoots];
+            u32 m_num_content_storage_entries;
+            u32 m_num_content_meta_entries;
+            RightsIdCache m_rights_id_cache;
+            RegisteredHostContent m_registered_host_content;
         public:
-            ContentManagerImpl() : mutex(), initialized(false), num_content_storage_entries(0), num_content_meta_entries(0), rights_id_cache(), registered_host_content() {
+            ContentManagerImpl() : m_mutex(), m_initialized(false), m_content_storage_roots(), m_content_meta_database_roots(), m_num_content_storage_entries(0), m_num_content_meta_entries(0), m_rights_id_cache(), m_registered_host_content() {
                 /* ... */
             };
             ~ContentManagerImpl();

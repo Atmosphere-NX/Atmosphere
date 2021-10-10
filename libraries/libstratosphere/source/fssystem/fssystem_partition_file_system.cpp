@@ -43,46 +43,46 @@ namespace ams::fssystem {
     template <typename MetaType>
     class PartitionFileSystemCore<MetaType>::PartitionFile : public fs::fsa::IFile, public fs::impl::Newable {
         private:
-            const typename MetaType::PartitionEntry *partition_entry;
-            const PartitionFileSystemCore<MetaType> *parent;
-            const fs::OpenMode mode;
+            const typename MetaType::PartitionEntry *m_partition_entry;
+            const PartitionFileSystemCore<MetaType> *m_parent;
+            const fs::OpenMode m_mode;
         public:
-            PartitionFile(PartitionFileSystemCore<MetaType> *parent, const typename MetaType::PartitionEntry *partition_entry, fs::OpenMode mode) : partition_entry(partition_entry), parent(parent), mode(mode) { /* ... */ }
+            PartitionFile(PartitionFileSystemCore<MetaType> *parent, const typename MetaType::PartitionEntry *partition_entry, fs::OpenMode mode) : m_partition_entry(partition_entry), m_parent(parent), m_mode(mode) { /* ... */ }
         private:
             virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final;
 
             virtual Result DoGetSize(s64 *out) override final {
-                *out = this->partition_entry->size;
+                *out = m_partition_entry->size;
                 return ResultSuccess();
             }
 
             virtual Result DoFlush() override final {
                 /* Nothing to do if writing disallowed. */
-                R_SUCCEED_IF((this->mode & fs::OpenMode_Write) == 0);
+                R_SUCCEED_IF((m_mode & fs::OpenMode_Write) == 0);
 
                 /* Flush base storage. */
-                return this->parent->base_storage->Flush();
+                return m_parent->m_base_storage->Flush();
             }
 
             virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
                 /* Ensure appending is not required. */
                 bool needs_append;
-                R_TRY(this->DryWrite(std::addressof(needs_append), offset, size, option, this->mode));
+                R_TRY(this->DryWrite(std::addressof(needs_append), offset, size, option, m_mode));
                 R_UNLESS(!needs_append, fs::ResultUnsupportedOperationInPartitionFileA());
 
                 /* Appending is prohibited. */
-                AMS_ASSERT((this->mode & fs::OpenMode_AllowAppend) == 0);
+                AMS_ASSERT((m_mode & fs::OpenMode_AllowAppend) == 0);
 
                 /* Validate offset and size. */
-                R_UNLESS(offset                          <= static_cast<s64>(this->partition_entry->size), fs::ResultOutOfRange());
-                R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(this->partition_entry->size), fs::ResultInvalidSize());
+                R_UNLESS(offset                          <= static_cast<s64>(m_partition_entry->size), fs::ResultOutOfRange());
+                R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
 
                 /* Write to the base storage. */
-                return this->parent->base_storage->Write(this->parent->meta_data_size + this->partition_entry->offset + offset, buffer, size);
+                return m_parent->m_base_storage->Write(m_parent->m_meta_data_size + m_partition_entry->offset + offset, buffer, size);
             }
 
             virtual Result DoSetSize(s64 size) override final {
-                R_TRY(this->DrySetSize(size, this->mode));
+                R_TRY(this->DrySetSize(size, m_mode));
                 return fs::ResultUnsupportedOperationInPartitionFileA();
             }
 
@@ -90,8 +90,8 @@ namespace ams::fssystem {
                 /* Validate preconditions for operation. */
                 switch (op_id) {
                     case fs::OperationId::Invalidate:
-                        R_UNLESS((this->mode & fs::OpenMode_Read)  != 0, fs::ResultReadNotPermitted());
-                        R_UNLESS((this->mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperationInPartitionFileB());
+                        R_UNLESS((m_mode & fs::OpenMode_Read)  != 0, fs::ResultReadNotPermitted());
+                        R_UNLESS((m_mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperationInPartitionFileB());
                         break;
                     case fs::OperationId::QueryRange:
                         break;
@@ -100,12 +100,12 @@ namespace ams::fssystem {
                 }
 
                 /* Validate offset and size. */
-                R_UNLESS(offset                          >= 0,                                             fs::ResultOutOfRange());
-                R_UNLESS(offset                          <= static_cast<s64>(this->partition_entry->size), fs::ResultOutOfRange());
-                R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(this->partition_entry->size), fs::ResultInvalidSize());
-                R_UNLESS(static_cast<s64>(offset + size) >= offset,                                        fs::ResultInvalidSize());
+                R_UNLESS(offset                          >= 0,                                         fs::ResultOutOfRange());
+                R_UNLESS(offset                          <= static_cast<s64>(m_partition_entry->size), fs::ResultOutOfRange());
+                R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
+                R_UNLESS(static_cast<s64>(offset + size) >= offset,                                    fs::ResultInvalidSize());
 
-                return this->parent->base_storage->OperateRange(dst, dst_size, op_id, this->parent->meta_data_size + this->partition_entry->offset + offset, size, src, src_size);
+                return m_parent->m_base_storage->OperateRange(dst, dst_size, op_id, m_parent->m_meta_data_size + m_partition_entry->offset + offset, size, src, src_size);
             }
         public:
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
@@ -118,10 +118,10 @@ namespace ams::fssystem {
     Result PartitionFileSystemCore<PartitionFileSystemMeta>::PartitionFile::DoRead(size_t *out, s64 offset, void *dst, size_t dst_size, const fs::ReadOption &option) {
         /* Perform a dry read. */
         size_t read_size = 0;
-        R_TRY(this->DryRead(std::addressof(read_size), offset, dst_size, option, this->mode));
+        R_TRY(this->DryRead(std::addressof(read_size), offset, dst_size, option, m_mode));
 
         /* Read from the base storage. */
-        R_TRY(this->parent->base_storage->Read(this->parent->meta_data_size + this->partition_entry->offset + offset, dst, read_size));
+        R_TRY(m_parent->m_base_storage->Read(m_parent->m_meta_data_size + m_partition_entry->offset + offset, dst, read_size));
 
         /* Set output size. */
         *out = read_size;
@@ -132,22 +132,22 @@ namespace ams::fssystem {
     Result PartitionFileSystemCore<Sha256PartitionFileSystemMeta>::PartitionFile::DoRead(size_t *out, s64 offset, void *dst, size_t dst_size, const fs::ReadOption &option) {
         /* Perform a dry read. */
         size_t read_size = 0;
-        R_TRY(this->DryRead(std::addressof(read_size), offset, dst_size, option, this->mode));
+        R_TRY(this->DryRead(std::addressof(read_size), offset, dst_size, option, m_mode));
 
-        const s64 entry_start = this->parent->meta_data_size + this->partition_entry->offset;
+        const s64 entry_start = m_parent->m_meta_data_size + m_partition_entry->offset;
         const s64 read_end    = static_cast<s64>(offset + read_size);
-        const s64 hash_start  = static_cast<s64>(this->partition_entry->hash_target_offset);
-        const s64 hash_end    = hash_start + this->partition_entry->hash_target_size;
+        const s64 hash_start  = static_cast<s64>(m_partition_entry->hash_target_offset);
+        const s64 hash_end    = hash_start + m_partition_entry->hash_target_size;
 
         if (read_end <= hash_start || hash_end <= offset) {
             /* We aren't reading hashed data, so we can just read from the base storage. */
-            R_TRY(this->parent->base_storage->Read(entry_start + offset, dst, read_size));
+            R_TRY(m_parent->m_base_storage->Read(entry_start + offset, dst, read_size));
         } else {
             /* Only hash target offset == 0 is supported. */
             R_UNLESS(hash_start == 0, fs::ResultInvalidSha256PartitionHashTarget());
 
             /* Ensure that the hash region is valid. */
-            R_UNLESS(this->partition_entry->hash_target_offset + this->partition_entry->hash_target_size <= this->partition_entry->size, fs::ResultInvalidSha256PartitionHashTarget());
+            R_UNLESS(m_partition_entry->hash_target_offset + m_partition_entry->hash_target_size <= m_partition_entry->size, fs::ResultInvalidSha256PartitionHashTarget());
 
             /* Validate our read offset. */
             const s64 read_offset = entry_start + offset;
@@ -167,11 +167,11 @@ namespace ams::fssystem {
 
             if (hash_in_read) {
                 /* Easy case: hash region is contained within the bounds. */
-                R_TRY(this->parent->base_storage->Read(entry_start + offset, dst, read_size));
-                generator.Update(static_cast<u8 *>(dst) + hash_start - offset, this->partition_entry->hash_target_size);
+                R_TRY(m_parent->m_base_storage->Read(entry_start + offset, dst, read_size));
+                generator.Update(static_cast<u8 *>(dst) + hash_start - offset, m_partition_entry->hash_target_size);
             } else /* if (read_in_hash) */ {
                 /* We're reading a portion of what's hashed. */
-                s64 remaining_hash_size = this->partition_entry->hash_target_size;
+                s64 remaining_hash_size = m_partition_entry->hash_target_size;
                 s64 hash_offset         = entry_start + hash_start;
                 s64 remaining_size      = read_size;
                 s64 copy_offset         = 0;
@@ -180,7 +180,7 @@ namespace ams::fssystem {
                     constexpr size_t HashBufferSize = 0x200;
                     char hash_buffer[HashBufferSize];
                     size_t cur_size = static_cast<size_t>(std::min(static_cast<s64>(HashBufferSize), remaining_hash_size));
-                    R_TRY(this->parent->base_storage->Read(hash_offset, hash_buffer, cur_size));
+                    R_TRY(m_parent->m_base_storage->Read(hash_offset, hash_buffer, cur_size));
 
                     /*  Update the hash. */
                     generator.Update(hash_buffer, cur_size);
@@ -205,7 +205,7 @@ namespace ams::fssystem {
 
             /* Validate the hash. */
             auto hash_guard = SCOPE_GUARD { std::memset(dst, 0, read_size); };
-            R_UNLESS(crypto::IsSameBytes(this->partition_entry->hash, hash, sizeof(hash)), fs::ResultSha256PartitionHashVerificationFailed());
+            R_UNLESS(crypto::IsSameBytes(m_partition_entry->hash, hash, sizeof(hash)), fs::ResultSha256PartitionHashVerificationFailed());
 
             /* We successfully completed our read. */
             hash_guard.Cancel();
@@ -219,30 +219,30 @@ namespace ams::fssystem {
     template <typename MetaType>
     class PartitionFileSystemCore<MetaType>::PartitionDirectory : public fs::fsa::IDirectory, public fs::impl::Newable {
         private:
-            u32 cur_index;
-            const PartitionFileSystemCore<MetaType> *parent;
-            const fs::OpenDirectoryMode mode;
+            u32 m_cur_index;
+            const PartitionFileSystemCore<MetaType> *m_parent;
+            const fs::OpenDirectoryMode m_mode;
         public:
-            PartitionDirectory(PartitionFileSystemCore<MetaType> *parent, fs::OpenDirectoryMode mode) : cur_index(0), parent(parent), mode(mode) { /* ... */ }
+            PartitionDirectory(PartitionFileSystemCore<MetaType> *parent, fs::OpenDirectoryMode mode) : m_cur_index(0), m_parent(parent), m_mode(mode) { /* ... */ }
         public:
             virtual Result DoRead(s64 *out_count, fs::DirectoryEntry *out_entries, s64 max_entries) override final {
                 /* There are no subdirectories. */
-                if ((this->mode & fs::OpenDirectoryMode_File) == 0) {
+                if ((m_mode & fs::OpenDirectoryMode_File) == 0) {
                     *out_count = 0;
                     return ResultSuccess();
                 }
 
                 /* Calculate number of entries. */
-                const s64 entry_count = std::min(max_entries, static_cast<s64>(this->parent->meta_data->GetEntryCount() - this->cur_index));
+                const s64 entry_count = std::min(max_entries, static_cast<s64>(m_parent->m_meta_data->GetEntryCount() - m_cur_index));
 
                 /* Populate output directory entries. */
-                for (auto i = 0; i < entry_count; i++, this->cur_index++) {
+                for (auto i = 0; i < entry_count; i++, m_cur_index++) {
                     fs::DirectoryEntry &dir_entry = out_entries[i];
 
                     /* Setup the output directory entry. */
                     dir_entry.type = fs::DirectoryEntryType_File;
-                    dir_entry.file_size = this->parent->meta_data->GetEntry(this->cur_index)->size;
-                    std::strncpy(dir_entry.name, this->parent->meta_data->GetEntryName(this->cur_index), sizeof(dir_entry.name) - 1);
+                    dir_entry.file_size = m_parent->m_meta_data->GetEntry(m_cur_index)->size;
+                    std::strncpy(dir_entry.name, m_parent->m_meta_data->GetEntryName(m_cur_index), sizeof(dir_entry.name) - 1);
                     dir_entry.name[sizeof(dir_entry.name) - 1] = fs::StringTraits::NullTerminator;
                 }
 
@@ -252,8 +252,8 @@ namespace ams::fssystem {
 
             virtual Result DoGetEntryCount(s64 *out) override final {
                 /* Output the parent meta data entry count for files, otherwise 0. */
-                if (this->mode & fs::OpenDirectoryMode_File) {
-                    *out = this->parent->meta_data->GetEntryCount();
+                if (m_mode & fs::OpenDirectoryMode_File) {
+                    *out = m_parent->m_meta_data->GetEntryCount();
                 } else {
                     *out = 0;
                 }
@@ -268,7 +268,7 @@ namespace ams::fssystem {
     };
 
     template <typename MetaType>
-    PartitionFileSystemCore<MetaType>::PartitionFileSystemCore() : initialized(false) {
+    PartitionFileSystemCore<MetaType>::PartitionFileSystemCore() : m_initialized(false) {
         /* ... */
     }
 
@@ -280,40 +280,40 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(fs::IStorage *base_storage, MemoryResource *allocator) {
         /* Validate preconditions. */
-        R_UNLESS(!this->initialized, fs::ResultPreconditionViolation());
+        R_UNLESS(!m_initialized, fs::ResultPreconditionViolation());
 
         /* Allocate meta data. */
-        this->unique_meta_data = std::make_unique<MetaType>();
-        R_UNLESS(this->unique_meta_data != nullptr, fs::ResultAllocationFailureInPartitionFileSystemA());
+        m_unique_meta_data = std::make_unique<MetaType>();
+        R_UNLESS(m_unique_meta_data != nullptr, fs::ResultAllocationFailureInPartitionFileSystemA());
 
         /* Initialize meta data. */
-        R_TRY(this->unique_meta_data->Initialize(base_storage, allocator));
+        R_TRY(m_unique_meta_data->Initialize(base_storage, allocator));
 
         /* Initialize members. */
-        this->meta_data = this->unique_meta_data.get();
-        this->base_storage = base_storage;
-        this->meta_data_size = this->meta_data->GetMetaDataSize();
-        this->initialized = true;
+        m_meta_data      = m_unique_meta_data.get();
+        m_base_storage   = base_storage;
+        m_meta_data_size = m_meta_data->GetMetaDataSize();
+        m_initialized    = true;
         return ResultSuccess();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::unique_ptr<MetaType> &&meta_data, std::shared_ptr<fs::IStorage> base_storage) {
-        this->unique_meta_data = std::move(meta_data);
-        return this->Initialize(this->unique_meta_data.get(), base_storage);
+        m_unique_meta_data = std::move(meta_data);
+        return this->Initialize(m_unique_meta_data.get(), base_storage);
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(MetaType *meta_data, std::shared_ptr<fs::IStorage> base_storage) {
         /* Validate preconditions. */
-        R_UNLESS(!this->initialized, fs::ResultPreconditionViolation());
+        R_UNLESS(!m_initialized, fs::ResultPreconditionViolation());
 
         /* Initialize members. */
-        this->shared_storage = std::move(base_storage);
-        this->base_storage = this->shared_storage.get();
-        this->meta_data = meta_data;
-        this->meta_data_size = this->meta_data->GetMetaDataSize();
-        this->initialized = true;
+        m_shared_storage = std::move(base_storage);
+        m_base_storage   = m_shared_storage.get();
+        m_meta_data      = meta_data;
+        m_meta_data_size = m_meta_data->GetMetaDataSize();
+        m_initialized    = true;
         return ResultSuccess();
     }
 
@@ -324,34 +324,34 @@ namespace ams::fssystem {
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::shared_ptr<fs::IStorage> base_storage) {
-        this->shared_storage = std::move(base_storage);
-        return this->Initialize(this->shared_storage.get());
+        m_shared_storage = std::move(base_storage);
+        return this->Initialize(m_shared_storage.get());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::shared_ptr<fs::IStorage> base_storage, MemoryResource *allocator) {
-        this->shared_storage = std::move(base_storage);
-        return this->Initialize(this->shared_storage.get(), allocator);
+        m_shared_storage = std::move(base_storage);
+        return this->Initialize(m_shared_storage.get(), allocator);
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::GetFileBaseOffset(s64 *out_offset, const char *path) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized, fs::ResultPreconditionViolation());
+        R_UNLESS(m_initialized, fs::ResultPreconditionViolation());
 
         /* Obtain and validate the entry index. */
-        const s32 entry_index = this->meta_data->GetEntryIndex(path + 1);
+        const s32 entry_index = m_meta_data->GetEntryIndex(path + 1);
         R_UNLESS(entry_index >= 0, fs::ResultPathNotFound());
 
         /* Output offset. */
-        *out_offset = this->meta_data_size + this->meta_data->GetEntry(entry_index)->offset;
+        *out_offset = m_meta_data_size + m_meta_data->GetEntry(entry_index)->offset;
         return ResultSuccess();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoGetEntryType(fs::DirectoryEntryType *out, const char *path) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized,                        fs::ResultPreconditionViolation());
+        R_UNLESS(m_initialized,                            fs::ResultPreconditionViolation());
         R_UNLESS(fs::PathNormalizer::IsSeparator(path[0]), fs::ResultInvalidPathFormat());
 
         /* Check if the path is for a directory. */
@@ -361,7 +361,7 @@ namespace ams::fssystem {
         }
 
         /* Ensure that path is for a file. */
-        R_UNLESS(this->meta_data->GetEntryIndex(path + 1) >= 0, fs::ResultPathNotFound());
+        R_UNLESS(m_meta_data->GetEntryIndex(path + 1) >= 0, fs::ResultPathNotFound());
 
         *out = fs::DirectoryEntryType_File;
         return ResultSuccess();
@@ -370,14 +370,14 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized, fs::ResultPreconditionViolation());
+        R_UNLESS(m_initialized, fs::ResultPreconditionViolation());
 
         /* Obtain and validate the entry index. */
-        const s32 entry_index = this->meta_data->GetEntryIndex(path + 1);
+        const s32 entry_index = m_meta_data->GetEntryIndex(path + 1);
         R_UNLESS(entry_index >= 0, fs::ResultPathNotFound());
 
         /* Create and output the file directory. */
-        std::unique_ptr file = std::make_unique<PartitionFile>(this, this->meta_data->GetEntry(entry_index), mode);
+        std::unique_ptr file = std::make_unique<PartitionFile>(this, m_meta_data->GetEntry(entry_index), mode);
         R_UNLESS(file != nullptr, fs::ResultAllocationFailureInPartitionFileSystemB());
         *out_file = std::move(file);
         return ResultSuccess();
@@ -386,7 +386,7 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized,                                                                           fs::ResultPreconditionViolation());
+        R_UNLESS(m_initialized,                                                                               fs::ResultPreconditionViolation());
         R_UNLESS(std::strncmp(path, fs::PathNormalizer::RootPath, sizeof(fs::PathNormalizer::RootPath)) == 0, fs::ResultPathNotFound());
 
         /* Create and output the partition directory. */

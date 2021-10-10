@@ -61,19 +61,19 @@ namespace ams::fssystem::save {
                 Flag_RealData      = (1 << 10),
             };
         private:
-            IBufferManager *buffer_manager;
-            os::SdkRecursiveMutex *mutex;
-            std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> entries;
-            IStorage *data_storage;
-            Result last_result;
-            s64 data_size;
-            size_t verification_block_size;
-            size_t verification_block_shift;
-            CacheIndex invalidate_index;
-            s32 max_cache_entry_count;
-            s32 flags;
-            s32 buffer_level;
-            fs::StorageType storage_type;
+            IBufferManager *m_buffer_manager;
+            os::SdkRecursiveMutex *m_mutex;
+            std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> m_entries;
+            IStorage *m_data_storage;
+            Result m_last_result;
+            s64 m_data_size;
+            size_t m_verification_block_size;
+            size_t m_verification_block_shift;
+            CacheIndex m_invalidate_index;
+            s32 m_max_cache_entry_count;
+            s32 m_flags;
+            s32 m_buffer_level;
+            fs::StorageType m_storage_type;
         public:
             BlockCacheBufferedStorage();
             virtual ~BlockCacheBufferedStorage() override;
@@ -96,31 +96,31 @@ namespace ams::fssystem::save {
             Result OnRollback();
 
             bool IsEnabledKeepBurstMode() const {
-                return (this->flags & Flag_KeepBurstMode) != 0;
+                return (m_flags & Flag_KeepBurstMode) != 0;
             }
 
             bool IsRealDataCache() const {
-                return (this->flags & Flag_RealData) != 0;
+                return (m_flags & Flag_RealData) != 0;
             }
 
             void SetKeepBurstMode(bool en) {
                 if (en) {
-                    this->flags |= Flag_KeepBurstMode;
+                    m_flags |= Flag_KeepBurstMode;
                 } else {
-                    this->flags &= ~Flag_KeepBurstMode;
+                    m_flags &= ~Flag_KeepBurstMode;
                 }
             }
 
             void SetRealDataCache(bool en) {
                 if (en) {
-                    this->flags |= Flag_RealData;
+                    m_flags |= Flag_RealData;
                 } else {
-                    this->flags &= ~Flag_RealData;
+                    m_flags &= ~Flag_RealData;
                 }
             }
         private:
             s32 GetMaxCacheEntryCount() const {
-                return this->max_cache_entry_count;
+                return m_max_cache_entry_count;
             }
 
             Result ClearImpl(s64 offset, s64 size);

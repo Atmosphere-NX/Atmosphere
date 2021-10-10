@@ -24,23 +24,23 @@ namespace ams::ddsf {
         NON_COPYABLE(DeviceCodeEntry);
         NON_MOVEABLE(DeviceCodeEntry);
         private:
-            ams::DeviceCode device_code = ams::InvalidDeviceCode;
-            IDevice *device = nullptr;
+            ams::DeviceCode m_device_code = ams::InvalidDeviceCode;
+            IDevice *m_device = nullptr;
         public:
-            constexpr DeviceCodeEntry(ams::DeviceCode dc, IDevice *dev) : device_code(dc), device(dev) {
+            constexpr DeviceCodeEntry(ams::DeviceCode dc, IDevice *dev) : m_device_code(dc), m_device(dev) {
                 AMS_ASSERT(dev != nullptr);
             }
 
             constexpr ams::DeviceCode GetDeviceCode() const {
-                return this->device_code;
+                return m_device_code;
             }
 
             constexpr IDevice &GetDevice() {
-                return *this->device;
+                return *m_device;
             }
 
             constexpr const IDevice &GetDevice() const {
-                return *this->device;
+                return *m_device;
             }
     };
 
@@ -48,15 +48,15 @@ namespace ams::ddsf {
         NON_COPYABLE(DeviceCodeEntryHolder);
         NON_MOVEABLE(DeviceCodeEntryHolder);
         private:
-            util::IntrusiveListNode list_node;
-            util::TypedStorage<DeviceCodeEntry> entry_storage;
-            bool is_constructed;
+            util::IntrusiveListNode m_list_node;
+            util::TypedStorage<DeviceCodeEntry> m_entry_storage;
+            bool m_is_constructed;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::list_node>;
+            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<DeviceCodeEntryHolder, util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::list_node>>;
+            friend class util::IntrusiveList<DeviceCodeEntryHolder, util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::m_list_node>>;
         public:
-            DeviceCodeEntryHolder() : list_node(), entry_storage(), is_constructed(false) {
+            DeviceCodeEntryHolder() : m_list_node(), m_entry_storage(), m_is_constructed(false) {
                 /* ... */
             }
 
@@ -75,34 +75,34 @@ namespace ams::ddsf {
             }
 
             bool IsLinkedToList() const {
-                return this->list_node.IsLinked();
+                return m_list_node.IsLinked();
             }
 
             DeviceCodeEntry &Construct(DeviceCode dc, IDevice *dev) {
                 AMS_ASSERT(!this->IsConstructed());
-                DeviceCodeEntry *entry = util::ConstructAt(this->entry_storage, dc, dev);
-                this->is_constructed = true;
+                DeviceCodeEntry *entry = util::ConstructAt(m_entry_storage, dc, dev);
+                m_is_constructed = true;
                 return *entry;
             }
 
             bool IsConstructed() const {
-                return this->is_constructed;
+                return m_is_constructed;
             }
 
             void Destroy() {
                 AMS_ASSERT(this->IsConstructed());
-                util::DestroyAt(this->entry_storage);
-                this->is_constructed = false;
+                util::DestroyAt(m_entry_storage);
+                m_is_constructed = false;
             }
 
             DeviceCodeEntry &Get() {
                 AMS_ASSERT(this->IsConstructed());
-                return GetReference(this->entry_storage);
+                return GetReference(m_entry_storage);
             }
 
             const DeviceCodeEntry &Get() const {
                 AMS_ASSERT(this->IsConstructed());
-                return GetReference(this->entry_storage);
+                return GetReference(m_entry_storage);
             }
     };
     static_assert(DeviceCodeEntryHolder::ListTraits::IsValid());
