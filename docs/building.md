@@ -7,6 +7,7 @@ Building Atmosphère is a very straightforward process that relies almost exclus
 + [Python 2](https://www.python.org) (Python 3 may work as well, but this is not guaranteed)
 + [LZ4](https://pypi.org/project/lz4)
 + [PyCryptodome](https://pypi.org/project/pycryptodome) (optional)
++ [hactool](https://github.com/SciresM/hactool)
 
 ## Instructions
 1. Follow the guide located [here](https://devkitpro.org/wiki/Getting_Started) to install and configure all the tools necessary for the build process.
@@ -17,6 +18,7 @@ Building Atmosphère is a very straightforward process that relies almost exclus
     + `switch-libjpeg-turbo`
     + `devkitARM`
     + `devkitarm-rules`
+    + `hactool`
 
 3. Install the following library via python's package manager `pip`, required by [exosphere](components/exosphere.md):
     + `lz4`
