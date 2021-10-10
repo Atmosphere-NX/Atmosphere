@@ -20,7 +20,7 @@ namespace ams::secmon::smc {
 
     enum class SmcResult : u32 {
         Success               = 0,
-        NotImplemented        = 1,
+        NotSupported          = 1,
         InvalidArgument       = 2,
         Busy                  = 3,
         NoAsyncOperation      = 4,

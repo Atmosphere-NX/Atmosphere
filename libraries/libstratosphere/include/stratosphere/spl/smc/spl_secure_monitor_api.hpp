@@ -20,24 +20,24 @@
 namespace ams::spl::smc {
 
     /* Helpers for converting arguments. */
-    inline u32 GetComputeAesMode(CipherMode mode, u32 keyslot) {
+    constexpr ALWAYS_INLINE u32 GetComputeAesMode(CipherMode mode, u32 keyslot) {
         return static_cast<u32>((static_cast<u32>(mode) << 4) | (keyslot & 7));
     }
 
-    inline u32 GetPrepareEsDeviceUniqueKeyOption(EsCommonKeyType type, u32 generation) {
+    constexpr ALWAYS_INLINE u32 GetPrepareEsDeviceUniqueKeyOption(EsDeviceUniqueKeyType type, u32 generation) {
         return static_cast<u32>((static_cast<u32>(type) << 6) | (generation & 0x3F));
     }
 
     /* Functions. */
-    Result SetConfig(spl::ConfigItem which, const void *address, const u64 *value, size_t num_qwords);
-    Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem which);
+    Result SetConfig(AsyncOperationKey *out_op, spl::ConfigItem key, const u64 *value, size_t num_qwords, const void *sign);
+    Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem key);
     Result GetResult(Result *out, AsyncOperationKey op);
     Result GetResultData(Result *out, void *out_buf, size_t out_buf_size, AsyncOperationKey op);
     Result ModularExponentiate(AsyncOperationKey *out_op, const void *base, const void *exp, size_t exp_size, const void *mod);
     Result GenerateRandomBytes(void *out, size_t size);
     Result GenerateAesKek(AccessKey *out, const KeySource &source, u32 generation, u32 option);
     Result LoadAesKey(u32 keyslot, const AccessKey &access_key, const KeySource &source);
-    Result ComputeAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size);
+    Result ComputeAes(AsyncOperationKey *out_op, u32 dst_addr, u32 mode, const IvCtr &iv_ctr, u32 src_addr, size_t size);
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &source, u32 generation, u32 which);
     Result ComputeCmac(Cmac *out_mac, u32 keyslot, const void *data, size_t size);
     Result ReencryptDeviceUniqueData(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
@@ -59,12 +59,13 @@ namespace ams::spl::smc {
     Result AtmosphereGetEmummcConfig(void *out_config, void *out_paths, u32 storage_id);
 
     /* Helpers. */
-    inline Result SetConfig(spl::ConfigItem which, const u64 *value, size_t num_qwords) {
-        return SetConfig(which, nullptr, value, num_qwords);
+    ALWAYS_INLINE Result SetConfig(spl::ConfigItem key, const u64 *value, size_t num_qwords) {
+        AsyncOperationKey dummy_op;
+        return SetConfig(std::addressof(dummy_op), key, value, num_qwords, nullptr);
     }
 
-    inline Result SetConfig(spl::ConfigItem which, const u64 value) {
-        return SetConfig(which, std::addressof(value), 1);
+    ALWAYS_INLINE Result SetConfig(spl::ConfigItem key, const u64 value) {
+        return SetConfig(key, std::addressof(value), 1);
     }
 
 }

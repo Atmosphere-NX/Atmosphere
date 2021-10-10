@@ -54,7 +54,7 @@ namespace ams::spl {
 
         enum class Result {
             Success               = 0,
-            NotImplemented        = 1,
+            NotSupported          = 1,
             InvalidArgument       = 2,
             InProgress            = 3,
             NoAsyncOperation      = 4,
@@ -69,7 +69,7 @@ namespace ams::spl {
 
             /* Convert to the list of known SecureMonitorErrors. */
             const auto converted = R_MAKE_NAMESPACE_RESULT(::ams::spl, static_cast<u32>(smc_result));
-            R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnknownSecureMonitorError());
+            R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnexpectedSecureMonitorResult());
 
             /* Return the error. */
             return converted;
@@ -95,7 +95,7 @@ namespace ams::spl {
             DrmDeviceCert = 2,
         };
 
-        enum class EsCommonKeyType {
+        enum class EsDeviceUniqueKeyType {
             TitleKey   = 0,
             ArchiveKey = 1,
         };
@@ -104,6 +104,9 @@ namespace ams::spl {
             u64 value;
         };
     }
+
+    constexpr inline size_t AesKeySize   = crypto::AesEncryptor128::KeySize;
+    constexpr inline size_t AesBlockSize = crypto::AesEncryptor128::BlockSize;
 
     enum class HardwareType {
         Icosa  = 0,
@@ -168,40 +171,40 @@ namespace ams::spl {
 
     struct AesKey {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
 
     struct IvCtr {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
 
     struct Cmac {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
 
     struct AccessKey {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 
     struct KeySource {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");

@@ -29,9 +29,9 @@ namespace ams::spl {
             Manu
         };
 
-        os::SdkMutex g_mutex;
-        s32 g_initialize_count = 0;
-        InitializeMode g_initialize_mode = InitializeMode::None;
+        constinit os::SdkMutex g_mutex;
+        constinit s32 g_initialize_count = 0;
+        constinit InitializeMode g_initialize_mode = InitializeMode::None;
 
         Result AllocateAesKeySlotImpl(s32 *out) {
             return serviceDispatchOut(splCryptoGetServiceSession(), 21, *out);
@@ -63,7 +63,7 @@ namespace ams::spl {
             auto is_event_initialized = false;
             while (true) {
                 R_TRY_CATCH(static_cast<::ams::Result>(f())) {
-                    R_CATCH(spl::ResultOutOfKeySlots) {
+                    R_CATCH(spl::ResultNoAvailableKeySlot) {
                         if (!is_event_initialized) {
                             GetAesKeySlotAvailableEvent(std::addressof(event));
                             is_event_initialized = true;

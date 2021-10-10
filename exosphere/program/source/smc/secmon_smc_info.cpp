@@ -345,7 +345,7 @@ namespace ams::secmon::smc {
                             PerformUserShutDown();
                         }
                     } else /* if (soc_type == fuse::SocType_Mariko) */ {
-                        return SmcResult::NotImplemented;
+                        return SmcResult::NotSupported;
                     }
                     break;
                 case ConfigItem::ExospherePayloadAddress:
@@ -389,7 +389,7 @@ namespace ams::secmon::smc {
 
         /* Validate arguments. */
         /* NOTE: In the future, configuration for non-NAND storage may be implemented. */
-        SMC_R_UNLESS(mmc == EmummcMmc_Nand,                             NotImplemented);
+        SMC_R_UNLESS(mmc == EmummcMmc_Nand,                            NotSupported);
         SMC_R_UNLESS(user_offset + 2 * sizeof(EmummcFilePath) <= 4_KB, InvalidArgument);
 
         /* Get the emummc config. */

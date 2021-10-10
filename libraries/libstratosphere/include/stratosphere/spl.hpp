@@ -18,7 +18,8 @@
 
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/spl_api.hpp>
-#include <stratosphere/spl/smc/spl_smc.hpp>
+#include <stratosphere/spl/smc/spl_secure_monitor_api.hpp>
+#include <stratosphere/spl/impl/spl_api_impl.hpp>
 #include <stratosphere/spl/impl/spl_random_interface.hpp>
 #include <stratosphere/spl/impl/spl_deprecated_general_interface.hpp>
 #include <stratosphere/spl/impl/spl_general_interface.hpp>

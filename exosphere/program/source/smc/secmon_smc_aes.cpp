@@ -417,7 +417,7 @@ namespace ams::secmon::smc {
                 case CipherMode_CbcDecryption: se::DecryptAes128CbcAsync(output_address, slot, input_address, size, iv, sizeof(iv), SecurityEngineDoneHandler); break;
                 case CipherMode_Ctr:           se::ComputeAes128CtrAsync(output_address, slot, input_address, size, iv, sizeof(iv), SecurityEngineDoneHandler); break;
                 case CipherMode_Cmac:
-                    return SmcResult::NotImplemented;
+                    return SmcResult::NotSupported;
                 default:
                     return SmcResult::InvalidArgument;
             }
@@ -765,8 +765,8 @@ namespace ams::secmon::smc {
             const auto which = static_cast<SecureData>(args.r[1]);
 
             /* Validate arguments/conditions. */
-            SMC_R_UNLESS(fuse::GetPatchVersion() < fuse::PatchVersion_Odnx02A2, NotImplemented);
-            SMC_R_UNLESS(which < SecureData_Count,                              NotImplemented);
+            SMC_R_UNLESS(fuse::GetPatchVersion() < fuse::PatchVersion_Odnx02A2, NotSupported);
+            SMC_R_UNLESS(which < SecureData_Count,                              NotSupported);
 
             /* Use a temporary buffer. */
             u8 secure_data[AesKeySize];

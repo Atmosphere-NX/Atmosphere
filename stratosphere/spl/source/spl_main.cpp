@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "spl_api_impl.hpp"
 
 #include "spl_random_service.hpp"
 #include "spl_general_service.hpp"
@@ -79,12 +78,13 @@ namespace ams {
             class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count, SplServerOptions, NumSessions> {
                 private:
                     sf::ExpHeapAllocator *m_allocator;
+                    spl::SecureMonitorManager *m_secure_monitor_manager;
                     spl::GeneralService m_general_service;
                     sf::UnmanagedServiceObjectByPointer<spl::impl::IGeneralInterface, spl::GeneralService> m_general_service_object;
                     spl::RandomService m_random_service;
                     sf::UnmanagedServiceObjectByPointer<spl::impl::IRandomInterface, spl::RandomService> m_random_service_object;
                 public:
-                    ServerManager(sf::ExpHeapAllocator *allocator) : m_allocator(allocator), m_general_service(), m_general_service_object(std::addressof(m_general_service)), m_random_service(), m_random_service_object(std::addressof(m_random_service)) {
+                    ServerManager(sf::ExpHeapAllocator *allocator, spl::SecureMonitorManager *manager) : m_allocator(allocator), m_secure_monitor_manager(manager), m_general_service(manager), m_general_service_object(std::addressof(m_general_service)), m_random_service(manager), m_random_service_object(std::addressof(m_random_service)) {
                         /* ... */
                     }
                 private:
@@ -96,29 +96,32 @@ namespace ams {
 
             alignas(0x40) constinit u8 g_server_allocator_buffer[8_KB];
             Allocator g_server_allocator;
+            constinit SecureMonitorManager g_secure_monitor_manager;
 
-            ServerManager g_server_manager(std::addressof(g_server_allocator));
+            constinit bool g_use_new_server = false;
+
+            ServerManager g_server_manager(std::addressof(g_server_allocator), std::addressof(g_secure_monitor_manager));
 
             ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
                 switch (port_index) {
                     case PortIndex_General:
-                        if (hos::GetVersion() >= hos::Version_4_0_0) {
+                        if (g_use_new_server) {
                             return this->AcceptImpl(server, m_general_service_object.GetShared());
                         } else {
-                            return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IDeprecatedGeneralInterface, spl::DeprecatedService>(m_allocator));
+                            return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IDeprecatedGeneralInterface, spl::DeprecatedService>(m_allocator, m_secure_monitor_manager));
                         }
                     case PortIndex_Random:
                         return this->AcceptImpl(server, m_random_service_object.GetShared());
                     case PortIndex_Crypto:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ICryptoInterface, spl::CryptoService>(m_allocator));
+                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ICryptoInterface, spl::CryptoService>(m_allocator, m_secure_monitor_manager));
                     case PortIndex_Fs:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IFsInterface,     spl::FsService>(m_allocator));
+                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IFsInterface,     spl::FsService>(m_allocator, m_secure_monitor_manager));
                     case PortIndex_Ssl:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ISslInterface,    spl::SslService>(m_allocator));
+                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::ISslInterface,    spl::SslService>(m_allocator, m_secure_monitor_manager));
                     case PortIndex_Es:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IEsInterface,     spl::EsService>(m_allocator));
+                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IEsInterface,     spl::EsService>(m_allocator, m_secure_monitor_manager));
                     case PortIndex_Manu:
-                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IManuInterface,   spl::ManuService>(m_allocator));
+                        return this->AcceptImpl(server, ObjectFactory::CreateSharedEmplaced<spl::impl::IManuInterface,   spl::ManuService>(m_allocator, m_secure_monitor_manager));
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }
@@ -127,8 +130,10 @@ namespace ams {
                 /* Setup server allocator. */
                 g_server_allocator.Attach(lmem::CreateExpHeap(g_server_allocator_buffer, sizeof(g_server_allocator_buffer), lmem::CreateOption_None));
 
-                /* Initialize global context. */
-                spl::impl::Initialize();
+                /* Initialize secure monitor manager. */
+                g_secure_monitor_manager.Initialize();
+
+                g_use_new_server = hos::GetVersion() >= hos::Version_4_0_0;
 
                 /* Create services. */
                 const auto fw_ver = hos::GetVersion();

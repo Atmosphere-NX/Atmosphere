@@ -15,13 +15,20 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "spl_secure_monitor_manager.hpp"
 
 namespace ams::spl {
 
     class RandomService final {
+        protected:
+            SecureMonitorManager &m_manager;
+        public:
+            explicit RandomService(SecureMonitorManager *manager) : m_manager(*manager) { /* ... */ }
         public:
             /* Actual commands. */
-            Result GenerateRandomBytes(const sf::OutBuffer &out);
+            Result GenerateRandomBytes(const sf::OutBuffer &out) {
+                return m_manager.GenerateRandomBytes(out.GetPointer(), out.GetSize());
+            }
     };
     static_assert(spl::impl::IsIRandomInterface<RandomService>);
 

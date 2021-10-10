@@ -16,47 +16,47 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::spl {
+namespace ams::spl::impl {
 
-    class KeySlotCacheEntry : public util::IntrusiveListBaseNode<KeySlotCacheEntry> {
-        NON_COPYABLE(KeySlotCacheEntry);
-        NON_MOVEABLE(KeySlotCacheEntry);
+    class AesKeySlotCacheEntry : public util::IntrusiveListBaseNode<AesKeySlotCacheEntry> {
+        NON_COPYABLE(AesKeySlotCacheEntry);
+        NON_MOVEABLE(AesKeySlotCacheEntry);
         private:
-            friend class KeySlotCache;
+            friend class AesKeySlotCache;
         public:
             static constexpr size_t KeySize = crypto::AesDecryptor128::KeySize;
         private:
-            const s32 m_slot_index;
-            s32 m_virtual_slot;
+            const s32 m_aes_keyslot_index;
+            s32 m_virtual_aes_keyslot;
         public:
-            explicit KeySlotCacheEntry(s32 idx) : m_slot_index(idx), m_virtual_slot(-1) { /* ... */ }
+            explicit AesKeySlotCacheEntry(s32 idx) : m_aes_keyslot_index(idx), m_virtual_aes_keyslot(-1) { /* ... */ }
 
             bool Contains(s32 virtual_slot) const {
-                return virtual_slot == m_virtual_slot;
+                return virtual_slot == m_virtual_aes_keyslot;
             }
 
-            s32 GetPhysicalKeySlotIndex() const { return m_slot_index; }
+            s32 GetPhysicalAesKeySlotIndex() const { return m_aes_keyslot_index; }
 
-            s32 GetVirtualKeySlotIndex() const { return m_virtual_slot; }
+            s32 GetVirtualAesKeySlotIndex() const { return m_virtual_aes_keyslot; }
 
-            void SetVirtualSlot(s32 virtual_slot) {
-                m_virtual_slot = virtual_slot;
+            void SetVirtualAesKeySlot(s32 virtual_slot) {
+                m_virtual_aes_keyslot = virtual_slot;
             }
 
-            void ClearVirtualSlot() {
-                m_virtual_slot = -1;
+            void ClearVirtualAesKeySlot() {
+                m_virtual_aes_keyslot = -1;
             }
     };
 
-    class KeySlotCache {
-        NON_COPYABLE(KeySlotCache);
-        NON_MOVEABLE(KeySlotCache);
+    class AesKeySlotCache {
+        NON_COPYABLE(AesKeySlotCache);
+        NON_MOVEABLE(AesKeySlotCache);
         private:
-            using KeySlotCacheEntryList = util::IntrusiveListBaseTraits<KeySlotCacheEntry>::ListType;
+            using AesKeySlotCacheEntryList = util::IntrusiveListBaseTraits<AesKeySlotCacheEntry>::ListType;
         private:
-            KeySlotCacheEntryList m_mru_list;
+            AesKeySlotCacheEntryList m_mru_list;
         public:
-            constexpr KeySlotCache() : m_mru_list() { /* ... */ }
+            constexpr AesKeySlotCache() : m_mru_list() { /* ... */ }
 
             s32 Allocate(s32 virtual_slot) {
                 return this->AllocateFromLru(virtual_slot);
@@ -65,7 +65,7 @@ namespace ams::spl {
             bool Find(s32 *out, s32 virtual_slot) {
                 for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
                     if (it->Contains(virtual_slot)) {
-                        *out = it->GetPhysicalKeySlotIndex();
+                        *out = it->GetPhysicalAesKeySlotIndex();
 
                         this->UpdateMru(it);
                         return true;
@@ -78,8 +78,8 @@ namespace ams::spl {
             bool Release(s32 *out, s32 virtual_slot) {
                 for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
                     if (it->Contains(virtual_slot)) {
-                        *out = it->GetPhysicalKeySlotIndex();
-                        it->ClearVirtualSlot();
+                        *out = it->GetPhysicalAesKeySlotIndex();
+                        it->ClearVirtualAesKeySlot();
 
                         this->UpdateLru(it);
                         return true;
@@ -91,13 +91,13 @@ namespace ams::spl {
 
             bool FindPhysical(s32 physical_slot) {
                 for (auto it = m_mru_list.begin(); it != m_mru_list.end(); ++it) {
-                    if (it->GetPhysicalKeySlotIndex() == physical_slot) {
+                    if (it->GetPhysicalAesKeySlotIndex() == physical_slot) {
                         this->UpdateMru(it);
 
-                        if (it->GetVirtualKeySlotIndex() == physical_slot) {
+                        if (it->GetVirtualAesKeySlotIndex() == physical_slot) {
                             return true;
                         } else {
-                            it->SetVirtualSlot(physical_slot);
+                            it->SetVirtualAesKeySlot(physical_slot);
                             return false;
                         }
                     }
@@ -105,7 +105,7 @@ namespace ams::spl {
                 AMS_ABORT();
             }
 
-            void AddEntry(KeySlotCacheEntry *entry) {
+            void AddEntry(AesKeySlotCacheEntry *entry) {
                 m_mru_list.push_front(*entry);
             }
         private:
@@ -113,22 +113,22 @@ namespace ams::spl {
                 AMS_ASSERT(!m_mru_list.empty());
 
                 auto it = m_mru_list.rbegin();
-                it->SetVirtualSlot(virtual_slot);
+                it->SetVirtualAesKeySlot(virtual_slot);
 
                 auto *entry = std::addressof(*it);
                 m_mru_list.pop_back();
                 m_mru_list.push_front(*entry);
 
-                return entry->GetPhysicalKeySlotIndex();
+                return entry->GetPhysicalAesKeySlotIndex();
             }
 
-            void UpdateMru(KeySlotCacheEntryList::iterator it) {
+            void UpdateMru(AesKeySlotCacheEntryList::iterator it) {
                 auto *entry = std::addressof(*it);
                 m_mru_list.erase(it);
                 m_mru_list.push_front(*entry);
             }
 
-            void UpdateLru(KeySlotCacheEntryList::iterator it) {
+            void UpdateLru(AesKeySlotCacheEntryList::iterator it) {
                 auto *entry = std::addressof(*it);
                 m_mru_list.erase(it);
                 m_mru_list.push_back(*entry);

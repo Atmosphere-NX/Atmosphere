@@ -70,7 +70,7 @@ namespace ams::secmon::smc {
     SmcResult SmcWriteAddress(SmcArguments &args) {
         /* NOTE: This smc was deprecated in Atmosphère 0.13.0. */
         AMS_UNUSED(args);
-        return SmcResult::NotImplemented;
+        return SmcResult::NotSupported;
     }
 
 }

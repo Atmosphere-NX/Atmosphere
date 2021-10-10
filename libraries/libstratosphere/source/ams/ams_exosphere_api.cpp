@@ -14,34 +14,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include <stratosphere/spl.hpp>
-#include <stratosphere/spl/smc/spl_smc.hpp>
 
 namespace ams::exosphere {
 
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
-        if (spl::smc::GetConfig(std::addressof(exosphere_cfg), 1, spl::ConfigItem::ExosphereApiVersion) != spl::smc::Result::Success) {
-            R_ABORT_UNLESS(ResultNotPresent());
+        if (R_FAILED(spl::impl::GetConfig(std::addressof(exosphere_cfg), spl::ConfigItem::ExosphereApiVersion))) {
+            R_ABORT_UNLESS(exosphere::ResultNotPresent());
         }
 
         return ApiInfo{ util::BitPack64{exosphere_cfg} };
     }
 
     void ForceRebootToRcm() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 1)));
+        R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 1));
     }
 
     void ForceRebootToIramPayload() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 2)));
+        R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 2));
     }
 
     void ForceRebootToFatalError() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 3)));
+        R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 3));
     }
 
     void ForceShutdown() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsShutdown, 1)));
+        R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsShutdown, 1));
     }
 
     void CopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size) {
@@ -67,19 +65,21 @@ namespace ams::exosphere {
     }
 
     bool IsRcmBugPatched() {
-        return GetBooleanConfigItem(spl::ConfigItem::ExosphereHasRcmBugPatch);
+        return spl::impl::GetConfigBool(spl::ConfigItem::ExosphereHasRcmBugPatch);
     }
 
     bool ShouldBlankProdInfo() {
-        return GetBooleanConfigItem(spl::ConfigItem::ExosphereBlankProdInfo);
+        return spl::impl::GetConfigBool(spl::ConfigItem::ExosphereBlankProdInfo);
     }
 
     bool ShouldAllowWritesToProdInfo() {
-        return GetBooleanConfigItem(spl::ConfigItem::ExosphereAllowCalWrites);
+        return spl::impl::GetConfigBool(spl::ConfigItem::ExosphereAllowCalWrites);
     }
 
     u64 GetDeviceId() {
-        return GetU64ConfigItem(spl::ConfigItem::DeviceId);
+        u64 device_id;
+        R_ABORT_UNLESS(spl::impl::GetConfig(std::addressof(device_id), spl::ConfigItem::DeviceId));
+        return device_id;
     }
 
 }

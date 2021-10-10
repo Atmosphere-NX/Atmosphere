@@ -22,7 +22,7 @@ namespace ams::spl {
     R_DEFINE_NAMESPACE_RESULT_MODULE(26);
 
     R_DEFINE_ERROR_RANGE(SecureMonitorError, 0, 99);
-        R_DEFINE_ERROR_RESULT(SecureMonitorNotImplemented,        1);
+        R_DEFINE_ERROR_RESULT(SecureMonitorNotSupported,          1);
         R_DEFINE_ERROR_RESULT(SecureMonitorInvalidArgument,       2);
         R_DEFINE_ERROR_RESULT(SecureMonitorBusy,                  3);
         R_DEFINE_ERROR_RESULT(SecureMonitorNoAsyncOperation,      4);
@@ -30,14 +30,14 @@ namespace ams::spl {
         R_DEFINE_ERROR_RESULT(SecureMonitorNotPermitted,          6);
         R_DEFINE_ERROR_RESULT(SecureMonitorNotInitialized,        7);
 
-    R_DEFINE_ERROR_RESULT(InvalidSize,                  100);
-    R_DEFINE_ERROR_RESULT(UnknownSecureMonitorError,    101);
-    R_DEFINE_ERROR_RESULT(DecryptionFailed,             102);
-
-    R_DEFINE_ERROR_RESULT(OutOfKeySlots,                104);
-    R_DEFINE_ERROR_RESULT(InvalidKeySlot,               105);
-    R_DEFINE_ERROR_RESULT(BootReasonAlreadySet,         106);
-    R_DEFINE_ERROR_RESULT(BootReasonNotSet,             107);
-    R_DEFINE_ERROR_RESULT(InvalidArgument,              108);
+    R_DEFINE_ERROR_RESULT(InvalidBufferSize,             100);
+    R_DEFINE_ERROR_RESULT(UnexpectedSecureMonitorResult, 101);
+    R_DEFINE_ERROR_RESULT(DecryptionFailed,              102);
+    R_DEFINE_ERROR_RESULT(InvalidDeviceUniqueDataType,   103);
+    R_DEFINE_ERROR_RESULT(NoAvailableKeySlot,            104);
+    R_DEFINE_ERROR_RESULT(InvalidKeySlot,                105);
+    R_DEFINE_ERROR_RESULT(BootReasonAlreadyInitialized,  106);
+    R_DEFINE_ERROR_RESULT(BootReasonNotInitialized,      107);
+    R_DEFINE_ERROR_RESULT(InvalidArgument,               108);
 
 }

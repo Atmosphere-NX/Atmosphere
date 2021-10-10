@@ -17,25 +17,27 @@
 
 namespace ams::spl::smc {
 
-    Result SetConfig(spl::ConfigItem which, const void *address, const u64 *value, size_t num_qwords) {
+    Result SetConfig(AsyncOperationKey *out_op, spl::ConfigItem key, const u64 *value, size_t num_qwords, const void *sign) {
         svc::SecureMonitorArguments args;
 
         args.r[0] = static_cast<u64>(FunctionId::SetConfig);
-        args.r[1] = static_cast<u64>(which);
-        args.r[2] = reinterpret_cast<u64>(address);
+        args.r[1] = static_cast<u64>(key);
+        args.r[2] = reinterpret_cast<u64>(sign);
+
         for (size_t i = 0; i < std::min(static_cast<size_t>(4), num_qwords); i++) {
             args.r[3 + i] = value[i];
         }
         svc::CallSecureMonitor(std::addressof(args));
 
+        out_op->value = args.r[1];
         return static_cast<Result>(args.r[0]);
     }
 
-    Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem which) {
+    Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem key) {
         svc::SecureMonitorArguments args;
 
         args.r[0] = static_cast<u64>(FunctionId::GetConfig);
-        args.r[1] = static_cast<u64>(which);
+        args.r[1] = static_cast<u64>(key);
         svc::CallSecureMonitor(std::addressof(args));
 
         for (size_t i = 0; i < std::min(static_cast<size_t>(4), num_qwords); i++) {
@@ -124,7 +126,7 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.r[0]);
     }
 
-    Result ComputeAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size) {
+    Result ComputeAes(AsyncOperationKey *out_op, u32 dst_addr, u32 mode, const IvCtr &iv_ctr, u32 src_addr, size_t size) {
         svc::SecureMonitorArguments args;
 
         args.r[0] = static_cast<u64>(FunctionId::ComputeAes);
