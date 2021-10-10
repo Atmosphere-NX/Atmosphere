@@ -53,3 +53,4 @@
 #include <stratosphere/os/os_io_region.hpp>
 #include <stratosphere/os/os_multiple_wait.hpp>
 #include <stratosphere/os/os_argument.hpp>
+#include <stratosphere/os/os_cache.hpp>

@@ -37,7 +37,7 @@ namespace ams::ncm {
             size_t m_peak_total_alloc_size;
             size_t m_peak_alloc_size;
         public:
-            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : m_allocator(heap, heap_size), m_peak_alloc_size(0), m_peak_total_alloc_size(0) { /* ... */ }
+            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : m_allocator(heap, heap_size), m_peak_total_alloc_size(0), m_peak_alloc_size(0) { /* ... */ }
 
             mem::StandardAllocator *GetAllocator() { return std::addressof(m_allocator); }
             size_t GetPeakTotalAllocationSize() const { return m_peak_total_alloc_size; }

@@ -372,7 +372,7 @@ namespace ams::spl::impl {
 
             std::memcpy(layout->in_block, src, sizeof(layout->in_block));
 
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
             {
                 std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
@@ -390,7 +390,7 @@ namespace ams::spl::impl {
                     return res;
                 }
             }
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
 
             std::memcpy(dst, layout->out_block, sizeof(layout->out_block));
             return smc::Result::Success;
@@ -407,7 +407,7 @@ namespace ams::spl::impl {
             R_UNLESS(src_size <= sizeof(DecryptAndStoreDeviceUniqueKeyLayout), spl::ResultInvalidSize());
             std::memcpy(layout, src, src_size);
 
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
             smc::Result smc_res;
             if (hos::GetVersion() >= hos::Version_5_0_0) {
                 smc_res = smc::DecryptDeviceUniqueData(layout->data, src_size, access_key, key_source, static_cast<smc::DeviceUniqueDataMode>(option));
@@ -438,7 +438,7 @@ namespace ams::spl::impl {
             std::memcpy(layout->mod + mod_ofs, mod, mod_size);
 
             /* Do exp mod operation. */
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
             {
                 std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
@@ -452,7 +452,7 @@ namespace ams::spl::impl {
                     return smc::ConvertResult(res);
                 }
             }
-            armDCacheFlush(g_work_buffer, sizeof(out_size));
+            os::FlushDataCache(g_work_buffer, sizeof(out_size));
 
             std::memcpy(out, g_work_buffer, out_size);
             return ResultSuccess();
@@ -478,7 +478,7 @@ namespace ams::spl::impl {
             std::memcpy(layout->mod + mod_ofs, mod, mod_size);
 
             /* Do exp mod operation. */
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
             {
                 std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
@@ -492,7 +492,7 @@ namespace ams::spl::impl {
                     return smc::ConvertResult(res);
                 }
             }
-            armDCacheFlush(g_work_buffer, sizeof(*out_access_key));
+            os::FlushDataCache(g_work_buffer, sizeof(*out_access_key));
 
             std::memcpy(out_access_key, g_work_buffer, sizeof(*out_access_key));
             return ResultSuccess();
@@ -566,7 +566,7 @@ namespace ams::spl::impl {
         std::memcpy(layout->mod + mod_ofs, mod, mod_size);
 
         /* Do exp mod operation. */
-        armDCacheFlush(layout, sizeof(*layout));
+        os::FlushDataCache(layout, sizeof(*layout));
         {
             std::scoped_lock lk(g_async_op_lock);
             smc::AsyncOperationKey op_key;
@@ -580,7 +580,7 @@ namespace ams::spl::impl {
                 return smc::ConvertResult(res);
             }
         }
-        armDCacheFlush(g_work_buffer, sizeof(out_size));
+        os::FlushDataCache(g_work_buffer, sizeof(out_size));
 
         std::memcpy(out, g_work_buffer, out_size);
         return ResultSuccess();
@@ -701,9 +701,9 @@ namespace ams::spl::impl {
         crypt_ctx->out.address = dst_se_addr;
         crypt_ctx->out.size = dst_size;
 
-        armDCacheFlush(crypt_ctx, sizeof(*crypt_ctx));
-        armDCacheFlush(const_cast<void *>(src), src_size);
-        armDCacheFlush(dst, dst_size);
+        os::FlushDataCache(crypt_ctx, sizeof(*crypt_ctx));
+        os::FlushDataCache(const_cast<void *>(src), src_size);
+        os::FlushDataCache(dst, dst_size);
         {
             std::scoped_lock lk(g_async_op_lock);
             smc::AsyncOperationKey op_key;
@@ -720,7 +720,7 @@ namespace ams::spl::impl {
                 return smc::ConvertResult(res);
             }
         }
-        armDCacheFlush(dst, dst_size);
+        os::FlushDataCache(dst, dst_size);
 
         return ResultSuccess();
     }
@@ -783,7 +783,7 @@ namespace ams::spl::impl {
         R_UNLESS(src_size <= sizeof(DecryptDeviceUniqueDataLayout), spl::ResultInvalidSize());
 
         std::memcpy(layout->data, src, src_size);
-        armDCacheFlush(layout, sizeof(*layout));
+        os::FlushDataCache(layout, sizeof(*layout));
 
         smc::Result smc_res;
         size_t copy_size = 0;
@@ -795,7 +795,7 @@ namespace ams::spl::impl {
             copy_size = std::min(dst_size, copy_size);
         }
 
-        armDCacheFlush(layout, sizeof(*layout));
+        os::FlushDataCache(layout, sizeof(*layout));
         if (smc_res == smc::Result::Success) {
             std::memcpy(dst, layout->data, copy_size);
         }
@@ -827,7 +827,7 @@ namespace ams::spl::impl {
 
             std::memcpy(layout, src, src_size);
 
-            armDCacheFlush(layout, sizeof(*layout));
+            os::FlushDataCache(layout, sizeof(*layout));
             return smc::ConvertResult(smc::LoadEsDeviceKey(layout->data, src_size, access_key, key_source, option));
         }
     }
@@ -915,12 +915,12 @@ namespace ams::spl::impl {
         layout->access_key_enc = access_key_enc;
         layout->source_enc = source_enc;
 
-        armDCacheFlush(layout, sizeof(*layout));
+        os::FlushDataCache(layout, sizeof(*layout));
 
         smc::Result smc_res = smc::ReencryptDeviceUniqueData(layout->data, src_size, layout->access_key_dec, layout->source_dec, layout->access_key_enc, layout->source_enc, option);
         if (smc_res == smc::Result::Success) {
             size_t copy_size = std::min(dst_size, src_size);
-            armDCacheFlush(layout, copy_size);
+            os::FlushDataCache(layout, copy_size);
             std::memcpy(dst, layout->data, copy_size);
         }
 
