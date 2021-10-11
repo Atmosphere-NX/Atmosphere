@@ -43,3 +43,16 @@
                                                                                          \
             return ::ams::util::GetReference(s_singleton_storage);                       \
         }
+
+#define AMS_CONSTINIT_SINGLETON_TRAITS(_CLASSNAME_)            \
+    private:                                                   \
+        NON_COPYABLE(_CLASSNAME_);                             \
+        NON_MOVEABLE(_CLASSNAME_);                             \
+    private:                                                   \
+        constexpr _CLASSNAME_ () = default;                    \
+    public:                                                    \
+        static _CLASSNAME_ &GetInstance() {                    \
+            /* Declare singleton instance variables. */        \
+            static constinit _CLASSNAME_ s_singleton_instance; \
+            return s_singleton_instance;                       \
+        }

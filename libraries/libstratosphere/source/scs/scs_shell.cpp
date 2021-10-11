@@ -330,7 +330,7 @@ namespace ams::scs {
         Result PrepareToLaunchProgram(ncm::ProgramId program_id, const void *args, size_t args_size) {
             /* Set the arguments. */
             R_TRY_CATCH(ldr::SetProgramArgument(program_id, args, args_size)) {
-                R_CATCH(ldr::ResultTooManyArguments) {
+                R_CATCH(ldr::ResultArgumentCountOverflow) {
                     /* There are too many arguments already registered. Flush the arguments queue. */
                     R_TRY(ldr::FlushArguments());
 

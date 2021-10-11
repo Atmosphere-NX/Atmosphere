@@ -320,7 +320,7 @@ namespace ams::ro::impl {
                     m_nro_in_use[index] = in_use;
                 }
 
-                void GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count) const {
+                void GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out_infos, size_t max_out_count) const {
                     size_t count = 0;
 
                     for (size_t i = 0; i < MaxNroInfos && count < max_out_count; i++) {
@@ -331,10 +331,11 @@ namespace ams::ro::impl {
                         const NroInfo *nro_info = m_nro_infos + i;
 
                         /* Just copy out the info. */
-                        LoaderModuleInfo *out_info = std::addressof(out_infos[count++]);
-                        memcpy(out_info->build_id, std::addressof(nro_info->module_id), sizeof(nro_info->module_id));
-                        out_info->base_address = nro_info->base_address;
-                        out_info->size = nro_info->nro_heap_size + nro_info->bss_heap_size;
+                        auto &out_info = out_infos[count++];
+
+                        std::memcpy(out_info.module_id, nro_info->module_id.data, sizeof(out_info.module_id));
+                        out_info.address = nro_info->base_address;
+                        out_info.size    = nro_info->nro_heap_size + nro_info->bss_heap_size;
                     }
 
                     *out_count = static_cast<u32>(count);
@@ -597,7 +598,7 @@ namespace ams::ro::impl {
     }
 
     /* Debug service implementations. */
-    Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id) {
+    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id) {
         if (const ProcessContext *context = GetContextByProcessId(process_id); context != nullptr) {
             context->GetProcessModuleInfo(out_count, out_infos, max_out_count);
         }

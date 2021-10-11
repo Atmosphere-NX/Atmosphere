@@ -113,7 +113,7 @@ namespace ams::dmnt::cheat::impl {
                 Result AttachToApplicationProcess(bool on_process_launch);
 
                 bool ParseCheats(const char *s, size_t len);
-                bool LoadCheats(const ncm::ProgramId program_id, const u8 *build_id);
+                bool LoadCheats(const ncm::ProgramId program_id, const u8 *module_id);
                 bool ParseCheatToggles(const char *s, size_t len);
                 bool LoadCheatToggles(const ncm::ProgramId program_id);
                 void SaveCheatToggles(const ncm::ProgramId program_id);
@@ -826,16 +826,16 @@ namespace ams::dmnt::cheat::impl {
 
             /* Get module information from loader. */
             {
-                LoaderModuleInfo proc_modules[2];
+                ldr::ModuleInfo proc_modules[2];
                 s32 num_modules;
 
                 /* TODO: ldr::dmnt:: */
-                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(m_cheat_process_metadata.process_id), proc_modules, util::size(proc_modules), std::addressof(num_modules)));
+                R_ABORT_UNLESS_IF_NEW_PROCESS(ldrDmntGetProcessModuleInfo(static_cast<u64>(m_cheat_process_metadata.process_id), reinterpret_cast<LoaderModuleInfo *>(proc_modules), util::size(proc_modules), std::addressof(num_modules)));
 
                 /* All applications must have two modules. */
                 /* Only accept one (which means we're attaching to HBL) */
                 /* if we aren't auto-attaching. */
-                const LoaderModuleInfo *proc_module = nullptr;
+                const ldr::ModuleInfo *proc_module = nullptr;
                 if (num_modules == 2) {
                     proc_module = std::addressof(proc_modules[1]);
                 } else if (num_modules == 1 && !on_process_launch) {
@@ -844,13 +844,13 @@ namespace ams::dmnt::cheat::impl {
                     return dmnt::cheat::ResultCheatNotAttached();
                 }
 
-                m_cheat_process_metadata.main_nso_extents.base = proc_module->base_address;
+                m_cheat_process_metadata.main_nso_extents.base = proc_module->address;
                 m_cheat_process_metadata.main_nso_extents.size = proc_module->size;
-                std::memcpy(m_cheat_process_metadata.main_nso_build_id, proc_module->build_id, sizeof(m_cheat_process_metadata.main_nso_build_id));
+                std::memcpy(m_cheat_process_metadata.main_nso_module_id, proc_module->module_id, sizeof(m_cheat_process_metadata.main_nso_module_id));
             }
 
             /* Read cheats off the SD. */
-            if (!this->LoadCheats(m_cheat_process_metadata.program_id, m_cheat_process_metadata.main_nso_build_id) ||
+            if (!this->LoadCheats(m_cheat_process_metadata.program_id, m_cheat_process_metadata.main_nso_module_id) ||
                 !this->LoadCheatToggles(m_cheat_process_metadata.program_id)) {
                 /* If new process launch, require success. */
                 R_UNLESS(!on_process_launch, dmnt::cheat::ResultCheatNotAttached());
@@ -1059,16 +1059,16 @@ namespace ams::dmnt::cheat::impl {
             return true;
         }
 
-        bool CheatProcessManager::LoadCheats(const ncm::ProgramId program_id, const u8 *build_id) {
+        bool CheatProcessManager::LoadCheats(const ncm::ProgramId program_id, const u8 *module_id) {
             /* Reset existing entries. */
             this->ResetAllCheatEntries();
 
-            /* Open the file for program/build_id. */
+            /* Open the file for program/module_id. */
             fs::FileHandle file;
             {
                 char path[fs::EntryNameLengthMax + 1];
                 util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", program_id.value,
-                        build_id[0], build_id[1], build_id[2], build_id[3], build_id[4], build_id[5], build_id[6], build_id[7]);
+                        module_id[0], module_id[1], module_id[2], module_id[3], module_id[4], module_id[5], module_id[6], module_id[7]);
                 if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
                     return false;
                 }

@@ -19,7 +19,7 @@
 
 namespace ams::ro {
 
-    Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id) {
+    Result DebugMonitorService::GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<ldr::ModuleInfo> &out_infos, os::ProcessId process_id) {
         R_UNLESS(out_infos.GetSize() <= std::numeric_limits<s32>::max(), ro::ResultInvalidSize());
         return impl::GetProcessModuleInfo(out_count.GetPointer(), out_infos.GetPointer(), out_infos.GetSize(), process_id);
     }

@@ -20,7 +20,7 @@ namespace ams::ro {
 
     class DebugMonitorService {
         public:
-            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
+            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<ldr::ModuleInfo> &out_infos, os::ProcessId process_id);
     };
     static_assert(ro::impl::IsIDebugMonitorInterface<DebugMonitorService>);
 

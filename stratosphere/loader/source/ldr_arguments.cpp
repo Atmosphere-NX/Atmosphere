@@ -48,13 +48,13 @@ namespace ams::ldr::args {
     }
 
     Result Set(ncm::ProgramId program_id, const void *args, size_t args_size) {
-        R_UNLESS(args_size < ArgumentSizeMax, ldr::ResultTooLongArgument());
+        R_UNLESS(args_size < ArgumentSizeMax, ldr::ResultArgumentOverflow());
 
         ArgumentInfo *arg_info = FindArgumentInfo(program_id);
         if (arg_info == nullptr) {
             arg_info = FindFreeArgumentInfo();
         }
-        R_UNLESS(arg_info != nullptr, ldr::ResultTooManyArguments());
+        R_UNLESS(arg_info != nullptr, ldr::ResultArgumentCountOverflow());
 
         arg_info->program_id = program_id;
         arg_info->args_size = args_size;

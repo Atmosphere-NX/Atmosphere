@@ -23,11 +23,11 @@ namespace ams::creport {
         private:
             static constexpr size_t ModuleCountMax      = 0x60;
             static constexpr size_t ModuleNameLengthMax = 0x20;
-            static constexpr size_t ModuleBuildIdLength = 0x20;
+            static constexpr size_t ModuleIdSize = 0x20;
 
             struct ModuleInfo {
                 char name[ModuleNameLengthMax];
-                u8   build_id[ModuleBuildIdLength];
+                u8   module_id[ModuleIdSize];
                 u64  start_address;
                 u64  end_address;
             };
@@ -58,7 +58,7 @@ namespace ams::creport {
             bool TryFindModule(uintptr_t *out_address, uintptr_t guess);
             void TryAddModule(uintptr_t guess);
             void GetModuleName(char *out_name, uintptr_t text_start, uintptr_t ro_start);
-            void GetModuleBuildId(u8 *out_build_id, uintptr_t ro_start);
+            void GetModuleId(u8 *out, uintptr_t ro_start);
     };
 
 }

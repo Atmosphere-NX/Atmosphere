@@ -16,14 +16,50 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::ldr::ro {
+namespace ams::ldr {
 
-    /* RO Manager API. */
-    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
-    Result UnpinProgram(PinId id);
-    Result GetProgramLocationAndStatus(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId id);
-    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::ProgramId program_id);
-    Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size);
-    Result GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id);
+    class RoManager {
+        AMS_CONSTINIT_SINGLETON_TRAITS(RoManager);
+        public:
+            static constexpr PinId InvalidPinId = {};
+            static constexpr int ProcessCount = 0x40;
+            static constexpr int NsoCount     = 0x20;
+        private:
+            struct NsoInfo {
+                bool in_use;
+                ldr::ModuleInfo module_info;
+            };
+
+            struct ProcessInfo {
+                bool in_use;
+                PinId pin_id;
+                os::ProcessId process_id;
+                ncm::ProgramId program_id;
+                cfg::OverrideStatus override_status;
+                ncm::ProgramLocation program_location;
+                NsoInfo nso_infos[NsoCount];
+            };
+        private:
+            ProcessInfo m_processes[ProcessCount];
+            u64 m_pin_id;
+        public:
+            bool Allocate(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
+            bool Free(PinId pin_id);
+
+            void RegisterProcess(PinId pin_id, os::ProcessId process_id, ncm::ProgramId program_id, bool is_64_bit_address_space);
+
+            bool GetProgramLocationAndStatus(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId pin_id);
+
+            void AddNso(PinId pin_id, const u8 *module_id, u64 address, u64 size);
+
+            bool GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id);
+        private:
+            ProcessInfo *AllocateProcessInfo();
+            ProcessInfo *FindProcessInfo(PinId pin_id);
+            ProcessInfo *FindProcessInfo(os::ProcessId process_id);
+            ProcessInfo *FindProcessInfo(ncm::ProgramId program_id);
+
+            NsoInfo *AllocateNsoInfo(ProcessInfo *info);
+    };
 
 }

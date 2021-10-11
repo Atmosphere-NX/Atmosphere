@@ -54,7 +54,7 @@ namespace ams::creport {
             if (std::strcmp(m_modules[i].name, "") != 0) {
                 file.WriteFormat("        Name:                    %s\n", module.name);
             }
-            file.DumpMemory("        Build Id:                ", module.build_id, sizeof(module.build_id));
+            file.DumpMemory("        Module Id:               ", module.module_id, sizeof(module.module_id));
         }
     }
 
@@ -104,10 +104,10 @@ namespace ams::creport {
                 module.start_address = mi.base_address;
                 module.end_address   = mi.base_address + mi.size;
                 GetModuleName(module.name, module.start_address, module.end_address);
-                GetModuleBuildId(module.build_id, module.end_address);
+                GetModuleId(module.module_id, module.end_address);
                 /* Some homebrew won't have a name. Add a fake one for readability. */
                 if (std::strcmp(module.name, "") == 0) {
-                    util::SNPrintf(module.name, sizeof(module.name), "[%02x%02x%02x%02x]", module.build_id[0], module.build_id[1], module.build_id[2], module.build_id[3]);
+                    util::SNPrintf(module.name, sizeof(module.name), "[%02x%02x%02x%02x]", module.module_id[0], module.module_id[1], module.module_id[2], module.module_id[3]);
                 }
             }
 
@@ -221,9 +221,9 @@ namespace ams::creport {
         out_name[ModuleNameLengthMax - 1] = '\x00';
     }
 
-    void ModuleList::GetModuleBuildId(u8 *out_build_id, uintptr_t ro_start_address) {
+    void ModuleList::GetModuleId(u8 *out, uintptr_t ro_start_address) {
         /* Clear output. */
-        std::memset(out_build_id, 0, ModuleBuildIdLength);
+        std::memset(out, 0, ModuleIdSize);
 
         /* Verify .rodata is read-only. */
         svc::MemoryInfo mi;
@@ -238,10 +238,10 @@ namespace ams::creport {
             return;
         }
 
-        /* Find GNU\x00 to locate start of build id. */
-        for (int ofs = read_size - sizeof(GnuSignature) - ModuleBuildIdLength; ofs >= 0; ofs--) {
+        /* Find GNU\x00 to locate start of module id (GNU build id). */
+        for (int ofs = read_size - sizeof(GnuSignature) - ModuleIdSize; ofs >= 0; ofs--) {
             if (std::memcmp(g_last_rodata_pages + ofs, GnuSignature, sizeof(GnuSignature)) == 0) {
-                std::memcpy(out_build_id, g_last_rodata_pages + ofs + sizeof(GnuSignature), ModuleBuildIdLength);
+                std::memcpy(out, g_last_rodata_pages + ofs + sizeof(GnuSignature), ModuleIdSize);
                 break;
             }
         }

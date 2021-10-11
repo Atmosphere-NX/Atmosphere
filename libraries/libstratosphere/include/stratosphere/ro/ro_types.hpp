@@ -27,10 +27,11 @@ namespace ams::ro {
         NrrKind_Count,
     };
 
+    static constexpr size_t ModuleIdSize = 0x20;
     struct ModuleId {
-        u8 build_id[0x20];
+        u8 data[ModuleIdSize];
     };
-    static_assert(sizeof(ModuleId) == sizeof(LoaderModuleInfo::build_id), "ModuleId definition!");
+    static_assert(sizeof(ModuleId) == ModuleIdSize);
 
     struct NrrCertification {
         static constexpr size_t RsaKeySize = 0x100;

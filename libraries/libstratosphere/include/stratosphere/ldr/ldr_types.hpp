@@ -73,8 +73,12 @@ namespace ams::ldr {
     }
     static_assert(sizeof(PinId) == sizeof(u64) && util::is_pod<PinId>::value, "PinId definition!");
 
-    /* Import ModuleInfo from libnx. */
-    using ModuleInfo = ::LoaderModuleInfo;
+    struct ModuleInfo {
+        u8 module_id[0x20];
+        u64 address;
+        u64 size;
+    };
+    static_assert(sizeof(ModuleInfo) == 0x30);
 
     /* NSO types. */
     struct NsoHeader {
@@ -123,7 +127,7 @@ namespace ams::ldr {
             };
             SegmentInfo segments[Segment_Count];
         };
-        u8 build_id[sizeof(ModuleInfo::build_id)];
+        u8 module_id[sizeof(ModuleInfo::module_id)];
         union {
             u32 compressed_sizes[Segment_Count];
             struct {

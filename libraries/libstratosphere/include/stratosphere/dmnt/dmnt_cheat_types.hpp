@@ -33,7 +33,7 @@ namespace ams::dmnt::cheat {
         MemoryRegionExtents heap_extents;
         MemoryRegionExtents alias_extents;
         MemoryRegionExtents aslr_extents;
-        u8 main_nso_build_id[0x20];
+        u8 main_nso_module_id[0x20];
     };
 
     static_assert(util::is_pod<CheatProcessMetadata>::value && sizeof(CheatProcessMetadata) == 0x70, "CheatProcessMetadata definition!");

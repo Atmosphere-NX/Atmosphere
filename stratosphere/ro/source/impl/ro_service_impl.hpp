@@ -41,6 +41,6 @@ namespace ams::ro::impl {
     Result UnmapManualLoadModuleMemory(size_t context_id, u64 nro_address);
 
     /* Debug service implementations. */
-    Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id);
+    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id);
 
 }

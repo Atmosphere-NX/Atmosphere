@@ -591,10 +591,10 @@ namespace ams::ldr {
                 std::memset(reinterpret_cast<void *>(map_address + rw_end), 0, nso_header->bss_size);
 
                 /* Apply embedded patches. */
-                ApplyEmbeddedPatchesToModule(nso_header->build_id, map_address, nso_size);
+                ApplyEmbeddedPatchesToModule(nso_header->module_id, map_address, nso_size);
 
                 /* Apply IPS patches. */
-                LocateAndApplyIpsPatchesToModule(nso_header->build_id, map_address, nso_size);
+                LocateAndApplyIpsPatchesToModule(nso_header->module_id, map_address, nso_size);
             }
 
             /* Set permissions. */
@@ -683,24 +683,32 @@ namespace ams::ldr {
             ProcessInfo info;
             R_TRY(CreateProcessImpl(std::addressof(info), std::addressof(meta), nso_headers, has_nso, arg_info, flags, reslimit_h));
 
-            /* Ensure we close the process handle, if we fail. */
-            ON_SCOPE_EXIT { os::CloseNativeHandle(info.process_handle); };
-
             /* Load NSOs into process memory. */
-            R_TRY(LoadNsosIntoProcessMemory(std::addressof(info), nso_headers, has_nso, arg_info));
+            {
+                /* Ensure we close the process handle, if we fail. */
+                auto process_guard = SCOPE_GUARD { os::CloseNativeHandle(info.process_handle); };
 
-            /* Register NSOs with ro manager. */
+                /* Load all NSOs. */
+                R_TRY(LoadNsosIntoProcessMemory(std::addressof(info), nso_headers, has_nso, arg_info));
+
+                /* We don't need to close the process handle, since we succeeded. */
+                process_guard.Cancel();
+            }
+
+            /* Register NSOs with the RoManager. */
             {
                 /* Nintendo doesn't validate this get, but we do. */
                 os::ProcessId process_id = os::GetProcessId(info.process_handle);
 
                 /* Register new process. */
-                ldr::ro::RegisterProcess(pin_id, process_id, loc.program_id);
+                /* NOTE: Nintendo uses meta->aci->program_id, not loc.program_id. Should we? */
+                const auto as_type = GetAddressSpaceType(std::addressof(meta));
+                RoManager::GetInstance().RegisterProcess(pin_id, process_id, loc.program_id, as_type == Npdm::AddressSpaceType_64Bit || as_type == Npdm::AddressSpaceType_64BitDeprecated);
 
                 /* Register all NSOs. */
                 for (size_t i = 0; i < Nso_Count; i++) {
                     if (has_nso[i]) {
-                        ldr::ro::RegisterModule(pin_id, nso_headers[i].build_id, info.nso_address[i], info.nso_size[i]);
+                        RoManager::GetInstance().AddNso(pin_id, nso_headers[i].module_id, info.nso_address[i], info.nso_size[i]);
                     }
                 }
             }
@@ -719,7 +727,6 @@ namespace ams::ldr {
 
             /* Move the process handle to output. */
             *out = info.process_handle;
-            info.process_handle = os::InvalidNativeHandle;
         }
 
         return ResultSuccess();
@@ -739,6 +746,26 @@ namespace ams::ldr {
         }
 
         return GetProgramInfoFromMeta(out, std::addressof(meta));
+    }
+
+    Result PinProgram(PinId *out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status) {
+        R_UNLESS(RoManager::GetInstance().Allocate(out_id, loc, override_status), ldr::ResultMaxProcess());
+        return ResultSuccess();
+    }
+
+    Result UnpinProgram(PinId id) {
+        R_UNLESS(RoManager::GetInstance().Free(id), ldr::ResultNotPinned());
+        return ResultSuccess();
+    }
+
+    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
+        R_UNLESS(RoManager::GetInstance().GetProcessModuleInfo(out_count, out, max_out_count, process_id), ldr::ResultNotPinned());
+        return ResultSuccess();
+    }
+
+    Result GetProgramLocationAndOverrideStatusFromPinId(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId pin_id) {
+        R_UNLESS(RoManager::GetInstance().GetProgramLocationAndStatus(out, out_status, pin_id), ldr::ResultNotPinned());
+        return ResultSuccess();
     }
 
 }

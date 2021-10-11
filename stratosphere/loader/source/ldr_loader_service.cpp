@@ -20,7 +20,6 @@
 #include "ldr_process_creation.hpp"
 #include "ldr_launch_record.hpp"
 #include "ldr_loader_service.hpp"
-#include "ldr_ro_manager.hpp"
 
 namespace ams::ldr {
 
@@ -64,7 +63,7 @@ namespace ams::ldr {
         char path[fs::EntryNameLengthMax];
 
         /* Get location and override status. */
-        R_TRY(ldr::ro::GetProgramLocationAndStatus(std::addressof(loc), std::addressof(override_status), id));
+        R_TRY(ldr::GetProgramLocationAndOverrideStatusFromPinId(std::addressof(loc), std::addressof(override_status), id));
 
         if (loc.storage_id != static_cast<u8>(ncm::StorageId::None)) {
             R_TRY(ResolveContentPath(path, loc));
@@ -87,11 +86,11 @@ namespace ams::ldr {
     }
 
     Result LoaderService::PinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc) {
-        return ldr::ro::PinProgram(out_id.GetPointer(), loc, cfg::OverrideStatus{});
+        return ldr::PinProgram(out_id.GetPointer(), loc, cfg::OverrideStatus{});
     }
 
     Result LoaderService::UnpinProgram(PinId id) {
-        return ldr::ro::UnpinProgram(id);
+        return ldr::UnpinProgram(id);
     }
 
     Result LoaderService::SetProgramArgumentsDeprecated(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size) {
@@ -107,8 +106,9 @@ namespace ams::ldr {
     }
 
     Result LoaderService::GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id) {
-        R_UNLESS(out.GetSize() <= std::numeric_limits<s32>::max(), ldr::ResultInvalidSize());
-        return ldr::ro::GetProcessModuleInfo(count.GetPointer(), out.GetPointer(), out.GetSize(), process_id);
+        *count = 0;
+        std::memset(out.GetPointer(), 0, out.GetSize() * sizeof(ldr::ModuleInfo));
+        return ldr::GetProcessModuleInfo(count.GetPointer(), out.GetPointer(), out.GetSize(), process_id);
     }
 
     Result LoaderService::SetEnabledProgramVerification(bool enabled) {
@@ -138,7 +138,7 @@ namespace ams::ldr {
     }
 
     Result LoaderService::AtmospherePinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status) {
-        return ldr::ro::PinProgram(out_id.GetPointer(), loc, override_status);
+        return ldr::PinProgram(out_id.GetPointer(), loc, override_status);
     }
 
 }

@@ -16,147 +16,166 @@
 #include <stratosphere.hpp>
 #include "ldr_ro_manager.hpp"
 
-namespace ams::ldr::ro {
+namespace ams::ldr {
 
-    namespace {
-
-        /* Convenience definitions. */
-        constexpr PinId InvalidPinId = {};
-        constexpr size_t ProcessCountMax = 0x40;
-        constexpr size_t ModuleCountMax = 0x20;
-
-        /* Types. */
-        struct ModuleInfo {
-            ldr::ModuleInfo info;
-            bool in_use;
-        };
-
-        struct ProcessInfo {
-            PinId pin_id;
-            os::ProcessId process_id;
-            ncm::ProgramId program_id;
-            cfg::OverrideStatus override_status;
-            ncm::ProgramLocation loc;
-            ModuleInfo modules[ModuleCountMax];
-            bool in_use;
-        };
-
-        /* Globals. */
-        ProcessInfo g_process_infos[ProcessCountMax];
-        u64 g_cur_pin_id = 1;
-
-        /* Helpers. */
-        ProcessInfo *GetProcessInfo(PinId pin_id) {
-            for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = g_process_infos + i;
-                if (info->in_use && info->pin_id == pin_id) {
-                    return info;
-                }
-            }
-            return nullptr;
-        }
-
-        ProcessInfo *GetProcessInfo(os::ProcessId process_id) {
-            for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = g_process_infos + i;
-                if (info->in_use && info->process_id == process_id) {
-                    return info;
-                }
-            }
-            return nullptr;
-        }
-
-        ProcessInfo *GetFreeProcessInfo() {
-            for (size_t i = 0; i < ProcessCountMax; i++) {
-                ProcessInfo *info = g_process_infos + i;
-                if (!info->in_use) {
-                    return info;
-                }
-            }
-            return nullptr;
-        }
-
-    }
-
-    /* RO Manager API. */
-    Result PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
+    bool RoManager::Allocate(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
+        /* Ensure that output pin id is set. */
         *out = InvalidPinId;
-        ProcessInfo *info = GetFreeProcessInfo();
-        R_UNLESS(info != nullptr, ldr::ResultTooManyProcesses());
 
-        std::memset(info, 0, sizeof(*info));
-        info->pin_id = { g_cur_pin_id++ };
-        info->loc = loc;
-        info->override_status = status;
-        info->in_use = true;
-        *out = info->pin_id;
-        return ResultSuccess();
-    }
-
-    Result UnpinProgram(PinId id) {
-        ProcessInfo *info = GetProcessInfo(id);
-        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
-
-        info->in_use = false;
-        return ResultSuccess();
-    }
-
-
-    Result GetProgramLocationAndStatus(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId id) {
-        ProcessInfo *info = GetProcessInfo(id);
-        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
-
-        *out = info->loc;
-        *out_status = info->override_status;
-        return ResultSuccess();
-    }
-
-    Result RegisterProcess(PinId id, os::ProcessId process_id, ncm::ProgramId program_id) {
-        ProcessInfo *info = GetProcessInfo(id);
-        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
-
-        info->program_id = program_id;
-        info->process_id = process_id;
-        return ResultSuccess();
-    }
-
-    Result RegisterModule(PinId id, const u8 *build_id, uintptr_t address, size_t size) {
-        ProcessInfo *info = GetProcessInfo(id);
-        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
-
-        /* Nintendo doesn't actually care about successful allocation. */
-        for (size_t i = 0; i < ModuleCountMax; i++) {
-            ModuleInfo *module = info->modules + i;
-            if (module->in_use) {
-                continue;
-            }
-
-            std::memcpy(module->info.build_id, build_id, sizeof(module->info.build_id));
-            module->info.base_address = address;
-            module->info.size = size;
-            module->in_use = true;
-            break;
+        /* Allocate a process info. */
+        auto *found = this->AllocateProcessInfo();
+        if (found == nullptr) {
+            return false;
         }
 
-        return ResultSuccess();
+        /* Setup the process info. */
+        std::memset(found, 0, sizeof(*found));
+        found->pin_id           = { ++m_pin_id };
+        found->program_location = loc;
+        found->override_status  = status;
+        found->in_use           = true;
+
+        /* Set the output pin id. */
+        *out = found->pin_id;
+        return true;
     }
 
-    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
-        const ProcessInfo *info = GetProcessInfo(process_id);
-        R_UNLESS(info != nullptr, ldr::ResultNotPinned());
+    bool RoManager::Free(PinId pin_id) {
+        /* Find the process. */
+        auto *found = this->FindProcessInfo(pin_id);
+        if (found == nullptr) {
+            return false;
+        }
 
+        /* Set the process as not in use. */
+        found->in_use = false;
+
+        /* Set all the process's nsos as not in use. */
+        for (auto i = 0; i < NsoCount; ++i) {
+            found->nso_infos[i].in_use = false;
+        }
+
+        return true;
+    }
+
+    void RoManager::RegisterProcess(PinId pin_id, os::ProcessId process_id, ncm::ProgramId program_id, bool is_64_bit_address_space) {
+        /* Find the process. */
+        auto *found = this->FindProcessInfo(pin_id);
+        if (found == nullptr) {
+            return;
+        }
+
+        /* Set the process id and program id. */
+        found->process_id = process_id;
+        found->program_id = program_id;
+        AMS_UNUSED(is_64_bit_address_space);
+    }
+
+    bool RoManager::GetProgramLocationAndStatus(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId pin_id) {
+        /* Find the process. */
+        auto *found = this->FindProcessInfo(pin_id);
+        if (found == nullptr) {
+            return false;
+        }
+
+        /* Set the output location/status. */
+        *out        = found->program_location;
+        *out_status = found->override_status;
+        return true;
+    }
+
+    void RoManager::AddNso(PinId pin_id, const u8 *module_id, u64 address, u64 size) {
+        /* Find the process. */
+        auto *found = this->FindProcessInfo(pin_id);
+        if (found == nullptr) {
+            return;
+        }
+
+        /* Allocate an nso. */
+        auto *info = this->AllocateNsoInfo(found);
+        if (info == nullptr) {
+            return;
+        }
+
+        /* Copy the information into the nso info. */
+        std::memcpy(info->module_info.module_id, module_id, sizeof(info->module_info.module_id));
+        info->module_info.address = address;
+        info->module_info.size    = size;
+        info->in_use              = true;
+    }
+
+    bool RoManager::GetProcessModuleInfo(u32 *out_count, ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
+        /* Find the process. */
+        auto *found = this->FindProcessInfo(process_id);
+        if (found == nullptr) {
+            return false;
+        }
+
+        /* Copy allocated nso module infos. */
         size_t count = 0;
-        for (size_t i = 0; i < ModuleCountMax && count < max_out_count; i++) {
-            const ModuleInfo *module = info->modules + i;
-            if (!module->in_use) {
+        for (auto i = 0; i < NsoCount && count < max_out_count; ++i) {
+            /* Skip unallocated nsos. */
+            if (!found->nso_infos[i].in_use) {
                 continue;
             }
 
-            out[count++] = module->info;
+            /* Copy out the module info. */
+            out[count++] = found->nso_infos[i].module_info;
         }
 
-        *out_count = static_cast<u32>(count);
-        return ResultSuccess();
+        /* Set the output count. */
+        *out_count = count;
+        return true;
+    }
+
+    RoManager::ProcessInfo *RoManager::AllocateProcessInfo() {
+        for (auto i = 0; i < ProcessCount; ++i) {
+            if (!m_processes[i].in_use) {
+                return m_processes + i;
+            }
+        }
+
+        return nullptr;
+    }
+
+    RoManager::ProcessInfo *RoManager::FindProcessInfo(PinId pin_id) {
+        for (auto i = 0; i < ProcessCount; ++i) {
+            if (m_processes[i].in_use && m_processes[i].pin_id == pin_id) {
+                return m_processes + i;
+            }
+        }
+
+        return nullptr;
+    }
+
+    RoManager::ProcessInfo *RoManager::FindProcessInfo(os::ProcessId process_id) {
+        for (auto i = 0; i < ProcessCount; ++i) {
+            if (m_processes[i].in_use && m_processes[i].process_id == process_id) {
+                return m_processes + i;
+            }
+        }
+
+        return nullptr;
+    }
+
+    RoManager::ProcessInfo *RoManager::FindProcessInfo(ncm::ProgramId program_id) {
+        for (auto i = 0; i < ProcessCount; ++i) {
+            if (m_processes[i].in_use && m_processes[i].program_id == program_id) {
+                return m_processes + i;
+            }
+        }
+
+        return nullptr;
+    }
+
+    RoManager::NsoInfo *RoManager::AllocateNsoInfo(ProcessInfo *info) {
+        for (auto i = 0; i < NsoCount; ++i) {
+            if (!info->nso_infos[i].in_use) {
+                return info->nso_infos + i;
+            }
+        }
+
+        return nullptr;
     }
 
 }

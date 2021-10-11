@@ -147,7 +147,7 @@ namespace ams::ldr {
                 R_TRY(fs::GetFileSize(std::addressof(npdm_size), file));
 
                 /* Read data into cache buffer. */
-                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ldr::ResultTooLargeMeta());
+                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ldr::ResultMetaOverflow());
                 R_TRY(fs::ReadFile(file, 0, cache->buffer, npdm_size));
             }
 
