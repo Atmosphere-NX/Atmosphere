@@ -35,7 +35,7 @@ namespace ams::fatal::srv {
         constexpr u32 FatalScreenBpp = 2;
         constexpr u32 FatalLayerZ = 100;
 
-        constexpr u32 FatalScreenWidthAlignedBytes = (FatalScreenWidth * FatalScreenBpp + 63) & ~63;
+        constexpr u32 FatalScreenWidthAlignedBytes = util::AlignUp(FatalScreenWidth * FatalScreenBpp, 64);
         constexpr u32 FatalScreenWidthAligned = FatalScreenWidthAlignedBytes / FatalScreenBpp;
 
         /* There should only be a single transfer memory (for nv). */
