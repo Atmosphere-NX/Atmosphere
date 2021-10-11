@@ -73,6 +73,7 @@ SECTIONS
         fusee_loader_main.o(.text*)
         fusee_loader_uncompress.o(.text*)
         fusee_loader_error.o(.text*)
+        *(.text.memcpy)
         fusee_loader_main.o(.rodata*)
         fusee_loader_uncompress.o(.rodata*)
         fusee_loader_error.o(.rodata*)
