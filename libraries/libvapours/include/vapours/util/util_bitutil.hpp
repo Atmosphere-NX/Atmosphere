@@ -195,6 +195,7 @@ namespace ams::util {
     }
 
     static_assert(CountLeadingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountLeadingZeros(static_cast<u64>(1) << 5) == BITSIZEOF(u64) - 1 - 5);
     static_assert(CountLeadingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
     template<typename T> requires std::integral<T>
@@ -202,6 +203,7 @@ namespace ams::util {
         if (std::is_constant_evaluated()) {
             auto count = 0;
             for (size_t i = 0; i < BITSIZEOF(T) && (x & 1) == 0; ++i) {
+                x >>= 1;
                 ++count;
             }
             return count;
@@ -226,6 +228,7 @@ namespace ams::util {
     }
 
     static_assert(CountTrailingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountTrailingZeros(static_cast<u64>(1) << 5) == 5);
     static_assert(CountTrailingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
     template<typename T> requires std::integral<T>
