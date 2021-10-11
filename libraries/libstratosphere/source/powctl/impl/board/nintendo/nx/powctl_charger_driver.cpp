@@ -35,6 +35,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
                 if (AMS_LIKELY(!g_constructed_bq24193_driver)) {
                     util::ConstructAt(g_bq24193_driver);
+                    g_constructed_bq24193_driver = true;
                 }
             }
 

@@ -27,7 +27,7 @@ bool diskio_write_sd_card(size_t sector_index, size_t sector_count, const void *
 }
 
 bool diskio_read_system(void *dst, size_t size, size_t sector_index, size_t sector_count) {
-    return R_SUCCEEDED(::ams::nxboot::ReadSystem(sector_index * 0x200, dst, size));
+    return false;
 }
 
 bool diskio_write_system(size_t sector_index, size_t sector_count, const void *src, size_t size) {

@@ -165,6 +165,12 @@ namespace ams {
 
     }
 
+    namespace hos {
+
+        void InitializeVersionInternal(bool allow_approximate);
+
+    }
+
     namespace init {
 
         void InitializeSystemModule() {
@@ -180,6 +186,12 @@ namespace ams {
             pm::RegisterPrivilegedProcesses();
 
             /* Use our manager extension to tell SM that the FS bug has been worked around. */
+            R_ABORT_UNLESS(sm::manager::EndInitialDefers());
+
+            /* Wait for the true hos version to be available. */
+            hos::InitializeVersionInternal(false);
+
+            /* Now that the true hos version is available, we should once more end defers (alerting sm to the available hos version). */
             R_ABORT_UNLESS(sm::manager::EndInitialDefers());
 
             /* Initialize remaining services we need. */

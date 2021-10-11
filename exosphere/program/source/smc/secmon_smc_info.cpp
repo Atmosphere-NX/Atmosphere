@@ -164,6 +164,7 @@ namespace ams::secmon::smc {
         }
 
         constinit u64 g_payload_address = 0;
+        constinit bool g_set_true_target_firmware = false;
 
         SmcResult GetConfig(SmcArguments &args, bool kern) {
             switch (static_cast<ConfigItem>(args.r[1])) {
@@ -240,11 +241,15 @@ namespace ams::secmon::smc {
                     break;
                 case ConfigItem::ExosphereApiVersion:
                     /* Get information about the current exosphere version. */
-                    args.r[1] = (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 56) |
-                                (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 48) |
-                                (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 40) |
-                                (static_cast<u64>(GetKeyGeneration())                      << 32) |
-                                (static_cast<u64>(GetTargetFirmware())                     <<  0);
+                    if (kern || g_set_true_target_firmware) {
+                        args.r[1] = (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 56) |
+                                    (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 48) |
+                                    (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 40) |
+                                    (static_cast<u64>(GetKeyGeneration())                      << 32) |
+                                    (static_cast<u64>(GetTargetFirmware())                     <<  0);
+                    } else {
+                        return SmcResult::NotInitialized;
+                    }
                     break;
                 case ConfigItem::ExosphereNeedsReboot:
                     /* We are executing, so we aren't in the process of rebooting. */
@@ -297,6 +302,18 @@ namespace ams::secmon::smc {
                                 (static_cast<u64>(ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR & 0xFF) << 16) |
                                 (static_cast<u64>(ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO & 0xFF) <<  8);
                     break;
+                case ConfigItem::ExosphereApproximateApiVersion:
+                    /* Get information about the current exosphere version. */
+                    if (!g_set_true_target_firmware) {
+                        args.r[1] = (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR & 0xFF) << 56) |
+                                    (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR & 0xFF) << 48) |
+                                    (static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO & 0xFF) << 40) |
+                                    (static_cast<u64>(GetKeyGeneration())                      << 32) |
+                                    (static_cast<u64>(GetTargetFirmware())                     <<  0);
+                    } else {
+                        return SmcResult::Busy;
+                    }
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }
@@ -311,6 +328,14 @@ namespace ams::secmon::smc {
                 case ConfigItem::IsChargerHiZModeEnabled:
                     /* Configure the HiZ mode. */
                     SetChargerHiZModeEnabled(static_cast<bool>(args.r[3]));
+                    break;
+                case ConfigItem::ExosphereApiVersion:
+                    if (!g_set_true_target_firmware) {
+                        ::ams::secmon::impl::SetTargetFirmware(static_cast<ams::TargetFirmware>(args.r[3] & 0xFFFFFFFF));
+                        g_set_true_target_firmware = true;
+                    } else {
+                        return SmcResult::Busy;
+                    }
                     break;
                 case ConfigItem::ExosphereNeedsReboot:
                     if (soc_type == fuse::SocType_Erista) {

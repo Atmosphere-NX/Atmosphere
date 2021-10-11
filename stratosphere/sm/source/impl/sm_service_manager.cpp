@@ -17,6 +17,12 @@
 #include "sm_service_manager.hpp"
 #include "../sm_wait_list.hpp"
 
+namespace ams::hos {
+
+    void InitializeVersionInternal(bool allow_approximate);
+
+}
+
 namespace ams::sm::impl {
 
     namespace {
@@ -862,7 +868,11 @@ namespace ams::sm::impl {
         std::scoped_lock lk(g_mutex);
 
         /* Note that we have ended the initial deferral period. */
+        const bool had_ended_defers = g_ended_initial_defers;
         g_ended_initial_defers = true;
+
+        /* Something about deferral state has changed, so we should refresh our hos version. */
+        hos::InitializeVersionInternal(!had_ended_defers);
 
         /* This might undefer some requests. */
         for (const auto &service_name : InitiallyDeferredServices) {

@@ -68,21 +68,31 @@ namespace ams {
 
     }
 
+    namespace hos {
+
+        void SetNonApproximateVersionInternal();
+
+    }
+
     namespace init {
 
         void InitializeSystemModule() {
             /* Initialize heaps. */
             boot::InitializeHeaps();
 
-            /* Set fs allocator. */
-            fs::SetAllocator(boot::Allocate, boot::Deallocate);
-
-            /* Initialize services we need. */
+            /* Connect to sm. */
             R_ABORT_UNLESS(sm::Initialize());
 
+            /* Initialize fs. */
             fs::InitializeForSystem();
+            fs::SetAllocator(boot::Allocate, boot::Deallocate);
+            fs::SetEnabledAutoAbort(false);
+
+            /* Initialize spl. */
             spl::Initialize();
-            R_ABORT_UNLESS(pmshellInitialize());
+
+            /* Set the true hos version. */
+            hos::SetNonApproximateVersionInternal();
 
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
@@ -174,6 +184,7 @@ namespace ams {
         boot::FinalizeGpioDriverLibrary();
 
         /* Tell PM to start boot2. */
+        R_ABORT_UNLESS(pmshellInitialize());
         R_ABORT_UNLESS(pmshellNotifyBootFinished());
     }
 

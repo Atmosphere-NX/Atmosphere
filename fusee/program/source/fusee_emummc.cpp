@@ -181,112 +181,6 @@ namespace ams::nxboot {
         constinit fs::IStorage *g_boot0_storage = nullptr;
         constinit fs::IStorage *g_user_storage  = nullptr;
 
-        class SystemPartitionStorage : public fs::IStorage {
-            private:
-                static constexpr size_t CacheEntries = BITSIZEOF(u32);
-                static constexpr size_t SectorSize   = 0x4000;
-            private:
-                fs::SubStorage m_storage;
-                u8 *m_sector_cache;
-                u32 *m_sector_ids;
-                u32 m_sector_flags;
-                u32 m_next_idx;
-            private:
-                Result LoadSector(u8 *sector, u32 sector_id) {
-                    /* Read the sector data. */
-                    R_TRY(m_storage.Read(static_cast<s64>(sector_id) * SectorSize, sector, SectorSize));
-
-                    /* Decrypt the sector. */
-                    se::DecryptAes128Xts(sector, SectorSize, pkg1::AesKeySlot_BootloaderSystem0, pkg1::AesKeySlot_BootloaderSystem1, sector, SectorSize, sector_id);
-
-                    /* Mark the sector as freshly loaded. */
-                    m_sector_flags &= ~(1u << (sector_id % CacheEntries));
-
-                    return ResultSuccess();
-                }
-
-                Result GetSector(u8 **out_sector, u32 sector_id) {
-                    /* Try to find in the cache. */
-                    for (size_t i = 0; i < CacheEntries; ++i) {
-                        if (m_sector_ids[i] == sector_id) {
-                            m_sector_flags &= ~(1u << i);
-                            *out_sector = m_sector_cache + SectorSize * i;
-                            return ResultSuccess();
-                        }
-                    }
-
-                    /* Find a sector to evict. */
-                    while ((m_sector_flags & (1u << m_next_idx)) == 0) {
-                        m_sector_flags |= (1u << m_next_idx);
-                        m_next_idx = (m_next_idx + 1) % CacheEntries;
-                    }
-
-                    /* Get the chosen sector. */
-                    *out_sector = m_sector_cache + SectorSize * m_next_idx;
-                    m_next_idx = (m_next_idx + 1) % CacheEntries;
-
-                    /* Load the sector. */
-                    return this->LoadSector(*out_sector, sector_id);
-                }
-            public:
-                SystemPartitionStorage(s64 ofs, s64 size) : m_storage(*g_user_storage, ofs, size) {
-                    /* Allocate sector cache. */
-                    m_sector_cache = static_cast<u8 *>(AllocateAligned(CacheEntries * SectorSize, SectorSize));
-
-                    /* Allocate sector ids. */
-                    m_sector_ids   = static_cast<u32 *>(AllocateAligned(CacheEntries * sizeof(u32), alignof(u32)));
-                    for (size_t i = 0; i < CacheEntries; ++i) {
-                        m_sector_ids[i] = std::numeric_limits<u32>::max();
-                    }
-
-                    /* All sectors are dirty. */
-                    m_sector_flags = ~0u;
-
-                    /* Next sector is 0. */
-                    m_next_idx = 0;
-                }
-
-                virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                    u32 sector_id = offset / SectorSize;
-                    s64 subofs    = offset % SectorSize;
-
-                    u8 *cur_dst = static_cast<u8 *>(buffer);
-                    while (size > 0) {
-                        /* Get the current sector. */
-                        u8 *sector;
-                        R_TRY(this->GetSector(std::addressof(sector), sector_id++));
-
-                        /* Copy the data. */
-                        const size_t cur_size = std::min<size_t>(SectorSize - subofs, size);
-                        std::memcpy(cur_dst, sector + subofs, cur_size);
-
-                        /* Advance. */
-                        cur_dst += cur_size;
-                        size -= cur_size;
-                        subofs = 0;
-                    }
-
-                    return ResultSuccess();
-                }
-
-                virtual Result Flush() override {
-                    return m_storage.Flush();
-                }
-
-                virtual Result GetSize(s64 *out) override {
-                    return m_storage.GetSize(out);
-                }
-
-                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    return fs::ResultUnsupportedOperation();
-                }
-
-                virtual Result SetSize(s64 size) override {
-                    return fs::ResultUnsupportedOperation();
-                }
-        };
-
-        constinit SystemPartitionStorage *g_system_storage = nullptr;
         constinit fs::SubStorage *g_package2_storage = nullptr;
 
         struct Guid {
@@ -332,10 +226,6 @@ namespace ams::nxboot {
             GptPartitionEntry entries[128];
         };
         static_assert(sizeof(Gpt) == 16_KB + 0x200);
-
-        constexpr const u16 SystemPartitionName[] = {
-            'S', 'Y', 'S', 'T', 'E', 'M', 0
-        };
 
         constexpr const u16 Package2PartitionName[] = {
             'B', 'C', 'P', 'K', 'G', '2', '-', '1', '-', 'N', 'o', 'r', 'm', 'a', 'l', '-', 'M', 'a', 'i', 'n', 0
@@ -447,26 +337,14 @@ namespace ams::nxboot {
             const s64 offset =  INT64_C(0x200) * gpt->entries[i].starting_lba;
             const u64 size   = UINT64_C(0x200) * (gpt->entries[i].ending_lba + 1 - gpt->entries[i].starting_lba);
 
-            if (std::memcmp(gpt->entries[i].partition_name, SystemPartitionName, sizeof(SystemPartitionName)) == 0) {
-                g_system_storage = AllocateObject<SystemPartitionStorage>(offset, size);
-            } else if (std::memcmp(gpt->entries[i].partition_name, Package2PartitionName, sizeof(Package2PartitionName)) == 0) {
+            if (std::memcmp(gpt->entries[i].partition_name, Package2PartitionName, sizeof(Package2PartitionName)) == 0) {
                 g_package2_storage = AllocateObject<fs::SubStorage>(*g_user_storage, offset, size);
             }
-        }
-
-        /* Check that we created system storage. */
-        if (g_system_storage == nullptr) {
-            ShowFatalError("Failed to initialize SYSTEM\n");
         }
 
         /* Check that we created package2 storage. */
         if (g_package2_storage == nullptr) {
             ShowFatalError("Failed to initialize Package2\n");
-        }
-
-        /* Mount system. */
-        if (!fs::MountSystem()) {
-            ShowFatalError("Failed to mount SYSTEM\n");
         }
     }
 
@@ -476,10 +354,6 @@ namespace ams::nxboot {
 
     Result ReadPackage2(s64 offset, void *dst, size_t size) {
         return g_package2_storage->Read(offset, dst, size);
-    }
-
-    Result ReadSystem(s64 offset, void *dst, size_t size) {
-        return g_system_storage->Read(offset, dst, size);
     }
 
 }

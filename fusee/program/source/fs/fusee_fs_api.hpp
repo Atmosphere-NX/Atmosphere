@@ -98,9 +98,6 @@ namespace ams::fs {
     bool MountSdCard();
     void UnmountSdCard();
 
-    bool MountSystem();
-    void UnmountSystem();
-
     Result GetEntryType(DirectoryEntryType *out_entry_type, bool *out_archive, const char *path);
 
     Result CreateFile(const char *path, s64 size);

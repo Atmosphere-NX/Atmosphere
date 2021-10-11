@@ -18,6 +18,12 @@
 #include "spl_device_address_mapper.hpp"
 #include "spl_key_slot_cache.hpp"
 
+namespace ams::hos {
+
+    void InitializeVersionInternal(bool allow_approximate);
+
+}
+
 namespace ams::spl::impl {
 
     namespace {
@@ -536,7 +542,13 @@ namespace ams::spl::impl {
     }
 
     Result SetConfig(ConfigItem key, u64 value) {
-        return smc::ConvertResult(smc::SetConfig(key, value));
+        R_TRY(smc::ConvertResult(smc::SetConfig(key, value)));
+
+        /* Work around for temporary version. */
+        if (key == ConfigItem::ExosphereApiVersion) {
+            hos::InitializeVersionInternal(false);
+        }
+        return ResultSuccess();
     }
 
     Result GenerateRandomBytes(void *out, size_t size) {

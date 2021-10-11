@@ -39,6 +39,7 @@ namespace ams::spl {
     Result DecryptAesKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 generation, u32 option);
 
     Result GetConfig(u64 *out, ConfigItem item);
+    Result SetConfig(ConfigItem item, u64 v);
     bool IsDevelopment();
     MemoryArrangement GetMemoryArrangement();
 

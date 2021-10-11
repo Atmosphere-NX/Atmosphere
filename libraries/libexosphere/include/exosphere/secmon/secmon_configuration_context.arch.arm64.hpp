@@ -70,6 +70,10 @@ namespace ams::secmon {
             GetConfigurationContext().secmon_cfg.key_generation = generation;
         }
 
+        ALWAYS_INLINE void SetTargetFirmware(ams::TargetFirmware target_firmware) {
+            GetConfigurationContext().secmon_cfg.target_firmware = target_firmware;
+        }
+
         ALWAYS_INLINE pkg1::BootConfig *GetBootConfigStorage() {
             return std::addressof(GetConfigurationContext().boot_config);
         }

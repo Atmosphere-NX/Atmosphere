@@ -27,10 +27,8 @@ namespace ams::fs {
         constexpr size_t MaxDirectories = 2;
 
         constinit bool g_is_sd_mounted = false;
-        constinit bool g_is_sys_mounted = false;
 
         alignas(0x10) constinit FATFS g_sd_fs = {};
-        alignas(0x10) constinit FATFS g_sys_fs = {};
 
         alignas(0x10) constinit FIL g_files[MaxFiles] = {};
         alignas(0x10) constinit DIR g_dirs[MaxDirectories] = {};
@@ -129,18 +127,6 @@ namespace ams::fs {
         AMS_ASSERT(g_is_sd_mounted);
         f_unmount("sdmc:");
         g_is_sd_mounted = false;
-    }
-
-    bool MountSystem() {
-        AMS_ASSERT(!g_is_sys_mounted);
-        g_is_sys_mounted = f_mount(std::addressof(g_sys_fs), "sys:", 1) == FR_OK;
-        return g_is_sys_mounted;
-    }
-
-    void UnmountSystem() {
-        AMS_ASSERT(g_is_sys_mounted);
-        f_unmount("sys:");
-        g_is_sys_mounted = false;
     }
 
     Result GetEntryType(DirectoryEntryType *out_entry_type, bool *out_archive, const char *path) {

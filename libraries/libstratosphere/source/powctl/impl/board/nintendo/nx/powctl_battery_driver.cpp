@@ -35,6 +35,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
                 if (AMS_LIKELY(!g_constructed_max17050_driver)) {
                     util::ConstructAt(g_max17050_driver);
+                    g_constructed_max17050_driver = true;
                 }
             }
 

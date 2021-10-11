@@ -216,6 +216,10 @@ namespace ams::spl {
         return splGetConfig(static_cast<::SplConfigItem>(item), out);
     }
 
+    Result SetConfig(ConfigItem item, u64 v) {
+        return splSetConfig(static_cast<::SplConfigItem>(item), v);
+    }
+
     bool IsDevelopment() {
         bool is_dev;
         R_ABORT_UNLESS(splIsDevelopment(std::addressof(is_dev)));
