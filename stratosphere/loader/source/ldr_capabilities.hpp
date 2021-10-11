@@ -16,13 +16,13 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::ldr::caps {
+namespace ams::ldr {
 
-    /* Capabilities API. */
-    Result ValidateCapabilities(const void *acid_kac, size_t acid_kac_size, const void *aci_kac, size_t aci_kac_size);
-    u16    GetProgramInfoFlags(const void *kac, size_t kac_size);
-    void   SetProgramInfoFlags(u16 flags, void *kac, size_t kac_size);
+    Result TestCapability(const util::BitPack32 *kacd, size_t kacd_count, const util::BitPack32 *kac, size_t kac_count);
 
-    void   ProcessCapabilities(void *kac, size_t kac_size);
+    u16 MakeProgramInfoFlag(const util::BitPack32 *kac, size_t count);
+    void UpdateProgramInfoFlag(u16 flags, util::BitPack32 *kac, size_t count);
+
+    void PreProcessCapability(util::BitPack32 *kac, size_t count);
 
 }

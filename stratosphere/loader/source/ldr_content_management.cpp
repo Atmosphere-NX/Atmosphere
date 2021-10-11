@@ -52,10 +52,8 @@ namespace ams::ldr {
         AMS_ABORT_UNLESS(m_has_status);
 
         /* Get the content path. */
-        char content_path[fs::EntryNameLengthMax + 1] = "/";
-        if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None) {
-            R_TRY(ResolveContentPath(content_path, loc));
-        }
+        char content_path[fs::EntryNameLengthMax + 1];
+        R_TRY(GetProgramPath(content_path, sizeof(content_path), loc));
 
         /* Mount the atmosphere code file system. */
         R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(m_ams_code_verification_data), AtmosphereCodeMountName, content_path, loc.program_id, m_override_status.IsHbl(), m_override_status.IsProgramSpecific()));
@@ -82,7 +80,14 @@ namespace ams::ldr {
     }
 
     /* Redirection API. */
-    Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc) {
+    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc) {
+        /* Check for storage id none. */
+        if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::None) {
+            std::memset(out_path, 0, out_size);
+            std::memcpy(out_path, "/", std::min<size_t>(out_size, 2));
+            return ResultSuccess();
+        }
+
         lr::Path path;
 
         /* Check that path registration is allowable. */
@@ -103,23 +108,35 @@ namespace ams::ldr {
             }
         } R_END_TRY_CATCH;
 
-        std::strncpy(out_path, path.str, fs::EntryNameLengthMax);
-        out_path[fs::EntryNameLengthMax - 1] = '\0';
+        /* Fix directory separators in path. */
+        fs::Replace(path.str, sizeof(path.str), fs::StringTraits::AlternateDirectorySeparator, fs::StringTraits::DirectorySeparator);
 
-        fs::Replace(out_path, fs::EntryNameLengthMax + 1, fs::StringTraits::AlternateDirectorySeparator, fs::StringTraits::DirectorySeparator);
+        /* Check that the path is valid. */
+        AMS_ABORT_UNLESS(path.IsValid());
+
+        /* Copy the output path. */
+        std::memset(out_path, 0, out_size);
+        std::memcpy(out_path, path.str, std::min(out_size, sizeof(path)));
 
         return ResultSuccess();
     }
 
-    Result RedirectContentPath(const char *path, const ncm::ProgramLocation &loc) {
-        /* Copy in path. */
-        lr::Path lr_path;
-        std::strncpy(lr_path.str, path, sizeof(lr_path.str));
-        lr_path.str[sizeof(lr_path.str) - 1] = '\0';
+    Result RedirectProgramPath(const char *path, size_t size, const ncm::ProgramLocation &loc) {
+        /* Check for storage id none. */
+        if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::None) {
+            return ResultSuccess();
+        }
 
-        /* Redirect the path. */
+        /* Open location resolver. */
         lr::LocationResolver lr;
         R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
+
+        /* Copy in path. */
+        lr::Path lr_path;
+        std::memcpy(lr_path.str, path, std::min(size, sizeof(lr_path.str)));
+        lr_path.str[sizeof(lr_path.str) - 1] = '\x00';
+
+        /* Redirect the path. */
         lr.RedirectProgramPath(lr_path, loc.program_id);
 
         return ResultSuccess();

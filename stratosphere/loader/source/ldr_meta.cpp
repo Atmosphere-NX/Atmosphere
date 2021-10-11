@@ -218,9 +218,9 @@ namespace ams::ldr {
                     }
 
                     /* Fix flags. */
-                    const u16 program_info_flags = caps::GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
-                    caps::SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
-                    caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
+                    const u16 program_info_flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(o_meta->aci_kac), o_meta->aci->kac_size / sizeof(util::BitPack32));
+                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
                 }
             }
 
@@ -240,7 +240,7 @@ namespace ams::ldr {
             }
 
             /* When hbl is applet, adjust main thread priority. */
-            if ((caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
+            if ((MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
                 constexpr auto HblMainThreadPriorityApplication = 44;
                 constexpr auto HblMainThreadPriorityApplet      = 40;
                 if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
@@ -262,8 +262,8 @@ namespace ams::ldr {
 
         /* Pre-process the capabilities. */
         /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
-        caps::ProcessCapabilities(meta->acid_kac, meta->acid->kac_size);
-        caps::ProcessCapabilities(meta->aci_kac, meta->aci->kac_size);
+        PreProcessCapability(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+        PreProcessCapability(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
 
         /* Set output. */
         g_cached_program_id = loc.program_id;

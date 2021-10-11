@@ -132,10 +132,10 @@ namespace ams::ldr {
         /* Helpers. */
         Result GetProgramInfoFromMeta(ProgramInfo *out, const Meta *meta) {
             /* Copy basic info. */
-            out->main_thread_priority = meta->npdm->main_thread_priority;
-            out->default_cpu_id = meta->npdm->default_cpu_id;
+            out->main_thread_priority   = meta->npdm->main_thread_priority;
+            out->default_cpu_id         = meta->npdm->default_cpu_id;
             out->main_thread_stack_size = meta->npdm->main_thread_stack_size;
-            out->program_id = meta->aci->program_id;
+            out->program_id             = meta->aci->program_id;
 
             /* Copy access controls. */
             size_t offset = 0;
@@ -156,16 +156,16 @@ namespace ams::ldr {
 #undef COPY_ACCESS_CONTROL
 
             /* Copy flags. */
-            out->flags = caps::GetProgramInfoFlags(meta->acid_kac, meta->acid->kac_size);
+            out->flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32));
             return ResultSuccess();
         }
 
         bool IsApplet(const Meta *meta) {
-            return (caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet;
+            return (MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet;
         }
 
         bool IsApplication(const Meta *meta) {
-            return (caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Application;
+            return (MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Application;
         }
 
         Npdm::AddressSpaceType GetAddressSpaceType(const Meta *meta) {
@@ -226,7 +226,7 @@ namespace ams::ldr {
             R_UNLESS(meta->aci->program_id <= meta->acid->program_id_max, ldr::ResultInvalidProgramId());
 
             /* Validate the kernel capabilities. */
-            R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
+            R_TRY(TestCapability(static_cast<const util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32), static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)));
 
             /* If we have data to validate, validate it. */
             if (code_verification_data.has_data && meta->check_verification_data) {
@@ -335,15 +335,15 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, os::NativeHandle reslimit_h) {
+        Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, os::NativeHandle resource_limit) {
             /* Clear output. */
             std::memset(out, 0, sizeof(*out));
 
             /* Set name, version, program id, resource limit handle. */
             std::memcpy(out->name, meta->npdm->program_name, sizeof(out->name) - 1);
-            out->version = meta->npdm->version;
-            out->program_id = static_cast<u64>(meta->aci->program_id);
-            out->reslimit = reslimit_h;
+            out->version    = meta->npdm->version;
+            out->program_id = meta->aci->program_id.value;
+            out->reslimit   = resource_limit;
 
             /* Set flags. */
             R_TRY(GetCreateProcessFlags(std::addressof(out->flags), meta, flags));
@@ -427,7 +427,7 @@ namespace ams::ldr {
             }
         }
 
-        Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
+        Result DecideAddressSpaceLayout(ProcessInfo *out, svc::CreateProcessParameter *out_param, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
             /* Clear output. */
             out->args_address = 0;
             out->args_size = 0;
@@ -435,6 +435,7 @@ namespace ams::ldr {
             std::memset(out->nso_size, 0, sizeof(out->nso_size));
 
             size_t total_size = 0;
+            bool argument_allocated = false;
 
             /* Calculate base offsets. */
             for (size_t i = 0; i < Nso_Count; i++) {
@@ -446,15 +447,15 @@ namespace ams::ldr {
                     out->nso_size[i] = text_end;
                     out->nso_size[i] = std::max(out->nso_size[i], ro_end);
                     out->nso_size[i] = std::max(out->nso_size[i], rw_end);
-                    out->nso_size[i] = (out->nso_size[i] + size_t(0xFFFul)) & ~size_t(0xFFFul);
+                    out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize);
 
                     total_size += out->nso_size[i];
 
-                    if (arg_info != nullptr && arg_info->args_size && !out->args_size) {
+                    if (!argument_allocated && argument != nullptr) {
                         out->args_address = total_size;
-                        out->args_size = 2 * arg_info->args_size + args::ArgumentSizeMax + 2 * sizeof(u32);
-                        out->args_size = (out->args_size + size_t(0xFFFul)) & ~size_t(0xFFFul);
+                        out->args_size    = util::AlignUp(2 * sizeof(u32) + argument->argument_size * 2 + ArgumentStore::ArgumentBufferSize, os::MemoryPageSize);
                         total_size += out->args_size;
+                        argument_allocated = true;
                     }
                 }
             }
@@ -516,13 +517,13 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info, u32 flags, os::NativeHandle reslimit_h) {
+        Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
             /* Get CreateProcessParameter. */
             svc::CreateProcessParameter param;
-            R_TRY(GetCreateProcessParameter(std::addressof(param), meta, flags, reslimit_h));
+            R_TRY(GetCreateProcessParameter(std::addressof(param), meta, flags, resource_limit));
 
             /* Decide on an NSO layout. */
-            R_TRY(DecideAddressSpaceLayout(out, std::addressof(param), nso_headers, has_nso, arg_info));
+            R_TRY(DecideAddressSpaceLayout(out, std::addressof(param), nso_headers, has_nso, argument));
 
             /* Actually create process. */
             svc::Handle process_handle;
@@ -567,7 +568,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadNsoIntoProcessMemory(os::NativeHandle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
+        Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
             /* Map and read data from file. */
             {
                 AutoCloseMap map(map_address, process_handle, nso_address, nso_size);
@@ -588,7 +589,7 @@ namespace ams::ldr {
                 std::memset(reinterpret_cast<void *>(map_address),            0, nso_header->text_dst_offset);
                 std::memset(reinterpret_cast<void *>(map_address + text_end), 0, nso_header->ro_dst_offset - text_end);
                 std::memset(reinterpret_cast<void *>(map_address + ro_end),   0, nso_header->rw_dst_offset - ro_end);
-                std::memset(reinterpret_cast<void *>(map_address + rw_end), 0, nso_header->bss_size);
+                std::memset(reinterpret_cast<void *>(map_address + rw_end),   0, nso_header->bss_size);
 
                 /* Apply embedded patches. */
                 ApplyEmbeddedPatchesToModule(nso_header->module_id, map_address, nso_size);
@@ -598,9 +599,9 @@ namespace ams::ldr {
             }
 
             /* Set permissions. */
-            const size_t text_size = (static_cast<size_t>(nso_header->text_size) + size_t(0xFFFul)) & ~size_t(0xFFFul);
-            const size_t ro_size = (static_cast<size_t>(nso_header->ro_size)   + size_t(0xFFFul)) & ~size_t(0xFFFul);
-            const size_t rw_size = (static_cast<size_t>(nso_header->rw_size + nso_header->bss_size) + size_t(0xFFFul)) & ~size_t(0xFFFul);
+            const size_t text_size = util::AlignUp(nso_header->text_size, os::MemoryPageSize);
+            const size_t ro_size   = util::AlignUp(nso_header->ro_size, os::MemoryPageSize);
+            const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
             if (text_size) {
                 R_TRY(svc::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, svc::MemoryPermission_ReadExecute));
             }
@@ -614,7 +615,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadNsosIntoProcessMemory(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const args::ArgumentInfo *arg_info) {
+        Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
             /* Load each NSO. */
             for (size_t i = 0; i < Nso_Count; i++) {
                 if (has_nso[i]) {
@@ -625,12 +626,12 @@ namespace ams::ldr {
                     uintptr_t map_address;
                     R_TRY(SearchFreeRegion(std::addressof(map_address), process_info->nso_size[i]));
 
-                    R_TRY(LoadNsoIntoProcessMemory(process_info->process_handle, file, map_address, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
+                    R_TRY(LoadAutoLoadModule(process_info->process_handle, file, map_address, nso_headers + i, process_info->nso_address[i], process_info->nso_size[i]));
                 }
             }
 
             /* Load arguments, if present. */
-            if (arg_info != nullptr) {
+            if (argument != nullptr) {
                 /* Write argument data into memory. */
                 {
                     uintptr_t map_address;
@@ -642,8 +643,8 @@ namespace ams::ldr {
                     ProgramArguments *args = reinterpret_cast<ProgramArguments *>(map_address);
                     std::memset(args, 0, sizeof(*args));
                     args->allocated_size = process_info->args_size;
-                    args->arguments_size = arg_info->args_size;
-                    std::memcpy(args->arguments, arg_info->args, arg_info->args_size);
+                    args->arguments_size = argument->argument_size;
+                    std::memcpy(args->arguments, argument->argument, argument->argument_size);
                 }
 
                 /* Set argument region permissions. */
@@ -656,87 +657,81 @@ namespace ams::ldr {
     }
 
     /* Process Creation API. */
-    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, u32 flags, os::NativeHandle reslimit_h) {
-        /* Use global storage for NSOs. */
-        NsoHeader *nso_headers = g_nso_headers;
-        bool *has_nso = g_has_nso;
-        const auto arg_info = args::Get(loc.program_id);
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status, const char *path, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
+        /* Mount code. */
+        AMS_UNUSED(path);
+        ScopedCodeMount mount(loc, override_status);
+        R_TRY(mount.GetResult());
 
+        /* Load meta, possibly from cache. */
+        Meta meta;
+        R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
+
+        /* Validate meta. */
+        R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
+
+        /* Load, validate NSOs. */
+        R_TRY(LoadNsoHeaders(g_nso_headers, g_has_nso));
+        R_TRY(ValidateNsoHeaders(g_nso_headers, g_has_nso));
+
+        /* Actually create process. */
+        ProcessInfo info;
+        R_TRY(CreateProcessImpl(std::addressof(info), std::addressof(meta), g_nso_headers, g_has_nso, argument, flags, resource_limit));
+
+        /* Load NSOs into process memory. */
         {
-            /* Mount code. */
-            AMS_UNUSED(path);
-            ScopedCodeMount mount(loc, override_status);
-            R_TRY(mount.GetResult());
+            /* Ensure we close the process handle, if we fail. */
+            auto process_guard = SCOPE_GUARD { os::CloseNativeHandle(info.process_handle); };
 
-            /* Load meta, possibly from cache. */
-            Meta meta;
-            R_TRY(LoadMetaFromCache(std::addressof(meta), loc, override_status));
+            /* Load all NSOs. */
+            R_TRY(LoadAutoLoadModules(std::addressof(info), g_nso_headers, g_has_nso, argument));
 
-            /* Validate meta. */
-            R_TRY(ValidateMeta(std::addressof(meta), loc, mount.GetCodeVerificationData()));
+            /* We don't need to close the process handle, since we succeeded. */
+            process_guard.Cancel();
+        }
 
-            /* Load, validate NSOs. */
-            R_TRY(LoadNsoHeaders(nso_headers, has_nso));
-            R_TRY(ValidateNsoHeaders(nso_headers, has_nso));
+        /* Register NSOs with the RoManager. */
+        {
+            /* Nintendo doesn't validate this get, but we do. */
+            os::ProcessId process_id = os::GetProcessId(info.process_handle);
 
-            /* Actually create process. */
-            ProcessInfo info;
-            R_TRY(CreateProcessImpl(std::addressof(info), std::addressof(meta), nso_headers, has_nso, arg_info, flags, reslimit_h));
+            /* Register new process. */
+            const auto as_type = GetAddressSpaceType(std::addressof(meta));
+            RoManager::GetInstance().RegisterProcess(pin_id, process_id, meta.aci->program_id, as_type == Npdm::AddressSpaceType_64Bit || as_type == Npdm::AddressSpaceType_64BitDeprecated);
 
-            /* Load NSOs into process memory. */
-            {
-                /* Ensure we close the process handle, if we fail. */
-                auto process_guard = SCOPE_GUARD { os::CloseNativeHandle(info.process_handle); };
-
-                /* Load all NSOs. */
-                R_TRY(LoadNsosIntoProcessMemory(std::addressof(info), nso_headers, has_nso, arg_info));
-
-                /* We don't need to close the process handle, since we succeeded. */
-                process_guard.Cancel();
-            }
-
-            /* Register NSOs with the RoManager. */
-            {
-                /* Nintendo doesn't validate this get, but we do. */
-                os::ProcessId process_id = os::GetProcessId(info.process_handle);
-
-                /* Register new process. */
-                /* NOTE: Nintendo uses meta->aci->program_id, not loc.program_id. Should we? */
-                const auto as_type = GetAddressSpaceType(std::addressof(meta));
-                RoManager::GetInstance().RegisterProcess(pin_id, process_id, loc.program_id, as_type == Npdm::AddressSpaceType_64Bit || as_type == Npdm::AddressSpaceType_64BitDeprecated);
-
-                /* Register all NSOs. */
-                for (size_t i = 0; i < Nso_Count; i++) {
-                    if (has_nso[i]) {
-                        RoManager::GetInstance().AddNso(pin_id, nso_headers[i].module_id, info.nso_address[i], info.nso_size[i]);
-                    }
+            /* Register all NSOs. */
+            for (size_t i = 0; i < Nso_Count; i++) {
+                if (g_has_nso[i]) {
+                    RoManager::GetInstance().AddNso(pin_id, g_nso_headers[i].module_id, info.nso_address[i], info.nso_size[i]);
                 }
             }
-
-            /* If we're overriding for HBL, perform HTML document redirection. */
-            if (override_status.IsHbl()) {
-                /* Don't validate result, failure is okay. */
-                RedirectHtmlDocumentPathForHbl(loc);
-            }
-
-            /* Clear the external code for the program. */
-            fssystem::DestroyExternalCode(loc.program_id);
-
-            /* Note that we've created the program. */
-            SetLaunchedBootProgram(loc.program_id);
-
-            /* Move the process handle to output. */
-            *out = info.process_handle;
         }
+
+        /* If we're overriding for HBL, perform HTML document redirection. */
+        if (override_status.IsHbl()) {
+            /* Don't validate result, failure is okay. */
+            RedirectHtmlDocumentPathForHbl(loc);
+        }
+
+        /* Clear the external code for the program. */
+        fssystem::DestroyExternalCode(loc.program_id);
+
+        /* Note that we've created the program. */
+        SetLaunchedBootProgram(loc.program_id);
+
+        /* Move the process handle to output. */
+        *out = info.process_handle;
 
         return ResultSuccess();
     }
 
-    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {
+    Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path) {
         Meta meta;
 
         /* Load Meta. */
         {
+            AMS_UNUSED(path);
+
             ScopedCodeMount mount(loc);
             R_TRY(mount.GetResult());
             R_TRY(LoadMeta(std::addressof(meta), loc, mount.GetOverrideStatus()));

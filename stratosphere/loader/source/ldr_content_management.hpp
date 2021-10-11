@@ -72,8 +72,8 @@ namespace ams::ldr {
     #define ENCODE_CODE_PATH(relative) "code:" relative
 
     /* Redirection API. */
-    Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc);
-    Result RedirectContentPath(const char *path, const ncm::ProgramLocation &loc);
+    Result GetProgramPath(char *out_path, size_t out_size, const ncm::ProgramLocation &loc);
+    Result RedirectProgramPath(const char *path, size_t size, const ncm::ProgramLocation &loc);
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc);
 
 }
