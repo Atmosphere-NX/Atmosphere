@@ -71,9 +71,9 @@ namespace ams::pgl {
                 explicit EventObserverByTipc(Args &&... args) : m_tipc_interface(std::forward<Args>(args)...) { /* ... */ }
             public:
                 virtual Result GetSystemEvent(os::SystemEventType *out) override {
-                    ams::tipc::CopyHandle handle;
+                    os::NativeHandle handle;
                     R_TRY(m_tipc_interface.GetProcessEventHandle(std::addressof(handle)));
-                    os::AttachReadableHandleToSystemEvent(out, handle.GetValue(), true, os::EventClearMode_AutoClear);
+                    os::AttachReadableHandleToSystemEvent(out, handle, true, os::EventClearMode_AutoClear);
                     return ResultSuccess();
                 }
 

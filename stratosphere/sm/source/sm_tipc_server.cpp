@@ -150,8 +150,6 @@ namespace ams::sm {
 
             /* Create the manager port handle. */
             R_ABORT_UNLESS(impl::RegisterServiceForSelf(std::addressof(manager_port_handle), sm::ServiceName::Encode("sm:m"), MaxSessionsManager));
-
-            /* TODO: Debug Monitor port? */
         }
 
         /* Register the ports. */

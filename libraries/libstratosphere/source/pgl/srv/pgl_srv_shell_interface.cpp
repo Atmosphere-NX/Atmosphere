@@ -171,7 +171,7 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterfaceTipc::GetShellEventObserver(ams::tipc::OutMoveHandle out) {
-        return pgl::srv::AllocateShellEventObserverForTipc(out.GetHandlePointer());
+        return pgl::srv::AllocateShellEventObserverForTipc(out.GetPointer());
     }
 
 }

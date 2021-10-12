@@ -86,6 +86,16 @@ namespace ams::tipc::impl {
             }                                                                                                                       \
         }
 
+    #define AMS_TIPC_IMPL_IS_FIRMWARE_VERSION_ALWAYS_VALID(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX) \
+            {                                                                                                                         \
+                constexpr bool MinValid = VERSION_MIN == hos::Version_Min;                                                            \
+                constexpr bool MaxValid = VERSION_MAX == hos::Version_Max;                                                            \
+                if (!MinValid || !MaxValid) {                                                                                         \
+                    return false;                                                                                                     \
+                }                                                                                                                     \
+            }
+
+
     #define AMS_TIPC_DEFINE_INTERFACE_WITH_DEFAULT_BASE(NAMESPACE, INTERFACE, BASE, CMD_MACRO)                                                         \
         namespace NAMESPACE {                                                                                                                          \
                                                                                                                                                        \
@@ -118,6 +128,11 @@ namespace ams::tipc::impl {
                                                                                                                                                        \
                         return this->ProcessDefaultMethod<ImplType>(impl, message_buffer);                                                             \
                     }                                                                                                                                  \
+                                                                                                                                                       \
+                    static consteval bool IsFirmwareVersionAlwaysValid() {                                                                             \
+                        CMD_MACRO(ImplType, AMS_TIPC_IMPL_IS_FIRMWARE_VERSION_ALWAYS_VALID);                                                           \
+                        return true;                                                                                                                   \
+                    }                                                                                                                                  \
                 public:                                                                                                                                \
                     virtual Result ProcessRequest() override {                                                                                         \
                         /* Get the implementation object. */                                                                                           \
@@ -132,7 +147,7 @@ namespace ams::tipc::impl {
                                                                                                                                                        \
                         /* Get decision variables. */                                                                                                  \
                         const auto tag    = svc::ipc::MessageBuffer::MessageHeader(message_buffer).GetTag();                                           \
-                        const auto fw_ver = hos::GetVersion();                                                                                         \
+                        const auto fw_ver = IsFirmwareVersionAlwaysValid() ? hos::Version_Current : hos::GetVersion();                                 \
                                                                                                                                                        \
                         /* Process against the command ids. */                                                                                         \
                         if (false) { }                                                                                                                 \

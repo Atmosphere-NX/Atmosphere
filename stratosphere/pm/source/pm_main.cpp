@@ -60,8 +60,9 @@ namespace ams {
 
             void RegisterPrivilegedProcesses() {
                 /* Get privileged process range. */
-                os::ProcessId min_priv_process_id = os::InvalidProcessId, max_priv_process_id = os::InvalidProcessId;
-                cfg::GetInitialProcessRange(std::addressof(min_priv_process_id), std::addressof(max_priv_process_id));
+                os::ProcessId min_priv_process_id, max_priv_process_id;
+                R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(min_priv_process_id.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Minimum));
+                R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(max_priv_process_id.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Maximum));
 
                 /* Get current process id/program id. */
                 const auto cur_process_id = os::GetCurrentProcessId();

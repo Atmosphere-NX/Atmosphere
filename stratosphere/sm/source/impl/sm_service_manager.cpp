@@ -141,7 +141,8 @@ namespace ams::sm::impl {
             public:
                 InitialProcessIdLimits() {
                     /* Retrieve process limits. */
-                    cfg::GetInitialProcessRange(std::addressof(m_min), std::addressof(m_max));
+                    R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(m_min.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Minimum));
+                    R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(m_max.value), svc::SystemInfoType_InitialProcessIdRange, svc::InvalidHandle, svc::InitialProcessIdRangeInfo_Maximum));
 
                     /* Ensure range is sane. */
                     AMS_ABORT_UNLESS(m_min <= m_max);
@@ -405,6 +406,27 @@ namespace ams::sm::impl {
                    program_id == ncm::SystemProgramId::Creport;
         }
 
+        Result CreatePortImpl(os::NativeHandle *out_server, os::NativeHandle *out_client, size_t max_sessions, bool is_light, sm::ServiceName &name) {
+            /* Create the port. */
+            svc::Handle server_port, client_port;
+            R_TRY(svc::CreatePort(std::addressof(server_port), std::addressof(client_port), max_sessions, is_light, reinterpret_cast<uintptr_t>(name.name)));
+
+            /* Set the output handles. */
+            *out_server = server_port;
+            *out_client = client_port;
+            return ResultSuccess();
+        }
+
+        Result ConnectToPortImpl(os::NativeHandle *out, os::NativeHandle port) {
+            /* Connect to the port. */
+            svc::Handle session;
+            R_TRY(svc::ConnectToPort(std::addressof(session), port));
+
+            /* Set the output handle. */
+            *out = session;
+            return ResultSuccess();
+        }
+
         Result GetMitmServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
             /* Get the mitm info. */
             MitmInfo *mitm_info = GetMitmInfo(service_info);
@@ -419,28 +441,16 @@ namespace ams::sm::impl {
             }
 
             /* If we shouldn't mitm, give normal session. */
-            R_UNLESS(should_mitm, svc::ConnectToPort(out, service_info->port_h));
+            R_UNLESS(should_mitm, ConnectToPortImpl(out, service_info->port_h));
 
             /* Create both handles. */
             {
                 /* Get the forward handle. */
-                os::NativeHandle fwd_hnd;
-                R_TRY(svc::ConnectToPort(std::addressof(fwd_hnd), service_info->port_h));
-
-                /* Ensure that the forward handle is closed, if we fail to get the mitm handle. */
-                auto fwd_guard = SCOPE_GUARD { os::CloseNativeHandle(fwd_hnd); };
+                R_TRY(ConnectToPortImpl(std::addressof(mitm_info->fwd_sess_h), service_info->port_h));
 
                 /* Get the mitm handle. */
                 /* This should be guaranteed to succeed, since we got a forward handle. */
-                os::NativeHandle hnd;
-                R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), mitm_info->port_h));
-
-                /* We got both handles, so we no longer need to clean up the forward handle. */
-                fwd_guard.Cancel();
-
-                /* Save the handles to their respective storages. */
-                mitm_info->fwd_sess_h = fwd_hnd;
-                *out                  = hnd;
+                R_ABORT_UNLESS(ConnectToPortImpl(out, mitm_info->port_h));
             }
 
             mitm_info->waiting_ack_process_id = client_info.process_id;
@@ -450,9 +460,6 @@ namespace ams::sm::impl {
         }
 
         Result GetServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, os::ProcessId process_id) {
-            /* Clear handle output. */
-            *out = os::InvalidNativeHandle;
-
             /* Get the mitm info. */
             MitmInfo *mitm_info = GetMitmInfo(service_info);
 
@@ -468,7 +475,7 @@ namespace ams::sm::impl {
             }
 
             /* We're not returning a mitm handle, so just return a normal port handle. */
-            return svc::ConnectToPort(out, service_info->port_h);
+            return ConnectToPortImpl(out, service_info->port_h);
         }
 
         Result RegisterServiceImpl(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
@@ -483,16 +490,13 @@ namespace ams::sm::impl {
             R_UNLESS(free_service != nullptr, sm::ResultOutOfServices());
 
             /* Create the new service. */
-            *out                        = os::InvalidNativeHandle;
-            os::NativeHandle server_hnd = os::InvalidNativeHandle;
-            R_TRY(svc::CreatePort(out, std::addressof(server_hnd), max_sessions, is_light, reinterpret_cast<uintptr_t>(free_service->name.name)));
+            R_TRY(CreatePortImpl(out, std::addressof(free_service->port_h), max_sessions, is_light, free_service->name));
 
             /* Save info. */
             free_service->name             = service;
             free_service->owner_process_id = process_id;
             free_service->max_sessions     = max_sessions;
             free_service->is_light         = is_light;
-            free_service->port_h           = server_hnd;
 
             /* This might undefer some requests. */
             TriggerResume(service);
@@ -745,10 +749,6 @@ namespace ams::sm::impl {
         MitmInfo *mitm_info = GetFreeMitmInfo();
         R_UNLESS(mitm_info != nullptr, sm::ResultOutOfServices());
 
-        /* Always clear output. */
-        *out       = os::InvalidNativeHandle;
-        *out_query = os::InvalidNativeHandle;
-
         /* If we don't have a future mitm declaration, add one. */
         /* Client will clear this when ready to process. */
         const bool has_existing_future_declaration = HasFutureMitmDeclaration(service);
@@ -762,7 +762,7 @@ namespace ams::sm::impl {
         {
             /* Get the port handles. */
             os::NativeHandle hnd, port_hnd;
-            R_TRY(svc::CreatePort(std::addressof(hnd), std::addressof(port_hnd), service_info->max_sessions, service_info->is_light, reinterpret_cast<uintptr_t>(service_info->name.name)));
+            R_TRY(CreatePortImpl(std::addressof(hnd), std::addressof(port_hnd), service_info->max_sessions, service_info->is_light, service_info->name));
 
             /* Ensure that we clean up the port handles, if something goes wrong creating the query sessions. */
             auto port_guard = SCOPE_GUARD { os::CloseNativeHandle(hnd); os::CloseNativeHandle(port_hnd); };

@@ -76,9 +76,9 @@ namespace ams::tipc::impl {
     constexpr inline ArgumentType GetArgumentType = [] {
         if constexpr (tipc::IsBuffer<T>) {
             return ArgumentType::Buffer;
-        } else if constexpr (std::is_base_of<tipc::impl::InHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, tipc::CopyHandle> || std::same_as<T, tipc::MoveHandle>) {
             return ArgumentType::InHandle;
-        } else if constexpr (std::is_base_of<tipc::impl::OutHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, tipc::OutCopyHandle> || std::same_as<T, tipc::OutMoveHandle>) {
             return ArgumentType::OutHandle;
         } else if constexpr (std::is_base_of<tipc::impl::OutBaseTag, T>::value) {
             return ArgumentType::OutData;
@@ -126,10 +126,10 @@ namespace ams::tipc::impl {
     using InCopyHandleFilter = TypeEqualityFilter<T, tipc::CopyHandle>;
 
     template<typename T>
-    using OutMoveHandleFilter = TypeEqualityFilter<T, tipc::Out<tipc::MoveHandle>>;
+    using OutMoveHandleFilter = TypeEqualityFilter<T, tipc::OutMoveHandle>;
 
     template<typename T>
-    using OutCopyHandleFilter = TypeEqualityFilter<T, tipc::Out<tipc::CopyHandle>>;
+    using OutCopyHandleFilter = TypeEqualityFilter<T, tipc::OutCopyHandle>;
 
     template<typename>
     struct BufferAttributeArrayGetter;
@@ -267,6 +267,8 @@ namespace ams::tipc::impl {
             static_assert(NumInHandles <= 8, "Methods must take in <= 8 Handles");
             static_assert(NumOutHandles <= 8, "Methods must output <= 8 Handles");
 
+            static_assert(NumInHandles == 0, "In Handles not yet implemented!");
+
             /* Buffer marshalling. */
             static constexpr std::array<u32, NumBuffers> BufferAttributes = BufferAttributeArrayGetter<Buffers>::value;
             static constexpr size_t NumInBuffers  = BufferAttributeCounter<InBufferPredicate>::GetCount(BufferAttributes);
@@ -340,18 +342,18 @@ namespace ams::tipc::impl {
                         current_info.out_raw_data_index++;
                     } else if constexpr (arg_type == ArgumentType::InHandle) {
                         /* New InHandle, increment the appropriate index. */
-                        if constexpr (std::is_same<T, tipc::MoveHandle>::value) {
+                        if constexpr (std::same_as<T, tipc::MoveHandle>) {
                             current_info.in_move_handle_index++;
-                        } else if constexpr (std::is_same<T, tipc::CopyHandle>::value) {
+                        } else if constexpr (std::same_as<T, tipc::CopyHandle>) {
                             current_info.in_copy_handle_index++;
                         } else {
                             static_assert(!std::is_same<T, T>::value, "Invalid InHandle kind");
                         }
                     } else if constexpr (arg_type == ArgumentType::OutHandle) {
                         /* New OutHandle, increment the appropriate index. */
-                        if constexpr (std::is_same<T, tipc::Out<tipc::MoveHandle>>::value) {
+                        if constexpr (std::same_as<T, tipc::OutMoveHandle>) {
                             current_info.out_move_handle_index++;
-                        } else if constexpr (std::is_same<T, tipc::Out<tipc::CopyHandle>>::value) {
+                        } else if constexpr (std::same_as<T, tipc::OutCopyHandle>) {
                             current_info.out_copy_handle_index++;
                         } else {
                             static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
@@ -418,25 +420,25 @@ namespace ams::tipc::impl {
             static constexpr size_t NumMove = _NumMove;
             static constexpr size_t NumCopy = _NumCopy;
         private:
-            MoveHandle move_handles[NumMove];
-            CopyHandle copy_handles[NumCopy];
+            os::NativeHandle move_handles[NumMove];
+            os::NativeHandle copy_handles[NumCopy];
         public:
-            constexpr ALWAYS_INLINE OutHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+            ALWAYS_INLINE OutHandleHolder() { /* ... */ }
 
             template<size_t Index>
-            constexpr ALWAYS_INLINE MoveHandle *GetMoveHandlePointer() {
+            constexpr ALWAYS_INLINE os::NativeHandle *GetMoveHandlePointer() {
                 static_assert(Index < NumMove, "Index < NumMove");
                 return move_handles + Index;
             }
 
             template<size_t Index>
-            constexpr ALWAYS_INLINE CopyHandle *GetCopyHandlePointer() {
+            constexpr ALWAYS_INLINE os::NativeHandle *GetCopyHandlePointer() {
                 static_assert(Index < NumCopy, "Index < NumCopy");
                 return copy_handles + Index;
             }
 
             ALWAYS_INLINE void CopyTo(const svc::ipc::MessageBuffer &buffer) const {
-                #define _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { buffer.SetHandle(OutIndex + n, copy_handles[n].GetValue()); } } while (0)
+                #define _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { buffer.SetHandle(OutIndex + n, copy_handles[n]); } } while (0)
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(0);
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(1);
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(2);
@@ -446,7 +448,7 @@ namespace ams::tipc::impl {
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(6);
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(7);
                 #undef _TIPC_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE
-                #define _TIPC_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { buffer.SetHandle(OutIndex + NumCopy + n, move_handles[n].GetValue()); } } while (0)
+                #define _TIPC_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { buffer.SetHandle(OutIndex + NumCopy + n, move_handles[n]); } } while (0)
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(0);
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(1);
                 _TIPC_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(2);
@@ -507,10 +509,10 @@ namespace ams::tipc::impl {
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */
-                    if constexpr (std::is_same<T, tipc::MoveHandle>::value) {
+                    if constexpr (std::same_as<T, tipc::MoveHandle>) {
                         constexpr auto HandleIndex = CommandMeta::InMessageHandleIndex + CommandMeta::NumInCopyHandles + Info.in_move_handle_index;
                         return T(message_buffer.GetHandle(HandleIndex));
-                    } else if constexpr (std::is_same<T, tipc::CopyHandle>::value) {
+                    } else if constexpr (std::same_as<T, tipc::CopyHandle>) {
                         constexpr auto HandleIndex = CommandMeta::InMessageHandleIndex + Info.in_copy_handle_index;
                         return T(message_buffer.GetHandle(HandleIndex));
                     } else {
@@ -518,10 +520,14 @@ namespace ams::tipc::impl {
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::OutHandle) {
                     /* New OutHandle. */
-                    if constexpr (std::is_same<T, tipc::Out<tipc::MoveHandle>>::value) {
-                        return T(out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>());
-                    } else if constexpr (std::is_same<T, tipc::Out<tipc::CopyHandle>>::value) {
-                        return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>());
+                    if constexpr (std::same_as<T, tipc::OutMoveHandle>) {
+                        os::NativeHandle * const ptr = out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>();
+                        *ptr = os::InvalidNativeHandle;
+                        return T(ptr);
+                    } else if constexpr (std::same_as<T, tipc::OutCopyHandle>) {
+                        os::NativeHandle * const ptr = out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>();
+                        *ptr = os::InvalidNativeHandle;
+                        return T(ptr);
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
                     }
