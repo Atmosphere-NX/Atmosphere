@@ -30,9 +30,11 @@ namespace ams::lm::srv {
         constexpr inline size_t PortCountMax = 2;
 
         struct ServerManagerOptions {
-            static constexpr size_t PointerBufferSize = 0x400;
-            static constexpr size_t MaxDomains       = 31;
-            static constexpr size_t MaxDomainObjects = 61;
+            static constexpr size_t PointerBufferSize   = 0x400;
+            static constexpr size_t MaxDomains          = 31;
+            static constexpr size_t MaxDomainObjects    = 61;
+            static constexpr bool CanDeferInvokeRequest = false;
+            static constexpr bool CanManageMitmServers  = false;
         };
 
         using ServerManager = sf::hipc::ServerManager<PortCountMax, ServerManagerOptions, SessionCountMax>;

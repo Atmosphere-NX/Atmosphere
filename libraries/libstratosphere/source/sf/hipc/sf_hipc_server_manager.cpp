@@ -114,21 +114,34 @@ namespace ams::sf::hipc {
         ServerSession *session = static_cast<ServerSession *>(holder);
 
         cmif::PointerAndSize tls_message(svc::GetThreadLocalRegion()->message_buffer, hipc::TlsMessageBufferSize);
-        const cmif::PointerAndSize &saved_message = session->m_saved_message;
-        AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
-        if (!session->m_has_received) {
-            R_TRY(this->ReceiveRequest(session, tls_message));
-            session->m_has_received = true;
-            std::memcpy(saved_message.GetPointer(), tls_message.GetPointer(), tls_message.GetSize());
-        } else {
-            /* We were deferred and are re-receiving, so just memcpy. */
-            std::memcpy(tls_message.GetPointer(), saved_message.GetPointer(), tls_message.GetSize());
-        }
+        if (this->CanDeferInvokeRequest()) {
+            const cmif::PointerAndSize &saved_message = session->m_saved_message;
+            AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
 
-        /* Treat a meta "Context Invalidated" message as a success. */
-        R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {
-            R_CONVERT(sf::impl::ResultRequestInvalidated, ResultSuccess());
-        } R_END_TRY_CATCH;
+            if (!session->m_has_received) {
+                R_TRY(this->ReceiveRequest(session, tls_message));
+                session->m_has_received = true;
+                std::memcpy(saved_message.GetPointer(), tls_message.GetPointer(), tls_message.GetSize());
+            } else {
+                /* We were deferred and are re-receiving, so just memcpy. */
+                std::memcpy(tls_message.GetPointer(), saved_message.GetPointer(), tls_message.GetSize());
+            }
+
+            /* Treat a meta "Context Invalidated" message as a success. */
+            R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {
+                R_CONVERT(sf::impl::ResultRequestInvalidated, ResultSuccess());
+            } R_END_TRY_CATCH;
+        } else {
+            if (!session->m_has_received) {
+                R_TRY(this->ReceiveRequest(session, tls_message));
+                session->m_has_received = true;
+            }
+
+            R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {
+                R_CATCH(sf::ResultRequestDeferred)          { AMS_ABORT("Request Deferred on server which does not support deferral"); }
+                R_CATCH(sf::impl::ResultRequestInvalidated) { AMS_ABORT("Request Invalidated on server which does not support deferral"); }
+            } R_END_TRY_CATCH;
+        }
 
         return ResultSuccess();
     }
@@ -138,6 +151,7 @@ namespace ams::sf::hipc {
             case UserDataTag::Server:
                 return this->ProcessForServer(holder);
             case UserDataTag::MitmServer:
+                AMS_ABORT_UNLESS(this->CanManageMitmServers());
                 return this->ProcessForMitmServer(holder);
             case UserDataTag::Session:
                 return this->ProcessForSession(holder);

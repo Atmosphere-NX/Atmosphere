@@ -46,9 +46,11 @@ namespace ams {
         namespace {
 
             struct ServerOptions {
-                static constexpr size_t PointerBufferSize = 0x400;
-                static constexpr size_t MaxDomains = 0;
-                static constexpr size_t MaxDomainObjects = 0;
+                static constexpr size_t PointerBufferSize   = 0x400;
+                static constexpr size_t MaxDomains          = 0;
+                static constexpr size_t MaxDomainObjects    = 0;
+                static constexpr bool CanDeferInvokeRequest = false;
+                static constexpr bool CanManageMitmServers  = false;
             };
 
             /* ldr:pm, ldr:shel, ldr:dmnt. */

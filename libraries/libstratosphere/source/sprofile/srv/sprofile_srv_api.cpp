@@ -41,9 +41,11 @@ namespace ams::sprofile::srv {
         constexpr inline size_t PortCountMax = 2;
 
         struct ServerManagerOptions {
-            static constexpr size_t PointerBufferSize = 0x0;
-            static constexpr size_t MaxDomains        = SessionCountMax; /* NOTE: Official is 3 */
-            static constexpr size_t MaxDomainObjects  = 16;              /* NOTE: Official is 8 */
+            static constexpr size_t PointerBufferSize   = 0x0;
+            static constexpr size_t MaxDomains          = SessionCountMax; /* NOTE: Official is 3 */
+            static constexpr size_t MaxDomainObjects    = 16;              /* NOTE: Official is 8 */
+            static constexpr bool CanDeferInvokeRequest = false;
+            static constexpr bool CanManageMitmServers  = false;
         };
 
         using ServerManager = sf::hipc::ServerManager<PortCountMax, ServerManagerOptions, SessionCountMax>;

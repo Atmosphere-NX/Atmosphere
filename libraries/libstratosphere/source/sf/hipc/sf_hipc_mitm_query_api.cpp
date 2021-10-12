@@ -27,7 +27,7 @@ namespace ams::sf::hipc::impl {
 
         class MitmQueryService {
             private:
-                ServerManagerBase::MitmQueryFunction m_query_function;
+                const ServerManagerBase::MitmQueryFunction m_query_function;
             public:
                 MitmQueryService(ServerManagerBase::MitmQueryFunction qf) : m_query_function(qf) { /* ... */ }
 

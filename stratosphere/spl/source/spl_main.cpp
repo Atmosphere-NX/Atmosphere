@@ -32,9 +32,11 @@ namespace ams {
         namespace {
 
             struct SplServerOptions {
-                static constexpr size_t PointerBufferSize = 0x800;
-                static constexpr size_t MaxDomains = 0;
-                static constexpr size_t MaxDomainObjects = 0;
+                static constexpr size_t PointerBufferSize   = 0x800;
+                static constexpr size_t MaxDomains          = 0;
+                static constexpr size_t MaxDomainObjects    = 0;
+                static constexpr bool CanDeferInvokeRequest = false;
+                static constexpr bool CanManageMitmServers  = false;
             };
 
             enum PortIndex {

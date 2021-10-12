@@ -29,9 +29,11 @@ namespace ams::mitm::fs {
         constexpr sm::ServiceName MitmServiceName = sm::ServiceName::Encode("fsp-srv");
 
         struct ServerOptions {
-            static constexpr size_t PointerBufferSize = 0x800;
-            static constexpr size_t MaxDomains = 0x40;
-            static constexpr size_t MaxDomainObjects = 0x4000;
+            static constexpr size_t PointerBufferSize   = 0x800;
+            static constexpr size_t MaxDomains          = 0x40;
+            static constexpr size_t MaxDomainObjects    = 0x4000;
+            static constexpr bool CanDeferInvokeRequest = false;
+            static constexpr bool CanManageMitmServers  = true;
         };
 
         constexpr size_t MaxSessions = 61;

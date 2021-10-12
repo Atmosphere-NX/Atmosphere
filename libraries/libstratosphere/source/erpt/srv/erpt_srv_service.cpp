@@ -27,9 +27,11 @@ namespace ams::erpt::srv {
     namespace {
 
         struct ErrorReportServerOptions {
-            static constexpr size_t PointerBufferSize = 0;
-            static constexpr size_t MaxDomains        = 64;
-            static constexpr size_t MaxDomainObjects  = 2 * ReportCountMax + 5 + 2;
+            static constexpr size_t PointerBufferSize   = 0;
+            static constexpr size_t MaxDomains          = 64;
+            static constexpr size_t MaxDomainObjects    = 2 * ReportCountMax + 5 + 2;
+            static constexpr bool CanDeferInvokeRequest = false;
+            static constexpr bool CanManageMitmServers  = false;
         };
 
         constexpr inline size_t ErrorReportNumServers      = 2;

@@ -25,9 +25,11 @@ namespace ams::htcs::server {
         static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("htcs");
 
         struct ServerOptions {
-            static constexpr size_t PointerBufferSize = 0x80;
-            static constexpr size_t MaxDomains        = 0x10;
-            static constexpr size_t MaxDomainObjects  = 100;
+            static constexpr size_t PointerBufferSize   = 0x80;
+            static constexpr size_t MaxDomains          = 0x10;
+            static constexpr size_t MaxDomainObjects    = 100;
+            static constexpr bool CanDeferInvokeRequest = false;
+            static constexpr bool CanManageMitmServers  = false;
         };
 
         using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;

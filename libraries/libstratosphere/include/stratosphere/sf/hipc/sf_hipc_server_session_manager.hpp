@@ -48,29 +48,29 @@ namespace ams::sf::hipc {
             cmif::ServiceObjectHolder m_srv_obj_holder;
             cmif::PointerAndSize m_pointer_buffer;
             cmif::PointerAndSize m_saved_message;
-            std::shared_ptr<::Service> m_forward_service;
+            util::TypedStorage<std::shared_ptr<::Service>> m_forward_service;
             os::NativeHandle m_session_handle;
             bool m_is_closed;
             bool m_has_received;
+            const bool m_has_forward_service;
         public:
-            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj) : m_srv_obj_holder(std::move(obj)), m_session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj) : m_srv_obj_holder(std::move(obj)), m_session_handle(h), m_has_forward_service(false) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 m_is_closed = false;
                 m_has_received = false;
-                m_forward_service = nullptr;
                 AMS_ABORT_UNLESS(!this->IsMitmSession());
             }
 
-            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : m_srv_obj_holder(std::move(obj)), m_session_handle(h) {
+            ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : m_srv_obj_holder(std::move(obj)), m_session_handle(h), m_has_forward_service(true) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 m_is_closed = false;
                 m_has_received = false;
-                m_forward_service = std::move(fsrv);
-                AMS_ABORT_UNLESS(this->IsMitmSession());
+                util::ConstructAt(m_forward_service, std::move(fsrv));
+                AMS_ABORT_UNLESS(util::GetReference(m_forward_service) != nullptr);
             }
 
-            bool IsMitmSession() const {
-                return m_forward_service != nullptr;
+            ALWAYS_INLINE bool IsMitmSession() const {
+                return m_has_forward_service;
             }
 
             Result ForwardRequest(const cmif::ServiceDispatchContext &ctx) const;

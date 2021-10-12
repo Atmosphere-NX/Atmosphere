@@ -40,7 +40,9 @@ namespace ams::sf::hipc {
     }
 
     Result ServerSession::ForwardRequest(const cmif::ServiceDispatchContext &ctx) const {
+        AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
         AMS_ABORT_UNLESS(this->IsMitmSession());
+
         /* TODO: Support non-TLS messages? */
         AMS_ABORT_UNLESS(m_saved_message.GetPointer() != nullptr);
         AMS_ABORT_UNLESS(m_saved_message.GetSize() == TlsMessageBufferSize);
@@ -55,7 +57,7 @@ namespace ams::sf::hipc {
         PreProcessCommandBufferForMitm(ctx, m_pointer_buffer, reinterpret_cast<uintptr_t>(message_buffer));
 
         /* Dispatch forwards. */
-        R_TRY(svc::SendSyncRequest(m_forward_service->session));
+        R_TRY(svc::SendSyncRequest(util::GetReference(m_forward_service)->session));
 
         /* Parse, to ensure we catch any copy handles and close them. */
         {
@@ -114,6 +116,8 @@ namespace ams::sf::hipc {
     }
 
     Result ServerSessionManager::RegisterMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
+        AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
+
         /* Create session object. */
         std::construct_at(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
 
@@ -122,8 +126,8 @@ namespace ams::sf::hipc {
         session_memory->m_saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
 
         /* Validate session pointer buffer. */
-        AMS_ABORT_UNLESS(session_memory->m_pointer_buffer.GetSize() >= session_memory->m_forward_service->pointer_buffer_size);
-        session_memory->m_pointer_buffer = cmif::PointerAndSize(session_memory->m_pointer_buffer.GetAddress(), session_memory->m_forward_service->pointer_buffer_size);
+        AMS_ABORT_UNLESS(session_memory->m_pointer_buffer.GetSize() >= util::GetReference(session_memory->m_forward_service)->pointer_buffer_size);
+        session_memory->m_pointer_buffer = cmif::PointerAndSize(session_memory->m_pointer_buffer.GetAddress(), util::GetReference(session_memory->m_forward_service)->pointer_buffer_size);
 
         /* Register to wait list. */
         this->RegisterServerSessionToWait(session_memory);
@@ -131,6 +135,8 @@ namespace ams::sf::hipc {
     }
 
     Result ServerSessionManager::AcceptMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
+        AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
+
         /* Create session handle. */
         os::NativeHandle mitm_session_handle;
         R_TRY(svc::AcceptSession(std::addressof(mitm_session_handle), mitm_port_handle));
@@ -201,7 +207,7 @@ namespace ams::sf::hipc {
 
     namespace {
 
-        NX_CONSTEXPR u32 GetCmifCommandType(const cmif::PointerAndSize &message) {
+        constexpr ALWAYS_INLINE u32 GetCmifCommandType(const cmif::PointerAndSize &message) {
             HipcHeader hdr = {};
             __builtin_memcpy(std::addressof(hdr), message.GetPointer(), sizeof(hdr));
             return hdr.type;

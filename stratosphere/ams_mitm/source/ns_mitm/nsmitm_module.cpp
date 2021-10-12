@@ -32,7 +32,14 @@ namespace ams::mitm::ns {
         constexpr sm::ServiceName NsWebMitmServiceName = sm::ServiceName::Encode("ns:web");
 
         constexpr size_t MaxSessions = 5;
-        using ServerOptions = sf::hipc::DefaultServerManagerOptions;
+
+        struct ServerOptions {
+            static constexpr size_t PointerBufferSize   = sf::hipc::DefaultServerManagerOptions::PointerBufferSize;
+            static constexpr size_t MaxDomains          = sf::hipc::DefaultServerManagerOptions::MaxDomains;
+            static constexpr size_t MaxDomainObjects    = sf::hipc::DefaultServerManagerOptions::MaxDomainObjects;
+            static constexpr bool CanDeferInvokeRequest = sf::hipc::DefaultServerManagerOptions::CanDeferInvokeRequest;
+            static constexpr bool CanManageMitmServers  = true;
+        };
 
         class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> {
             private:
