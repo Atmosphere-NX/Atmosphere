@@ -29,11 +29,11 @@ namespace ams::sm::impl {
 
         /* Constexpr definitions. */
         static constexpr size_t ProcessCountMax      = 0x50;
-        static constexpr size_t ServiceCountMax      = 0x100 + 0x10; /* Extra 0x10 services over Nintendo for homebrew. */
-        static constexpr size_t FutureMitmCountMax   = 0x20;
+        static constexpr size_t ServiceCountMax      = 0x180;
+        static constexpr size_t MitmCountMax         = 0x20;
         static constexpr size_t AccessControlSizeMax = 0x200;
 
-        constexpr sm::ServiceName InitiallyDeferredServices[] = {
+        constexpr const sm::ServiceName InitiallyDeferredServices[] = {
             ServiceName::Encode("fsp-srv")
         };
 
@@ -46,7 +46,7 @@ namespace ams::sm::impl {
             u8 access_control[AccessControlSizeMax];
         };
 
-        constexpr ProcessInfo InvalidProcessInfo = {
+        constexpr const ProcessInfo InvalidProcessInfo = {
             .process_id          = os::InvalidProcessId,
             .program_id          = ncm::InvalidProgramId,
             .override_status     = {},
@@ -57,29 +57,37 @@ namespace ams::sm::impl {
         struct ServiceInfo {
             ServiceName name;
             os::ProcessId owner_process_id;
-            os::ProcessId mitm_process_id;
-            os::ProcessId mitm_waiting_ack_process_id;
-            os::NativeHandle mitm_port_h;
-            os::NativeHandle mitm_query_h;
             os::NativeHandle port_h;
-            os::NativeHandle mitm_fwd_sess_h;
-            s32 max_sessions;
             bool is_light;
-            bool mitm_waiting_ack;
+            u8 max_sessions;
+            u8 mitm_index;
         };
 
-        constexpr ServiceInfo InvalidServiceInfo = {
+        struct MitmInfo {
+            os::ProcessId process_id;
+            os::ProcessId waiting_ack_process_id;
+            os::NativeHandle port_h;
+            os::NativeHandle query_h;
+            os::NativeHandle fwd_sess_h;
+            bool waiting_ack;
+        };
+
+        constexpr const ServiceInfo InvalidServiceInfo = {
             .name                        = sm::InvalidServiceName,
             .owner_process_id            = os::InvalidProcessId,
-            .mitm_process_id             = os::InvalidProcessId,
-            .mitm_waiting_ack_process_id = os::InvalidProcessId,
-            .mitm_port_h                 = os::InvalidNativeHandle,
-            .mitm_query_h                = os::InvalidNativeHandle,
             .port_h                      = os::InvalidNativeHandle,
-            .mitm_fwd_sess_h             = os::InvalidNativeHandle,
-            .max_sessions                = 0,
             .is_light                    = false,
-            .mitm_waiting_ack            = false,
+            .max_sessions                = 0,
+            .mitm_index                  = MitmCountMax,
+        };
+
+        constexpr const MitmInfo InvalidMitmInfo = {
+            .process_id             = os::InvalidProcessId,
+            .waiting_ack_process_id = os::InvalidProcessId,
+            .port_h                 = os::InvalidNativeHandle,
+            .query_h                = os::InvalidNativeHandle,
+            .fwd_sess_h             = os::InvalidNativeHandle,
+            .waiting_ack            = false,
         };
 
         class AccessControlEntry {
@@ -175,8 +183,8 @@ namespace ams::sm::impl {
             return list;
         }();
 
-        constinit std::array<ServiceName, FutureMitmCountMax> g_future_mitm_list = [] {
-            std::array<ServiceName, FutureMitmCountMax> list = {};
+        constinit std::array<ServiceName, MitmCountMax> g_future_mitm_list = [] {
+            std::array<ServiceName, MitmCountMax> list = {};
 
             /* Initialize each info. */
             for (auto &name : list) {
@@ -186,9 +194,20 @@ namespace ams::sm::impl {
             return list;
         }();
 
+        constinit std::array<MitmInfo, MitmCountMax> g_mitm_list = [] {
+            std::array<MitmInfo, MitmCountMax> list = {};
+
+            /* Initialize each info. */
+            for (auto &mitm_info : list) {
+                mitm_info = InvalidMitmInfo;
+            }
+
+            return list;
+        }();
+
         constinit bool g_ended_initial_defers = false;
 
-        InitialProcessIdLimits g_initial_process_id_limits;
+        const InitialProcessIdLimits g_initial_process_id_limits;
 
         /* Helper functionality. */
         bool IsInitialProcess(os::ProcessId process_id) {
@@ -307,9 +326,28 @@ namespace ams::sm::impl {
             return GetServiceInfo(service) != nullptr;
         }
 
+        MitmInfo *GetMitmInfo(const ServiceInfo *service_info) {
+            if (service_info->mitm_index < MitmCountMax) {
+                return std::addressof(g_mitm_list[service_info->mitm_index]);
+            } else {
+                return nullptr;
+            }
+        }
+
+        MitmInfo *GetFreeMitmInfo() {
+            /* Find a mitm info without an owner. */
+            for (auto &mitm_info : g_mitm_list) {
+                if (!IsValidProcessId(mitm_info.process_id)) {
+                    return std::addressof(mitm_info);
+                }
+            }
+
+            return nullptr;
+        }
+
         bool HasMitm(ServiceName service) {
             const ServiceInfo *service_info = GetServiceInfo(service);
-            return service_info != nullptr && IsValidProcessId(service_info->mitm_process_id);
+            return service_info != nullptr && GetMitmInfo(service_info) != nullptr;
         }
 
         Result AddFutureMitmDeclaration(ServiceName service) {
@@ -368,11 +406,15 @@ namespace ams::sm::impl {
         }
 
         Result GetMitmServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
+            /* Get the mitm info. */
+            MitmInfo *mitm_info = GetMitmInfo(service_info);
+            AMS_ABORT_UNLESS(mitm_info != nullptr);
+
             /* Send command to query if we should mitm. */
             bool should_mitm;
             {
                 /* TODO: Convert mitm internal messaging to use tipc? */
-                ::Service srv { .session = service_info->mitm_query_h };
+                ::Service srv { .session = mitm_info->query_h };
                 R_ABORT_UNLESS(::serviceDispatchInOut(std::addressof(srv), 65000, client_info, should_mitm));
             }
 
@@ -391,18 +433,18 @@ namespace ams::sm::impl {
                 /* Get the mitm handle. */
                 /* This should be guaranteed to succeed, since we got a forward handle. */
                 os::NativeHandle hnd;
-                R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), service_info->mitm_port_h));
+                R_ABORT_UNLESS(svc::ConnectToPort(std::addressof(hnd), mitm_info->port_h));
 
                 /* We got both handles, so we no longer need to clean up the forward handle. */
                 fwd_guard.Cancel();
 
                 /* Save the handles to their respective storages. */
-                service_info->mitm_fwd_sess_h = fwd_hnd;
-                *out                          = hnd;
+                mitm_info->fwd_sess_h = fwd_hnd;
+                *out                  = hnd;
             }
 
-            service_info->mitm_waiting_ack_process_id = client_info.process_id;
-            service_info->mitm_waiting_ack            = true;
+            mitm_info->waiting_ack_process_id = client_info.process_id;
+            mitm_info->waiting_ack            = true;
 
             return ResultSuccess();
         }
@@ -411,8 +453,11 @@ namespace ams::sm::impl {
             /* Clear handle output. */
             *out = os::InvalidNativeHandle;
 
+            /* Get the mitm info. */
+            MitmInfo *mitm_info = GetMitmInfo(service_info);
+
             /* Check if we should return a mitm handle. */
-            if (IsValidProcessId(service_info->mitm_process_id) && service_info->mitm_process_id != process_id) {
+            if (mitm_info != nullptr && mitm_info->process_id != process_id) {
                 /* Get mitm process info, ensure that we're allowed to mitm the given program. */
                 MitmProcessInfo client_info;
                 GetMitmProcessInfo(std::addressof(client_info), process_id);
@@ -456,14 +501,23 @@ namespace ams::sm::impl {
         }
 
         void UnregisterServiceImpl(ServiceInfo *service_info) {
+            /* Get the mitm info. */
+            MitmInfo *mitm_info = GetMitmInfo(service_info);
+
             /* Close all valid handles. */
             os::CloseNativeHandle(service_info->port_h);
-            os::CloseNativeHandle(service_info->mitm_port_h);
-            os::CloseNativeHandle(service_info->mitm_query_h);
-            os::CloseNativeHandle(service_info->mitm_fwd_sess_h);
 
             /* Reset the info's state. */
             *service_info = InvalidServiceInfo;
+
+            /* Reset the mitm info, if necessary. */
+            if (mitm_info != nullptr) {
+                os::CloseNativeHandle(mitm_info->port_h);
+                os::CloseNativeHandle(mitm_info->query_h);
+                os::CloseNativeHandle(mitm_info->fwd_sess_h);
+
+                *mitm_info = InvalidMitmInfo;
+            }
         }
 
     }
@@ -569,7 +623,8 @@ namespace ams::sm::impl {
 
         /* Get service info. Check to see if we need to defer this until later. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || service_info->mitm_waiting_ack) {
+        MitmInfo *mitm_info = GetMitmInfo(service_info);
+        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || (mitm_info != nullptr && mitm_info->waiting_ack)) {
             return StartRegisterRetry(service);
         }
 
@@ -684,7 +739,11 @@ namespace ams::sm::impl {
         R_UNLESS(service_info != nullptr, StartRegisterRetry(service));
 
         /* Validate that the service isn't already being mitm'd. */
-        R_UNLESS(!IsValidProcessId(service_info->mitm_process_id), sm::ResultAlreadyRegistered());
+        R_UNLESS(GetMitmInfo(service_info) == nullptr, sm::ResultAlreadyRegistered());
+
+        /* Validate that we can create a new mitm. */
+        MitmInfo *mitm_info = GetFreeMitmInfo();
+        R_UNLESS(mitm_info != nullptr, sm::ResultOutOfServices());
 
         /* Always clear output. */
         *out       = os::InvalidNativeHandle;
@@ -715,12 +774,17 @@ namespace ams::sm::impl {
             /* We created the query service session, so we no longer need to clean up the port handles. */
             port_guard.Cancel();
 
+            /* Setup the mitm info. */
+            mitm_info->process_id = process_id;
+            mitm_info->port_h     = port_hnd;
+            mitm_info->query_h    = mitm_qry_hnd;
+
+            /* Setup the service info. */
+            service_info->mitm_index = mitm_info - g_mitm_list.data();
+
             /* Copy to output. */
-            service_info->mitm_process_id = process_id;
-            service_info->mitm_port_h     = port_hnd;
-            service_info->mitm_query_h    = mitm_qry_hnd;
-            *out                          = hnd;
-            *out_query                    = qry_hnd;
+            *out       = hnd;
+            *out_query = qry_hnd;
 
             /* This might undefer some requests. */
             TriggerResume(service);
@@ -747,19 +811,25 @@ namespace ams::sm::impl {
         ServiceInfo *service_info = GetServiceInfo(service);
         R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
+        /* Validate that the service is mitm'd. */
+        MitmInfo *mitm_info = GetMitmInfo(service_info);
+        R_UNLESS(mitm_info != nullptr, sm::ResultNotRegistered());
+
         /* Validate that the client process_id is the mitm process. */
-        R_UNLESS(service_info->mitm_process_id == process_id, sm::ResultNotAllowed());
+        R_UNLESS(mitm_info->process_id == process_id, sm::ResultNotAllowed());
 
         /* Uninstall the mitm. */
         {
             /* Close mitm handles. */
-            os::CloseNativeHandle(service_info->mitm_port_h);
-            os::CloseNativeHandle(service_info->mitm_query_h);
+            os::CloseNativeHandle(mitm_info->port_h);
+            os::CloseNativeHandle(mitm_info->query_h);
+            os::CloseNativeHandle(mitm_info->fwd_sess_h);
 
             /* Reset mitm members. */
-            service_info->mitm_port_h     = os::InvalidNativeHandle;
-            service_info->mitm_query_h    = os::InvalidNativeHandle;
-            service_info->mitm_process_id = os::InvalidProcessId;
+            *mitm_info = InvalidMitmInfo;
+
+            /* Reset service info. */
+            service_info->mitm_index = MitmCountMax;
         }
 
         return ResultSuccess();
@@ -803,14 +873,14 @@ namespace ams::sm::impl {
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
         }
 
-        /* Check that a future mitm declaration is present or we have a mitm. */
-        if (HasMitm(service)) {
-            /* Validate that the service exists. */
-            ServiceInfo *service_info = GetServiceInfo(service);
-            R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
+        /* Validate that the service exists. */
+        ServiceInfo *service_info = GetServiceInfo(service);
+        R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
+        /* Check that we have a mitm or a future declaration. */
+        if (MitmInfo *mitm_info = GetMitmInfo(service_info); mitm_info != nullptr) {
             /* Validate that the client process_id is the mitm process. */
-            R_UNLESS(service_info->mitm_process_id == process_id, sm::ResultNotAllowed());
+            R_UNLESS(mitm_info->process_id == process_id, sm::ResultNotAllowed());
         } else {
             R_UNLESS(HasFutureMitmDeclaration(service), sm::ResultNotRegistered());
         }
@@ -838,22 +908,26 @@ namespace ams::sm::impl {
         ServiceInfo *service_info = GetServiceInfo(service);
         R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
 
+        /* Get the mitm info. */
+        MitmInfo *mitm_info = GetMitmInfo(service_info);
+        R_UNLESS(mitm_info != nullptr, sm::ResultNotRegistered());
+
         /* Validate that the client process_id is the mitm process, and that an acknowledgement is waiting. */
-        R_UNLESS(service_info->mitm_process_id == process_id,  sm::ResultNotAllowed());
-        R_UNLESS(service_info->mitm_waiting_ack,               sm::ResultNotAllowed());
+        R_UNLESS(mitm_info->process_id == process_id,  sm::ResultNotAllowed());
+        R_UNLESS(mitm_info->waiting_ack,               sm::ResultNotAllowed());
 
         /* Acknowledge. */
         {
             /* Copy the mitm info to output. */
-            GetMitmProcessInfo(out_info, service_info->mitm_waiting_ack_process_id);
+            GetMitmProcessInfo(out_info, mitm_info->waiting_ack_process_id);
 
             /* Set the output handle. */
-            *out_hnd                      = service_info->mitm_fwd_sess_h;
-            service_info->mitm_fwd_sess_h = os::InvalidNativeHandle;
+            *out_hnd              = mitm_info->fwd_sess_h;
+            mitm_info->fwd_sess_h = os::InvalidNativeHandle;
 
             /* Clear acknowledgement-related fields. */
-            service_info->mitm_waiting_ack            = false;
-            service_info->mitm_waiting_ack_process_id = os::InvalidProcessId;
+            mitm_info->waiting_ack            = false;
+            mitm_info->waiting_ack_process_id = os::InvalidProcessId;
         }
 
         /* Undefer requests to the session. */
