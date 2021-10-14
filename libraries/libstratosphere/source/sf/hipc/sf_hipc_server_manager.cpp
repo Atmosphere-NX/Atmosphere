@@ -135,6 +135,13 @@ namespace ams::sf::hipc {
             if (!session->m_has_received) {
                 R_TRY(this->ReceiveRequest(session, tls_message));
                 session->m_has_received = true;
+
+                if (this->CanManageMitmServers()) {
+                    const cmif::PointerAndSize &saved_message = session->m_saved_message;
+                    AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
+
+                    std::memcpy(saved_message.GetPointer(), tls_message.GetPointer(), tls_message.GetSize());
+                }
             }
 
             R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {

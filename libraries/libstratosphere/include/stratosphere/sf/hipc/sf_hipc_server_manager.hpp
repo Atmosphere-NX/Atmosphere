@@ -289,7 +289,7 @@ namespace ams::sf::hipc {
             util::TypedStorage<ServerSession> m_session_storages[MaxSessions];
             bool m_session_allocated[MaxSessions];
             u8 m_pointer_buffer_storage[0x10 + (MaxSessions * ManagerOptions::PointerBufferSize)];
-            u8 m_saved_message_storage[0x10 + (MaxSessions * (ManagerOptions::CanDeferInvokeRequest ? hipc::TlsMessageBufferSize : 0))];
+            u8 m_saved_message_storage[0x10 + (MaxSessions * ((ManagerOptions::CanDeferInvokeRequest || ManagerOptions::CanManageMitmServers) ? hipc::TlsMessageBufferSize : 0))];
             uintptr_t m_pointer_buffers_start;
             uintptr_t m_saved_messages_start;
 
@@ -403,7 +403,7 @@ namespace ams::sf::hipc {
             }
 
             virtual cmif::PointerAndSize GetSessionSavedMessageBuffer(const ServerSession *session) const override final {
-                if constexpr (ManagerOptions::CanDeferInvokeRequest) {
+                if constexpr (ManagerOptions::CanDeferInvokeRequest || ManagerOptions::CanManageMitmServers) {
                     return this->GetObjectBySessionIndex(session, m_saved_messages_start, hipc::TlsMessageBufferSize);
                 } else {
                     return cmif::PointerAndSize();

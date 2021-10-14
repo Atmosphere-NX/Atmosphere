@@ -624,9 +624,11 @@ namespace ams::sm::impl {
             R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, false, false));
         }
 
-        /* Get service info. Check to see if we need to defer this until later. */
+        /* Get service info/mitm info. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        MitmInfo *mitm_info = GetMitmInfo(service_info);
+        MitmInfo *mitm_info = service_info != nullptr ? GetMitmInfo(service_info) : nullptr;
+
+        /* Check to see if we need to defer until later. */
         R_UNLESS(service_info != nullptr,                           tipc::ResultRequestDeferred());
         R_UNLESS(!ShouldDeferForInit(service),                      tipc::ResultRequestDeferred());
         R_UNLESS(!HasFutureMitmDeclaration(service),                tipc::ResultRequestDeferred());

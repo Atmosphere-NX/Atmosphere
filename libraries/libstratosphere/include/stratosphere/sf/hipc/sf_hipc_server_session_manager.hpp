@@ -69,6 +69,12 @@ namespace ams::sf::hipc {
                 AMS_ABORT_UNLESS(util::GetReference(m_forward_service) != nullptr);
             }
 
+            ~ServerSession() {
+                if (m_has_forward_service) {
+                    util::DestroyAt(m_forward_service);
+                }
+            }
+
             ALWAYS_INLINE bool IsMitmSession() const {
                 return m_has_forward_service;
             }
