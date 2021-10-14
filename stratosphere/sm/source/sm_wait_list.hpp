@@ -18,8 +18,6 @@
 
 namespace ams::sm {
 
-    Result StartRegisterRetry(sm::ServiceName service_name);
-
     void TriggerResume(sm::ServiceName service_name);
 
 }

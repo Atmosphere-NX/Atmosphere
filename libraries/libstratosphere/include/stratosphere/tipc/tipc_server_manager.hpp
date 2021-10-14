@@ -18,6 +18,7 @@
 #include <stratosphere/tipc/tipc_common.hpp>
 #include <stratosphere/tipc/tipc_service_object.hpp>
 #include <stratosphere/tipc/tipc_object_manager.hpp>
+#include <stratosphere/tipc/tipc_deferral_manager.hpp>
 
 namespace ams::tipc {
 
@@ -25,25 +26,26 @@ namespace ams::tipc {
     struct PortMeta {
         static constexpr inline size_t MaxSessions = NumSessions;
 
+        static constexpr bool CanDeferInvokeRequest = IsDeferrable<Impl>;
+
         using ServiceObject = tipc::ServiceObject<Interface, Impl>;
 
         using Allocator     = _Allocator<ServiceObject, NumSessions>;
     };
 
-    struct DummyDeferralManager{
-        struct Key{};
-    };
+    struct DummyDeferralManagerBase{};
 
-    class PortManagerInterface {
-        public:
-            virtual Result ProcessRequest(ObjectHolder &object) = 0;
-    };
+    template<size_t N>
+    struct DummyDeferralManager : public DummyDeferralManagerBase {};
 
-    template<typename DeferralManagerType, size_t ThreadStackSize, typename... PortInfos>
+    template<size_t ThreadStackSize, typename... PortInfos>
     class ServerManagerImpl {
         private:
             static constexpr inline size_t NumPorts    = sizeof...(PortInfos);
             static constexpr inline size_t MaxSessions = (PortInfos::MaxSessions + ...);
+
+            /* Verify that we have at least one port. */
+            static_assert(NumPorts > 0);
 
             /* Verify that it's possible to service this many sessions, with our port manager count. */
             static_assert(MaxSessions <= NumPorts * svc::ArgumentHandleCountMax);
@@ -51,43 +53,24 @@ namespace ams::tipc {
             static_assert(util::IsAligned(ThreadStackSize, os::ThreadStackAlignment));
             alignas(os::ThreadStackAlignment) static constinit inline u8 s_port_stacks[ThreadStackSize * (NumPorts - 1)];
 
-            static constexpr inline bool IsDeferralSupported = !std::same_as<DeferralManagerType, DummyDeferralManager>;
-            using ResumeKey = typename DeferralManagerType::Key;
-
-            static constexpr ALWAYS_INLINE uintptr_t ConvertKeyToMessage(ResumeKey key) {
-                static_assert(sizeof(key) <= sizeof(uintptr_t));
-                static_assert(std::is_trivial<ResumeKey>::value);
-
-                if constexpr (sizeof(key) == sizeof(uintptr_t)) {
-                    return std::bit_cast<uintptr_t>(key);
-                } else {
-                    uintptr_t converted = 0;
-                    std::memcpy(std::addressof(converted), std::addressof(key), sizeof(key));
-                    return converted;
-                }
-            }
-
-            static constexpr ALWAYS_INLINE ResumeKey ConvertMessageToKey(uintptr_t message) {
-                static_assert(sizeof(ResumeKey) <= sizeof(uintptr_t));
-                static_assert(std::is_trivial<ResumeKey>::value);
-
-                if constexpr (sizeof(ResumeKey) == sizeof(uintptr_t)) {
-                    return std::bit_cast<ResumeKey>(message);
-                } else {
-                    ResumeKey converted = {};
-                    std::memcpy(std::addressof(converted), std::addressof(message), sizeof(converted));
-                    return converted;
-                }
-            }
-
             template<size_t Ix> requires (Ix < NumPorts)
             static constexpr inline size_t SessionsPerPortManager = (Ix == NumPorts - 1) ? ((MaxSessions / NumPorts) + MaxSessions % NumPorts)
                                                                                          : ((MaxSessions / NumPorts));
 
             template<size_t Ix> requires (Ix < NumPorts)
             using PortInfo = typename std::tuple_element<Ix, std::tuple<PortInfos...>>::type;
+
+            static constexpr inline bool IsDeferralSupported = (PortInfos::CanDeferInvokeRequest || ...);
+
+            template<size_t Sessions>
+            using DeferralManagerImplType = typename std::conditional<IsDeferralSupported, DeferralManager<Sessions>, DummyDeferralManager<Sessions>>::type;
+
+            using DeferralManagerBaseType = typename std::conditional<IsDeferralSupported, DeferralManagerBase, DummyDeferralManagerBase>::type;
+
+            template<size_t Ix> requires (Ix < NumPorts)
+            static constexpr inline bool IsPortDeferrable = PortInfo<Ix>::CanDeferInvokeRequest;
         public:
-            class PortManagerBase : public PortManagerInterface {
+            class PortManagerBase {
                 public:
                     enum MessageType : u8 {
                         MessageType_AddSession    = 0,
@@ -98,14 +81,14 @@ namespace ams::tipc {
                     std::atomic<s32> m_num_sessions;
                     s32 m_port_number;
                     os::MultiWaitType m_multi_wait;
-                    DeferralManagerType m_deferral_manager;
                     os::MessageQueueType m_message_queue;
                     os::MultiWaitHolderType m_message_queue_holder;
                     uintptr_t m_message_queue_storage[MaxSessions];
-                    ObjectManagerBase *m_object_manager;
                     ServerManagerImpl *m_server_manager;
+                    ObjectManagerBase *m_object_manager;
+                    DeferralManagerBaseType *m_deferral_manager;
                 public:
-                    PortManagerBase() : m_id(), m_num_sessions(), m_port_number(), m_multi_wait(), m_deferral_manager(), m_message_queue(), m_message_queue_holder(), m_message_queue_storage(), m_object_manager(), m_server_manager() {
+                    PortManagerBase() : m_id(), m_num_sessions(), m_port_number(), m_multi_wait(), m_message_queue(), m_message_queue_holder(), m_message_queue_storage(), m_server_manager(), m_object_manager(), m_deferral_manager() {
                         /* Setup our message queue. */
                         os::InitializeMessageQueue(std::addressof(m_message_queue), m_message_queue_storage, util::size(m_message_queue_storage));
                         os::InitializeMultiWaitHolder(std::addressof(m_message_queue_holder), std::addressof(m_message_queue), os::MessageQueueWaitType::ForNotEmpty);
@@ -119,11 +102,7 @@ namespace ams::tipc {
                         return m_num_sessions;
                     }
 
-                    ObjectManagerBase *GetObjectManager() const {
-                        return m_object_manager;
-                    }
-
-                    void InitializeBase(s32 id, ServerManagerImpl *sm, ObjectManagerBase *manager) {
+                    void InitializeBase(s32 id, ServerManagerImpl *sm, DeferralManagerBaseType *dm, ObjectManagerBase *om) {
                         /* Set our id. */
                         m_id = id;
 
@@ -138,7 +117,10 @@ namespace ams::tipc {
                         os::LinkMultiWaitHolder(std::addressof(m_multi_wait), std::addressof(m_message_queue_holder));
 
                         /* Initialize our object manager. */
-                        m_object_manager = manager;
+                        m_object_manager = om;
+
+                        /* Initialize our deferral manager. */
+                        m_deferral_manager = dm;
                     }
 
                     void RegisterPort(s32 index, os::NativeHandle port_handle) {
@@ -155,21 +137,57 @@ namespace ams::tipc {
                         m_object_manager->AddObject(object);
                     }
 
-                    virtual Result ProcessRequest(ObjectHolder &object) override {
-                        /* Process the request, this must succeed because we succeeded when deferring earlier. */
-                        R_ABORT_UNLESS(m_object_manager->ProcessRequest(object));
+                    os::NativeHandle ProcessRequest(ObjectHolder &object) {
+                        /* Acquire exclusive server manager access. */
+                        std::scoped_lock lk(m_server_manager->GetMutex());
 
-                        /* NOTE: We support nested deferral, where Nintendo does not. */
-                        if constexpr (IsDeferralSupported) {
-                            R_UNLESS(!PortManagerBase::IsRequestDeferred(), tipc::ResultRequestDeferred());
+                        /* Process the request. */
+                        const Result result = m_object_manager->ProcessRequest(object);
+                        if (R_SUCCEEDED(result)) {
+                            /* We should reply only if the request isn't deferred. */
+                            return !IsRequestDeferred() ? object.GetHandle() : os::InvalidNativeHandle;
+                        } else {
+                            /* Processing failed, so note the session as closed (or close it). */
+                            this->CloseSessionIfNecessary(object, !tipc::ResultSessionClosed::Includes(result));
+
+                            /* We shouldn't reply on failure. */
+                            return os::InvalidNativeHandle;
                         }
-
-                        /* Reply to the request. */
-                        return m_object_manager->Reply(object.GetHandle());
                     }
 
-                    Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, os::NativeHandle reply_target) {
-                        return m_object_manager->ReplyAndReceive(out_holder, out_object, reply_target, std::addressof(m_multi_wait));
+                    template<bool Enable = IsDeferralSupported, typename = typename std::enable_if<Enable>::type>
+                    void ProcessDeferredRequest(ObjectHolder &object) {
+                        static_assert(Enable == IsDeferralSupported);
+
+                        if (const auto reply_target = this->ProcessRequest(object); reply_target != os::InvalidNativeHandle) {
+                            m_object_manager->Reply(reply_target);
+                        }
+                    }
+
+                    bool ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, os::NativeHandle reply_target) {
+                        /* If we don't have a reply target, clear our message buffer. */
+                        if (reply_target == os::InvalidNativeHandle) {
+                            svc::ipc::MessageBuffer(svc::ipc::GetMessageBuffer()).SetNull();
+                        }
+
+                        /* Try to reply/receive. */
+                        const Result result = m_object_manager->ReplyAndReceive(out_holder, out_object, reply_target, std::addressof(m_multi_wait));
+
+                        /* Acquire exclusive access to the server manager. */
+                        std::scoped_lock lk(m_server_manager->GetMutex());
+
+                        /* Handle the result. */
+                        R_TRY_CATCH(result) {
+                            R_CATCH(os::ResultSessionClosedForReceive, os::ResultReceiveListBroken) {
+                                /* Close the object. */
+                                this->CloseSession(*out_object);
+
+                                /* We don't have anything to process. */
+                                return false;
+                            }
+                        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+                        return true;
                     }
 
                     void AddSession(os::NativeHandle session_handle, tipc::ServiceObjectBase *service_object) {
@@ -198,7 +216,7 @@ namespace ams::tipc {
                                         const os::NativeHandle session_handle = static_cast<os::NativeHandle>(message_type >> BITSIZEOF(u32));
 
                                         /* Allocate a service object for the port. */
-                                        auto *service_object = m_server_manager->AllocateObject(static_cast<size_t>(message_data));
+                                        auto *service_object = m_server_manager->AllocateObject(static_cast<size_t>(message_data), session_handle, *m_deferral_manager);
 
                                         /* Add the newly-created service object. */
                                         this->AddSession(session_handle, service_object);
@@ -206,12 +224,8 @@ namespace ams::tipc {
                                     break;
                                 case MessageType_TriggerResume:
                                     if constexpr (IsDeferralSupported) {
-                                        /* Acquire exclusive server manager access. */
-                                        std::scoped_lock lk(m_server_manager->GetMutex());
-
                                         /* Perform the resume. */
-                                        const auto resume_key = ConvertMessageToKey(message_data);
-                                        m_deferral_manager.Resume(resume_key, this);
+                                        this->OnTriggerResume(message_data);
                                     }
                                     break;
                                 AMS_UNREACHABLE_DEFAULT_CASE();
@@ -249,59 +263,42 @@ namespace ams::tipc {
                         --m_num_sessions;
                     }
 
-                    Result StartRegisterRetry(ResumeKey key) {
-                        if constexpr (IsDeferralSupported) {
-                            /* Acquire exclusive server manager access. */
-                            std::scoped_lock lk(m_server_manager->GetMutex());
-
-                            /* Begin the retry. */
-                            return m_deferral_manager.StartRegisterRetry(key);
-                        } else {
-                            return ResultSuccess();
-                        }
-                    }
-
-                    void ProcessRegisterRetry(ObjectHolder &object) {
-                        if constexpr (IsDeferralSupported) {
-                            /* Acquire exclusive server manager access. */
-                            std::scoped_lock lk(m_server_manager->GetMutex());
-
-                            /* Process the retry. */
-                            m_deferral_manager.ProcessRegisterRetry(object);
-                        }
-                    }
-
-                    bool TestResume(ResumeKey key) {
+                    bool TestResume(uintptr_t key) {
                         if constexpr (IsDeferralSupported) {
                             /* Acquire exclusive server manager access. */
                             std::scoped_lock lk(m_server_manager->GetMutex());
 
                             /* Check to see if the key corresponds to some deferred message. */
-                            return m_deferral_manager.TestResume(key);
+                            return m_deferral_manager->TestResume(key);
                         } else {
                             return false;
                         }
                     }
 
-                    void TriggerResume(ResumeKey key) {
+                    void TriggerResume(uintptr_t key) {
                         /* Acquire exclusive server manager access. */
                         std::scoped_lock lk(m_server_manager->GetMutex());
 
                         /* Send the key as a message. */
                         os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(MessageType_TriggerResume));
-                        os::SendMessageQueue(std::addressof(m_message_queue), ConvertKeyToMessage(key));
+                        os::SendMessageQueue(std::addressof(m_message_queue), key);
                     }
 
                     void TriggerAddSession(os::NativeHandle session_handle, size_t port_index) {
-                        /* Acquire exclusive server manager access. */
-                        std::scoped_lock lk(m_server_manager->GetMutex());
-
                         /* Increment our session count. */
                         ++m_num_sessions;
 
                         /* Send information about the session as a message. */
                         os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(MessageType_AddSession) | (static_cast<u64>(session_handle) << BITSIZEOF(u32)));
                         os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(port_index));
+                    }
+                private:
+                    void OnTriggerResume(uintptr_t key) {
+                        /* Acquire exclusive server manager access. */
+                        std::scoped_lock lk(m_server_manager->GetMutex());
+
+                        /* Trigger the resume. */
+                        m_deferral_manager->TriggerResume(this, key);
                     }
                 public:
                     static bool IsRequestDeferred() {
@@ -331,15 +328,16 @@ namespace ams::tipc {
             template<typename PortInfo, size_t PortSessions>
             class PortManagerImpl final : public PortManagerBase {
                 private:
+                    DeferralManagerImplType<PortSessions> m_deferral_manager_impl;
                     tipc::ObjectManager<1 + PortSessions> m_object_manager_impl;
                 public:
-                    PortManagerImpl() : PortManagerBase(), m_object_manager_impl() {
+                    PortManagerImpl() : PortManagerBase(), m_deferral_manager_impl(), m_object_manager_impl() {
                         /* ...  */
                     }
 
                     void Initialize(s32 id, ServerManagerImpl *sm) {
                         /* Initialize our base. */
-                        this->InitializeBase(id, sm, std::addressof(m_object_manager_impl));
+                        this->InitializeBase(id, sm, std::addressof(m_deferral_manager_impl), std::addressof(m_object_manager_impl));
 
                         /* Initialize our object manager. */
                         m_object_manager_impl.Initialize(std::addressof(this->m_multi_wait));
@@ -356,7 +354,6 @@ namespace ams::tipc {
             using PortAllocatorTuple = std::tuple<typename PortInfos::Allocator...>;
         private:
             os::SdkRecursiveMutex m_mutex;
-            os::TlsSlot m_tls_slot;
             PortManagerTuple m_port_managers;
             PortAllocatorTuple m_port_allocators;
             os::ThreadType m_port_threads[NumPorts - 1];
@@ -390,18 +387,11 @@ namespace ams::tipc {
                 os::StartThread(m_port_threads + Ix);
             }
         public:
-            ServerManagerImpl() : m_mutex(), m_tls_slot(), m_port_managers(), m_port_allocators() { /* ... */ }
-
-            os::TlsSlot GetTlsSlot() const { return m_tls_slot; }
+            ServerManagerImpl() : m_mutex(), m_port_managers(), m_port_allocators() { /* ... */ }
 
             os::SdkRecursiveMutex &GetMutex() { return m_mutex; }
 
             void Initialize() {
-                /* Initialize our tls slot. */
-                if constexpr (IsDeferralSupported) {
-                    R_ABORT_UNLESS(os::SdkAllocateTlsSlot(std::addressof(m_tls_slot), nullptr));
-                }
-
                 /* Initialize our port managers. */
                 [this]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                     (this->GetPortManager<Ix>().Initialize(static_cast<s32>(Ix), this), ...);
@@ -438,14 +428,14 @@ namespace ams::tipc {
                 this->LoopAutoForPort<NumPorts - 1>();
             }
 
-            tipc::ServiceObjectBase *AllocateObject(size_t port_index) {
+            tipc::ServiceObjectBase *AllocateObject(size_t port_index, os::NativeHandle handle, DeferralManagerBaseType &deferral_manager) {
                 /* Check that the port index is valid. */
                 AMS_ABORT_UNLESS(port_index < NumPorts);
 
                 /* Try to allocate from each port, in turn. */
                 tipc::ServiceObjectBase *allocated = nullptr;
-                [this, port_index, &allocated]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-                    (this->TryAllocateObject<Ix>(port_index, allocated), ...);
+                [this, port_index, handle, &deferral_manager, &allocated]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    (this->TryAllocateObject<Ix>(port_index, handle, deferral_manager, allocated), ...);
                 }(std::make_index_sequence<NumPorts>());
 
                 /* Return the allocated object. */
@@ -453,13 +443,17 @@ namespace ams::tipc {
                 return allocated;
             }
 
-            void TriggerResume(ResumeKey resume_key) {
+            template<IsResumeKey ResumeKey>
+            void TriggerResume(const ResumeKey &resume_key) {
                 /* Acquire exclusive access to ourselves. */
                 std::scoped_lock lk(m_mutex);
 
+                /* Convert to internal resume key. */
+                const auto internal_resume_key = ConvertToInternalResumeKey(resume_key);
+
                 /* Check/trigger resume on each of our ports. */
-                [this, resume_key]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
-                    (this->TriggerResumeImpl<Ix>(resume_key), ...);
+                [this, internal_resume_key]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    (this->TriggerResumeImpl<Ix>(internal_resume_key), ...);
                 }(std::make_index_sequence<NumPorts>());
             }
 
@@ -485,50 +479,45 @@ namespace ams::tipc {
             }
         private:
             template<size_t Ix> requires (Ix < NumPorts)
-            void TryAllocateObject(size_t port_index, tipc::ServiceObjectBase *&allocated) {
+            void TryAllocateObject(size_t port_index, os::NativeHandle handle, DeferralManagerBaseType &deferral_manager, tipc::ServiceObjectBase *&allocated) {
                 /* Check that the port index matches. */
                 if (port_index == Ix) {
+                    /* Check that we haven't already allocated. */
+                    AMS_ABORT_UNLESS(allocated == nullptr);
+
                     /* Get the allocator. */
                     auto &allocator = std::get<Ix>(m_port_allocators);
 
                     /* Allocate the object. */
-                    AMS_ABORT_UNLESS(allocated == nullptr);
-                    allocated = allocator.Allocate();
-                    AMS_ABORT_UNLESS(allocated != nullptr);
+                    auto * const new_object = allocator.Allocate();
+                    AMS_ABORT_UNLESS(new_object != nullptr);
 
                     /* If we should, set the object's deleter. */
                     if constexpr (IsServiceObjectDeleter<typename std::tuple_element<Ix, PortAllocatorTuple>::type>) {
-                        allocated->SetDeleter(std::addressof(allocator));
+                        new_object->SetDeleter(std::addressof(allocator));
                     }
+
+                    /* If we should, set the object's deferral manager. */
+                    if constexpr (IsPortDeferrable<Ix>) {
+                        deferral_manager.AddObject(new_object->GetImpl(), handle, new_object);
+                    }
+
+                    /* Set the allocated object. */
+                    allocated = new_object;
                 }
             }
 
             Result LoopProcess(PortManagerBase &port_manager) {
-                /* Set our tls slot's value to be the port manager we're processing for. */
-                if constexpr (IsDeferralSupported) {
-                    os::SetTlsValue(this->GetTlsSlot(), reinterpret_cast<uintptr_t>(std::addressof(port_manager)));
-                }
-
-                /* Clear the message buffer. */
-                /* NOTE: Nintendo only clears the hipc header. */
-                std::memset(svc::ipc::GetMessageBuffer(), 0, svc::ipc::MessageBufferSize);
-
                 /* Process requests forever. */
                 os::NativeHandle reply_target = os::InvalidNativeHandle;
                 while (true) {
-                    /* Reply to our pending request, and receive a new one. */
+                    /* Reply to our pending request, and wait to receive a new one. */
                     os::MultiWaitHolderType *signaled_holder = nullptr;
                     tipc::ObjectHolder signaled_object{};
-                    R_TRY_CATCH(port_manager.ReplyAndReceive(std::addressof(signaled_holder), std::addressof(signaled_object), reply_target)) {
-                        R_CATCH(os::ResultSessionClosedForReceive, os::ResultReceiveListBroken) {
-                            /* Close the object and continue. */
-                            port_manager.CloseSession(signaled_object);
-
-                            /* We have nothing to reply to. */
-                            reply_target = os::InvalidNativeHandle;
-                            continue;
-                        }
-                    } R_END_TRY_CATCH;
+                    while (!port_manager.ReplyAndReceive(std::addressof(signaled_holder), std::addressof(signaled_object), reply_target)) {
+                        reply_target    = os::InvalidNativeHandle;
+                        signaled_object = {};
+                    }
 
                     if (signaled_holder == nullptr) {
                         /* A session was signaled, accessible via signaled_object. */
@@ -548,31 +537,7 @@ namespace ams::tipc {
                             case ObjectHolder::ObjectType_Session:
                                 {
                                     /* Process the request */
-                                    const Result process_result = port_manager.GetObjectManager()->ProcessRequest(signaled_object);
-                                    if (R_SUCCEEDED(process_result)) {
-                                        if constexpr (IsDeferralSupported) {
-                                            /* Check if the request is deferred. */
-                                            if (PortManagerBase::IsRequestDeferred()) {
-                                                /* Process the retry that we began. */
-                                                port_manager.ProcessRegisterRetry(signaled_object);
-
-                                                /* We have nothing to reply to. */
-                                                reply_target = os::InvalidNativeHandle;
-                                            } else {
-                                                /* We're done processing, so we should reply. */
-                                                reply_target = signaled_object.GetHandle();
-                                            }
-                                        } else {
-                                            /* We're done processing, so we should reply. */
-                                            reply_target = signaled_object.GetHandle();
-                                        }
-                                    } else {
-                                        /* We failed to process, so note the session as closed (or close it). */
-                                        port_manager.CloseSessionIfNecessary(signaled_object, !tipc::ResultSessionClosed::Includes(process_result));
-
-                                        /* We have nothing to reply to. */
-                                        reply_target = os::InvalidNativeHandle;
-                                    }
+                                    reply_target = port_manager.ProcessRequest(signaled_object);
                                 }
                                 break;
                             AMS_UNREACHABLE_DEFAULT_CASE();
@@ -625,7 +590,7 @@ namespace ams::tipc {
             }
 
             template<size_t Ix>
-            void TriggerResumeImpl(ResumeKey resume_key) {
+            void TriggerResumeImpl(uintptr_t resume_key) {
                 /* Get the port manager. */
                 auto &port_manager = this->GetPortManager<Ix>();
 
@@ -636,17 +601,11 @@ namespace ams::tipc {
             }
     };
 
-    template<typename DeferralManagerType, typename... PortInfos>
-    using ServerManagerWithDeferral = ServerManagerImpl<DeferralManagerType, os::MemoryPageSize, PortInfos...>;
-
-    template<typename DeferralManagerType, size_t ThreadStackSize, typename... PortInfos>
-    using ServerManagerWithDeferralAndThreadStack = ServerManagerImpl<DeferralManagerType, ThreadStackSize, PortInfos...>;
-
     template<typename... PortInfos>
-    using ServerManager = ServerManagerImpl<DummyDeferralManager, os::MemoryPageSize, PortInfos...>;
+    using ServerManager = ServerManagerImpl<os::MemoryPageSize, PortInfos...>;
 
     template<size_t ThreadStackSize, typename... PortInfos>
-    using ServerManagerWithThreadStack = ServerManagerImpl<DummyDeferralManager, ThreadStackSize, PortInfos...>;
+    using ServerManagerWithThreadStack = ServerManagerImpl<ThreadStackSize, PortInfos...>;
 
 }
 

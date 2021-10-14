@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/tipc/tipc_common.hpp>
-#include <stratosphere/tipc/tipc_service_object.hpp>
+#include <stratosphere/tipc/tipc_service_object_base.hpp>
 
 namespace ams::tipc {
 
@@ -26,6 +26,8 @@ namespace ams::tipc {
                 ObjectType_Invalid = 0,
                 ObjectType_Port    = 1,
                 ObjectType_Session = 2,
+
+                ObjectType_Deferral = ObjectType_Invalid,
             };
         private:
             os::NativeHandle m_handle;
@@ -55,6 +57,10 @@ namespace ams::tipc {
 
             void InitializeAsSession(os::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
                 this->InitializeImpl(ObjectType_Session, handle, managed, object);
+            }
+
+            void InitializeForDeferralManager(os::NativeHandle handle, tipc::ServiceObjectBase *object) {
+                this->InitializeImpl(ObjectType_Deferral, handle, false, object);
             }
 
             void Destroy() {

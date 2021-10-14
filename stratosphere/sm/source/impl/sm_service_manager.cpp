@@ -604,11 +604,10 @@ namespace ams::sm::impl {
         bool has_service = false;
         R_TRY(impl::HasService(std::addressof(has_service), service));
 
-        /* If we do, we can succeed immediately. */
-        R_SUCCEED_IF(has_service);
+        /* If we don't, we want to wait until the service is registered. */
+        R_UNLESS(has_service, tipc::ResultRequestDeferred());
 
-        /* Otherwise, we want to wait until the service is registered. */
-        return StartRegisterRetry(service);
+        return ResultSuccess();
     }
 
     Result GetServiceHandle(os::NativeHandle *out, os::ProcessId process_id, ServiceName service) {
@@ -628,9 +627,10 @@ namespace ams::sm::impl {
         /* Get service info. Check to see if we need to defer this until later. */
         ServiceInfo *service_info = GetServiceInfo(service);
         MitmInfo *mitm_info = GetMitmInfo(service_info);
-        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || (mitm_info != nullptr && mitm_info->waiting_ack)) {
-            return StartRegisterRetry(service);
-        }
+        R_UNLESS(service_info != nullptr,                           tipc::ResultRequestDeferred());
+        R_UNLESS(!ShouldDeferForInit(service),                      tipc::ResultRequestDeferred());
+        R_UNLESS(!HasFutureMitmDeclaration(service),                tipc::ResultRequestDeferred());
+        R_UNLESS((mitm_info == nullptr || !mitm_info->waiting_ack), tipc::ResultRequestDeferred());
 
         /* Get a handle from the service info. */
         R_TRY_CATCH(GetServiceHandleImpl(out, service_info, process_id)) {
@@ -715,11 +715,10 @@ namespace ams::sm::impl {
         bool has_mitm = false;
         R_TRY(impl::HasMitm(std::addressof(has_mitm), service));
 
-        /* If we do, we can succeed immediately. */
-        R_SUCCEED_IF(has_mitm);
+        /* If we don't, we want to wait until the mitm is installed. */
+        R_UNLESS(has_mitm, tipc::ResultRequestDeferred());
 
-        /* Otherwise, we want to wait until the service is registered. */
-        return StartRegisterRetry(service);
+        return ResultSuccess();
     }
 
     Result InstallMitm(os::NativeHandle *out, os::NativeHandle *out_query, os::ProcessId process_id, ServiceName service) {
@@ -740,7 +739,7 @@ namespace ams::sm::impl {
         ServiceInfo *service_info = GetServiceInfo(service);
 
         /* If it doesn't exist, defer until it does. */
-        R_UNLESS(service_info != nullptr, StartRegisterRetry(service));
+        R_UNLESS(service_info != nullptr, tipc::ResultRequestDeferred());
 
         /* Validate that the service isn't already being mitm'd. */
         R_UNLESS(GetMitmInfo(service_info) == nullptr, sm::ResultAlreadyRegistered());

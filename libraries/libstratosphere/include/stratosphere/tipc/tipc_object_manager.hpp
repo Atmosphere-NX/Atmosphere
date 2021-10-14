@@ -125,7 +125,7 @@ namespace ams::tipc {
                 }
             }
 
-            Result Reply(os::NativeHandle reply_target) {
+            void Reply(os::NativeHandle reply_target) {
                 /* Perform the reply. */
                 s32 dummy;
                 R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(dummy), nullptr, 0, reply_target, 0)) {
@@ -136,8 +136,6 @@ namespace ams::tipc {
                         /* It's okay if we couldn't reply to a closed session. */
                     }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-                return ResultSuccess();
             }
 
             Result ProcessRequest(ObjectHolder &object) {

@@ -143,7 +143,7 @@ namespace ams::sm {
                 const Result result = this->GetServiceHandle(std::addressof(out_handle), service_name);
 
                 /* Serialize output. */
-                if (R_SUCCEEDED(result) || !tipc::ResultRequestDeferred::Includes(result)) {
+                if (!tipc::ResultRequestDeferred::Includes(result)) {
                     std::memcpy(out_message_buffer + 0x00, CmifResponseToGetServiceHandleAndRegisterService, sizeof(CmifResponseToGetServiceHandleAndRegisterService));
                     std::memcpy(out_message_buffer + 0x0C, std::addressof(out_handle), sizeof(out_handle));
                     std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
@@ -155,12 +155,8 @@ namespace ams::sm {
                 const Result result = this->UnregisterService(service_name);
 
                 /* Serialize output. */
-                if (R_SUCCEEDED(result) || !tipc::ResultRequestDeferred::Includes(result)) {
-                    std::memcpy(out_message_buffer + 0x00, CmifResponseToUnregisterService, sizeof(CmifResponseToUnregisterService));
-                    std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
-                } else {
-                    std::memcpy(out_message_buffer, CmifResponseToForceProcessorDeferral, sizeof(CmifResponseToForceProcessorDeferral));
-                }
+                std::memcpy(out_message_buffer + 0x00, CmifResponseToUnregisterService, sizeof(CmifResponseToUnregisterService));
+                std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
             } else {
                 return tipc::ResultInvalidMethod();
             }
@@ -186,13 +182,9 @@ namespace ams::sm {
                 const Result result = this->RegisterService(std::addressof(out_handle), service_name, max_sessions, is_light);
 
                 /* Serialize output. */
-                if (R_SUCCEEDED(result) || !tipc::ResultRequestDeferred::Includes(result)) {
-                    std::memcpy(out_message_buffer + 0x00, CmifResponseToGetServiceHandleAndRegisterService, sizeof(CmifResponseToGetServiceHandleAndRegisterService));
-                    std::memcpy(out_message_buffer + 0x0C, std::addressof(out_handle), sizeof(out_handle));
-                    std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
-                } else {
-                    std::memcpy(out_message_buffer, CmifResponseToForceProcessorDeferral, sizeof(CmifResponseToForceProcessorDeferral));
-                }
+                std::memcpy(out_message_buffer + 0x00, CmifResponseToGetServiceHandleAndRegisterService, sizeof(CmifResponseToGetServiceHandleAndRegisterService));
+                std::memcpy(out_message_buffer + 0x0C, std::addressof(out_handle), sizeof(out_handle));
+                std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
             } else {
                 return tipc::ResultInvalidMethod();
             }

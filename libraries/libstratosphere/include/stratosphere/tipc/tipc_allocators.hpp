@@ -44,12 +44,12 @@ namespace ams::tipc {
                 util::TypedStorage<T> storage;
             };
         private:
-            os::SdkMutex m_mutex;
             Entry m_entries[N];
+            os::SdkMutex m_mutex;
         public:
-            constexpr ALWAYS_INLINE SlabAllocator() : m_entries() { /* ... */ }
+            constexpr ALWAYS_INLINE SlabAllocator() : m_entries(), m_mutex() { /* ... */ }
 
-            ServiceObjectBase *Allocate() {
+            T *Allocate() {
                 std::scoped_lock lk(m_mutex);
 
                 for (size_t i = 0; i < N; ++i) {
