@@ -84,8 +84,9 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         constexpr int DecodeChargeVoltageLimit(u8 reg) {
             constexpr int Minimum = 3504;
+            constexpr int Maximum = 4400;
 
-            return Minimum + (static_cast<u32>(reg & 0xFC) << 2);
+            return std::min<int>(Maximum, Minimum + (static_cast<u32>(reg & 0xFC) << 2));
         }
 
         static_assert(DecodeChargeVoltageLimit(EncodeChargeVoltageLimit(3504)) == 3504);

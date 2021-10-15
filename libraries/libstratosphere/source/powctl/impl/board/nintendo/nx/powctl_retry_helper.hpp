@@ -21,11 +21,11 @@ namespace ams::powctl::impl {
     constexpr inline const TimeSpan PowerControlRetryTimeout  = TimeSpan::FromSeconds(10);
     constexpr inline const TimeSpan PowerControlRetryInterval = TimeSpan::FromMilliSeconds(20);
 
-    #define AMS_POWCTL_R_TRY_WITH_RETRY(__EXPR__)                                                        \
+    #define AMS_POWCTL_DRIVER_R_TRY_WITH_RETRY(__EXPR__)                                                 \
         ({                                                                                               \
             TimeSpan __powctl_retry_current_time = 0;                                                    \
             while (true) {                                                                               \
-                const Result __powctl_retry_result = (__EXPR__);                                         \
+                const Result __powctl_retry_result = ( __EXPR__ );                                       \
                 if (R_SUCCEEDED(__powctl_retry_result)) {                                                \
                     break;                                                                               \
                 }                                                                                        \
@@ -37,5 +37,6 @@ namespace ams::powctl::impl {
             }                                                                                            \
         })
 
+    #define AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(__EXPR__) AMS_POWCTL_DRIVER_R_TRY_WITH_RETRY( ({ std::scoped_lock lk(this->GetMutex()); ( __EXPR__ ); }) )
 
 }

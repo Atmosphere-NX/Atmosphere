@@ -100,7 +100,7 @@ namespace ams::boot {
         bool use_desired_shutdown = true;
         if (spl::GetHardwareType() == spl::HardwareType::Hoag) {
             float battery_charge_raw;
-            if (R_FAILED(battery_driver.GetSocRep(std::addressof(battery_charge_raw))) || battery_charge_raw >= 80.0) {
+            if (R_FAILED(battery_driver.GetChargePercentage(std::addressof(battery_charge_raw))) || battery_charge_raw >= 80.0) {
                 use_desired_shutdown = false;
             }
         }

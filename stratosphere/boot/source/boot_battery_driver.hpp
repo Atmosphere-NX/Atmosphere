@@ -19,55 +19,62 @@
 namespace ams::boot {
 
     class BatteryDriver {
+        NON_COPYABLE(BatteryDriver);
+        NON_MOVEABLE(BatteryDriver);
         private:
-            powctl::Session m_battery_session;
+            static constinit inline powctl::Session s_battery_session{powctl::Session::ConstantInitializeTag{}};
+            static constinit inline int s_reference_count{0};
         public:
-            BatteryDriver() : m_battery_session() {
-                R_ABORT_UNLESS(powctl::OpenSession(std::addressof(m_battery_session), powctl::DeviceCode_Max17050, ddsf::AccessMode_ReadWrite));
+            BatteryDriver() {
+                if ((s_reference_count++) == 0) {
+                    R_ABORT_UNLESS(powctl::OpenSession(std::addressof(s_battery_session), powctl::DeviceCode_Max17050, ddsf::AccessMode_ReadWrite));
+                }
             }
 
             ~BatteryDriver() {
-                powctl::CloseSession(m_battery_session);
+                if ((--s_reference_count) == 0) {
+                    powctl::CloseSession(s_battery_session);
+                }
             }
         public:
             Result IsBatteryRemoved(bool *out) {
                 bool present;
-                R_TRY(powctl::IsBatteryPresent(std::addressof(present), m_battery_session));
+                R_TRY(powctl::IsBatteryPresent(std::addressof(present), s_battery_session));
 
                 *out = !present;
                 return ResultSuccess();
             }
 
-            Result GetSocRep(float *out) {
-                return powctl::GetBatterySocRep(out, m_battery_session);
+            Result GetChargePercentage(float *out) {
+                return powctl::GetBatteryChargePercentage(out, s_battery_session);
             }
 
             Result GetAverageVCell(int *out) {
-                return powctl::GetBatteryAverageVCell(out, m_battery_session);
+                return powctl::GetBatteryAverageVCell(out, s_battery_session);
             }
 
             Result GetOpenCircuitVoltage(int *out) {
-                return powctl::GetBatteryOpenCircuitVoltage(out, m_battery_session);
+                return powctl::GetBatteryOpenCircuitVoltage(out, s_battery_session);
             }
 
             Result GetAverageCurrent(int *out) {
-                return powctl::GetBatteryAverageCurrent(out, m_battery_session);
+                return powctl::GetBatteryAverageCurrent(out, s_battery_session);
             }
 
             Result GetCurrent(int *out) {
-                return powctl::GetBatteryCurrent(out, m_battery_session);
+                return powctl::GetBatteryCurrent(out, s_battery_session);
             }
 
             Result GetTemperature(float *out) {
-                return powctl::GetBatteryTemperature(out, m_battery_session);
+                return powctl::GetBatteryTemperature(out, s_battery_session);
             }
 
             Result IsI2cShutdownEnabled(bool *out) {
-                return powctl::IsBatteryI2cShutdownEnabled(out, m_battery_session);
+                return powctl::IsBatteryI2cShutdownEnabled(out, s_battery_session);
             }
 
             Result SetI2cShutdownEnabled(bool en) {
-                return powctl::SetBatteryI2cShutdownEnabled(m_battery_session, en);
+                return powctl::SetBatteryI2cShutdownEnabled(s_battery_session, en);
             }
     };
 

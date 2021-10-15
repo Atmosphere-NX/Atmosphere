@@ -357,7 +357,7 @@ namespace ams::boot {
             if (show_charging_display) {
                 /* Get the raw battery charge. */
                 float raw_battery_charge;
-                if (R_FAILED(m_battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
+                if (R_FAILED(m_battery_driver.GetChargePercentage(std::addressof(raw_battery_charge)))) {
                     return CheckBatteryResult::Shutdown;
                 }
 
@@ -372,7 +372,7 @@ namespace ams::boot {
             while (true) {
                 /* Get the raw battery charge. */
                 float raw_battery_charge;
-                if (R_FAILED(m_battery_driver.GetSocRep(std::addressof(raw_battery_charge)))) {
+                if (R_FAILED(m_battery_driver.GetChargePercentage(std::addressof(raw_battery_charge)))) {
                     return CheckBatteryResult::Shutdown;
                 }
 

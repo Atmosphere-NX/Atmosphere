@@ -45,16 +45,19 @@ namespace ams::powctl::impl::board::nintendo::nx {
             Result InitializeSession(const char *battery_vendor, u8 battery_version);
             Result SetMaximumShutdownTimerThreshold();
 
+            Result SetAlertByChargePercentage();
+            Result SetAlertByVoltageFuelGaugePercentage();
+
             bool IsPowerOnReset();
-            Result LockVfSoc();
-            Result UnlockVfSoc();
+            Result LockVoltageFuelGauge();
+            Result UnlockVoltageFuelGauge();
             Result LockModelTable();
             Result UnlockModelTable();
             bool IsModelTableLocked();
             Result SetModelTable(const u16 *model_table);
             bool IsModelTableSet(const u16 *model_table);
         public:
-            Max17050Driver() : m_mutex(), m_init_count(0), m_i2c_session(), m_internal_state() {
+            constexpr Max17050Driver() : m_mutex(), m_init_count(0), m_i2c_session(), m_internal_state() {
                 /* ... */
             }
 
@@ -97,16 +100,19 @@ namespace ams::powctl::impl::board::nintendo::nx {
                 m_internal_state = src;
             }
 
-            Result GetSocRep(double *out);
-            Result GetSocVf(double *out);
+            Result GetChargePercentage(double *out);
+            Result GetVoltageFuelGaugePercentage(double *out);
 
             Result GetFullCapacity(double *out, double sense_resistor);
             Result GetRemainingCapacity(double *out, double sense_resistor);
 
-            Result SetPercentageMinimumAlertThreshold(int percentage);
-            Result SetPercentageMaximumAlertThreshold(int percentage);
+            Result SetChargePercentageMinimumAlertThreshold(int percentage);
+            Result SetChargePercentageMaximumAlertThreshold(int percentage);
 
-            Result SetPercentageFullThreshold(double percentage);
+            Result SetVoltageFuelGaugePercentageMinimumAlertThreshold(int percentage);
+            Result SetVoltageFuelGaugePercentageMaximumAlertThreshold(int percentage);
+
+            Result SetFullChargeThreshold(double percentage);
 
             Result GetAverageCurrent(double *out, double sense_resistor);
             Result GetCurrent(double *out, double sense_resistor);

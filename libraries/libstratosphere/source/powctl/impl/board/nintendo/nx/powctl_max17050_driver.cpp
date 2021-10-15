@@ -330,11 +330,11 @@ namespace ams::powctl::impl::board::nintendo::nx {
         u16 vfsoc, qh;
         {
             R_TRY(ReadRegister(m_i2c_session, max17050::SocVf, std::addressof(vfsoc)));
-            R_TRY(this->UnlockVfSoc());
+            R_TRY(this->UnlockVoltageFuelGauge());
             while (!WriteValidateRegister(m_i2c_session, max17050::SocVf0, vfsoc)) { /* ... */ }
             R_TRY(ReadRegister(m_i2c_session, max17050::Qh, std::addressof(qh)));
             R_TRY(WriteRegister(m_i2c_session, max17050::Qh0, qh));
-            R_TRY(this->LockVfSoc());
+            R_TRY(this->LockVoltageFuelGauge());
         }
 
         /* Reset cycles. */
@@ -371,6 +371,14 @@ namespace ams::powctl::impl::board::nintendo::nx {
         return WriteRegister(m_i2c_session, max17050::ShdnTimer, 0xE000);
     }
 
+    Result Max17050Driver::SetAlertByChargePercentage() {
+        return ReadWriteRegister(m_i2c_session, max17050::MiscCfg, 0x0003, 0x0000);
+    }
+
+    Result Max17050Driver::SetAlertByVoltageFuelGaugePercentage() {
+        return ReadWriteRegister(m_i2c_session, max17050::MiscCfg, 0x0003, 0x0003);
+    }
+
     bool Max17050Driver::IsPowerOnReset() {
         /* Get the register. */
         u16 val;
@@ -380,11 +388,11 @@ namespace ams::powctl::impl::board::nintendo::nx {
         return (val & 0x0002) != 0;
     }
 
-    Result Max17050Driver::LockVfSoc() {
+    Result Max17050Driver::LockVoltageFuelGauge() {
         return WriteRegister(m_i2c_session, max17050::SocVfAccess, 0x0000);
     }
 
-    Result Max17050Driver::UnlockVfSoc() {
+    Result Max17050Driver::UnlockVoltageFuelGauge() {
         return WriteRegister(m_i2c_session, max17050::SocVfAccess, 0x0080);
     }
 
@@ -479,7 +487,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         return ResultSuccess();
     }
 
-    Result Max17050Driver::GetSocRep(double *out) {
+    Result Max17050Driver::GetChargePercentage(double *out) {
         /* Validate parameters. */
         AMS_ABORT_UNLESS(out != nullptr);
 
@@ -492,7 +500,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         return ResultSuccess();
     }
 
-    Result Max17050Driver::GetSocVf(double *out) {
+    Result Max17050Driver::GetVoltageFuelGaugePercentage(double *out) {
         /* Validate parameters. */
         AMS_ABORT_UNLESS(out != nullptr);
 
@@ -535,15 +543,27 @@ namespace ams::powctl::impl::board::nintendo::nx {
         return ResultSuccess();
     }
 
-    Result Max17050Driver::SetPercentageMinimumAlertThreshold(int percentage) {
+    Result Max17050Driver::SetChargePercentageMinimumAlertThreshold(int percentage) {
+        R_TRY(this->SetAlertByChargePercentage());
         return ReadWriteRegister(m_i2c_session, max17050::SocAlrtThreshold, 0x00FF, static_cast<u8>(percentage));
     }
 
-    Result Max17050Driver::SetPercentageMaximumAlertThreshold(int percentage) {
+    Result Max17050Driver::SetChargePercentageMaximumAlertThreshold(int percentage) {
+        R_TRY(this->SetAlertByChargePercentage());
         return ReadWriteRegister(m_i2c_session, max17050::SocAlrtThreshold, 0xFF00, static_cast<u16>(static_cast<u8>(percentage)) << 8);
     }
 
-    Result Max17050Driver::SetPercentageFullThreshold(double percentage) {
+    Result Max17050Driver::SetVoltageFuelGaugePercentageMinimumAlertThreshold(int percentage) {
+        R_TRY(this->SetAlertByVoltageFuelGaugePercentage());
+        return ReadWriteRegister(m_i2c_session, max17050::SocAlrtThreshold, 0x00FF, static_cast<u8>(percentage));
+    }
+
+    Result Max17050Driver::SetVoltageFuelGaugePercentageMaximumAlertThreshold(int percentage) {
+        R_TRY(this->SetAlertByVoltageFuelGaugePercentage());
+        return ReadWriteRegister(m_i2c_session, max17050::SocAlrtThreshold, 0xFF00, static_cast<u16>(static_cast<u8>(percentage)) << 8);
+    }
+
+    Result Max17050Driver::SetFullChargeThreshold(double percentage) {
         #if defined(ATMOSPHERE_ARCH_ARM64)
             const u16 val = vcvtd_n_s64_f64(percentage, BITSIZEOF(u8));
         #else

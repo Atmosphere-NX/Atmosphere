@@ -33,12 +33,17 @@ namespace ams::powctl::impl {
         AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::IPowerControlDriver, ::ams::ddsf::IDriver);
         private:
             bool m_event_handler_enabled;
+            os::SdkMutex m_mutex;
         protected:
             constexpr bool IsEventHandlerEnabled() const {
                 return m_event_handler_enabled;
             }
+
+            ALWAYS_INLINE os::SdkMutex &GetMutex() {
+                return m_mutex;
+            }
         public:
-            IPowerControlDriver(bool ev) : IDriver(), m_event_handler_enabled(ev) { /* ... */ }
+            IPowerControlDriver(bool ev) : IDriver(), m_event_handler_enabled(ev), m_mutex() { /* ... */ }
             virtual ~IPowerControlDriver() { /* ... */ }
 
             virtual void InitializeDriver() = 0;
@@ -51,16 +56,19 @@ namespace ams::powctl::impl {
             virtual Result GetDeviceErrorStatus(u32 *out, IDevice *device) = 0;
             virtual Result SetDeviceErrorStatus(IDevice *device, u32 status) = 0;
 
-            virtual Result GetBatterySocRep(float *out_percent, IDevice *device) = 0;
+            virtual Result GetBatteryChargePercentage(float *out_percent, IDevice *device) = 0;
 
-            virtual Result GetBatterySocVf(float *out_percent, IDevice *device) = 0;
+            virtual Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, IDevice *device) = 0;
 
             virtual Result GetBatteryFullCapacity(int *out_mah, IDevice *device) = 0;
             virtual Result GetBatteryRemainingCapacity(int *out_mah, IDevice *device) = 0;
 
-            virtual Result SetBatteryPercentageMinimumAlertThreshold(IDevice *device, float percentage) = 0;
-            virtual Result SetBatteryPercentageMaximumAlertThreshold(IDevice *device, float percentage) = 0;
-            virtual Result SetBatteryPercentageFullThreshold(IDevice *device, float percentage) = 0;
+            virtual Result SetBatteryChargePercentageMinimumAlertThreshold(IDevice *device, float percentage) = 0;
+            virtual Result SetBatteryChargePercentageMaximumAlertThreshold(IDevice *device, float percentage) = 0;
+            virtual Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(IDevice *device, float percentage) = 0;
+            virtual Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(IDevice *device, float percentage) = 0;
+
+            virtual Result SetBatteryFullChargeThreshold(IDevice *device, float percentage) = 0;
 
             virtual Result GetChargerChargeCurrentState(ChargeCurrentState *out, IDevice *device) = 0;
             virtual Result SetChargerChargeCurrentState(IDevice *device, ChargeCurrentState state) = 0;

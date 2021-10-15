@@ -105,16 +105,20 @@ namespace ams::powctl::impl::board::nintendo::nx {
             virtual Result SetChargerVoltageClamp(IDevice *device, int mv) override;
 
             /* Unsupported Battery API. */
-            virtual Result GetBatterySocRep(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryChargePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
 
-            virtual Result GetBatterySocVf(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
 
             virtual Result GetBatteryFullCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); return powctl::ResultNotSupported(); }
             virtual Result GetBatteryRemainingCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); return powctl::ResultNotSupported(); }
 
-            virtual Result SetBatteryPercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryPercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryPercentageFullThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryChargePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryChargePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+
+            virtual Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+
+            virtual Result SetBatteryFullChargeThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
 
             virtual Result GetBatteryAverageCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); return powctl::ResultNotSupported(); }
             virtual Result GetBatteryCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); return powctl::ResultNotSupported(); }

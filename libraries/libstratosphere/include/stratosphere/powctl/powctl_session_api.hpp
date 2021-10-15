@@ -37,6 +37,10 @@ namespace ams::powctl {
         bool has_session;
         util::TypedStorage<impl::SessionImpl> impl_storage;
 
+        struct ConstantInitializeTag{};
+
+        constexpr Session(ConstantInitializeTag) : has_session(false), impl_storage() { /* ... */ }
+
         Session() : has_session(false) { /* ... */ }
     };
 

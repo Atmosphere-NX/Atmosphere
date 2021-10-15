@@ -21,16 +21,20 @@
 namespace ams::powctl {
 
     /* Battery API. */
-    Result GetBatterySocRep(float *out_percent, Session &session);
+    Result GetBatteryChargePercentage(float *out_percent, Session &session);
 
-    Result GetBatterySocVf(float *out_percent, Session &session);
+    Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, Session &session);
 
     Result GetBatteryFullCapacity(int *out_mah, Session &session);
     Result GetBatteryRemainingCapacity(int *out_mah, Session &session);
 
-    Result SetBatteryPercentageMinimumAlertThreshold(Session &session, float percentage);
-    Result SetBatteryPercentageMaximumAlertThreshold(Session &session, float percentage);
-    Result SetBatteryPercentageFullThreshold(Session &session, float percentage);
+    Result SetBatteryChargePercentageMinimumAlertThreshold(Session &session, float percentage);
+    Result SetBatteryChargePercentageMaximumAlertThreshold(Session &session, float percentage);
+
+    Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(Session &session, float percentage);
+    Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(Session &session, float percentage);
+
+    Result SetBatteryFullChargeThreshold(Session &session, float percentage);
 
     Result GetBatteryAverageCurrent(int *out_ma, Session &session);
     Result GetBatteryCurrent(int *out_ma, Session &session);

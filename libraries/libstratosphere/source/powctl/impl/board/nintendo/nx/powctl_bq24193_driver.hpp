@@ -43,7 +43,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         private:
             Result InitializeSession();
         public:
-            Bq24193Driver() : m_mutex(), m_init_count(0), m_i2c_session() {
+            constexpr Bq24193Driver() : m_mutex(), m_init_count(0), m_i2c_session() {
                 /* ... */
             }
 

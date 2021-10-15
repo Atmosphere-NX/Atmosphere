@@ -30,7 +30,7 @@ namespace ams::powctl {
 
     }
 
-    Result GetBatterySocRep(float *out_percent, Session &session) {
+    Result GetBatteryChargePercentage(float *out_percent, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -41,10 +41,10 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatterySocRep(out_percent, std::addressof(device));
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryChargePercentage(out_percent, std::addressof(device));
     }
 
-    Result GetBatterySocVf(float *out_percent, Session &session) {
+    Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -55,7 +55,7 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatterySocVf(out_percent, std::addressof(device));
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryVoltageFuelGaugePercentage(out_percent, std::addressof(device));
     }
 
     Result GetBatteryFullCapacity(int *out_mah, Session &session) {
@@ -86,7 +86,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryRemainingCapacity(out_mah, std::addressof(device));
     }
 
-    Result SetBatteryPercentageMinimumAlertThreshold(Session &session, float percentage) {
+    Result SetBatteryChargePercentageMinimumAlertThreshold(Session &session, float percentage) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -97,10 +97,10 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryPercentageMinimumAlertThreshold(std::addressof(device), percentage);
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryChargePercentageMinimumAlertThreshold(std::addressof(device), percentage);
     }
 
-    Result SetBatteryPercentageMaximumAlertThreshold(Session &session, float percentage) {
+    Result SetBatteryChargePercentageMaximumAlertThreshold(Session &session, float percentage) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -111,10 +111,10 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryPercentageMaximumAlertThreshold(std::addressof(device), percentage);
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryChargePercentageMaximumAlertThreshold(std::addressof(device), percentage);
     }
 
-    Result SetBatteryPercentageFullThreshold(Session &session, float percentage) {
+    Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(Session &session, float percentage) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -125,7 +125,35 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryPercentageFullThreshold(std::addressof(device), percentage);
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(std::addressof(device), percentage);
+    }
+
+    Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(Session &session, float percentage) {
+        /* Get the session impl. */
+        auto &impl = GetOpenSessionImpl(session);
+
+        /* Check the access mode. */
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
+
+        /* Get the device. */
+        auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
+
+        /* Call into the driver. */
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(std::addressof(device), percentage);
+    }
+
+    Result SetBatteryFullChargeThreshold(Session &session, float percentage) {
+        /* Get the session impl. */
+        auto &impl = GetOpenSessionImpl(session);
+
+        /* Check the access mode. */
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
+
+        /* Get the device. */
+        auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
+
+        /* Call into the driver. */
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryFullChargeThreshold(std::addressof(device), percentage);
     }
 
     Result GetBatteryAverageCurrent(int *out_ma, Session &session) {
