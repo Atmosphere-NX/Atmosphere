@@ -1,4 +1,38 @@
 # Changelog
+## 1.2.0
++ `boot` was updated to reflect the latest official behavior for display/battery management.
+  + This should fix any issues that might result from running older releases on the OLED model, if you're somehow in a position to do so.
++ The "target firmware" system was changed to allow the bootloader to specify an approximation, rather than the true target firmware.
+  + Previously we expected compliant bootloaders to inspect SYSTEM:/ to determine the specific target firmware.
+  + Now, we only require an approximate version, with major version == true major version and approximate version <= true version.
+  + This greatly simplifies bootloader requirements, and correspondingly all code for accessing SYSTEM has been removed from fusee.
+    + This should result in a substantial speedup when booting emummc with fusee, as SYSTEM accesses were the most expensive thing done previously.
+  + This should resolve any inconsistency in firmware detection when booting via fusee vs hekate.
+  + This should also improve our compatibility with micro firmware releases, making it more likely that atmosphere "just works" if nothing important has changed.
++ Dynamic resource limit determination logic was implemented in `pm` to match latest official behavior.
+  + This greatly simplifies/makes consistent the resource limits on older firmwares, as well.
++ An enormous amount of refactoring was performed under the hood, including:
+  + **Please Note**: If you are a developer who uses Atmosphere-libs, a number of changes here are breaking.
+    + Feel free to contact SciresM#0524 for help updating your program.
+  + The OS namespace had many primitives implemented/made more accurate.
+  + Since mesosphere is now always-on, os::LightEvent (which required newer SVCs) is now globally usable (and used by stratosphere where relevant).
+  + Assertions are now true no-ops when building for release.
+  + Stratosphere is now built with -Wextra/-Werror.
+  + Most "common" logic in system module main.cpp files was moved into libstratosphere.
+    + **Please Note**: main.cpp files for prior atmosphere-libs will no longer work, for a really large number of reasons.
+  + A number of longstanding code style issues were corrected.
+  + Mesosphere now uses util::BitFlagSet for SVC permissions.
+  + Mesosphere now puts its relocation table inside .bss, which allows that memory to be reclaimed after relocations are performed.
+    + These changes save ~16KB of memory in the kernel, all said and done.
+  + A number of locations in stratosphere where memory could be saved were spotted and taken advantage of, leading to ~150-200KB of saved memory.
+  + The `spl` and `loader` system module was refactored to better reflect official logic.
+  + `sf` ipc server code was updated to only emit mitm/defer logic when that logic is actually required somewhere in process.
+  + `tipc` ipc server code was updated to reflect changes to official logic made in 13.0.0.
+  + Many, many other minor changes, please talk to SciresM#0524 or read the relevant commits if you want to know more.
++ A number of minor issues were fixed, including:
+  + Mesosphere's handling of SVC permissions on thread pin/unpin was updated to reflect official kernel behavior.
+  + util::CountTrailingZeroes() was fixed to calculate the correct value when used at compile-time.
++ General system stability improvements to enhance the user's experience.
 ## 1.1.1
 + A bug was fixed which caused some memory to leak when launching a game with mods enabled, eventually causing a crash after enough game launches without rebooting.
 + General system stability improvements to enhance the user's experience.
