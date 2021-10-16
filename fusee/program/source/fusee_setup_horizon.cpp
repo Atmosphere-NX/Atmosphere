@@ -146,7 +146,7 @@ namespace ams::nxboot {
                         /* Handle individual fields. */
                         for (const auto &entry : section.kv_list) {
                             if (std::strcmp(entry.key, "enabled") == 0) {
-                                enabled = entry.value[0] == '1';
+                                enabled = entry.value[0] != '0';
                             } else if (std::strcmp(entry.key, "id") == 0) {
                                 id = ParseHexInteger(entry.value);
                             } else if (std::strcmp(entry.key, "sector") == 0) {
