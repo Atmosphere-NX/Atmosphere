@@ -110,8 +110,8 @@ namespace ams::boot {
             AMS_UNUSED(raw_charge, voltage, voltage_threshold);
 
             /* Get various battery metrics. */
-            int avg_current, current, open_circuit_voltage;
-            float temp;
+            int avg_current, current;
+            float temp, voltage_fuel_gauge_percentage;
             if (R_FAILED(m_battery_driver.GetAverageCurrent(std::addressof(avg_current)))) {
                 return;
             }
@@ -121,12 +121,12 @@ namespace ams::boot {
             if (R_FAILED(m_battery_driver.GetTemperature(std::addressof(temp)))) {
                 return;
             }
-            if (R_FAILED(m_battery_driver.GetOpenCircuitVoltage(std::addressof(open_circuit_voltage)))) {
+            if (R_FAILED(m_battery_driver.GetVoltageFuelGaugePercentage(std::addressof(voltage_fuel_gauge_percentage)))) {
                 return;
             }
 
             /* TODO: Print the things we just got. */
-            AMS_UNUSED(avg_current, current, temp, open_circuit_voltage);
+            AMS_UNUSED(avg_current, current, temp, voltage_fuel_gauge_percentage);
         }
 
         bool BatteryChecker::IsChargeDone() {
@@ -198,12 +198,12 @@ namespace ams::boot {
             }
             m_charge_arbiter.SetBatteryAverageVCell(avg_v_cell);
 
-            /* Update open circuit voltage. */
-            int ocv;
-            if (R_FAILED(m_battery_driver.GetOpenCircuitVoltage(std::addressof(ocv)))) {
+            /* Update voltage fuel gauge percentage. */
+            float vfgp;
+            if (R_FAILED(m_battery_driver.GetVoltageFuelGaugePercentage(std::addressof(vfgp)))) {
                 boot::ShutdownSystem();
             }
-            m_charge_arbiter.SetBatteryOpenCircuitVoltage(ocv);
+            m_charge_arbiter.SetBatteryVoltageFuelGaugePercentage(vfgp);
 
             /* Update charge done current. */
             this->UpdateChargeDoneCurrent();
@@ -450,7 +450,6 @@ namespace ams::boot {
                 /* Update the charger. */
                 this->UpdateCharger();
             }
-
         }
 
     }
@@ -492,7 +491,7 @@ namespace ams::boot {
 
         /* Get the charge voltage limit. */
         int charge_voltage_limit_mv;
-        if (boot_reason != spl::BootReason_RtcAlarm2) {
+        if (boot_reason != spl::BootReason_RtcAlarm2 || charge_parameters.unknown_x_table == nullptr || charge_parameters.x_table_size == 0) {
             charge_voltage_limit_mv = charge_parameters.default_charge_voltage_limit;
         } else {
             if (R_FAILED(charger_driver.GetChargeVoltageLimit(std::addressof(charge_voltage_limit_mv)))) {

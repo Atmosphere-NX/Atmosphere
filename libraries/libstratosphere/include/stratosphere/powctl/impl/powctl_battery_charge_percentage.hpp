@@ -43,7 +43,7 @@ namespace ams::powctl::impl {
     constexpr inline int GetDisplayPercentage(double raw_percentage, double min, double max) {
         /* Calculate the display percentage. */
         constexpr const double BaseDisplayPercentage = 2.0;
-        const auto display_percentage = BaseDisplayPercentage + ((static_cast<double>(MaxDisplayPercentage - MinDisplayPercentage) * (raw_percentage - min)) / (max - min));
+        const auto display_percentage = BaseDisplayPercentage + ((static_cast<double>(MaxDisplayPercentage - BaseDisplayPercentage) * (raw_percentage - min)) / (max - min));
 
         /* Clamp the display percentage within bounds. */
         return std::max(std::min(static_cast<int>(display_percentage), MaxDisplayPercentage), MinDisplayPercentage);

@@ -32,8 +32,11 @@ namespace ams::powctl::driver::impl {
             PowerState::ShutdownChargeMain,
         };
 
-        constexpr inline const int Min = std::numeric_limits<int>::min();
         constexpr inline const int Max = std::numeric_limits<int>::max();
+        constexpr inline const int Min = std::numeric_limits<int>::min();
+
+        constexpr inline const float FloatMax = std::numeric_limits<float>::max();
+        constexpr inline const float FloatMin = -FloatMax;
 
         constexpr inline const UnknownParameterX UnknownXTableForBatteryVersion2[] = {
             {  20000, 4320, 95.0, 100.4 },

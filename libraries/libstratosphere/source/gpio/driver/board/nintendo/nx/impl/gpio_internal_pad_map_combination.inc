@@ -94,6 +94,7 @@ constexpr inline const PadMapCombination PadMapCombinationList[] = {
     { DeviceCode_HdmiHpd,            InternalGpioPadNumber_Port_CC_1, ams::wec::WakeEvent_None               },
     { DeviceCode_GpioPortF1,         InternalGpioPadNumber_Port_F_1,  ams::wec::WakeEvent_None               },
     { DeviceCode_GpioPortH0,         InternalGpioPadNumber_Port_H_0,  ams::wec::WakeEvent_None               },
+    { DeviceCode_GpioPortI6,         InternalGpioPadNumber_Port_I_6,  ams::wec::WakeEvent_None               },
     { DeviceCode_ExtconDetS,         InternalGpioPadNumber_Port_E_6,  ams::wec::WakeEvent_ExtconDetS         },
     { DeviceCode_GameCardCd,         InternalGpioPadNumber_Port_S_3,  ams::wec::WakeEvent_CamI2cSda          },
     { DeviceCode_BattMgicIrq,        InternalGpioPadNumber_Port_Y_0,  ams::wec::WakeEvent_ButtonSlideSw      },

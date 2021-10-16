@@ -53,8 +53,8 @@ namespace ams::boot {
                 return powctl::GetBatteryAverageVCell(out, s_battery_session);
             }
 
-            Result GetOpenCircuitVoltage(int *out) {
-                return powctl::GetBatteryOpenCircuitVoltage(out, s_battery_session);
+            Result GetVoltageFuelGaugePercentage(float *out) {
+                return powctl::GetBatteryVoltageFuelGaugePercentage(out, s_battery_session);
             }
 
             Result GetAverageCurrent(int *out) {

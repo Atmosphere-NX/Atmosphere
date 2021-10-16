@@ -135,11 +135,6 @@ namespace ams {
         /* Get the hardware type. */
         const auto hw_type = spl::GetHardwareType();
 
-        /* TODO: Aula support. */
-        /* We haven't actually implemented battery configuration for Aula, running on OLED models */
-        /* is likely not good for the hardware until we do that properly. */
-        AMS_ABORT_UNLESS(hw_type != spl::HardwareType::Aula);
-
         /* Initialize the power control library without interrupt event handling. */
         if (hw_type != spl::HardwareType::Calcio) {
             powctl::Initialize(false);

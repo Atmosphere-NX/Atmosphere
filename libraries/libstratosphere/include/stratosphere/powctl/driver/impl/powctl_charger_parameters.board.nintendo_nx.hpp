@@ -23,10 +23,12 @@ namespace ams::powctl::driver::impl {
         BatteryTemperatureLevel temperature_level;
         int min_avg_v_cell;
         int max_avg_v_cell;
-        int min_open_circuit_voltage;
-        int max_open_circuit_voltage;
         int min_battery_done_current;
         int max_battery_done_current;
+        float min_unknown_14;
+        float max_unknown_18;
+        float min_voltage_fuel_gauge_percentage;
+        float max_voltage_fuel_gauge_percentage;
         const PowerState *acceptable_power_states;
         size_t num_acceptable_power_states;
         bool check_battery_current;

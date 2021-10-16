@@ -114,7 +114,6 @@ namespace ams::gpio {
         GpioPadName_NfcEn              = 92,
     };
 
-    /* TODO: Better place for this? */
     constexpr inline const DeviceCode DeviceCode_CodecLdoEnTemp     = 0x33000002;
     constexpr inline const DeviceCode DeviceCode_PowSdEn            = 0x3C000001;
     constexpr inline const DeviceCode DeviceCode_BtRst              = 0x37000002;
@@ -128,7 +127,7 @@ namespace ams::gpio {
     constexpr inline const DeviceCode DeviceCode_FanTach            = 0x3D000002;
     constexpr inline const DeviceCode DeviceCode_ExtconDetS         = 0x3500040B;
     constexpr inline const DeviceCode DeviceCode_Vdd50AEn           = 0x39000401;
-    constexpr inline const DeviceCode DeviceCode_SdevCoaxSel1       = 0xCA000402;
+    constexpr inline const DeviceCode DeviceCode_SdevCoaxSel1       = 0xCA000406;
     constexpr inline const DeviceCode DeviceCode_GameCardCd         = 0x3C000403;
     constexpr inline const DeviceCode DeviceCode_ProdType0          = 0xC900040B;
     constexpr inline const DeviceCode DeviceCode_ProdType1          = 0xC900040C;
@@ -148,7 +147,7 @@ namespace ams::gpio {
     constexpr inline const DeviceCode DeviceCode_PdVconnEn          = 0x040000CC;
     constexpr inline const DeviceCode DeviceCode_PdRstN             = 0x040000CA;
     constexpr inline const DeviceCode DeviceCode_Bq24190Irq         = 0x39000002;
-    constexpr inline const DeviceCode DeviceCode_SdevCoaxSel0       = 0xCA000401;
+    constexpr inline const DeviceCode DeviceCode_SdevCoaxSel0       = 0xCA000405;
     constexpr inline const DeviceCode DeviceCode_SdWp               = 0x3C000003;
     constexpr inline const DeviceCode DeviceCode_TpReset            = 0x35000035;
     constexpr inline const DeviceCode DeviceCode_BtGpio2            = 0x37000401;
@@ -216,6 +215,7 @@ namespace ams::gpio {
     constexpr inline const DeviceCode DeviceCode_GpioPortY7         = 0x35000065;
     constexpr inline const DeviceCode DeviceCode_GpioPortF1         = 0x04000409;
     constexpr inline const DeviceCode DeviceCode_GpioPortH0         = 0x34000401;
+    constexpr inline const DeviceCode DeviceCode_GpioPortI6         = 0x37000405;
 
     constexpr inline GpioPadName ConvertToGpioPadName(DeviceCode dc) {
         switch (dc.GetInternalValue()) {

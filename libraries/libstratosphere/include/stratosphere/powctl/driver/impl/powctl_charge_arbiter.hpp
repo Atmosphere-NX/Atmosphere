@@ -27,7 +27,7 @@ namespace ams::powctl::driver::impl {
             int m_charge_voltage_limit;
             BatteryTemperatureLevel m_temperature_level;
             int m_avg_v_cell;
-            int m_open_circuit_voltage;
+            float m_voltage_fuel_gauge_percentage;
             bool m_has_battery_done_current;
             int m_battery_done_current;
             PowerState m_power_state;
@@ -45,6 +45,17 @@ namespace ams::powctl::driver::impl {
                     return value < max;
                 }
             }
+            static constexpr bool IsInRangeFloat(float value, float min, float max) {
+                if (!(min <= value)) {
+                    return false;
+                }
+
+                if (max == std::numeric_limits<float>::max()) {
+                    return value <= max;
+                } else {
+                    return value < max;
+                }
+            }
 
             bool IsAcceptablePowerState(const PowerState *acceptable, size_t num_acceptable) const {
                 for (size_t i = 0; i < num_acceptable; ++i) {
@@ -57,7 +68,7 @@ namespace ams::powctl::driver::impl {
         public:
             ChargeArbiter(const ChargeParametersRule *r, size_t nr, int cvl)
                 : m_rules(r), m_num_rules(nr), m_charge_voltage_limit(cvl), m_temperature_level(BatteryTemperatureLevel::Medium),
-                  m_avg_v_cell(4080), m_open_circuit_voltage(4001), m_has_battery_done_current(false), m_battery_done_current(0),
+                  m_avg_v_cell(4080), m_voltage_fuel_gauge_percentage(25.0), m_has_battery_done_current(false), m_battery_done_current(0),
                   m_power_state(PowerState::FullAwake), m_selected_rule(nullptr), m_check_battery_done_current(false)
             {
                 this->UpdateSelectedRule();
@@ -73,8 +84,8 @@ namespace ams::powctl::driver::impl {
                 this->UpdateSelectedRule();
             }
 
-            void SetBatteryOpenCircuitVoltage(int ocv) {
-                m_open_circuit_voltage = ocv;
+            void SetBatteryVoltageFuelGaugePercentage(float pct) {
+                m_voltage_fuel_gauge_percentage = pct;
                 this->UpdateSelectedRule();
             }
 
@@ -121,8 +132,8 @@ namespace ams::powctl::driver::impl {
                         continue;
                     }
 
-                    /* Check that open circuit voltage is in range. */
-                    if (!IsInRange(m_open_circuit_voltage, cur_rule.min_open_circuit_voltage, cur_rule.max_open_circuit_voltage)) {
+                    /* Check that voltage fuel gauge percentage is in range. */
+                    if (!IsInRangeFloat(m_voltage_fuel_gauge_percentage, cur_rule.min_voltage_fuel_gauge_percentage, cur_rule.max_voltage_fuel_gauge_percentage)) {
                         continue;
                     }
 
@@ -138,9 +149,25 @@ namespace ams::powctl::driver::impl {
                             continue;
                         }
 
+                        /* Determine whether we should check battery done current. */
+                        bool check_battery_done_current;
+
+                        if (m_selected_rule != nullptr && m_selected_rule->check_battery_current) {
+                            if (m_selected_rule->temperature_level == m_temperature_level &&
+                                IsInRange(m_avg_v_cell, m_selected_rule->min_avg_v_cell, m_selected_rule->max_avg_v_cell) &&
+                                IsInRangeFloat(m_voltage_fuel_gauge_percentage, m_selected_rule->min_voltage_fuel_gauge_percentage, m_selected_rule->max_voltage_fuel_gauge_percentage))
+                            {
+                                check_battery_done_current = m_has_battery_done_current && !IsInRange(m_battery_done_current, m_selected_rule->min_battery_done_current, m_selected_rule->max_battery_done_current);
+                            } else {
+                                check_battery_done_current = true;
+                            }
+                        } else {
+                            check_battery_done_current = false;
+                        }
+
                         /* Set whether we need to check the battery done current. */
                         m_has_battery_done_current = false;
-                        m_check_battery_done_current |= cur_rule.check_battery_current;
+                        m_check_battery_done_current |= check_battery_done_current;
                     } else {
                         /* We're selecting the currently selected rule. Make sure the battery done current is acceptable if we have one. */
                         if (m_has_battery_done_current && !IsInRange(m_battery_done_current, cur_rule.min_battery_done_current, cur_rule.max_battery_done_current)) {
