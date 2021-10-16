@@ -16,10 +16,6 @@
 #include <stratosphere.hpp>
 #include "powctl_max17050_driver.hpp"
 
-#if defined(ATMOSPHERE_ARCH_ARM64)
-#include <arm_neon.h>
-#endif
-
 namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace max17050 {
