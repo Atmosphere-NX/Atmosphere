@@ -148,9 +148,6 @@ namespace ams::kern {
         m_priority                      = prio;
         m_base_priority                 = prio;
 
-        /* Set waiting lock to null. */
-        m_waiting_lock                  = nullptr;
-
         /* Initialize wait queue/sync index. */
         m_synced_index                  = -1;
         m_wait_queue                    = nullptr;

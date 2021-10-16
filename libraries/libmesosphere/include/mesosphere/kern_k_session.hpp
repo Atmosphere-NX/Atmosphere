@@ -35,13 +35,13 @@ namespace ams::kern {
                 ServerClosed = 3,
             };
         private:
+            std::atomic<std::underlying_type<State>::type> m_atomic_state;
+            bool m_initialized;
             KServerSession m_server;
             KClientSession m_client;
-            std::atomic<std::underlying_type<State>::type> m_atomic_state;
             KClientPort *m_port;
             uintptr_t m_name;
             KProcess *m_process;
-            bool m_initialized;
         private:
             ALWAYS_INLINE void SetState(State state) {
                 m_atomic_state = static_cast<u8>(state);
@@ -52,7 +52,7 @@ namespace ams::kern {
             }
         public:
             constexpr KSession()
-                : m_server(), m_client(), m_atomic_state(static_cast<std::underlying_type<State>::type>(State::Invalid)), m_port(), m_name(), m_process(), m_initialized()
+                : m_atomic_state(static_cast<std::underlying_type<State>::type>(State::Invalid)), m_initialized(), m_server(), m_client(),  m_port(), m_name(), m_process()
             {
                 /* ... */
             }

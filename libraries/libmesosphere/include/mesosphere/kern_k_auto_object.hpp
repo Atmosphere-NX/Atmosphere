@@ -71,10 +71,11 @@ namespace ams::kern {
         private:
             KAutoObject *m_next_closed_object;
             std::atomic<u32> m_ref_count;
+            u32 m_reserved;
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0), m_reserved(0) { MESOSPHERE_ASSERT_THIS(); }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
             virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }

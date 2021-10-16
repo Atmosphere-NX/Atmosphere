@@ -177,9 +177,8 @@ namespace ams::kern {
             static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
             static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
-            static inline std::atomic<u64> s_next_thread_id = 0;
+            static constinit inline std::atomic<u64> s_next_thread_id = 0;
         private:
-            alignas(16) KThreadContext      m_thread_context{};
             util::IntrusiveListNode         m_process_list_node{};
             util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node{};
             s32                             m_priority{};
@@ -189,6 +188,7 @@ namespace ams::kern {
 
             ConditionVariableThreadTree    *m_condvar_tree{};
             uintptr_t                       m_condvar_key{};
+            alignas(16) KThreadContext      m_thread_context{};
             u64                             m_virtual_affinity_mask{};
             KAffinityMask                   m_physical_affinity_mask{};
             u64                             m_thread_id{};
@@ -204,7 +204,6 @@ namespace ams::kern {
             s64                             m_schedule_count{};
             s64                             m_last_scheduled_tick{};
             QueueEntry                      m_per_core_priority_queue_entry[cpu::NumCores]{};
-            KLightLock                     *m_waiting_lock{};
             KThreadQueue                   *m_wait_queue{};
             WaiterList                      m_waiter_list{};
             WaiterList                      m_pinned_waiter_list{};

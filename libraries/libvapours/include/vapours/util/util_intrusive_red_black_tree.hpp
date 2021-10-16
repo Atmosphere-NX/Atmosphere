@@ -31,6 +31,7 @@ namespace ams::util {
 
     }
 
+    #pragma pack(push, 4)
     struct IntrusiveRedBlackTreeNode {
         NON_COPYABLE(IntrusiveRedBlackTreeNode);
         public:
@@ -45,6 +46,8 @@ namespace ams::util {
 
             constexpr ALWAYS_INLINE void SetRBEntry(const RBEntry &entry) { m_entry = entry; }
     };
+    static_assert(sizeof(IntrusiveRedBlackTreeNode) == 3 * sizeof(void *) + std::max<size_t>(sizeof(freebsd::RBColor), 4));
+    #pragma pack(pop)
 
     template<class T, class Traits, class Comparator>
     class IntrusiveRedBlackTree;
@@ -501,6 +504,7 @@ namespace ams::util {
         private:
             static constexpr TypedStorage<Derived> DerivedStorage = {};
             static_assert(GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage));
+            static_assert(util::IsAligned(util::impl::OffsetOf<Member, Derived>, alignof(void *)));
     };
 
     template<auto T, class Derived = util::impl::GetParentType<T>>
@@ -515,7 +519,7 @@ namespace ams::util {
 
             static constexpr bool IsValid() {
                 TypedStorage<Derived> DerivedStorage = {};
-                return GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage);
+                return GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage) && util::IsAligned(util::impl::OffsetOf<Member, Derived>, alignof(void *));
             }
         private:
             template<class, class, class>
@@ -541,7 +545,7 @@ namespace ams::util {
     };
 
     template<class Derived>
-    class IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode {
+    class alignas(void *) IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode {
         public:
             constexpr ALWAYS_INLINE Derived *GetPrev()             { return static_cast<      Derived *>(impl::IntrusiveRedBlackTreeImpl::GetPrev(this)); }
             constexpr ALWAYS_INLINE const Derived *GetPrev() const { return static_cast<const Derived *>(impl::IntrusiveRedBlackTreeImpl::GetPrev(this)); }

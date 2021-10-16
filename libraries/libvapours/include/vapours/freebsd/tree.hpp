@@ -53,6 +53,7 @@ namespace ams::freebsd {
         RB_RED   = 1,
     };
 
+    #pragma pack(push, 4)
     template<typename T>
     class RBEntry {
         private:
@@ -82,6 +83,7 @@ namespace ams::freebsd {
 
             constexpr ALWAYS_INLINE void SetColor(RBColor c) { m_rbe_color = c; }
     };
+    #pragma pack(pop)
 
     template<typename T> struct CheckRBEntry             { static constexpr bool value = false; };
     template<typename T> struct CheckRBEntry<RBEntry<T>> { static constexpr bool value = true;  };
