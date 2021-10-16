@@ -72,7 +72,7 @@ namespace ams::sm {
 
     void LoopProcessTipcServer() {
         /* Loop processing the server on all threads. */
-        g_server_manager.LoopAuto();
+        g_server_manager.LoopAuto(AMS_GET_SYSTEM_THREAD_PRIORITY(sm, DispatcherThread), AMS_GET_SYSTEM_THREAD_NAME(sm, DispatcherThread));
     }
 
     void TriggerResume(sm::ServiceName service_name) {

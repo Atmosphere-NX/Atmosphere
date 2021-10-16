@@ -28,6 +28,7 @@ namespace ams::impl {
 
     /* sm. */
     AMS_DEFINE_SYSTEM_THREAD(-1, sm, Main);
+    AMS_DEFINE_SYSTEM_THREAD(-1, sm, DispatcherThread);
 
     /* spl. */
     AMS_DEFINE_SYSTEM_THREAD(-1, spl, Main);
@@ -177,5 +178,5 @@ namespace ams::impl {
 
 }
 
-#define AMS_GET_SYSTEM_THREAD_PRIORITY(__AMS_MODULE__, __AMS_THREAD_NAME__) ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__.priority
-#define AMS_GET_SYSTEM_THREAD_NAME(__AMS_MODULE__, __AMS_THREAD_NAME__)     ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__.name
+#define AMS_GET_SYSTEM_THREAD_PRIORITY(__AMS_MODULE__, __AMS_THREAD_NAME__) ( ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__ ).priority
+#define AMS_GET_SYSTEM_THREAD_NAME(__AMS_MODULE__, __AMS_THREAD_NAME__)     ( ::ams::impl::SystemThreadDefinition_##__AMS_MODULE__##_##__AMS_THREAD_NAME__ ).name

@@ -379,9 +379,14 @@ namespace ams::tipc {
             }
 
             template<size_t Ix>
-            void InitializePortThread(s32 priority) {
+            void InitializePortThread(s32 priority, const char *name) {
                 /* Create the thread. */
                 R_ABORT_UNLESS(os::CreateThread(m_port_threads + Ix, &LoopAutoForPortThreadFunction<Ix>, this, s_port_stacks + Ix, ThreadStackSize, priority));
+
+                /* Set the thread name pointer. */
+                if (name != nullptr) {
+                    os::SetThreadNamePointer(m_port_threads + Ix, name);
+                }
 
                 /* Start the thread. */
                 os::StartThread(m_port_threads + Ix);
@@ -420,8 +425,27 @@ namespace ams::tipc {
 
                     [thread_priority, this]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                         /* Create all threads. */
-                        (this->InitializePortThread<Ix>(thread_priority), ...);
+                        (this->InitializePortThread<Ix>(thread_priority, nullptr), ...);
                     }(std::make_index_sequence<NumPorts - 1>());
+                }
+
+                /* Process for the last port. */
+                this->LoopAutoForPort<NumPorts - 1>();
+            }
+
+            void LoopAuto(int priority, const char *name) {
+                /* If we have additional threads, create and start them. */
+                if constexpr (NumPorts > 1) {
+                    [priority, name, this]<size_t... Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                        /* Create all threads. */
+                        (this->InitializePortThread<Ix>(priority, name), ...);
+                    }(std::make_index_sequence<NumPorts - 1>());
+                }
+
+                /* Check current thread. */
+                {
+                    AMS_ASSERT(priority == os::GetThreadPriority(os::GetCurrentThread()));
+                    /* N does not do: os::SetThreadNamePointer(os::GetCurrentThread(), name); */
                 }
 
                 /* Process for the last port. */
