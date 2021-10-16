@@ -29,7 +29,7 @@ namespace ams::pgl::srv {
         };
 
         constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("pgl");
-        constexpr size_t          ShellMaxSessions = 8; /* Official maximum is 8. */
+        constexpr size_t          ShellMaxSessions = 8; /* Official maximum is 6. */
 
         using CmifServerManager = ams::sf::hipc::ServerManager<PortIndex_Count>;
 
@@ -113,7 +113,7 @@ namespace ams::pgl::srv {
                 globals.server_manager.Initialize();
 
                 /* Register the pgl service. */
-                globals.server_manager.RegisterPort<PortIndex_Shell>(ShellServiceName, ShellMaxSessions);
+                globals.server_manager.RegisterPort(ShellServiceName, ShellMaxSessions);
             } else {
                 /* Get the globals. */
                 auto &globals = GetGlobalsForCmif();
@@ -190,18 +190,6 @@ namespace ams::pgl::srv {
         R_TRY(GetGlobalsForTipc().server_manager.AddSession(out, object));
 
         return ResultSuccess();
-    }
-
-
-    ams::tipc::ServiceObjectBase *AllocateShellEventObserverForTipc() {
-        auto &allocator = GetGlobalsForTipc().observer_allocator;
-
-        auto *object = allocator.Allocate();
-        if (object != nullptr) {
-            object->SetDeleter(std::addressof(allocator));
-        }
-
-        return object;
     }
 
 }
