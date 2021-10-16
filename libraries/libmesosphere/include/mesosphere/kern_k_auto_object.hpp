@@ -63,7 +63,11 @@ namespace ams::kern {
                     }
 
                     constexpr ALWAYS_INLINE bool IsDerivedFrom(const TypeObj &rhs) {
-                        return (this->GetClassToken() | rhs.GetClassToken()) == this->GetClassToken();
+                        return IsClassTokenDerivedFrom(this->GetClassToken(), rhs.GetClassToken());
+                    }
+
+                    static constexpr ALWAYS_INLINE bool IsClassTokenDerivedFrom(ClassTokenType derived, ClassTokenType base) {
+                        return (derived | base) == derived;
                     }
             };
         private:
@@ -71,11 +75,23 @@ namespace ams::kern {
         private:
             KAutoObject *m_next_closed_object;
             std::atomic<u32> m_ref_count;
+            #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+            ClassTokenType m_class_token;
+            #else
             u32 m_reserved;
+            #endif
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0), m_reserved(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0),
+            #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+                m_class_token(0)
+            #else
+                m_reserved(0)
+            #endif
+            {
+                MESOSPHERE_ASSERT_THIS();
+            }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
             virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }
@@ -90,11 +106,19 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const TypeObj &rhs) const {
-                return this->GetTypeObj().IsDerivedFrom(rhs);
+                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+                    return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.GetClassToken());
+                #else
+                    return this->GetTypeObj().IsDerivedFrom(rhs);
+                #endif
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const KAutoObject &rhs) const {
-                return this->IsDerivedFrom(rhs.GetTypeObj());
+                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+                    return TypeObj::IsClassTokenDerivedFrom(m_class_token, rhs.m_class_token);
+                #else
+                    return this->IsDerivedFrom(rhs.GetTypeObj());
+                #endif
             }
 
             template<typename Derived>

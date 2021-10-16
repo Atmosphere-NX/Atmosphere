@@ -19,6 +19,11 @@ namespace ams::kern {
 
     KAutoObject *KAutoObject::Create(KAutoObject *obj) {
         obj->m_ref_count = 1;
+
+        #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+        obj->m_class_token = obj->GetTypeObj().GetClassToken();
+        #endif
+
         return obj;
     }
 

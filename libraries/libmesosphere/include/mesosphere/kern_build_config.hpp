@@ -32,3 +32,10 @@
 //#define MESOSPHERE_BUILD_FOR_TRACING
 #define MESOSPHERE_ENABLE_PANIC_REGISTER_DUMP
 #define MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP
+
+/* NOTE: This enables fast class token storage using a class member. */
+/* This saves a virtual call when doing KAutoObject->DynCast<>(), */
+/* at the cost of storing class tokens inside the class object. */
+/* However, as of (10/16/2021) KAutoObject has an unused class member */
+/* of the right side, and so this does not actually cost any space. */
+#define MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST
