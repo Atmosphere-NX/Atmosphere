@@ -77,17 +77,13 @@ namespace ams::kern {
             std::atomic<u32> m_ref_count;
             #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
             ClassTokenType m_class_token;
-            #else
-            u32 m_reserved;
             #endif
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0),
+            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0)
             #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
-                m_class_token(0)
-            #else
-                m_reserved(0)
+                , m_class_token(0)
             #endif
             {
                 MESOSPHERE_ASSERT_THIS();
@@ -159,7 +155,14 @@ namespace ams::kern {
 
     class KAutoObjectWithListContainer;
 
-    class KAutoObjectWithList : public KAutoObject {
+    class KAutoObjectWithListBase : public KAutoObject {
+        private:
+            void *m_alignment_forcer_unused[0]{};
+        public:
+            constexpr ALWAYS_INLINE KAutoObjectWithListBase() = default;
+    };
+
+    class KAutoObjectWithList : public KAutoObjectWithListBase {
         private:
             friend class KAutoObjectWithListContainer;
         private:
