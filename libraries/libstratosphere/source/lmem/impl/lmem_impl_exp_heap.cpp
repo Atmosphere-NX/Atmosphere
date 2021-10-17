@@ -38,51 +38,51 @@ namespace ams::lmem::impl {
             void *end;
         };
 
-        constexpr inline bool IsValidHeapHandle(HeapHandle handle) {
+        inline bool IsValidHeapHandle(HeapHandle handle) {
             return handle->magic == ExpHeapMagic;
         }
 
-        constexpr inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
+        inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
             return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        constexpr inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
+        inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
             return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        constexpr inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
+        inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 
-        constexpr inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
+        inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 
-        constexpr inline void *GetExpHeapMemoryStart(ExpHeapHead *exp_heap_head) {
+        inline void *GetExpHeapMemoryStart(ExpHeapHead *exp_heap_head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(exp_heap_head) + sizeof(ImplementationHeapHead));
         }
 
-        constexpr inline void *GetMemoryBlockStart(ExpHeapMemoryBlockHead *head) {
+        inline void *GetMemoryBlockStart(ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(head) + sizeof(*head));
         }
 
-        constexpr inline const void *GetMemoryBlockStart(const ExpHeapMemoryBlockHead *head) {
+        inline const void *GetMemoryBlockStart(const ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(head) + sizeof(*head));
         }
 
-        constexpr inline void *GetMemoryBlockEnd(ExpHeapMemoryBlockHead *head) {
+        inline void *GetMemoryBlockEnd(ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(GetMemoryBlockStart(head)) + head->block_size);
         }
 
-        constexpr inline const void *GetMemoryBlockEnd(const ExpHeapMemoryBlockHead *head) {
+        inline const void *GetMemoryBlockEnd(const ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(GetMemoryBlockStart(head)) + head->block_size);
         }
 
-        constexpr inline ExpHeapMemoryBlockHead *GetHeadForMemoryBlock(const void *block) {
+        inline ExpHeapMemoryBlockHead *GetHeadForMemoryBlock(const void *block) {
             return reinterpret_cast<ExpHeapMemoryBlockHead *>(reinterpret_cast<uintptr_t>(block) - sizeof(ExpHeapMemoryBlockHead));
         }
 
-        constexpr inline bool IsValidUsedMemoryBlock(const HeapHead *heap, const void *block) {
+        inline bool IsValidUsedMemoryBlock(const HeapHead *heap, const void *block) {
             /* Block must fall within the heap range. */
             if (heap != nullptr) {
                 if (block < heap->heap_start || heap->heap_end <= block) {
@@ -106,7 +106,7 @@ namespace ams::lmem::impl {
             return true;
         }
 
-        constexpr inline u16 GetMemoryBlockAlignmentPadding(const ExpHeapMemoryBlockHead *block_head) {
+        inline u16 GetMemoryBlockAlignmentPadding(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<u16>((block_head->attributes >> 8) & 0x7F);
         }
 
@@ -115,7 +115,7 @@ namespace ams::lmem::impl {
             block_head->attributes |= static_cast<decltype(block_head->attributes)>(padding & 0x7F) << 8;
         }
 
-        constexpr inline u16 GetMemoryBlockGroupId(const ExpHeapMemoryBlockHead *block_head) {
+        inline u16 GetMemoryBlockGroupId(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<u16>(block_head->attributes & 0xFF);
         }
 
@@ -124,7 +124,7 @@ namespace ams::lmem::impl {
             block_head->attributes |= static_cast<decltype(block_head->attributes)>(group_id & 0xFF);
         }
 
-        constexpr inline AllocationDirection GetMemoryBlockAllocationDirection(const ExpHeapMemoryBlockHead *block_head) {
+        inline AllocationDirection GetMemoryBlockAllocationDirection(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<AllocationDirection>((block_head->attributes >> 15) & 1);
         }
 
@@ -138,7 +138,7 @@ namespace ams::lmem::impl {
             out->end   = GetMemoryBlockEnd(head);
         }
 
-        constexpr inline AllocationMode GetAllocationModeImpl(const ExpHeapHead *head) {
+        inline AllocationMode GetAllocationModeImpl(const ExpHeapHead *head) {
             return static_cast<AllocationMode>(head->mode);
         }
 

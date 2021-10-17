@@ -38,9 +38,9 @@ namespace ams::ddsf {
             mutable os::SdkMutex m_session_list_lock;
             bool m_is_exclusive_write;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::m_list_node>;
+            using ListTraits = util::IntrusiveListMemberTraits<&IDevice::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<IDevice, util::IntrusiveListMemberTraitsDeferredAssert<&IDevice::m_list_node>>;
+            friend class util::IntrusiveList<IDevice, util::IntrusiveListMemberTraits<&IDevice::m_list_node>>;
         private:
             Result AttachSession(ISession *session) {
                 AMS_ASSERT(session != nullptr);
@@ -135,6 +135,5 @@ namespace ams::ddsf {
                 return !m_session_list.empty();
             }
     };
-    static_assert(IDevice::ListTraits::IsValid());
 
 }

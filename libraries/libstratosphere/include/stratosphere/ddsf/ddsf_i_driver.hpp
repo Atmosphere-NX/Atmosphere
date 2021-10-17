@@ -31,9 +31,9 @@ namespace ams::ddsf {
             IDevice::List m_device_list;
             mutable os::SdkMutex m_device_list_lock;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::m_list_node>;
+            using ListTraits = util::IntrusiveListMemberTraits<&IDriver::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<IDriver, util::IntrusiveListMemberTraitsDeferredAssert<&IDriver::m_list_node>>;
+            friend class util::IntrusiveList<IDriver, util::IntrusiveListMemberTraits<&IDriver::m_list_node>>;
         private:
         public:
             IDriver() : m_list_node(), m_device_list(), m_device_list_lock() {
@@ -94,6 +94,5 @@ namespace ams::ddsf {
                 return impl::ForEach(m_device_list_lock, m_device_list, f);
             }
     };
-    static_assert(IDriver::ListTraits::IsValid());
 
 }

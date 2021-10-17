@@ -21,7 +21,7 @@ namespace ams::os::impl {
 
     class MultiWaitObjectList {
         public:
-            using ListType = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::m_object_list_node>::ListType;
+            using ListType = util::IntrusiveListMemberTraitsByNonConstexprOffsetOf<&MultiWaitHolderBase::m_object_list_node>::ListType;
         private:
             ListType m_object_list;
         public:

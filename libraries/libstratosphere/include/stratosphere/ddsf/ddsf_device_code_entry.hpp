@@ -52,9 +52,9 @@ namespace ams::ddsf {
             util::TypedStorage<DeviceCodeEntry> m_entry_storage;
             bool m_is_constructed;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::m_list_node>;
+            using ListTraits = util::IntrusiveListMemberTraits<&DeviceCodeEntryHolder::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<DeviceCodeEntryHolder, util::IntrusiveListMemberTraitsDeferredAssert<&DeviceCodeEntryHolder::m_list_node>>;
+            friend class util::IntrusiveList<DeviceCodeEntryHolder, util::IntrusiveListMemberTraits<&DeviceCodeEntryHolder::m_list_node>>;
         public:
             DeviceCodeEntryHolder() : m_list_node(), m_entry_storage(), m_is_constructed(false) {
                 /* ... */
@@ -105,6 +105,5 @@ namespace ams::ddsf {
                 return GetReference(m_entry_storage);
             }
     };
-    static_assert(DeviceCodeEntryHolder::ListTraits::IsValid());
 
 }

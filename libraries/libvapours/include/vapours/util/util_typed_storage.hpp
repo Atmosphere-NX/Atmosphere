@@ -26,32 +26,32 @@ namespace ams::util {
     };
 
     template<typename T>
-    static constexpr ALWAYS_INLINE T *GetPointer(TypedStorage<T> &ts) {
-        return static_cast<T *>(static_cast<void *>(std::addressof(ts._storage)));
+    static ALWAYS_INLINE T *GetPointer(TypedStorage<T> &ts) {
+        return std::launder(reinterpret_cast<T *>(std::addressof(ts._storage)));
     }
 
     template<typename T>
-    static constexpr ALWAYS_INLINE const T *GetPointer(const TypedStorage<T> &ts) {
-        return static_cast<const T *>(static_cast<const void *>(std::addressof(ts._storage)));
+    static ALWAYS_INLINE const T *GetPointer(const TypedStorage<T> &ts) {
+        return std::launder(reinterpret_cast<const T *>(std::addressof(ts._storage)));
     }
 
     template<typename T>
-    static constexpr ALWAYS_INLINE T &GetReference(TypedStorage<T> &ts) {
+    static ALWAYS_INLINE T &GetReference(TypedStorage<T> &ts) {
         return *GetPointer(ts);
     }
 
     template<typename T>
-    static constexpr ALWAYS_INLINE const T &GetReference(const TypedStorage<T> &ts) {
+    static ALWAYS_INLINE const T &GetReference(const TypedStorage<T> &ts) {
         return *GetPointer(ts);
     }
 
     template<typename T, typename... Args>
-    static constexpr ALWAYS_INLINE T *ConstructAt(TypedStorage<T> &ts, Args &&... args) {
-        return std::construct_at(GetPointer(ts), std::forward<Args>(args)...);
+    static ALWAYS_INLINE T *ConstructAt(TypedStorage<T> &ts, Args &&... args) {
+        return std::construct_at(reinterpret_cast<T *>(std::addressof(ts._storage)), std::forward<Args>(args)...);
     }
 
     template<typename T>
-    static constexpr ALWAYS_INLINE void DestroyAt(TypedStorage<T> &ts) {
+    static ALWAYS_INLINE void DestroyAt(TypedStorage<T> &ts) {
         return std::destroy_at(GetPointer(ts));
     }
 
@@ -65,7 +65,7 @@ namespace ams::util {
                 bool m_active;
             public:
                 template<typename... Args>
-                constexpr ALWAYS_INLINE TypedStorageGuard(TypedStorage<T> &ts, Args &&... args) : m_ts(ts), m_active(true) {
+                ALWAYS_INLINE TypedStorageGuard(TypedStorage<T> &ts, Args &&... args) : m_ts(ts), m_active(true) {
                     ConstructAt(m_ts, std::forward<Args>(args)...);
                 }
 
@@ -83,7 +83,7 @@ namespace ams::util {
     }
 
     template<typename T, typename... Args>
-    static constexpr ALWAYS_INLINE impl::TypedStorageGuard<T> ConstructAtGuarded(TypedStorage<T> &ts, Args &&... args) {
+    static ALWAYS_INLINE impl::TypedStorageGuard<T> ConstructAtGuarded(TypedStorage<T> &ts, Args &&... args) {
         return impl::TypedStorageGuard<T>(ts, std::forward<Args>(args)...);
     }
 

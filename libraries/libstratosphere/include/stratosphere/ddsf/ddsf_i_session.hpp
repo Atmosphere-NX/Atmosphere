@@ -37,9 +37,9 @@ namespace ams::ddsf {
             IDevice *m_device;
             AccessMode m_access_mode;
         public:
-            using ListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&ISession::m_list_node>;
+            using ListTraits = util::IntrusiveListMemberTraits<&ISession::m_list_node>;
             using List       = typename ListTraits::ListType;
-            friend class util::IntrusiveList<ISession, util::IntrusiveListMemberTraitsDeferredAssert<&ISession::m_list_node>>;
+            friend class util::IntrusiveList<ISession, util::IntrusiveListMemberTraits<&ISession::m_list_node>>;
         private:
             void AttachDevice(IDevice *dev, AccessMode mode) {
                 AMS_ASSERT(dev != nullptr);
@@ -95,6 +95,5 @@ namespace ams::ddsf {
                 return this->CheckAccess(AccessMode_Write) && !this->CheckAccess(AccessMode_Shared);
             }
     };
-    static_assert(ISession::ListTraits::IsValid());
 
 }

@@ -34,20 +34,22 @@ namespace ams::os::impl {
                 private:
                     friend class util::IntrusiveList<ThreadType, ThreadListTraits>;
 
-                    static constexpr util::IntrusiveListNode &GetNode(ThreadType &parent) {
+                    static util::IntrusiveListNode &GetNode(ThreadType &parent) {
                         return GetReference(parent.all_threads_node);
                     }
 
-                    static constexpr util::IntrusiveListNode const &GetNode(ThreadType const &parent) {
+                    static util::IntrusiveListNode const &GetNode(ThreadType const &parent) {
                         return GetReference(parent.all_threads_node);
                     }
+
+                    static constexpr size_t Offset = OFFSETOF(ThreadType, all_threads_node);
 
                     static ThreadType &GetParent(util::IntrusiveListNode &node) {
-                        return *reinterpret_cast<ThreadType *>(reinterpret_cast<char *>(std::addressof(node)) - OFFSETOF(ThreadType, all_threads_node));
+                        return *reinterpret_cast<ThreadType *>(reinterpret_cast<char *>(std::addressof(node)) - Offset);
                     }
 
                     static ThreadType const &GetParent(util::IntrusiveListNode const &node) {
-                        return *reinterpret_cast<const ThreadType *>(reinterpret_cast<const char *>(std::addressof(node)) - OFFSETOF(ThreadType, all_threads_node));
+                        return *reinterpret_cast<const ThreadType *>(reinterpret_cast<const char *>(std::addressof(node)) - Offset);
                     }
             };
 

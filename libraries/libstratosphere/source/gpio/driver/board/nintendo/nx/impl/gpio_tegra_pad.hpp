@@ -355,9 +355,9 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
             PadInfo m_info;
             PadStatus m_status;
         public:
-            using InterruptListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::m_interrupt_list_node>;
+            using InterruptListTraits = util::IntrusiveListMemberTraits<&TegraPad::m_interrupt_list_node>;
             using InterruptList       = typename InterruptListTraits::ListType;
-            friend class util::IntrusiveList<TegraPad, util::IntrusiveListMemberTraitsDeferredAssert<&TegraPad::m_interrupt_list_node>>;
+            friend class util::IntrusiveList<TegraPad, util::IntrusiveListMemberTraits<&TegraPad::m_interrupt_list_node>>;
         public:
             TegraPad() : Pad(), m_interrupt_list_node(), m_info(), m_status() { /* ... */ }
 

@@ -79,7 +79,7 @@ namespace ams::lmem::impl {
         u32 magic;
         util::IntrusiveListNode list_node;
 
-        using ChildListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&HeapHead::list_node>;
+        using ChildListTraits = util::IntrusiveListMemberTraits<&HeapHead::list_node>;
         using ChildList       = ChildListTraits::ListType;
         ChildList child_list;
 
@@ -90,6 +90,5 @@ namespace ams::lmem::impl {
         ImplementationHeapHead impl_head;
     };
     static_assert(std::is_trivially_destructible<HeapHead>::value);
-    static_assert(HeapHead::ChildListTraits::IsValid());
 
 }

@@ -29,9 +29,9 @@ namespace ams::i2c::driver {
             AddressingMode m_addressing_mode;
             util::IntrusiveListNode m_device_property_list_node;
         public:
-            using DevicePropertyListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::m_device_property_list_node>;
+            using DevicePropertyListTraits = util::IntrusiveListMemberTraits<&I2cDeviceProperty::m_device_property_list_node>;
             using DevicePropertyList       = typename DevicePropertyListTraits::ListType;
-            friend class util::IntrusiveList<I2cDeviceProperty, util::IntrusiveListMemberTraitsDeferredAssert<&I2cDeviceProperty::m_device_property_list_node>>;
+            friend class util::IntrusiveList<I2cDeviceProperty, util::IntrusiveListMemberTraits<&I2cDeviceProperty::m_device_property_list_node>>;
         public:
             I2cDeviceProperty() : IDevice(false), m_address(0), m_addressing_mode(AddressingMode_SevenBit), m_device_property_list_node() { /* ... */ }
             I2cDeviceProperty(u16 addr, AddressingMode m) : IDevice(false), m_address(addr), m_addressing_mode(m), m_device_property_list_node() { /* ... */ }

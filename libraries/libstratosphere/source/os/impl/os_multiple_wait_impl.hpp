@@ -30,7 +30,7 @@ namespace ams::os::impl {
             static constexpr s32 WaitInvalid   = -3;
             static constexpr s32 WaitCancelled = -2;
             static constexpr s32 WaitTimedOut  = -1;
-            using MultiWaitList = util::IntrusiveListMemberTraits<&MultiWaitHolderBase::m_multi_wait_node>::ListType;
+            using MultiWaitList = util::IntrusiveListMemberTraitsByNonConstexprOffsetOf<&MultiWaitHolderBase::m_multi_wait_node>::ListType;
         private:
             MultiWaitList m_multi_wait_list;
             MultiWaitHolderBase *m_signaled_holder;

@@ -54,9 +54,9 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             DeviceCode m_device_code;
             util::IntrusiveListNode m_bus_accessor_list_node;
         public:
-            using BusAccessorListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::m_bus_accessor_list_node>;
+            using BusAccessorListTraits = util::IntrusiveListMemberTraits<&I2cBusAccessor::m_bus_accessor_list_node>;
             using BusAccessorList       = typename BusAccessorListTraits::ListType;
-            friend class util::IntrusiveList<I2cBusAccessor, util::IntrusiveListMemberTraitsDeferredAssert<&I2cBusAccessor::m_bus_accessor_list_node>>;
+            friend class util::IntrusiveList<I2cBusAccessor, util::IntrusiveListMemberTraits<&I2cBusAccessor::m_bus_accessor_list_node>>;
         public:
             I2cBusAccessor()
                 : m_registers(nullptr), m_speed_mode(SpeedMode_Fast), m_user_count(0), m_user_count_mutex(),
