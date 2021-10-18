@@ -23,98 +23,85 @@ namespace ams::util {
 
     namespace impl {
 
-        #define AMS_UTIL_OFFSET_OF_STANDARD_COMPLIANT 0
+        #define AMS_UTIL_OFFSET_OF_STANDARD_COMPLIANT 1
 
         #if AMS_UTIL_OFFSET_OF_STANDARD_COMPLIANT
 
-            template<size_t MaxDepth>
-            struct OffsetOfUnionHolder {
-                template<typename ParentType, typename MemberType, size_t Offset>
-                union UnionImpl {
-                    using PaddingMember = char;
-                    static constexpr size_t GetOffset() { return Offset; }
-
-                    #pragma pack(push, 1)
-                    struct {
-                        PaddingMember padding[Offset];
-                        MemberType members[(sizeof(ParentType) / sizeof(MemberType)) + 1];
-                    } data;
-                    #pragma pack(pop)
-                    UnionImpl<ParentType, MemberType, Offset + 1> next_union;
-                };
-
-                template<typename ParentType, typename MemberType>
-                union UnionImpl<ParentType, MemberType, MaxDepth> { /* Empty ... */ };
-            };
-
-            template<typename ParentType, typename MemberType>
-            struct OffsetOfCalculator {
-                using UnionHolder = typename OffsetOfUnionHolder<sizeof(MemberType)>::template UnionImpl<ParentType, MemberType, 0>;
-                union Union {
+            template<std::ptrdiff_t Offset, typename P, typename M, auto Ptr>
+            consteval std::strong_ordering TestOffsetForOffsetOfImpl() {
+                #pragma pack(push, 1)
+                const union Union {
                     char c;
-                    UnionHolder first_union;
-                    ParentType parent;
+                    struct {
+                        char padding[Offset];
+                        M members[1 + (sizeof(P) / std::max<size_t>(sizeof(M), 1))];
+                    };
+                    P p;
 
-                    /* This coerces the active member to be c. */
                     constexpr Union() : c() { /* ... */ }
-                    constexpr ~Union() { std::destroy_at(std::addressof(c)); }
-                };
-                static constexpr Union U = {};
+                    constexpr ~Union() { /* ... */ }
+                } U;
+                #pragma pack(pop)
 
-                static constexpr const MemberType *GetNextAddress(const MemberType *start, const MemberType *target) {
-                    while (start < target) {
-                        start++;
-                    }
-                    return start;
+                const M *target = std::addressof(U.p.*Ptr);
+                const M *guess  = std::addressof(U.members[0]);
+
+                /* NOTE: target == guess is definitely legal, target < guess is probably legal, definitely legal if Offset <= true offsetof. */
+                /* <=> may or may not be legal, but it definitely seems to work. Evaluate again, if it breaks. */
+                return guess <=> target;
+
+                //if (guess == target) {
+                //    return std::strong_ordering::equal;
+                //} else if (guess < target) {
+                //    return std::strong_ordering::less;
+                //} else {
+                //    return std::strong_ordering::greater;
+                //}
+            }
+
+            template<std::ptrdiff_t Low, std::ptrdiff_t High, typename P, typename M, auto Ptr>
+            consteval std::ptrdiff_t OffsetOfImpl() {
+                static_assert(Low <= High);
+
+                constexpr std::ptrdiff_t Guess = (Low + High) / 2;
+                constexpr auto Order = TestOffsetForOffsetOfImpl<Guess, P, M, Ptr>();
+
+                if constexpr (Order == std::strong_ordering::equal) {
+                    return Guess;
+                } else if constexpr (Order == std::strong_ordering::less) {
+                    return OffsetOfImpl<Guess + 1, High, P, M, Ptr>();
+                } else {
+                    static_assert(Order == std::strong_ordering::greater);
+                    return OffsetOfImpl<Low, Guess - 1, P, M, Ptr>();
                 }
+            }
 
-                static constexpr std::ptrdiff_t GetDifference(const MemberType *start, const MemberType *target) {
-                    return (target - start) * sizeof(MemberType);
-                }
-
-                template<typename CurUnion>
-                static constexpr std::ptrdiff_t OffsetOfImpl(MemberType ParentType::*member, CurUnion &cur_union) {
-                    constexpr size_t Offset = CurUnion::GetOffset();
-                    const auto target = std::addressof(U.parent.*member);
-                    const auto start  = std::addressof(cur_union.data.members[0]);
-                    const auto next   = GetNextAddress(start, target);
-
-                    if (next != target) {
-                        if constexpr (Offset < sizeof(MemberType) - 1) {
-                            return OffsetOfImpl(member, cur_union.next_union);
-                        } else {
-                            __builtin_unreachable();
-                        }
-                    }
-
-                    return (next - start) * sizeof(MemberType) + Offset;
-                }
-
-
-                static constexpr std::ptrdiff_t OffsetOf(MemberType ParentType::*member) {
-                    return OffsetOfImpl(member, U.first_union);
-                }
+            template<typename P, typename M, auto Ptr>
+            struct OffsetOfCalculator {
+                static constexpr const std::ptrdiff_t Value = OffsetOfImpl<0, sizeof(P), P, M, Ptr>();
             };
 
         #else
 
-            template<typename T>
-            union HelperUnion {
-                T v;
-                char c;
-
-                constexpr HelperUnion() : c() { /* ... */ }
-                constexpr ~HelperUnion() { std::destroy_at(std::addressof(c)); }
-            };
-
-            template<typename ParentType, typename MemberType>
+            template<typename ParentType, typename MemberType, auto Ptr>
             struct OffsetOfCalculator {
-                static constexpr std::ptrdiff_t OffsetOf(MemberType ParentType::*member) {
-                    constexpr HelperUnion<ParentType> Holder = {};
-                    const auto *parent = std::addressof(Holder.v);
-                    const auto *target = std::addressof(parent->*member);
-                    return static_cast<const uint8_t *>(static_cast<const void *>(target)) - static_cast<const uint8_t *>(static_cast<const void *>(parent));
-                }
+                private:
+                    static consteval std::ptrdiff_t Calculate() {
+                        const union Union {
+                            ParentType p;
+                            char c;
+
+                            constexpr Union() : c() { /* ... */ }
+                            constexpr ~Union() { /* ... */ }
+                        } U;
+
+                        const auto *parent = std::addressof(U.p);
+                        const auto *target = std::addressof(parent->*Ptr);
+
+                        return static_cast<const uint8_t *>(static_cast<const void *>(target)) - static_cast<const uint8_t *>(static_cast<const void *>(parent));
+                    }
+                public:
+                    static constexpr const std::ptrdiff_t Value = Calculate();
             };
 
         #endif
@@ -135,22 +122,19 @@ namespace ams::util {
         using GetMemberType = typename GetMemberPointerTraits<decltype(MemberPtr)>::Member;
 
         template<auto MemberPtr, typename RealParentType = GetParentType<MemberPtr>> requires (std::derived_from<RealParentType, GetParentType<MemberPtr>> || std::same_as<RealParentType, GetParentType<MemberPtr>>)
-        struct OffsetOf {
-            using MemberType = GetMemberType<MemberPtr>;
+        struct OffsetOf : public std::integral_constant<std::ptrdiff_t, OffsetOfCalculator<RealParentType, GetMemberType<MemberPtr>, MemberPtr>::Value> {};
 
-            static constexpr std::ptrdiff_t Value = OffsetOfCalculator<RealParentType, MemberType>::OffsetOf(MemberPtr);
-        };
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     ALWAYS_INLINE RealParentType &GetParentReference(impl::GetMemberType<MemberPtr> *member) {
-        constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::Value;
+        constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::value;
         return *static_cast<RealParentType *>(static_cast<void *>(static_cast<uint8_t *>(static_cast<void *>(member)) - Offset));
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     ALWAYS_INLINE RealParentType const &GetParentReference(impl::GetMemberType<MemberPtr> const *member) {
-        constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::Value;
+        constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::value;
         return *static_cast<const RealParentType *>(static_cast<const void *>(static_cast<const uint8_t *>(static_cast<const void *>(member)) - Offset));
     }
 
@@ -187,7 +171,7 @@ namespace ams::util {
 
     /* Defines, for use by other code. */
 
-    #define OFFSETOF(parent, member) (::ams::util::impl::OffsetOf<&parent::member, parent>::Value)
+    #define OFFSETOF(parent, member) (::ams::util::impl::OffsetOf<&parent::member, parent>::value)
 
     #define GET_PARENT_PTR(parent, member, _arg) (::ams::util::GetParentPointer<&parent::member, parent>(_arg))
 

@@ -502,7 +502,7 @@ namespace ams::util {
                 return util::GetParentPointer<Member, Derived>(node);
             }
         private:
-            static_assert(util::IsAligned(util::impl::OffsetOf<Member, Derived>::Value, alignof(void *)));
+            static_assert(util::IsAligned(util::impl::OffsetOf<Member, Derived>::value, alignof(void *)));
     };
 
     template<auto T, class Derived = util::impl::GetParentType<T>>
@@ -516,7 +516,7 @@ namespace ams::util {
             using TreeTypeImpl = impl::IntrusiveRedBlackTreeImpl;
 
             static constexpr bool IsValid() {
-                return util::IsAligned(util::impl::OffsetOf<Member, Derived>::Value, alignof(void *));
+                return util::IsAligned(util::impl::OffsetOf<Member, Derived>::value, alignof(void *));
             }
         private:
             template<class, class, class>
