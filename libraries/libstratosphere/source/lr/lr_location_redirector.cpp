@@ -86,25 +86,27 @@ namespace ams::lr {
 
     void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {
         /* Remove any redirections with a matching program id. */
-        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end();) {
+        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end(); /* ... */) {
             if (it->GetProgramId() == program_id) {
                 auto *redirection = std::addressof(*it);
-                m_redirection_list.erase(it);
+                it = m_redirection_list.erase(it);
                 delete redirection;
                 break;
+            } else {
+                ++it;
             }
         }
     }
 
     void LocationRedirector::ClearRedirections(u32 flags) {
         /* Remove any redirections with matching flags. */
-        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end();) {
+        for (auto it = m_redirection_list.begin(); it != m_redirection_list.end(); /* ... */) {
             if ((it->GetFlags() & flags) == flags) {
                 auto *redirection = std::addressof(*it);
                 it = m_redirection_list.erase(it);
                 delete redirection;
             } else {
-                it++;
+                ++it;
             }
         }
     }
