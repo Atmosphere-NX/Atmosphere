@@ -46,7 +46,7 @@ export ATMOSPHERE_BOARD_DIR  := nintendo/nx_bpmp
 export ATMOSPHERE_OS_DIR     := horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm
-export ATMOSPHERE_BOARD_NAME := nintendo_nx_bpmp
+export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
 
 export ATMOSPHERE_CPU_EXTENSIONS :=
