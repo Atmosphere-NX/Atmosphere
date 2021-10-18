@@ -119,7 +119,7 @@ namespace ams::mitm {
         }
 
         bool IsValid(const CalibrationInfoHeader &header) {
-            return header.magic == CalibrationMagic && GetCrc16(std::addressof(header), OFFSETOF(CalibrationInfoHeader, crc)) == header.crc;
+            return header.magic == CalibrationMagic && GetCrc16(std::addressof(header), AMS_OFFSETOF(CalibrationInfoHeader, crc)) == header.crc;
         }
 
         bool IsValid(const CalibrationInfoHeader &header, const void *body) {
@@ -213,7 +213,7 @@ namespace ams::mitm {
             /* Set header. */
             info.header.magic       = CalibrationMagic;
             info.header.body_size   = sizeof(info.body);
-            info.header.crc         = GetCrc16(std::addressof(info.header), OFFSETOF(CalibrationInfoHeader, crc));
+            info.header.crc         = GetCrc16(std::addressof(info.header), AMS_OFFSETOF(CalibrationInfoHeader, crc));
 
             /* Set blocks. */
             Blank(info.GetBlock<SerialNumberBlock>());

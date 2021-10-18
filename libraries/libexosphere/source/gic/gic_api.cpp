@@ -191,27 +191,27 @@ namespace ams::gic {
     }
 
     void SetPriority(int interrupt_id, int priority) {
-        ReadWrite(g_distributor_address + offsetof(GicDistributor, ipriorityr), BITSIZEOF(u8), interrupt_id, priority);
+        ReadWrite(g_distributor_address + AMS_OFFSETOF(GicDistributor, ipriorityr), BITSIZEOF(u8), interrupt_id, priority);
     }
 
     void SetInterruptGroup(int interrupt_id, int group) {
-        ReadWrite(g_distributor_address + offsetof(GicDistributor, igroupr), 1, interrupt_id, group);
+        ReadWrite(g_distributor_address + AMS_OFFSETOF(GicDistributor, igroupr), 1, interrupt_id, group);
     }
 
     void SetEnable(int interrupt_id, bool enable) {
-        Write(g_distributor_address + offsetof(GicDistributor, isenabler), 1, interrupt_id, enable);
+        Write(g_distributor_address + AMS_OFFSETOF(GicDistributor, isenabler), 1, interrupt_id, enable);
     }
 
     void SetSpiTargetCpu(int interrupt_id, u32 cpu_mask) {
-        ReadWrite(g_distributor_address + offsetof(GicDistributor, itargetsr), BITSIZEOF(u8), interrupt_id, cpu_mask);
+        ReadWrite(g_distributor_address + AMS_OFFSETOF(GicDistributor, itargetsr), BITSIZEOF(u8), interrupt_id, cpu_mask);
     }
 
     void SetSpiMode(int interrupt_id, InterruptMode mode) {
-        ReadWrite(g_distributor_address + offsetof(GicDistributor, icfgr), 2, interrupt_id, static_cast<u32>(mode) << 1);
+        ReadWrite(g_distributor_address + AMS_OFFSETOF(GicDistributor, icfgr), 2, interrupt_id, static_cast<u32>(mode) << 1);
     }
 
     void SetPending(int interrupt_id) {
-        Write(g_distributor_address + offsetof(GicDistributor, ispendr), 1, interrupt_id, 1);
+        Write(g_distributor_address + AMS_OFFSETOF(GicDistributor, ispendr), 1, interrupt_id, 1);
     }
 
     int GetInterruptRequestId() {

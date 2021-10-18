@@ -270,7 +270,7 @@ namespace ams::nxboot {
             u8 *package2;
             size_t package2_size;
             {
-                constexpr s64 Package2Offset = __builtin_offsetof(pkg2::StorageLayout, package2_header);
+                constexpr s64 Package2Offset = AMS_OFFSETOF(pkg2::StorageLayout, package2_header);
 
                 pkg2::Package2Header header;
                 if (R_FAILED((result = ReadPackage2(Package2Offset, std::addressof(header), sizeof(header))))) {

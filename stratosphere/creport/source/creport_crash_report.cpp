@@ -23,8 +23,8 @@ namespace ams::creport {
 
         /* Convenience definitions. */
         constexpr size_t DyingMessageAddressOffset = 0x1C0;
-        static_assert(DyingMessageAddressOffset == OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, dying_message_region_address));
-        static_assert(DyingMessageAddressOffset == OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, dying_message_region_address));
+        static_assert(DyingMessageAddressOffset == AMS_OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, dying_message_region_address));
+        static_assert(DyingMessageAddressOffset == AMS_OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, dying_message_region_address));
 
         /* Helper functions. */
         bool TryGetCurrentTimestamp(u64 *out) {

@@ -34,7 +34,7 @@ namespace ams::osdbg::impl {
         u64 p_thread_type;
     };
     static_assert(sizeof(ThreadLocalRegionLp64) == sizeof(svc::ThreadLocalRegion));
-    static_assert(__builtin_offsetof(ThreadLocalRegionLp64, tls) == 0x180);
+    static_assert(AMS_OFFSETOF(ThreadLocalRegionLp64, tls) == 0x180);
 
 
     struct ThreadLocalRegionIlp32 {
@@ -51,7 +51,7 @@ namespace ams::osdbg::impl {
         u32 p_thread_type;
     };
     static_assert(sizeof(ThreadLocalRegionIlp32) == sizeof(svc::ThreadLocalRegion));
-    static_assert(__builtin_offsetof(ThreadLocalRegionIlp32, tls) == 0x1C0);
+    static_assert(AMS_OFFSETOF(ThreadLocalRegionIlp32, tls) == 0x1C0);
 
     struct LibnxThreadVars {
         static constexpr u32 Magic = util::FourCC<'!','T','V','$'>::Code;
@@ -73,7 +73,7 @@ namespace ams::osdbg::impl {
         LibnxThreadVars thread_vars;
     };
     static_assert(sizeof(ThreadLocalRegionLibnx) == sizeof(svc::ThreadLocalRegion));
-    static_assert(__builtin_offsetof(ThreadLocalRegionLibnx, thread_vars) == 0x1E0);
+    static_assert(AMS_OFFSETOF(ThreadLocalRegionLibnx, thread_vars) == 0x1E0);
 
     struct LibnxThreadEntryArgs {
         u64 t;

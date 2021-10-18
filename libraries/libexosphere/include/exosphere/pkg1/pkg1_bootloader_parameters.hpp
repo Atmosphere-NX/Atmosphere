@@ -55,9 +55,9 @@ namespace ams::pkg1 {
     static_assert(util::is_pod<SecureMonitorParameters>::value);
     static_assert(sizeof(SecureMonitorParameters) == 0x200);
 
-    static_assert(offsetof(SecureMonitorParameters, bct_params)       == 0x10);
-    static_assert(offsetof(SecureMonitorParameters, bootloader_state) == 0xF8);
-    static_assert(offsetof(SecureMonitorParameters, secmon_state) == 0xFC);
+    static_assert(AMS_OFFSETOF(SecureMonitorParameters, bct_params)       == 0x10);
+    static_assert(AMS_OFFSETOF(SecureMonitorParameters, bootloader_state) == 0xF8);
+    static_assert(AMS_OFFSETOF(SecureMonitorParameters, secmon_state) == 0xFC);
 
     enum BootloaderAttribute {
         BootloaderAttribute_None         = (0u << 0),

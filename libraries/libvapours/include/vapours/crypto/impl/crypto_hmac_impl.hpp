@@ -50,7 +50,7 @@ namespace ams::crypto::impl {
         public:
             HmacImpl() : m_state(State_None) { /* ... */ }
             ~HmacImpl() {
-                static_assert(offsetof(HmacImpl, m_hash_function) == 0);
+                static_assert(AMS_OFFSETOF(HmacImpl, m_hash_function) == 0);
 
                 /* Clear everything except for the hash function. */
                 ClearMemory(reinterpret_cast<u8 *>(this) + sizeof(m_hash_function), sizeof(*this) - sizeof(m_hash_function));

@@ -267,9 +267,9 @@ namespace ams::fssystem {
     };
     static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
     static_assert(util::is_pod<NcaFsHeader>::value);
-    static_assert(offsetof(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
+    static_assert(AMS_OFFSETOF(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
 
-    inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = offsetof(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);
-    inline constexpr const size_t NcaFsHeader::HashData::IntegrityMetaInfo::MasterHashOffset      = offsetof(NcaFsHeader, hash_data.integrity_meta_info.master_hash);
+    inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = AMS_OFFSETOF(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);
+    inline constexpr const size_t NcaFsHeader::HashData::IntegrityMetaInfo::MasterHashOffset      = AMS_OFFSETOF(NcaFsHeader, hash_data.integrity_meta_info.master_hash);
 
 }

@@ -101,18 +101,18 @@ namespace ams::kern {
             static_assert(alignof(StackParameters) == 0x10);
             static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
 
-            static_assert(__builtin_offsetof(StackParameters, svc_access_flags)        == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
-            static_assert(__builtin_offsetof(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
-            static_assert(__builtin_offsetof(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
-            static_assert(__builtin_offsetof(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
-            static_assert(__builtin_offsetof(StackParameters, dpc_flags)               == THREAD_STACK_PARAMETERS_DPC_FLAGS);
-            static_assert(__builtin_offsetof(StackParameters, current_svc_id)          == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
-            static_assert(__builtin_offsetof(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
-            static_assert(__builtin_offsetof(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
-            static_assert(__builtin_offsetof(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
+            static_assert(AMS_OFFSETOF(StackParameters, svc_access_flags)        == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
+            static_assert(AMS_OFFSETOF(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
+            static_assert(AMS_OFFSETOF(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
+            static_assert(AMS_OFFSETOF(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
+            static_assert(AMS_OFFSETOF(StackParameters, dpc_flags)               == THREAD_STACK_PARAMETERS_DPC_FLAGS);
+            static_assert(AMS_OFFSETOF(StackParameters, current_svc_id)          == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
+            static_assert(AMS_OFFSETOF(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
+            static_assert(AMS_OFFSETOF(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
+            static_assert(AMS_OFFSETOF(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
 
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-            static_assert(__builtin_offsetof(StackParameters, is_single_step)          == THREAD_STACK_PARAMETERS_IS_SINGLE_STEP);
+            static_assert(AMS_OFFSETOF(StackParameters, is_single_step)          == THREAD_STACK_PARAMETERS_IS_SINGLE_STEP);
             #endif
 
             struct QueueEntry {

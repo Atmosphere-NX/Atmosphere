@@ -78,8 +78,8 @@ namespace ams::ncm {
         u8 reserved_1C[4];
     };
     static_assert(sizeof(PackagedContentMetaHeader) == 0x20);
-    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_0D) == 0x0D);
-    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
+    static_assert(AMS_OFFSETOF(PackagedContentMetaHeader, reserved_0D) == 0x0D);
+    static_assert(AMS_OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
 
     using InstallContentMetaHeader = PackagedContentMetaHeader;
 

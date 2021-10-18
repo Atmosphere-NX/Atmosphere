@@ -272,7 +272,7 @@ namespace ams::crypto::impl {
         Block last_block = Block{ .block_128 = { m_msg_size, m_aad_size } };
 
         /* Multiply the last block by 8 to account for bit vs byte sizes. */
-        static_assert(offsetof(Block128, hi) == 0);
+        static_assert(AMS_OFFSETOF(Block128, hi) == 0);
         GaloisShiftLeft(std::addressof(last_block.block_128.hi));
         GaloisShiftLeft(std::addressof(last_block.block_128.hi));
         GaloisShiftLeft(std::addressof(last_block.block_128.hi));

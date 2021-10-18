@@ -26,19 +26,19 @@ namespace ams::fssrv::fscreator {
         size_t size;
 
         /* Read the Acid signature key generation. */
-        constexpr s64 AcidSignatureKeyGenerationOffset = offsetof(ldr::Npdm, signature_key_generation);
+        constexpr s64 AcidSignatureKeyGenerationOffset = AMS_OFFSETOF(ldr::Npdm, signature_key_generation);
         u32 acid_signature_key_generation;
         R_TRY(file->Read(std::addressof(size), AcidSignatureKeyGenerationOffset, std::addressof(acid_signature_key_generation), sizeof(acid_signature_key_generation), fs::ReadOption()));
         R_UNLESS(size == sizeof(acid_signature_key_generation), fs::ResultInvalidAcidFileSize());
 
         /* Read the Acid offset. */
-        constexpr s64 AcidOffsetOffset = offsetof(ldr::Npdm, acid_offset);
+        constexpr s64 AcidOffsetOffset = AMS_OFFSETOF(ldr::Npdm, acid_offset);
         s32 acid_offset;
         R_TRY(file->Read(std::addressof(size), AcidOffsetOffset, std::addressof(acid_offset), sizeof(acid_offset), fs::ReadOption()));
         R_UNLESS(size == sizeof(acid_offset), fs::ResultInvalidAcidFileSize());
 
         /* Read the Acid size. */
-        constexpr s64 AcidSizeOffset = offsetof(ldr::Npdm, acid_size);
+        constexpr s64 AcidSizeOffset = AMS_OFFSETOF(ldr::Npdm, acid_size);
         s32 acid_size;
         R_TRY(file->Read(std::addressof(size), AcidSizeOffset, std::addressof(acid_size), sizeof(acid_size), fs::ReadOption()));
         R_UNLESS(size == sizeof(acid_size), fs::ResultInvalidAcidFileSize());

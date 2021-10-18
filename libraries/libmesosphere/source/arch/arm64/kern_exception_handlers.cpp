@@ -201,13 +201,13 @@ namespace ams::kern::arch::arm64 {
                     context->pc   = GetInteger(cur_process.GetEntryPoint());
                     context->x[0] = type;
                     if (is_aarch64) {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + __builtin_offsetof(ams::svc::aarch64::ProcessLocalRegion, exception_info));
+                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, exception_info));
 
                         auto *plr    = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
                         context->sp  = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
                         context->psr = 0;
                     } else {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + __builtin_offsetof(ams::svc::aarch32::ProcessLocalRegion, exception_info));
+                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, exception_info));
 
                         auto *plr      = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
                         context->x[13] = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);

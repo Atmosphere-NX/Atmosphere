@@ -33,11 +33,11 @@ namespace ams::nxboot {
             u32 verif_hash;
             u32 store_hash;
             if (fuse::GetSocType() == fuse::SocType_Erista) {
-                result = fs::ReadFile(archive_file, __builtin_offsetof(ExternalPackage, ovl_mtc_erista), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_erista));
+                result = fs::ReadFile(archive_file, AMS_OFFSETOF(ExternalPackage, ovl_mtc_erista), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_erista));
                 verif_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[-2];
                 store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(ExternalPackage{}.ovl_mtc_erista) / sizeof(u32)) - 1];
             } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-                result = fs::ReadFile(archive_file, __builtin_offsetof(ExternalPackage, ovl_mtc_mariko), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_mariko));
+                result = fs::ReadFile(archive_file, AMS_OFFSETOF(ExternalPackage, ovl_mtc_mariko), GetOverlayDestination(), sizeof(ExternalPackage{}.ovl_mtc_mariko));
                 verif_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[-1];
                 store_hash = reinterpret_cast<const u32 *>(GetOverlayDestination())[(sizeof(ExternalPackage{}.ovl_mtc_mariko) / sizeof(u32)) - 1];
             }

@@ -35,17 +35,17 @@ namespace ams::kern::init {
     static_assert(alignof(KInitArguments) == util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE));
     static_assert(sizeof(KInitArguments) == std::max(INIT_ARGUMENTS_SIZE, util::CeilingPowerOfTwo(INIT_ARGUMENTS_SIZE)));
 
-    static_assert(__builtin_offsetof(KInitArguments, ttbr0)           == INIT_ARGUMENTS_TTBR0);
-    static_assert(__builtin_offsetof(KInitArguments, ttbr1)           == INIT_ARGUMENTS_TTBR1);
-    static_assert(__builtin_offsetof(KInitArguments, tcr)             == INIT_ARGUMENTS_TCR);
-    static_assert(__builtin_offsetof(KInitArguments, mair)            == INIT_ARGUMENTS_MAIR);
-    static_assert(__builtin_offsetof(KInitArguments, cpuactlr)        == INIT_ARGUMENTS_CPUACTLR);
-    static_assert(__builtin_offsetof(KInitArguments, cpuectlr)        == INIT_ARGUMENTS_CPUECTLR);
-    static_assert(__builtin_offsetof(KInitArguments, sctlr)           == INIT_ARGUMENTS_SCTLR);
-    static_assert(__builtin_offsetof(KInitArguments, sp)              == INIT_ARGUMENTS_SP);
-    static_assert(__builtin_offsetof(KInitArguments, entrypoint)      == INIT_ARGUMENTS_ENTRYPOINT);
-    static_assert(__builtin_offsetof(KInitArguments, argument)        == INIT_ARGUMENTS_ARGUMENT);
-    static_assert(__builtin_offsetof(KInitArguments, setup_function)  == INIT_ARGUMENTS_SETUP_FUNCTION);
-    static_assert(__builtin_offsetof(KInitArguments, exception_stack) == INIT_ARGUMENTS_EXCEPTION_STACK);
+    static_assert(AMS_OFFSETOF(KInitArguments, ttbr0)           == INIT_ARGUMENTS_TTBR0);
+    static_assert(AMS_OFFSETOF(KInitArguments, ttbr1)           == INIT_ARGUMENTS_TTBR1);
+    static_assert(AMS_OFFSETOF(KInitArguments, tcr)             == INIT_ARGUMENTS_TCR);
+    static_assert(AMS_OFFSETOF(KInitArguments, mair)            == INIT_ARGUMENTS_MAIR);
+    static_assert(AMS_OFFSETOF(KInitArguments, cpuactlr)        == INIT_ARGUMENTS_CPUACTLR);
+    static_assert(AMS_OFFSETOF(KInitArguments, cpuectlr)        == INIT_ARGUMENTS_CPUECTLR);
+    static_assert(AMS_OFFSETOF(KInitArguments, sctlr)           == INIT_ARGUMENTS_SCTLR);
+    static_assert(AMS_OFFSETOF(KInitArguments, sp)              == INIT_ARGUMENTS_SP);
+    static_assert(AMS_OFFSETOF(KInitArguments, entrypoint)      == INIT_ARGUMENTS_ENTRYPOINT);
+    static_assert(AMS_OFFSETOF(KInitArguments, argument)        == INIT_ARGUMENTS_ARGUMENT);
+    static_assert(AMS_OFFSETOF(KInitArguments, setup_function)  == INIT_ARGUMENTS_SETUP_FUNCTION);
+    static_assert(AMS_OFFSETOF(KInitArguments, exception_stack) == INIT_ARGUMENTS_EXCEPTION_STACK);
 
 }

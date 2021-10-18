@@ -129,7 +129,7 @@ namespace ams::ro {
     static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader definition!");
 
     constexpr size_t NrrHeader::GetSignedAreaOffset() {
-        return OFFSETOF(NrrHeader, m_program_id);
+        return AMS_OFFSETOF(NrrHeader, m_program_id);
     }
 
     class NroHeader {

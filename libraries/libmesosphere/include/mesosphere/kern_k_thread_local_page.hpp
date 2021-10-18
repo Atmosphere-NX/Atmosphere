@@ -107,8 +107,8 @@ namespace ams::kern {
 
     /* Miscellaneous sanity checking. */
     static_assert(ams::svc::ThreadLocalRegionSize == THREAD_LOCAL_REGION_SIZE);
-    static_assert(__builtin_offsetof(ams::svc::ThreadLocalRegion, message_buffer) == THREAD_LOCAL_REGION_MESSAGE_BUFFER);
-    static_assert(__builtin_offsetof(ams::svc::ThreadLocalRegion, disable_count)  == THREAD_LOCAL_REGION_DISABLE_COUNT);
-    static_assert(__builtin_offsetof(ams::svc::ThreadLocalRegion, interrupt_flag) == THREAD_LOCAL_REGION_INTERRUPT_FLAG);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, message_buffer) == THREAD_LOCAL_REGION_MESSAGE_BUFFER);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, disable_count)  == THREAD_LOCAL_REGION_DISABLE_COUNT);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, interrupt_flag) == THREAD_LOCAL_REGION_INTERRUPT_FLAG);
 
 }

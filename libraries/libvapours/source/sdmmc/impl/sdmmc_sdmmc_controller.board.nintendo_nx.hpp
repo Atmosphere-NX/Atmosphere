@@ -123,7 +123,7 @@ namespace ams::sdmmc::impl {
         public:
             explicit SdmmcController(dd::PhysicalAddress registers_phys_addr) : SdHostStandardController(registers_phys_addr, SdmmcRegistersSize) {
                 /* Set sdmmc registers. */
-                static_assert(offsetof(SdmmcRegisters, sd_host_standard_registers) == 0);
+                static_assert(AMS_OFFSETOF(SdmmcRegisters, sd_host_standard_registers) == 0);
                 m_sdmmc_registers = reinterpret_cast<SdmmcRegisters *>(m_registers);
 
                 m_is_shutdown                        = true;

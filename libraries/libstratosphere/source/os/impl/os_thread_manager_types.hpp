@@ -42,7 +42,7 @@ namespace ams::os::impl {
                         return GetReference(parent.all_threads_node);
                     }
 
-                    static constexpr size_t Offset = OFFSETOF(ThreadType, all_threads_node);
+                    static constexpr size_t Offset = AMS_OFFSETOF(ThreadType, all_threads_node);
 
                     static ThreadType &GetParent(util::IntrusiveListNode &node) {
                         return *reinterpret_cast<ThreadType *>(reinterpret_cast<char *>(std::addressof(node)) - Offset);

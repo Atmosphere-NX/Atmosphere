@@ -170,11 +170,8 @@ namespace ams::util {
 
 
     /* Defines, for use by other code. */
-
-    #define OFFSETOF(parent, member) (::ams::util::impl::OffsetOf<&parent::member, parent>::value)
-
-    #define GET_PARENT_PTR(parent, member, _arg) (::ams::util::GetParentPointer<&parent::member, parent>(_arg))
-
-    #define GET_PARENT_REF(parent, member, _arg) (::ams::util::GetParentReference<&parent::member, parent>(_arg))
+    #define AMS_OFFSETOF(parent, member) (__builtin_offsetof(parent, member))
+    #define AMS_GET_PARENT_PTR(parent, member, _arg) (::ams::util::GetParentPointer<&parent::member, parent>(_arg))
+    #define AMS_GET_PARENT_REF(parent, member, _arg) (::ams::util::GetParentReference<&parent::member, parent>(_arg))
 
 }

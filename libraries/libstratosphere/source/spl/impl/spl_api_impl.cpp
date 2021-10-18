@@ -297,10 +297,10 @@ namespace ams::spl::impl {
             auto &layout = *reinterpret_cast<DecryptAesLayout *>(g_work_buffer);
 
             layout.crypt_ctx.in.num_entries  = 0;
-            layout.crypt_ctx.in.address      = g_work_buffer_mapped_address + offsetof(DecryptAesLayout, in_buffer);
+            layout.crypt_ctx.in.address      = g_work_buffer_mapped_address + AMS_OFFSETOF(DecryptAesLayout, in_buffer);
             layout.crypt_ctx.in.size         = sizeof(layout.in_buffer);
             layout.crypt_ctx.out.num_entries = 0;
-            layout.crypt_ctx.out.address     = g_work_buffer_mapped_address + offsetof(DecryptAesLayout, out_buffer);
+            layout.crypt_ctx.out.address     = g_work_buffer_mapped_address + AMS_OFFSETOF(DecryptAesLayout, out_buffer);
             layout.crypt_ctx.out.size        = sizeof(layout.out_buffer);
 
             std::memcpy(layout.in_buffer, src, sizeof(layout.in_buffer));
@@ -312,8 +312,8 @@ namespace ams::spl::impl {
                 smc::AsyncOperationKey op_key;
                 const IvCtr iv_ctr    = {};
                 const u32 mode        = smc::GetComputeAesMode(smc::CipherMode::CbcDecrypt, GetPhysicalAesKeySlot(keyslot, true));
-                const u32 dst_ll_addr = g_work_buffer_mapped_address + offsetof(DecryptAesLayout, crypt_ctx.out);
-                const u32 src_ll_addr = g_work_buffer_mapped_address + offsetof(DecryptAesLayout, crypt_ctx.in);
+                const u32 dst_ll_addr = g_work_buffer_mapped_address + AMS_OFFSETOF(DecryptAesLayout, crypt_ctx.out);
+                const u32 src_ll_addr = g_work_buffer_mapped_address + AMS_OFFSETOF(DecryptAesLayout, crypt_ctx.in);
 
                 smc::Result res = smc::ComputeAes(std::addressof(op_key), dst_ll_addr, mode, iv_ctr, src_ll_addr, sizeof(layout.out_buffer));
                 if (res != smc::Result::Success) {
@@ -666,8 +666,8 @@ namespace ams::spl::impl {
             std::scoped_lock lk(g_operation_lock);
 
             const u32 mode = smc::GetComputeAesMode(smc::CipherMode::Ctr, GetPhysicalAesKeySlot(keyslot, true));
-            const u32 dst_ll_addr = g_work_buffer_mapped_address + offsetof(SeCryptContext, out);
-            const u32 src_ll_addr = g_work_buffer_mapped_address + offsetof(SeCryptContext, in);
+            const u32 dst_ll_addr = g_work_buffer_mapped_address + AMS_OFFSETOF(SeCryptContext, out);
+            const u32 src_ll_addr = g_work_buffer_mapped_address + AMS_OFFSETOF(SeCryptContext, in);
 
             smc::AsyncOperationKey op_key;
             smc::Result res = smc::ComputeAes(std::addressof(op_key), dst_ll_addr, mode, iv_ctr, src_ll_addr, src_size);

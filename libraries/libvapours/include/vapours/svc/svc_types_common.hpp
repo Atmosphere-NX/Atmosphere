@@ -563,7 +563,7 @@ namespace ams::svc {
             u64           padding[6];
         };
         static_assert(sizeof(ProcessLocalRegion) == 0x200);
-        static_assert(OFFSETOF(ProcessLocalRegion, dying_message_region_address) == 0x1C0);
+        static_assert(AMS_OFFSETOF(ProcessLocalRegion, dying_message_region_address) == 0x1C0);
 
     }
 
@@ -607,7 +607,7 @@ namespace ams::svc {
             u64           padding[6];
         };
         static_assert(sizeof(ProcessLocalRegion) == 0x200);
-        static_assert(OFFSETOF(ProcessLocalRegion, dying_message_region_address) == 0x1C0);
+        static_assert(AMS_OFFSETOF(ProcessLocalRegion, dying_message_region_address) == 0x1C0);
 
     }
 

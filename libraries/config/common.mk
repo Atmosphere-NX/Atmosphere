@@ -21,7 +21,8 @@ export ATMOSPHERE_DEFINES  := -DATMOSPHERE
 export ATMOSPHERE_SETTINGS := -fPIE -g -gdwarf-4 $(ATMOSPHERE_BUILD_SETTINGS)
 export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv  \
                               -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector \
-                              -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation
+                              -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation \
+                              -Wno-invalid-offsetof
 
 export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++20
 export ATMOSPHERE_ASFLAGS  :=
@@ -45,7 +46,7 @@ export ATMOSPHERE_BOARD_DIR  := nintendo/nx_bpmp
 export ATMOSPHERE_OS_DIR     := horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm
-export ATMOSPHERE_BOARD_NAME := nintendo_nx
+export ATMOSPHERE_BOARD_NAME := nintendo_nx_bpmp
 export ATMOSPHERE_OS_NAME    := horizon
 
 export ATMOSPHERE_CPU_EXTENSIONS :=
