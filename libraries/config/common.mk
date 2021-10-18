@@ -21,10 +21,10 @@ export ATMOSPHERE_DEFINES  := -DATMOSPHERE
 export ATMOSPHERE_SETTINGS := -fPIE -g -gdwarf-4 $(ATMOSPHERE_BUILD_SETTINGS)
 export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv  \
                               -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector \
-                              -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation \
-                              -Wno-invalid-offsetof
+                              -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation
 
-export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++20
+
+export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++20 -Wno-invalid-offsetof
 export ATMOSPHERE_ASFLAGS  :=
 
 
