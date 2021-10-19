@@ -46,7 +46,6 @@ namespace ams::kern::arch::arm64 {
             static constexpr size_t NumLevels = 3;
             static constexpr size_t LevelBits = 9;
             static_assert(NumLevels > 0);
-            static_assert(PageBits == 12);
 
             template<size_t Offset, size_t Count>
             static constexpr ALWAYS_INLINE u64 GetBits(u64 value) {
