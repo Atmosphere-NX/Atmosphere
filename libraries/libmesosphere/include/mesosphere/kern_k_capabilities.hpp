@@ -55,48 +55,16 @@ namespace ams::kern {
                 return static_cast<u32>(type) + 1;
             }
 
-            static constexpr u32 CountTrailingZero(u32 flag) {
-                for (u32 i = 0; i < BITSIZEOF(u32); i++) {
-                    if (flag & (1u << i)) {
-                        return i;
-                    }
-                }
-                return BITSIZEOF(u32);
-            }
-
-            static constexpr u32 GetCapabilityId(CapabilityType type) {
-                const u32 flag = GetCapabilityFlag(type);
-                if (std::is_constant_evaluated()) {
-                    return CountTrailingZero(flag);
-                } else {
-                    return static_cast<u32>(__builtin_ctz(flag));
-                }
-            }
-
             template<size_t Index, size_t Count, typename T = u32>
             using Field = util::BitPack32::Field<Index, Count, T>;
 
             #define DEFINE_FIELD(name, prev, ...) using name = Field<prev::Next, __VA_ARGS__>
 
             template<CapabilityType Type>
-            static constexpr inline u32 CapabilityFlag = []() -> u32 {
-                return static_cast<u32>(Type) + 1;
-            }();
+            static constexpr inline u32 CapabilityFlag = static_cast<u32>(Type) + 1;
 
             template<CapabilityType Type>
-            static constexpr inline u32 CapabilityId = []() -> u32 {
-                const u32 flag = static_cast<u32>(Type) + 1;
-                if (std::is_constant_evaluated()) {
-                    for (u32 i = 0; i < BITSIZEOF(u32); i++) {
-                        if (flag & (1u << i)) {
-                            return i;
-                        }
-                    }
-                    return BITSIZEOF(u32);
-                } else {
-                    return __builtin_ctz(flag);
-                }
-            }();
+            static constexpr inline u32 CapabilityId = util::CountTrailingZeros<u32>(CapabilityFlag<Type>);
 
             struct CorePriority {
                 using IdBits = Field<0, CapabilityId<CapabilityType::CorePriority> + 1>;

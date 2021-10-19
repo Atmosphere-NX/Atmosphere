@@ -248,8 +248,9 @@ namespace ams::kern::arch::arm {
                 return id;
             }
         private:
-            static constexpr size_t PriorityShift = BITSIZEOF(u8) - __builtin_ctz(NumPriorityLevels);
+            static constexpr size_t PriorityShift = BITSIZEOF(u8) - util::CountTrailingZeros(NumPriorityLevels);
             static_assert(PriorityShift < BITSIZEOF(u8));
+            static_assert(util::IsPowerOfTwo(NumPriorityLevels));
 
             static constexpr ALWAYS_INLINE u8 ToGicPriorityValue(s32 level) {
                 return (level << PriorityShift) | ((1 << PriorityShift) - 1);

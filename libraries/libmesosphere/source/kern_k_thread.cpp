@@ -441,7 +441,7 @@ namespace ams::kern {
             m_base_priority_on_unpin    = old_base_priority;
 
             /* Set base priority to higher than any possible process priority. */
-            m_base_priority = std::min<s32>(old_base_priority, __builtin_ctzll(this->GetOwnerProcess()->GetPriorityMask()));
+            m_base_priority = std::min<s32>(old_base_priority, __builtin_ctzll(this->GetOwnerProcess()->GetPriorityMask()) - 1);
             RestorePriority(this);
         }
 

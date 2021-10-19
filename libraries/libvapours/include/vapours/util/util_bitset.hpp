@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_bitutil.hpp>
 
 namespace ams::util {
 
@@ -30,14 +31,10 @@ namespace ams::util {
                 static_assert(sizeof(Storage) <= sizeof(u64));
 
                 static constexpr size_t FlagsPerWord = BITSIZEOF(Storage);
-                static constexpr size_t NumWords     = util::AlignUp(N, FlagsPerWord) / FlagsPerWord;
-
-                static constexpr ALWAYS_INLINE auto CountLeadingZeroImpl(Storage word) {
-                    return __builtin_clzll(static_cast<unsigned long long>(word)) - (BITSIZEOF(unsigned long long) - FlagsPerWord);
-                }
+                static constexpr size_t NumWords     = util::DivideUp(N, FlagsPerWord);
 
                 static constexpr ALWAYS_INLINE Storage GetBitMask(size_t bit) {
-                    return Storage(1) << (FlagsPerWord - 1 - bit);
+                    return static_cast<Storage>(1) << (FlagsPerWord - 1 - bit);
                 }
             private:
                 Storage m_words[NumWords];
@@ -55,7 +52,7 @@ namespace ams::util {
                 constexpr ALWAYS_INLINE size_t CountLeadingZero() const {
                     for (size_t i = 0; i < NumWords; i++) {
                         if (m_words[i]) {
-                            return FlagsPerWord * i + CountLeadingZeroImpl(m_words[i]);
+                            return FlagsPerWord * i + util::CountLeadingZeros<Storage>(m_words[i]);
                         }
                     }
                     return FlagsPerWord * NumWords;
@@ -68,7 +65,7 @@ namespace ams::util {
                             word &= GetBitMask(n % FlagsPerWord) - 1;
                         }
                         if (word) {
-                            return FlagsPerWord * i + CountLeadingZeroImpl(word);
+                            return FlagsPerWord * i + util::CountLeadingZeros<Storage>(word);
                         }
                     }
                     return FlagsPerWord * NumWords;

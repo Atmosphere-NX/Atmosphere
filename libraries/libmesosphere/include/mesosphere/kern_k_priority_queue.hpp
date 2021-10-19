@@ -235,7 +235,7 @@ namespace ams::kern {
             KPriorityQueueImpl m_suggested_queue;
         private:
             constexpr ALWAYS_INLINE void ClearAffinityBit(u64 &affinity, s32 core) {
-                affinity &= ~(u64(1ul) << core);
+                affinity &= ~(UINT64_C(1) << core);
             }
 
             constexpr ALWAYS_INLINE s32 GetNextCore(u64 &affinity) {

@@ -126,11 +126,13 @@ namespace ams::kern {
         for (size_t core_id = 0; core_id < cpu::NumCores; core_id++) {
             KThread *top_thread = priority_queue.GetScheduledFront(core_id);
             if (top_thread != nullptr) {
-                /* If the thread has no waiters, we need to check if the process has a thread pinned. */
-                if (top_thread->GetNumKernelWaiters() == 0) {
-                    if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
-                        if (KThread *pinned = parent->GetPinnedThread(core_id); pinned != nullptr && pinned != top_thread) {
-                            /* We prefer our parent's pinned thread if possible. However, we also don't want to schedule un-runnable threads. */
+                /* We need to check if the thread's process has a pinned thread. */
+                if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
+                    /* Check that there's a pinned thread other than the current top thread. */
+                    if (KThread *pinned = parent->GetPinnedThread(core_id); pinned != nullptr && pinned != top_thread) {
+                        /* We need to prefer threads with kernel waiters to the pinned thread. */
+                        if (top_thread->GetNumKernelWaiters() == 0 && top_thread != parent->GetExceptionThread()) {
+                            /* If the pinned thread is runnable, use it. */
                             if (pinned->GetRawState() == KThread::ThreadState_Runnable) {
                                 top_thread = pinned;
                             } else {
