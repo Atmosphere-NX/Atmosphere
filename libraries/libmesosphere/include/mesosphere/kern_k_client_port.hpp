@@ -28,12 +28,12 @@ namespace ams::kern {
     class KClientPort final : public KSynchronizationObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KClientPort, KSynchronizationObject);
         private:
-            std::atomic<s32> m_num_sessions;
-            std::atomic<s32> m_peak_sessions;
+            util::Atomic<s32> m_num_sessions;
+            util::Atomic<s32> m_peak_sessions;
             s32 m_max_sessions;
             KPort *m_parent;
         public:
-            constexpr KClientPort() : m_num_sessions(), m_peak_sessions(), m_max_sessions(), m_parent() { /* ... */ }
+            constexpr KClientPort() : m_num_sessions(0), m_peak_sessions(0), m_max_sessions(), m_parent() { /* ... */ }
 
             void Initialize(KPort *parent, s32 max_sessions);
             void OnSessionFinalized();
@@ -41,8 +41,8 @@ namespace ams::kern {
 
             constexpr const KPort *GetParent() const { return m_parent; }
 
-            ALWAYS_INLINE s32 GetNumSessions()  const { return m_num_sessions; }
-            ALWAYS_INLINE s32 GetPeakSessions() const { return m_peak_sessions; }
+            ALWAYS_INLINE s32 GetNumSessions()  const { return m_num_sessions.Load(); }
+            ALWAYS_INLINE s32 GetPeakSessions() const { return m_peak_sessions.Load(); }
             ALWAYS_INLINE s32 GetMaxSessions()  const { return m_max_sessions; }
 
             bool IsLight() const;

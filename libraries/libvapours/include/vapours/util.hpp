@@ -53,6 +53,8 @@
 #include <vapours/util/util_fixed_map.hpp>
 #include <vapours/util/util_fixed_set.hpp>
 
+#include <vapours/util/util_atomic.hpp>
+
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 #include <vapours/util/util_mutex_utils.hpp>
 #endif

@@ -39,14 +39,16 @@ namespace ams::kern {
             static_assert(ams::svc::HighestThreadPriority <= HighestCoreMigrationAllowedPriority);
 
             struct SchedulingState {
-                std::atomic<u8> needs_scheduling;
-                bool interrupt_task_runnable;
-                bool should_count_idle;
-                u64  idle_count;
-                KThread *highest_priority_thread;
-                void *idle_thread_stack;
-                KThread *prev_thread;
-                KInterruptTaskManager *interrupt_task_manager;
+                util::Atomic<u8> needs_scheduling{false};
+                bool interrupt_task_runnable{false};
+                bool should_count_idle{false};
+                u64  idle_count{0};
+                KThread *highest_priority_thread{nullptr};
+                void *idle_thread_stack{nullptr};
+                util::Atomic<KThread *> prev_thread{nullptr};
+                KInterruptTaskManager *interrupt_task_manager{nullptr};
+
+                constexpr SchedulingState() = default;
             };
         private:
             friend class KScopedSchedulerLock;
@@ -58,7 +60,7 @@ namespace ams::kern {
             s32 m_core_id;
             s64 m_last_context_switch_time;
             KThread *m_idle_thread;
-            std::atomic<KThread *> m_current_thread;
+            util::Atomic<KThread *> m_current_thread;
         public:
             constexpr KScheduler()
                 : m_state(), m_is_active(false), m_core_id(0), m_last_context_switch_time(0), m_idle_thread(nullptr), m_current_thread(nullptr)
@@ -98,11 +100,11 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE KThread *GetPreviousThread() const {
-                return m_state.prev_thread;
+                return m_state.prev_thread.Load<std::memory_order_relaxed>();
             }
 
             ALWAYS_INLINE KThread *GetSchedulerCurrentThread() const {
-                return m_current_thread;
+                return m_current_thread.Load();
             }
 
             ALWAYS_INLINE s64 GetLastContextSwitchTime() const {
@@ -182,7 +184,7 @@ namespace ams::kern {
 
                 GetCurrentThread().EnableDispatch();
 
-                if (m_state.needs_scheduling.load()) {
+                if (m_state.needs_scheduling.Load()) {
                     /* Disable interrupts, and then check again if rescheduling is needed. */
                     KScopedInterruptDisable intr_disable;
 
@@ -192,7 +194,7 @@ namespace ams::kern {
 
             ALWAYS_INLINE void RescheduleCurrentCoreImpl() {
                 /* Check that scheduling is needed. */
-                if (AMS_LIKELY(m_state.needs_scheduling.load())) {
+                if (AMS_LIKELY(m_state.needs_scheduling.Load())) {
                     GetCurrentThread().DisableDispatch();
                     this->Schedule();
                     GetCurrentThread().EnableDispatch();

@@ -42,15 +42,15 @@ namespace ams::kern {
             return arr;
         }();
 
-        std::atomic<s32> g_next_ticket    = 0;
-        std::atomic<s32> g_current_ticket = 0;
+        constinit util::Atomic<s32> g_next_ticket{0};
+        constinit util::Atomic<s32> g_current_ticket{0};
 
-        std::array<s32, cpu::NumCores> g_core_tickets = NegativeArray;
+        constinit std::array<s32, cpu::NumCores> g_core_tickets = NegativeArray;
 
         s32 GetCoreTicket() {
             const s32 core_id = GetCurrentCoreId();
             if (g_core_tickets[core_id] == -1) {
-                g_core_tickets[core_id] = 2 * g_next_ticket.fetch_add(1);
+                g_core_tickets[core_id] = 2 * g_next_ticket.FetchAdd(1);
             }
             return g_core_tickets[core_id];
         }
@@ -58,24 +58,21 @@ namespace ams::kern {
         void WaitCoreTicket() {
             const s32 expected = GetCoreTicket();
             const s32 desired  = expected + 1;
-            s32 compare = g_current_ticket;
+            s32 compare = g_current_ticket.Load<std::memory_order_relaxed>();
             do {
                 if (compare == desired) {
                     break;
                 }
                 compare = expected;
-            } while (!g_current_ticket.compare_exchange_weak(compare, desired));
+            } while (!g_current_ticket.CompareExchangeWeak(compare, desired));
         }
 
         void ReleaseCoreTicket() {
             const s32 expected = GetCoreTicket() + 1;
             const s32 desired  = expected + 1;
-            s32 compare = g_current_ticket;
-            do {
-                if (compare != expected) {
-                    break;
-                }
-            } while (!g_current_ticket.compare_exchange_weak(compare, desired));
+
+            s32 compare = expected;
+            g_current_ticket.CompareExchangeStrong(compare, desired);
         }
 
         ALWAYS_INLINE KExceptionContext *GetPanicExceptionContext(int core_id) {

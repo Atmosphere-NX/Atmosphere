@@ -23,7 +23,7 @@ namespace ams::kern {
 
     class KLightLock {
         private:
-            std::atomic<uintptr_t> m_tag;
+            util::Atomic<uintptr_t> m_tag;
         public:
             constexpr KLightLock() : m_tag(0) { /* ... */ }
 
@@ -31,12 +31,11 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
-                const uintptr_t cur_thread_tag = (cur_thread | 1);
 
                 while (true) {
-                    uintptr_t old_tag = m_tag.load(std::memory_order_relaxed);
+                    uintptr_t old_tag = m_tag.Load<std::memory_order_relaxed>();
 
-                    while (!m_tag.compare_exchange_weak(old_tag, (old_tag == 0) ? cur_thread : old_tag | 1, std::memory_order_acquire)) {
+                    while (!m_tag.CompareExchangeWeak<std::memory_order_acquire>(old_tag, (old_tag == 0) ? cur_thread : (old_tag | 1))) {
                         /* ... */
                     }
 
@@ -52,7 +51,7 @@ namespace ams::kern {
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
 
                 uintptr_t expected = cur_thread;
-                if (!m_tag.compare_exchange_strong(expected, 0, std::memory_order_release)) {
+                if (!m_tag.CompareExchangeStrong<std::memory_order_release>(expected, 0)) {
                     this->UnlockSlowPath(cur_thread);
                 }
             }
@@ -60,8 +59,8 @@ namespace ams::kern {
             bool LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
             void UnlockSlowPath(uintptr_t cur_thread);
 
-            ALWAYS_INLINE bool IsLocked() const { return m_tag.load() != 0; }
-            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return (m_tag.load() | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
+            ALWAYS_INLINE bool IsLocked() const { return m_tag.Load() != 0; }
+            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return (m_tag.Load() | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
     };
 
     using KScopedLightLock = KScopedLock<KLightLock>;

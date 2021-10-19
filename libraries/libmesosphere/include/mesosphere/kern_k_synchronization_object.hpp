@@ -37,7 +37,7 @@ namespace ams::kern {
             virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
             void NotifyAvailable(Result result);
-            void NotifyAvailable() {
+            ALWAYS_INLINE void NotifyAvailable() {
                 return this->NotifyAvailable(ResultSuccess());
             }
         public:

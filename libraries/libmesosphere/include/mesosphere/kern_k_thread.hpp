@@ -89,7 +89,7 @@ namespace ams::kern {
                 KThreadContext *context;
                 KThread *cur_thread;
                 s16 disable_count;
-                std::atomic<u8> dpc_flags;
+                util::Atomic<u8> dpc_flags;
                 u8 current_svc_id;
                 bool is_calling_svc;
                 bool is_in_exception_handler;
@@ -177,7 +177,7 @@ namespace ams::kern {
             static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
             static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
-            static constinit inline std::atomic<u64> s_next_thread_id = 0;
+            static constinit inline util::Atomic<u64> s_next_thread_id{0};
         private:
             util::IntrusiveListNode         m_process_list_node{};
             util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node{};
@@ -192,7 +192,7 @@ namespace ams::kern {
             u64                             m_virtual_affinity_mask{};
             KAffinityMask                   m_physical_affinity_mask{};
             u64                             m_thread_id{};
-            std::atomic<s64>                m_cpu_time{};
+            util::Atomic<s64>               m_cpu_time{0};
             KProcessAddress                 m_address_key{};
             KProcess                       *m_parent{};
             void                           *m_kernel_stack_top{};
@@ -227,7 +227,7 @@ namespace ams::kern {
             s32                             m_original_physical_ideal_core_id{};
             s32                             m_num_core_migration_disables{};
             ThreadState                     m_thread_state{};
-            std::atomic<u8>                 m_termination_requested{};
+            util::Atomic<u8>                m_termination_requested{false};
             bool                            m_wait_cancelled{};
             bool                            m_cancellable{};
             bool                            m_signaled{};
@@ -348,15 +348,15 @@ namespace ams::kern {
             #endif
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags.fetch_or(flag);
+                this->GetStackParameters().dpc_flags.FetchOr(flag);
             }
 
             ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags.fetch_and(~flag);
+                this->GetStackParameters().dpc_flags.FetchAnd(~flag);
             }
 
             ALWAYS_INLINE u8 GetDpc() const {
-                return this->GetStackParameters().dpc_flags.load();
+                return this->GetStackParameters().dpc_flags.Load();
             }
 
             ALWAYS_INLINE bool HasDpc() const {
@@ -516,7 +516,7 @@ namespace ams::kern {
                 m_closed_object = object;
 
                 /* Schedule destruction DPC. */
-                if ((this->GetStackParameters().dpc_flags.load(std::memory_order_relaxed) & DpcFlag_PerformDestruction) == 0) {
+                if ((this->GetStackParameters().dpc_flags.Load<std::memory_order_relaxed>() & DpcFlag_PerformDestruction) == 0) {
                     this->RegisterDpc(DpcFlag_PerformDestruction);
                 }
             }
@@ -544,12 +544,12 @@ namespace ams::kern {
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
 
             void AddCpuTime(s32 core_id, s64 amount) {
-                m_cpu_time += amount;
+                m_cpu_time.FetchAdd(amount);
                 /* TODO: Debug kernels track per-core tick counts. Should we? */
                 MESOSPHERE_UNUSED(core_id);
             }
 
-            s64 GetCpuTime() const { return m_cpu_time.load(); }
+            s64 GetCpuTime() const { return m_cpu_time.Load(); }
 
             s64 GetCpuTime(s32 core_id) const {
                 MESOSPHERE_ABORT_UNLESS(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
@@ -591,7 +591,7 @@ namespace ams::kern {
             ALWAYS_INLINE void *GetKernelStackTop() const { return m_kernel_stack_top; }
 
             ALWAYS_INLINE bool IsTerminationRequested() const {
-                return m_termination_requested.load() || this->GetRawState() == ThreadState_Terminated;
+                return m_termination_requested.Load() || this->GetRawState() == ThreadState_Terminated;
             }
 
             size_t GetKernelStackUsage() const;

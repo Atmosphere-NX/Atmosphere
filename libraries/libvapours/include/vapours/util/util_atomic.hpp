@@ -13,18 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#pragma once
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
-namespace ams::kern {
+#if defined(ATMOSPHERE_ARCH_ARM64)
 
-    KAutoObject *KAutoObject::Create(KAutoObject *obj) {
-        obj->m_ref_count = 1;
+    #include <vapours/util/arch/arm64/util_atomic.hpp>
 
-        #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
-        obj->m_class_token = obj->GetTypeObj().GetClassToken();
-        #endif
+#else
 
-        return obj;
-    }
+    #include <vapours/util/arch/generic/util_atomic.hpp>
 
-}
+#endif

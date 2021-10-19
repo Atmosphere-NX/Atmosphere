@@ -29,9 +29,9 @@ namespace ams::kern {
         private:
             using PageBuffer = KDynamicPageManager::PageBuffer;
         private:
-            std::atomic<size_t> m_used{};
-            std::atomic<size_t> m_peak{};
-            std::atomic<size_t> m_count{};
+            util::Atomic<size_t> m_used{0};
+            util::Atomic<size_t> m_peak{0};
+            util::Atomic<size_t> m_count{0};
             KVirtualAddress m_address{};
             size_t m_size{};
         public:
@@ -39,9 +39,9 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE KVirtualAddress GetAddress() const { return m_address; }
             constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
-            constexpr ALWAYS_INLINE size_t GetUsed() const { return m_used.load(); }
-            constexpr ALWAYS_INLINE size_t GetPeak() const { return m_peak.load(); }
-            constexpr ALWAYS_INLINE size_t GetCount() const { return m_count.load(); }
+            constexpr ALWAYS_INLINE size_t GetUsed() const { return m_used.Load(); }
+            constexpr ALWAYS_INLINE size_t GetPeak() const { return m_peak.Load(); }
+            constexpr ALWAYS_INLINE size_t GetCount() const { return m_count.Load(); }
 
             constexpr ALWAYS_INLINE bool IsInRange(KVirtualAddress addr) const {
                 return this->GetAddress() <= addr && addr <= this->GetAddress() + this->GetSize() - 1;
@@ -58,7 +58,7 @@ namespace ams::kern {
                 KSlabHeapImpl::Initialize();
 
                 /* Allocate until we have the correct number of objects. */
-                while (m_count.load() < num_objects) {
+                while (m_count.Load() < num_objects) {
                     auto *allocated = reinterpret_cast<T *>(page_allocator->Allocate());
                     MESOSPHERE_ABORT_UNLESS(allocated != nullptr);
 
@@ -66,7 +66,7 @@ namespace ams::kern {
                         KSlabHeapImpl::Free(allocated + i);
                     }
 
-                    m_count.fetch_add(sizeof(PageBuffer) / sizeof(T));
+                    m_count.FetchAdd(sizeof(PageBuffer) / sizeof(T));
                 }
             }
 
@@ -89,7 +89,7 @@ namespace ams::kern {
                             for (size_t i = 1; i < sizeof(PageBuffer) / sizeof(T); i++) {
                                 KSlabHeapImpl::Free(allocated + i);
                             }
-                            m_count.fetch_add(sizeof(PageBuffer) / sizeof(T));
+                            m_count.FetchAdd(sizeof(PageBuffer) / sizeof(T));
                         }
                     }
                 }
@@ -99,10 +99,10 @@ namespace ams::kern {
                     std::construct_at(allocated);
 
                     /* Update our tracking. */
-                    size_t used = m_used.fetch_add(1) + 1;
-                    size_t peak = m_peak.load();
+                    size_t used = m_used.FetchAdd(1) + 1;
+                    size_t peak = m_peak.Load();
                     while (peak < used) {
-                        if (m_peak.compare_exchange_weak(peak, used, std::memory_order_relaxed)) {
+                        if (m_peak.CompareExchangeWeak<std::memory_order_relaxed>(peak, used)) {
                             break;
                         }
                     }
@@ -113,7 +113,7 @@ namespace ams::kern {
 
             ALWAYS_INLINE void Free(T *t) {
                 KSlabHeapImpl::Free(t);
-                m_used.fetch_sub(1);
+                m_used.FetchSub(1);
             }
     };
 

@@ -40,7 +40,7 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Ensure we actually have locking to do. */
-            if (m_tag.load(std::memory_order_relaxed) != _owner) {
+            if (m_tag.Load<std::memory_order_relaxed>() != _owner) {
                 return false;
             }
 
@@ -68,16 +68,13 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Get the next owner. */
-            s32 num_waiters = 0;
+            s32 num_waiters;
             KThread *next_owner = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(m_tag)));
 
             /* Pass the lock to the next owner. */
             uintptr_t next_tag = 0;
             if (next_owner != nullptr) {
-                next_tag = reinterpret_cast<uintptr_t>(next_owner);
-                if (num_waiters > 1) {
-                    next_tag |= 0x1;
-                }
+                next_tag = reinterpret_cast<uintptr_t>(next_owner) | static_cast<uintptr_t>(num_waiters > 1);
 
                 next_owner->EndWait(ResultSuccess());
 
@@ -92,7 +89,7 @@ namespace ams::kern {
             }
 
             /* Write the new tag value. */
-            m_tag.store(next_tag);
+            m_tag.Store<std::memory_order_release>(next_tag);
         }
     }
 

@@ -76,21 +76,18 @@ namespace ams::kern {
         NON_MOVEABLE(KSlabHeapBase);
         private:
             size_t m_obj_size{};
-            uintptr_t m_peak{};
+            util::Atomic<uintptr_t> m_peak{0};
             uintptr_t m_start{};
             uintptr_t m_end{};
         private:
             ALWAYS_INLINE void UpdatePeakImpl(uintptr_t obj) {
-                static_assert(std::atomic_ref<uintptr_t>::is_always_lock_free);
-                std::atomic_ref<uintptr_t> peak_ref(m_peak);
-
                 const uintptr_t alloc_peak = obj + this->GetObjectSize();
-                uintptr_t cur_peak = m_peak;
+                uintptr_t cur_peak = m_peak.Load<std::memory_order_relaxed>();
                 do {
                     if (alloc_peak <= cur_peak) {
                         break;
                     }
-                } while (!peak_ref.compare_exchange_strong(cur_peak, alloc_peak));
+                } while (!m_peak.CompareExchangeStrong(cur_peak, alloc_peak));
             }
         public:
             constexpr KSlabHeapBase() = default;
@@ -112,8 +109,9 @@ namespace ams::kern {
                 /* Set our tracking variables. */
                 const size_t num_obj = (memory_size / obj_size);
                 m_start = reinterpret_cast<uintptr_t>(memory);
-                m_end  = m_start + num_obj * obj_size;
-                m_peak = m_start;
+                m_end   = m_start + num_obj * obj_size;
+
+                m_peak.Store<std::memory_order_relaxed>(m_start);
 
                 /* Free the objects. */
                 u8 *cur = reinterpret_cast<u8 *>(m_end);
@@ -177,7 +175,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE size_t GetPeakIndex() const {
-                return this->GetObjectIndex(reinterpret_cast<const void *>(m_peak));
+                return this->GetObjectIndex(reinterpret_cast<const void *>(m_peak.Load<std::memory_order_relaxed>()));
             }
 
             ALWAYS_INLINE uintptr_t GetSlabHeapAddress() const {

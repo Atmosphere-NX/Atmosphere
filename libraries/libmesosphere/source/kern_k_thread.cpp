@@ -219,7 +219,7 @@ namespace ams::kern {
         this->SetInExceptionHandler();
 
         /* Set thread ID. */
-        m_thread_id = s_next_thread_id++;
+        m_thread_id = s_next_thread_id.FetchAdd(1);
 
         /* We initialized! */
         m_initialized = true;
@@ -707,7 +707,7 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Determine the priority value to use. */
-        const s32 target_priority = m_termination_requested.load() && priority >= TerminatingThreadPriority ? TerminatingThreadPriority : priority;
+        const s32 target_priority = m_termination_requested.Load() && priority >= TerminatingThreadPriority ? TerminatingThreadPriority : priority;
 
         /* Change our base priority. */
         if (this->GetStackParameters().is_pinned) {
@@ -1183,7 +1183,7 @@ namespace ams::kern {
         const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
             /* Perform an atomic compare-and-swap from false to true. */
             u8 expected = false;
-            return m_termination_requested.compare_exchange_strong(expected, true);
+            return m_termination_requested.CompareExchangeStrong(expected, true);
         }();
 
         /* If this is the first request, start termination procedure. */

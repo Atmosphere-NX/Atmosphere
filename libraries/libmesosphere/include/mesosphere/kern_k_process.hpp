@@ -58,7 +58,7 @@ namespace ams::kern {
             using TLPIterator = TLPTree::iterator;
         private:
             KProcessPageTable           m_page_table{};
-            std::atomic<size_t>         m_used_kernel_memory_size{};
+            util::Atomic<size_t>        m_used_kernel_memory_size{0};
             TLPTree                     m_fully_used_tlp_tree{};
             TLPTree                     m_partially_used_tlp_tree{};
             s32                         m_ideal_core_id{};
@@ -77,7 +77,7 @@ namespace ams::kern {
             bool                        m_is_initialized{};
             bool                        m_is_application{};
             char                        m_name[13]{};
-            std::atomic<u16>            m_num_running_threads{};
+            util::Atomic<u16>           m_num_running_threads{0};
             u32                         m_flags{};
             KMemoryManager::Pool        m_memory_pool{};
             s64                         m_schedule_count{};
@@ -109,14 +109,14 @@ namespace ams::kern {
             KThread                    *m_running_threads[cpu::NumCores]{};
             u64                         m_running_thread_idle_counts[cpu::NumCores]{};
             KThread                    *m_pinned_threads[cpu::NumCores]{};
-            std::atomic<s64>            m_cpu_time{};
-            std::atomic<s64>            m_num_process_switches{};
-            std::atomic<s64>            m_num_thread_switches{};
-            std::atomic<s64>            m_num_fpu_switches{};
-            std::atomic<s64>            m_num_supervisor_calls{};
-            std::atomic<s64>            m_num_ipc_messages{};
-            std::atomic<s64>            m_num_ipc_replies{};
-            std::atomic<s64>            m_num_ipc_receives{};
+            util::Atomic<s64>           m_cpu_time{0};
+            util::Atomic<s64>           m_num_process_switches{0};
+            util::Atomic<s64>           m_num_thread_switches{0};
+            util::Atomic<s64>           m_num_fpu_switches{0};
+            util::Atomic<s64>           m_num_supervisor_calls{0};
+            util::Atomic<s64>           m_num_ipc_messages{0};
+            util::Atomic<s64>           m_num_ipc_replies{0};
+            util::Atomic<s64>           m_num_ipc_receives{0};
             KDynamicPageManager         m_dynamic_page_manager{};
             KMemoryBlockSlabManager     m_memory_block_slab_manager{};
             KBlockInfoManager           m_block_info_manager{};
@@ -288,8 +288,8 @@ namespace ams::kern {
 
             KThread *GetExceptionThread() const { return m_exception_thread; }
 
-            void AddCpuTime(s64 diff) { m_cpu_time += diff; }
-            s64 GetCpuTime() { return m_cpu_time; }
+            void AddCpuTime(s64 diff) { m_cpu_time.FetchAdd(diff); }
+            s64 GetCpuTime() { return m_cpu_time.Load(); }
 
             constexpr s64 GetScheduledCount() const { return m_schedule_count; }
             void IncrementScheduledCount() { ++m_schedule_count; }

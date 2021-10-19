@@ -35,7 +35,7 @@ namespace ams::kern {
                 ServerClosed = 3,
             };
         private:
-            std::atomic<std::underlying_type<State>::type> m_atomic_state;
+            util::Atomic<std::underlying_type<State>::type> m_atomic_state;
             bool m_initialized;
             KServerSession m_server;
             KClientSession m_client;
@@ -48,7 +48,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE State GetState() const {
-                return static_cast<State>(m_atomic_state.load());
+                return static_cast<State>(m_atomic_state.Load());
             }
         public:
             constexpr KSession()

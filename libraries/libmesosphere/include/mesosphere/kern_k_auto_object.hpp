@@ -41,8 +41,48 @@ namespace ams::kern {
             virtual const char *GetTypeName() { return GetStaticTypeName(); }                                   \
         private:
 
-
     class KAutoObject {
+        public:
+            class ReferenceCount {
+                NON_COPYABLE(ReferenceCount);
+                NON_MOVEABLE(ReferenceCount);
+                private:
+                    using Storage = u32;
+                private:
+                    util::Atomic<Storage> m_value;
+                public:
+                    ALWAYS_INLINE explicit ReferenceCount() { /* ... */ }
+                    constexpr ALWAYS_INLINE explicit ReferenceCount(Storage v) : m_value(v) { /* ... */ }
+
+                    ALWAYS_INLINE void operator=(Storage v) { m_value = v; }
+
+                    ALWAYS_INLINE Storage GetValue() const { return m_value.Load(); }
+
+                    ALWAYS_INLINE bool Open() {
+                        /* Atomically increment the reference count, only if it's positive. */
+                        u32 cur = m_value.Load<std::memory_order_relaxed>();
+                        do {
+                            if (AMS_UNLIKELY(cur == 0)) {
+                                MESOSPHERE_AUDIT(cur != 0);
+                                return false;
+                            }
+                            MESOSPHERE_ABORT_UNLESS(cur < cur + 1);
+                        } while (AMS_UNLIKELY(!m_value.CompareExchangeWeak<std::memory_order_relaxed>(cur, cur + 1)));
+
+                        return true;
+                    }
+
+                    ALWAYS_INLINE bool Close() {
+                        /* Atomically decrement the reference count, not allowing it to become negative. */
+                        u32 cur = m_value.Load<std::memory_order_relaxed>();
+                        do {
+                            MESOSPHERE_ABORT_UNLESS(cur > 0);
+                        } while (AMS_UNLIKELY(!m_value.CompareExchangeWeak<std::memory_order_relaxed>(cur, cur - 1)));
+
+                        /* Return whether the object was closed. */
+                        return cur - 1 == 0;
+                    }
+            };
         protected:
             class TypeObj {
                 private:
@@ -74,7 +114,7 @@ namespace ams::kern {
             MESOSPHERE_AUTOOBJECT_TRAITS(KAutoObject, KAutoObject);
         private:
             KAutoObject *m_next_closed_object;
-            std::atomic<u32> m_ref_count;
+            ReferenceCount m_ref_count;
             #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
             ClassTokenType m_class_token;
             #endif
@@ -98,7 +138,7 @@ namespace ams::kern {
             virtual KProcess *GetOwner() const { return nullptr; }
 
             u32 GetReferenceCount() const {
-                return m_ref_count.load();
+                return m_ref_count.GetValue();
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const TypeObj &rhs) const {
@@ -141,8 +181,19 @@ namespace ams::kern {
                 }
             }
 
-            bool Open();
-            void Close();
+            NOINLINE bool Open() {
+                MESOSPHERE_ASSERT_THIS();
+
+                return m_ref_count.Open();
+            }
+
+            NOINLINE void Close() {
+                MESOSPHERE_ASSERT_THIS();
+
+                if (m_ref_count.Close()) {
+                    this->ScheduleDestruction();
+                }
+            }
         private:
             /* NOTE: This has to be defined *after* KThread is defined. */
             /* Nintendo seems to handle this by defining Open/Close() in a cpp, but we'd like them to remain in headers. */
@@ -254,6 +305,53 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE bool IsNull() const { return m_obj == nullptr; }
             constexpr ALWAYS_INLINE bool IsNotNull() const { return m_obj != nullptr; }
+    };
+
+    template<typename T> requires std::derived_from<T, KAutoObject>
+    class KSharedAutoObject {
+        private:
+            T *m_object;
+            KAutoObject::ReferenceCount m_ref_count;
+        public:
+            explicit KSharedAutoObject() : m_object(nullptr) { /* ... */ }
+
+            void Attach(T *obj) {
+                MESOSPHERE_ASSERT(m_object == nullptr);
+
+                /* Set our object. */
+                m_object = obj;
+
+                /* Open reference to our object. */
+                m_object->Open();
+
+                /* Set our reference count. */
+                m_ref_count = 1;
+            }
+
+            bool Open() {
+                return m_ref_count.Open();
+            }
+
+            void Close() {
+                if (m_ref_count.Close()) {
+                    this->Detach();
+                }
+            }
+
+            ALWAYS_INLINE T *Get() const {
+                return m_object;
+            }
+        private:
+            void Detach() {
+                /* Close our object, if we have one. */
+                if (T * const object = m_object; AMS_LIKELY(object != nullptr)) {
+                    /* Set our object to a debug sentinel value, which will cause crash if accessed. */
+                    m_object = reinterpret_cast<T *>(1);
+
+                    /* Close reference to our object. */
+                    object->Close();
+                }
+            }
     };
 
 

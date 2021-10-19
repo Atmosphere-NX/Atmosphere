@@ -26,25 +26,9 @@ namespace ams::kern {
         protected:
             using DebugEventList = util::IntrusiveListBaseTraits<KEventInfo>::ListType;
         private:
-            class ProcessHolder {
-                private:
-                    friend class KDebugBase;
-                private:
-                    KProcess *m_process;
-                    std::atomic<u32> m_ref_count;
-                private:
-                    explicit ProcessHolder() : m_process(nullptr) { /* ... */ }
-
-                    void Attach(KProcess *process);
-                    void Detach();
-
-                    bool Open();
-                    void Close();
-            };
-        private:
             DebugEventList m_event_info_list;
             u32 m_continue_flags;
-            ProcessHolder m_process_holder;
+            KSharedAutoObject<KProcess> m_process_holder;
             KLightLock m_lock;
             KProcess::State m_old_process_state;
             bool m_is_attached;
@@ -89,7 +73,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE KProcess *GetProcessUnsafe() const {
-                return m_process_holder.m_process;
+                return m_process_holder.Get();
             }
         private:
             void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);

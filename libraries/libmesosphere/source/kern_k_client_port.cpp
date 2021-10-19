@@ -28,8 +28,7 @@ namespace ams::kern {
     void KClientPort::OnSessionFinalized() {
         KScopedSchedulerLock sl;
 
-        const auto prev = m_num_sessions--;
-        if (prev == m_max_sessions) {
+        if (m_num_sessions.FetchSub(1) == m_max_sessions) {
             this->NotifyAvailable();
         }
     }
@@ -56,7 +55,7 @@ namespace ams::kern {
 
     bool KClientPort::IsSignaled() const {
         MESOSPHERE_ASSERT_THIS();
-        return m_num_sessions < m_max_sessions;
+        return m_num_sessions.Load() < m_max_sessions;
     }
 
     Result KClientPort::CreateSession(KClientSession **out) {
@@ -99,7 +98,6 @@ namespace ams::kern {
         /* Check that we successfully created a session. */
         R_UNLESS(session != nullptr, svc::ResultOutOfResource());
 
-
         /* Update the session counts. */
         auto count_guard = SCOPE_GUARD { session->Close(); };
         {
@@ -107,22 +105,22 @@ namespace ams::kern {
             s32 new_sessions;
             {
                 const auto max = m_max_sessions;
-                auto cur_sessions = m_num_sessions.load(std::memory_order_acquire);
+                auto cur_sessions = m_num_sessions.Load();
                 do {
                     R_UNLESS(cur_sessions < max, svc::ResultOutOfSessions());
                     new_sessions = cur_sessions + 1;
-                } while (!m_num_sessions.compare_exchange_weak(cur_sessions, new_sessions, std::memory_order_relaxed));
+                } while (!m_num_sessions.CompareExchangeWeak<std::memory_order_relaxed>(cur_sessions, new_sessions));
 
             }
 
             /* Atomically update the peak session tracking. */
             {
-                auto peak = m_peak_sessions.load(std::memory_order_acquire);
+                auto peak = m_peak_sessions.Load();
                 do {
                     if (peak >= new_sessions) {
                         break;
                     }
-                } while (!m_peak_sessions.compare_exchange_weak(peak, new_sessions, std::memory_order_relaxed));
+                } while (!m_peak_sessions.CompareExchangeWeak<std::memory_order_relaxed>(peak, new_sessions));
             }
         }
         count_guard.Cancel();
@@ -183,22 +181,22 @@ namespace ams::kern {
             s32 new_sessions;
             {
                 const auto max = m_max_sessions;
-                auto cur_sessions = m_num_sessions.load(std::memory_order_acquire);
+                auto cur_sessions = m_num_sessions.Load();
                 do {
                     R_UNLESS(cur_sessions < max, svc::ResultOutOfSessions());
                     new_sessions = cur_sessions + 1;
-                } while (!m_num_sessions.compare_exchange_weak(cur_sessions, new_sessions, std::memory_order_relaxed));
+                } while (!m_num_sessions.CompareExchangeWeak<std::memory_order_relaxed>(cur_sessions, new_sessions));
 
             }
 
             /* Atomically update the peak session tracking. */
             {
-                auto peak = m_peak_sessions.load(std::memory_order_acquire);
+                auto peak = m_peak_sessions.Load();
                 do {
                     if (peak >= new_sessions) {
                         break;
                     }
-                } while (!m_peak_sessions.compare_exchange_weak(peak, new_sessions, std::memory_order_relaxed));
+                } while (!m_peak_sessions.CompareExchangeWeak<std::memory_order_relaxed>(peak, new_sessions));
             }
         }
         count_guard.Cancel();
