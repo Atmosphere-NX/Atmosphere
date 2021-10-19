@@ -31,7 +31,7 @@ namespace ams::kern {
 
     }
 
-    void KLightLock::LockSlowPath(uintptr_t _owner, uintptr_t _cur_thread) {
+    bool KLightLock::LockSlowPath(uintptr_t _owner, uintptr_t _cur_thread) {
         KThread *cur_thread = reinterpret_cast<KThread *>(_cur_thread);
         ThreadQueueImplForKLightLock wait_queue;
 
@@ -40,8 +40,8 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Ensure we actually have locking to do. */
-            if (AMS_UNLIKELY(m_tag.load(std::memory_order_relaxed) != _owner)) {
-                return;
+            if (m_tag.load(std::memory_order_relaxed) != _owner) {
+                return false;
             }
 
             /* Add the current thread as a waiter on the owner. */
@@ -56,6 +56,8 @@ namespace ams::kern {
                 owner_thread->ContinueIfHasKernelWaiters();
             }
         }
+
+        return true;
     }
 
     void KLightLock::UnlockSlowPath(uintptr_t _cur_thread) {

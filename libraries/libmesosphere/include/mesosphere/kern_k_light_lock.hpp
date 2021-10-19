@@ -37,16 +37,12 @@ namespace ams::kern {
                     uintptr_t old_tag = m_tag.load(std::memory_order_relaxed);
 
                     while (!m_tag.compare_exchange_weak(old_tag, (old_tag == 0) ? cur_thread : old_tag | 1, std::memory_order_acquire)) {
-                        if ((old_tag | 1) == cur_thread_tag) {
-                            return;
-                        }
+                        /* ... */
                     }
 
-                    if ((old_tag == 0) || ((old_tag | 1) == cur_thread_tag)) {
+                    if (old_tag == 0 || this->LockSlowPath(old_tag | 1, cur_thread)) {
                         break;
                     }
-
-                    this->LockSlowPath(old_tag | 1, cur_thread);
                 }
             }
 
@@ -54,15 +50,14 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
+
                 uintptr_t expected = cur_thread;
-                do {
-                    if (expected != cur_thread) {
-                        return this->UnlockSlowPath(cur_thread);
-                    }
-                } while (!m_tag.compare_exchange_weak(expected, 0, std::memory_order_release));
+                if (!m_tag.compare_exchange_strong(expected, 0, std::memory_order_release)) {
+                    this->UnlockSlowPath(cur_thread);
+                }
             }
 
-            void LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
+            bool LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
             void UnlockSlowPath(uintptr_t cur_thread);
 
             ALWAYS_INLINE bool IsLocked() const { return m_tag.load() != 0; }
