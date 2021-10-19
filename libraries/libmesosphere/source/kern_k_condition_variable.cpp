@@ -113,6 +113,7 @@ namespace ams::kern {
         ThreadQueueImplForKConditionVariableWaitForAddress wait_queue;
 
         /* Wait for the address. */
+        KThread *owner_thread;
         {
             KScopedSchedulerLock sl;
 
@@ -127,8 +128,8 @@ namespace ams::kern {
             R_SUCCEED_IF(test_tag != (handle | ams::svc::HandleWaitMask));
 
             /* Get the lock owner thread. */
-            KScopedAutoObject owner_thread = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KThread>(handle);
-            R_UNLESS(owner_thread.IsNotNull(), svc::ResultInvalidHandle());
+            owner_thread = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KThread>(handle).ReleasePointerUnsafe();
+            R_UNLESS(owner_thread != nullptr, svc::ResultInvalidHandle());
 
             /* Update the lock. */
             cur_thread->SetAddressKey(addr, value);
@@ -137,6 +138,9 @@ namespace ams::kern {
             /* Begin waiting. */
             cur_thread->BeginWait(std::addressof(wait_queue));
         }
+
+        /* Close our reference to the owner thread, now that the wait is over. */
+        owner_thread->Close();
 
         /* Get the wait result. */
         return cur_thread->GetWaitResult();

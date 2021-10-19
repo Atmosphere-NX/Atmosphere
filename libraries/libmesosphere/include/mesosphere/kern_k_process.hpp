@@ -284,6 +284,8 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetProcessLocalRegionAddress() const { return m_plr_address; }
 
+            constexpr void *GetProcessLocalRegionHeapAddress() const { return m_plr_heap_address; }
+
             void AddCpuTime(s64 diff) { m_cpu_time += diff; }
             s64 GetCpuTime() { return m_cpu_time; }
 

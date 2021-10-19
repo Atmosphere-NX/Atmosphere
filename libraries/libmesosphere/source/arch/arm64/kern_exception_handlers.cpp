@@ -126,7 +126,7 @@ namespace ams::kern::arch::arm64 {
                     const bool is_aarch64 = (context->psr & 0x10) == 0;
                     if (is_aarch64) {
                         /* 64-bit. */
-                        ams::svc::aarch64::ExceptionInfo *info = std::addressof(GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info);
+                        ams::svc::aarch64::ExceptionInfo *info = std::addressof(static_cast<ams::svc::aarch64::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info);
 
                         for (size_t i = 0; i < util::size(info->r); ++i) {
                             info->r[i] = context->x[i];
@@ -141,7 +141,7 @@ namespace ams::kern::arch::arm64 {
                         info->far    = far;
                     } else {
                         /* 32-bit. */
-                        ams::svc::aarch32::ExceptionInfo *info = std::addressof(GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info);
+                        ams::svc::aarch32::ExceptionInfo *info = std::addressof(static_cast<ams::svc::aarch32::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info);
 
                         for (size_t i = 0; i < util::size(info->r); ++i) {
                             info->r[i] = context->x[i];
@@ -201,17 +201,17 @@ namespace ams::kern::arch::arm64 {
                     context->pc   = GetInteger(cur_process.GetEntryPoint());
                     context->x[0] = type;
                     if (is_aarch64) {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, exception_info));
+                        context->x[1]   = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, exception_info));
 
-                        auto *plr    = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
-                        context->sp  = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
-                        context->psr = 0;
+                        const auto *plr = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
+                        context->sp     = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
+                        context->psr    = 0;
                     } else {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, exception_info));
+                        context->x[1]   = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, exception_info));
 
-                        auto *plr      = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
-                        context->x[13] = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
-                        context->psr   = 0x10;
+                        const auto *plr = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
+                        context->x[13]  = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x08);
+                        context->psr    = 0x10;
                     }
 
                     /* Set exception SVC permissions. */
@@ -380,10 +380,10 @@ namespace ams::kern::arch::arm64 {
         const bool is_aarch64 = (e_ctx->psr & 0x10) == 0;
         if (is_aarch64) {
             /* We're 64-bit. */
-            info.info64 = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info;
+            info.info64 = static_cast<const ams::svc::aarch64::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info;
         } else {
             /* We're 32-bit. */
-            info.info32 = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info;
+            info.info32 = static_cast<const ams::svc::aarch32::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info;
         }
 
         /* Try to leave the user exception. */

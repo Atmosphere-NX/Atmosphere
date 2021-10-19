@@ -21,7 +21,7 @@ namespace ams::kern {
 
         constexpr inline s32 TerminatingThreadPriority = ams::svc::SystemThreadPriorityHighest - 1;
 
-        constexpr bool IsKernelAddressKey(KProcessAddress key) {
+        constexpr ALWAYS_INLINE bool IsKernelAddressKey(KProcessAddress key) {
             const uintptr_t key_uptr = GetInteger(key);
             return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast && (key_uptr & 1) == 0;
         }
