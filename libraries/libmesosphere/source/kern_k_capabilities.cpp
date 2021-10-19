@@ -76,6 +76,9 @@ namespace ams::kern {
         R_UNLESS(m_core_mask     != 0, svc::ResultInvalidArgument());
         R_UNLESS(m_priority_mask != 0, svc::ResultInvalidArgument());
 
+        /* Processes must not have access to kernel thread priorities. */
+        R_UNLESS((m_priority_mask & 0xF) == 0, svc::ResultInvalidArgument());
+
         return ResultSuccess();
     }
 
