@@ -973,7 +973,7 @@ namespace ams::kern {
 
         /* Get the request and client thread. */
         KSessionRequest *request;
-        KScopedAutoObject<KThread> client_thread;
+        KThread *client_thread;
         {
             KScopedSchedulerLock sl;
 
@@ -991,9 +991,13 @@ namespace ams::kern {
             m_request_list.pop_front();
 
             /* Get the thread for the request. */
-            client_thread = KScopedAutoObject<KThread>(request->GetThread());
-            R_UNLESS(client_thread.IsNotNull(), svc::ResultSessionClosed());
+            client_thread = request->GetThread();
+            R_UNLESS(client_thread != nullptr, svc::ResultSessionClosed());
+
+            /* Open the client thread. */
+            client_thread->Open();
         }
+        ON_SCOPE_EXIT { client_thread->Close(); };
 
         /* Set the request as our current. */
         m_current_request = request;
@@ -1004,7 +1008,7 @@ namespace ams::kern {
         bool recv_list_broken = false;
 
         /* Receive the message. */
-        Result result = ReceiveMessage(recv_list_broken, server_message, server_buffer_size, server_message_paddr, *client_thread.GetPointerUnsafe(), client_message, client_buffer_size, this, request);
+        Result result = ReceiveMessage(recv_list_broken, server_message, server_buffer_size, server_message_paddr, *client_thread, client_message, client_buffer_size, this, request);
 
         /* Handle cleanup on receive failure. */
         if (R_FAILED(result)) {

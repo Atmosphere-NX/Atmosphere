@@ -43,7 +43,7 @@ namespace ams::kern {
                         return rnd_bit;
                     }
                 public:
-                    RandomBitGenerator() : m_rng(), m_entropy(), m_bits_available() {
+                    RandomBitGenerator() : m_entropy(), m_bits_available() {
                         m_rng.Initialize(static_cast<u32>(KSystemControl::GenerateRandomU64()));
                     }
 

@@ -34,7 +34,8 @@ namespace ams::kern {
             LightSessionList m_light_session_list;
             KPort *m_parent;
         public:
-            constexpr KServerPort() : m_session_list(), m_light_session_list(), m_parent() { /* ... */ }
+            constexpr explicit KServerPort(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_session_list(), m_light_session_list(), m_parent() { /* ... */ }
+            explicit KServerPort() { /* ... */ }
 
             void Initialize(KPort *parent);
             void EnqueueSession(KServerSession *session);

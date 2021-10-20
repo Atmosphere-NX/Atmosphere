@@ -25,7 +25,7 @@ namespace ams::kern::arch::arm64 {
             KPageTable m_page_table;
             u64 m_ttbr0_identity[cpu::NumCores];
         public:
-            constexpr KSupervisorPageTable() : m_page_table(), m_ttbr0_identity() { /* ... */ }
+            constexpr KSupervisorPageTable() : m_page_table(util::ConstantInitialize), m_ttbr0_identity() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
 

@@ -220,8 +220,8 @@ namespace ams::kern {
         /* Set thread fields. */
         for (size_t i = 0; i < cpu::NumCores; i++) {
             m_running_threads[i]            = nullptr;
-            m_running_thread_idle_counts[i] = 0;
             m_pinned_threads[i]             = nullptr;
+            m_running_thread_idle_counts[i] = 0;
         }
 
         /* Set max memory based on address space type. */

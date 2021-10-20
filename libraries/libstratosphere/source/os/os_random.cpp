@@ -20,7 +20,7 @@ namespace ams::os {
 
     namespace {
 
-        constinit util::TinyMT g_random;
+        constinit util::TinyMT g_random{util::ConstantInitialize};
         constinit os::SdkMutex g_random_mutex;
         constinit bool g_initialized_random;
 

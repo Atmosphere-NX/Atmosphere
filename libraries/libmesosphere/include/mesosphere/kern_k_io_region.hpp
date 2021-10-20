@@ -40,11 +40,7 @@ namespace ams::kern {
             util::IntrusiveListNode m_process_list_node;
             util::IntrusiveListNode m_pool_list_node;
         public:
-            explicit KIoRegion()
-                : m_lock(), m_pool(nullptr), m_is_initialized(false), m_process_list_node(), m_pool_list_node()
-            {
-                /* ... */
-            }
+            explicit KIoRegion() : m_pool(nullptr), m_is_initialized(false) { /* ... */ }
 
             Result Initialize(KIoPool *pool, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm);
             virtual void Finalize() override;

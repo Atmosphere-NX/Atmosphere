@@ -29,11 +29,14 @@ namespace ams::kern {
             bool m_initialized;
             bool m_readable_event_destroyed;
         public:
-            constexpr KEvent()
-                : m_readable_event(), m_owner(), m_initialized(), m_readable_event_destroyed()
+            constexpr explicit KEvent(util::ConstantInitializeTag)
+                : KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList, true>(util::ConstantInitialize),
+                  m_readable_event(util::ConstantInitialize), m_owner(), m_initialized(), m_readable_event_destroyed()
             {
                 /* ... */
             }
+
+            explicit KEvent() : m_readable_event(), m_owner(), m_initialized(), m_readable_event_destroyed() { /* ... */ }
 
             void Initialize();
             virtual void Finalize() override;

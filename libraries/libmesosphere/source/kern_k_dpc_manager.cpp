@@ -23,7 +23,7 @@ namespace ams::kern {
             private:
                 static constinit inline KLightLock s_req_lock;
                 static constinit inline KLightLock s_lock;
-                static constinit inline KLightConditionVariable s_cond_var;
+                static constinit inline KLightConditionVariable s_cond_var{util::ConstantInitialize};
                 static constinit inline u64 s_core_mask;
                 static constinit inline KDpcTask *s_task;
             private:

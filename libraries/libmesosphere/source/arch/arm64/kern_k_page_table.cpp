@@ -233,7 +233,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Begin the traversal. */
                 TraversalContext context;
-                TraversalEntry   cur_entry  = {};
+                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
                 bool             cur_valid  = false;
                 TraversalEntry   next_entry;
                 bool             next_valid;

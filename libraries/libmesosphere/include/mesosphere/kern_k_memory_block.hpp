@@ -349,28 +349,30 @@ namespace ams::kern {
                 };
             }
         public:
-            constexpr KMemoryBlock()
-                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(), m_num_pages(), m_memory_state(KMemoryState_None), m_ipc_lock_count(), m_device_use_count(), m_ipc_disable_merge_count(), m_permission(), m_original_permission(), m_attribute(), m_disable_merge_attribute()
-            {
-                /* ... */
-            }
+            explicit KMemoryBlock() { /* ... */ }
 
-            constexpr KMemoryBlock(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
-                : m_device_disable_merge_left_count(), m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0), m_device_use_count(0), m_ipc_disable_merge_count(), m_permission(p), m_original_permission(KMemoryPermission_None), m_attribute(attr), m_disable_merge_attribute()
+            constexpr KMemoryBlock(util::ConstantInitializeTag, KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
+                : util::IntrusiveRedBlackTreeBaseNode<KMemoryBlock>(util::ConstantInitialize), m_device_disable_merge_left_count(),
+                  m_device_disable_merge_right_count(), m_address(addr), m_num_pages(np), m_memory_state(ms), m_ipc_lock_count(0),
+                  m_device_use_count(0), m_ipc_disable_merge_count(), m_permission(p), m_original_permission(KMemoryPermission_None),
+                  m_attribute(attr), m_disable_merge_attribute()
             {
                 /* ... */
             }
 
             constexpr void Initialize(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr) {
                 MESOSPHERE_ASSERT_THIS();
-                m_address             = addr;
-                m_num_pages           = np;
-                m_memory_state        = ms;
-                m_ipc_lock_count      = 0;
-                m_device_use_count    = 0;
-                m_permission          = p;
-                m_original_permission = KMemoryPermission_None;
-                m_attribute           = attr;
+                m_device_disable_merge_left_count  = 0;
+                m_device_disable_merge_right_count = 0;
+                m_address                          = addr;
+                m_num_pages                        = np;
+                m_memory_state                     = ms;
+                m_ipc_lock_count                   = 0;
+                m_device_use_count                 = 0;
+                m_permission                       = p;
+                m_original_permission              = KMemoryPermission_None;
+                m_attribute                        = attr;
+                m_disable_merge_attribute          = KMemoryBlockDisableMergeAttribute_None;
             }
 
             constexpr bool HasProperties(KMemoryState s, KMemoryPermission p, KMemoryAttribute a) const {

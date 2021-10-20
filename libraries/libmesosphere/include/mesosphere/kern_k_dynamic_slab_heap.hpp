@@ -32,7 +32,7 @@ namespace ams::kern {
             util::Atomic<size_t> m_used{0};
             util::Atomic<size_t> m_peak{0};
             util::Atomic<size_t> m_count{0};
-            KVirtualAddress m_address{};
+            KVirtualAddress m_address{Null<KVirtualAddress>};
             size_t m_size{};
         public:
             constexpr KDynamicSlabHeap() = default;

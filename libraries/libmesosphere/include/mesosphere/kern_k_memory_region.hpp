@@ -43,13 +43,14 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KMemoryRegion() : m_address(0), m_pair_address(0), m_last_address(0), m_attributes(0), m_type_id(0) { /* ... */ }
-            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, uintptr_t p, u32 r, u32 t) :
+            constexpr ALWAYS_INLINE KMemoryRegion() : util::IntrusiveRedBlackTreeBaseNode<KMemoryRegion>(util::ConstantInitialize), m_address(0), m_pair_address(0), m_last_address(0), m_attributes(0), m_type_id(0) { /* ... */ }
+
+            ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, uintptr_t p, u32 r, u32 t) :
                 m_address(a), m_pair_address(p), m_last_address(la), m_attributes(r), m_type_id(t)
             {
                 /* ... */
             }
-            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, u32 r, u32 t) : KMemoryRegion(a, la, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
+            ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, u32 r, u32 t) : KMemoryRegion(a, la, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
         private:
             constexpr ALWAYS_INLINE void Reset(uintptr_t a, uintptr_t la, uintptr_t p, u32 r, u32 t) {
                 m_address      = a;

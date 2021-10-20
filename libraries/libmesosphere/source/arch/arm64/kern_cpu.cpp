@@ -129,7 +129,7 @@ namespace ams::kern::arch::arm64::cpu {
 
                 void ProcessOperation();
             public:
-                constexpr KCacheHelperInterruptHandler() : KInterruptHandler(), m_lock(), m_cv_lock(), m_cv(), m_target_cores(0), m_operation(Operation::Idle) { /* ... */ }
+                constexpr KCacheHelperInterruptHandler() : KInterruptHandler(), m_lock(), m_cv_lock(), m_cv(util::ConstantInitialize), m_target_cores(0), m_operation(Operation::Idle) { /* ... */ }
 
                 void Initialize(s32 core_id) {
                     /* Reserve a thread from the system limit. */

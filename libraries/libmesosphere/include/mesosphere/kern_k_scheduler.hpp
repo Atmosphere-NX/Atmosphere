@@ -62,8 +62,7 @@ namespace ams::kern {
             KThread *m_idle_thread;
             util::Atomic<KThread *> m_current_thread;
         public:
-            constexpr KScheduler()
-                : m_state(), m_is_active(false), m_core_id(0), m_last_context_switch_time(0), m_idle_thread(nullptr), m_current_thread(nullptr)
+            constexpr KScheduler() : m_state(), m_is_active(false), m_core_id(0), m_last_context_switch_time(0), m_idle_thread(nullptr), m_current_thread(nullptr)
             {
                 m_state.needs_scheduling        = true;
                 m_state.interrupt_task_runnable = false;

@@ -30,7 +30,8 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KTimerTask() : m_time(0) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE KTimerTask(util::ConstantInitializeTag) : util::IntrusiveRedBlackTreeBaseNode<KTimerTask>(util::ConstantInitialize), m_time(0) { /* ... */ }
+            explicit ALWAYS_INLINE KTimerTask() : m_time(0) { /* ... */ }
 
             constexpr ALWAYS_INLINE void SetTime(s64 t) {
                 m_time = t;

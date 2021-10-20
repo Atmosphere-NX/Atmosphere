@@ -88,7 +88,9 @@ namespace ams::kern {
         private:
             void CoalesceForUpdate(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages);
         public:
-            constexpr KMemoryBlockManager() : m_memory_block_tree(), m_start_address(), m_end_address() { /* ... */ }
+            constexpr explicit KMemoryBlockManager(util::ConstantInitializeTag) : m_memory_block_tree(), m_start_address(Null<KProcessAddress>), m_end_address(Null<KProcessAddress>) { /* ... */ }
+
+            explicit KMemoryBlockManager() { /* ... */ }
 
             iterator end() { return m_memory_block_tree.end(); }
             const_iterator end() const { return m_memory_block_tree.end(); }
@@ -105,7 +107,7 @@ namespace ams::kern {
             void UpdateIfMatch(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState test_state, KMemoryPermission test_perm, KMemoryAttribute test_attr, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
 
             iterator FindIterator(KProcessAddress address) const {
-                return m_memory_block_tree.find(KMemoryBlock(address, 1, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None));
+                return m_memory_block_tree.find(KMemoryBlock(util::ConstantInitialize, address, 1, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None));
             }
 
             const KMemoryBlock *FindBlock(KProcessAddress address) const {

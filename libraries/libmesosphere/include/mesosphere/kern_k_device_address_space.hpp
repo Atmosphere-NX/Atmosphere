@@ -30,7 +30,7 @@ namespace ams::kern {
             u64 m_space_size;
             bool m_is_initialized;
         public:
-            constexpr KDeviceAddressSpace() : m_lock(), m_table(), m_space_address(), m_space_size(), m_is_initialized() { /* ... */ }
+            explicit KDeviceAddressSpace() : m_is_initialized(false) { /* ... */ }
 
             Result Initialize(u64 address, u64 size);
             virtual void Finalize() override;

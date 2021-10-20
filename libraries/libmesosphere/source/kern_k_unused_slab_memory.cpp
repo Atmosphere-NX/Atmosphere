@@ -42,7 +42,7 @@ namespace ams::kern {
                     }
                 }
             public:
-                constexpr KUnusedSlabMemory(size_t size) : m_size(size) { /* ... */ }
+                KUnusedSlabMemory(size_t size) : m_size(size) { /* ... */ }
 
                 constexpr ALWAYS_INLINE KVirtualAddress GetAddress() const { return reinterpret_cast<uintptr_t>(this); }
                 constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }

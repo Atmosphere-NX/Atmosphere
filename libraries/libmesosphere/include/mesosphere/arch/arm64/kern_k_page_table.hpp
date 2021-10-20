@@ -168,7 +168,8 @@ namespace ams::kern::arch::arm64 {
                 return entry;
             }
         public:
-            constexpr KPageTable() : KPageTableBase(), m_manager(), m_ttbr(), m_asid() { /* ... */ }
+            constexpr explicit KPageTable(util::ConstantInitializeTag) : KPageTableBase(util::ConstantInitialize), m_manager(), m_ttbr(), m_asid() { /* ... */ }
+            explicit KPageTable() { /* ... */ }
 
             static NOINLINE void Initialize(s32 core_id);
 

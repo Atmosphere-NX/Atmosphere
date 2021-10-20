@@ -40,7 +40,7 @@ namespace ams::kern {
             KVirtualAddress m_address;
             size_t m_size;
         public:
-            KDynamicPageManager() : m_lock(), m_page_bitmap(), m_used(), m_peak(), m_count(), m_address(), m_size() { /* ... */ }
+            KDynamicPageManager() : m_lock(), m_page_bitmap(), m_used(), m_peak(), m_count(), m_address(Null<KVirtualAddress>), m_size() { /* ... */ }
 
             Result Initialize(KVirtualAddress memory, size_t sz) {
                 /* We need to have positive size. */

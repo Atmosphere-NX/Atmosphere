@@ -33,7 +33,8 @@ namespace ams::kern {
             KSessionRequest *m_current_request;
             KLightLock m_lock;
         public:
-            constexpr KServerSession() : m_parent(), m_request_list(), m_current_request(), m_lock() { /* ... */ }
+            constexpr explicit KServerSession(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_parent(), m_request_list(), m_current_request(), m_lock() { /* ... */ }
+            explicit KServerSession() : m_current_request(nullptr), m_lock() { /* ... */ }
 
             virtual void Destroy() override;
 

@@ -33,7 +33,15 @@ namespace ams::kern {
             s32 m_waiter_count;
             KLightConditionVariable m_cond_var;
         public:
-            constexpr ALWAYS_INLINE KResourceLimit() : m_limit_values(), m_current_values(), m_current_hints(), m_peak_values(), m_lock(), m_waiter_count(), m_cond_var() { /* ... */ }
+            constexpr explicit ALWAYS_INLINE KResourceLimit(util::ConstantInitializeTag)
+                : KAutoObjectWithSlabHeapAndContainer<KResourceLimit, KAutoObjectWithList>(util::ConstantInitialize),
+                  m_limit_values(), m_current_values(), m_current_hints(), m_peak_values(), m_lock(), m_waiter_count(),
+                  m_cond_var(util::ConstantInitialize)
+            {
+                /* ... */
+            }
+
+            explicit ALWAYS_INLINE KResourceLimit() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 

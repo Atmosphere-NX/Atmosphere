@@ -26,7 +26,7 @@ namespace ams::kern {
         private:
             ThreadTree m_tree;
         public:
-            constexpr KConditionVariable() : m_tree() { /* ... */ }
+            constexpr KConditionVariable() = default;
 
             /* Arbitration. */
             static Result SignalToAddress(KProcessAddress addr);

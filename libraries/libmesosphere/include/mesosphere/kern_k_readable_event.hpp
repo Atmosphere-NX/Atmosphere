@@ -27,7 +27,9 @@ namespace ams::kern {
             bool m_is_signaled;
             KEvent *m_parent;
         public:
-            constexpr explicit KReadableEvent() : KSynchronizationObject(), m_is_signaled(), m_parent() { MESOSPHERE_ASSERT_THIS(); }
+            constexpr explicit KReadableEvent(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_is_signaled(), m_parent() { MESOSPHERE_ASSERT_THIS(); }
+
+            explicit KReadableEvent() { /* ... */ }
 
             void Initialize(KEvent *parent);
 

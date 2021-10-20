@@ -54,12 +54,12 @@ namespace ams::kern {
 
     class KMemoryLayout {
         private:
-            static /* constinit */ inline uintptr_t s_linear_phys_to_virt_diff;
-            static /* constinit */ inline uintptr_t s_linear_virt_to_phys_diff;
-            static /* constinit */ inline KMemoryRegionTree s_virtual_tree;
-            static /* constinit */ inline KMemoryRegionTree s_physical_tree;
-            static /* constinit */ inline KMemoryRegionTree s_virtual_linear_tree;
-            static /* constinit */ inline KMemoryRegionTree s_physical_linear_tree;
+            static constinit inline uintptr_t s_linear_phys_to_virt_diff;
+            static constinit inline uintptr_t s_linear_virt_to_phys_diff;
+            static constinit inline KMemoryRegionTree s_virtual_tree;
+            static constinit inline KMemoryRegionTree s_physical_tree;
+            static constinit inline KMemoryRegionTree s_virtual_linear_tree;
+            static constinit inline KMemoryRegionTree s_physical_linear_tree;
         private:
             template<typename AddressType> requires IsKTypedAddress<AddressType>
             static ALWAYS_INLINE bool IsTypedAddress(const KMemoryRegion *&region, AddressType address, KMemoryRegionTree &tree, KMemoryRegionType type) {

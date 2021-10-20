@@ -345,8 +345,8 @@ namespace ams::kern::board::nintendo::nx {
         /* Globals. */
         constinit KLightLock g_lock;
         constinit u8 g_reserved_asid;
-        constinit KPhysicalAddress   g_memory_controller_address;
-        constinit KPhysicalAddress   g_reserved_table_phys_addr;
+        constinit KPhysicalAddress   g_memory_controller_address{Null<KPhysicalAddress>};
+        constinit KPhysicalAddress   g_reserved_table_phys_addr{Null<KPhysicalAddress>};
         constinit KDeviceAsidManager g_asid_manager;
         constinit u32 g_saved_page_tables[AsidCount];
         constinit u32 g_saved_asid_registers[ams::svc::DeviceName_Count];

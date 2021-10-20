@@ -19,7 +19,12 @@ namespace ams::kern {
 
     Result KCapabilities::Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table) {
         /* We're initializing an initial process. */
-        /* Most fields have already been cleared by our constructor. */
+        m_svc_access_flags.Reset();
+        m_irq_access_flags.Reset();
+        m_debug_capabilities      = {0};
+        m_handle_table_size       = 0;
+        m_intended_kernel_version = {0};
+        m_program_type            = 0;
 
         /* Initial processes may run on all cores. */
         m_core_mask = cpu::VirtualCoreMask;
@@ -38,7 +43,16 @@ namespace ams::kern {
 
      Result KCapabilities::Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table) {
         /* We're initializing a user process. */
-        /* Most fields have already been cleared by our constructor. */
+        m_svc_access_flags.Reset();
+        m_irq_access_flags.Reset();
+        m_debug_capabilities      = {0};
+        m_handle_table_size       = 0;
+        m_intended_kernel_version = {0};
+        m_program_type            = 0;
+
+        /* User processes must specify what cores/priorities they can use. */
+        m_core_mask     = 0;
+        m_priority_mask = 0;
 
         /* Parse the user capabilities array. */
         return this->SetCapabilities(user_caps, num_caps, page_table);

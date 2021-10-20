@@ -41,7 +41,7 @@ namespace ams::kern {
             State m_state;
             bool m_is_light;
         public:
-            constexpr KPort() : m_server(), m_client(), m_name(), m_state(State::Invalid), m_is_light() { /* ... */ }
+            explicit KPort() : m_state(State::Invalid), m_is_light() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
