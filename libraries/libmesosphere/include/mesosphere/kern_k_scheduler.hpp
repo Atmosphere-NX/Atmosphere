@@ -39,13 +39,13 @@ namespace ams::kern {
             static_assert(ams::svc::HighestThreadPriority <= HighestCoreMigrationAllowedPriority);
 
             struct SchedulingState {
-                util::Atomic<u8> needs_scheduling{false};
+                util::Atomic<bool> needs_scheduling{false};
                 bool interrupt_task_runnable{false};
                 bool should_count_idle{false};
                 u64  idle_count{0};
                 KThread *highest_priority_thread{nullptr};
                 void *idle_thread_stack{nullptr};
-                util::Atomic<KThread *> prev_thread{nullptr};
+                KThread *prev_thread{nullptr};
                 KInterruptTaskManager *interrupt_task_manager{nullptr};
 
                 constexpr SchedulingState() = default;
@@ -100,7 +100,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE KThread *GetPreviousThread() const {
-                return m_state.prev_thread.Load<std::memory_order_relaxed>();
+                return m_state.prev_thread;
             }
 
             ALWAYS_INLINE KThread *GetSchedulerCurrentThread() const {

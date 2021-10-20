@@ -100,6 +100,121 @@ namespace ams::util {
 
         #undef AMS_UTIL_IMPL_DEFINE_ATOMIC_STORE_EXCLUSIVE_FUNCTION
 
+        template<UsableAtomicType T>
+        constexpr ALWAYS_INLINE T ConvertToTypeForAtomic(AtomicStorage<T> s) {
+            if constexpr (std::integral<T>) {
+                return static_cast<T>(s);
+            } else if constexpr(std::is_pointer<T>::value) {
+                return reinterpret_cast<T>(s);
+            } else {
+                return std::bit_cast<T>(s);
+            }
+        }
+
+        template<UsableAtomicType T>
+        constexpr ALWAYS_INLINE AtomicStorage<T> ConvertToStorageForAtomic(T arg) {
+            if constexpr (std::integral<T>) {
+                return static_cast<AtomicStorage<T>>(arg);
+            } else if constexpr(std::is_pointer<T>::value) {
+                if (std::is_constant_evaluated() && arg == nullptr) {
+                    return 0;
+                }
+
+                return reinterpret_cast<AtomicStorage<T>>(arg);
+            } else {
+                return std::bit_cast<AtomicStorage<T>>(arg);
+            }
+        }
+
+        template<std::memory_order Order, std::unsigned_integral StorageType>
+        ALWAYS_INLINE StorageType AtomicLoadImpl(volatile StorageType * const p) {
+            if constexpr (Order != std::memory_order_relaxed) {
+                return ::ams::util::impl::LoadAcquireForAtomic(p);
+            } else {
+                return *p;
+            }
+        }
+
+        template<std::memory_order Order, std::unsigned_integral StorageType>
+        ALWAYS_INLINE void AtomicStoreImpl(volatile StorageType * const p, const StorageType s) {
+            if constexpr (Order != std::memory_order_relaxed) {
+                ::ams::util::impl::StoreReleaseForAtomic(p, s);
+            } else {
+                *p = s;
+            }
+        }
+
+        template<std::memory_order Order, std::unsigned_integral StorageType>
+        ALWAYS_INLINE StorageType LoadExclusiveForAtomicByMemoryOrder(volatile StorageType * const p) {
+            if constexpr (Order == std::memory_order_relaxed) {
+                return ::ams::util::impl::LoadExclusiveForAtomic(p);
+            }  else if constexpr (Order == std::memory_order_consume || Order == std::memory_order_acquire) {
+                return ::ams::util::impl::LoadAcquireExclusiveForAtomic(p);
+            } else if constexpr (Order == std::memory_order_release) {
+                return ::ams::util::impl::LoadExclusiveForAtomic(p);
+            } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
+                return ::ams::util::impl::LoadAcquireExclusiveForAtomic(p);
+            } else {
+                static_assert(Order != Order, "Invalid memory order");
+            }
+        }
+
+        template<std::memory_order Order, std::unsigned_integral StorageType>
+        ALWAYS_INLINE bool StoreExclusiveForAtomicByMemoryOrder(volatile StorageType * const p, const StorageType s) {
+            if constexpr (Order == std::memory_order_relaxed) {
+                return ::ams::util::impl::StoreExclusiveForAtomic(p, s);
+            }  else if constexpr (Order == std::memory_order_consume || Order == std::memory_order_acquire) {
+                return ::ams::util::impl::StoreExclusiveForAtomic(p, s);
+            } else if constexpr (Order == std::memory_order_release) {
+                return ::ams::util::impl::StoreReleaseExclusiveForAtomic(p, s);
+            } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
+                return ::ams::util::impl::StoreReleaseExclusiveForAtomic(p, s);
+            } else {
+                static_assert(Order != Order, "Invalid memory order");
+            }
+        }
+
+        template<std::memory_order Order, std::unsigned_integral StorageType>
+        ALWAYS_INLINE StorageType AtomicExchangeImpl(volatile StorageType * const p, const StorageType s) {
+            StorageType current;
+            do {
+                current = ::ams::util::impl::LoadExclusiveForAtomicByMemoryOrder<Order>(p);
+            } while(AMS_UNLIKELY(!impl::StoreExclusiveForAtomicByMemoryOrder<Order>(p, s)));
+
+            return current;
+        }
+
+        template<std::memory_order Order, UsableAtomicType T>
+        ALWAYS_INLINE bool AtomicCompareExchangeWeakImpl(volatile AtomicStorage<T> * const p, T &expected, T desired) {
+            const AtomicStorage<T> e = ::ams::util::impl::ConvertToStorageForAtomic(expected);
+            const AtomicStorage<T> d = ::ams::util::impl::ConvertToStorageForAtomic(desired);
+
+            const AtomicStorage<T> current = ::ams::util::impl::LoadExclusiveForAtomicByMemoryOrder<Order>(p);
+            if (AMS_UNLIKELY(current != e)) {
+                impl::ClearExclusiveForAtomic();
+                expected = ::ams::util::impl::ConvertToTypeForAtomic<T>(current);
+                return false;
+            }
+
+            return AMS_LIKELY(impl::StoreExclusiveForAtomicByMemoryOrder<Order>(p, d));
+        }
+
+        template<std::memory_order Order, UsableAtomicType T>
+        ALWAYS_INLINE bool AtomicCompareExchangeStrongImpl(volatile AtomicStorage<T> * const p, T &expected, T desired) {
+            const AtomicStorage<T> e = ::ams::util::impl::ConvertToStorageForAtomic(expected);
+            const AtomicStorage<T> d = ::ams::util::impl::ConvertToStorageForAtomic(desired);
+
+            do {
+                if (const AtomicStorage<T> current = ::ams::util::impl::LoadExclusiveForAtomicByMemoryOrder<Order>(p); AMS_UNLIKELY(current != e)) {
+                    impl::ClearExclusiveForAtomic();
+                    expected = ::ams::util::impl::ConvertToTypeForAtomic<T>(current);
+                    return false;
+                }
+            } while (AMS_UNLIKELY(!impl::StoreExclusiveForAtomicByMemoryOrder<Order>(p, d)));
+
+            return true;
+        }
+
     }
 
     template<impl::UsableAtomicType T>
@@ -117,27 +232,11 @@ namespace ams::util {
             using DifferenceType = typename std::conditional<IsIntegral, T, typename std::conditional<IsPointer, std::ptrdiff_t, void>::type>::type;
 
             static constexpr ALWAYS_INLINE T ConvertToType(StorageType s) {
-                if constexpr (std::integral<T>) {
-                    return static_cast<T>(s);
-                } else if constexpr(std::is_pointer<T>::value) {
-                    return reinterpret_cast<T>(s);
-                } else {
-                    return std::bit_cast<T>(s);
-                }
+                return impl::ConvertToTypeForAtomic<T>(s);
             }
 
             static constexpr ALWAYS_INLINE StorageType ConvertToStorage(T arg) {
-                if constexpr (std::integral<T>) {
-                    return static_cast<StorageType>(arg);
-                } else if constexpr(std::is_pointer<T>::value) {
-                    if (std::is_constant_evaluated() && arg == nullptr) {
-                        return 0;
-                    }
-
-                    return reinterpret_cast<StorageType>(arg);
-                } else {
-                    return std::bit_cast<StorageType>(arg);
-                }
+                return impl::ConvertToStorageForAtomic<T>(arg);
             }
         private:
             StorageType m_v;
@@ -157,148 +256,31 @@ namespace ams::util {
                 return desired;
             }
 
+            ALWAYS_INLINE operator T() const { return this->Load(); }
+
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE T Load() const {
-                if constexpr (Order != std::memory_order_relaxed) {
-                    return ConvertToType(impl::LoadAcquireForAtomic(this->GetStoragePointer()));
-                } else {
-                    return ConvertToType(*this->GetStoragePointer());
-                }
+                return ConvertToType(impl::AtomicLoadImpl<Order>(this->GetStoragePointer()));
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE void Store(T arg) {
-                if constexpr (Order != std::memory_order_relaxed) {
-                    impl::StoreReleaseForAtomic(this->GetStoragePointer(), ConvertToStorage(arg));
-                } else {
-                    *this->GetStoragePointer() = ConvertToStorage(arg);
-                }
+                return impl::AtomicStoreImpl<Order>(this->GetStoragePointer(), ConvertToStorage(arg));
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE T Exchange(T arg) {
-                volatile StorageType * const p = this->GetStoragePointer();
-                const StorageType s = ConvertToStorage(arg);
-
-                StorageType current;
-
-                if constexpr (Order == std::memory_order_relaxed) {
-                    do {
-                        current = impl::LoadExclusiveForAtomic(p);
-                    } while (AMS_UNLIKELY(!impl::StoreExclusiveForAtomic(p, s)));
-                } else if constexpr (Order == std::memory_order_consume || Order == std::memory_order_acquire) {
-                    do {
-                        current = impl::LoadAcquireExclusiveForAtomic(p);
-                    } while (AMS_UNLIKELY(!impl::StoreExclusiveForAtomic(p, s)));
-                } else if constexpr (Order == std::memory_order_release) {
-                    do {
-                        current = impl::LoadExclusiveForAtomic(p);
-                    } while (AMS_UNLIKELY(!impl::StoreReleaseExclusiveForAtomic(p, s)));
-                } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
-                    do {
-                        current = impl::LoadAcquireExclusiveForAtomic(p);
-                    } while (AMS_UNLIKELY(!impl::StoreReleaseExclusiveForAtomic(p, s)));
-                } else {
-                    static_assert(Order != Order, "Invalid memory order");
-                }
-
-                return current;
+                return ConvertToType(impl::AtomicExchangeImpl(this->GetStoragePointer(), ConvertToStorage(arg)));
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE bool CompareExchangeWeak(T &expected, T desired) {
-                volatile StorageType * const p = this->GetStoragePointer();
-                const StorageType e = ConvertToStorage(expected);
-                const StorageType d = ConvertToStorage(desired);
-
-                if constexpr (Order == std::memory_order_relaxed) {
-                    const StorageType current = impl::LoadExclusiveForAtomic(p);
-                    if (AMS_UNLIKELY(current != e)) {
-                        impl::ClearExclusiveForAtomic();
-                        expected = ConvertToType(current);
-                        return false;
-                    }
-
-                    return AMS_LIKELY(impl::StoreExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_consume || Order == std::memory_order_acquire) {
-                    const StorageType current = impl::LoadAcquireExclusiveForAtomic(p);
-                    if (AMS_UNLIKELY(current != e)) {
-                        impl::ClearExclusiveForAtomic();
-                        expected = ConvertToType(current);
-                        return false;
-                    }
-
-                    return AMS_LIKELY(impl::StoreExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_release) {
-                    const StorageType current = impl::LoadExclusiveForAtomic(p);
-                    if (AMS_UNLIKELY(current != e)) {
-                        impl::ClearExclusiveForAtomic();
-                        expected = ConvertToType(current);
-                        return false;
-                    }
-
-                    return AMS_LIKELY(impl::StoreReleaseExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
-                    const StorageType current = impl::LoadAcquireExclusiveForAtomic(p);
-                    if (AMS_UNLIKELY(current != e)) {
-                        impl::ClearExclusiveForAtomic();
-                        expected = ConvertToType(current);
-                        return false;
-                    }
-
-                    return AMS_LIKELY(impl::StoreReleaseExclusiveForAtomic(p, d));
-                } else {
-                    static_assert(Order != Order, "Invalid memory order");
-                }
+                return impl::AtomicCompareExchangeWeakImpl<Order, T>(this->GetStoragePointer(), expected, desired);
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE bool CompareExchangeStrong(T &expected, T desired) {
-                volatile StorageType * const p = this->GetStoragePointer();
-                const StorageType e = ConvertToStorage(expected);
-                const StorageType d = ConvertToStorage(desired);
-
-                if constexpr (Order == std::memory_order_relaxed) {
-                    StorageType current;
-                    do {
-                        if (current = impl::LoadExclusiveForAtomic(p); current != e) {
-                            impl::ClearExclusiveForAtomic();
-                            expected = ConvertToType(current);
-                            return false;
-                        }
-                    } while (!impl::StoreExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_consume || Order == std::memory_order_acquire) {
-                    StorageType current;
-                    do {
-                        if (current = impl::LoadAcquireExclusiveForAtomic(p); current != e) {
-                            impl::ClearExclusiveForAtomic();
-                            expected = ConvertToType(current);
-                            return false;
-                        }
-                    } while (!impl::StoreExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_release) {
-                    StorageType current;
-                    do {
-                        if (current = impl::LoadExclusiveForAtomic(p); current != e) {
-                            impl::ClearExclusiveForAtomic();
-                            expected = ConvertToType(current);
-                            return false;
-                        }
-                    } while (!impl::StoreReleaseExclusiveForAtomic(p, d));
-                } else if constexpr (Order == std::memory_order_acq_rel || Order == std::memory_order_seq_cst) {
-                    StorageType current;
-                    do {
-                        if (current = impl::LoadAcquireExclusiveForAtomic(p); current != e) {
-                            impl::ClearExclusiveForAtomic();
-                            expected = ConvertToType(current);
-                            return false;
-                        }
-                    } while (!impl::StoreReleaseExclusiveForAtomic(p, d));
-                } else {
-                    static_assert(Order != Order, "Invalid memory order");
-                }
-
-                return true;
+                return impl::AtomicCompareExchangeStrongImpl<Order, T>(this->GetStoragePointer(), expected, desired);
             }
 
             #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                          \
@@ -341,5 +323,108 @@ namespace ams::util {
             ALWAYS_INLINE T operator--(int) { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1); }
     };
 
+    template<impl::UsableAtomicType T>
+    class AtomicRef {
+        NON_MOVEABLE(AtomicRef);
+        public:
+            static constexpr size_t RequiredAlignment = std::max<size_t>(sizeof(T), alignof(T));
+        private:
+            using StorageType = impl::AtomicStorage<T>;
+            static_assert(sizeof(StorageType)  == sizeof(T));
+            static_assert(alignof(StorageType) >= alignof(T));
+
+            static constexpr bool IsIntegral = std::integral<T>;
+            static constexpr bool IsPointer  = std::is_pointer<T>::value;
+
+            static constexpr bool HasArithmeticFunctions = IsIntegral || IsPointer;
+
+            using DifferenceType = typename std::conditional<IsIntegral, T, typename std::conditional<IsPointer, std::ptrdiff_t, void>::type>::type;
+
+            static constexpr ALWAYS_INLINE T ConvertToType(StorageType s) {
+                return impl::ConvertToTypeForAtomic<T>(s);
+            }
+
+            static constexpr ALWAYS_INLINE StorageType ConvertToStorage(T arg) {
+                return impl::ConvertToStorageForAtomic<T>(arg);
+            }
+        private:
+            volatile StorageType * const m_p;
+        private:
+            ALWAYS_INLINE volatile StorageType *GetStoragePointer() const { return m_p; }
+        public:
+            explicit ALWAYS_INLINE AtomicRef(T &t) : m_p(reinterpret_cast<volatile StorageType *>(std::addressof(t))) { /* ... */ }
+            ALWAYS_INLINE AtomicRef(const AtomicRef &) noexcept = default;
+
+            AtomicRef() = delete;
+            AtomicRef &operator=(const AtomicRef &) = delete;
+
+            ALWAYS_INLINE T operator=(T desired) const { return const_cast<AtomicRef *>(this)->Store(desired); }
+
+            ALWAYS_INLINE operator T() const { return this->Load(); }
+
+            template<std::memory_order Order = std::memory_order_seq_cst>
+            ALWAYS_INLINE T Load() const {
+                return ConvertToType(impl::AtomicLoadImpl<Order>(this->GetStoragePointer()));
+            }
+
+            template<std::memory_order Order = std::memory_order_seq_cst>
+            ALWAYS_INLINE void Store(T arg) const {
+                return impl::AtomicStoreImpl<Order>(this->GetStoragePointer(), ConvertToStorage(arg));
+            }
+
+            template<std::memory_order Order = std::memory_order_seq_cst>
+            ALWAYS_INLINE T Exchange(T arg) const {
+                return ConvertToType(impl::AtomicExchangeImpl(this->GetStoragePointer(), ConvertToStorage(arg)));
+            }
+
+            template<std::memory_order Order = std::memory_order_seq_cst>
+            ALWAYS_INLINE bool CompareExchangeWeak(T &expected, T desired) const {
+                return impl::AtomicCompareExchangeWeakImpl<Order, T>(this->GetStoragePointer(), expected, desired);
+            }
+
+            template<std::memory_order Order = std::memory_order_seq_cst>
+            ALWAYS_INLINE bool CompareExchangeStrong(T &expected, T desired) const {
+                return impl::AtomicCompareExchangeStrongImpl<Order, T>(this->GetStoragePointer(), expected, desired);
+            }
+
+            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATOR_, _POINTER_ALLOWED_)                                          \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
+                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) const {                                                                            \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
+                    volatile StorageType * const p = this->GetStoragePointer();                                                                             \
+                                                                                                                                                            \
+                    StorageType current;                                                                                                                    \
+                    do {                                                                                                                                    \
+                        current = impl::LoadAcquireExclusiveForAtomic<StorageType>(p);                                                                      \
+                    } while (AMS_UNLIKELY(!impl::StoreReleaseExclusiveForAtomic<StorageType>(p, ConvertToStorage(ConvertToType(current) _OPERATOR_ arg)))); \
+                    return ConvertToType(current);                                                                                                          \
+                }                                                                                                                                           \
+                                                                                                                                                            \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type>            \
+                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) const {                                                                          \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                              \
+                    return this->Fetch ## _OPERATION_(arg) _OPERATOR_ arg;                                                                                  \
+                }
+
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Add, +, true)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Sub, -, true)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(And, &, false)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Or,  |, false)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Xor, ^, false)
+
+            #undef AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator++() const { static_assert(Enable == HasArithmeticFunctions); return this->FetchAdd(1) + 1; }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator++(int) const { static_assert(Enable == HasArithmeticFunctions); return this->FetchAdd(1); }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator--() const { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1) - 1; }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator--(int) const { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1); }
+    };
 
 }

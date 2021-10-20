@@ -246,9 +246,9 @@ namespace ams::kern {
         if (cur_process != nullptr) {
             /* NOTE: Combining this into AMS_LIKELY(!... && ...) triggers an internal compiler error: Segmentation fault in GCC 9.2.0. */
             if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == m_core_id)) {
-                m_state.prev_thread.Store<std::memory_order_relaxed>(cur_thread);
+                m_state.prev_thread = cur_thread;
             } else {
-                m_state.prev_thread.Store<std::memory_order_relaxed>(nullptr);
+                m_state.prev_thread =nullptr;
             }
         }
 
@@ -270,9 +270,12 @@ namespace ams::kern {
     void KScheduler::ClearPreviousThread(KThread *thread) {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
         for (size_t i = 0; i < cpu::NumCores; ++i) {
+            /* Get an atomic reference to the core scheduler's previous thread. */
+            const util::AtomicRef<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).m_state.prev_thread);
+
             /* Atomically clear the previous thread if it's our target. */
             KThread *compare = thread;
-            Kernel::GetScheduler(static_cast<s32>(i)).m_state.prev_thread.CompareExchangeStrong(compare, nullptr);
+            prev_thread.CompareExchangeStrong(compare, nullptr);
         }
     }
 

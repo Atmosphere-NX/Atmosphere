@@ -225,7 +225,7 @@ namespace ams::kern {
             s32                             m_original_physical_ideal_core_id{};
             s32                             m_num_core_migration_disables{};
             ThreadState                     m_thread_state{};
-            util::Atomic<u8>                m_termination_requested{false};
+            util::Atomic<bool>              m_termination_requested{false};
             bool                            m_wait_cancelled{};
             bool                            m_cancellable{};
             bool                            m_signaled{};

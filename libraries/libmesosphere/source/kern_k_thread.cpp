@@ -1184,7 +1184,7 @@ namespace ams::kern {
         /* Determine if this is the first termination request. */
         const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
             /* Perform an atomic compare-and-swap from false to true. */
-            u8 expected = false;
+            bool expected = false;
             return m_termination_requested.CompareExchangeStrong(expected, true);
         }();
 
