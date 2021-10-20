@@ -22,7 +22,7 @@ namespace ams::secmon {
 
         constexpr inline uintptr_t PMC = MemoryRegionVirtualDevicePmc.GetAddress();
 
-        constinit util::Atomic<bool> g_is_locked{false};
+        constinit util::Atomic<bool> g_is_locked = false;
 
     }
 

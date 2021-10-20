@@ -177,8 +177,6 @@ namespace ams::kern {
             static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
             static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
-            static constinit inline util::Atomic<u64> s_next_thread_id{0};
-        private:
             util::IntrusiveListNode         m_process_list_node{};
             util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node{};
             s32                             m_priority{};
@@ -348,11 +346,11 @@ namespace ams::kern {
             #endif
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags.FetchOr(flag);
+                this->GetStackParameters().dpc_flags |= flag;
             }
 
             ALWAYS_INLINE void ClearDpc(DpcFlag flag) {
-                this->GetStackParameters().dpc_flags.FetchAnd(~flag);
+                this->GetStackParameters().dpc_flags &= ~flag;
             }
 
             ALWAYS_INLINE u8 GetDpc() const {
@@ -544,7 +542,7 @@ namespace ams::kern {
             constexpr bool IsAttachedToDebugger() const { return m_debug_attached; }
 
             void AddCpuTime(s32 core_id, s64 amount) {
-                m_cpu_time.FetchAdd(amount);
+                m_cpu_time += amount;
                 /* TODO: Debug kernels track per-core tick counts. Should we? */
                 MESOSPHERE_UNUSED(core_id);
             }

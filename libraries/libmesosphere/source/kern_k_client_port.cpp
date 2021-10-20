@@ -28,7 +28,7 @@ namespace ams::kern {
     void KClientPort::OnSessionFinalized() {
         KScopedSchedulerLock sl;
 
-        if (m_num_sessions.FetchSub(1) == m_max_sessions) {
+        if (const auto prev = m_num_sessions--; prev == m_max_sessions) {
             this->NotifyAvailable();
         }
     }

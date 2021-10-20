@@ -42,15 +42,15 @@ namespace ams::kern {
             return arr;
         }();
 
-        constinit util::Atomic<s32> g_next_ticket{0};
-        constinit util::Atomic<s32> g_current_ticket{0};
+        constinit util::Atomic<s32> g_next_ticket    = 0;
+        constinit util::Atomic<s32> g_current_ticket = 0;
 
         constinit std::array<s32, cpu::NumCores> g_core_tickets = NegativeArray;
 
         s32 GetCoreTicket() {
             const s32 core_id = GetCurrentCoreId();
             if (g_core_tickets[core_id] == -1) {
-                g_core_tickets[core_id] = 2 * g_next_ticket.FetchAdd(1);
+                g_core_tickets[core_id] = 2 * (g_next_ticket++);
             }
             return g_core_tickets[core_id];
         }

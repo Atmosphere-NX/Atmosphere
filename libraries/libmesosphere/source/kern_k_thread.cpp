@@ -21,6 +21,8 @@ namespace ams::kern {
 
         constexpr inline s32 TerminatingThreadPriority = ams::svc::SystemThreadPriorityHighest - 1;
 
+        constinit util::Atomic<u64> g_thread_id = 0;
+
         constexpr ALWAYS_INLINE bool IsKernelAddressKey(KProcessAddress key) {
             const uintptr_t key_uptr = GetInteger(key);
             return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast && (key_uptr & 1) == 0;
@@ -219,7 +221,7 @@ namespace ams::kern {
         this->SetInExceptionHandler();
 
         /* Set thread ID. */
-        m_thread_id = s_next_thread_id.FetchAdd(1);
+        m_thread_id = g_thread_id++;
 
         /* We initialized! */
         m_initialized = true;

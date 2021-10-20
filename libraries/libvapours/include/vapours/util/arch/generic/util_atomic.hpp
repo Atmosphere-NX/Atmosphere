@@ -56,12 +56,19 @@ namespace ams::util {
         NON_COPYABLE(Atomic);
         NON_MOVEABLE(Atomic);
         private:
+            static constexpr bool IsIntegral = std::integral<T>;
+            static constexpr bool IsPointer  = std::is_pointer<T>::value;
+
+            static constexpr bool HasArithmeticFunctions = IsIntegral || IsPointer;
+
+            using DifferenceType = typename std::conditional<IsIntegral, T, typename std::conditional<IsPointer, std::ptrdiff_t, void>::type>::type;
+        private:
             static_assert(std::atomic<T>::is_always_lock_free);
         private:
             std::atomic<T> m_v;
         public:
-            ALWAYS_INLINE explicit Atomic() { /* ... */ }
-            constexpr ALWAYS_INLINE explicit Atomic(T v) : m_v(v) { /* ... */ }
+            ALWAYS_INLINE Atomic() { /* ... */ }
+            constexpr ALWAYS_INLINE Atomic(T v) : m_v(v) { /* ... */ }
 
             ALWAYS_INLINE T operator=(T desired) {
                 return (m_v = desired);
@@ -93,18 +100,38 @@ namespace ams::util {
             }
 
 
-            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATION_LOWER_) \
-                ALWAYS_INLINE T Fetch ## _OPERATION_(T arg) {                                          \
-                    return m_v.fetch_##_OPERATION_LOWER_(arg);                                         \
+            #define AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(_OPERATION_, _OPERATION_LOWER_, _OPERATOR_, _POINTER_ALLOWED_)            \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type> \
+                ALWAYS_INLINE T Fetch ## _OPERATION_(DifferenceType arg) {                                                                       \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                   \
+                    return m_v.fetch_##_OPERATION_LOWER_(arg);                                                                                   \
+                }                                                                                                                                \
+                                                                                                                                                 \
+                template<bool Enable = (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)), typename = typename std::enable_if<Enable, void>::type> \
+                ALWAYS_INLINE T operator _OPERATOR_##=(DifferenceType arg) {                                                                     \
+                    static_assert(Enable == (IsIntegral || (_POINTER_ALLOWED_ && IsPointer)));                                                   \
+                    return this->Fetch##_OPERATION_(arg) _OPERATOR_ arg;                                                                         \
                 }
 
-            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Add, add)
-            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Sub, sub)
-            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(And, and)
-            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Or,  or)
-            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Xor, xor)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Add, add, +, true)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Sub, sub, -, true)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(And, and, &, false)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Or,  or,  |, false)
+            AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION(Xor, xor, ^, false)
 
             #undef AMS_UTIL_IMPL_DEFINE_ATOMIC_FETCH_OPERATE_FUNCTION
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator++() { static_assert(Enable == HasArithmeticFunctions); return this->FetchAdd(1) + 1; }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator++(int) { static_assert(Enable == HasArithmeticFunctions); return this->FetchAdd(1); }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator--() { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1) - 1; }
+
+            template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
+            ALWAYS_INLINE T operator--(int) { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1); }
     };
 
 

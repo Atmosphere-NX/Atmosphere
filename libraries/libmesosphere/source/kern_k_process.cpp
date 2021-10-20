@@ -25,8 +25,8 @@ namespace ams::kern {
         constexpr u64 ProcessIdMin        = InitialProcessIdMax + 1;
         constexpr u64 ProcessIdMax        = std::numeric_limits<u64>::max();
 
-        constinit util::Atomic<u64> g_initial_process_id{InitialProcessIdMin};
-        constinit util::Atomic<u64> g_process_id{ProcessIdMin};
+        constinit util::Atomic<u64> g_initial_process_id = InitialProcessIdMin;
+        constinit util::Atomic<u64> g_process_id         = ProcessIdMin;
 
         Result TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
             /* Request that all children threads terminate. */
@@ -299,7 +299,7 @@ namespace ams::kern {
         R_TRY(m_capabilities.Initialize(caps, num_caps, std::addressof(m_page_table)));
 
         /* Initialize the process id. */
-        m_process_id = g_initial_process_id.FetchAdd(1);
+        m_process_id = g_initial_process_id++;
         MESOSPHERE_ABORT_UNLESS(InitialProcessIdMin <= m_process_id);
         MESOSPHERE_ABORT_UNLESS(m_process_id <= InitialProcessIdMax);
 
@@ -409,7 +409,7 @@ namespace ams::kern {
         R_TRY(m_capabilities.Initialize(user_caps, num_caps, std::addressof(m_page_table)));
 
         /* Initialize the process id. */
-        m_process_id = g_process_id.FetchAdd(1);
+        m_process_id = g_process_id++;
         MESOSPHERE_ABORT_UNLESS(ProcessIdMin <= m_process_id);
         MESOSPHERE_ABORT_UNLESS(m_process_id <= ProcessIdMax);
 
@@ -791,13 +791,13 @@ namespace ams::kern {
     void KProcess::IncrementRunningThreadCount() {
         MESOSPHERE_ASSERT(m_num_running_threads.Load() >= 0);
 
-        m_num_running_threads.FetchAdd(1);
+        ++m_num_running_threads;
     }
 
     void KProcess::DecrementRunningThreadCount() {
         MESOSPHERE_ASSERT(m_num_running_threads.Load() > 0);
 
-        if (m_num_running_threads.FetchSub(1) == 1) {
+        if (const auto prev = m_num_running_threads--; prev == 1) {
             this->Terminate();
         }
     }

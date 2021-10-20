@@ -21,7 +21,7 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constinit util::Atomic<bool> g_is_locked{false};
+        constinit util::Atomic<bool> g_is_locked = false;
 
         ALWAYS_INLINE bool TryLockSecurityEngineImpl() {
             bool value = false;

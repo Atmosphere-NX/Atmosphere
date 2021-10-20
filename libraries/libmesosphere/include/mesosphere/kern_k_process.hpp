@@ -288,7 +288,7 @@ namespace ams::kern {
 
             KThread *GetExceptionThread() const { return m_exception_thread; }
 
-            void AddCpuTime(s64 diff) { m_cpu_time.FetchAdd(diff); }
+            void AddCpuTime(s64 diff) { m_cpu_time += diff; }
             s64 GetCpuTime() { return m_cpu_time.Load(); }
 
             constexpr s64 GetScheduledCount() const { return m_schedule_count; }

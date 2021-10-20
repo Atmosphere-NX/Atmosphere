@@ -287,7 +287,7 @@ namespace ams::kern::arch::arm64::cpu {
                     break;
             }
 
-            m_target_cores.FetchAnd(~(1ul << GetCurrentCoreId()));
+            m_target_cores &= (~(1ul << GetCurrentCoreId()));
         }
 
         ALWAYS_INLINE void SetEventLocally() {
