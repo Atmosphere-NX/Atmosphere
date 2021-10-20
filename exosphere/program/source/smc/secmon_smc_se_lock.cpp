@@ -21,35 +21,47 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constinit std::atomic_bool g_is_locked = false;
+        constinit util::Atomic<bool> g_is_locked{false};
+
+        ALWAYS_INLINE bool TryLockSecurityEngineImpl() {
+            bool value = false;
+            return g_is_locked.CompareExchangeStrong(value, true);
+        }
+
+        ALWAYS_INLINE void UnlockSecurityEngineImpl() {
+            g_is_locked = false;
+        }
+
+        ALWAYS_INLINE bool IsSecurityEngineLockedImpl() {
+            return g_is_locked.Load();
+        }
 
     }
 
     bool TryLockSecurityEngine() {
-        bool value = false;
-        return g_is_locked.compare_exchange_strong(value, true);
+        return TryLockSecurityEngineImpl();
     }
 
     void UnlockSecurityEngine() {
-        g_is_locked = false;
+        return UnlockSecurityEngineImpl();
     }
 
     bool IsSecurityEngineLocked() {
-        return g_is_locked;
+        return IsSecurityEngineLockedImpl();
     }
 
     SmcResult LockSecurityEngineAndInvoke(SmcArguments &args, SmcHandler impl) {
         /* Try to lock the security engine. */
-        SMC_R_UNLESS(TryLockSecurityEngine(), Busy);
-        ON_SCOPE_EXIT { UnlockSecurityEngine(); };
+        SMC_R_UNLESS(TryLockSecurityEngineImpl(), Busy);
+        ON_SCOPE_EXIT { UnlockSecurityEngineImpl(); };
 
         return impl(args);
     }
 
     SmcResult LockSecurityEngineAndInvokeAsync(SmcArguments &args, SmcHandler impl, GetResultHandler result_handler) {
         /* Try to lock the security engine. */
-        SMC_R_UNLESS(TryLockSecurityEngine(), Busy);
-        auto se_guard = SCOPE_GUARD { UnlockSecurityEngine(); };
+        SMC_R_UNLESS(TryLockSecurityEngineImpl(), Busy);
+        auto se_guard = SCOPE_GUARD { UnlockSecurityEngineImpl(); };
 
         /* Try to start an async operation. */
         const u64 async_key = BeginAsyncOperation(result_handler);

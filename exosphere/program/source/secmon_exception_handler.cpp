@@ -22,7 +22,7 @@ namespace ams::secmon {
 
         constexpr inline uintptr_t PMC = MemoryRegionVirtualDevicePmc.GetAddress();
 
-        constinit std::atomic_bool g_is_locked = false;
+        constinit util::Atomic<bool> g_is_locked{false};
 
     }
 
@@ -72,7 +72,7 @@ namespace ams::secmon {
         }
 
         /* Acquire exclusive access to exception handling logic. */
-        if (!g_is_locked.exchange(true)) {
+        if (!g_is_locked.Exchange(true)) {
             /* Invoke the exception handler impl. */
             ExceptionHandlerImpl(lr, sp);
 
