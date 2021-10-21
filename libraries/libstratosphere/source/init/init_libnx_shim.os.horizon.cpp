@@ -38,6 +38,8 @@ namespace ams {
 
     namespace init {
 
+        void InitializeSystemModuleBeforeConstructors();
+
         void InitializeSystemModule();
         void FinalizeSystemModule();
 
@@ -66,6 +68,9 @@ extern "C" void __libnx_initheap(void) {
 extern "C" void __appInit(void) {
     /* The very first thing all stratosphere code must do is initialize the os library. */
     ::ams::hos::InitializeForStratosphere();
+
+    /* Perform pre-C++ constructor init. */
+    ::ams::init::InitializeSystemModuleBeforeConstructors();
 }
 
 extern "C" void __appExit(void) {

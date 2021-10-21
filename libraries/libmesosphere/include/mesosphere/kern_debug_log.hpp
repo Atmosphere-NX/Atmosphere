@@ -43,6 +43,8 @@ namespace ams::kern {
 
     #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
         #define MESOSPHERE_DEBUG_LOG_USE_UART
+    #elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+        #define MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING
     #else
         #error "Unknown board for Default Debug Log Source"
     #endif

@@ -13,23 +13,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <mesosphere/kern_common.hpp>
+#include <mesosphere.hpp>
+#include "kern_debug_log_impl.hpp"
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    #include <mesosphere/board/nintendo/nx/kern_k_system_control.hpp>
+namespace ams::kern {
 
-    namespace ams::kern {
-        using ams::kern::board::nintendo::nx::KSystemControl;
+#if defined(MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING)
+
+    bool KDebugLogImpl::Initialize() {
+        return true;
     }
 
-#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
-    #include <mesosphere/board/qemu/virt/kern_k_system_control.hpp>
+    void KDebugLogImpl::PutChar(char c) {
+        /* TODO */
+        AMS_UNUSED(c);
+    }
 
-    namespace ams::kern {
-        using ams::kern::board::qemu::virt::KSystemControl;
+    void KDebugLogImpl::Flush() {
+        /* ... */
+    }
+
+    void KDebugLogImpl::Save() {
+        /* ... */
+    }
+
+    void KDebugLogImpl::Restore() {
+        /* ... */
     }
 
 #else
-    #error "Unknown board for KSystemControl"
+
+    #error "Unknown Debug device!"
+
 #endif
+
+}

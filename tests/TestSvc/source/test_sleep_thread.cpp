@@ -15,24 +15,23 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::init {
+#define CATCH_CONFIG_NOSTDOUT
+#define CATCH_CONFIG_PREFIX_ALL
+#define CATCH_CONFIG_DISABLE_EXCEPTIONS
+#define CATCH_CONFIG_NO_POSIX_SIGNALS
+#include "catch.hpp"
 
-    WEAK_SYMBOL void InitializeSystemModuleBeforeConstructors() {
-        /* This should only be used in exceptional circumstances. */
-    }
+namespace ams::test {
 
-    WEAK_SYMBOL void InitializeSystemModule() {
-        /* TODO: What should we do here, if anything? */
-        /* Nintendo does nndiagStartup(); nn::diag::InitializeSystemProcessAbortObserver(); */
-    }
+    CATCH_TEST_CASE( "svc::SleepThread: Thread sleeps for time specified" ) {
+        for (s64 ns = 1; ns < TimeSpan::FromSeconds(1).GetNanoSeconds(); ns *= 2) {
+            const auto start = os::GetSystemTickOrdered();
+            svc::SleepThread(ns);
+            const auto end   = os::GetSystemTickOrdered();
 
-    WEAK_SYMBOL void FinalizeSystemModule() {
-        /* Do nothing by default. */
-    }
-
-    WEAK_SYMBOL void Startup() {
-        /* TODO: What should we do here, if anything? */
-        /* Nintendo determines heap size and does init::InitializeAllocator, as relevant. */
+            const s64 taken_ns = (end - start).ToTimeSpan().GetNanoSeconds();
+            CATCH_REQUIRE( taken_ns >= ns );
+        }
     }
 
 }

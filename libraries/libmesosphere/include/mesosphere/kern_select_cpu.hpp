@@ -39,6 +39,16 @@
 
     }
 
+#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+
+    #include <mesosphere/board/qemu/virt/kern_cpu_map.hpp>
+
+    namespace ams::kern::cpu {
+
+        using namespace ams::kern::board::qemu::virt::impl::cpu;
+
+    }
+
 #else
     #error "Unknown board for CPU Map"
 #endif

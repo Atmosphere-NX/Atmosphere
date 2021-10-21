@@ -25,7 +25,23 @@ namespace ams::kern::board::nintendo::nx::smc {
         };
 
         enum UserFunctionId : u32 {
-            UserFunctionId_SetConfig = 0xC3000401,
+            UserFunctionId_SetConfig                       = 0xC3000401,
+            UserFunctionId_GetConfigUser                   = 0xC3000002,
+            UserFunctionId_GetResult                       = 0xC3000003,
+            UserFunctionId_GetResultData                   = 0xC3000404,
+            UserFunctionId_ModularExponentiate             = 0xC3000E05,
+            UserFunctionId_GenerateRandomBytes             = 0xC3000006,
+            UserFunctionId_GenerateAesKek                  = 0xC3000007,
+            UserFunctionId_LoadAesKey                      = 0xC3000008,
+            UserFunctionId_ComputeAes                      = 0xC3000009,
+            UserFunctionId_GenerateSpecificAesKey          = 0xC300000A,
+            UserFunctionId_ComputeCmac                     = 0xC300040B,
+            UserFunctionId_ReencryptDeviceUniqueData       = 0xC300D60C,
+            UserFunctionId_DecryptDeviceUniqueData         = 0xC300100D,
+            UserFunctionId_ModularExponentiateByStorageKey = 0xC300060F,
+            UserFunctionId_PrepareEsDeviceUniqueKey        = 0xC3000610,
+            UserFunctionId_LoadPreparedAesKey              = 0xC3000011,
+            UserFunctionId_PrepareEsCommonTitleKey         = 0xC3000012,
         };
 
         enum FunctionId : u32 {

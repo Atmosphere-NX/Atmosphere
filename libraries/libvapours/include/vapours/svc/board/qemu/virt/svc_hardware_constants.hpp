@@ -2,7 +2,7 @@
  * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
+ * under the terms and conditions of the GNU General Public License
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -14,22 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <mesosphere/kern_common.hpp>
+#include <vapours/svc/svc_types_common.hpp>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    #include <mesosphere/board/nintendo/nx/kern_k_system_control.hpp>
+namespace ams::svc::board::qemu::virt {
 
-    namespace ams::kern {
-        using ams::kern::board::nintendo::nx::KSystemControl;
-    }
+    constexpr inline const s64 TicksPerSecond = 19'200'000;
 
-#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
-    #include <mesosphere/board/qemu/virt/kern_k_system_control.hpp>
-
-    namespace ams::kern {
-        using ams::kern::board::qemu::virt::KSystemControl;
-    }
-
-#else
-    #error "Unknown board for KSystemControl"
-#endif
+}
