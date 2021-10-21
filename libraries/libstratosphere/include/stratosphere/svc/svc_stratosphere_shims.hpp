@@ -26,6 +26,11 @@
                     return ::svcSetHeapSize(reinterpret_cast<void **>(out_address), size);
                 }
 
+                ALWAYS_INLINE Result SetHeapSize(uintptr_t *out_address, ::ams::svc::Size size) {
+                    static_assert(sizeof(::ams::svc::Address) == sizeof(uintptr_t));
+                    return ::svcSetHeapSize(reinterpret_cast<void **>(out_address), size);
+                }
+
                 ALWAYS_INLINE Result SetMemoryPermission(::ams::svc::Address address, ::ams::svc::Size size, ::ams::svc::MemoryPermission perm) {
                     return ::svcSetMemoryPermission(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), size, static_cast<u32>(perm));
                 }

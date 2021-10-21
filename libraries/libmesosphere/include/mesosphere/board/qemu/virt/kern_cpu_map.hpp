@@ -16,20 +16,18 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    #include <mesosphere/board/nintendo/nx/kern_k_system_control.hpp>
+namespace ams::kern::board::qemu::virt::impl::cpu {
 
-    namespace ams::kern {
-        using ams::kern::board::nintendo::nx::KSystemControl;
-    }
+    /* Virtual to Physical core map. */
+    constexpr inline const s32 VirtualToPhysicalCoreMap[BITSIZEOF(u64)] = {
+        0, 1, 2, 3, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 3,
+    };
 
-#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
-    #include <mesosphere/board/qemu/virt/kern_k_system_control.hpp>
-
-    namespace ams::kern {
-        using ams::kern::board::qemu::virt::KSystemControl;
-    }
-
-#else
-    #error "Unknown board for KSystemControl"
-#endif
+}

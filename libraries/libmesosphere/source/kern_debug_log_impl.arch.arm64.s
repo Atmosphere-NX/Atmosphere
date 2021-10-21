@@ -13,23 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <mesosphere/kern_common.hpp>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-    #include <mesosphere/board/nintendo/nx/kern_k_system_control.hpp>
+/* ams::kern::KDebugLogImpl::PutStringBySemihosting(const char *str) */
+.section    .text._ZN3ams4kern13KDebugLogImpl22PutStringBySemihostingEPKc, "ax", %progbits
+.global     _ZN3ams4kern13KDebugLogImpl22PutStringBySemihostingEPKc
+.type       _ZN3ams4kern13KDebugLogImpl22PutStringBySemihostingEPKc, %function
+.balign 0x10
+_ZN3ams4kern13KDebugLogImpl22PutStringBySemihostingEPKc:
+    mov x1, x0
+    mov x0, #0x4
+    hlt #0xF000
+    ret
 
-    namespace ams::kern {
-        using ams::kern::board::nintendo::nx::KSystemControl;
-    }
-
-#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
-    #include <mesosphere/board/qemu/virt/kern_k_system_control.hpp>
-
-    namespace ams::kern {
-        using ams::kern::board::qemu::virt::KSystemControl;
-    }
-
-#else
-    #error "Unknown board for KSystemControl"
-#endif

@@ -44,13 +44,13 @@ namespace ams::kern::board::generic {
                 return ams::kern::svc::ResultNotImplemented();
             }
 
-            Result ALWAYS_INLINE Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
-                MESOSPHERE_UNUSED(out_mapped_size, pg, device_address, device_perm, refresh_mappings);
+            Result ALWAYS_INLINE Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
+                MESOSPHERE_UNUSED(page_table, process_address, size, device_address, device_perm, is_aligned);
                 return ams::kern::svc::ResultNotImplemented();
             }
 
-            Result ALWAYS_INLINE Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) {
-                MESOSPHERE_UNUSED(pg, device_address);
+            Result ALWAYS_INLINE Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address) {
+                MESOSPHERE_UNUSED(page_table, process_address, size, device_address);
                 return ams::kern::svc::ResultNotImplemented();
             }
 

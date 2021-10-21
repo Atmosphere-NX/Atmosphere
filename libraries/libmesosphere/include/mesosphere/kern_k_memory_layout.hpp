@@ -20,6 +20,8 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     #include <mesosphere/board/nintendo/nx/kern_k_memory_layout.hpp>
+#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+    #include <mesosphere/board/qemu/virt/kern_k_memory_layout.hpp>
 #else
     #error "Unknown board for KMemoryLayout"
 #endif
