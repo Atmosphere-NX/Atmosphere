@@ -14,12 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-
-#define CATCH_CONFIG_NOSTDOUT
-#define CATCH_CONFIG_PREFIX_ALL
-#define CATCH_CONFIG_DISABLE_EXCEPTIONS
-#define CATCH_CONFIG_NO_POSIX_SIGNALS
-#include "catch.hpp"
+#include "util_catch.hpp"
+#include "util_check_memory.hpp"
 
 namespace ams::test {
 
@@ -70,7 +66,9 @@ namespace ams::test {
         ON_SCOPE_EXIT { CATCH_REQUIRE(initial_memory == GetPhysicalMemorySizeAvailable()); };
 
         CATCH_SECTION("Unaligned and too big sizes fail") {
-            CATCH_REQUIRE(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), 5)));
+            for (size_t i = 1; i < svc::HeapSizeAlignment; i = util::AlignUp(i + 1, os::MemoryPageSize)){
+                CATCH_REQUIRE(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), i)));
+            }
             CATCH_REQUIRE(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), 64_GB)));
         }
 
@@ -85,12 +83,7 @@ namespace ams::test {
 
         CATCH_SECTION("SetHeapSize gives heap memory") {
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
-
-            CATCH_REQUIRE(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
-            CATCH_REQUIRE(mem_info.base_address == addr);
-            CATCH_REQUIRE(mem_info.size         == svc::HeapSizeAlignment);
-            CATCH_REQUIRE(mem_info.permission   == svc::MemoryPermission_ReadWrite);
-            CATCH_REQUIRE(mem_info.state        == svc::MemoryState_Normal);
+            TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
         }
@@ -99,28 +92,15 @@ namespace ams::test {
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
 
             CATCH_REQUIRE(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
-            CATCH_REQUIRE(mem_info.base_address == addr);
-            CATCH_REQUIRE(mem_info.size         == svc::HeapSizeAlignment);
-            CATCH_REQUIRE(mem_info.permission   == svc::MemoryPermission_ReadWrite);
-            CATCH_REQUIRE(mem_info.state        == svc::MemoryState_Normal);
+            TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_Read)));
-
-            CATCH_REQUIRE(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
-            CATCH_REQUIRE(mem_info.base_address == addr);
-            CATCH_REQUIRE(mem_info.size         == svc::HeapSizeAlignment);
-            CATCH_REQUIRE(mem_info.permission   == svc::MemoryPermission_Read);
-            CATCH_REQUIRE(mem_info.state        == svc::MemoryState_Normal);
+            TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_Read, 0);
 
             CATCH_REQUIRE(svc::ResultInvalidCurrentMemory::Includes(svc::SetHeapSize(std::addressof(dummy), 0)));
 
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_ReadWrite)));
-
-            CATCH_REQUIRE(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
-            CATCH_REQUIRE(mem_info.base_address == addr);
-            CATCH_REQUIRE(mem_info.size         == svc::HeapSizeAlignment);
-            CATCH_REQUIRE(mem_info.permission   == svc::MemoryPermission_ReadWrite);
-            CATCH_REQUIRE(mem_info.state        == svc::MemoryState_Normal);
+            TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
             CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
         }
