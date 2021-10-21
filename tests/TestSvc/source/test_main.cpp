@@ -15,12 +15,8 @@
  */
 #include <stratosphere.hpp>
 
-#define CATCH_CONFIG_NOSTDOUT
 #define CATCH_CONFIG_RUNNER
-#define CATCH_CONFIG_PREFIX_ALL
-#define CATCH_CONFIG_DISABLE_EXCEPTIONS
-#define CATCH_CONFIG_NO_POSIX_SIGNALS
-#include "catch.hpp"
+#include "util_catch.hpp"
 
 namespace ams {
 
