@@ -48,6 +48,7 @@ namespace ams::hos {
 
     }
 
+    bool IsUnitTestProgramForSetVersion();
     void InitializeVersionInternal(bool allow_approximate);
 
     void InitializeForStratosphere() {
@@ -58,7 +59,7 @@ namespace ams::hos {
         hos::InitializeVersionInternal(CanAllowTemporaryApproximateVersion());
 
         /* Check that we're running under mesosphere. */
-        AMS_ABORT_UNLESS(svc::IsKernelMesosphere());
+        AMS_ABORT_UNLESS(IsUnitTestProgramForSetVersion() || svc::IsKernelMesosphere());
     }
 
 }

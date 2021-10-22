@@ -27,6 +27,12 @@ namespace ams {
 
     }
 
+    namespace hos {
+
+        bool IsUnitTestProgramForSetVersion() { return true; }
+
+    }
+
     namespace init {
 
         void InitializeSystemModuleBeforeConstructors() {
