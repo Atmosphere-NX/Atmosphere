@@ -61,7 +61,16 @@ namespace ams::hos {
 
     }
 
+    bool IsUnitTestProgramForSetVersion();
+
     void InitializeVersionInternal(bool allow_approximate) {
+        /* If we're unit testing, just set the version and move on. */
+        if (IsUnitTestProgramForSetVersion()) {
+            g_hos_version     = hos::Version_Current;
+            g_set_hos_version = true;
+            return;
+        }
+
         /* Get the current (and previous approximation of) target firmware. */
         hos::Version prev, current;
         bool has_prev = false;
