@@ -82,7 +82,11 @@ namespace ams::kern {
                 DEFINE_FIELD(Index, Mask,    3);
             };
 
+            #if defined(MESOSPHERE_ENABLE_LARGE_PHYSICAL_ADDRESS_CAPABILITIES)
+            static constexpr u64 PhysicalMapAllowedMask = (1ul << 40) - 1;
+            #else
             static constexpr u64 PhysicalMapAllowedMask = (1ul << 36) - 1;
+            #endif
 
             struct MapRange {
                 using IdBits = Field<0, CapabilityId<CapabilityType::MapRange> + 1>;
@@ -94,9 +98,15 @@ namespace ams::kern {
             struct MapRangeSize {
                 using IdBits = Field<0, CapabilityId<CapabilityType::MapRange> + 1>;
 
-                DEFINE_FIELD(Pages,    IdBits,   20);
+                DEFINE_FIELD(Pages, IdBits, 20);
+
+                #if defined(MESOSPHERE_ENABLE_LARGE_PHYSICAL_ADDRESS_CAPABILITIES)
+                DEFINE_FIELD(AddressHigh, Pages,        4);
+                DEFINE_FIELD(Normal,      AddressHigh,  1, bool);
+                #else
                 DEFINE_FIELD(Reserved, Pages,     4);
                 DEFINE_FIELD(Normal,   Reserved,  1, bool);
+                #endif
             };
 
             struct MapIoPage {
