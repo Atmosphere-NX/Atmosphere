@@ -117,11 +117,15 @@ namespace ams::kern {
     }
 
     Result KCapabilities::MapRange(const util::BitPack32 cap, const util::BitPack32 size_cap, KProcessPageTable *page_table) {
+        /* Get/validate address/size */
+        #if defined(MESOSPHERE_ENABLE_LARGE_PHYSICAL_ADDRESS_CAPABILITIES)
+        const u64 phys_addr    = static_cast<u64>(cap.Get<MapRange::Address>() | (size_cap.Get<MapRangeSize::AddressHigh>() << MapRange::Address::Count)) * PageSize;
+        #else
+        const u64 phys_addr    = static_cast<u64>(cap.Get<MapRange::Address>()) * PageSize;
+
         /* Validate reserved bits are unused. */
         R_UNLESS(size_cap.Get<MapRangeSize::Reserved>() == 0, svc::ResultOutOfRange());
-
-        /* Get/validate address/size */
-        const u64 phys_addr    = cap.Get<MapRange::Address>() * PageSize;
+        #endif
         const size_t num_pages = size_cap.Get<MapRangeSize::Pages>();
         const size_t size      = num_pages * PageSize;
         R_UNLESS(phys_addr == GetInteger(KPhysicalAddress(phys_addr)),    svc::ResultInvalidAddress());
