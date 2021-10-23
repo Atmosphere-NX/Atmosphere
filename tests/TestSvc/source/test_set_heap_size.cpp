@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "util_catch.hpp"
+#include "util_common.hpp"
 #include "util_check_memory.hpp"
 
 namespace ams::test {

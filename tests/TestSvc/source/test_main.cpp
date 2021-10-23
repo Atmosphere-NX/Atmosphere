@@ -54,6 +54,13 @@ namespace ams {
     }
 
     void Main() {
+        /* Ensure our thread priority and core mask is correct. */
+        {
+            auto * const cur_thread = os::GetCurrentThread();
+            os::SetThreadCoreMask(cur_thread, 3, (1ul << 3));
+            os::ChangeThreadPriority(cur_thread, 0);
+        }
+
         /* Run tests. */
         Catch::Session().run(os::GetHostArgc(), os::GetHostArgv());
 

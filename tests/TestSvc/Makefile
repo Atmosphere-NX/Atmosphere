@@ -86,11 +86,20 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).kip
+all	:	$(OUTPUT).kip $(OUTPUT).nsp
+
+$(OUTPUT).nsp	:	$(OUTPUT).nso $(OUTPUT).npdm
+
+$(OUTPUT).nso	:	$(OUTPUT).elf
 
 $(OUTPUT).kip	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
+
+$(OUTPUT).npdm  :   $(OUTPUT).npdm.json
+	@echo built ... $< $@
+	@npdmtool $< $@
+	@echo built ... $(notdir $@)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
