@@ -487,7 +487,7 @@ namespace ams::kern::board::nintendo::nx {
         {
             /* Construct the resource limit object. */
             KResourceLimit &sys_res_limit = Kernel::GetSystemResourceLimit();
-            KAutoObject::Create(std::addressof(sys_res_limit));
+            KAutoObject::Create<KResourceLimit>(std::addressof(sys_res_limit));
             sys_res_limit.Initialize();
 
             /* Set the initial limits. */

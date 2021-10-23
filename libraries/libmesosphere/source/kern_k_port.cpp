@@ -22,8 +22,8 @@ namespace ams::kern {
         this->Open();
 
         /* Create and initialize our server/client pair. */
-        KAutoObject::Create(std::addressof(m_server));
-        KAutoObject::Create(std::addressof(m_client));
+        KAutoObject::Create<KServerPort>(std::addressof(m_server));
+        KAutoObject::Create<KClientPort>(std::addressof(m_client));
         m_server.Initialize(this);
         m_client.Initialize(this, max_sessions);
 

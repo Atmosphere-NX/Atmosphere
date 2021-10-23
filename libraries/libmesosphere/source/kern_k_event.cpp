@@ -21,7 +21,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Create our readable event. */
-        KAutoObject::Create(std::addressof(m_readable_event));
+        KAutoObject::Create<KReadableEvent>(std::addressof(m_readable_event));
 
         /* Initialize our readable event. */
         m_readable_event.Initialize(this);

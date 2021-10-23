@@ -118,7 +118,7 @@ namespace ams::kern {
             static Derived *Create() {
                 Derived *obj = Allocate();
                 if (AMS_LIKELY(obj != nullptr)) {
-                    KAutoObject::Create(obj);
+                    KAutoObject::Create<Derived>(obj);
                 }
                 return obj;
             }
@@ -130,7 +130,7 @@ namespace ams::kern {
                 Derived * const obj = GetPointer<Derived>(AllocateUnusedSlabMemory(sizeof(Derived), alignof(Derived)));
                 if (AMS_LIKELY(obj != nullptr)) {
                     std::construct_at(obj);
-                    KAutoObject::Create(obj);
+                    KAutoObject::Create<Derived>(obj);
                 }
                 return obj;
             }

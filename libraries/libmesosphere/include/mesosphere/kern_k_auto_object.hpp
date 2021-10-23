@@ -22,13 +22,19 @@ namespace ams::kern {
 
     class KProcess;
 
+    #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING) || defined(MESOSPHERE_BUILD_FOR_AUDITING)
+    #define MESOSPHERE_AUTO_OBJECT_TYPENAME_IMPL(CLASS) #CLASS
+    #else
+    #define MESOSPHERE_AUTO_OBJECT_TYPENAME_IMPL(CLASS) ""
+    #endif
+
     #define MESOSPHERE_AUTOOBJECT_TRAITS(CLASS, BASE_CLASS)                                                     \
         NON_COPYABLE(CLASS);                                                                                    \
         NON_MOVEABLE(CLASS);                                                                                    \
         private:                                                                                                \
             friend class ::ams::kern::KClassTokenGenerator;                                                     \
             static constexpr inline auto ObjectType = ::ams::kern::KClassTokenGenerator::ObjectType::CLASS;     \
-            static constexpr inline const char * const TypeName = #CLASS;                                       \
+            static constexpr inline const char * const TypeName = MESOSPHERE_AUTO_OBJECT_TYPENAME_IMPL(CLASS);  \
             static constexpr inline ClassTokenType ClassToken() { return ::ams::kern::ClassToken<CLASS>; }      \
         public:                                                                                                 \
             using BaseClass = BASE_CLASS;                                                                       \
@@ -119,8 +125,6 @@ namespace ams::kern {
             ClassTokenType m_class_token;
             #endif
         public:
-            static KAutoObject *Create(KAutoObject *ptr);
-        public:
             constexpr ALWAYS_INLINE explicit KAutoObject(util::ConstantInitializeTag) : m_next_closed_object(nullptr), m_ref_count(0)
             #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
                 , m_class_token(0)
@@ -204,6 +208,23 @@ namespace ams::kern {
         public:
             /* Getter, for KThread. */
             ALWAYS_INLINE KAutoObject *GetNextClosedObject() { return m_next_closed_object; }
+        public:
+            template<typename Derived> requires (std::derived_from<Derived, KAutoObject>)
+            static ALWAYS_INLINE void Create(typename std::type_identity<Derived>::type *obj) {
+                /* Get auto object pointer. */
+                KAutoObject &auto_object = *static_cast<KAutoObject *>(obj);
+
+                /* If we should, set our class token. */
+                #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
+                {
+                    constexpr auto Token = Derived::GetStaticTypeObj().GetClassToken();
+                    auto_object.m_class_token = Token;
+                }
+                #endif
+
+                /* Initialize reference count to 1. */
+                auto_object.m_ref_count = 1;
+            }
     };
 
     class KAutoObjectWithListContainer;

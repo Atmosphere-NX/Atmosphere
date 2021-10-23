@@ -137,7 +137,7 @@ namespace ams::kern {
             static KSessionRequest *Create() {
                 KSessionRequest *req = KSessionRequest::Allocate();
                 if (AMS_LIKELY(req != nullptr)) {
-                    KAutoObject::Create(req);
+                    KAutoObject::Create<KSessionRequest>(req);
                 }
                 return req;
             }
@@ -145,7 +145,7 @@ namespace ams::kern {
             static KSessionRequest *CreateFromUnusedSlabMemory() {
                 KSessionRequest *req = KSessionRequest::AllocateFromUnusedSlabMemory();
                 if (AMS_LIKELY(req != nullptr)) {
-                    KAutoObject::Create(req);
+                    KAutoObject::Create<KSessionRequest>(req);
                 }
                 return req;
             }

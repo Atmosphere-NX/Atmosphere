@@ -50,8 +50,8 @@ namespace ams::kern {
         void    *main_thread_stack = GetVoidPointer(KMemoryLayout::GetMainStackTopAddress(core_id));
         KThread *idle_thread       = std::addressof(Kernel::GetIdleThread(core_id));
         void    *idle_thread_stack = GetVoidPointer(KMemoryLayout::GetIdleStackTopAddress(core_id));
-        KAutoObject::Create(main_thread);
-        KAutoObject::Create(idle_thread);
+        KAutoObject::Create<KThread>(main_thread);
+        KAutoObject::Create<KThread>(idle_thread);
         main_thread->Initialize(nullptr, 0, main_thread_stack, 0, KThread::MainThreadPriority, core_id, nullptr, KThread::ThreadType_Main);
         idle_thread->Initialize(nullptr, 0, idle_thread_stack, 0, KThread::IdleThreadPriority, core_id, nullptr, KThread::ThreadType_Main);
 
