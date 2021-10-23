@@ -25,7 +25,7 @@ namespace ams::kern {
         private:
             util::Atomic<uintptr_t> m_tag;
         public:
-            constexpr KLightLock() : m_tag(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KLightLock() : m_tag(0) { /* ... */ }
 
             void Lock() {
                 MESOSPHERE_ASSERT_THIS();

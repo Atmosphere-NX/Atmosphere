@@ -32,7 +32,7 @@ namespace ams::kern {
             u64 m_server_thread_id;
             KThread *m_server_thread;
         public:
-            constexpr KLightServerSession() : m_parent(), m_request_list(), m_current_request(), m_server_thread_id(), m_server_thread() { /* ... */ }
+            explicit KLightServerSession() : m_current_request(nullptr), m_server_thread_id(std::numeric_limits<u64>::max()), m_server_thread() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */

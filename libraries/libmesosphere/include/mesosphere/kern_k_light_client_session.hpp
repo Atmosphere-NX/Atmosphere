@@ -26,7 +26,7 @@ namespace ams::kern {
         private:
             KLightSession *m_parent;
         public:
-            constexpr KLightClientSession() : m_parent() { /* ... */ }
+            explicit KLightClientSession() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */

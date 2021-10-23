@@ -26,7 +26,7 @@ namespace ams::os::impl {
         private:
             void Initialize();
         public:
-            constexpr RngManager() : m_mt(), m_lock(), m_initialized() { /* ... */ }
+            RngManager() : m_mt(), m_lock(), m_initialized() { /* ... */ }
         public:
             u64 GenerateRandomU64();
     };

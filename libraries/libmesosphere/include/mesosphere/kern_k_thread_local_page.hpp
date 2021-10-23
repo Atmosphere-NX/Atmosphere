@@ -33,13 +33,13 @@ namespace ams::kern {
             KProcess *m_owner;
             bool m_is_region_free[RegionsPerPage];
         public:
-            constexpr explicit KThreadLocalPage(KProcessAddress addr) : m_virt_addr(addr), m_owner(nullptr), m_is_region_free() {
-                for (size_t i = 0; i < RegionsPerPage; i++) {
+            explicit KThreadLocalPage(KProcessAddress addr) : m_virt_addr(addr), m_owner(nullptr) {
+                for (size_t i = 0; i < util::size(m_is_region_free); i++) {
                     m_is_region_free[i] = true;
                 }
             }
 
-            constexpr explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
+            explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
 
             constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return m_virt_addr; }
 

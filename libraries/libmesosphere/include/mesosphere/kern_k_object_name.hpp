@@ -30,8 +30,6 @@ namespace ams::kern {
             char m_name[NameLengthMax];
             KAutoObject *m_object;
         public:
-            constexpr KObjectName() : m_name(), m_object() { /* ... */ }
-        public:
             static Result NewFromName(KAutoObject *obj, const char *name);
             static Result Delete(KAutoObject *obj, const char *name);
 

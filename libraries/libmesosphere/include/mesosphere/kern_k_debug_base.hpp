@@ -33,7 +33,7 @@ namespace ams::kern {
             KProcess::State m_old_process_state;
             bool m_is_attached;
         public:
-            explicit KDebugBase() : m_event_info_list(), m_process_holder(), m_lock() { /* ... */ }
+            explicit KDebugBase() { /* ... */ }
         protected:
             bool Is64Bit() const;
         public:

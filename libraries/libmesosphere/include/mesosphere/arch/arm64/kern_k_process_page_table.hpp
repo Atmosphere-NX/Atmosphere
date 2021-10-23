@@ -23,8 +23,6 @@ namespace ams::kern::arch::arm64 {
         private:
             KPageTable m_page_table;
         public:
-            constexpr KProcessPageTable() : m_page_table() { /* ... */ }
-
             void Activate(u64 id) {
                 /* Activate the page table with the specified contextidr. */
                 m_page_table.Activate(id);

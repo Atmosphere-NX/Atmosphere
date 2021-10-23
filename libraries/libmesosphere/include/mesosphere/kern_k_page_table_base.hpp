@@ -144,45 +144,60 @@ namespace ams::kern {
                     PageLinkedList *GetPageList() { return std::addressof(m_ll); }
             };
         private:
-            KProcessAddress m_address_space_start{};
-            KProcessAddress m_address_space_end{};
-            KProcessAddress m_heap_region_start{};
-            KProcessAddress m_heap_region_end{};
-            KProcessAddress m_current_heap_end{};
-            KProcessAddress m_alias_region_start{};
-            KProcessAddress m_alias_region_end{};
-            KProcessAddress m_stack_region_start{};
-            KProcessAddress m_stack_region_end{};
-            KProcessAddress m_kernel_map_region_start{};
-            KProcessAddress m_kernel_map_region_end{};
-            KProcessAddress m_alias_code_region_start{};
-            KProcessAddress m_alias_code_region_end{};
-            KProcessAddress m_code_region_start{};
-            KProcessAddress m_code_region_end{};
-            size_t m_max_heap_size{};
-            size_t m_mapped_physical_memory_size{};
-            size_t m_mapped_unsafe_physical_memory{};
-            size_t m_mapped_ipc_server_memory{};
-            mutable KLightLock m_general_lock{};
-            mutable KLightLock m_map_physical_memory_lock{};
-            KLightLock m_device_map_lock{};
-            KPageTableImpl m_impl{};
-            KMemoryBlockManager m_memory_block_manager{};
-            u32 m_allocate_option{};
-            u32 m_address_space_width{};
-            bool m_is_kernel{};
-            bool m_enable_aslr{};
-            bool m_enable_device_address_space_merge{};
-            KMemoryBlockSlabManager *m_memory_block_slab_manager{};
-            KBlockInfoManager *m_block_info_manager{};
-            KResourceLimit *m_resource_limit{};
-            const KMemoryRegion *m_cached_physical_linear_region{};
-            const KMemoryRegion *m_cached_physical_heap_region{};
-            MemoryFillValue m_heap_fill_value{};
-            MemoryFillValue m_ipc_fill_value{};
-            MemoryFillValue m_stack_fill_value{};
+            KProcessAddress m_address_space_start;
+            KProcessAddress m_address_space_end;
+            KProcessAddress m_heap_region_start;
+            KProcessAddress m_heap_region_end;
+            KProcessAddress m_current_heap_end;
+            KProcessAddress m_alias_region_start;
+            KProcessAddress m_alias_region_end;
+            KProcessAddress m_stack_region_start;
+            KProcessAddress m_stack_region_end;
+            KProcessAddress m_kernel_map_region_start;
+            KProcessAddress m_kernel_map_region_end;
+            KProcessAddress m_alias_code_region_start;
+            KProcessAddress m_alias_code_region_end;
+            KProcessAddress m_code_region_start;
+            KProcessAddress m_code_region_end;
+            size_t m_max_heap_size;
+            size_t m_mapped_physical_memory_size;
+            size_t m_mapped_unsafe_physical_memory;
+            size_t m_mapped_ipc_server_memory;
+            mutable KLightLock m_general_lock;
+            mutable KLightLock m_map_physical_memory_lock;
+            KLightLock m_device_map_lock;
+            KPageTableImpl m_impl;
+            KMemoryBlockManager m_memory_block_manager;
+            u32 m_allocate_option;
+            u32 m_address_space_width;
+            bool m_is_kernel;
+            bool m_enable_aslr;
+            bool m_enable_device_address_space_merge;
+            KMemoryBlockSlabManager *m_memory_block_slab_manager;
+            KBlockInfoManager *m_block_info_manager;
+            KResourceLimit *m_resource_limit;
+            const KMemoryRegion *m_cached_physical_linear_region;
+            const KMemoryRegion *m_cached_physical_heap_region;
+            MemoryFillValue m_heap_fill_value;
+            MemoryFillValue m_ipc_fill_value;
+            MemoryFillValue m_stack_fill_value;
         public:
-            constexpr KPageTableBase() { /* ... */ }
+            constexpr explicit KPageTableBase(util::ConstantInitializeTag)
+                : m_address_space_start(Null<KProcessAddress>), m_address_space_end(Null<KProcessAddress>), m_heap_region_start(Null<KProcessAddress>),
+                  m_heap_region_end(Null<KProcessAddress>), m_current_heap_end(Null<KProcessAddress>), m_alias_region_start(Null<KProcessAddress>),
+                  m_alias_region_end(Null<KProcessAddress>), m_stack_region_start(Null<KProcessAddress>), m_stack_region_end(Null<KProcessAddress>),
+                  m_kernel_map_region_start(Null<KProcessAddress>), m_kernel_map_region_end(Null<KProcessAddress>), m_alias_code_region_start(Null<KProcessAddress>),
+                  m_alias_code_region_end(Null<KProcessAddress>), m_code_region_start(Null<KProcessAddress>), m_code_region_end(Null<KProcessAddress>),
+                  m_max_heap_size(), m_mapped_physical_memory_size(), m_mapped_unsafe_physical_memory(), m_mapped_ipc_server_memory(), m_general_lock(),
+                  m_map_physical_memory_lock(), m_device_map_lock(), m_impl(util::ConstantInitialize), m_memory_block_manager(util::ConstantInitialize),
+                  m_allocate_option(), m_address_space_width(), m_is_kernel(), m_enable_aslr(), m_enable_device_address_space_merge(),
+                  m_memory_block_slab_manager(), m_block_info_manager(), m_resource_limit(), m_cached_physical_linear_region(), m_cached_physical_heap_region(),
+                  m_heap_fill_value(), m_ipc_fill_value(), m_stack_fill_value()
+            {
+                /* ... */
+            }
+
+            explicit KPageTableBase() { /* ... */ }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
             NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit);

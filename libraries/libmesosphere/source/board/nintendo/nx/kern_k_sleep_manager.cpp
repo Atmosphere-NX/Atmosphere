@@ -66,7 +66,7 @@ namespace ams::kern::board::nintendo::nx {
         constinit u64 g_sleep_target_cores;
         constinit KLightLock g_request_lock;
         constinit KLightLock g_cv_lock;
-        constinit KLightConditionVariable g_cv;
+        constinit KLightConditionVariable g_cv{util::ConstantInitialize};
         constinit KPhysicalAddress g_sleep_buffer_phys_addrs[cpu::NumCores];
         alignas(1_KB) constinit u64 g_sleep_buffers[cpu::NumCores][1_KB / sizeof(u64)];
         constinit SavedSystemRegisters g_sleep_system_registers[cpu::NumCores] = {};

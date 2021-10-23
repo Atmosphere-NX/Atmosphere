@@ -23,4 +23,7 @@ namespace ams::util {
     template<typename T>
     using is_pod = std::bool_constant<std::is_standard_layout<T>::value && std::is_trivial<T>::value>;
 
+    struct ConstantInitializeTag final {};
+    constexpr inline const ConstantInitializeTag ConstantInitialize{};
+
 }

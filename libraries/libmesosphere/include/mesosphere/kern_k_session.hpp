@@ -51,11 +51,15 @@ namespace ams::kern {
                 return static_cast<State>(m_atomic_state.Load());
             }
         public:
-            constexpr KSession()
-                : m_atomic_state(static_cast<std::underlying_type<State>::type>(State::Invalid)), m_initialized(), m_server(), m_client(),  m_port(), m_name(), m_process()
+            constexpr explicit KSession(util::ConstantInitializeTag)
+                : KAutoObjectWithSlabHeapAndContainer<KSession, KAutoObjectWithList, true>(util::ConstantInitialize),
+                  m_atomic_state(static_cast<std::underlying_type<State>::type>(State::Invalid)), m_initialized(),
+                  m_server(util::ConstantInitialize), m_client(util::ConstantInitialize),  m_port(), m_name(), m_process()
             {
                 /* ... */
             }
+
+            explicit KSession() : m_atomic_state(util::ToUnderlying(State::Invalid)), m_initialized(false), m_process(nullptr) { /* ... */ }
 
             void Initialize(KClientPort *client_port, uintptr_t name);
             virtual void Finalize() override;

@@ -195,9 +195,11 @@ namespace ams::kern::KDumpObject {
                     char name[9] = {};
                     {
                         /* Find the client port process. */
-                        KScopedAutoObject<KProcess> client_port_process;
+                        KProcess *client_port_process = nullptr;
+                        ON_SCOPE_EXIT { if (client_port_process != nullptr) { client_port_process->Close(); } };
+
                         {
-                            for (auto it = accessor.begin(); it != end && client_port_process.IsNull(); ++it) {
+                            for (auto it = accessor.begin(); it != end && client_port_process == nullptr; ++it) {
                                 KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
                                 for (size_t j = 0; j < cur->GetHandleTable().GetTableSize(); ++j) {
                                     ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
@@ -205,6 +207,7 @@ namespace ams::kern::KDumpObject {
                                     if (cur_o.IsNotNull()) {
                                         if (cur_o.GetPointerUnsafe() == client) {
                                             client_port_process = cur;
+                                            client_port_process->Open();
                                             break;
                                         }
                                     }
@@ -213,7 +216,7 @@ namespace ams::kern::KDumpObject {
                         }
 
                         /* Read the port name. */
-                        if (client_port_process.IsNotNull()) {
+                        if (client_port_process != nullptr) {
                             if (R_FAILED(client_port_process->GetPageTable().CopyMemoryFromLinearToKernel(KProcessAddress(name), 8, port_name, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
                                 std::memset(name, 0, sizeof(name));
                             }

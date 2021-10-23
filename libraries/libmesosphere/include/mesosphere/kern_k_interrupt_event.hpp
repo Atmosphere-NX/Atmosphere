@@ -31,7 +31,9 @@ namespace ams::kern {
             s32 m_core_id;
             bool m_is_initialized;
         public:
-            constexpr KInterruptEvent() : m_interrupt_id(-1), m_core_id(-1), m_is_initialized(false) { /* ... */ }
+            constexpr explicit KInterruptEvent(util::ConstantInitializeTag) : KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>(util::ConstantInitialize), m_interrupt_id(-1), m_core_id(-1), m_is_initialized(false) { /* ... */ }
+
+            explicit KInterruptEvent() : m_interrupt_id(-1), m_is_initialized(false) { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
             virtual void Finalize() override;

@@ -26,7 +26,7 @@ namespace ams::kern {
             KSharedMemory *m_shared_memory;
             size_t m_reference_count;
         public:
-            constexpr KSharedMemoryInfo() : m_shared_memory(), m_reference_count() { /* ... */ }
+            explicit KSharedMemoryInfo() { /* ... */ }
             ~KSharedMemoryInfo() { /* ... */ }
 
             constexpr void Initialize(KSharedMemory *m) {

@@ -26,8 +26,8 @@ namespace ams::kern {
 
         /* Set our members. */
         m_heap_address = address;
-        m_heap_size = size;
-        m_num_blocks = num_block_shifts;
+        m_heap_size    = size;
+        m_num_blocks   = num_block_shifts;
 
         /* Setup bitmaps. */
         u64 *cur_bitmap_storage = GetPointer<u64>(management_address);

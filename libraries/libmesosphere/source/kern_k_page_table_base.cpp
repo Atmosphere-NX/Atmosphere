@@ -706,7 +706,7 @@ namespace ams::kern {
 
         /* Begin traversal. */
         TraversalContext context;
-        TraversalEntry   cur_entry  = {};
+        TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
         bool             cur_valid  = false;
         TraversalEntry   next_entry;
         bool             next_valid;
@@ -1400,7 +1400,7 @@ namespace ams::kern {
 
         /* Begin a traversal. */
         TraversalContext context;
-        TraversalEntry cur_entry = {};
+        TraversalEntry cur_entry = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
         R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address), svc::ResultInvalidCurrentMemory());
 
         /* The region we're traversing has to be heap. */
@@ -4423,7 +4423,7 @@ namespace ams::kern {
 
             /* Begin traversal. */
             TraversalContext context;
-            TraversalEntry   cur_entry  = {};
+            TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
             bool             cur_valid  = false;
             TraversalEntry   next_entry;
             bool             next_valid;

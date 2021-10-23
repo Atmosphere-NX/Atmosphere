@@ -33,7 +33,7 @@ namespace ams::kern {
         public:
             static bool IsValidIoPoolType(ams::svc::IoPoolType pool_type);
         public:
-            explicit KIoPool() : m_lock(), m_io_region_list(), m_is_initialized(false) {
+            explicit KIoPool() : m_is_initialized(false) {
                 /* ... */
             }
 

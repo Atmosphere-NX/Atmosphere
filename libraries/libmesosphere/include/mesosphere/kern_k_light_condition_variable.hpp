@@ -26,7 +26,9 @@ namespace ams::kern {
         private:
             KThread::WaiterList m_wait_list;
         public:
-            constexpr ALWAYS_INLINE KLightConditionVariable() : m_wait_list() { /* ... */ }
+            constexpr explicit ALWAYS_INLINE KLightConditionVariable(util::ConstantInitializeTag) : m_wait_list() { /* ... */ }
+
+            explicit ALWAYS_INLINE KLightConditionVariable() { /* ... */ }
         public:
             void Wait(KLightLock *lock, s64 timeout = -1ll, bool allow_terminating_thread = true);
             void Broadcast();

@@ -105,7 +105,9 @@ namespace ams::kern::arch::arm64 {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
         public:
-            constexpr KPageTableImpl() : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
+            constexpr explicit KPageTableImpl(util::ConstantInitializeTag) : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
+
+            explicit KPageTableImpl() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);

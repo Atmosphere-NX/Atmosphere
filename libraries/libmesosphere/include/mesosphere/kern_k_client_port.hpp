@@ -33,7 +33,9 @@ namespace ams::kern {
             s32 m_max_sessions;
             KPort *m_parent;
         public:
-            constexpr KClientPort() : m_num_sessions(0), m_peak_sessions(0), m_max_sessions(), m_parent() { /* ... */ }
+            constexpr explicit KClientPort(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_num_sessions(0), m_peak_sessions(0), m_max_sessions(), m_parent() { /* ... */ }
+
+            explicit KClientPort() { /* ... */ }
 
             void Initialize(KPort *parent, s32 max_sessions);
             void OnSessionFinalized();

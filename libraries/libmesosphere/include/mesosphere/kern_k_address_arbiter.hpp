@@ -25,7 +25,7 @@ namespace ams::kern {
         private:
             ThreadTree m_tree;
         public:
-            constexpr KAddressArbiter() : m_tree() { /* ... */ }
+            constexpr KAddressArbiter() = default;
 
             Result SignalToAddress(uintptr_t addr, ams::svc::SignalType type, s32 value, s32 count) {
                 switch (type) {

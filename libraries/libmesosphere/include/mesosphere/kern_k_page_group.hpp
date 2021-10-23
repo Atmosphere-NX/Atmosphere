@@ -28,11 +28,11 @@ namespace ams::kern {
         private:
             friend class KPageGroup;
         private:
-            KBlockInfo *m_next{};
-            u32 m_page_index{};
-            u32 m_num_pages{};
+            KBlockInfo *m_next;
+            u32 m_page_index;
+            u32 m_num_pages;
         public:
-            constexpr KBlockInfo() = default;
+            KBlockInfo() : m_next(nullptr) { /* ... */ }
 
             constexpr ALWAYS_INLINE void Initialize(KPhysicalAddress addr, size_t np) {
                 MESOSPHERE_ASSERT(util::IsAligned(GetInteger(addr), PageSize));

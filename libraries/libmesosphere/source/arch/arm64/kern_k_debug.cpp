@@ -283,9 +283,6 @@ namespace ams::kern::arch::arm64 {
             /* Check that the name is a valid instruction breakpoint. */
             R_UNLESS((name - ams::svc::HardwareBreakPointRegisterName_I0) <= num_bp, svc::ResultNotSupported());
 
-            /* We may be getting the process, so prepare a scoped reference holder. */
-            KScopedAutoObject<KProcess> process;
-
             /* Configure flags/value. */
             if ((flags & 1) != 0) {
                 /* We're enabling the breakpoint. Check that the flags are allowable. */

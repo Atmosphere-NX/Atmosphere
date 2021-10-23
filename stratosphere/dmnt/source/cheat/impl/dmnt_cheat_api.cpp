@@ -33,7 +33,7 @@ namespace ams::dmnt::cheat::impl {
                 u64 m_address;
                 FrozenAddressValue m_value;
             public:
-                constexpr FrozenAddressMapEntry(u64 address, FrozenAddressValue value) : m_address(address), m_value(value) { /* ... */ }
+                FrozenAddressMapEntry(u64 address, FrozenAddressValue value) : m_address(address), m_value(value) { /* ... */ }
 
                 constexpr u64 GetAddress() const { return m_address; }
 

@@ -68,7 +68,7 @@ namespace ams::kern {
                     Impl *m_next;
                     Impl *m_prev;
                 public:
-                    Impl() : m_heap(), m_page_reference_counts(), m_management_region(), m_pool(), m_next(), m_prev() { /* ... */ }
+                    Impl() : m_heap(), m_page_reference_counts(), m_management_region(Null<KVirtualAddress>), m_pool(), m_next(), m_prev() { /* ... */ }
 
                     size_t Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
 

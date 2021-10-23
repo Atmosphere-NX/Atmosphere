@@ -121,13 +121,15 @@ namespace ams::kern {
         public:
             static KAutoObject *Create(KAutoObject *ptr);
         public:
-            constexpr ALWAYS_INLINE explicit KAutoObject() : m_next_closed_object(nullptr), m_ref_count(0)
+            constexpr ALWAYS_INLINE explicit KAutoObject(util::ConstantInitializeTag) : m_next_closed_object(nullptr), m_ref_count(0)
             #if defined(MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST)
                 , m_class_token(0)
             #endif
             {
                 MESOSPHERE_ASSERT_THIS();
             }
+
+            ALWAYS_INLINE explicit KAutoObject() : m_ref_count(0) { MESOSPHERE_ASSERT_THIS(); }
 
             /* Destroy is responsible for destroying the auto object's resources when ref_count hits zero. */
             virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }
@@ -208,9 +210,11 @@ namespace ams::kern {
 
     class KAutoObjectWithListBase : public KAutoObject {
         private:
-            void *m_alignment_forcer_unused[0]{};
+            void *m_alignment_forcer_unused[0];
         public:
-            constexpr ALWAYS_INLINE KAutoObjectWithListBase() = default;
+            constexpr ALWAYS_INLINE explicit KAutoObjectWithListBase(util::ConstantInitializeTag) : KAutoObject(util::ConstantInitialize), m_alignment_forcer_unused{} { /* ... */ }
+
+            ALWAYS_INLINE explicit KAutoObjectWithListBase() { /* ... */ }
     };
 
     class KAutoObjectWithList : public KAutoObjectWithListBase {
@@ -219,7 +223,8 @@ namespace ams::kern {
         private:
             util::IntrusiveRedBlackTreeNode m_list_node;
         public:
-            constexpr ALWAYS_INLINE KAutoObjectWithList() : m_list_node() { /* ... */ }
+            constexpr ALWAYS_INLINE KAutoObjectWithList(util::ConstantInitializeTag) : KAutoObjectWithListBase(util::ConstantInitialize), m_list_node(util::ConstantInitialize) { /* ... */ }
+            ALWAYS_INLINE explicit KAutoObjectWithList() { /* ... */ }
 
             static ALWAYS_INLINE int Compare(const KAutoObjectWithList &lhs, const KAutoObjectWithList &rhs) {
                 const u64 lid = lhs.GetId();
@@ -252,7 +257,6 @@ namespace ams::kern {
                 std::swap(m_obj, rhs.m_obj);
             }
         public:
-            constexpr ALWAYS_INLINE KScopedAutoObject() : m_obj(nullptr) { /* ... */ }
             constexpr ALWAYS_INLINE KScopedAutoObject(T *o) : m_obj(o) {
                 if (m_obj != nullptr) {
                     m_obj->Open();

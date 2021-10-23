@@ -102,9 +102,8 @@ namespace ams::util {
                 state2 ^= y;
             }
         public:
-            constexpr TinyMT() : m_state() { /* ... */ }
-
-            /* Public API. */
+            constexpr explicit TinyMT(util::ConstantInitializeTag) : m_state() { /* ... */ }
+            explicit TinyMT() { /* ... */ }
 
             /* Initialization. */
             void Initialize(u32 seed) {

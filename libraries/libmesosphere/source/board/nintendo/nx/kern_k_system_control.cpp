@@ -43,7 +43,7 @@ namespace ams::kern::board::nintendo::nx {
         /* To save space (and because mt19337_t isn't secure anyway), */
         /* We will use TinyMT. */
         constinit bool         g_initialized_random_generator;
-        constinit util::TinyMT g_random_generator;
+        constinit util::TinyMT g_random_generator{util::ConstantInitialize};
         constinit KSpinLock    g_random_lock;
 
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {

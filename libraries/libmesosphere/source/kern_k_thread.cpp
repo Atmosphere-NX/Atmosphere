@@ -132,6 +132,7 @@ namespace ams::kern {
         /* Set parent and condvar tree. */
         m_parent                        = nullptr;
         m_condvar_tree                  = nullptr;
+        m_condvar_key                   = 0;
 
         /* Set sync booleans. */
         m_signaled                      = false;
@@ -179,7 +180,7 @@ namespace ams::kern {
         m_current_core_id               = phys_core;
 
         /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
-        m_resource_limit_release_hint   = 0;
+        m_resource_limit_release_hint   = false;
         m_cpu_time                      = 0;
 
         /* Setup our kernel stack. */
@@ -1328,7 +1329,7 @@ namespace ams::kern {
             private:
                 u64 m_id;
             public:
-                constexpr explicit IdObjectHelper(u64 id) : m_id(id) { /* ... */ }
+                explicit IdObjectHelper(u64 id) : m_id(id) { /* ... */ }
                 virtual u64 GetId() const override { return m_id; }
         };
 

@@ -27,7 +27,8 @@ namespace ams::kern {
         private:
             KSession *m_parent;
         public:
-            constexpr KClientSession() : m_parent() { /* ... */ }
+            constexpr explicit KClientSession(util::ConstantInitializeTag) : KAutoObject(util::ConstantInitialize), m_parent() { /* ... */ }
+            explicit KClientSession() { /* ... */ }
 
             void Initialize(KSession *parent) {
                 /* Set member variables. */

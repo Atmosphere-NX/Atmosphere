@@ -120,8 +120,6 @@ namespace ams::kern {
                     KThread *m_prev;
                     KThread *m_next;
                 public:
-                    constexpr QueueEntry() : m_prev(nullptr), m_next(nullptr) { /* ... */ }
-
                     constexpr void Initialize() {
                         m_prev = nullptr;
                         m_next = nullptr;
@@ -140,7 +138,9 @@ namespace ams::kern {
                 KSynchronizationObject *m_sync_objects[ams::svc::ArgumentHandleCountMax];
                 ams::svc::Handle        m_handles[ams::svc::ArgumentHandleCountMax * (sizeof(KSynchronizationObject *) / sizeof(ams::svc::Handle))];
 
-                constexpr SyncObjectBuffer() : m_sync_objects() { /* ... */ }
+                constexpr explicit SyncObjectBuffer(util::ConstantInitializeTag) : m_sync_objects() { /* ... */ }
+
+                explicit SyncObjectBuffer() { /* ... */ }
             };
             static_assert(sizeof(SyncObjectBuffer::m_sync_objects) == sizeof(SyncObjectBuffer::m_handles));
 
@@ -177,64 +177,79 @@ namespace ams::kern {
             static_assert(ams::util::HasRedBlackKeyType<ConditionVariableComparator>);
             static_assert(std::same_as<ams::util::RedBlackKeyType<ConditionVariableComparator, void>, ConditionVariableComparator::RedBlackKeyType>);
         private:
-            util::IntrusiveListNode         m_process_list_node{};
-            util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node{};
-            s32                             m_priority{};
+            util::IntrusiveListNode         m_process_list_node;
+            util::IntrusiveRedBlackTreeNode m_condvar_arbiter_tree_node;
+            s32                             m_priority;
 
             using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::m_condvar_arbiter_tree_node>;
             using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
 
-            ConditionVariableThreadTree    *m_condvar_tree{};
-            uintptr_t                       m_condvar_key{};
-            alignas(16) KThreadContext      m_thread_context{};
-            u64                             m_virtual_affinity_mask{};
-            KAffinityMask                   m_physical_affinity_mask{};
-            u64                             m_thread_id{};
-            util::Atomic<s64>               m_cpu_time{0};
-            KProcessAddress                 m_address_key{};
-            KProcess                       *m_parent{};
-            void                           *m_kernel_stack_top{};
-            u32                            *m_light_ipc_data{};
-            KProcessAddress                 m_tls_address{};
-            void                           *m_tls_heap_address{};
-            KLightLock                      m_activity_pause_lock{};
-            SyncObjectBuffer                m_sync_object_buffer{};
-            s64                             m_schedule_count{};
-            s64                             m_last_scheduled_tick{};
-            QueueEntry                      m_per_core_priority_queue_entry[cpu::NumCores]{};
-            KThreadQueue                   *m_wait_queue{};
-            WaiterList                      m_waiter_list{};
-            WaiterList                      m_pinned_waiter_list{};
-            KThread                        *m_lock_owner{};
-            uintptr_t                       m_debug_params[3]{};
-            KAutoObject                    *m_closed_object{};
-            u32                             m_address_key_value{};
-            u32                             m_suspend_request_flags{};
-            u32                             m_suspend_allowed_flags{};
-            s32                             m_synced_index{};
+            ConditionVariableThreadTree    *m_condvar_tree;
+            uintptr_t                       m_condvar_key;
+            alignas(16) KThreadContext      m_thread_context;
+            u64                             m_virtual_affinity_mask;
+            KAffinityMask                   m_physical_affinity_mask;
+            u64                             m_thread_id;
+            util::Atomic<s64>               m_cpu_time;
+            KProcessAddress                 m_address_key;
+            KProcess                       *m_parent;
+            void                           *m_kernel_stack_top;
+            u32                            *m_light_ipc_data;
+            KProcessAddress                 m_tls_address;
+            void                           *m_tls_heap_address;
+            KLightLock                      m_activity_pause_lock;
+            SyncObjectBuffer                m_sync_object_buffer;
+            s64                             m_schedule_count;
+            s64                             m_last_scheduled_tick;
+            QueueEntry                      m_per_core_priority_queue_entry[cpu::NumCores];
+            KThreadQueue                   *m_wait_queue;
+            WaiterList                      m_waiter_list;
+            WaiterList                      m_pinned_waiter_list;
+            KThread                        *m_lock_owner;
+            uintptr_t                       m_debug_params[3];
+            KAutoObject                    *m_closed_object;
+            u32                             m_address_key_value;
+            u32                             m_suspend_request_flags;
+            u32                             m_suspend_allowed_flags;
+            s32                             m_synced_index;
             Result                          m_wait_result;
             Result                          m_debug_exception_result;
-            s32                             m_base_priority{};
-            s32                             m_base_priority_on_unpin{};
-            s32                             m_physical_ideal_core_id{};
-            s32                             m_virtual_ideal_core_id{};
-            s32                             m_num_kernel_waiters{};
-            s32                             m_current_core_id{};
-            s32                             m_core_id{};
-            KAffinityMask                   m_original_physical_affinity_mask{};
-            s32                             m_original_physical_ideal_core_id{};
-            s32                             m_num_core_migration_disables{};
-            ThreadState                     m_thread_state{};
-            util::Atomic<bool>              m_termination_requested{false};
-            bool                            m_wait_cancelled{};
-            bool                            m_cancellable{};
-            bool                            m_signaled{};
-            bool                            m_initialized{};
-            bool                            m_debug_attached{};
-            s8                              m_priority_inheritance_count{};
-            bool                            m_resource_limit_release_hint{};
+            s32                             m_base_priority;
+            s32                             m_base_priority_on_unpin;
+            s32                             m_physical_ideal_core_id;
+            s32                             m_virtual_ideal_core_id;
+            s32                             m_num_kernel_waiters;
+            s32                             m_current_core_id;
+            s32                             m_core_id;
+            KAffinityMask                   m_original_physical_affinity_mask;
+            s32                             m_original_physical_ideal_core_id;
+            s32                             m_num_core_migration_disables;
+            ThreadState                     m_thread_state;
+            util::Atomic<bool>              m_termination_requested;
+            bool                            m_wait_cancelled;
+            bool                            m_cancellable;
+            bool                            m_signaled;
+            bool                            m_initialized;
+            bool                            m_debug_attached;
+            s8                              m_priority_inheritance_count;
+            bool                            m_resource_limit_release_hint;
         public:
-            constexpr KThread() : m_wait_result(svc::ResultNoSynchronizationObject()), m_debug_exception_result(ResultSuccess()) { /* ... */ }
+            constexpr explicit KThread(util::ConstantInitializeTag)
+                : KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
+                  m_process_list_node{}, m_condvar_arbiter_tree_node{util::ConstantInitialize}, m_priority{-1}, m_condvar_tree{}, m_condvar_key{},
+                  m_thread_context{util::ConstantInitialize}, m_virtual_affinity_mask{}, m_physical_affinity_mask{}, m_thread_id{}, m_cpu_time{0}, m_address_key{Null<KProcessAddress>}, m_parent{},
+                  m_kernel_stack_top{}, m_light_ipc_data{}, m_tls_address{Null<KProcessAddress>}, m_tls_heap_address{}, m_activity_pause_lock{}, m_sync_object_buffer{util::ConstantInitialize},
+                  m_schedule_count{}, m_last_scheduled_tick{}, m_per_core_priority_queue_entry{}, m_wait_queue{}, m_waiter_list{}, m_pinned_waiter_list{},
+                  m_lock_owner{}, m_debug_params{}, m_closed_object{}, m_address_key_value{}, m_suspend_request_flags{}, m_suspend_allowed_flags{}, m_synced_index{},
+                  m_wait_result{svc::ResultNoSynchronizationObject()}, m_debug_exception_result{ResultSuccess()}, m_base_priority{}, m_base_priority_on_unpin{},
+                  m_physical_ideal_core_id{}, m_virtual_ideal_core_id{}, m_num_kernel_waiters{}, m_current_core_id{}, m_core_id{}, m_original_physical_affinity_mask{},
+                  m_original_physical_ideal_core_id{}, m_num_core_migration_disables{}, m_thread_state{}, m_termination_requested{false}, m_wait_cancelled{},
+                  m_cancellable{}, m_signaled{}, m_initialized{}, m_debug_attached{}, m_priority_inheritance_count{}, m_resource_limit_release_hint{}
+            {
+                /* ... */
+            }
+
+            explicit KThread() : m_priority(-1), m_condvar_tree(nullptr), m_condvar_key(0), m_parent(nullptr), m_initialized(false) { /* ... */ }
 
             Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
         private:

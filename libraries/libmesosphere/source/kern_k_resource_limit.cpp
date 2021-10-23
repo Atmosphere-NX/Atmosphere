@@ -24,17 +24,11 @@ namespace ams::kern {
     }
 
     void KResourceLimit::Initialize() {
-        /* This should be unnecessary for us, because our constructor will clear all fields. */
-        /* The following is analagous to what Nintendo's implementation (no constexpr constructor) would do, though. */
-        /*
-            m_waiter_count = 0;
-            for (size_t i = 0; i < util::size(m_limit_values); i++) {
-                m_limit_values[i]    = 0;
-                m_current_values[i]  = 0;
-                m_current_hints[i]   = 0;
-                m_peak_values[i]     = 0;
-            }
-        */
+        m_waiter_count = 0;
+        std::memset(m_limit_values,   0, sizeof(m_limit_values));
+        std::memset(m_current_values, 0, sizeof(m_current_values));
+        std::memset(m_current_hints,  0, sizeof(m_current_hints));
+        std::memset(m_peak_values,    0, sizeof(m_peak_values));
     }
 
     void KResourceLimit::Finalize() {

@@ -63,16 +63,16 @@ namespace ams::kern {
         private:
             EntryInfo m_entry_infos[MaxTableSize];
             KAutoObject *m_objects[MaxTableSize];
+            mutable KSpinLock m_lock;
             s32 m_free_head_index;
             u16 m_table_size;
             u16 m_max_count;
             u16 m_next_linear_id;
             u16 m_count;
-            mutable KSpinLock m_lock;
         public:
-            constexpr KHandleTable() :
-                m_entry_infos(), m_objects(), m_free_head_index(-1), m_table_size(0), m_max_count(0), m_next_linear_id(MinLinearId), m_count(0), m_lock()
-            { MESOSPHERE_ASSERT_THIS(); }
+            constexpr explicit KHandleTable(util::ConstantInitializeTag) : m_entry_infos(), m_objects(), m_lock(), m_free_head_index(-1), m_table_size(), m_max_count(), m_next_linear_id(MinLinearId), m_count() { /* ... */ }
+
+            explicit KHandleTable() : m_free_head_index(-1), m_lock(), m_count() { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr NOINLINE Result Initialize(s32 size) {
                 MESOSPHERE_ASSERT_THIS();

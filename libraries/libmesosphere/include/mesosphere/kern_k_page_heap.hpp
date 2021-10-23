@@ -59,7 +59,7 @@ namespace ams::kern {
                     size_t m_block_shift;
                     size_t m_next_block_shift;
                 public:
-                    Block() : m_bitmap(), m_heap_address(), m_end_offset(), m_block_shift(), m_next_block_shift() { /* ... */ }
+                    Block() : m_bitmap(), m_heap_address(Null<KPhysicalAddress>), m_end_offset(), m_block_shift(), m_next_block_shift() { /* ... */ }
 
                     constexpr size_t GetShift() const { return m_block_shift; }
                     constexpr size_t GetNextShift() const { return m_next_block_shift; }
@@ -134,7 +134,7 @@ namespace ams::kern {
 
             void FreeBlock(KPhysicalAddress block, s32 index);
         public:
-            KPageHeap() : m_heap_address(), m_heap_size(), m_initial_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
+            KPageHeap() : m_heap_address(Null<KPhysicalAddress>), m_heap_size(), m_initial_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
 
             constexpr KPhysicalAddress GetAddress() const { return m_heap_address; }
             constexpr size_t GetSize() const { return m_heap_size; }

@@ -27,9 +27,10 @@ namespace ams::kern {
         private:
             using BaseHeap = KDynamicResourceManager<impl::PageTablePage, true>;
         private:
-            KPageTableSlabHeap *m_pt_heap{};
+            KPageTableSlabHeap *m_pt_heap;
         public:
-            constexpr KPageTableManager() = default;
+            constexpr explicit KPageTableManager(util::ConstantInitializeTag) : m_pt_heap() { /* ... */ }
+            explicit KPageTableManager() { /* ... */ }
 
             ALWAYS_INLINE void Initialize(KDynamicPageManager *page_allocator, KPageTableSlabHeap *pt_heap) {
                 m_pt_heap = pt_heap;

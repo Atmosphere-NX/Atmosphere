@@ -39,7 +39,8 @@ namespace ams::util {
         private:
             RBEntry m_entry;
         public:
-            constexpr ALWAYS_INLINE IntrusiveRedBlackTreeNode() = default;
+            constexpr explicit ALWAYS_INLINE IntrusiveRedBlackTreeNode(util::ConstantInitializeTag) : m_entry(util::ConstantInitialize) { /* ... */ }
+            explicit ALWAYS_INLINE IntrusiveRedBlackTreeNode() { /* ... */ }
 
             [[nodiscard]] constexpr ALWAYS_INLINE RBEntry &GetRBEntry() { return m_entry; }
             [[nodiscard]] constexpr ALWAYS_INLINE const RBEntry &GetRBEntry() const { return m_entry; }
@@ -544,6 +545,8 @@ namespace ams::util {
     template<class Derived>
     class alignas(void *) IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode {
         public:
+            using IntrusiveRedBlackTreeNode::IntrusiveRedBlackTreeNode;
+
             constexpr ALWAYS_INLINE Derived *GetPrev()             { return static_cast<      Derived *>(static_cast<      IntrusiveRedBlackTreeBaseNode *>(impl::IntrusiveRedBlackTreeImpl::GetPrev(this))); }
             constexpr ALWAYS_INLINE const Derived *GetPrev() const { return static_cast<const Derived *>(static_cast<const IntrusiveRedBlackTreeBaseNode *>(impl::IntrusiveRedBlackTreeImpl::GetPrev(this))); }
 

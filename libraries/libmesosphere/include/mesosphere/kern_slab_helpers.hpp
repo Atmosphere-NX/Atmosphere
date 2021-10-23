@@ -85,7 +85,9 @@ namespace ams::kern {
                     ALWAYS_INLINE ~ListAccessor() { /* ... */ }
             };
         public:
-            constexpr KAutoObjectWithSlabHeapAndContainer() = default;
+            constexpr explicit KAutoObjectWithSlabHeapAndContainer(util::ConstantInitializeTag) : Base(util::ConstantInitialize) { /* ... */ }
+
+            explicit KAutoObjectWithSlabHeapAndContainer() { /* ... */ }
 
             virtual void Destroy() override {
                 const bool is_initialized = this->IsInitialized();

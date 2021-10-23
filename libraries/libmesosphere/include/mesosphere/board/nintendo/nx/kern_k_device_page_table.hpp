@@ -61,7 +61,12 @@ namespace ams::kern::board::nintendo::nx {
                 return KPageTable::GetPageTablePhysicalAddress(addr);
             }
         public:
-            constexpr KDevicePageTable() : m_tables(), m_table_asids(), m_attached_device(), m_attached_value(), m_detached_value(), m_hs_attached_value(), m_hs_detached_value() { /* ... */ }
+            constexpr KDevicePageTable()
+                : m_tables{Null<KVirtualAddress>, Null<KVirtualAddress>, Null<KVirtualAddress>, Null<KVirtualAddress>},
+                  m_table_asids(), m_attached_device(), m_attached_value(), m_detached_value(), m_hs_attached_value(), m_hs_detached_value()
+            {
+                /* ... */
+            }
 
             Result Initialize(u64 space_address, u64 space_size);
             void Finalize();

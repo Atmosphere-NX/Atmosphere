@@ -26,7 +26,7 @@ namespace ams::kern {
             uintptr_t m_address;
         public:
             /* Constructors. */
-            constexpr ALWAYS_INLINE KTypedAddress() : m_address(0) { /* ... */ }
+            ALWAYS_INLINE KTypedAddress() { /* ... */ }
             constexpr ALWAYS_INLINE KTypedAddress(uintptr_t a) : m_address(a) { /* ... */ }
             template<typename U>
             constexpr ALWAYS_INLINE explicit KTypedAddress(U *ptr) : m_address(reinterpret_cast<uintptr_t>(ptr)) { /* ... */ }
@@ -146,13 +146,13 @@ namespace ams::kern {
     }
 
     template<typename T, typename U>
-    constexpr ALWAYS_INLINE T *GetPointer(KTypedAddress<true, U> address) {
-        return CONST_FOLD(reinterpret_cast<T *>(address.GetValue()));
+    ALWAYS_INLINE T *GetPointer(KTypedAddress<true, U> address) {
+        return reinterpret_cast<T *>(address.GetValue());
     }
 
     template<typename T>
-    constexpr ALWAYS_INLINE void *GetVoidPointer(KTypedAddress<true, T> address) {
-        return CONST_FOLD(reinterpret_cast<void *>(address.GetValue()));
+    ALWAYS_INLINE void *GetVoidPointer(KTypedAddress<true, T> address) {
+        return reinterpret_cast<void *>(address.GetValue());
     }
 
 #else
@@ -170,12 +170,12 @@ namespace ams::kern {
 
     template<typename T>
     constexpr ALWAYS_INLINE T *GetPointer(uintptr_t address) {
-        return CONST_FOLD(reinterpret_cast<T *>(address));
+        return reinterpret_cast<T *>(address);
     }
 
     template<typename T>
     constexpr ALWAYS_INLINE void *GetVoidPointer(uintptr_t address) {
-        return CONST_FOLD(reinterpret_cast<void *>(address));
+        return reinterpret_cast<void *>(address);
     }
 
 #endif

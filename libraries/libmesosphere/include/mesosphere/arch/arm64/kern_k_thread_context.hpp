@@ -57,7 +57,8 @@ namespace ams::kern::arch::arm64 {
             static void RestoreFpuRegisters64(const KThreadContext &);
             static void RestoreFpuRegisters32(const KThreadContext &);
         public:
-            constexpr explicit KThreadContext() : m_callee_saved(), m_lr(), m_sp(), m_cpacr(), m_fpcr(), m_fpsr(), m_fpu_registers(), m_locked() { /* ... */ }
+            constexpr explicit KThreadContext(util::ConstantInitializeTag) : m_callee_saved(), m_lr(), m_sp(), m_cpacr(), m_fpcr(), m_fpsr(), m_fpu_registers(), m_locked() { /* ... */ }
+            explicit KThreadContext() { /* ... */ }
 
             Result Initialize(KVirtualAddress u_pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_user, bool is_64_bit, bool is_main);
             Result Finalize();
