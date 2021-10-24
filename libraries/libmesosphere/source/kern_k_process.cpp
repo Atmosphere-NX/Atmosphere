@@ -705,10 +705,10 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Try to find the page in the partially used list. */
-            auto it = m_partially_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize)));
+            auto it = m_partially_used_tlp_tree.find_key(util::AlignDown(GetInteger(addr), PageSize));
             if (it == m_partially_used_tlp_tree.end()) {
                 /* If we don't find it, it has to be in the fully used list. */
-                it = m_fully_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize)));
+                it = m_fully_used_tlp_tree.find_key(util::AlignDown(GetInteger(addr), PageSize));
                 R_UNLESS(it != m_fully_used_tlp_tree.end(), svc::ResultInvalidAddress());
 
                 /* Release the region. */
@@ -749,9 +749,9 @@ namespace ams::kern {
         KThreadLocalPage *tlp = nullptr;
         {
             KScopedSchedulerLock sl;
-            if (auto it = m_partially_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize))); it != m_partially_used_tlp_tree.end()) {
+            if (auto it = m_partially_used_tlp_tree.find_key(util::AlignDown(GetInteger(addr), PageSize)); it != m_partially_used_tlp_tree.end()) {
                 tlp = std::addressof(*it);
-            } else if (auto it = m_fully_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize))); it != m_fully_used_tlp_tree.end()) {
+            } else if (auto it = m_fully_used_tlp_tree.find_key(util::AlignDown(GetInteger(addr), PageSize)); it != m_fully_used_tlp_tree.end()) {
                 tlp = std::addressof(*it);
             } else {
                 return nullptr;

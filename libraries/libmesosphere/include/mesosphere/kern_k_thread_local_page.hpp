@@ -42,10 +42,16 @@ namespace ams::kern {
             explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
 
             constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return m_virt_addr; }
+        public:
+            using RedBlackKeyType = KProcessAddress;
 
-            static constexpr ALWAYS_INLINE int Compare(const KThreadLocalPage &lhs, const KThreadLocalPage &rhs) {
-                const KProcessAddress lval = lhs.GetAddress();
-                const KProcessAddress rval = rhs.GetAddress();
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const RedBlackKeyType  &v) { return v; }
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const KThreadLocalPage &v) { return v.GetAddress(); }
+
+            template<typename T> requires (std::same_as<T, KThreadLocalPage> || std::same_as<T, RedBlackKeyType>)
+            static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThreadLocalPage &rhs) {
+                const KProcessAddress lval = GetRedBlackKey(lhs);
+                const KProcessAddress rval = GetRedBlackKey(rhs);
 
                 if (lval < rval) {
                     return -1;

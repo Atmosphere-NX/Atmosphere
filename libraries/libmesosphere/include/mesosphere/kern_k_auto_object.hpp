@@ -248,10 +248,16 @@ namespace ams::kern {
         public:
             constexpr ALWAYS_INLINE KAutoObjectWithList(util::ConstantInitializeTag) : KAutoObjectWithListBase(util::ConstantInitialize), m_list_node(util::ConstantInitialize) { /* ... */ }
             ALWAYS_INLINE explicit KAutoObjectWithList() { /* ... */ }
+        public:
+            using RedBlackKeyType = u64;
 
-            static ALWAYS_INLINE int Compare(const KAutoObjectWithList &lhs, const KAutoObjectWithList &rhs) {
-                const u64 lid = lhs.GetId();
-                const u64 rid = rhs.GetId();
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const RedBlackKeyType     &v) { return v; }
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const KAutoObjectWithList &v) { return v.GetId(); }
+
+            template<typename T> requires (std::same_as<T, KAutoObjectWithList> || std::same_as<T, RedBlackKeyType>)
+            static ALWAYS_INLINE int Compare(const T &lhs, const KAutoObjectWithList &rhs) {
+                const u64 lid = GetRedBlackKey(lhs);
+                const u64 rid = GetRedBlackKey(rhs);
 
                 if (lid < rid) {
                     return -1;

@@ -1324,33 +1324,16 @@ namespace ams::kern {
         KThread::ListAccessor accessor;
         const auto end = accessor.end();
 
-        /* Define helper object to find the thread. */
-        class IdObjectHelper : public KAutoObjectWithListContainer::ListType::value_type {
-            private:
-                u64 m_id;
-            public:
-                explicit IdObjectHelper(u64 id) : m_id(id) { /* ... */ }
-                virtual u64 GetId() const override { return m_id; }
-        };
-
         /* Find the object with the right id. */
-        const auto it = accessor.find(IdObjectHelper(thread_id));
-
-        /* Check to make sure we found the thread. */
-        if (it == end) {
-            return nullptr;
+        if (const auto it = accessor.find_key(thread_id); it != end) {
+            /* Try to open the thread. */
+            if (KThread *thread = static_cast<KThread *>(std::addressof(*it)); AMS_LIKELY(thread->Open())) {
+                MESOSPHERE_ASSERT(thread->GetId() == thread_id);
+                return thread;
+            }
         }
 
-        /* Get the thread. */
-        KThread *thread = static_cast<KThread *>(std::addressof(*it));
-
-        /* Open the thread. */
-        if (AMS_LIKELY(thread->Open())) {
-            MESOSPHERE_ASSERT(thread->GetId() == thread_id);
-            return thread;
-        }
-
-        /* We failed to find the thread. */
+        /* We failed to find or couldn't open the thread. */
         return nullptr;
     }
 

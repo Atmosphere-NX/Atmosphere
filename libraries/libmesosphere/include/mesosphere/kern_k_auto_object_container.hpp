@@ -33,16 +33,20 @@ namespace ams::kern {
                     explicit ListAccessor(KAutoObjectWithListContainer *container) : KScopedLightLock(container->m_lock), m_list(container->m_object_list) { /* ... */ }
                     explicit ListAccessor(KAutoObjectWithListContainer &container) : KScopedLightLock(container.m_lock), m_list(container.m_object_list) { /* ... */ }
 
-                    typename ListType::iterator begin() const {
+                    ALWAYS_INLINE typename ListType::iterator begin() const {
                         return m_list.begin();
                     }
 
-                    typename ListType::iterator end() const {
+                    ALWAYS_INLINE typename ListType::iterator end() const {
                         return m_list.end();
                     }
 
-                    typename ListType::iterator find(typename ListType::const_reference ref) const {
+                    ALWAYS_INLINE typename ListType::iterator find(typename ListType::const_reference ref) const {
                         return m_list.find(ref);
+                    }
+
+                    ALWAYS_INLINE typename ListType::iterator find_key(typename ListType::const_key_reference ref) const {
+                        return m_list.find_key(ref);
                     }
             };
 
