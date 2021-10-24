@@ -43,9 +43,9 @@ namespace ams::kern {
             explicit KIoRegion() : m_pool(nullptr), m_is_initialized(false) { /* ... */ }
 
             Result Initialize(KIoPool *pool, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Map(KProcessAddress address, size_t size, ams::svc::MemoryPermission map_perm);

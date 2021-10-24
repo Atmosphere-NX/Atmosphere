@@ -384,11 +384,11 @@ namespace ams::kern {
             }
         public:
             /* Overridden parent functions. */
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            virtual void Finalize() override;
+            void Finalize();
 
             virtual u64 GetId() const override final { return this->GetProcessId(); }
 

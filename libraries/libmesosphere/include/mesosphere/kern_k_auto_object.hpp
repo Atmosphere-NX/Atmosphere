@@ -139,7 +139,9 @@ namespace ams::kern {
             virtual void Destroy() { MESOSPHERE_ASSERT_THIS(); }
 
             /* Finalize is responsible for cleaning up resource, but does not destroy the object. */
-            virtual void Finalize() { MESOSPHERE_ASSERT_THIS(); }
+            /* NOTE: This is a virtual function in official kernel, but because everything which uses it */
+            /* is already using CRTP for slab heap, we have devirtualized it for performance gain. */
+            /* virtual void Finalize() { MESOSPHERE_ASSERT_THIS(); } */
 
             virtual KProcess *GetOwner() const { return nullptr; }
 

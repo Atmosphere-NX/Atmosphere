@@ -40,7 +40,6 @@ namespace ams::kern {
             }
 
             virtual void Destroy() override;
-            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr const KLightSession *GetParent() const { return m_parent; }
 

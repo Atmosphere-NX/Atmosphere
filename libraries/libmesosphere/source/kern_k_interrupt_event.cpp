@@ -54,7 +54,7 @@ namespace ams::kern {
         g_interrupt_event_task_table[m_interrupt_id]->Unregister(m_interrupt_id, m_core_id);
 
         /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>::Finalize();
+        KReadableEvent::Finalize();
     }
 
     Result KInterruptEvent::Reset() {

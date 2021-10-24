@@ -39,10 +39,10 @@ namespace ams::kern {
             explicit KEvent() : m_readable_event(), m_owner(), m_initialized(), m_readable_event_destroyed() { /* ... */ }
 
             void Initialize();
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_owner); }
+            bool IsInitialized() const { return m_initialized; }
+            uintptr_t GetPostDestroyArgument() const { return reinterpret_cast<uintptr_t>(m_owner); }
 
             static void PostDestroy(uintptr_t arg);
 

@@ -67,9 +67,6 @@ namespace ams::kern {
 
         /* Close our reference to our owner. */
         m_owner->Close();
-
-        /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KCodeMemory, KAutoObjectWithList>::Finalize();
     }
 
     Result KCodeMemory::Map(KProcessAddress address, size_t size) {

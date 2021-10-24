@@ -36,11 +36,11 @@ namespace ams::kern {
             explicit KInterruptEvent() : m_interrupt_id(-1), m_is_initialized(false) { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
-            virtual void Finalize() override;
+            void Finalize();
 
             virtual Result Reset() override;
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 

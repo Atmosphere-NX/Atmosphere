@@ -169,20 +169,6 @@ namespace ams::kern {
                 }
             }
 
-            virtual void Finalize() override {
-                m_mappings.Finalize();
-
-                if (m_thread) {
-                    m_thread->Close();
-                }
-                if (m_event) {
-                    m_event->Close();
-                }
-                if (m_server) {
-                    m_server->Close();
-                }
-            }
-
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr ALWAYS_INLINE KThread *GetThread() const { return m_thread; }
@@ -229,6 +215,21 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KProcessAddress GetExchangeServerAddress(size_t i) const { return m_mappings.GetExchangeServerAddress(i);  }
             constexpr ALWAYS_INLINE size_t          GetExchangeSize(size_t i)          const { return m_mappings.GetExchangeSize(i);           }
             constexpr ALWAYS_INLINE KMemoryState    GetExchangeMemoryState(size_t i)   const { return m_mappings.GetExchangeMemoryState(i);    }
+        private:
+            /* NOTE: This is public and virtual in Nintendo's kernel. */
+            void Finalize() {
+                m_mappings.Finalize();
+
+                if (m_thread) {
+                    m_thread->Close();
+                }
+                if (m_event) {
+                    m_event->Close();
+                }
+                if (m_server) {
+                    m_server->Close();
+                }
+            }
     };
 
 }

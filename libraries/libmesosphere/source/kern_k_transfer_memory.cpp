@@ -56,9 +56,6 @@ namespace ams::kern {
         /* Close the page group. */
         GetReference(m_page_group).Close();
         GetReference(m_page_group).Finalize();
-
-        /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KTransferMemory, KAutoObjectWithList>::Finalize();
     }
 
     void KTransferMemory::PostDestroy(uintptr_t arg) {

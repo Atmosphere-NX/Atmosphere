@@ -183,7 +183,7 @@ namespace ams::kern {
         MESOSPHERE_LOG("KProcess::Finalize() pid=%ld name=%-12s\n", m_process_id, m_name);
 
         /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject>::Finalize();
+        KSynchronizationObject::Finalize();
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params) {

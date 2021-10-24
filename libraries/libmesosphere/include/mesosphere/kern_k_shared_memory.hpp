@@ -42,9 +42,9 @@ namespace ams::kern {
             }
 
             Result Initialize(KProcess *owner, size_t size, ams::svc::MemoryPermission own_perm, ams::svc::MemoryPermission rem_perm);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Map(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process, ams::svc::MemoryPermission map_perm);

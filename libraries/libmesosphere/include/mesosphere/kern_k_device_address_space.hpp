@@ -33,9 +33,9 @@ namespace ams::kern {
             explicit KDeviceAddressSpace() : m_is_initialized(false) { /* ... */ }
 
             Result Initialize(u64 address, u64 size);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Attach(ams::svc::DeviceName device_name);

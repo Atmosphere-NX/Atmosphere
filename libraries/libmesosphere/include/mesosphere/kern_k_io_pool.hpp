@@ -38,9 +38,9 @@ namespace ams::kern {
             }
 
             Result Initialize(ams::svc::IoPoolType pool_type);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result AddIoRegion(KIoRegion *region);

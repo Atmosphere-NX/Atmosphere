@@ -84,7 +84,6 @@ namespace ams::kern {
         #endif
 
         this->OnFinalizeSynchronizationObject();
-        KAutoObject::Finalize();
     }
 
     Result KSynchronizationObject::Wait(s32 *out_index, KSynchronizationObject **objects, const s32 num_objects, s64 timeout) {

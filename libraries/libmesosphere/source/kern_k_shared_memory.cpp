@@ -71,9 +71,6 @@ namespace ams::kern {
         /* Release the memory reservation. */
         m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, size);
         m_resource_limit->Close();
-
-        /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KSharedMemory, KAutoObjectWithList>::Finalize();
     }
 
     Result KSharedMemory::Map(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process, ams::svc::MemoryPermission map_perm) {

@@ -43,9 +43,6 @@ namespace ams::kern {
 
         /* Finalize the table. */
         m_table.Finalize();
-
-        /* Finalize base. */
-        KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList>::Finalize();
     }
 
     Result KDeviceAddressSpace::Attach(ams::svc::DeviceName device_name) {

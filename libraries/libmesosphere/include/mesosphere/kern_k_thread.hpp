@@ -612,12 +612,13 @@ namespace ams::kern {
             /* Overridden parent functions. */
             virtual u64 GetId() const override final { return this->GetThreadId(); }
 
-            virtual bool IsInitialized() const override { return m_initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_parent) | (m_resource_limit_release_hint ? 1 : 0); }
+            bool IsInitialized() const { return m_initialized; }
+            uintptr_t GetPostDestroyArgument() const { return reinterpret_cast<uintptr_t>(m_parent) | (m_resource_limit_release_hint ? 1 : 0); }
 
             static void PostDestroy(uintptr_t arg);
 
-            virtual void Finalize() override;
+            void Finalize();
+
             virtual bool IsSignaled() const override;
             virtual void OnTimer() override;
             virtual void DoWorkerTask() override;

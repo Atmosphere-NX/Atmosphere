@@ -36,8 +36,6 @@ namespace ams::kern {
 
     void KEvent::Finalize() {
         MESOSPHERE_ASSERT_THIS();
-
-        KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList, true>::Finalize();
     }
 
     Result KEvent::Signal() {

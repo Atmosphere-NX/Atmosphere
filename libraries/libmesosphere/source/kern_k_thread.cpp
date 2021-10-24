@@ -338,7 +338,7 @@ namespace ams::kern {
         }
 
         /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>::Finalize();
+        KSynchronizationObject::Finalize();
     }
 
     bool KThread::IsSignaled() const {

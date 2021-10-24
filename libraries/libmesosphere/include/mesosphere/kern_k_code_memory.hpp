@@ -36,14 +36,14 @@ namespace ams::kern {
             }
 
             Result Initialize(KProcessAddress address, size_t size);
-            virtual void Finalize() override;
+            void Finalize();
 
             Result Map(KProcessAddress address, size_t size);
             Result Unmap(KProcessAddress address, size_t size);
             Result MapToOwner(KProcessAddress address, size_t size, ams::svc::MemoryPermission perm);
             Result UnmapFromOwner(KProcessAddress address, size_t size);
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             KProcess *GetOwner() const { return m_owner; }

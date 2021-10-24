@@ -46,7 +46,7 @@ namespace ams::kern {
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize();
-            virtual void Finalize() override;
+            void Finalize();
 
             s64 GetLimitValue(ams::svc::LimitableResource which) const;
             s64 GetCurrentValue(ams::svc::LimitableResource which) const;

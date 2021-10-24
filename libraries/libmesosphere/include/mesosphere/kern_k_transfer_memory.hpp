@@ -36,10 +36,10 @@ namespace ams::kern {
             }
 
             Result Initialize(KProcessAddress addr, size_t size, ams::svc::MemoryPermission own_perm);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return m_is_initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_owner); }
+            bool IsInitialized() const { return m_is_initialized; }
+            uintptr_t GetPostDestroyArgument() const { return reinterpret_cast<uintptr_t>(m_owner); }
             static void PostDestroy(uintptr_t arg);
 
             Result Map(KProcessAddress address, size_t size, ams::svc::MemoryPermission map_perm);

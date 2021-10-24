@@ -46,6 +46,8 @@ namespace ams::kern {
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize(s32 max_sessions, bool is_light, uintptr_t name);
+            void Finalize() { /* ... */ }
+
             void OnClientClosed();
             void OnServerClosed();
 
