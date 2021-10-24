@@ -60,9 +60,38 @@ namespace ams::kern {
             void Initialize() { MESOSPHERE_ASSERT_THIS(); }
             void Finalize() { MESOSPHERE_ASSERT_THIS(); }
 
-            void Register(KAutoObjectWithList *obj);
-            void Unregister(KAutoObjectWithList *obj);
-            size_t GetOwnedCount(KProcess *owner);
+            void Register(KAutoObjectWithList *obj) {
+                MESOSPHERE_ASSERT_THIS();
+
+                KScopedLightLock lk(m_lock);
+
+                m_object_list.insert(*obj);
+            }
+
+            void Unregister(KAutoObjectWithList *obj) {
+                MESOSPHERE_ASSERT_THIS();
+
+                KScopedLightLock lk(m_lock);
+
+                m_object_list.erase(m_object_list.iterator_to(*obj));
+            }
+
+            template<typename T> requires (std::derived_from<T, KAutoObjectWithList> && requires (const T &t) { { t.GetOwner() } -> std::convertible_to<const KProcess *>; })
+            size_t GetOwnedCount(const KProcess *owner) {
+                MESOSPHERE_ASSERT_THIS();
+
+                KScopedLightLock lk(m_lock);
+
+                size_t count = 0;
+
+                for (const auto &obj : m_object_list) {
+                    if (const T * const derived = obj.DynamicCast<T *>(); derived != nullptr && derived->GetOwner() == owner) {
+                        ++count;
+                    }
+                }
+
+                return count;
+            }
     };
 
 

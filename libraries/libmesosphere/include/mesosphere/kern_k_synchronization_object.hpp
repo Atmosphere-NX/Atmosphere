@@ -35,7 +35,8 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE explicit KSynchronizationObject(util::ConstantInitializeTag) : KAutoObjectWithList(util::ConstantInitialize), m_thread_list_head(), m_thread_list_tail() { MESOSPHERE_ASSERT_THIS(); }
             ALWAYS_INLINE explicit KSynchronizationObject() : m_thread_list_head(), m_thread_list_tail() { MESOSPHERE_ASSERT_THIS(); }
 
-            virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
+            /* NOTE: This is a virtual function which is overridden only by KDebugBase in Nintendo's kernel. */
+            /* virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); } */
 
             void NotifyAvailable(Result result);
             ALWAYS_INLINE void NotifyAvailable() {

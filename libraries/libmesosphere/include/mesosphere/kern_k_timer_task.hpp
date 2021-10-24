@@ -41,8 +41,9 @@ namespace ams::kern {
                 return m_time;
             }
 
-            virtual void OnTimer() = 0;
-
+            /* NOTE: This is virtual in Nintendo's kernel. Prior to 13.0.0, KWaitObject was also a TimerTask; this is no longer the case. */
+            /* Since this is now KThread exclusive, we have devirtualized (see inline declaration for this inside kern_kthread.hpp). */
+            void OnTimer();
     };
 
 }

@@ -620,7 +620,7 @@ namespace ams::kern {
             void Finalize();
 
             virtual bool IsSignaled() const override;
-            virtual void OnTimer() override;
+            void OnTimer();
             virtual void DoWorkerTask() override;
         public:
             static constexpr bool IsConditionVariableThreadTreeValid() {
@@ -672,6 +672,10 @@ namespace ams::kern {
 
         /* Set ourselves as the thread's next object to destroy. */
         GetCurrentThread().SetClosedObject(this);
+    }
+
+    ALWAYS_INLINE void KTimerTask::OnTimer() {
+        static_cast<KThread *>(this)->OnTimer();
     }
 
 }

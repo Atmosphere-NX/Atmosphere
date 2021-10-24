@@ -38,11 +38,11 @@ namespace ams::kern {
             static constexpr inline ClassTokenType ClassToken() { return ::ams::kern::ClassToken<CLASS>; }      \
         public:                                                                                                 \
             using BaseClass = BASE_CLASS;                                                                       \
-            static constexpr ALWAYS_INLINE TypeObj GetStaticTypeObj() {                                         \
+            static consteval ALWAYS_INLINE TypeObj GetStaticTypeObj() {                                         \
                 constexpr ClassTokenType Token = ClassToken();                                                  \
                 return TypeObj(TypeName, Token);                                                                \
             }                                                                                                   \
-            static constexpr ALWAYS_INLINE const char *GetStaticTypeName() { return TypeName; }                 \
+            static consteval ALWAYS_INLINE const char *GetStaticTypeName() { return TypeName; }                 \
             virtual TypeObj GetTypeObj() const { return GetStaticTypeObj(); }                                   \
             virtual const char *GetTypeName() { return GetStaticTypeName(); }                                   \
         private:
@@ -143,7 +143,8 @@ namespace ams::kern {
             /* is already using CRTP for slab heap, we have devirtualized it for performance gain. */
             /* virtual void Finalize() { MESOSPHERE_ASSERT_THIS(); } */
 
-            virtual KProcess *GetOwner() const { return nullptr; }
+            /* NOTE: This is a virtual function which is unused-except-for-debug in Nintendo's kernel. */
+            /* virtual KProcess *GetOwner() const { return nullptr; } */
 
             u32 GetReferenceCount() const {
                 return m_ref_count.GetValue();

@@ -34,19 +34,22 @@ namespace ams::kern::arch::arm64::init {
         }
     }
 
-    class KInitialPageTable {
+    /* NOTE: Nintendo uses virtual functions, rather than a concept + template. */
+    template<typename T>
+    concept IsInitialPageAllocator = requires (T &t, KPhysicalAddress phys_addr, size_t size) {
+        { t.Allocate(size) }        -> std::same_as<KPhysicalAddress>;
+        { t.Free(phys_addr, size) } -> std::same_as<void>;
+    };
+
+    template<IsInitialPageAllocator _PageAllocator>
+    class KInitialPageTableTemplate {
         public:
-            class IPageAllocator {
-                public:
-                    virtual KPhysicalAddress Allocate(size_t size) = 0;
-                    virtual void Free(KPhysicalAddress phys_addr, size_t size) = 0;
-            };
+            using PageAllocator = _PageAllocator;
         private:
             KPhysicalAddress m_l1_tables[2];
             u32 m_num_entries[2];
-
         public:
-            KInitialPageTable(KVirtualAddress start_address, KVirtualAddress end_address, IPageAllocator &allocator) {
+            KInitialPageTableTemplate(KVirtualAddress start_address, KVirtualAddress end_address, PageAllocator &allocator) {
                 /* Set tables. */
                 m_l1_tables[0] = AllocateNewPageTable(allocator);
                 m_l1_tables[1] = AllocateNewPageTable(allocator);
@@ -56,7 +59,7 @@ namespace ams::kern::arch::arm64::init {
                 m_num_entries[1] = ((end_address / L1BlockSize) & (MaxPageTableEntries - 1)) - ((start_address / L1BlockSize) & (MaxPageTableEntries - 1)) + 1;
             }
 
-            KInitialPageTable() {
+            KInitialPageTableTemplate() {
                 /* Set tables. */
                 m_l1_tables[0] = util::AlignDown(cpu::GetTtbr0El1(), PageSize);
                 m_l1_tables[1] = util::AlignDown(cpu::GetTtbr1El1(), PageSize);
@@ -95,7 +98,7 @@ namespace ams::kern::arch::arm64::init {
                 return l3_table + ((GetInteger(address) / L3BlockSize) & (MaxPageTableEntries - 1));
             }
 
-            static ALWAYS_INLINE KPhysicalAddress AllocateNewPageTable(IPageAllocator &allocator) {
+            static ALWAYS_INLINE KPhysicalAddress AllocateNewPageTable(PageAllocator &allocator) {
                 auto address = allocator.Allocate(PageSize);
                 ClearNewPageTable(address);
                 return address;
@@ -323,7 +326,7 @@ namespace ams::kern::arch::arm64::init {
                 }
             }
         public:
-            void NOINLINE Map(KVirtualAddress virt_addr, size_t size, KPhysicalAddress phys_addr, const PageTableEntry &attr, IPageAllocator &allocator) {
+            void NOINLINE Map(KVirtualAddress virt_addr, size_t size, KPhysicalAddress phys_addr, const PageTableEntry &attr, PageAllocator &allocator) {
                 /* Ensure that addresses and sizes are page aligned. */
                 MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
                 MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(phys_addr),    PageSize));
@@ -700,10 +703,9 @@ namespace ams::kern::arch::arm64::init {
                 this->PhysicallyRandomize(virt_addr, size, L3BlockSize, do_copy);
                 cpu::StoreEntireCacheForInit();
             }
-
     };
 
-    class KInitialPageAllocator final : public KInitialPageTable::IPageAllocator {
+    class KInitialPageAllocator final {
         private:
             static constexpr inline size_t FreeUnitSize = BITSIZEOF(u64) * PageSize;
             struct FreeListEntry {
@@ -807,11 +809,11 @@ namespace ams::kern::arch::arm64::init {
                 }
             }
 
-            virtual KPhysicalAddress Allocate(size_t size) override {
+            KPhysicalAddress Allocate(size_t size) {
                 return this->Allocate(size, size);
             }
 
-            virtual void Free(KPhysicalAddress phys_addr, size_t size) override {
+            void Free(KPhysicalAddress phys_addr, size_t size) {
                 auto **prev_next = std::addressof(m_state.free_head);
                 auto *new_chunk  = reinterpret_cast<FreeListEntry *>(GetInteger(phys_addr));
                 if (auto *cur = m_state.free_head; cur != nullptr) {
@@ -863,5 +865,8 @@ namespace ams::kern::arch::arm64::init {
                 *prev_next = new_chunk;
             }
     };
+    static_assert(IsInitialPageAllocator<KInitialPageAllocator>);
+
+    using KInitialPageTable = KInitialPageTableTemplate<KInitialPageAllocator>;
 
 }
