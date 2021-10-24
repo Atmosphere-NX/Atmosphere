@@ -104,12 +104,12 @@ namespace ams::kern::arch::arm64::cpu {
                 }
 
                 void ThreadFunctionImpl() {
-                    const s32 core_id = GetCurrentCoreId();
+                    const u64 core_mask = (1ul << GetCurrentCoreId());
                     while (true) {
                         /* Wait for a request to come in. */
                         {
                             KScopedLightLock lk(m_cv_lock);
-                            while ((m_target_cores.Load() & (1ul << core_id)) == 0) {
+                            while ((m_target_cores.Load() & core_mask) == 0) {
                                 m_cv.Wait(std::addressof(m_cv_lock));
                             }
                         }
@@ -120,6 +120,8 @@ namespace ams::kern::arch::arm64::cpu {
                         /* Broadcast, if there's nothing pending. */
                         {
                             KScopedLightLock lk(m_cv_lock);
+
+                            m_target_cores &= ~core_mask;
                             if (m_target_cores.Load() == 0) {
                                 m_cv.Broadcast();
                             }
@@ -150,6 +152,7 @@ namespace ams::kern::arch::arm64::cpu {
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
                     MESOSPHERE_UNUSED(interrupt_id);
                     this->ProcessOperation();
+                    m_target_cores &= ~(1ul << GetCurrentCoreId());
                     return nullptr;
                 }
 
@@ -286,8 +289,6 @@ namespace ams::kern::arch::arm64::cpu {
                     FlushDataCacheBySetWay(0);
                     break;
             }
-
-            m_target_cores &= (~(1ul << GetCurrentCoreId()));
         }
 
         ALWAYS_INLINE void SetEventLocally() {
