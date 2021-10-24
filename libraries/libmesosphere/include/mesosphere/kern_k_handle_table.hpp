@@ -72,7 +72,7 @@ namespace ams::kern {
         public:
             constexpr explicit KHandleTable(util::ConstantInitializeTag) : m_entry_infos(), m_objects(), m_lock(), m_free_head_index(-1), m_table_size(), m_max_count(), m_next_linear_id(MinLinearId), m_count() { /* ... */ }
 
-            explicit KHandleTable() : m_free_head_index(-1), m_lock(), m_count() { MESOSPHERE_ASSERT_THIS(); }
+            explicit KHandleTable() : m_lock(), m_free_head_index(-1), m_count() { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr NOINLINE Result Initialize(s32 size) {
                 MESOSPHERE_ASSERT_THIS();
