@@ -33,8 +33,6 @@
 #define ALWAYS_INLINE inline __attribute__((always_inline))
 #define NOINLINE      __attribute__((noinline))
 
-#define CONST_FOLD(x) (__builtin_constant_p(x) ? (x) : (x))
-
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
 

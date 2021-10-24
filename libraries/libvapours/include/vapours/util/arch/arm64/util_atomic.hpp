@@ -270,7 +270,7 @@ namespace ams::util {
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE T Exchange(T arg) {
-                return ConvertToType(impl::AtomicExchangeImpl(this->GetStoragePointer(), ConvertToStorage(arg)));
+                return ConvertToType(impl::AtomicExchangeImpl<Order>(this->GetStoragePointer(), ConvertToStorage(arg)));
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
@@ -374,7 +374,7 @@ namespace ams::util {
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE T Exchange(T arg) const {
-                return ConvertToType(impl::AtomicExchangeImpl(this->GetStoragePointer(), ConvertToStorage(arg)));
+                return ConvertToType(impl::AtomicExchangeImpl<Order>(this->GetStoragePointer(), ConvertToStorage(arg)));
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
