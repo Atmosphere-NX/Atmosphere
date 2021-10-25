@@ -117,6 +117,7 @@ $(OFILES)	:	$(ATMOSPHERE_LIBRARIES_DIR)/libmesosphere/$(ATMOSPHERE_LIBRARY_DIR)/
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 kern_libc_generic.o: CFLAGS += -fno-builtin
+kern_kernel_instantiations.o: CXXFLAGS += -flto
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

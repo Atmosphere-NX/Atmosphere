@@ -108,7 +108,8 @@ namespace ams::kern {
 
         struct DummyKAutoObjectWithListComparator {
             static NOINLINE int Compare(KAutoObjectWithList &lhs, KAutoObjectWithList &rhs) {
-                AMS_ASSUME(false);
+                MESOSPHERE_UNUSED(lhs, rhs);
+                MESOSPHERE_PANIC("DummyKAutoObjectWithListComparator invoked");
             }
         };
 
