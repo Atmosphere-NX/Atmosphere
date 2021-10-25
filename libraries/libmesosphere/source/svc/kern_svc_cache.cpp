@@ -36,7 +36,7 @@ namespace ams::kern::svc {
             size_t remaining = size;
             while (remaining > 0) {
                 /* Get a contiguous range to operate on. */
-                KPageTableBase::MemoryRange contig_range = {};
+                KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
                 R_TRY(page_table.OpenMemoryRangeForProcessCacheOperation(std::addressof(contig_range), cur_address, aligned_end - cur_address));
 
                 /* Close the range when we're done operating on it. */

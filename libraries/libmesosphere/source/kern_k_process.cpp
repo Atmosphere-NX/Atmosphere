@@ -238,7 +238,7 @@ namespace ams::kern {
         }
 
         /* Generate random entropy. */
-        KSystemControl::GenerateRandomBytes(m_entropy, sizeof(m_entropy));
+        KSystemControl::GenerateRandom(m_entropy, util::size(m_entropy));
 
         /* Clear remaining fields. */
         m_num_running_threads         = 0;
