@@ -180,9 +180,11 @@ namespace ams::kern {
         }
 
         /* Flush caches. */
-        /* NOTE: official kernel does an entire cache flush by set/way here, which is incorrect as other cores are online. */
-        /* We will simply flush by virtual address, since that's what ARM says is correct to do. */
-        MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(GetVoidPointer(address), params.code_num_pages * PageSize));
+        /* NOTE: This seems incorrect according to arm spec, which says not to flush via set/way after boot. */
+        /* However, Nintendo flushes the entire cache here and not doing so has caused reports of abort with ESR_EL1 */
+        /* as 0x02000000 (unknown abort) to occur. */
+        MESOSPHERE_UNUSED(params);
+        cpu::FlushEntireDataCache();
         cpu::InvalidateEntireInstructionCache();
 
         return ResultSuccess();
