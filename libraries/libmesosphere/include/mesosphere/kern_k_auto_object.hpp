@@ -230,8 +230,6 @@ namespace ams::kern {
             }
     };
 
-    class KAutoObjectWithListContainer;
-
     class KAutoObjectWithListBase : public KAutoObject {
         private:
             void *m_alignment_forcer_unused[0];
@@ -243,6 +241,7 @@ namespace ams::kern {
 
     class KAutoObjectWithList : public KAutoObjectWithListBase {
         private:
+            template<typename>
             friend class KAutoObjectWithListContainer;
         private:
             util::IntrusiveRedBlackTreeNode m_list_node;
@@ -250,28 +249,8 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KAutoObjectWithList(util::ConstantInitializeTag) : KAutoObjectWithListBase(util::ConstantInitialize), m_list_node(util::ConstantInitialize) { /* ... */ }
             ALWAYS_INLINE explicit KAutoObjectWithList() { /* ... */ }
         public:
-            using RedBlackKeyType = u64;
-
-            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const RedBlackKeyType     &v) { return v; }
-            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const KAutoObjectWithList &v) { return v.GetId(); }
-
-            template<typename T> requires (std::same_as<T, KAutoObjectWithList> || std::same_as<T, RedBlackKeyType>)
-            static ALWAYS_INLINE int Compare(const T &lhs, const KAutoObjectWithList &rhs) {
-                const u64 lid = GetRedBlackKey(lhs);
-                const u64 rid = GetRedBlackKey(rhs);
-
-                if (lid < rid) {
-                    return -1;
-                } else if (lid > rid) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }
-        public:
-            virtual u64 GetId() const {
-                return reinterpret_cast<u64>(this);
-            }
+            /* NOTE: This is virtual in Nintendo's kernel. */
+            u64 GetId() const;
     };
 
     template<typename T> requires std::derived_from<T, KAutoObject>

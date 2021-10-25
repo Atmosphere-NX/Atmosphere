@@ -610,7 +610,8 @@ namespace ams::kern {
             size_t GetKernelStackUsage() const;
         public:
             /* Overridden parent functions. */
-            virtual u64 GetId() const override final { return this->GetThreadId(); }
+            ALWAYS_INLINE u64 GetIdImpl() const { return this->GetThreadId(); }
+            ALWAYS_INLINE u64 GetId() const { return this->GetIdImpl(); }
 
             bool IsInitialized() const { return m_initialized; }
             uintptr_t GetPostDestroyArgument() const { return reinterpret_cast<uintptr_t>(m_parent) | (m_resource_limit_release_hint ? 1 : 0); }
@@ -662,16 +663,6 @@ namespace ams::kern {
 
     ALWAYS_INLINE s32 GetCurrentCoreId() {
         return GetCurrentThread().GetCurrentCore();
-    }
-
-    ALWAYS_INLINE void KAutoObject::ScheduleDestruction() {
-        MESOSPHERE_ASSERT_THIS();
-
-        /* Set our object to destroy. */
-        m_next_closed_object = GetCurrentThread().GetClosedObject();
-
-        /* Set ourselves as the thread's next object to destroy. */
-        GetCurrentThread().SetClosedObject(this);
     }
 
     ALWAYS_INLINE void KTimerTask::OnTimer() {

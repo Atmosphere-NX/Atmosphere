@@ -20,77 +20,129 @@
 
 namespace ams::kern {
 
-    class KAutoObjectWithListContainer {
-        NON_COPYABLE(KAutoObjectWithListContainer);
-        NON_MOVEABLE(KAutoObjectWithListContainer);
-        public:
-            using ListType = util::IntrusiveRedBlackTreeMemberTraits<&KAutoObjectWithList::m_list_node>::TreeType<KAutoObjectWithList>;
-        public:
-            class ListAccessor : public KScopedLightLock {
-                private:
-                    ListType &m_list;
-                public:
-                    explicit ListAccessor(KAutoObjectWithListContainer *container) : KScopedLightLock(container->m_lock), m_list(container->m_object_list) { /* ... */ }
-                    explicit ListAccessor(KAutoObjectWithListContainer &container) : KScopedLightLock(container.m_lock), m_list(container.m_object_list) { /* ... */ }
+    namespace impl {
 
-                    ALWAYS_INLINE typename ListType::iterator begin() const {
-                        return m_list.begin();
-                    }
+        template<typename T>
+        struct GetAutoObjectWithListComparator;
 
-                    ALWAYS_INLINE typename ListType::iterator end() const {
-                        return m_list.end();
-                    }
+        class KAutoObjectWithListContainerBase {
+            NON_COPYABLE(KAutoObjectWithListContainerBase);
+            NON_MOVEABLE(KAutoObjectWithListContainerBase);
+            protected:
+                template<typename ListType>
+                class ListAccessorImpl {
+                    NON_COPYABLE(ListAccessorImpl);
+                    NON_MOVEABLE(ListAccessorImpl);
+                    private:
+                        KScopedLightLock m_lk;
+                        ListType &m_list;
+                    public:
+                        explicit ALWAYS_INLINE ListAccessorImpl(KAutoObjectWithListContainerBase *container, ListType &list) : m_lk(container->m_lock), m_list(list) { /* ... */ }
+                        explicit ALWAYS_INLINE ListAccessorImpl(KAutoObjectWithListContainerBase &container, ListType &list) : m_lk(container.m_lock), m_list(list) { /* ... */ }
 
-                    ALWAYS_INLINE typename ListType::iterator find(typename ListType::const_reference ref) const {
-                        return m_list.find(ref);
-                    }
+                        ALWAYS_INLINE ~ListAccessorImpl() { /* ... */ }
 
-                    ALWAYS_INLINE typename ListType::iterator find_key(typename ListType::const_key_reference ref) const {
-                        return m_list.find_key(ref);
-                    }
-            };
+                        ALWAYS_INLINE typename ListType::iterator begin() const {
+                            return m_list.begin();
+                        }
 
-            friend class ListAccessor;
-        private:
-            KLightLock m_lock;
-            ListType m_object_list;
-        public:
-            constexpr KAutoObjectWithListContainer() : m_lock(), m_object_list() { MESOSPHERE_ASSERT_THIS(); }
+                        ALWAYS_INLINE typename ListType::iterator end() const {
+                            return m_list.end();
+                        }
 
-            void Initialize() { MESOSPHERE_ASSERT_THIS(); }
-            void Finalize() { MESOSPHERE_ASSERT_THIS(); }
+                        ALWAYS_INLINE typename ListType::iterator find(typename ListType::const_reference ref) const {
+                            return m_list.find(ref);
+                        }
 
-            void Register(KAutoObjectWithList *obj) {
-                MESOSPHERE_ASSERT_THIS();
+                        ALWAYS_INLINE typename ListType::iterator find_key(typename ListType::const_key_reference ref) const {
+                            return m_list.find_key(ref);
+                        }
+                };
 
-                KScopedLightLock lk(m_lock);
+                template<typename ListType>
+                friend class ListAccessorImpl;
+            private:
+                KLightLock m_lock;
+            protected:
+                constexpr KAutoObjectWithListContainerBase() : m_lock() { /* ... */ }
 
-                m_object_list.insert(*obj);
-            }
+                ALWAYS_INLINE void InitializeImpl() { MESOSPHERE_ASSERT_THIS(); }
+                ALWAYS_INLINE void FinalizeImpl() { MESOSPHERE_ASSERT_THIS(); }
 
-            void Unregister(KAutoObjectWithList *obj) {
-                MESOSPHERE_ASSERT_THIS();
+                template<typename ListType>
+                void RegisterImpl(KAutoObjectWithList *obj, ListType &list) {
+                    MESOSPHERE_ASSERT_THIS();
 
-                KScopedLightLock lk(m_lock);
+                    KScopedLightLock lk(m_lock);
 
-                m_object_list.erase(m_object_list.iterator_to(*obj));
-            }
-
-            template<typename T> requires (std::derived_from<T, KAutoObjectWithList> && requires (const T &t) { { t.GetOwner() } -> std::convertible_to<const KProcess *>; })
-            size_t GetOwnedCount(const KProcess *owner) {
-                MESOSPHERE_ASSERT_THIS();
-
-                KScopedLightLock lk(m_lock);
-
-                size_t count = 0;
-
-                for (const auto &obj : m_object_list) {
-                    if (const T * const derived = obj.DynamicCast<T *>(); derived != nullptr && derived->GetOwner() == owner) {
-                        ++count;
-                    }
+                    list.insert(*obj);
                 }
 
-                return count;
+                template<typename ListType>
+                void UnregisterImpl(KAutoObjectWithList *obj, ListType &list) {
+                    MESOSPHERE_ASSERT_THIS();
+
+                    KScopedLightLock lk(m_lock);
+
+                    list.erase(list.iterator_to(*obj));
+                }
+
+                template<typename U, typename ListType>
+                size_t GetOwnedCountImpl(const KProcess *owner, ListType &list) {
+                    MESOSPHERE_ASSERT_THIS();
+
+                    KScopedLightLock lk(m_lock);
+
+                    size_t count = 0;
+
+                    for (const auto &obj : list) {
+                        AMS_AUDIT(obj.DynamicCast<const U *>() != nullptr);
+                        if (static_cast<const U &>(obj).GetOwner() == owner) {
+                            ++count;
+                        }
+                    }
+
+                    return count;
+                }
+        };
+
+        struct DummyKAutoObjectWithListComparator {
+            static NOINLINE int Compare(KAutoObjectWithList &lhs, KAutoObjectWithList &rhs) {
+                AMS_ASSUME(false);
+            }
+        };
+
+    }
+
+    template<typename T>
+    class KAutoObjectWithListContainer : public impl::KAutoObjectWithListContainerBase {
+        private:
+            using Base = impl::KAutoObjectWithListContainerBase;
+        public:
+            class ListAccessor;
+            friend class ListAccessor;
+
+            template<typename Comparator>
+            using ListType = util::IntrusiveRedBlackTreeMemberTraits<&KAutoObjectWithList::m_list_node>::TreeType<Comparator>;
+
+            using DummyListType = ListType<impl::DummyKAutoObjectWithListComparator>;
+        private:
+            DummyListType m_dummy_object_list;
+        public:
+            constexpr ALWAYS_INLINE KAutoObjectWithListContainer() : Base(), m_dummy_object_list() { static_assert(std::derived_from<T, KAutoObjectWithList>); }
+
+            ALWAYS_INLINE void Initialize() { return this->InitializeImpl(); }
+            ALWAYS_INLINE void Finalize() { return this->FinalizeImpl(); }
+
+            void Register(T *obj);
+            void Unregister(T *obj);
+
+        private:
+            size_t GetOwnedCountChecked(const KProcess *owner);
+        public:
+            template<typename U> requires (std::same_as<U, T> && requires (const U &u) { { u.GetOwner() } -> std::convertible_to<const KProcess *>; })
+            ALWAYS_INLINE size_t GetOwnedCount(const KProcess *owner) {
+                return this->GetOwnedCountChecked(owner);
             }
     };
 

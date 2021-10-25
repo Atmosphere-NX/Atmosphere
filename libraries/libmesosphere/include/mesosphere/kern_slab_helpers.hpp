@@ -68,7 +68,7 @@ namespace ams::kern {
     class KAutoObjectWithSlabHeapAndContainer : public Base {
         private:
             static constinit inline KSlabHeap<Derived, SupportDynamicExpansion> s_slab_heap;
-            static constinit inline KAutoObjectWithListContainer s_container;
+            static constinit inline KAutoObjectWithListContainer<Derived> s_container;
         private:
             static ALWAYS_INLINE Derived *Allocate() {
                 return s_slab_heap.Allocate();
@@ -78,9 +78,9 @@ namespace ams::kern {
                 s_slab_heap.Free(obj);
             }
         public:
-            class ListAccessor : public KAutoObjectWithListContainer::ListAccessor {
+            class ListAccessor : public KAutoObjectWithListContainer<Derived>::ListAccessor {
                 public:
-                    ALWAYS_INLINE ListAccessor() : KAutoObjectWithListContainer::ListAccessor(s_container) { /* ... */ }
+                    ALWAYS_INLINE ListAccessor() : KAutoObjectWithListContainer<Derived>::ListAccessor(s_container) { /* ... */ }
                     ALWAYS_INLINE ~ListAccessor() { /* ... */ }
             };
         private:
@@ -111,7 +111,7 @@ namespace ams::kern {
                 Derived * const derived = static_cast<Derived *>(this);
 
                 if (IsInitialized(derived)) {
-                    s_container.Unregister(this);
+                    s_container.Unregister(derived);
                     const uintptr_t arg = GetPostDestroyArgument(derived);
                     derived->Finalize();
                     Free(derived);

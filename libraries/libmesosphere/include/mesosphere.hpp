@@ -90,3 +90,6 @@
 
 /* Main functionality. */
 #include <mesosphere/kern_main.hpp>
+
+/* Deferred includes. */
+#include <mesosphere/kern_k_auto_object_impls.hpp>
