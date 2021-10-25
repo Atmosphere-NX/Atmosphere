@@ -59,14 +59,6 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KReadableEvent::Clear() {
-        MESOSPHERE_ASSERT_THIS();
-
-        this->Reset();
-
-        return ResultSuccess();
-    }
-
     Result KReadableEvent::Reset() {
         MESOSPHERE_ASSERT_THIS();
 

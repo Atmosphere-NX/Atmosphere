@@ -432,7 +432,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    void KProcess::DoWorkerTask() {
+    void KProcess::DoWorkerTaskImpl() {
         /* Terminate child threads. */
         TerminateChildren(this, nullptr);
 

@@ -406,7 +406,7 @@ namespace ams::kern {
         this->Close();
     }
 
-    void KThread::DoWorkerTask() {
+    void KThread::DoWorkerTaskImpl() {
         /* Finish the termination that was begun by Exit(). */
         this->FinishTermination();
     }

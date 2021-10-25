@@ -96,7 +96,7 @@ namespace ams::kern {
                     size_t count = 0;
 
                     for (const auto &obj : list) {
-                        AMS_AUDIT(obj.DynamicCast<const U *>() != nullptr);
+                        MESOSPHERE_AUDIT(obj.DynamicCast<const U *>() != nullptr);
                         if (static_cast<const U &>(obj).GetOwner() == owner) {
                             ++count;
                         }

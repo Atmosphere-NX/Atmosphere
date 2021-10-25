@@ -41,6 +41,17 @@ namespace ams::kern {
 
     }
 
+    void KWorkerTask::DoWorkerTask() {
+        if (auto * const thread = this->DynamicCast<KThread *>(); thread != nullptr) {
+            return thread->DoWorkerTaskImpl();
+        } else {
+            auto * const process = this->DynamicCast<KProcess *>();
+            MESOSPHERE_ABORT_UNLESS(process != nullptr);
+
+            return process->DoWorkerTaskImpl();
+        }
+    }
+
     void KWorkerTaskManager::Initialize(s32 priority) {
         /* Reserve a thread from the system limit. */
         MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));

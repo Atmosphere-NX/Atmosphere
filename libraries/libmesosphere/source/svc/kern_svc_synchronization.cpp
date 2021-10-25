@@ -35,7 +35,11 @@ namespace ams::kern::svc {
             {
                 KScopedAutoObject readable_event = handle_table.GetObject<KReadableEvent>(handle);
                 if (readable_event.IsNotNull()) {
-                    return readable_event->Reset();
+                    if (auto * const interrupt_event = readable_event->DynamicCast<KInterruptEvent *>(); interrupt_event != nullptr) {
+                        return interrupt_event->Reset();
+                    } else {
+                        return readable_event->Reset();
+                    }
                 }
             }
 

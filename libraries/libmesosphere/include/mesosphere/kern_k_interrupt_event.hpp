@@ -38,7 +38,16 @@ namespace ams::kern {
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
             void Finalize();
 
-            virtual Result Reset() override;
+            Result Reset();
+
+            Result Clear() {
+                MESOSPHERE_ASSERT_THIS();
+
+                /* Try to perform a reset, succeeding unconditionally. */
+                this->Reset();
+
+                return ResultSuccess();
+            }
 
             bool IsInitialized() const { return m_is_initialized; }
 

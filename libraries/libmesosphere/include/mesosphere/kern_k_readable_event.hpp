@@ -36,11 +36,22 @@ namespace ams::kern {
             constexpr KEvent *GetParent() const { return m_parent; }
 
             Result Signal();
-            Result Clear();
+            Result Reset();
+
+            Result Clear() {
+                MESOSPHERE_ASSERT_THIS();
+
+                /* Try to perform a reset, succeeding unconditionally. */
+                this->Reset();
+
+                return ResultSuccess();
+            }
 
             virtual bool IsSignaled() const override;
             virtual void Destroy() override;
-            virtual Result Reset();
+
+            /* NOTE: This is a virtual function in Nintendo's kernel. */
+            /* virtual Result Reset(); */
     };
 
 }

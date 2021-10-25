@@ -32,7 +32,7 @@ namespace ams::kern {
 
     using KThreadFunction = void (*)(uintptr_t);
 
-    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public util::IntrusiveListBaseNode<KThread>, public KTimerTask, public KWorkerTask {
+    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KWorkerTask>, public util::IntrusiveListBaseNode<KThread>, public KTimerTask {
         MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
         private:
             friend class KProcess;
@@ -235,7 +235,7 @@ namespace ams::kern {
             bool                            m_resource_limit_release_hint;
         public:
             constexpr explicit KThread(util::ConstantInitializeTag)
-                : KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
+                : KAutoObjectWithSlabHeapAndContainer<KThread, KWorkerTask>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
                   m_process_list_node{}, m_condvar_arbiter_tree_node{util::ConstantInitialize}, m_priority{-1}, m_condvar_tree{}, m_condvar_key{},
                   m_thread_context{util::ConstantInitialize}, m_virtual_affinity_mask{}, m_physical_affinity_mask{}, m_thread_id{}, m_cpu_time{0}, m_address_key{Null<KProcessAddress>}, m_parent{},
                   m_kernel_stack_top{}, m_light_ipc_data{}, m_tls_address{Null<KProcessAddress>}, m_tls_heap_address{}, m_activity_pause_lock{}, m_sync_object_buffer{util::ConstantInitialize},
@@ -622,7 +622,7 @@ namespace ams::kern {
 
             virtual bool IsSignaled() const override;
             void OnTimer();
-            virtual void DoWorkerTask() override;
+            void DoWorkerTaskImpl();
         public:
             static constexpr bool IsConditionVariableThreadTreeValid() {
                 return ConditionVariableThreadTreeTraits::IsValid();

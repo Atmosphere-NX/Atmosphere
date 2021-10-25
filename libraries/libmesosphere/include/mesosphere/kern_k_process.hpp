@@ -34,7 +34,7 @@
 
 namespace ams::kern {
 
-    class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject>, public KWorkerTask {
+    class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KWorkerTask> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KProcess, KSynchronizationObject);
         public:
             enum State {
@@ -399,7 +399,7 @@ namespace ams::kern {
                 return m_is_signaled;
             }
 
-            virtual void DoWorkerTask() override;
+            void DoWorkerTaskImpl();
         private:
             void ChangeState(State new_state) {
                 if (m_state != new_state) {
