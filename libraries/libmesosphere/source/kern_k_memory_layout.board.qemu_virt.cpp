@@ -19,11 +19,7 @@ namespace ams::kern {
 
     namespace {
 
-        constexpr uintptr_t DramPhysicalAddress = 0x40000000;
         constexpr size_t ReservedEarlyDramSize  = 0x00080000;
-
-        constexpr size_t CarveoutAlignment      = 0x20000;
-        constexpr size_t CarveoutSizeMax        = 512_MB - CarveoutAlignment;
 
         template<typename... T> requires (std::same_as<T, KMemoryRegionAttr> && ...)
         constexpr ALWAYS_INLINE KMemoryRegionType GetMemoryRegionType(KMemoryRegionType base, T... attr) {
@@ -32,6 +28,7 @@ namespace ams::kern {
 
         void InsertPoolPartitionRegionIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
             const u32 attr = cur_attr++;
+
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(start, size, phys_type, attr));
             const KMemoryRegion *phys = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(phys_type, attr);
             MESOSPHERE_INIT_ABORT_UNLESS(phys != nullptr);
@@ -50,7 +47,7 @@ namespace ams::kern {
 
         void SetupDramPhysicalMemoryRegions() {
             const size_t intended_memory_size                   = KSystemControl::Init::GetIntendedMemorySize();
-            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(DramPhysicalAddress);
+            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(ams::kern::MainMemoryAddress);
 
             /* Insert blocks into the tree. */
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
@@ -76,9 +73,6 @@ namespace ams::kern {
             const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernelBase);
             MESOSPHERE_INIT_ABORT_UNLESS(kernel_dram_region != nullptr);
 
-            const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
-            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
-
             /* Find the start of the pool partitions region. */
             const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
             MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
@@ -93,43 +87,56 @@ namespace ams::kern {
             /* Decide on starting addresses for our pools. */
             const uintptr_t application_pool_start   = pool_end - application_pool_size;
             const uintptr_t applet_pool_start        = application_pool_start - applet_pool_size;
-            const uintptr_t unsafe_system_pool_start = std::min(kernel_dram_start + CarveoutSizeMax, util::AlignDown(applet_pool_start - unsafe_system_pool_min_size, CarveoutAlignment));
+            const uintptr_t unsafe_system_pool_start = util::AlignDown(applet_pool_start - unsafe_system_pool_min_size, PageSize);
             const size_t    unsafe_system_pool_size  = applet_pool_start - unsafe_system_pool_start;
 
             /* We want to arrange application pool depending on where the middle of dram is. */
             const uintptr_t dram_midpoint = (dram_extents.GetAddress() + dram_extents.GetEndAddress()) / 2;
             u32 cur_pool_attr = 0;
             size_t total_overhead_size = 0;
-            if (dram_extents.GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
-                InsertPoolPartitionRegionIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
-                total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(application_pool_size);
-            } else {
-                const size_t first_application_pool_size  = dram_midpoint - application_pool_start;
-                const size_t second_application_pool_size = application_pool_start + application_pool_size - dram_midpoint;
-                InsertPoolPartitionRegionIntoBothTrees(application_pool_start, first_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
-                InsertPoolPartitionRegionIntoBothTrees(dram_midpoint, second_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
-                total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(first_application_pool_size);
-                total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(second_application_pool_size);
+
+            /* Insert the application pool. */
+            if (application_pool_size > 0) {
+                if (dram_extents.GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
+                    InsertPoolPartitionRegionIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(application_pool_size);
+                } else {
+                    const size_t first_application_pool_size  = dram_midpoint - application_pool_start;
+                    const size_t second_application_pool_size = application_pool_start + application_pool_size - dram_midpoint;
+                    InsertPoolPartitionRegionIntoBothTrees(application_pool_start, first_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    InsertPoolPartitionRegionIntoBothTrees(dram_midpoint, second_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(first_application_pool_size);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(second_application_pool_size);
+                }
             }
 
             /* Insert the applet pool. */
-            InsertPoolPartitionRegionIntoBothTrees(applet_pool_start, applet_pool_size, KMemoryRegionType_DramAppletPool, KMemoryRegionType_VirtualDramAppletPool, cur_pool_attr);
-            total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(applet_pool_size);
+            if (applet_pool_size > 0) {
+                InsertPoolPartitionRegionIntoBothTrees(applet_pool_start, applet_pool_size, KMemoryRegionType_DramAppletPool, KMemoryRegionType_VirtualDramAppletPool, cur_pool_attr);
+                total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(applet_pool_size);
+            }
 
             /* Insert the nonsecure system pool. */
-            InsertPoolPartitionRegionIntoBothTrees(unsafe_system_pool_start, unsafe_system_pool_size, KMemoryRegionType_DramSystemNonSecurePool, KMemoryRegionType_VirtualDramSystemNonSecurePool, cur_pool_attr);
-            total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(unsafe_system_pool_size);
+            if (unsafe_system_pool_size > 0) {
+                InsertPoolPartitionRegionIntoBothTrees(unsafe_system_pool_start, unsafe_system_pool_size, KMemoryRegionType_DramSystemNonSecurePool, KMemoryRegionType_VirtualDramSystemNonSecurePool, cur_pool_attr);
+                total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(unsafe_system_pool_size);
+            }
+
+            /* Determine final total overhead size. */
+            total_overhead_size += KMemoryManager::CalculateManagementOverheadSize((unsafe_system_pool_start - pool_partitions_start) - total_overhead_size);
+
+            /* NOTE: Nintendo's kernel has layout [System, Management] but we have [Management, System]. This ensures the four UserPool regions are contiguous. */
+
+            /* Insert the system pool. */
+            const uintptr_t system_pool_start = pool_partitions_start + total_overhead_size;
+            const size_t    system_pool_size  = unsafe_system_pool_start - system_pool_start;
+            InsertPoolPartitionRegionIntoBothTrees(system_pool_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
 
             /* Insert the pool management region. */
-            total_overhead_size += KMemoryManager::CalculateManagementOverheadSize((unsafe_system_pool_start - pool_partitions_start) - total_overhead_size);
-            const uintptr_t pool_management_start = unsafe_system_pool_start - total_overhead_size;
+            const uintptr_t pool_management_start = pool_partitions_start;
             const size_t    pool_management_size  = total_overhead_size;
             u32 pool_management_attr = 0;
             InsertPoolPartitionRegionIntoBothTrees(pool_management_start, pool_management_size, KMemoryRegionType_DramPoolManagement, KMemoryRegionType_VirtualDramPoolManagement, pool_management_attr);
-
-            /* Insert the system pool. */
-            const uintptr_t system_pool_size = pool_management_start - pool_partitions_start;
-            InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
         }
 
     }

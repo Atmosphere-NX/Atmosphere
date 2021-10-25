@@ -212,12 +212,16 @@ namespace ams::kern {
             static NOINLINE auto GetKernelPageTableHeapRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelPtHeap); }
             static NOINLINE auto GetKernelInitPageTableRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelInitPt); }
 
-            static NOINLINE auto GetKernelPoolManagementRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolManagement); }
             static NOINLINE auto GetKernelPoolPartitionRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolPartition); }
+            static NOINLINE auto GetKernelPoolManagementRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolManagement); }
             static NOINLINE auto GetKernelSystemPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemPool); }
             static NOINLINE auto GetKernelSystemNonSecurePoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemNonSecurePool); }
             static NOINLINE auto GetKernelAppletPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramAppletPool); }
             static NOINLINE auto GetKernelApplicationPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramApplicationPool); }
+
+            static NOINLINE bool HasKernelSystemNonSecurePoolRegion() { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramSystemNonSecurePool) != nullptr; }
+            static NOINLINE bool HasKernelAppletPoolRegion() { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramAppletPool) != nullptr; }
+            static NOINLINE bool HasKernelApplicationPoolRegion() { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramApplicationPool) != nullptr; }
 
             static NOINLINE auto GetKernelTraceBufferRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelTraceBuffer); }
     };

@@ -15,10 +15,16 @@
  */
 #pragma once
 #include <mesosphere.hpp>
+#include <mesosphere/arch/arm64/kern_secure_monitor_base.hpp>
 
 namespace ams::kern::board::nintendo::nx::smc {
 
     /* Types. */
+    enum SmcId {
+        SmcId_User       = 0,
+        SmcId_Supervisor = 1,
+    };
+
     enum MemorySize {
         MemorySize_4GB = 0,
         MemorySize_6GB = 1,
@@ -105,15 +111,12 @@ namespace ams::kern::board::nintendo::nx::smc {
 
     bool SetConfig(ConfigItem config_item, u64 value);
 
-    void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
-
     void NORETURN Panic(u32 color);
 
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
 
     namespace init {
 
-        void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
         void GenerateRandomBytes(void *dst, size_t size);
         bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);

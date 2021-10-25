@@ -63,14 +63,6 @@ namespace ams::kern::board::qemu::virt::smc {
         NotPermitted          = 6,
     };
 
-    void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
-
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
-
-    namespace init {
-
-        void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
-
-    }
 
 }
