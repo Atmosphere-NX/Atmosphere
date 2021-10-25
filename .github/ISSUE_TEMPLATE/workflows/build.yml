@@ -1,0 +1,43 @@
+name: NX_CI
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [published]
+jobs:
+  build_NX:
+      runs-on: ubuntu-latest
+    
+      steps:
+        - name: Extract owner and repo
+          uses: jungwinter/split@v1
+          id: repo
+          with:
+            seperator: /
+            msg: ${{ github.repository }}
+        - name: Checkout
+          uses: actions/checkout@v2
+          with:
+            ref: master
+            submodules: recursive
+        - name: Use Docker Build
+          uses: actions-hub/docker/cli@master
+          env:
+              SKIP_LOGIN: true
+        - run: | 
+               docker run -t --rm --name builder -v `pwd`:`pwd` -w `pwd` zerofo/ns_dev:0.4 make dist-no-debug -j8
+               
+        - name: Upload file
+          uses: actions/upload-artifact@v2
+          with:
+            path: ./out/*zip
+        - name: Upload binaries to release
+          uses: svenstaro/upload-release-action@v2
+          with:
+            repo_token: ${{ secrets.release_token }}
+            file: ./out/*zip
+            tag: ${{ github.ref }}
+            overwrite: true
+            file_glob: true
