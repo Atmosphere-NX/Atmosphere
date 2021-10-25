@@ -384,11 +384,13 @@ namespace ams::kern::arch::arm64::cpu {
             /* Store cache from L1 up to (level of coherence - 1). */
             for (int level = 0; level < levels_of_coherency - 1; ++level) {
                 PerformCacheOperationBySetWayImpl<true>(level, StoreDataCacheLineBySetWayImpl);
+                DataSynchronizationBarrier();
             }
 
             /* Flush cache from (level of coherence - 1) down to L0. */
             for (int level = levels_of_coherency; level > 0; --level) {
                 PerformCacheOperationBySetWayImpl<true>(level - 1, FlushDataCacheLineBySetWayImpl);
+                DataSynchronizationBarrier();
             }
         }
 
