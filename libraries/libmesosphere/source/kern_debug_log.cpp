@@ -32,6 +32,9 @@ namespace ams::kern {
                 return;
             }
 
+            #if defined(MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING)
+            KDebugLogImpl::PutStringBySemihosting(str);
+            #else
             while (*str) {
                 /* Get a character. */
                 const char c = *(str++);
@@ -44,6 +47,7 @@ namespace ams::kern {
             }
 
             KDebugLogImpl::Flush();
+            #endif
         }
 
         #if defined(MESOSPHERE_ENABLE_DEBUG_PRINT)
@@ -54,6 +58,11 @@ namespace ams::kern {
                 return ResultSuccess();
             }
 
+            #if defined(MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING)
+            /* TODO: should we do this properly? */
+            KDebugLogImpl::PutStringBySemihosting(user_str.GetUnsafePointer());
+            MESOSPHERE_UNUSED(len);
+            #else
             for (size_t i = 0; i < len; ++i) {
                 /* Get a character. */
                 char c;
@@ -67,6 +76,7 @@ namespace ams::kern {
             }
 
             KDebugLogImpl::Flush();
+            #endif
 
             return ResultSuccess();
         }

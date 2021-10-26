@@ -21,6 +21,7 @@ namespace ams::kern {
     class KDebugLogImpl {
         public:
             static NOINLINE bool Initialize();
+            static NOINLINE void PutStringBySemihosting(const char *s);
             static NOINLINE void PutChar(char c);
             static NOINLINE void Flush();
 

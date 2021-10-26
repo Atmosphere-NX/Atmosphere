@@ -250,7 +250,7 @@ namespace ams::kern {
                 {
                     const u32 has_waiter_flag = 1;
                     WriteToUser(key, std::addressof(has_waiter_flag));
-                    cpu::DataMemoryBarrier();
+                    cpu::DataMemoryBarrierInnerShareable();
                 }
 
                 /* Write the value to userspace. */

@@ -17,6 +17,10 @@
 
 namespace ams::init {
 
+    WEAK_SYMBOL void InitializeSystemModuleBeforeConstructors() {
+        /* This should only be used in exceptional circumstances. */
+    }
+
     WEAK_SYMBOL void InitializeSystemModule() {
         /* TODO: What should we do here, if anything? */
         /* Nintendo does nndiagStartup(); nn::diag::InitializeSystemProcessAbortObserver(); */

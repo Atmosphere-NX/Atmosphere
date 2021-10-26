@@ -30,6 +30,8 @@ namespace ams::kern::arch::arm64::cpu {
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     constexpr inline size_t NumCores = 4;
+#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+    constexpr inline size_t NumCores = 4;
 #else
     #error "Unknown Board for cpu::NumCores"
 #endif
@@ -48,6 +50,10 @@ namespace ams::kern::arch::arm64::cpu {
 
     ALWAYS_INLINE void DataMemoryBarrier() {
         __asm__ __volatile__("dmb sy" ::: "memory");
+    }
+
+    ALWAYS_INLINE void DataMemoryBarrierInnerShareable() {
+        __asm__ __volatile__("dmb ish" ::: "memory");
     }
 
     ALWAYS_INLINE void InstructionMemoryBarrier() {

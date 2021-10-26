@@ -73,7 +73,7 @@ namespace ams::kern::board::nintendo::nx {
 
         void PowerOnCpu(int core_id, KPhysicalAddress entry_phys_addr, u64 context_id) {
             /* Request the secure monitor power on the core. */
-            smc::CpuOn(cpu::MultiprocessorAffinityRegisterAccessor().GetCpuOnArgument() | core_id, GetInteger(entry_phys_addr), context_id);
+            ::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor, true>(cpu::MultiprocessorAffinityRegisterAccessor().GetCpuOnArgument() | core_id, GetInteger(entry_phys_addr), context_id);
         }
 
         void WaitOtherCpuPowerOff() {

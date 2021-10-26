@@ -61,51 +61,61 @@ namespace ams::hos {
 
     }
 
+    bool IsUnitTestProgramForSetVersion();
+
     void InitializeVersionInternal(bool allow_approximate) {
-        /* Get the current (and previous approximation of) target firmware. */
-        hos::Version prev, current;
-        bool has_prev = false;
-        {
-            /* Acquire exclusive access to set hos version. */
-            std::scoped_lock lk(g_hos_init_lock);
+        hos::Version current = hos::Version_Current;
 
-            /* Save the previous value of g_hos_version. */
-            prev     = g_hos_version;
-            has_prev = g_set_hos_version;
-
-            /* Set hos version = exosphere api version target firmware. */
-            g_hos_version = static_cast<hos::Version>(GetExosphereApiInfo(allow_approximate).GetTargetFirmware());
-
-            /* Save the current value of g_hos_version. */
-            current = g_hos_version;
-
-            /* Note that we've set a previous hos version. */
+        /* If we're unit testing, just set the version and move on. */
+        if (IsUnitTestProgramForSetVersion()) {
+            g_hos_version     = hos::Version_Current;
             g_set_hos_version = true;
-        }
+        } else {
+            /* Get the current (and previous approximation of) target firmware. */
+            hos::Version prev;
+            bool has_prev = false;
+            {
+                /* Acquire exclusive access to set hos version. */
+                std::scoped_lock lk(g_hos_init_lock);
 
-        /* Ensure that this is a hos version we can sanely *try* to run. */
-        /* To be friendly, we will only require that we recognize the major and minor versions. */
-        /* We can consider only recognizing major in the future, but micro seems safe to ignore as */
-        /* there are no breaking IPC changes in minor updates. */
-        {
-            constexpr u32 MaxMajor = (static_cast<u32>(hos::Version_Max) >> 24) & 0xFF;
-            constexpr u32 MaxMinor = (static_cast<u32>(hos::Version_Max) >> 16) & 0xFF;
+                /* Save the previous value of g_hos_version. */
+                prev     = g_hos_version;
+                has_prev = g_set_hos_version;
 
-            const u32 major = (static_cast<u32>(current) >> 24) & 0xFF;
-            const u32 minor = (static_cast<u32>(current) >> 16) & 0xFF;
+                /* Set hos version = exosphere api version target firmware. */
+                g_hos_version = static_cast<hos::Version>(GetExosphereApiInfo(allow_approximate).GetTargetFirmware());
 
-            const bool is_safely_tryable_version = (current <= hos::Version_Max) || (major == MaxMajor && minor <= MaxMinor);
-            AMS_ABORT_UNLESS(is_safely_tryable_version);
-        }
+                /* Save the current value of g_hos_version. */
+                current = g_hos_version;
 
-        /* Ensure that this is a hos version compatible with previous approximations. */
-        if (has_prev) {
-            AMS_ABORT_UNLESS(current >= prev);
+                /* Note that we've set a previous hos version. */
+                g_set_hos_version = true;
+            }
 
-            const u32 current_major = (static_cast<u32>(current) >> 24) & 0xFF;
-            const u32 prev_major    = (static_cast<u32>(prev) >> 24) & 0xFF;
+            /* Ensure that this is a hos version we can sanely *try* to run. */
+            /* To be friendly, we will only require that we recognize the major and minor versions. */
+            /* We can consider only recognizing major in the future, but micro seems safe to ignore as */
+            /* there are no breaking IPC changes in minor updates. */
+            {
+                constexpr u32 MaxMajor = (static_cast<u32>(hos::Version_Max) >> 24) & 0xFF;
+                constexpr u32 MaxMinor = (static_cast<u32>(hos::Version_Max) >> 16) & 0xFF;
 
-            AMS_ABORT_UNLESS(current_major == prev_major);
+                const u32 major = (static_cast<u32>(current) >> 24) & 0xFF;
+                const u32 minor = (static_cast<u32>(current) >> 16) & 0xFF;
+
+                const bool is_safely_tryable_version = (current <= hos::Version_Max) || (major == MaxMajor && minor <= MaxMinor);
+                AMS_ABORT_UNLESS(is_safely_tryable_version);
+            }
+
+            /* Ensure that this is a hos version compatible with previous approximations. */
+            if (has_prev) {
+                AMS_ABORT_UNLESS(current >= prev);
+
+                const u32 current_major = (static_cast<u32>(current) >> 24) & 0xFF;
+                const u32 prev_major    = (static_cast<u32>(prev) >> 24) & 0xFF;
+
+                AMS_ABORT_UNLESS(current_major == prev_major);
+            }
         }
 
         /* Set the version for libnx. */

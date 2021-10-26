@@ -74,6 +74,9 @@ namespace ams::kern {
 
                 /* Release an instance of the lock. */
                 if ((--m_lock_count) == 0) {
+                    /* Perform a memory barrier here. */
+                    cpu::DataMemoryBarrierInnerShareable();
+
                     /* We're no longer going to hold the lock. Take note of what cores need scheduling. */
                     const u64 cores_needing_scheduling = SchedulerType::UpdateHighestPriorityThreads();
 

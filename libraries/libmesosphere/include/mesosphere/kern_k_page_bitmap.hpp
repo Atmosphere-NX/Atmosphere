@@ -48,39 +48,20 @@ namespace ams::kern {
                     }
 
                     size_t SelectRandomBit(u64 bitmap) {
-                        u64 selected     = 0;
+                        u64 selected = 0;
 
-                        u64 cur_num_bits = BITSIZEOF(bitmap) / 2;
-                        u64 cur_mask     = (1ull << cur_num_bits) - 1;
+                        for (size_t cur_num_bits = BITSIZEOF(bitmap) / 2; cur_num_bits != 0; cur_num_bits /= 2) {
+                            const u64 high = (bitmap >> cur_num_bits);
+                            const u64 low  = (bitmap & (~(UINT64_C(0xFFFFFFFFFFFFFFFF) << cur_num_bits)));
 
-                        while (cur_num_bits) {
-                            const u64 low  = (bitmap >> 0) & cur_mask;
-                            const u64 high = (bitmap >> cur_num_bits) & cur_mask;
-
-                            bool choose_low;
-                            if (high == 0) {
-                                /* If only low val is set, choose low. */
-                                choose_low = true;
-                            } else if (low == 0) {
-                                /* If only high val is set, choose high. */
-                                choose_low = false;
-                            } else {
-                                /* If both are set, choose random. */
-                                choose_low = this->GenerateRandomBit();
-                            }
-
-                            /* If we chose low, proceed with low. */
-                            if (choose_low) {
-                                bitmap    = low;
-                                selected += 0;
-                            } else {
+                            /* Choose high if we have high and (don't have low or select high randomly). */
+                            if (high && (low == 0 || this->GenerateRandomBit())) {
                                 bitmap    = high;
                                 selected += cur_num_bits;
+                            } else {
+                                bitmap    = low;
+                                selected += 0;
                             }
-
-                            /* Proceed. */
-                            cur_num_bits /= 2;
-                            cur_mask >>= cur_num_bits;
                         }
 
                         return selected;

@@ -139,14 +139,20 @@ namespace ams::kern {
         PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
         PrintMemoryRegion("    MemoryPoolRegion",   KMemoryLayout::GetKernelPoolPartitionRegionPhysicalExtents());
         if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
-            PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
             PrintMemoryRegion("        Management",     KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
-            PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
-            PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
-            PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+            PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
+            if (KMemoryLayout::HasKernelSystemNonSecurePoolRegion()) {
+                PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
+            }
+            if (KMemoryLayout::HasKernelAppletPoolRegion()) {
+                PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
+            }
+            if (KMemoryLayout::HasKernelApplicationPoolRegion()) {
+                PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+            }
         } else {
-            PrintMemoryRegion("        Secure",     KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
             PrintMemoryRegion("        Management", KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
+            PrintMemoryRegion("        Secure",     KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
             PrintMemoryRegion("        Unsafe",     KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
         }
         if constexpr (IsKTraceEnabled) {

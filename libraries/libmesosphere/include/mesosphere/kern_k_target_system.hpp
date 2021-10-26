@@ -21,6 +21,7 @@ namespace ams::kern {
 
     class KTargetSystem {
         private:
+            friend class KSystemControlBase;
             friend class KSystemControl;
         private:
             static inline constinit bool s_is_debug_mode;

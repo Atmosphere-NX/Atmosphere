@@ -1130,7 +1130,7 @@ namespace ams::kern::board::nintendo::nx {
             size_t cur_size;
             {
                 /* Get the current contiguous range. */
-                KPageTableBase::MemoryRange contig_range = {};
+                KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
                 R_TRY(page_table->OpenMemoryRangeForMapDeviceAddressSpace(std::addressof(contig_range), process_address + mapped_size, size - mapped_size, ConvertToKMemoryPermission(device_perm), is_aligned));
 
                 /* Ensure we close the range when we're done. */
@@ -1288,7 +1288,7 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
 
         /* We need to traverse the ranges that make up our mapping, to make sure they're all good. Start by getting a contiguous range. */
-        KPageTableBase::MemoryRange contig_range = {};
+        KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
         if (R_FAILED(page_table->OpenMemoryRangeForUnmapDeviceAddressSpace(std::addressof(contig_range), process_address, size))) {
             return false;
         }

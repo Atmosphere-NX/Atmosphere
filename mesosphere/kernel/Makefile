@@ -85,6 +85,18 @@ $(eval $(call ATMOSPHERE_ADD_TARGET, audit, _audit, \
 	ATMOSPHERE_BUILD_SETTINGS="-DMESOSPHERE_BUILD_FOR_AUDITING" \
 ))
 
+$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_release, _qemu_virt, \
+	ATMOSPHERE_BUILD_SETTINGS="" \
+))
+
+$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_debug, _qemu_virt_debug, \
+	ATMOSPHERE_BUILD_SETTINGS="-DMESOSPHERE_BUILD_FOR_DEBUGGING" \
+))
+
+$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_audit, _qemu_virt_audit, \
+	ATMOSPHERE_BUILD_SETTINGS="-DMESOSPHERE_BUILD_FOR_AUDITING" \
+))
+
 $(ATMOSPHERE_BUILD_DIR)/%:
 	@[ -d $@ ] || mkdir -p $@
 

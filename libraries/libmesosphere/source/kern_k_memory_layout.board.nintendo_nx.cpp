@@ -19,7 +19,6 @@ namespace ams::kern {
 
     namespace {
 
-        constexpr uintptr_t DramPhysicalAddress = 0x80000000;
         constexpr size_t ReservedEarlyDramSize  = 0x60000;
 
         constexpr size_t CarveoutAlignment      = 0x20000;
@@ -100,7 +99,7 @@ namespace ams::kern {
 
         void SetupDramPhysicalMemoryRegions() {
             const size_t intended_memory_size                   = KSystemControl::Init::GetIntendedMemorySize();
-            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(DramPhysicalAddress);
+            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(ams::kern::MainMemoryAddress);
 
             /* Insert blocks into the tree. */
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
@@ -173,16 +172,21 @@ namespace ams::kern {
                 InsertPoolPartitionRegionIntoBothTrees(unsafe_system_pool_start, unsafe_system_pool_size, KMemoryRegionType_DramSystemNonSecurePool, KMemoryRegionType_VirtualDramSystemNonSecurePool, cur_pool_attr);
                 total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(unsafe_system_pool_size);
 
-                /* Insert the pool management region. */
+                /* Determine final total overhead size. */
                 total_overhead_size += KMemoryManager::CalculateManagementOverheadSize((unsafe_system_pool_start - pool_partitions_start) - total_overhead_size);
-                const uintptr_t pool_management_start = unsafe_system_pool_start - total_overhead_size;
+
+                /* NOTE: Nintendo's kernel has layout [System, Management] but we have [Management, System]. This ensures the four UserPool regions are contiguous. */
+
+                /* Insert the system pool. */
+                const uintptr_t system_pool_start = pool_partitions_start + total_overhead_size;
+                const size_t    system_pool_size  = unsafe_system_pool_start - system_pool_start;
+                InsertPoolPartitionRegionIntoBothTrees(system_pool_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
+
+                /* Insert the pool management region. */
+                const uintptr_t pool_management_start = pool_partitions_start;
                 const size_t    pool_management_size  = total_overhead_size;
                 u32 pool_management_attr = 0;
                 InsertPoolPartitionRegionIntoBothTrees(pool_management_start, pool_management_size, KMemoryRegionType_DramPoolManagement, KMemoryRegionType_VirtualDramPoolManagement, pool_management_attr);
-
-                /* Insert the system pool. */
-                const uintptr_t system_pool_size = pool_management_start - pool_partitions_start;
-                InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
             } else {
                 /* On < 5.0.0, setup a legacy 2-pool layout for backwards compatibility. */
 
@@ -249,14 +253,18 @@ namespace ams::kern {
                     total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(second_application_pool_size);
                 }
 
-                /* Insert the secure pool. */
-                InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, secure_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
-
-                /* Insert the pool management region. */
+                /* Validate the true overhead size. */
                 MESOSPHERE_INIT_ABORT_UNLESS(total_overhead_size <= approximate_total_overhead_size);
 
-                const uintptr_t pool_management_start = pool_partitions_start + secure_pool_size;
-                const size_t    pool_management_size  = unsafe_memory_start - pool_management_start;
+                /* NOTE: Nintendo's kernel has layout [System, Management] but we have [Management, System]. This ensures the UserPool regions are contiguous. */
+
+                /* Insert the secure pool. */
+                const uintptr_t secure_pool_start = unsafe_memory_start - secure_pool_size;
+                InsertPoolPartitionRegionIntoBothTrees(secure_pool_start, secure_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
+
+                /* Insert the pool management region. */
+                const uintptr_t pool_management_start = pool_partitions_start;
+                const size_t    pool_management_size  = secure_pool_start - pool_management_start;
                 MESOSPHERE_INIT_ABORT_UNLESS(total_overhead_size <= pool_management_size);
 
                 u32 pool_management_attr = 0;
