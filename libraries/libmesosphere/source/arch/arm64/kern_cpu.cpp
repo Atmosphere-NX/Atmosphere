@@ -76,7 +76,7 @@ namespace ams::kern::arch::arm64::cpu {
                     } else {
                         m_counter = cpu::GetPerformanceCounter(m_which);
                     }
-                    DataMemoryBarrier();
+                    DataMemoryBarrierInnerShareable();
                     m_done = true;
                     return nullptr;
                 }
