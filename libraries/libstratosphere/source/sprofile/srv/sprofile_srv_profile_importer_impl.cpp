@@ -19,16 +19,16 @@
 
 namespace ams::sprofile::srv {
 
-    Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfileDataForImportData &data) {
-        return m_manager->ImportProfile(data);
+    Result ProfileImporterImpl::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
+        return m_manager->ImportProfile(import);
     }
 
     Result ProfileImporterImpl::Commit() {
         return m_manager->Commit();
     }
 
-    Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data) {
-        return m_manager->ImportMetadata(data);
+    Result ProfileImporterImpl::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
+        return m_manager->ImportMetadata(import);
     }
 
 }

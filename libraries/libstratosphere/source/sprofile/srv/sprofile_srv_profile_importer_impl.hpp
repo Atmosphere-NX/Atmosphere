@@ -27,9 +27,9 @@ namespace ams::sprofile::srv {
         public:
             ProfileImporterImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
         public:
-            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &data);
+            Result ImportProfile(const sprofile::srv::ProfileDataForImportData &import);
             Result Commit();
-            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data);
+            Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import);
     };
     static_assert(IsIProfileImporter<ProfileImporterImpl>);
 

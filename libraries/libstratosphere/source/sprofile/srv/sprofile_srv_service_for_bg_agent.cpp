@@ -34,7 +34,7 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
-    Result ServiceForBgAgent::ReadMetadata(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ReadMetadataEntry> &out, const sprofile::srv::ReadMetadataArgument &arg) {
+    Result ServiceForBgAgent::GetMetadataEntryData(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileMetadataEntryData> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg) {
         /* Check size. */
         R_UNLESS(out.GetSize() >= arg.metadata.num_entries, sprofile::ResultInvalidArgument());
 

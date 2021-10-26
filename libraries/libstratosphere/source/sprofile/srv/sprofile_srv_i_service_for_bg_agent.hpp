@@ -18,9 +18,9 @@
 #include "sprofile_srv_i_profile_importer.hpp"
 
 #define AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileImporter, (sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out),                                                                 (out)) \
-    AMS_SF_METHOD_INFO(C, H, 200,  Result, ReadMetadata,        (sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ReadMetadataEntry> &out, const sprofile::srv::ReadMetadataArgument &arg), (out_count, out, arg)) \
-    AMS_SF_METHOD_INFO(C, H, 201,  Result, IsUpdateNeeded,      (sf::Out<bool> out, sprofile::Identifier revision_key),                                                                              (out, revision_key)) \
-    AMS_SF_METHOD_INFO(C, H, 2000, Result, Reset,               (),                                                                                                                                  ())
+    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileImporter,  (sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out),                                                                                    (out)) \
+    AMS_SF_METHOD_INFO(C, H, 200,  Result, GetMetadataEntryData, (sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileMetadataEntryData> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg), (out_count, out, arg)) \
+    AMS_SF_METHOD_INFO(C, H, 201,  Result, IsUpdateNeeded,       (sf::Out<bool> out, sprofile::Identifier revision_key),                                                                                                 (out, revision_key)) \
+    AMS_SF_METHOD_INFO(C, H, 2000, Result, Reset,                (),                                                                                                                                                     ())
 
 AMS_SF_DEFINE_INTERFACE(ams::sprofile, ISprofileServiceForBgAgent, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO)

@@ -38,7 +38,7 @@ namespace ams::sprofile::srv {
             bool HasProfile(Identifier id0, Identifier id1) {
                 /* Require that we have metadata. */
                 if (m_metadata.has_value()) {
-                    for (auto i = 0u; i < m_metadata->num_entries; ++i) {
+                    for (auto i = 0u; i < std::min<size_t>(m_metadata->num_entries, util::size(m_metadata->entries)); ++i) {
                         const auto &entry = m_metadata->entries[i];
                         if (entry.identifier_0 == id0 && entry.identifier_1 == id1) {
                             return true;
@@ -63,7 +63,7 @@ namespace ams::sprofile::srv {
                 m_revision_key = meta.revision_key;
 
                 /* Import all profiles. */
-                for (auto i = 0u; i < meta.num_entries; ++i) {
+                for (auto i = 0u; i < std::min<size_t>(meta.num_entries, util::size(meta.entries)); ++i) {
                     const auto &import_entry = meta.entries[i];
                     if (!this->HasProfile(import_entry.identifier_0, import_entry.identifier_1)) {
                         m_importing_profiles[m_importing_count++] = import_entry.identifier_0;

@@ -151,7 +151,7 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
-    Result ProfileManager::ImportProfile(const sprofile::srv::ProfileDataForImportData &data) {
+    Result ProfileManager::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_importer_mutex);
         std::scoped_lock lk2(m_fs_mutex);
@@ -159,25 +159,37 @@ namespace ams::sprofile::srv {
         /* Check that we have an importer. */
         R_UNLESS(m_profile_importer.has_value(), sprofile::ResultInvalidState());
 
-        /* Check that the metadata we're importing is valid. */
-        R_UNLESS(data.data.version == ProfileDataVersion, sprofile::ResultInvalidDataVersion());
+        /* Check that the metadata we're importing is a valid version. */
+        R_UNLESS(IsValidProfileFormatVersion(import.header.version), sprofile::ResultInvalidDataVersion());
+
+        /* Check that the metadata we're importing has a valid hash. */
+        {
+            crypto::Md5Generator md5;
+            md5.Update(std::addressof(import.header), sizeof(import.header));
+            md5.Update(std::addressof(import.data), sizeof(import.data) - sizeof(import.data.entries[0]) * (util::size(import.data.entries) - std::min<size_t>(import.data.num_entries, util::size(import.data.entries))));
+
+            u8 hash[crypto::Md5Generator::HashSize];
+            md5.GetHash(hash, sizeof(hash));
+
+            R_UNLESS(crypto::IsSameBytes(hash, import.hash, sizeof(hash)), sprofile::ResultInvalidDataHash());
+        }
 
         /* Succeed if we already have the profile. */
-        R_SUCCEED_IF(m_profile_importer->HasProfile(data.identifier_0, data.identifier_1));
+        R_SUCCEED_IF(m_profile_importer->HasProfile(import.header.identifier_0, import.header.identifier_1));
 
         /* Check that we're importing the profile. */
-        R_UNLESS(m_profile_importer->CanImportProfile(data.identifier_0), sprofile::ResultInvalidState());
+        R_UNLESS(m_profile_importer->CanImportProfile(import.header.identifier_0), sprofile::ResultInvalidState());
 
         /* Create temporary directories. */
         R_TRY(this->EnsureTemporaryDirectories());
 
         /* Create profile. */
         char path[0x30];
-        CreateTemporaryProfilePath(path, sizeof(path), m_save_data_info.mount_name, data.identifier_0);
-        R_TRY(WriteFile(path, std::addressof(data.data), sizeof(data.data)));
+        CreateTemporaryProfilePath(path, sizeof(path), m_save_data_info.mount_name, import.header.identifier_0);
+        R_TRY(WriteFile(path, std::addressof(import.data), sizeof(import.data)));
 
         /* Set profile imported. */
-        m_profile_importer->OnImportProfile(data.identifier_0);
+        m_profile_importer->OnImportProfile(import.header.identifier_0);
         return ResultSuccess();
     }
 
@@ -231,7 +243,7 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
-    Result ProfileManager::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data) {
+    Result ProfileManager::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_importer_mutex);
         std::scoped_lock lk2(m_fs_mutex);
@@ -240,8 +252,21 @@ namespace ams::sprofile::srv {
         R_UNLESS(m_profile_importer.has_value(),          sprofile::ResultInvalidState());
         R_UNLESS(m_profile_importer->CanImportMetadata(), sprofile::ResultInvalidState());
 
-        /* Check that the metadata we're importing is valid. */
-        R_UNLESS(data.metadata.version == ProfileMetadataVersion, sprofile::ResultInvalidMetadataVersion());
+        /* Check that the metadata we're importing is a valid version. */
+        R_UNLESS(IsValidProfileFormatVersion(import.header.version), sprofile::ResultInvalidMetadataVersion());
+
+        /* Check that the metadata we're importing has a valid hash. */
+        {
+            crypto::Md5Generator md5;
+            md5.Update(std::addressof(import.header), sizeof(import.header));
+            md5.Update(std::addressof(import.metadata), sizeof(import.metadata));
+            md5.Update(std::addressof(import.entries), sizeof(import.entries[0]) * std::min<size_t>(import.metadata.num_entries, util::size(import.metadata.entries)));
+
+            u8 hash[crypto::Md5Generator::HashSize];
+            md5.GetHash(hash, sizeof(hash));
+
+            R_UNLESS(crypto::IsSameBytes(hash, import.hash, sizeof(hash)), sprofile::ResultInvalidMetadataHash());
+        }
 
         /* Create temporary directories. */
         R_TRY(this->EnsureTemporaryDirectories());
@@ -249,10 +274,10 @@ namespace ams::sprofile::srv {
         /* Create metadata. */
         char path[0x30];
         CreateTemporaryMetadataPath(path, sizeof(path), m_save_data_info.mount_name);
-        R_TRY(WriteFile(path, std::addressof(data.metadata), sizeof(data.metadata)));
+        R_TRY(WriteFile(path, std::addressof(import.metadata), sizeof(import.metadata)));
 
         /* Import the metadata. */
-        m_profile_importer->ImportMetadata(data.metadata);
+        m_profile_importer->ImportMetadata(import.metadata);
         return ResultSuccess();
     }
 
@@ -309,13 +334,13 @@ namespace ams::sprofile::srv {
         std::scoped_lock lk2(m_general_mutex);
 
         /* Load the desired profile. */
-        R_TRY(this->LoadProfile(profile));
-
-        /* Find the specified key. */
-        for (auto i = 0u; i < m_service_profile->data.num_entries; ++i) {
-            if (m_service_profile->data.entries[i].key == key) {
-                *out = m_service_profile->data.entries[i];
-                return ResultSuccess();
+        if (R_SUCCEEDED(this->LoadProfile(profile))) {
+            /* Find the specified key. */
+            for (auto i = 0u; i < std::min<size_t>(m_service_profile->data.num_entries, util::size(m_service_profile->data.entries)); ++i) {
+                if (m_service_profile->data.entries[i].key == key) {
+                    *out = m_service_profile->data.entries[i];
+                    return ResultSuccess();
+                }
             }
         }
 
@@ -426,6 +451,8 @@ namespace ams::sprofile::srv {
     }
 
     void ProfileManager::OnCommitted() {
+        /* TODO: Here, Nintendo sets the erpt ServiceProfileRevisionKey to the current revision key. */
+
         /* If we need to, invalidate the loaded service profile. */
         if (m_service_profile.has_value()) {
             for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
@@ -436,8 +463,6 @@ namespace ams::sprofile::srv {
             }
         }
 
-        /* TODO: Here, Nintendo sets the erpt ServiceProfileRevisionKey to the current revision key. */
-
         /* Reset profile metadata. */
         m_profile_metadata = util::nullopt;
 
@@ -445,6 +470,9 @@ namespace ams::sprofile::srv {
         for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
             m_update_observer_manager.OnUpdate(m_profile_importer->GetImportingProfile(i));
         }
+
+        /* Reset profile importer. */
+        m_profile_importer = util::nullopt;
     }
 
     Result ProfileManager::EnsurePrimaryDirectories() {

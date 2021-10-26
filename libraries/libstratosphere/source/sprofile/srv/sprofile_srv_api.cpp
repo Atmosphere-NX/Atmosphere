@@ -34,7 +34,7 @@ namespace ams::sprofile::srv {
         constexpr const sm::ServiceName ServiceNameForSystemProcess = sm::ServiceName::Encode("sprof:sp");
 
         constexpr inline size_t BgAgentSessionCountMax       = 2;
-        constexpr inline size_t SystemProcessSessionCountMax = 5;
+        constexpr inline size_t SystemProcessSessionCountMax = 10;
 
         constexpr inline size_t SessionCountMax = BgAgentSessionCountMax + SystemProcessSessionCountMax;
 
@@ -42,8 +42,8 @@ namespace ams::sprofile::srv {
 
         struct ServerManagerOptions {
             static constexpr size_t PointerBufferSize   = 0x0;
-            static constexpr size_t MaxDomains          = SessionCountMax; /* NOTE: Official is 3 */
-            static constexpr size_t MaxDomainObjects    = 16;              /* NOTE: Official is 8 */
+            static constexpr size_t MaxDomains          = SessionCountMax; /* NOTE: Official is 9 */
+            static constexpr size_t MaxDomainObjects    = 16;              /* NOTE: Official is 14 */
             static constexpr bool CanDeferInvokeRequest = false;
             static constexpr bool CanManageMitmServers  = false;
         };

@@ -37,6 +37,8 @@ namespace ams::sprofile {
     R_DEFINE_ERROR_RESULT(MaxObservers,     623);
 
     R_DEFINE_ERROR_RESULT(InvalidMetadataVersion, 3210);
+    R_DEFINE_ERROR_RESULT(InvalidMetadataHash,    3211);
     R_DEFINE_ERROR_RESULT(InvalidDataVersion,     3230);
+    R_DEFINE_ERROR_RESULT(InvalidDataHash,        3231);
 
 }

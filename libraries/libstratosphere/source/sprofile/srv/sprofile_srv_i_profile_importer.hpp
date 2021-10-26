@@ -18,8 +18,8 @@
 #include "sprofile_srv_types.hpp"
 
 #define AMS_SPROFILE_I_PROFILE_IMPORTER_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, ImportProfile,  (const sprofile::srv::ProfileDataForImportData &data),         (data)) \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, Commit,         (),                                                            ())     \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, ImportMetadata, (const sprofile::srv::ProfileMetadataForImportMetadata &data), (data)) \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, ImportProfile,  (const sprofile::srv::ProfileDataForImportData &import),         (import)) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, Commit,         (),                                                              ())     \
+    AMS_SF_METHOD_INFO(C, H, 2, Result, ImportMetadata, (const sprofile::srv::ProfileMetadataForImportMetadata &import), (import)) \
 
 AMS_SF_DEFINE_INTERFACE(ams::sprofile, IProfileImporter, AMS_SPROFILE_I_PROFILE_IMPORTER_INTERFACE_INFO)
