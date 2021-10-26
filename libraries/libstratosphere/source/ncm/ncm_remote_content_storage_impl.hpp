@@ -201,11 +201,14 @@ namespace ams::ncm {
             }
 
             Result RegisterPath(const ContentId &content_id, const Path &path) {
-                return ncmContentStorageRegisterPath(std::addressof(m_srv), Convert(content_id), path.str);
+                AMS_ABORT("TODO");
+
+                //return ncmContentStorageRegisterPath(std::addressof(m_srv), Convert(content_id), path.str);
             }
 
             Result ClearRegisteredPath() {
-                return ncmContentStorageClearRegisteredPath(std::addressof(m_srv));
+                AMS_ABORT("TODO");
+                //return ncmContentStorageClearRegisteredPath(std::addressof(m_srv));
             }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
