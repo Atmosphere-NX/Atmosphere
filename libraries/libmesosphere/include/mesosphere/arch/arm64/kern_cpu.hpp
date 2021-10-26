@@ -52,6 +52,10 @@ namespace ams::kern::arch::arm64::cpu {
         __asm__ __volatile__("dmb sy" ::: "memory");
     }
 
+    ALWAYS_INLINE void DataMemoryBarrierInnerShareable() {
+        __asm__ __volatile__("dmb ish" ::: "memory");
+    }
+
     ALWAYS_INLINE void InstructionMemoryBarrier() {
         __asm__ __volatile__("isb" ::: "memory");
     }

@@ -126,7 +126,8 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     cmp    x7, x18
     b.ne   1f
 
-    /* If they're the same, then we can just return as there's nothing to do. */
+    /* If they're the same, then we can just issue a memory barrier and return. */
+    dmb    ish
     ret
 
 0:  /* The interrupt task thread is runnable. */
