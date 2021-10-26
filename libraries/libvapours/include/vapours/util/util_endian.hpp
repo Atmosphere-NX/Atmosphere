@@ -20,11 +20,11 @@
 
 namespace ams::util {
 
-    constexpr bool IsLittleEndian() {
+    consteval bool IsLittleEndian() {
         return std::endian::native == std::endian::little;
     }
 
-    constexpr bool IsBigEndian() {
+    consteval bool IsBigEndian() {
         return std::endian::native == std::endian::big;
     }
 

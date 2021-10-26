@@ -70,7 +70,7 @@ namespace ams::svc {
                     }
                 }
 
-                return util::ScaleByConstantFactor<s64, TicksPerSecond, NanoSecondsPerSecond>(ns);
+                return util::ScaleByConstantFactorUp<s64, TicksPerSecond, NanoSecondsPerSecond>(ns);
             }
         public:
             constexpr ALWAYS_INLINE explicit Tick(s64 t = 0) : m_tick(t) { /* ... */ }

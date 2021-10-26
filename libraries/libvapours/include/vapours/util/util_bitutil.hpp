@@ -256,7 +256,7 @@ namespace ams::util {
     }
 
     template<typename T, T N, T D>
-    constexpr ALWAYS_INLINE T ScaleByConstantFactor(const T V) {
+    constexpr ALWAYS_INLINE T ScaleByConstantFactorUp(const T V) {
         /* Multiplying and dividing by large numerator/denominator can cause error to be introduced. */
         /* This algorithm multiples/divides in stages, so as to mitigate this (particularly with large denominator). */
 
@@ -277,6 +277,22 @@ namespace ams::util {
 
         /* Calculate results. */
         return (D * Quot_N * Quot_V) + (Quot_V * Rem_N) + (Rem_V * Quot_N) + rem_mult;
+    }
+
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T RotateLeft(T v, int n) {
+        using Unsigned = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(Unsigned) == sizeof(T));
+
+        return static_cast<T>(std::rotl<Unsigned>(static_cast<Unsigned>(v), n));
+    }
+
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T RotateRight(T v, int n) {
+        using Unsigned = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(Unsigned) == sizeof(T));
+
+        return static_cast<T>(std::rotr<Unsigned>(static_cast<Unsigned>(v), n));
     }
 
 }
