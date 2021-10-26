@@ -1,4 +1,43 @@
 # Changelog
+## 1.2.1
++ Support was implemented for 13.1.0.
+  + `mesosphère` was updated to reflect the kernel behavioral changes made in 13.1.0.
+    + KScheduler now issues a data memory barrier when unlocking the scheduler lock and when early-returning due to top-thread-is-current during scheduling.
+  + `erpt` was  updated to reflect the latest official behaviors.
+    + The new service added in 13.0.0 ("sprofile") was revised, and the data formats it expects was changed.
+      + This still appears to be (possibly(?)) untestable due to data not being transmitted yet, but I have greater confidence things will go smoothly than I did when 1.1.0 released.
++ A number of improvements were made to `mesosphère`, including:
+  + A build target was created to build targeting the qemu `virt` board.
+    + This facilitates writing unit tests for the kernel (and other atmosphere components) and running them under PC.
+      + **Please Note**: Official system software will not work at all under this, and the Atmosphère project has zero interest in attempting to run official software of any kind. This is unit testing machinery, and explicitly not more than that.
+    + This should hopefully allow us to have greater confidence that all of atmosphere's components work the way they're theoretically supposed to in the future.
+    + **Please Note**: If you are a developer who is familiar with the Horizon operating system (or capable of becoming familiar), I would greatly appreciate help writing tests and improving the testing framework.
+      + Please contact `SciresM#0524` if you are capable and interested.
+        + Really, if you are actually a developer who would like to help me get this off the ground, I would deeply appreciate it.
+        + That said, if you are not a developer but want to be one, this probably isn't the best opportunity; I expect it to be highly technical.
+          + Consider the ReSwitched discord's #hack-n-all channel for your educational purposes.
+      + We are (at least for now) using [catch2](https://github.com/catchorg/Catch2) for unit tests.
+  + Almost all virtual calls in the kernel are now resolved statically.
+    + This eliminates substantial virtual call overhead, and should lead to improved kernel microperformance in pretty much every function.
+  + The remaining red black tree find operations which weren't using the optimized "find key" variant are now using the optimized version.
+  + Custom assembly was written to improve tick-to-timespan conversion.
+    + This works around gcc emitting suboptimal assembly at -Os (it emits good assembly at -O3, clang is fine at both -O3 and -Os).
+  + KThread and KSession structures were updated to optimize member layout, saving 0x10 bytes per KThread/KSession object.
+  + Rather than unnecessarily zero-ing all data in kernel objects only to overwrite members later, we now only initialize the members we need to in kernel object constructors.
+    + This is what Nintendo was doing already.
+  + A set of custom optimized atomic primitives were implemented and are used in place of std::atomic<>
+    + This works around a gcc bug which downgrades specified memory order to seq_cst, and introduces clrex in places where it is appropriate.
+    + This should strictly improve microperformance of many system calls.
+  + An compile-time toggleable extension was added to support 40-bit physical addresses in MapRange capabilities (using currently reserved bits).
+  + A number of minor bugs were fixed, including:
+    + Initial cache management now better reflects official behavior.
+      + This fixes an issue that caused certain hardware with cache sensitivity to produce cryptic kernel panics during boot.
+    + Incorrect logic when checking thread priority capabilities was fixed to reflect official behavior.
+    + The scheduler was updated to reflect latest official behavior, and a number of minor bugs involving clz/ctz were fixed.
+    + Accesses to the processes local region were fixed to properly use kernel linear region, not userland pointers.
+    + The cache SVCs exposed for 32-bit processes now better reflect official core mask request semantics.
+    + A bug was fixed that could cause a kernel panic if SvcArbitrateLock was called on a thread with exactly one reference in the middle of handling a user-mode exception.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.0
 + `boot` was updated to reflect the latest official behavior for display/battery management.
   + This should fix any issues that might result from running older releases on the OLED model, if you're somehow in a position to do so.
