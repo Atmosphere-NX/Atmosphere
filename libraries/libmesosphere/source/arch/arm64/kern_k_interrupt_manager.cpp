@@ -201,7 +201,7 @@ namespace ams::kern::arch::arm64 {
         if (user_mode) {
             KThread *cur_thread = GetCurrentThreadPointer();
             if (cur_thread->IsTerminationRequested()) {
-                KScopedInterruptEnable ei;
+                EnableInterrupts();
                 cur_thread->Exit();
             }
         }
@@ -212,13 +212,14 @@ namespace ams::kern::arch::arm64 {
 
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
-        KScopedInterruptDisable di;
-
         if (KInterruptController::IsGlobal(irq)) {
+            KScopedInterruptDisable di;
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
             return this->BindGlobal(handler, irq, core_id, priority, manual_clear, level);
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
+
+            KScopedInterruptDisable di;
             return this->BindLocal(handler, irq, priority, manual_clear);
         }
     }
@@ -228,13 +229,16 @@ namespace ams::kern::arch::arm64 {
 
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
-        KScopedInterruptDisable di;
 
         if (KInterruptController::IsGlobal(irq)) {
+            KScopedInterruptDisable di;
+
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
             return this->UnbindGlobal(irq);
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
+
+            KScopedInterruptDisable di;
             return this->UnbindLocal(irq);
         }
     }
@@ -244,13 +248,15 @@ namespace ams::kern::arch::arm64 {
 
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
-        KScopedInterruptDisable di;
 
         if (KInterruptController::IsGlobal(irq)) {
+            KScopedInterruptDisable di;
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
             return this->ClearGlobal(irq);
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
+
+            KScopedInterruptDisable di;
             return this->ClearLocal(irq);
         }
     }
