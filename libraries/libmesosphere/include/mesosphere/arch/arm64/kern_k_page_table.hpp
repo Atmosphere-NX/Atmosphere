@@ -219,27 +219,27 @@ namespace ams::kern::arch::arm64 {
 
             Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll);
 
-            static void PteDataSynchronizationBarrier() {
+            static ALWAYS_INLINE void PteDataSynchronizationBarrier() {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }
 
-            static void ClearPageTable(KVirtualAddress table) {
+            static ALWAYS_INLINE void ClearPageTable(KVirtualAddress table) {
                 cpu::ClearPageToZero(GetVoidPointer(table));
             }
 
-            void OnTableUpdated() const {
+            ALWAYS_INLINE void OnTableUpdated() const {
                 cpu::InvalidateTlbByAsid(m_asid);
             }
 
-            void OnKernelTableUpdated() const {
+            ALWAYS_INLINE void OnKernelTableUpdated() const {
                 cpu::InvalidateEntireTlbDataOnly();
             }
 
-            void OnKernelTableSinglePageUpdated(KProcessAddress virt_addr) const {
+            ALWAYS_INLINE void OnKernelTableSinglePageUpdated(KProcessAddress virt_addr) const {
                 cpu::InvalidateTlbByVaDataOnly(virt_addr);
             }
 
-            void NoteUpdated() const {
+            ALWAYS_INLINE void NoteUpdated() const {
                 cpu::DataSynchronizationBarrier();
 
                 if (this->IsKernel()) {
@@ -249,7 +249,7 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
+            ALWAYS_INLINE void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
                 MESOSPHERE_ASSERT(this->IsKernel());
 
                 cpu::DataSynchronizationBarrier();

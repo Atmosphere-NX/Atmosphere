@@ -341,7 +341,9 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Restore pmu registers. */
             cpu::SetPmUserEnrEl0(0);
-            cpu::PerformanceMonitorsControlRegisterAccessor().SetEventCounterReset(true).SetCycleCounterReset(true).Store();
+            cpu::PerformanceMonitorsControlRegisterAccessor(0).SetEventCounterReset(true).SetCycleCounterReset(true).Store();
+            cpu::EnsureInstructionConsistency();
+
             cpu::SetPmOvsClrEl0(static_cast<u64>(static_cast<u32>(~u32())));
             cpu::SetPmIntEnClrEl1(static_cast<u64>(static_cast<u32>(~u32())));
             cpu::SetPmCntEnClrEl0(static_cast<u64>(static_cast<u32>(~u32())));

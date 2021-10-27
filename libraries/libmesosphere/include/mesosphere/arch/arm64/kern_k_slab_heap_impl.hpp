@@ -45,6 +45,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Select L1 cache. */
             cpu::SetCsselrEl1(0);
+            cpu::InstructionMemoryBarrier();
 
             /* Check that the L1 cache is not direct-mapped. */
             return cpu::CacheSizeIdRegisterAccessor().GetAssociativity() != 0;

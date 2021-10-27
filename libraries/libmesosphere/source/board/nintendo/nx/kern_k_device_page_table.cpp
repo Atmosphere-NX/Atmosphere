@@ -656,9 +656,8 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_ASSERT(IsValidPhysicalAddress(table_phys_addr));
         Kernel::GetSystemPageTableManager().Open(table_virt_addr, 1);
 
-        /* Clear the page and save it. */
+        /* Save the page. Note that it is a pre-condition that the page is cleared, when allocated from the system page table manager. */
         /* NOTE: Nintendo does not check the result of StoreDataCache. */
-        cpu::ClearPageToZero(GetVoidPointer(table_virt_addr));
         cpu::StoreDataCache(GetVoidPointer(table_virt_addr), PageDirectorySize);
         g_reserved_table_phys_addr = table_phys_addr;
 

@@ -46,7 +46,7 @@ namespace ams::kern {
                 return m_slab_heap->Allocate(m_page_allocator);
             }
 
-            void Free(T *t) const {
+            ALWAYS_INLINE void Free(T *t) const {
                 m_slab_heap->Free(t);
             }
     };

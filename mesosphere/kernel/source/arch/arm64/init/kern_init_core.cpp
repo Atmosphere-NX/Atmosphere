@@ -49,10 +49,9 @@ namespace ams::kern::init {
         constexpr PageTableEntry KernelRwDataUncachedAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemoryNotCacheable, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
 
         void StoreDataCache(const void *addr, size_t size) {
-            uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), cpu::DataCacheLineSize);
-            uintptr_t end   = reinterpret_cast<uintptr_t>(addr) + size;
-            for (uintptr_t cur = start; cur < end; cur += cpu::DataCacheLineSize) {
-                __asm__ __volatile__("dc cvac, %[cur]" :: [cur]"r"(cur) : "memory");
+            const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), cpu::DataCacheLineSize);
+            for (size_t stored = 0; stored < size; stored += cpu::DataCacheLineSize) {
+                __asm__ __volatile__("dc cvac, %[cur]" :: [cur]"r"(start + stored) : "memory");
             }
             cpu::DataSynchronizationBarrier();
         }
@@ -594,11 +593,13 @@ namespace ams::kern::init {
 
         switch (num_watchpoints) {
             FOR_I_IN_15_TO_1(MESOSPHERE_INITIALIZE_WATCHPOINT_CASE, 0)
+            case 0:
+                cpu::SetDbgWcr0El1(0);
+                cpu::SetDbgWvr0El1(0);
+            [[fallthrough]];
             default:
                 break;
         }
-        cpu::SetDbgWcr0El1(0);
-        cpu::SetDbgWvr0El1(0);
 
         switch (num_breakpoints) {
             FOR_I_IN_15_TO_1(MESOSPHERE_INITIALIZE_BREAKPOINT_CASE, 0)

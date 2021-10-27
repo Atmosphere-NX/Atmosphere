@@ -225,7 +225,7 @@ namespace ams::kern::arch::arm64 {
             if (AMS_UNLIKELY(GetCurrentThread().IsSingleStep())) {
                 GetCurrentThread().ClearSingleStep();
                 cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(false).Store();
-                cpu::EnsureInstructionConsistency();
+                cpu::InstructionMemoryBarrier();
             }
             #endif
 

@@ -279,7 +279,7 @@ namespace ams::kern::arch::arm64::init {
 
                 /* Invalidate the entire tlb. */
                 cpu::DataSynchronizationBarrierInnerShareable();
-                cpu::InvalidateEntireTlb();
+                cpu::InvalidateEntireTlbInnerShareable();
 
                 /* Copy data, if we should. */
                 const u64 negative_block_size_for_mask = static_cast<u64>(-static_cast<s64>(block_size));
@@ -350,7 +350,6 @@ namespace ams::kern::arch::arm64::init {
                     /* If we don't already have an L2 table, we need to make a new one. */
                     if (!l1_entry->IsTable()) {
                         KPhysicalAddress new_table = AllocateNewPageTable(allocator);
-                        ClearNewPageTable(new_table);
                         *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
                     }
@@ -361,12 +360,12 @@ namespace ams::kern::arch::arm64::init {
                     if (util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L2ContiguousBlockSize) && size >= L2ContiguousBlockSize) {
                         for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
                             l2_entry[i] = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, attr, PageTableEntry::SoftwareReservedBit_None, true);
-                            cpu::DataSynchronizationBarrierInnerShareable();
 
                             virt_addr += L2BlockSize;
                             phys_addr += L2BlockSize;
                             size      -= L2BlockSize;
                         }
+                        cpu::DataSynchronizationBarrierInnerShareable();
                         continue;
                     }
 
@@ -384,7 +383,6 @@ namespace ams::kern::arch::arm64::init {
                     /* If we don't already have an L3 table, we need to make a new one. */
                     if (!l2_entry->IsTable()) {
                         KPhysicalAddress new_table = AllocateNewPageTable(allocator);
-                        ClearNewPageTable(new_table);
                         *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
                     }
@@ -395,12 +393,12 @@ namespace ams::kern::arch::arm64::init {
                     if (util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L3ContiguousBlockSize) && size >= L3ContiguousBlockSize) {
                         for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
                             l3_entry[i] = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, attr, PageTableEntry::SoftwareReservedBit_None, true);
-                            cpu::DataSynchronizationBarrierInnerShareable();
 
                             virt_addr += L3BlockSize;
                             phys_addr += L3BlockSize;
                             size      -= L3BlockSize;
                         }
+                        cpu::DataSynchronizationBarrierInnerShareable();
                         continue;
                     }
 

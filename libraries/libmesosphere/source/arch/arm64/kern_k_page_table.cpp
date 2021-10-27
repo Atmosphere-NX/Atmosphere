@@ -169,10 +169,10 @@ namespace ams::kern::arch::arm64 {
         m_manager = std::addressof(Kernel::GetSystemPageTableManager());
 
         /* Allocate a page for ttbr. */
+        /* NOTE: It is a postcondition of page table manager allocation that the page is all-zero. */
         const u64 asid_tag = (static_cast<u64>(m_asid) << 48ul);
         const KVirtualAddress page = m_manager->Allocate();
         MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
-        cpu::ClearPageToZero(GetVoidPointer(page));
         m_ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
 
         /* Initialize the base page table. */
@@ -1058,7 +1058,7 @@ namespace ams::kern::arch::arm64 {
         auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
 
         /* Merge! */
-        PteDataSynchronizationBarrier();
+        /* NOTE: As of 13.1.0, Nintendo does not do: PteDataSynchronizationBarrier(); */
         *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
 
         /* Note that we updated. */

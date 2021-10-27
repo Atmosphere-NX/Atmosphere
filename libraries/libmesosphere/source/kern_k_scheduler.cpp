@@ -79,13 +79,6 @@ namespace ams::kern {
         RescheduleCurrentCore();
     }
 
-    void KScheduler::RescheduleOtherCores(u64 cores_needing_scheduling) {
-        if (const u64 core_mask = cores_needing_scheduling & ~(1ul << m_core_id); core_mask != 0) {
-            cpu::DataSynchronizationBarrier();
-            Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_Scheduler, core_mask);
-        }
-    }
-
     u64 KScheduler::UpdateHighestPriorityThread(KThread *highest_thread) {
         if (KThread *prev_highest_thread = m_state.highest_priority_thread; AMS_LIKELY(prev_highest_thread != highest_thread)) {
             if (AMS_LIKELY(prev_highest_thread != nullptr)) {
@@ -254,9 +247,24 @@ namespace ams::kern {
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
 
+        #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+        /* Ensure the single-step bit in mdscr reflects the correct single-step state for the new thread. */
+        cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(next_thread->IsSingleStep()).Store();
+        #endif
+
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
             KProcess::Switch(cur_process, next_process);
+        } else {
+            /* The single-step bit set up above requires an instruction synchronization barrier, to ensure */
+            /* the state change takes before we actually perform a return which might break-to-step. */
+            /* KProcess::Switch performs an isb incidentally, and so when we're changing process we */
+            /* can piggy-back off of that isb to avoid unnecessarily emptying the pipeline twice. */
+            /* However, this means that when we're switching to thread in a different process, */
+            /* we must ensure that we still isb. In practice, gcc will deduplicate into a single isb. */
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            cpu::InstructionMemoryBarrier();
+            #endif
         }
 
         /* Set the new thread. */

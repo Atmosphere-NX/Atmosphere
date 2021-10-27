@@ -93,3 +93,4 @@
 
 /* Deferred includes. */
 #include <mesosphere/kern_k_auto_object_impls.hpp>
+#include <mesosphere/kern_k_scheduler_impls.hpp>
