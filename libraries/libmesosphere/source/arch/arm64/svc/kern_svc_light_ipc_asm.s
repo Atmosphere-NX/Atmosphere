@@ -50,10 +50,6 @@ _ZN3ams4kern3svc26CallSendSyncRequestLight64Ev:
 .global     _ZN3ams4kern3svc32CallSendSyncRequestLight64From32Ev
 .type       _ZN3ams4kern3svc32CallSendSyncRequestLight64From32Ev, %function
 _ZN3ams4kern3svc32CallSendSyncRequestLight64From32Ev:
-    /* Load x4-x7 from where the svc handler stores them. */
-    ldp     x4, x5, [sp, #(8 * 0)]
-    ldp     x6, x7, [sp, #(8 * 2)]
-
     /* Allocate space for the light ipc data. */
     sub     sp, sp, #(4 * 8)
 
@@ -78,12 +74,7 @@ _ZN3ams4kern3svc32CallSendSyncRequestLight64From32Ev:
     /* Free the stack space for the light ipc data. */
     add     sp, sp, #(4 * 8)
 
-    /* Save x4-x7 to where the svc handler stores them. */
-    stp     x4, x5, [sp, #(8 * 0)]
-    stp     x6, x7, [sp, #(8 * 2)]
-
     ret
-
 
 /* ams::kern::svc::CallReplyAndReceiveLight64() */
 .section    .text._ZN3ams4kern3svc26CallReplyAndReceiveLight64Ev, "ax", %progbits
@@ -121,10 +112,6 @@ _ZN3ams4kern3svc26CallReplyAndReceiveLight64Ev:
 .global     _ZN3ams4kern3svc32CallReplyAndReceiveLight64From32Ev
 .type       _ZN3ams4kern3svc32CallReplyAndReceiveLight64From32Ev, %function
 _ZN3ams4kern3svc32CallReplyAndReceiveLight64From32Ev:
-    /* Load x4-x7 from where the svc handler stores them. */
-    ldp     x4, x5, [sp, #(8 * 0)]
-    ldp     x6, x7, [sp, #(8 * 2)]
-
     /* Allocate space for the light ipc data. */
     sub     sp, sp, #(4 * 8)
 
@@ -148,9 +135,5 @@ _ZN3ams4kern3svc32CallReplyAndReceiveLight64From32Ev:
 
     /* Free the stack space for the light ipc data. */
     add     sp, sp, #(4 * 8)
-
-    /* Save x4-x7 to where the svc handler stores them. */
-    stp     x4, x5, [sp, #(8 * 0)]
-    stp     x6, x7, [sp, #(8 * 2)]
 
     ret
