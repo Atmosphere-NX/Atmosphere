@@ -20,6 +20,8 @@ extern "C" {
     constinit u32 __nx_fs_num_sessions = 1;
     constinit u32 __nx_applet_type = AppletType_None;
 
+    constinit bool __nx_fsdev_support_cwd = false;
+
     extern int __system_argc;
     extern char** __system_argv;
 
