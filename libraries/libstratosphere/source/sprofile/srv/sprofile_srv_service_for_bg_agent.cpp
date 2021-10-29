@@ -34,7 +34,7 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
-    Result ServiceForBgAgent::GetMetadataEntryData(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileMetadataEntryData> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg) {
+    Result ServiceForBgAgent::GetImportableProfileUrls(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg) {
         /* Check size. */
         R_UNLESS(out.GetSize() >= arg.metadata.num_entries, sprofile::ResultInvalidArgument());
 
@@ -42,24 +42,30 @@ namespace ams::sprofile::srv {
         sprofile::srv::ProfileMetadata primary_metadata;
         R_TRY_CATCH(m_profile_manager->LoadPrimaryMetadata(std::addressof(primary_metadata))) {
             R_CATCH(fs::ResultPathNotFound) {
-                /* If we have no metadata, we can't get any entries. */
-                *out_count = 0;
-                return ResultSuccess();
+                /* It's okay if we have no primary metadata -- this means that all profiles are importable. */
+                primary_metadata.num_entries = 0;
             }
         } R_END_TRY_CATCH;
 
-        /* Copy matching entries. */
+        /* We want to return the set of profiles that can be imported, which is just the profiles we don't already have. */
         u32 count = 0;
         for (u32 i = 0; i < arg.metadata.num_entries; ++i) {
             const auto &arg_entry = arg.metadata.entries[i];
 
+            /* Check if we have the entry. */
+            bool have_entry = false;
             for (u32 j = 0; j < primary_metadata.num_entries; ++j) {
                 const auto &pri_entry = primary_metadata.entries[j];
 
                 if (pri_entry.identifier_0 == arg_entry.identifier_0 && pri_entry.identifier_1 == arg_entry.identifier_1) {
-                    out[count++] = arg.entries[i];
+                    have_entry = true;
                     break;
                 }
+            }
+
+            /* If we don't already have the entry, it's importable -- copy it out. */
+            if (!have_entry) {
+                out[count++] = arg.profile_urls[i];
             }
         }
 

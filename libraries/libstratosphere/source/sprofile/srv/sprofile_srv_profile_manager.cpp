@@ -260,7 +260,7 @@ namespace ams::sprofile::srv {
             crypto::Md5Generator md5;
             md5.Update(std::addressof(import.header), sizeof(import.header));
             md5.Update(std::addressof(import.metadata), sizeof(import.metadata));
-            md5.Update(std::addressof(import.entries), sizeof(import.entries[0]) * std::min<size_t>(import.metadata.num_entries, util::size(import.metadata.entries)));
+            md5.Update(std::addressof(import.profile_urls), sizeof(import.profile_urls[0]) * std::min<size_t>(import.metadata.num_entries, util::size(import.metadata.entries)));
 
             u8 hash[crypto::Md5Generator::HashSize];
             md5.GetHash(hash, sizeof(hash));

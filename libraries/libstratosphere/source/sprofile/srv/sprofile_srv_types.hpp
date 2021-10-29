@@ -46,6 +46,10 @@ namespace ams::sprofile::srv {
     static_assert(util::is_pod<ProfileDataEntry>::value);
     static_assert(sizeof(ProfileDataEntry) == 0x10);
 
+    static_assert(AMS_OFFSETOF(ProfileDataEntry, key)       == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileDataEntry, type)      == 0x07);
+    static_assert(AMS_OFFSETOF(ProfileDataEntry, value_s64) == 0x08);
+
     struct ProfileData {
         u32 num_entries;
         u8 unk_04[0x0C];
@@ -55,12 +59,20 @@ namespace ams::sprofile::srv {
     static_assert(util::is_pod<ProfileData>::value);
     static_assert(sizeof(ProfileData) == 0x4000);
 
+    static_assert(AMS_OFFSETOF(ProfileData, num_entries) == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileData, unk_04)      == 0x04);
+    static_assert(AMS_OFFSETOF(ProfileData, unk_10)      == 0x10);
+    static_assert(AMS_OFFSETOF(ProfileData, entries)     == 0x30);
+
     struct ServiceProfile {
         Identifier name;
         ProfileData data;
     };
     static_assert(util::is_pod<ServiceProfile>::value);
     static_assert(sizeof(ServiceProfile) == 0x4008);
+
+    static_assert(AMS_OFFSETOF(ServiceProfile, name)   == 0x00);
+    static_assert(AMS_OFFSETOF(ServiceProfile, data)   == 0x08);
 
     struct ProfileDataForImportData : public sf::LargeData, public sf::PrefersMapAliasTransferMode {
         struct {
@@ -77,6 +89,11 @@ namespace ams::sprofile::srv {
     static_assert(util::is_pod<ProfileDataForImportData>::value);
     static_assert(sizeof(ProfileDataForImportData) == 0x4400);
 
+    static_assert(AMS_OFFSETOF(ProfileDataForImportData, header)   == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileDataForImportData, hash)     == 0x30);
+    static_assert(AMS_OFFSETOF(ProfileDataForImportData, data)     == 0x40);
+    static_assert(AMS_OFFSETOF(ProfileDataForImportData, unk_4040) == 0x4040);
+
     struct ProfileMetadataEntry {
         Identifier identifier_0;
         Identifier identifier_1;
@@ -85,21 +102,33 @@ namespace ams::sprofile::srv {
     static_assert(util::is_pod<ProfileMetadataEntry>::value);
     static_assert(sizeof(ProfileMetadataEntry) == 0x40);
 
-    struct ProfileMetadataEntryData : public sf::PrefersMapAliasTransferMode {
-        u8 unk[0x100];
+    static_assert(AMS_OFFSETOF(ProfileMetadataEntry, identifier_0) == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileMetadataEntry, identifier_1) == 0x07);
+    static_assert(AMS_OFFSETOF(ProfileMetadataEntry, unk_0E)       == 0x0E);
+
+    struct ProfileUrl : public sf::PrefersMapAliasTransferMode {
+        char url[0x100];
     };
-    static_assert(util::is_pod<ProfileMetadataEntryData>::value);
-    static_assert(sizeof(ProfileMetadataEntryData) == 0x100);
+    static_assert(util::is_pod<ProfileUrl>::value);
+    static_assert(sizeof(ProfileUrl) == 0x100);
 
     struct ProfileMetadata {
         u32 num_entries;
         u32 unk_04;
         Identifier revision_key;
+        u8 unk_0F[0x1];
         u8 unk_10[0x30];
         ProfileMetadataEntry entries[50];
     };
     static_assert(util::is_pod<ProfileMetadata>::value);
     static_assert(sizeof(ProfileMetadata) == 0xCC0);
+
+    static_assert(AMS_OFFSETOF(ProfileMetadata, num_entries)  == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileMetadata, unk_04)       == 0x04);
+    static_assert(AMS_OFFSETOF(ProfileMetadata, revision_key) == 0x08);
+    static_assert(AMS_OFFSETOF(ProfileMetadata, unk_0F)       == 0x0F);
+    static_assert(AMS_OFFSETOF(ProfileMetadata, unk_10)       == 0x10);
+    static_assert(AMS_OFFSETOF(ProfileMetadata, entries)      == 0x40);
 
     struct ProfileMetadataForImportMetadata : public sf::LargeData, public sf::PrefersMapAliasTransferMode {
         struct {
@@ -108,10 +137,16 @@ namespace ams::sprofile::srv {
         } header;
         u8 hash[crypto::Md5Generator::HashSize];
         ProfileMetadata metadata;
-        ProfileMetadataEntryData entries[50];
-        u8 unk[0x8000 - 0x3EF0];
+        ProfileUrl profile_urls[50];
+        u8 unk_3EF0[0x8000 - 0x3EF0];
     };
     static_assert(util::is_pod<ProfileMetadataForImportMetadata>::value);
     static_assert(sizeof(ProfileMetadataForImportMetadata) == 0x8000);
+
+    static_assert(AMS_OFFSETOF(ProfileMetadataForImportMetadata, header)       == 0x00);
+    static_assert(AMS_OFFSETOF(ProfileMetadataForImportMetadata, hash)         == 0x20);
+    static_assert(AMS_OFFSETOF(ProfileMetadataForImportMetadata, metadata)     == 0x30);
+    static_assert(AMS_OFFSETOF(ProfileMetadataForImportMetadata, profile_urls) == 0xCF0);
+    static_assert(AMS_OFFSETOF(ProfileMetadataForImportMetadata, unk_3EF0)     == 0x3EF0);
 
 }
