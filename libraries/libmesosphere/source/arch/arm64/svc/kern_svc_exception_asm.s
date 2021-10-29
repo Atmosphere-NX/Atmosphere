@@ -28,7 +28,7 @@ _ZN3ams4kern3svc25CallReturnFromException64Ev:
     stp     x20, x21, [sp, #(EXCEPTION_CONTEXT_X20_X21)]
     stp     x22, x23, [sp, #(EXCEPTION_CONTEXT_X22_X23)]
     stp     x24, x25, [sp, #(EXCEPTION_CONTEXT_X24_X25)]
-    stp     x26, x26, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
+    stp     x26, x27, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
     stp     x28, x29, [sp, #(EXCEPTION_CONTEXT_X28_X29)]
 
     /* Call ams::kern::arch::arm64::ReturnFromException(result). */

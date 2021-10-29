@@ -19,6 +19,9 @@
 /* TODO: Different header for this? */
 #define AMS_KERN_NUM_SUPERVISOR_CALLS 0xC0
 
+/* ams::kern::KThread, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_thread.hpp */
+#define THREAD_THREAD_CONTEXT 0xD0
+
 /* ams::kern::KThread::StackParameters, https://github.com/Atmosphere-NX/Atmosphere/blob/master/libraries/libmesosphere/include/mesosphere/kern_k_thread.hpp */
 #define THREAD_STACK_PARAMETERS_SIZE                    0x30
 #define THREAD_STACK_PARAMETERS_SVC_PERMISSION          0x00

@@ -1315,10 +1315,6 @@ namespace ams::kern {
         }
     }
 
-    KThreadContext *KThread::GetContextForSchedulerLoop() {
-        return std::addressof(this->GetContext());
-    }
-
     KThread *KThread::GetThreadFromId(u64 thread_id) {
         /* Lock the list. */
         KThread::ListAccessor accessor;

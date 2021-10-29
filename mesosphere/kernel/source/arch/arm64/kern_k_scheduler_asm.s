@@ -183,9 +183,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
 
     /* Get the highest priority thread's context, and save it. */
     /* ams::kern::KThread::GetContextForSchedulerLoop() */
-    mov    x0, x21
-    bl     _ZN3ams4kern7KThread26GetContextForSchedulerLoopEv
-    mov    x22, x0
+    add    x22, x21, #(THREAD_THREAD_CONTEXT)
 
     /* Prepare to try to acquire the context lock. */
     add    x1, x22, #(THREAD_CONTEXT_LOCKED)

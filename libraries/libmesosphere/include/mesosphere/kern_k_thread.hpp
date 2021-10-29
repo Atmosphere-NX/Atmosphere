@@ -405,8 +405,6 @@ namespace ams::kern {
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(m_thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return m_thread_state; }
 
-            NOINLINE KThreadContext *GetContextForSchedulerLoop();
-
             constexpr uintptr_t GetConditionVariableKey() const { return m_condvar_key; }
             constexpr uintptr_t GetAddressArbiterKey() const { return m_condvar_key; }
 
@@ -624,9 +622,7 @@ namespace ams::kern {
             void OnTimer();
             void DoWorkerTaskImpl();
         public:
-            static constexpr bool IsConditionVariableThreadTreeValid() {
-                return ConditionVariableThreadTreeTraits::IsValid();
-            }
+            static consteval bool IsKThreadStructurallyValid();
 
             static KThread *GetThreadFromId(u64 thread_id);
             static Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
@@ -634,7 +630,18 @@ namespace ams::kern {
             using ConditionVariableThreadTreeType = ConditionVariableThreadTree;
     };
     static_assert(alignof(KThread) == 0x10);
-    static_assert(KThread::IsConditionVariableThreadTreeValid());
+
+    consteval bool KThread::IsKThreadStructurallyValid() {
+        /* Check that the condition variable tree is valid. */
+        static_assert(ConditionVariableThreadTreeTraits::IsValid());
+
+        /* Check that the assembly offsets are valid. */
+        static_assert(AMS_OFFSETOF(KThread, m_thread_context) == THREAD_THREAD_CONTEXT);
+
+        return true;
+    }
+
+    static_assert(KThread::IsKThreadStructurallyValid());
 
     class KScopedDisableDispatch {
         public:

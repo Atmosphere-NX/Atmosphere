@@ -376,7 +376,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     stp     x26, x27, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
     stp     x28, x29, [sp, #(EXCEPTION_CONTEXT_X28_X29)]
 
-    mrs     x20, sp_el0
+    ldr     x20, [sp]
     mrs     x21, elr_el1
     mrs     x22, spsr_el1
     mrs     x23, tpidr_el0
@@ -529,7 +529,7 @@ _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv:
     stp     x26, x27, [sp, #(EXCEPTION_CONTEXT_X26_X27)]
     stp     x28, x29, [sp, #(EXCEPTION_CONTEXT_X28_X29)]
 
-    mrs     x20, sp_el0
+    ldr     x20, [sp]
     mrs     x21, elr_el1
     mrs     x22, spsr_el1
     mrs     x23, tpidr_el0
