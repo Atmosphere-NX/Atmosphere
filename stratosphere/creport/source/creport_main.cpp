@@ -103,13 +103,17 @@ namespace ams {
         g_crash_report.Initialize();
 
         /* Try to debug the crashed process. */
-        g_crash_report.BuildReport(crashed_pid, has_extra_info);
-        if (!g_crash_report.IsComplete()) {
-            return;
-        }
+        {
+            g_crash_report.BuildReport(crashed_pid, has_extra_info);
+            ON_SCOPE_EXIT { if (g_crash_report.IsOpen()) { g_crash_report.Close(); } };
 
-        /* Save report to file. */
-        g_crash_report.SaveReport(enable_screenshot);
+            if (!g_crash_report.IsComplete()) {
+                return;
+            }
+
+            /* Save report to file. */
+            g_crash_report.SaveReport(enable_screenshot);
+        }
 
         /* Try to terminate the process, if we should. */
         const auto fw_ver = hos::GetVersion();

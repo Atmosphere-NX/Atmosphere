@@ -101,11 +101,9 @@ namespace ams::creport {
         m_has_extra_info = has_extra_info;
 
         if (this->OpenProcess(process_id)) {
-            ON_SCOPE_EXIT { this->Close(); };
-
             /* Parse info from the crashed process. */
             this->ProcessExceptions();
-            m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_crashed_thread);
+            m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_crashed_thread, this->Is64Bit());
             m_thread_list->ReadFromProcess(m_debug_handle, m_thread_tls_map, this->Is64Bit());
 
             /* Associate module list to threads. */
@@ -120,7 +118,7 @@ namespace ams::creport {
             /* Nintendo's creport finds extra modules by looking at all threads if application, */
             /* but there's no reason for us not to always go looking. */
             for (size_t i = 0; i < m_thread_list->GetThreadCount(); i++) {
-                m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_thread_list->GetThreadInfo(i));
+                m_module_list->FindModulesFromThreadInfo(m_debug_handle, m_thread_list->GetThreadInfo(i), this->Is64Bit());
             }
 
             /* Cache the module base address to send to fatal. */
@@ -324,6 +322,11 @@ namespace ams::creport {
                 }
             }
 
+            /* If we're open, we need to close here. */
+            if (this->IsOpen()) {
+                this->Close();
+            }
+
             /* Finalize our heap. */
             std::destroy_at(m_module_list);
             std::destroy_at(m_thread_list);
@@ -358,7 +361,7 @@ namespace ams::creport {
     }
 
     void CrashReport::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("Atmosphère Crash Report (v1.6):\n");
+        file.WriteFormat("Atmosphère Crash Report (v1.7):\n");
 
         file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", m_result.GetValue(), m_result.GetModule(), m_result.GetDescription());
 
