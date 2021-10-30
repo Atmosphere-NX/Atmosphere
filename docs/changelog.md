@@ -1,4 +1,20 @@
 # Changelog
+## 1.2.2
++ A number of fixes were made to Atmosphère's implementation of the new "sprofile" service added in 13.0.0.
+  + Nintendo is finally transmitting data over the internet to certain consoles, which has allowed for validating our service implementation.
+    + Unfortunately, there were several problems, and if your console began trying to use the new services atmosphere would show a fatal error with code 0xCAF6 (sprofile::ResultInvalidState()).
+  + With actual test data in hand, a test program was written and it was verified that our implementation can successfully import/access profile data now.
+    + Hopefully there are no more issues, and I sincerely apologize for anyone who got an 0xCAF6 fatal due to this.
++ A number of minor improvements were made to `mesosphère`, including:
+  + KThread::GetContextForSchedulerLoop was implemented in assembly (using static assertions to verify offset-of-context-in-struct is correct).
+    + This saves an unnecessary function call in the middle of the scheduler hot loop, replacing it with an addition instruction, which should improve microperformance.
+  + Mesosphere's hardware maintenance instructions were audited via a script and now directly match Nintendo's kernels.
+    + Notably, this inserts a missing instruction synchronization barrier when validating that slab heaps may be constructed.
+    + This missing ISB could cause an abort on certain (see: particularly sensitive) hardware on boot if the relevant codepath was speculatively executed (it normally only executes on game launch...)
+  + The SVC handlers for performing light IPC (normally unused) from 32-bit process were fixed in Mesosphere.
+  + A bug was fixed that would cause the register x27 to be overwritten with the contents of x26 when returning from a user exception handler.
+  + A bug was fixed that would cause the kernel to use the userland stack pointer instead of the kernel stack pointer while generating an error report for a kernel abort.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.1
 + Support was implemented for 13.1.0.
   + `mesosphère` was updated to reflect the kernel behavioral changes made in 13.1.0.
