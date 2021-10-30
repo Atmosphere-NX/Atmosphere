@@ -74,6 +74,7 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
 
     }
+
     Result ServiceForBgAgent::IsUpdateNeeded(sf::Out<bool> out, Identifier revision_key) {
         /* Load primary metadata. */
         bool loaded_metadata = true;

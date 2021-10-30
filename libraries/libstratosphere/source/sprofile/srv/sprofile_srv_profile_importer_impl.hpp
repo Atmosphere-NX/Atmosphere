@@ -26,6 +26,10 @@ namespace ams::sprofile::srv {
             ProfileManager *m_manager;
         public:
             ProfileImporterImpl(ProfileManager *manager) : m_manager(manager) { /* ... */ }
+
+            ~ProfileImporterImpl() {
+                m_manager->CloseProfileImporter();
+            }
         public:
             Result ImportProfile(const sprofile::srv::ProfileDataForImportData &import);
             Result Commit();

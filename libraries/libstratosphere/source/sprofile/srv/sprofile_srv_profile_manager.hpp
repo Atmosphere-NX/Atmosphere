@@ -50,6 +50,8 @@ namespace ams::sprofile::srv {
             Result ResetSaveData();
 
             Result OpenProfileImporter();
+            void CloseProfileImporter();
+
             Result ImportProfile(const sprofile::srv::ProfileDataForImportData &data);
             Result Commit();
             Result ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &data);

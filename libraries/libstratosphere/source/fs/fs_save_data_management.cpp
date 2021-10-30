@@ -89,9 +89,8 @@ namespace ams::fs {
     Result DeleteSystemSaveData(SaveDataSpaceId space_id, SystemSaveDataId id, UserId user_id) {
         const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, id);
 
-        /* TODO: Libnx binding for DeleteSaveDataFileSystemBySaveDataAttribute */
-        AMS_UNUSED(space_id, attribute);
-        AMS_ABORT();
+        static_assert(sizeof(attribute) == sizeof(::FsSaveDataAttribute));
+        return fsDeleteSaveDataFileSystemBySaveDataAttribute(static_cast<::FsSaveDataSpaceId>(space_id), reinterpret_cast<const ::FsSaveDataAttribute *>(std::addressof(attribute)));
     }
 
     Result GetSaveDataFlags(u32 *out, SaveDataId id) {

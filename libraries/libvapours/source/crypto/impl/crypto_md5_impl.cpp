@@ -149,7 +149,7 @@ namespace ams::crypto::impl {
 
         /* Copy in any leftover data. */
         if (const auto left = size % BlockSize; left > 0) {
-            std::memcpy(m_y, cur_block, size);
+            std::memcpy(m_y, cur_block, left);
         }
 
     }

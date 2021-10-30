@@ -151,6 +151,16 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
+    void ProfileManager::CloseProfileImporter() {
+        /* Acquire locks. */
+        std::scoped_lock lk1(m_profile_importer_mutex);
+        std::scoped_lock lk2(m_general_mutex);
+        std::scoped_lock lk3(m_fs_mutex);
+
+        /* Close our importer. */
+        m_profile_importer = util::nullopt;
+    }
+
     Result ProfileManager::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_importer_mutex);
@@ -165,6 +175,8 @@ namespace ams::sprofile::srv {
         /* Check that the metadata we're importing has a valid hash. */
         {
             crypto::Md5Generator md5;
+            md5.Initialize();
+
             md5.Update(std::addressof(import.header), sizeof(import.header));
             md5.Update(std::addressof(import.data), sizeof(import.data) - sizeof(import.data.entries[0]) * (util::size(import.data.entries) - std::min<size_t>(import.data.num_entries, util::size(import.data.entries))));
 
@@ -258,6 +270,8 @@ namespace ams::sprofile::srv {
         /* Check that the metadata we're importing has a valid hash. */
         {
             crypto::Md5Generator md5;
+            md5.Initialize();
+
             md5.Update(std::addressof(import.header), sizeof(import.header));
             md5.Update(std::addressof(import.metadata), sizeof(import.metadata));
             md5.Update(std::addressof(import.profile_urls), sizeof(import.profile_urls[0]) * std::min<size_t>(import.metadata.num_entries, util::size(import.metadata.entries)));
