@@ -729,9 +729,10 @@ namespace ams::spl::impl {
         return ResultSuccess();
     }
 
-    Result TestAesKeySlot(s32 *out_index, s32 keyslot) {
+    Result TestAesKeySlot(s32 *out_index, bool *out_virtual, s32 keyslot) {
         if (g_is_physical_keyslot_allowed && IsPhysicalAesKeySlot(keyslot)) {
-            *out_index = keyslot;
+            *out_index   = keyslot;
+            *out_virtual = false;
             return ResultSuccess();
         }
 
@@ -740,7 +741,8 @@ namespace ams::spl::impl {
         const s32 index = GetVirtualAesKeySlotIndex(keyslot);
         R_UNLESS(g_is_aes_keyslot_allocated[index], spl::ResultInvalidKeySlot());
 
-        *out_index = index;
+        *out_index   = index;
+        *out_virtual = true;
         return ResultSuccess();
     }
 

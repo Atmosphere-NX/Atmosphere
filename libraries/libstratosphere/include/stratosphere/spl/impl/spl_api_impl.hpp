@@ -51,7 +51,7 @@ namespace ams::spl::impl {
 
     Result AllocateAesKeySlot(s32 *out_keyslot);
     Result DeallocateAesKeySlot(s32 keyslot);
-    Result TestAesKeySlot(s32 *out_index, s32 keyslot);
+    Result TestAesKeySlot(s32 *out_index, bool *out_virtual, s32 keyslot);
 
     os::SystemEvent *GetAesKeySlotAvailableEvent();
 

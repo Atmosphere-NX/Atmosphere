@@ -131,11 +131,17 @@ namespace ams::spl {
     }
 
     Result SecureMonitorManager::AllocateAesKeySlot(s32 *out_keyslot, const void *owner) {
+        /* Allocate a new virtual keyslot. */
         s32 keyslot;
         R_TRY(impl::AllocateAesKeySlot(std::addressof(keyslot)));
 
+        /* Get the keyslot's index. */
         s32 index;
-        R_ABORT_UNLESS(impl::TestAesKeySlot(std::addressof(index), keyslot));
+        bool virt;
+        R_ABORT_UNLESS(impl::TestAesKeySlot(std::addressof(index), std::addressof(virt), keyslot));
+
+        /* All allocated keyslots must be virtual. */
+        AMS_ABORT_UNLESS(virt);
 
         m_aes_keyslot_owners[index] = owner;
         *out_keyslot                = keyslot;
@@ -174,10 +180,11 @@ namespace ams::spl {
     Result SecureMonitorManager::TestAesKeySlot(s32 *out_index, s32 keyslot, const void *owner) {
         /* Validate the keyslot (and get the index). */
         s32 index;
-        R_TRY(impl::TestAesKeySlot(std::addressof(index), keyslot));
+        bool virt;
+        R_TRY(impl::TestAesKeySlot(std::addressof(index), std::addressof(virt), keyslot));
 
-        /* Check that the keyslot is owned by the request maker. */
-        R_UNLESS(m_aes_keyslot_owners[index] == owner, spl::ResultInvalidKeySlot());
+        /* Check that the keyslot is physical (for legacy compat) or owned by the request maker. */
+        R_UNLESS(!virt || m_aes_keyslot_owners[index] == owner, spl::ResultInvalidKeySlot());
 
         /* Set output index. */
         if (out_index != nullptr) {
