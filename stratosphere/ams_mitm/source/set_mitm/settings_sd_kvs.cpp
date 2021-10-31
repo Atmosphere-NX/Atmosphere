@@ -378,6 +378,12 @@ namespace ams::settings::fwdbg {
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_htc", "u8!0x0"));
 
+            /* Controls whether atmosphere's dmnt.gen2 gdbstub should run as a standalone via sockets. */
+            /* Note that this setting is ignored (and treated as 0) when htc is enabled. */
+            /* Note that this setting may disappear in the future. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_standalone_gdbstub", "u8!0x0"));
+
             /* Controls whether atmosphere's log manager is enabled. */
             /* Note that this setting is ignored (and treated as 1) when htc is enabled. */
             /* 0 = Disabled, 1 = Enabled */

@@ -41,7 +41,7 @@ namespace ams::dmnt {
 
     }
 
-    void GdbPacketIo::SendPacket(bool *out_break, const char *src, HtcsSession *session) {
+    void GdbPacketIo::SendPacket(bool *out_break, const char *src, TransportSession *session) {
         /* Default to not breaked. */
         *out_break = false;
 
@@ -99,7 +99,7 @@ namespace ams::dmnt {
         }
     }
 
-    char *GdbPacketIo::ReceivePacket(bool *out_break, char *dst, size_t size, HtcsSession *session) {
+    char *GdbPacketIo::ReceivePacket(bool *out_break, char *dst, size_t size, TransportSession *session) {
         /* Default to not breaked. */
         *out_break = false;
 

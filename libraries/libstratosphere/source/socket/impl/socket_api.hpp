@@ -41,6 +41,7 @@ namespace ams::socket::impl {
 
     s32 Shutdown(s32 desc, ShutdownMethod how);
 
+    s32 Socket(Family domain, Type type, Protocol protocol);
     s32 SocketExempt(Family domain, Type type, Protocol protocol);
 
     s32 Accept(s32 desc, SockAddr *out_address, SockLenT *out_addr_len);

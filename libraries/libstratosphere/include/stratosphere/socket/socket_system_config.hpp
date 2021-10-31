@@ -57,4 +57,42 @@ namespace ams::socket {
             }
     };
 
+    class SystemConfigLightDefault : public Config {
+        public:
+            static constexpr size_t DefaultTcpInitialSendBufferSize     = 16_KB;
+            static constexpr size_t DefaultTcpInitialReceiveBufferSize  = 16_KB;
+            static constexpr size_t DefaultTcpAutoSendBufferSizeMax     = 0_KB;
+            static constexpr size_t DefaultTcpAutoReceiveBufferSizeMax  = 0_KB;
+            static constexpr size_t DefaultUdpSendBufferSize            = 9_KB;
+            static constexpr size_t DefaultUdpReceiveBufferSize         = 42240;
+            static constexpr auto   DefaultSocketBufferEfficiency       = 2;
+            static constexpr auto   DefaultConcurrency                  = 2;
+            static constexpr size_t DefaultAllocatorPoolSize            = 64_KB;
+
+            static constexpr size_t PerTcpSocketWorstCaseMemoryPoolSize = [] {
+                constexpr size_t WorstCaseTcpSendBufferSize    = AlignMss(std::max(DefaultTcpInitialSendBufferSize, DefaultTcpAutoSendBufferSizeMax));
+                constexpr size_t WorstCaseTcpReceiveBufferSize = AlignMss(std::max(DefaultTcpInitialReceiveBufferSize, DefaultTcpAutoReceiveBufferSizeMax));
+
+                return util::AlignUp(WorstCaseTcpSendBufferSize * DefaultSocketBufferEfficiency + WorstCaseTcpReceiveBufferSize * DefaultSocketBufferEfficiency, os::MemoryPageSize);
+            }();
+
+            static constexpr size_t PerUdpSocketWorstCaseMemoryPoolSize = [] {
+                constexpr size_t WorstCaseUdpSendBufferSize    = AlignMss(DefaultUdpSendBufferSize);
+                constexpr size_t WorstCaseUdpReceiveBufferSize = AlignMss(DefaultUdpReceiveBufferSize);
+
+                return util::AlignUp(WorstCaseUdpSendBufferSize * DefaultSocketBufferEfficiency + WorstCaseUdpReceiveBufferSize * DefaultSocketBufferEfficiency, os::MemoryPageSize);
+            }();
+        public:
+            constexpr SystemConfigLightDefault(void *mp, size_t mp_sz, size_t ap, int c=DefaultConcurrency)
+                : Config(mp, mp_sz, ap,
+                         DefaultTcpInitialSendBufferSize, DefaultTcpInitialReceiveBufferSize,
+                         DefaultTcpAutoSendBufferSizeMax, DefaultTcpAutoReceiveBufferSizeMax,
+                         DefaultUdpSendBufferSize, DefaultUdpReceiveBufferSize,
+                         DefaultSocketBufferEfficiency, c)
+            {
+                /* Mark as system. */
+                m_system = true;
+            }
+    };
+
 }

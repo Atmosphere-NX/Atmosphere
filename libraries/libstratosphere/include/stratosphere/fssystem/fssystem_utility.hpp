@@ -118,12 +118,12 @@ namespace ams::fssystem {
 
     /* Copy API. */
     Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *dir_ent, void *work_buf, size_t work_buf_size);
-    NX_INLINE Result CopyFile(fs::fsa::IFileSystem *fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *dir_ent, void *work_buf, size_t work_buf_size) {
+    ALWAYS_INLINE Result CopyFile(fs::fsa::IFileSystem *fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *dir_ent, void *work_buf, size_t work_buf_size) {
         return CopyFile(fs, fs, dst_parent_path, src_path, dir_ent, work_buf, work_buf_size);
     }
 
     Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size);
-    NX_INLINE Result CopyDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
+    ALWAYS_INLINE Result CopyDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
         return CopyDirectoryRecursively(fs, fs, dst_path, src_path, work_buf, work_buf_size);
     }
 
@@ -148,11 +148,11 @@ namespace ams::fssystem {
     Result EnsureDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path);
     Result EnsureParentDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path);
 
-    template<typename F>
-    NX_INLINE Result RetryFinitelyForTargetLocked(F f) {
+    template<s64 RetryMilliSeconds = 100>
+    ALWAYS_INLINE Result RetryFinitelyForTargetLocked(auto f) {
         /* Retry up to 10 times, 100ms between retries. */
         constexpr s32 MaxRetryCount = 10;
-        constexpr TimeSpan RetryWaitTime = TimeSpan::FromMilliSeconds(100);
+        constexpr TimeSpan RetryWaitTime = TimeSpan::FromMilliSeconds(RetryMilliSeconds);
 
         s32 remaining_retries = MaxRetryCount;
         while (true) {

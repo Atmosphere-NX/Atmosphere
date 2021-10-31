@@ -16,7 +16,8 @@
 #include <stratosphere.hpp>
 #include "dmnt2_debug_log.hpp"
 
-#define AMS_DMNT2_ENABLE_HTCS_DEBUG_LOG
+// TODO: This should be converted to use log manager. */
+//#define AMS_DMNT2_ENABLE_HTCS_DEBUG_LOG
 
 #if defined(AMS_DMNT2_ENABLE_HTCS_DEBUG_LOG)
 
@@ -164,14 +165,77 @@ namespace ams::dmnt {
 
 namespace ams::dmnt {
 
+    //#define AMS_DMNT2_ENABLE_SD_CARD_DEBUG_LOG
+
+    #if defined(AMS_DMNT2_ENABLE_SD_CARD_DEBUG_LOG)
+
+    namespace {
+
+        alignas(0x40) constinit u8 g_buffer[os::MemoryPageSize * 4];
+        constinit lmem::HeapHandle g_debug_log_heap;
+        constinit fs::FileHandle g_debug_log_file;
+
+        constinit os::SdkMutex g_fs_mutex;
+        constinit s64 g_fs_offset = 0;
+
+        void *Allocate(size_t size) {
+            return lmem::AllocateFromExpHeap(g_debug_log_heap, size);
+        }
+
+        void Deallocate(void *p, size_t size) {
+            AMS_UNUSED(size);
+            return lmem::FreeToExpHeap(g_debug_log_heap, p);
+        }
+
+    }
 
     void InitializeDebugLog() {
-        /* Do nothing. */
+        g_debug_log_heap = lmem::CreateExpHeap(g_buffer, sizeof(g_buffer), lmem::CreateOption_ThreadSafe);
+
+        fs::SetAllocator(Allocate, Deallocate);
+        fs::InitializeForSystem();
+        fs::SetEnabledAutoAbort(false);
+
+        R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+
+        fs::DeleteFile("sdmc:/dmnt2.log");
+        R_ABORT_UNLESS(fs::CreateFile("sdmc:/dmnt2.log", 0));
+        R_ABORT_UNLESS(fs::OpenFile(std::addressof(g_debug_log_file), "sdmc:/dmnt2.log", fs::OpenMode_Write | fs::OpenMode_AllowAppend));
     }
 
     void DebugLog(const char *prefix, const char *fmt, ...) {
         /* Do nothing. */
+        char buffer[0x200];
+        {
+            const auto prefix_len = std::strlen(prefix);
+            std::memcpy(buffer, prefix, prefix_len);
+
+            std::va_list vl;
+            va_start(vl, fmt);
+            util::VSNPrintf(buffer + prefix_len, sizeof(buffer) - prefix_len, fmt, vl);
+            va_end(vl);
+        }
+
+        const auto len = std::strlen(buffer);
+
+        std::scoped_lock lk(g_fs_mutex);
+        R_ABORT_UNLESS(fs::WriteFile(g_debug_log_file, g_fs_offset, buffer, len, fs::WriteOption::Flush));
+        g_fs_offset += len;
     }
+
+    #else
+
+    void InitializeDebugLog() {
+        /* ... */
+    }
+
+    void DebugLog(const char *prefix, const char *fmt, ...) {
+        AMS_UNUSED(prefix, fmt);
+    }
+
+    #endif
+
+
 
 }
 

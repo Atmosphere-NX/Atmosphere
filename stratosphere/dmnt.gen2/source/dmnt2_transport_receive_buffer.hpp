@@ -18,7 +18,7 @@
 
 namespace ams::dmnt {
 
-    class HtcsReceiveBuffer {
+    class TransportReceiveBuffer {
         public:
             static constexpr size_t ReceiveBufferSize = 4_KB;
         private:
@@ -30,7 +30,7 @@ namespace ams::dmnt {
             size_t m_offset;
             bool m_valid;
         public:
-            HtcsReceiveBuffer() : m_readable_event(os::EventClearMode_ManualClear), m_writable_event(os::EventClearMode_ManualClear), m_mutex(), m_readable_size(), m_offset(), m_valid(true) { /* ... */ }
+            TransportReceiveBuffer() : m_readable_event(os::EventClearMode_ManualClear), m_writable_event(os::EventClearMode_ManualClear), m_mutex(), m_readable_size(), m_offset(), m_valid(true) { /* ... */ }
 
             ALWAYS_INLINE bool IsReadable() const { return m_readable_size != 0; }
             ALWAYS_INLINE bool IsWritable() const { return m_readable_size == 0; }

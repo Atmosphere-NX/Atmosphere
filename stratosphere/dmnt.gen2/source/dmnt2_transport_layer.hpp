@@ -15,23 +15,28 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "dmnt2_transport_session.hpp"
 
-namespace ams::dmnt {
+namespace ams::dmnt::transport {
 
-    static constexpr size_t GdbPacketBufferSize = 16_KB;
+    void InitializeByHtcs();
+    void InitializeByTcp();
 
-    class GdbPacketIo {
-        private:
-            os::SdkMutex m_mutex;
-            bool m_no_ack;
-        public:
-            GdbPacketIo() : m_mutex(), m_no_ack(false) { /* ... */ }
-
-            void SetNoAck() { m_no_ack = true; }
-
-            void SendPacket(bool *out_break, const char *src, TransportSession *session);
-            char *ReceivePacket(bool *out_break, char *dst, size_t size, TransportSession *session);
+    enum PortName {
+        PortName_GdbServer,
+        PortName_GdbDebugLog,
     };
+
+    s32 Socket();
+    s32 Close(s32 desc);
+    s32 Bind(s32 desc, PortName port_name);
+    s32 Listen(s32 desc, s32 backlog_count);
+    s32 Accept(s32 desc);
+    s32 Shutdown(s32 desc);
+
+    ssize_t Recv(s32 desc, void *buffer, size_t buffer_size, s32 flags);
+    ssize_t Send(s32 desc, const void *buffer, size_t buffer_size, s32 flags);
+
+    s32 GetLastError();
+    bool IsLastErrorEAgain();
 
 }

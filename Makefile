@@ -112,6 +112,7 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000420
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000B240
+	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D609
 	mkdir -p atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D623
 	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000008/exefs.nsp
 	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000000D/exefs.nsp
@@ -125,6 +126,7 @@ dist-no-debug: all
 	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
 	cp stratosphere/LogManager/LogManager.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/0100000000000420/exefs.nsp
 	cp stratosphere/htc/htc.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000B240/exefs.nsp
+	cp stratosphere/dmnt.gen2/dmnt.gen2.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D609/exefs.nsp
 	cp stratosphere/TioServer/TioServer.nsp atmosphere-$(AMSVER)/stratosphere_romfs/atmosphere/contents/010000000000D623/exefs.nsp
 	@build_romfs atmosphere-$(AMSVER)/stratosphere_romfs atmosphere-$(AMSVER)/atmosphere/stratosphere.romfs
 	rm -r atmosphere-$(AMSVER)/stratosphere_romfs
