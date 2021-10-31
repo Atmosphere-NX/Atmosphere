@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "dmnt2_debug_log.hpp"
+#include "dmnt2_transport_layer.hpp"
 #include "dmnt2_gdb_server.hpp"
 #include "dmnt2_gdb_server_impl.hpp"
 
@@ -36,34 +37,28 @@ namespace ams::dmnt {
             while (true) {
                 /* Get a socket. */
                 int fd;
-                while ((fd = htcs::Socket()) == -1) {
+                while ((fd = transport::Socket()) == -1) {
                     os::SleepThread(TimeSpan::FromSeconds(1));
                 }
 
                 /* Ensure we cleanup the socket when we're done with it. */
                 ON_SCOPE_EXIT {
-                    htcs::Close(fd);
+                    transport::Close(fd);
                     os::SleepThread(TimeSpan::FromSeconds(1));
                 };
 
-                /* Create a sock addr for our server. */
-                htcs::SockAddrHtcs addr;
-                addr.family    = htcs::HTCS_AF_HTCS;
-                addr.peer_name = htcs::GetPeerNameAny();
-                std::strcpy(addr.port_name.name, "iywys@$gdb");
-
                 /* Bind. */
-                if (htcs::Bind(fd, std::addressof(addr)) == -1) {
+                if (transport::Bind(fd, transport::PortName_GdbServer) == -1) {
                     continue;
                 }
 
                 /* Listen on our port. */
-                while (htcs::Listen(fd, 0) == 0) {
+                while (transport::Listen(fd, 0) == 0) {
                     /* Continue accepting clients, so long as we can. */
                     int client_fd;
                     while (true) {
                         /* Try to accept a client. */
-                        if (client_fd = htcs::Accept(fd, std::addressof(addr)); client_fd < 0) {
+                        if (client_fd = transport::Accept(fd); client_fd < 0) {
                             break;
                         }
 
@@ -77,7 +72,7 @@ namespace ams::dmnt {
                         }
 
                         /* Close the client socket. */
-                        htcs::Close(client_fd);
+                        transport::Close(client_fd);
                     }
                 }
             }

@@ -188,6 +188,12 @@ namespace ams::boot2 {
             return enable_htc != 0;
         }
 
+        bool IsStandaloneGdbstubEnabled() {
+            u8 enable_gdbstub = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_gdbstub), sizeof(enable_gdbstub), "atmosphere", "enable_standalone_gdbstub");
+            return enable_gdbstub != 0;
+        }
+
         bool IsAtmosphereLogManagerEnabled() {
             /* If htc is enabled, ams log manager is enabled. */
             if (IsHtcEnabled()) {
@@ -403,6 +409,9 @@ namespace ams::boot2 {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc,      ncm::StorageId::None), 0);
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Cs,       ncm::StorageId::None), 0);
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::DmntGen2, ncm::StorageId::None), 0);
+        } else if (IsStandaloneGdbstubEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::DmntGen2, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma,  ncm::StorageId::BuiltInSystem), 0);
         } else {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Dmnt, ncm::StorageId::None), 0);
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma,  ncm::StorageId::BuiltInSystem), 0);

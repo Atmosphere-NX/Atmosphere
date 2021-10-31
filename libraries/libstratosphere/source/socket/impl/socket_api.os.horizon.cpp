@@ -206,6 +206,8 @@ namespace ams::socket::impl {
 
             /* TODO: socket::resolver::EnableResolverCalls()? Not necessary in our case (htc), but consider calling it. */
 
+            g_initialized = true;
+
             return ResultSuccess();
         }
 
@@ -413,6 +415,22 @@ namespace ams::socket::impl {
         /* Perform the call. */
         Errno error = Errno::ESuccess;
         int result  = ::bsdShutdown(desc, static_cast<int>(how));
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 Socket(Family domain, Type type, Protocol protocol) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdSocket(static_cast<int>(domain), static_cast<int>(type), static_cast<int>(protocol));
         TranslateResultToBsdError(error, result);
 
         if (result < 0) {

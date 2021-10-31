@@ -15,20 +15,20 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "dmnt2_htcs_receive_buffer.hpp"
+#include "dmnt2_transport_receive_buffer.hpp"
 
 namespace ams::dmnt {
 
-    class HtcsSession {
+    class TransportSession {
         private:
-            alignas(os::ThreadStackAlignment) u8 m_receive_thread_stack[util::AlignUp(os::MemoryPageSize + HtcsReceiveBuffer::ReceiveBufferSize, os::ThreadStackAlignment)];
-            HtcsReceiveBuffer m_receive_buffer;
+            alignas(os::ThreadStackAlignment) u8 m_receive_thread_stack[util::AlignUp(os::MemoryPageSize + TransportReceiveBuffer::ReceiveBufferSize, os::ThreadStackAlignment)];
+            TransportReceiveBuffer m_receive_buffer;
             os::ThreadType m_receive_thread;
             int m_socket;
             bool m_valid;
         public:
-            HtcsSession(int fd);
-            ~HtcsSession();
+            TransportSession(int fd);
+            ~TransportSession();
 
             ALWAYS_INLINE bool IsValid() const { return m_valid; }
 
@@ -41,7 +41,7 @@ namespace ams::dmnt {
 
         private:
             static void ReceiveThreadEntry(void *arg) {
-                static_cast<HtcsSession *>(arg)->ReceiveThreadFunction();
+                static_cast<TransportSession *>(arg)->ReceiveThreadFunction();
             }
 
             void ReceiveThreadFunction();

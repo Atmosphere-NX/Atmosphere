@@ -14,11 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "dmnt2_htcs_receive_buffer.hpp"
+#include "dmnt2_transport_receive_buffer.hpp"
 
 namespace ams::dmnt {
 
-    ssize_t HtcsReceiveBuffer::Read(void *dst, size_t size) {
+    ssize_t TransportReceiveBuffer::Read(void *dst, size_t size) {
         /* Acquire exclusive access to ourselves. */
         std::scoped_lock lk(m_mutex);
 
@@ -50,7 +50,7 @@ namespace ams::dmnt {
         return readable;
     }
 
-    ssize_t HtcsReceiveBuffer::Write(const void *src, size_t size) {
+    ssize_t TransportReceiveBuffer::Write(const void *src, size_t size) {
         /* Acquire exclusive access to ourselves. */
         std::scoped_lock lk(m_mutex);
 
@@ -71,7 +71,7 @@ namespace ams::dmnt {
         return size;
     }
 
-    bool HtcsReceiveBuffer::WaitToBeReadable() {
+    bool TransportReceiveBuffer::WaitToBeReadable() {
         /* Check if we're already readable. */
         {
             std::scoped_lock lk(m_mutex);
@@ -91,7 +91,7 @@ namespace ams::dmnt {
         return this->IsValid();
     }
 
-    bool HtcsReceiveBuffer::WaitToBeReadable(TimeSpan timeout) {
+    bool TransportReceiveBuffer::WaitToBeReadable(TimeSpan timeout) {
         /* Check if we're already readable. */
         {
             std::scoped_lock lk(m_mutex);
@@ -111,7 +111,7 @@ namespace ams::dmnt {
         return res && this->IsValid();
     }
 
-    bool HtcsReceiveBuffer::WaitToBeWritable() {
+    bool TransportReceiveBuffer::WaitToBeWritable() {
         /* Check if we're already writable. */
         {
             std::scoped_lock lk(m_mutex);
@@ -131,7 +131,7 @@ namespace ams::dmnt {
         return this->IsValid();
     }
 
-    void HtcsReceiveBuffer::Invalidate() {
+    void TransportReceiveBuffer::Invalidate() {
         /* Acquire exclusive access to ourselves. */
         std::scoped_lock lk(m_mutex);
 

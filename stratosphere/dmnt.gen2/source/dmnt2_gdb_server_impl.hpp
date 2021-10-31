@@ -31,7 +31,7 @@ namespace ams::dmnt {
             };
         private:
             int m_socket;
-            HtcsSession m_session;
+            TransportSession m_session;
             GdbPacketIo m_packet_io;
             char *m_receive_packet{nullptr};
             char *m_reply_packet{nullptr};

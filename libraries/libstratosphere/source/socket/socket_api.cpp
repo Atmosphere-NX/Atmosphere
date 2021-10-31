@@ -74,6 +74,10 @@ namespace ams::socket {
         return impl::Shutdown(desc, how);
     }
 
+    s32 Socket(Family domain, Type type, Protocol protocol) {
+        return impl::Socket(domain, type, protocol);
+    }
+
     s32 SocketExempt(Family domain, Type type, Protocol protocol) {
         return impl::SocketExempt(domain, type, protocol);
     }

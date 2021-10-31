@@ -16,15 +16,22 @@
 #include <stratosphere.hpp>
 #include "dmnt2_debug_log.hpp"
 #include "dmnt2_gdb_server.hpp"
+#include "dmnt2_transport_layer.hpp"
 
 namespace ams {
 
-    namespace dmnt {
+    namespace {
 
-        namespace {
+        bool IsHtcEnabled() {
+            u8 enable_htc = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_htc), sizeof(enable_htc), "atmosphere", "enable_htc");
+            return enable_htc != 0;
+        }
 
-            alignas(0x40) constinit u8 g_htcs_buffer[4_KB];
-
+        bool IsStandaloneGdbstubEnabled() {
+            u8 enable_gdbstub = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_gdbstub), sizeof(enable_gdbstub), "atmosphere", "enable_standalone_gdbstub");
+            return enable_gdbstub != 0;
         }
 
     }
@@ -50,11 +57,23 @@ namespace ams {
         os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(dmnt, Main));
         AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, Main));
 
-        /* Initialize htcs. */
-        constexpr auto HtcsSocketCountMax = 8;
-        const size_t buffer_size = htcs::GetWorkingMemorySize(HtcsSocketCountMax);
-        AMS_ABORT_UNLESS(sizeof(dmnt::g_htcs_buffer) >= buffer_size);
-        htcs::InitializeForSystem(dmnt::g_htcs_buffer, buffer_size, HtcsSocketCountMax);
+        bool use_htcs = false, use_tcp = false;
+        {
+            R_ABORT_UNLESS(::setsysInitialize());
+            ON_SCOPE_EXIT { ::setsysExit(); };
+
+            use_htcs = IsHtcEnabled();
+            use_tcp  = IsStandaloneGdbstubEnabled();
+        }
+
+        /* Initialize transport layer. */
+        if (use_htcs) {
+            dmnt::transport::InitializeByHtcs();
+        } else if (use_tcp) {
+            dmnt::transport::InitializeByTcp();
+        } else {
+            return;
+        }
 
         /* Initialize debug log thread. */
         dmnt::InitializeDebugLog();
