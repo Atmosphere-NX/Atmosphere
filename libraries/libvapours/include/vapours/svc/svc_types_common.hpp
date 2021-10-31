@@ -251,7 +251,7 @@ namespace ams::svc {
     /* Thread types. */
     using ThreadFunc = ams::svc::Address;
 
-#if defined(ATMOSPHERE_ARCH_ARM64)
+#if defined(ATMOSPHERE_ARCH_ARM_V8A)
 
     struct ThreadContext {
         u64  r[29];
@@ -268,7 +268,7 @@ namespace ams::svc {
     };
     static_assert(sizeof(ThreadContext) == 0x320);
 
-#elif defined(ATMOSPHERE_ARCH_ARM)
+#elif defined(ATMOSPHERE_ARCH_ARM_V7A)
 
     struct ThreadContext {
         u32 r[13];
@@ -282,9 +282,14 @@ namespace ams::svc {
         u32 fpexc;
         u32 tpidr;
     };
+    static_assert(sizeof(ThreadContext) == 0x158);
 
 #else
+
+    #if !defined(ATMOSPHERE_IS_EXOSPHERE)
     #error "Unknown Architecture for ams::svc::ThreadContext"
+    #endif
+
 #endif
 
     enum ThreadSuspend : u32 {
