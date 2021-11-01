@@ -104,7 +104,6 @@ namespace ams::dmnt {
             void qXfer();
             void qXferFeaturesRead();
             void qXferLibrariesRead();
-            void qXferMemoryMapRead();
             void qXferOsdataRead();
             bool qXferThreadsRead();
 
