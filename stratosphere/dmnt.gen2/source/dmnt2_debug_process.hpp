@@ -64,6 +64,17 @@ namespace ams::dmnt {
             ModuleDefinition m_module_definitions[ModuleCountMax]{};
             size_t m_module_count{};
             size_t m_main_module{};
+            u64 m_process_alias_address{};
+            u64 m_process_alias_size{};
+            u64 m_process_heap_address{};
+            u64 m_process_heap_size{};
+            u64 m_process_aslr_address{};
+            u64 m_process_aslr_size{};
+            u64 m_process_stack_address{};
+            u64 m_process_stack_size{};
+            ncm::ProgramLocation m_program_location{};
+            cfg::OverrideStatus m_process_override_status{};
+            bool m_is_application{false};
         public:
             DebugProcess() : m_software_breakpoints(this), m_hardware_breakpoints(this), m_hardware_watchpoints(this), m_step_breakpoints(m_software_breakpoints) {
                 if (svc::IsKernelMesosphere()) {
@@ -108,6 +119,20 @@ namespace ams::dmnt {
             void SetDebugBreaked() {
                 m_status = ProcessStatus_DebugBreak;
             }
+
+            u64 GetAliasRegionAddress() const { return m_process_alias_address; }
+            u64 GetAliasRegionSize()    const { return m_process_alias_size; }
+            u64 GetHeapRegionAddress()  const { return m_process_heap_address; }
+            u64 GetHeapRegionSize()     const { return m_process_heap_size; }
+            u64 GetAslrRegionAddress()  const { return m_process_aslr_address; }
+            u64 GetAslrRegionSize()     const { return m_process_aslr_size; }
+            u64 GetStackRegionAddress() const { return m_process_stack_address; }
+            u64 GetStackRegionSize()    const { return m_process_stack_size; }
+
+            const ncm::ProgramLocation &GetProgramLocation() const { return m_program_location; }
+            const cfg::OverrideStatus &GetOverrideStatus() const { return m_process_override_status; }
+
+            bool IsApplication() const { return m_is_application; }
         public:
             Result Attach(os::ProcessId process_id, bool start_process = false);
             void Detach();
@@ -151,6 +176,8 @@ namespace ams::dmnt {
             Result CollectModules();
         private:
             Result Start();
+
+            void CollectProcessInfo();
 
             s32 ThreadCreate(u64 thread_id);
             void ThreadExit(u64 thread_id);

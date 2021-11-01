@@ -38,6 +38,80 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetInfoImpl(u64 *out, ams::svc::InfoType info_type, KProcess *process) {
+            switch (info_type) {
+                case ams::svc::InfoType_CoreMask:
+                    *out = process->GetCoreMask();
+                    break;
+                case ams::svc::InfoType_PriorityMask:
+                    *out = process->GetPriorityMask();
+                    break;
+                case ams::svc::InfoType_AliasRegionAddress:
+                    *out = GetInteger(process->GetPageTable().GetAliasRegionStart());
+                    break;
+                case ams::svc::InfoType_AliasRegionSize:
+                    *out = process->GetPageTable().GetAliasRegionSize();
+                    break;
+                case ams::svc::InfoType_HeapRegionAddress:
+                    *out = GetInteger(process->GetPageTable().GetHeapRegionStart());
+                    break;
+                case ams::svc::InfoType_HeapRegionSize:
+                    *out = process->GetPageTable().GetHeapRegionSize();
+                    break;
+                case ams::svc::InfoType_TotalMemorySize:
+                    *out = process->GetTotalUserPhysicalMemorySize();
+                    break;
+                case ams::svc::InfoType_UsedMemorySize:
+                    *out = process->GetUsedUserPhysicalMemorySize();
+                    break;
+                case ams::svc::InfoType_AslrRegionAddress:
+                    *out = GetInteger(process->GetPageTable().GetAliasCodeRegionStart());
+                    break;
+                case ams::svc::InfoType_AslrRegionSize:
+                    *out = process->GetPageTable().GetAliasCodeRegionSize();
+                    break;
+                case ams::svc::InfoType_StackRegionAddress:
+                    *out = GetInteger(process->GetPageTable().GetStackRegionStart());
+                    break;
+                case ams::svc::InfoType_StackRegionSize:
+                    *out = process->GetPageTable().GetStackRegionSize();
+                    break;
+                case ams::svc::InfoType_SystemResourceSizeTotal:
+                    *out = process->GetTotalSystemResourceSize();
+                    break;
+                case ams::svc::InfoType_SystemResourceSizeUsed:
+                    *out = process->GetUsedSystemResourceSize();
+                    break;
+                case ams::svc::InfoType_ProgramId:
+                    *out = process->GetProgramId();
+                    break;
+                case ams::svc::InfoType_UserExceptionContextAddress:
+                    *out = GetInteger(process->GetProcessLocalRegionAddress());
+                    break;
+                case ams::svc::InfoType_TotalNonSystemMemorySize:
+                    *out = process->GetTotalNonSystemUserPhysicalMemorySize();
+                    break;
+                case ams::svc::InfoType_UsedNonSystemMemorySize:
+                    *out = process->GetUsedNonSystemUserPhysicalMemorySize();
+                    break;
+                case ams::svc::InfoType_IsApplication:
+                    *out = process->IsApplication();
+                    break;
+                case ams::svc::InfoType_FreeThreadCount:
+                    if (KResourceLimit *resource_limit = process->GetResourceLimit(); resource_limit != nullptr) {
+                        const auto current_value = resource_limit->GetCurrentValue(ams::svc::LimitableResource_ThreadCountMax);
+                        const auto limit_value   = resource_limit->GetLimitValue(ams::svc::LimitableResource_ThreadCountMax);
+                        *out = limit_value - current_value;
+                    } else {
+                        *out = 0;
+                    }
+                    break;
+                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            return ResultSuccess();
+        }
+
         Result GetInfo(u64 *out, ams::svc::InfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
             switch (info_type) {
                 case ams::svc::InfoType_CoreMask:
@@ -66,77 +140,34 @@ namespace ams::kern::svc {
 
                         /* Get the process from its handle. */
                         KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(handle);
+
+                        #if defined(MESOSPHERE_ENABLE_GET_INFO_OF_DEBUG_PROCESS)
+                        /* If we the process is valid, use it. */
+                        if (process.IsNotNull()) {
+                            return GetInfoImpl(out, info_type, process.GetPointerUnsafe());
+                        }
+
+                        /* Otherwise, as a mesosphere extension check if we were passed a usable KDebug. */
+                        KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(handle);
+                        R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+                        /* Get the process from the debug object. */
+                        /* TODO: ResultInvalidHandle()? */
+                        R_UNLESS(debug->IsAttached(),  svc::ResultProcessTerminated());
+                        R_UNLESS(debug->OpenProcess(), svc::ResultProcessTerminated());
+
+                        /* Close the process when we're done. */
+                        ON_SCOPE_EXIT { debug->CloseProcess(); };
+
+                        /* Return the info. */
+                        return GetInfoImpl(out, info_type, debug->GetProcessUnsafe());
+                        #else
+                        /* Verify that the process is valid. */
                         R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
-                        switch (info_type) {
-                            case ams::svc::InfoType_CoreMask:
-                                *out = process->GetCoreMask();
-                                break;
-                            case ams::svc::InfoType_PriorityMask:
-                                *out = process->GetPriorityMask();
-                                break;
-                            case ams::svc::InfoType_AliasRegionAddress:
-                                *out = GetInteger(process->GetPageTable().GetAliasRegionStart());
-                                break;
-                            case ams::svc::InfoType_AliasRegionSize:
-                                *out = process->GetPageTable().GetAliasRegionSize();
-                                break;
-                            case ams::svc::InfoType_HeapRegionAddress:
-                                *out = GetInteger(process->GetPageTable().GetHeapRegionStart());
-                                break;
-                            case ams::svc::InfoType_HeapRegionSize:
-                                *out = process->GetPageTable().GetHeapRegionSize();
-                                break;
-                            case ams::svc::InfoType_TotalMemorySize:
-                                *out = process->GetTotalUserPhysicalMemorySize();
-                                break;
-                            case ams::svc::InfoType_UsedMemorySize:
-                                *out = process->GetUsedUserPhysicalMemorySize();
-                                break;
-                            case ams::svc::InfoType_AslrRegionAddress:
-                                *out = GetInteger(process->GetPageTable().GetAliasCodeRegionStart());
-                                break;
-                            case ams::svc::InfoType_AslrRegionSize:
-                                *out = process->GetPageTable().GetAliasCodeRegionSize();
-                                break;
-                            case ams::svc::InfoType_StackRegionAddress:
-                                *out = GetInteger(process->GetPageTable().GetStackRegionStart());
-                                break;
-                            case ams::svc::InfoType_StackRegionSize:
-                                *out = process->GetPageTable().GetStackRegionSize();
-                                break;
-                            case ams::svc::InfoType_SystemResourceSizeTotal:
-                                *out = process->GetTotalSystemResourceSize();
-                                break;
-                            case ams::svc::InfoType_SystemResourceSizeUsed:
-                                *out = process->GetUsedSystemResourceSize();
-                                break;
-                            case ams::svc::InfoType_ProgramId:
-                                *out = process->GetProgramId();
-                                break;
-                            case ams::svc::InfoType_UserExceptionContextAddress:
-                                *out = GetInteger(process->GetProcessLocalRegionAddress());
-                                break;
-                            case ams::svc::InfoType_TotalNonSystemMemorySize:
-                                *out = process->GetTotalNonSystemUserPhysicalMemorySize();
-                                break;
-                            case ams::svc::InfoType_UsedNonSystemMemorySize:
-                                *out = process->GetUsedNonSystemUserPhysicalMemorySize();
-                                break;
-                            case ams::svc::InfoType_IsApplication:
-                                *out = process->IsApplication();
-                                break;
-                            case ams::svc::InfoType_FreeThreadCount:
-                                if (KResourceLimit *resource_limit = process->GetResourceLimit(); resource_limit != nullptr) {
-                                    const auto current_value = resource_limit->GetCurrentValue(ams::svc::LimitableResource_ThreadCountMax);
-                                    const auto limit_value   = resource_limit->GetLimitValue(ams::svc::LimitableResource_ThreadCountMax);
-                                    *out = limit_value - current_value;
-                                } else {
-                                    *out = 0;
-                                }
-                                break;
-                            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
-                        }
+                        /* Return the relevant info. */
+                        return GetInfoImpl(out, info_type, process.GetPointerUnsafe());
+                        #endif
                     }
                     break;
                 case ams::svc::InfoType_DebuggerAttached:

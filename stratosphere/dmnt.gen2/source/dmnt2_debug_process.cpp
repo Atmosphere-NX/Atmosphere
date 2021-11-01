@@ -47,6 +47,10 @@ namespace ams::dmnt {
         svc::GetProcessId(std::addressof(pid_value), m_debug_handle);
 
         m_process_id = { pid_value };
+
+        /* Get process info. */
+        this->CollectProcessInfo();
+
         return ResultSuccess();
     }
 
@@ -225,6 +229,53 @@ namespace ams::dmnt {
         }
 
         return ResultSuccess();
+    }
+
+    void DebugProcess::CollectProcessInfo() {
+        /* Define helper for getting process info. */
+        auto CollectProcessInfoImpl = [&](os::NativeHandle handle) -> Result {
+            /* Collect all values. */
+            R_TRY(svc::GetInfo(std::addressof(m_process_alias_address), svc::InfoType_AliasRegionAddress, handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_alias_size),    svc::InfoType_AliasRegionSize,    handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_heap_address),  svc::InfoType_HeapRegionAddress,  handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_heap_size),     svc::InfoType_HeapRegionSize,     handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_aslr_address),  svc::InfoType_AslrRegionAddress,  handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_aslr_size),     svc::InfoType_AslrRegionSize,     handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_stack_address), svc::InfoType_StackRegionAddress, handle, 0));
+            R_TRY(svc::GetInfo(std::addressof(m_process_stack_size),    svc::InfoType_StackRegionSize,    handle, 0));
+
+            if (m_program_location.program_id == ncm::InvalidProgramId) {
+                R_TRY(svc::GetInfo(std::addressof(m_program_location.program_id.value), svc::InfoType_ProgramId, handle, 0));
+            }
+
+            u64 value;
+            R_TRY(svc::GetInfo(std::addressof(value), svc::InfoType_IsApplication, handle, 0));
+            m_is_application = value != 0;
+
+            return ResultSuccess();
+        };
+
+        /* Get process info/status. */
+        os::NativeHandle process_handle;
+        if (R_FAILED(pm::dmnt::AtmosphereGetProcessInfo(std::addressof(process_handle), std::addressof(m_program_location), std::addressof(m_process_override_status), m_process_id))) {
+            process_handle            = os::InvalidNativeHandle;
+            m_program_location        = { ncm::InvalidProgramId, };
+            m_process_override_status = {};
+        }
+        ON_SCOPE_EXIT { os::CloseNativeHandle(process_handle); };
+
+        /* Try collecting from our debug handle, then the process handle. */
+        if (R_FAILED(CollectProcessInfoImpl(m_debug_handle)) && R_FAILED(CollectProcessInfoImpl(process_handle))) {
+            m_process_alias_address = 0;
+            m_process_alias_size    = 0;
+            m_process_heap_address  = 0;
+            m_process_heap_size     = 0;
+            m_process_aslr_address  = 0;
+            m_process_aslr_size     = 0;
+            m_process_stack_address = 0;
+            m_process_stack_size    = 0;
+            m_is_application        = false;
+        }
     }
 
     Result DebugProcess::GetThreadContext(svc::ThreadContext *out, u64 thread_id, u32 flags) {
