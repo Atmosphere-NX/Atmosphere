@@ -26,6 +26,7 @@ namespace ams::dmnt {
             char m_name[PathLengthMax];
             u64 m_address;
             u64 m_size;
+            size_t m_name_start;
         public:
             constexpr ModuleDefinition() : m_name(), m_address(), m_size() { /* ... */ }
             constexpr ~ModuleDefinition() { /* ... */ }
@@ -34,9 +35,10 @@ namespace ams::dmnt {
             constexpr ModuleDefinition &operator=(const ModuleDefinition &rhs) = default;
 
             constexpr void Reset() {
-                m_name[0] = 0;
-                m_address = 0;
-                m_size    = 0;
+                m_name[0]    = 0;
+                m_address    = 0;
+                m_size       = 0;
+                m_name_start = 0;
             }
 
             constexpr bool operator==(const ModuleDefinition &rhs) const {
@@ -48,7 +50,7 @@ namespace ams::dmnt {
             }
 
             constexpr char *GetNameBuffer() { return m_name; }
-            constexpr const char *GetName() const { return m_name; }
+            constexpr const char *GetName() const { return m_name + m_name_start; }
 
             constexpr u64 GetAddress() const { return m_address; }
             constexpr u64 GetSize() const { return m_size; }
@@ -56,6 +58,10 @@ namespace ams::dmnt {
             constexpr void SetAddressSize(u64 address, u64 size) {
                 m_address = address;
                 m_size    = size;
+            }
+
+            constexpr void SetNameStart(size_t offset) {
+                m_name_start = offset;
             }
     };
 
