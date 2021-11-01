@@ -80,7 +80,8 @@ namespace ams::dmnt {
             size_t GetModuleCount() const { return m_module_count; }
             size_t GetMainModuleIndex() const { return m_main_module; }
             const char *GetModuleName(size_t ix) const { return m_module_definitions[ix].GetName(); }
-            uintptr_t GetBaseAddress(size_t ix) const { return m_module_definitions[ix].GetAddress(); }
+            uintptr_t GetModuleBaseAddress(size_t ix) const { return m_module_definitions[ix].GetAddress(); }
+            uintptr_t GetModuleSize(size_t ix) const { return m_module_definitions[ix].GetSize(); }
             ProcessStatus GetStatus() const { return m_status; }
             os::ProcessId GetProcessId() const { return m_process_id; }
 
