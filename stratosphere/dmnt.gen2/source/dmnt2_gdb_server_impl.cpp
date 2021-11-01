@@ -1209,6 +1209,11 @@ namespace ams::dmnt {
                 /* Send packet. */
                 this->SendPacket(std::addressof(do_break), reply_buffer);
             }
+
+            /* If we should, break the process. */
+            if (do_break) {
+                m_debug_process.Break();
+            }
         }
     }
 
@@ -1855,7 +1860,9 @@ namespace ams::dmnt {
 
     void GdbServerImpl::qRcmd() {
         /* Decode the command. */
-        HexToMemory(m_buffer, m_receive_packet, std::strlen(m_receive_packet));
+        const auto packet_len = std::strlen(m_receive_packet);
+        HexToMemory(m_buffer, m_receive_packet, packet_len);
+        m_buffer[packet_len / 2] = '\x00';
 
         /* Convert our response to hex, on complete. */
         ON_SCOPE_EXIT {
@@ -1866,26 +1873,39 @@ namespace ams::dmnt {
         /* Parse the command. */
         char *command = reinterpret_cast<char *>(m_buffer);
         if (ParsePrefix(command, "help")) {
-            SetReply(m_buffer, "get base\n"
+            SetReply(m_buffer, "get info\n"
                                "wait application\n"
                                "wait {program id}\n"
                                "wait homebrew\n");
-        } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get modules")) {
-            SetReply(m_buffer, "Modules:\n");
-
+        } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get info") || ParsePrefix(command, "get modules")) {
             if (!this->HasDebugProcess()) {
-                AppendReply(m_buffer, "    [Not Attached]\n");
+                SetReply(m_buffer, "Not attached.\n");
                 return;
             }
+
+            SetReply(m_buffer, "Process:     0x%lx (%s)\n"
+                               "Program Id:  0x%016lx\n"
+                               "Application: %d\n"
+                               "Hbl:         %d\n"
+                               "Layout:\n", m_process_id.value, m_debug_process.GetProcessName(), m_debug_process.GetProgramLocation().program_id.value, m_debug_process.IsApplication(), m_debug_process.GetOverrideStatus().IsHbl());
+
+            AppendReply(m_buffer, "    Alias: 0x%010lx - 0x%010lx\n"
+                                  "    Heap:  0x%010lx - 0x%010lx\n"
+                                  "    Aslr:  0x%010lx - 0x%010lx\n"
+                                  "    Stack: 0x%010lx - 0x%010lx\n"
+                                  "Modules:\n", m_debug_process.GetAliasRegionAddress(), m_debug_process.GetAliasRegionAddress() + m_debug_process.GetAliasRegionSize() - 1,
+                                                m_debug_process.GetHeapRegionAddress(),  m_debug_process.GetHeapRegionAddress()  + m_debug_process.GetHeapRegionSize()  - 1,
+                                                m_debug_process.GetAslrRegionAddress(),  m_debug_process.GetAslrRegionAddress()  + m_debug_process.GetAslrRegionSize()  - 1,
+                                                m_debug_process.GetStackRegionAddress(), m_debug_process.GetStackRegionAddress() + m_debug_process.GetStackRegionSize() - 1);
 
             /* Get the module list. */
             for (size_t i = 0; i < m_debug_process.GetModuleCount(); ++i) {
                 const char *module_name = m_debug_process.GetModuleName(i);
                 const auto name_len = std::strlen(module_name);
                 if (name_len < 5 || (std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0)) {
-                    AppendReply(m_buffer, "    %p - %p %s.elf\n", reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i)), reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1), module_name);
+                    AppendReply(m_buffer, "    0x%010lx - 0x%010lx %s.elf\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
                 } else {
-                    AppendReply(m_buffer, "    %p - %p %s\n", reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i)), reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1), module_name);
+                    AppendReply(m_buffer, "    0x%010lx - 0x%010lx %s\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
                 }
             }
         } else if (ParsePrefix(command, "wait application") || ParsePrefix(command, "wait app")) {
@@ -1916,7 +1936,8 @@ namespace ams::dmnt {
 
             SetReply(m_buffer, "[TODO] wait for program id 0x%lx\n", program_id);
         } else {
-            SetReply(m_buffer, "Unknown command `%s`\n", command);
+            SetReply(m_reply_packet, "Unknown command `%s`\n", command);
+            std::memcpy(m_buffer, m_reply_packet, std::strlen(m_reply_packet));
         }
     }
 

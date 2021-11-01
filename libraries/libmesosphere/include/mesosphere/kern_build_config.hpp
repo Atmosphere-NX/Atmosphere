@@ -40,6 +40,12 @@
 /* of the right side, and so this does not actually cost any space. */
 #define MESOSPHERE_ENABLE_DEVIRTUALIZED_DYNAMIC_CAST
 
+/* NOTE: This enables usage of KDebug handles as parameter for svc::GetInfo */
+/* calls which require a process parameter. This enables a debugger to obtain */
+/* address space/layout information, for example. However, it changes abi, and so */
+/* this define allows toggling the extension. */
+#define MESOSPHERE_ENABLE_GET_INFO_OF_DEBUG_PROCESS
+
 /* NOTE: This uses currently-reserved bits inside the MapRange capability */
 /* in order to support large physical addresses (40-bit instead of 36). */
 /* This is toggleable in order to disable it if N ever uses those bits. */
