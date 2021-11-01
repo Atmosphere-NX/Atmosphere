@@ -1818,6 +1818,8 @@ namespace ams::dmnt {
             this->qAttached();
         } else if (ParsePrefix(m_receive_packet, "qC")) {
             this->qC();
+        } else if (ParsePrefix(m_receive_packet, "qRcmd,")) {
+            this->qRcmd();
         } else if (ParsePrefix(m_receive_packet, "qSupported:")) {
             this->qSupported();
         } else if (ParsePrefix(m_receive_packet, "qXfer:")) {
@@ -1841,6 +1843,58 @@ namespace ams::dmnt {
             SetReply(m_reply_packet, "QCp%lx.%lx", m_process_id.value, m_debug_process.GetLastThreadId());
         } else {
             SetReplyError(m_reply_packet, "E01");
+        }
+    }
+
+    void GdbServerImpl::qRcmd() {
+        /* Decode the command. */
+        HexToMemory(m_buffer, m_receive_packet, std::strlen(m_receive_packet));
+
+        /* Convert our response to hex, on complete. */
+        ON_SCOPE_EXIT {
+            /* Convert response to hex. */
+            MemoryToHex(m_reply_packet, m_buffer, std::strlen(m_buffer));
+        };
+
+        /* Parse the command. */
+        char *command = reinterpret_cast<char *>(m_buffer);
+        if (ParsePrefix(command, "help")) {
+            SetReply(m_buffer, "get base\n"
+                               "wait application\n"
+                               "wait {program id}\n"
+                               "wait homebrew\n");
+        } else if (ParsePrefix(command, "get base") || ParsePrefix(command, "get modules")) {
+            SetReply(m_buffer, "Modules:\n");
+
+            if (!this->HasDebugProcess()) {
+                AppendReply(m_buffer, "    [Not Attached]\n");
+                return;
+            }
+
+            /* Get the module list. */
+            for (size_t i = 0; i < m_debug_process.GetModuleCount(); ++i) {
+                const char *module_name = m_debug_process.GetModuleName(i);
+                const auto name_len = std::strlen(module_name);
+                if (name_len < 5 || (std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0)) {
+                    AppendReply(m_buffer, "    %p - %p %s.elf\n", reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i)), reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1), module_name);
+                } else {
+                    AppendReply(m_buffer, "    %p - %p %s\n", reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i)), reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1), module_name);
+                }
+            }
+        } else if (ParsePrefix(command, "wait application") || ParsePrefix(command, "wait app")) {
+            SetReply(m_buffer, "[TODO] wait for next application\n");
+        } else if (ParsePrefix(command, "wait homebrew") || ParsePrefix(command, "wait hb")) {
+            SetReply(m_buffer, "[TODO] wait for next homebrew\n");
+        } else if (ParsePrefix(command, "wait ")) {
+            /* Allow optional "0x" prefix. */
+            ParsePrefix(command, "0x");
+
+            /* Decode program id. */
+            const u64 program_id = DecodeHex(command);
+
+            SetReply(m_buffer, "[TODO] wait for program id 0x%lx\n", program_id);
+        } else {
+            SetReply(m_buffer, "Unknown command `%s`\n", command);
         }
     }
 
@@ -1962,14 +2016,14 @@ namespace ams::dmnt {
 
             /* Get the module list. */
             for (size_t i = 0; i < m_debug_process.GetModuleCount(); ++i) {
-                AMS_DMNT2_GDB_LOG_DEBUG("Module[%zu]: %p, %s\n", i, reinterpret_cast<void *>(m_debug_process.GetBaseAddress(i)), m_debug_process.GetModuleName(i));
+                AMS_DMNT2_GDB_LOG_DEBUG("Module[%zu]: %p, %s\n", i, reinterpret_cast<void *>(m_debug_process.GetModuleBaseAddress(i)), m_debug_process.GetModuleName(i));
 
                 const char *module_name = m_debug_process.GetModuleName(i);
                 const auto name_len = std::strlen(module_name);
                 if (name_len < 5 || (std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0)) {
-                    AppendReply(g_annex_buffer, "<library name=\"%s.elf\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
+                    AppendReply(g_annex_buffer, "<library name=\"%s.elf\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetModuleBaseAddress(i));
                 } else {
-                    AppendReply(g_annex_buffer, "<library name=\"%s\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
+                    AppendReply(g_annex_buffer, "<library name=\"%s\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetModuleBaseAddress(i));
                 }
             }
 

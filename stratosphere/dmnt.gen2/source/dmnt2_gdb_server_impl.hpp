@@ -98,6 +98,7 @@ namespace ams::dmnt {
 
             void qAttached();
             void qC();
+            void qRcmd();
             void qSupported();
             void qXfer();
             void qXferFeaturesRead();
