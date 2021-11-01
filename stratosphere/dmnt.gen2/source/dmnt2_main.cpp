@@ -42,6 +42,9 @@ namespace ams {
             /* Initialize our connection to sm. */
             R_ABORT_UNLESS(sm::Initialize());
 
+            /* Initialize other services we need. */
+            R_ABORT_UNLESS(pmdmntInitialize());
+
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
         }

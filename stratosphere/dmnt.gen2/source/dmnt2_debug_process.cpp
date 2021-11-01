@@ -27,9 +27,14 @@ namespace ams::dmnt {
 
     }
 
-    Result DebugProcess::Attach(os::ProcessId process_id) {
+    Result DebugProcess::Attach(os::ProcessId process_id, bool start_process) {
         /* Attach to the process. */
         R_TRY(svc::DebugActiveProcess(std::addressof(m_debug_handle), process_id.value));
+
+        /* If necessary, start the process. */
+        if (start_process) {
+            R_ABORT_UNLESS(pm::dmnt::StartProcess(process_id));
+        }
 
         /* Collect initial information. */
         R_TRY(this->Start());
