@@ -42,6 +42,7 @@ namespace ams::dmnt {
             DebugProcess m_debug_process;
             os::ProcessId m_process_id{os::InvalidProcessId};
             os::Event m_event;
+            os::ProcessId m_wait_process_id{os::InvalidProcessId};
         public:
             GdbServerImpl(int socket, void *thread_stack, size_t stack_size);
             ~GdbServerImpl();

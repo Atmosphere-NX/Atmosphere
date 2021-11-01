@@ -857,11 +857,18 @@ namespace ams::dmnt {
                 /* Detach. */
                 m_debug_process.Detach();
 
-                /* If we have a process id, attach. */
-                if (R_FAILED(m_debug_process.Attach(m_process_id))) {
-                    AMS_DMNT2_GDB_LOG_DEBUG("Failed to attach to %016lx\n", m_process_id.value);
-                    g_event_done_cv.Signal();
-                    continue;
+                /* Check if we need to start the process. */
+                const bool start_process = m_process_id == m_wait_process_id;
+                {
+                    /* Clear our wait process id. */
+                    ON_SCOPE_EXIT { if (start_process) { m_wait_process_id = os::InvalidProcessId; } };
+
+                    /* If we have a process id, attach. */
+                    if (R_FAILED(m_debug_process.Attach(m_process_id, m_process_id == m_wait_process_id))) {
+                        AMS_DMNT2_GDB_LOG_DEBUG("Failed to attach to %016lx\n", m_process_id.value);
+                        g_event_done_cv.Signal();
+                        continue;
+                    }
                 }
 
                 /* Set our process id. */
@@ -1882,7 +1889,22 @@ namespace ams::dmnt {
                 }
             }
         } else if (ParsePrefix(command, "wait application") || ParsePrefix(command, "wait app")) {
-            SetReply(m_buffer, "[TODO] wait for next application\n");
+            /* Wait for an application process. */
+            {
+                /* Get hook to creation of application process. */
+                os::NativeHandle h;
+                R_ABORT_UNLESS(pm::dmnt::HookToCreateApplicationProcess(std::addressof(h)));
+
+                /* Wait for event. */
+                os::SystemEvent hook_event(h, true, os::InvalidNativeHandle, false, os::EventClearMode_AutoClear);
+                hook_event.Wait();
+            }
+
+            /* Get application process id. */
+            R_ABORT_UNLESS(pm::dmnt::GetApplicationProcessId(std::addressof(m_wait_process_id)));
+
+            /* Note that we're attaching. */
+            SetReply(m_buffer, "Attach to 0x%lx.\n", m_wait_process_id.value);
         } else if (ParsePrefix(command, "wait homebrew") || ParsePrefix(command, "wait hb")) {
             SetReply(m_buffer, "[TODO] wait for next homebrew\n");
         } else if (ParsePrefix(command, "wait ")) {

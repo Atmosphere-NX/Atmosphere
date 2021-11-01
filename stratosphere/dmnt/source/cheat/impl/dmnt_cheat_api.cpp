@@ -248,7 +248,6 @@ namespace ams::dmnt::cheat::impl {
                 void StartProcess(os::ProcessId process_id) const {
                     R_ABORT_UNLESS(pm::dmnt::StartProcess(process_id));
                 }
-
             public:
                 CheatProcessManager() : m_cheat_lock(), m_unsafe_break_event(os::EventClearMode_ManualClear), m_debug_events_event(os::EventClearMode_AutoClear), m_cheat_process_event(os::EventClearMode_AutoClear, true) {
                     /* Learn whether we should enable cheats by default. */

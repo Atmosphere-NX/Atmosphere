@@ -109,7 +109,7 @@ namespace ams::dmnt {
                 m_status = ProcessStatus_DebugBreak;
             }
         public:
-            Result Attach(os::ProcessId process_id);
+            Result Attach(os::ProcessId process_id, bool start_process = false);
             void Detach();
 
             Result GetThreadContext(svc::ThreadContext *out, u64 thread_id, u32 flags);
