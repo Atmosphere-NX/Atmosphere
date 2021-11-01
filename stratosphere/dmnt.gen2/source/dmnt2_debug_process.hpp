@@ -117,6 +117,8 @@ namespace ams::dmnt {
             Result ReadMemory(void *dst, uintptr_t address, size_t size);
             Result WriteMemory(const void *src, uintptr_t address, size_t size);
 
+            Result QueryMemory(svc::MemoryInfo *out, uintptr_t address);
+
             Result Continue();
             Result Continue(u64 thread_id);
             Result Step();

@@ -194,6 +194,16 @@ namespace ams::dmnt {
 
                     /* Truncate module name. */
                     module_name[ModuleDefinition::PathLengthMax - 1] = 0;
+
+                    /* Set default module name start. */
+                    module.SetNameStart(0);
+
+                    /* Ignore leading directories. */
+                    for (size_t i = 0; i < static_cast<size_t>(module_path.path_length); ++i) {
+                        if (module_name[i] == '/' || module_name[i] == '\\') {
+                            module.SetNameStart(i + 1);
+                        }
+                    }
                 }
             }
 
@@ -226,6 +236,11 @@ namespace ams::dmnt {
 
     Result DebugProcess::WriteMemory(const void *src, uintptr_t address, size_t size) {
         return svc::WriteDebugProcessMemory(m_debug_handle, reinterpret_cast<uintptr_t>(src), address, size);
+    }
+
+    Result DebugProcess::QueryMemory(svc::MemoryInfo *out, uintptr_t address) {
+        svc::PageInfo dummy;
+        return svc::QueryDebugProcessMemory(out, std::addressof(dummy), m_debug_handle, address);
     }
 
     Result DebugProcess::Continue() {

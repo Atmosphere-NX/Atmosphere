@@ -772,6 +772,7 @@ namespace ams::dmnt {
             AnnexBufferContents_Processes,
             AnnexBufferContents_Threads,
             AnnexBufferContents_Libraries,
+            AnnexBufferContents_MemoryMap,
         };
 
         constinit AnnexBufferContents g_annex_buffer_contents = AnnexBufferContents_Invalid;
@@ -1856,6 +1857,7 @@ namespace ams::dmnt {
         AppendReply(m_reply_packet, ";augmented-libraries-svr4-read+");
         AppendReply(m_reply_packet, ";qXfer:threads:read+");
         AppendReply(m_reply_packet, ";qXfer:exec-file:read+");
+        AppendReply(m_reply_packet, ";qXfer:memory-map:read+");
         AppendReply(m_reply_packet, ";swbreak+");
         AppendReply(m_reply_packet, ";hwbreak+");
         AppendReply(m_reply_packet, ";vContSupported+");
@@ -1882,6 +1884,8 @@ namespace ams::dmnt {
                 }
             } else if (ParsePrefix(m_receive_packet, "libraries:read::")) {
                 this->qXferLibrariesRead();
+            } else if (ParsePrefix(m_receive_packet, "memory-map:read::")) {
+                this->qXferMemoryMapRead();
             } else if (ParsePrefix(m_receive_packet, "exec-file:read:")) {
                 SetReply(m_reply_packet, "l%s", m_debug_process.GetProcessName());
             } else {
@@ -1962,7 +1966,7 @@ namespace ams::dmnt {
 
                 const char *module_name = m_debug_process.GetModuleName(i);
                 const auto name_len = std::strlen(module_name);
-                if (name_len > 4 && std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0) {
+                if (name_len < 5 || (std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0)) {
                     AppendReply(g_annex_buffer, "<library name=\"%s.elf\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
                 } else {
                     AppendReply(g_annex_buffer, "<library name=\"%s\"><segment address=\"0x%lx\" /></library>", module_name, m_debug_process.GetBaseAddress(i));
@@ -1972,6 +1976,73 @@ namespace ams::dmnt {
             AppendReply(g_annex_buffer, "</library-list>");
 
             g_annex_buffer_contents = AnnexBufferContents_Libraries;
+        }
+
+        /* Copy out the module list. */
+        GetAnnexBufferContents(m_reply_packet, offset, length);
+    }
+
+    void GdbServerImpl::qXferMemoryMapRead() {
+        /* Handle the qXfer. */
+        u32 offset, length;
+
+        /* Parse offset/length. */
+        ParseOffsetLength(m_receive_packet, offset, length);
+
+        /* Acquire access to the annex buffer. */
+        std::scoped_lock lk(g_annex_buffer_lock);
+
+        /* If doing a fresh read, generate the module list. */
+        if (offset == 0 || g_annex_buffer_contents != AnnexBufferContents_MemoryMap) {
+            /* Set header. */
+            SetReply(g_annex_buffer, "<memory-map>\n");
+
+            /* Iterate over all mappings. */
+            uintptr_t cur_addr = 0;
+            svc::MemoryInfo prev_info = {};
+            size_t prev_size = 0;
+            while (true) {
+                /* Get current mapping. */
+                svc::MemoryInfo mem_info;
+                if (R_FAILED(m_debug_process.QueryMemory(std::addressof(mem_info), cur_addr))) {
+                    break;
+                }
+
+                /* If the mapping is present, add it. */
+                if (mem_info.state != svc::MemoryState_Free && mem_info.state != svc::MemoryState_Inaccessible && mem_info.permission != svc::MemoryPermission_None) {
+                    if (prev_size != 0 && mem_info.state == prev_info.state && mem_info.permission == prev_info.permission && mem_info.attribute == prev_info.attribute && mem_info.base_address == prev_info.base_address + prev_size) {
+                        prev_size += mem_info.size;
+                    } else {
+                        if (prev_size != 0) {
+                            AppendReply(g_annex_buffer, "<memory type=\"ram\" start=\"0x%lx\" length=\"0x%lx\" />", prev_info.base_address, prev_size);
+                        }
+
+                        prev_info = mem_info;
+                        prev_size = mem_info.size;
+                    }
+                } else {
+                    if (prev_size != 0) {
+                        AppendReply(g_annex_buffer, "<memory type=\"ram\" start=\"0x%lx\" length=\"0x%lx\" />", prev_info.base_address, prev_size);
+
+                        prev_size = 0;
+                    }
+                }
+
+                const uintptr_t next_address = mem_info.base_address + mem_info.size;
+                if (next_address <= cur_addr) {
+                    break;
+                }
+
+                cur_addr = next_address;
+            }
+
+            if (prev_size != 0) {
+                AppendReply(g_annex_buffer, "<memory type=\"ram\" start=\"0x%lx\" length=\"0x%lx\" />", prev_info.base_address, prev_size);
+            }
+
+            AppendReply(g_annex_buffer, "</memory-map>");
+
+            g_annex_buffer_contents = AnnexBufferContents_MemoryMap;
         }
 
         /* Copy out the module list. */
