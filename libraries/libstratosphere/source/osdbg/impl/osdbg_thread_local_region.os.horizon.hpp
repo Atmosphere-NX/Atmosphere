@@ -54,7 +54,7 @@ namespace ams::osdbg::impl {
     static_assert(AMS_OFFSETOF(ThreadLocalRegionIlp32, tls) == 0x1C0);
 
     struct LibnxThreadVars {
-        static constexpr u32 Magic = util::FourCC<'!','T','V','$'>::Code;
+        static constexpr u32 Magic = util::ReverseFourCC<'!','T','V','$'>::Code;
 
         u32 magic;
         ::Handle handle;
@@ -69,11 +69,11 @@ namespace ams::osdbg::impl {
         volatile u16 disable_counter;
         volatile u16 interrupt_flag;
         u32 reserved0;
-        u64 tls[(0x1E0 - 0x108) / sizeof(u64)];
+        u64 tls[(0x200 - sizeof(LibnxThreadVars) - 0x108) / sizeof(u64)];
         LibnxThreadVars thread_vars;
     };
     static_assert(sizeof(ThreadLocalRegionLibnx) == sizeof(svc::ThreadLocalRegion));
-    static_assert(AMS_OFFSETOF(ThreadLocalRegionLibnx, thread_vars) == 0x1E0);
+    static_assert(AMS_OFFSETOF(ThreadLocalRegionLibnx, thread_vars) == 0x200 - sizeof(LibnxThreadVars));
 
     struct LibnxThreadEntryArgs {
         u64 t;

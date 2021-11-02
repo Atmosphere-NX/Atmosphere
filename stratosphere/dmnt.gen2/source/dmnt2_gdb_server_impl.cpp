@@ -265,6 +265,57 @@ namespace ams::dmnt {
             "\t<reg name=\"fpscr\" bitsize=\"32\" type=\"int\" group=\"float\"/>\n"
             "</feature>\n";
 
+        constexpr const char * const MemoryStateNames[svc::MemoryState_Coverage + 1] = {
+            "----- Free -----", /* svc::MemoryState_Free             */
+            "Io              ", /* svc::MemoryState_Io               */
+            "Static          ", /* svc::MemoryState_Static           */
+            "Code            ", /* svc::MemoryState_Code             */
+            "CodeData        ", /* svc::MemoryState_CodeData         */
+            "Normal          ", /* svc::MemoryState_Normal           */
+            "Shared          ", /* svc::MemoryState_Shared           */
+            "Alias           ", /* svc::MemoryState_Alias            */
+            "AliasCode       ", /* svc::MemoryState_AliasCode        */
+            "AliasCodeData   ", /* svc::MemoryState_AliasCodeData    */
+            "Ipc             ", /* svc::MemoryState_Ipc              */
+            "Stack           ", /* svc::MemoryState_Stack            */
+            "ThreadLocal     ", /* svc::MemoryState_ThreadLocal      */
+            "Transfered      ", /* svc::MemoryState_Transfered       */
+            "SharedTransfered", /* svc::MemoryState_SharedTransfered */
+            "SharedCode      ", /* svc::MemoryState_SharedCode       */
+            "Inaccessible    ", /* svc::MemoryState_Inaccessible     */
+            "NonSecureIpc    ", /* svc::MemoryState_NonSecureIpc     */
+            "NonDeviceIpc    ", /* svc::MemoryState_NonDeviceIpc     */
+            "Kernel          ", /* svc::MemoryState_Kernel           */
+            "GeneratedCode   ", /* svc::MemoryState_GeneratedCode    */
+            "CodeOut         ", /* svc::MemoryState_CodeOut          */
+            "Coverage        ", /* svc::MemoryState_Coverage         */
+        };
+
+        constexpr const char *GetMemoryStateName(svc::MemoryState state) {
+            if (static_cast<size_t>(state) < util::size(MemoryStateNames)) {
+                return MemoryStateNames[static_cast<size_t>(state)];
+            } else {
+                return "Unknown         ";
+            }
+        }
+
+        constexpr const char *GetMemoryPermissionString(const svc::MemoryInfo &info) {
+            if (info.state == svc::MemoryState_Free) {
+                return "   ";
+            } else {
+                switch (info.permission) {
+                    case svc::MemoryPermission_ReadExecute:
+                        return "r-x";
+                    case svc::MemoryPermission_Read:
+                        return "r--";
+                    case svc::MemoryPermission_ReadWrite:
+                        return "rw-";
+                    default:
+                        return "---";
+                }
+            }
+        }
+
         bool ParsePrefix(char *&packet, const char *prefix) {
             const auto len = std::strlen(prefix);
             if (std::strncmp(packet, prefix, len) == 0) {
@@ -765,7 +816,7 @@ namespace ams::dmnt {
         }
 
         constinit os::SdkMutex g_annex_buffer_lock;
-        constinit char g_annex_buffer[0x8000];
+        constinit char g_annex_buffer[2 * GdbPacketBufferSize];
 
         enum AnnexBufferContents {
             AnnexBufferContents_Invalid,
@@ -1001,10 +1052,18 @@ namespace ams::dmnt {
                                 break;
                             case svc::DebugException_DebuggerBreak:
                                 {
-                                    AMS_DMNT2_GDB_LOG_DEBUG("DebuggerBreak %lx, last=%lx\n", thread_id, m_debug_process.GetLastThreadId());
                                     signal = GdbSignal_Interrupt;
-                                    thread_id = m_debug_process.GetLastThreadId();
+
+                                    thread_id = m_debug_process.GetPreferredDebuggerBreakThreadId();
+                                    svc::ThreadContext ctx;
+                                    if (thread_id == 0 || thread_id == static_cast<u64>(-1) || R_FAILED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
+                                        thread_id = m_debug_process.GetLastThreadId();
+                                    }
+
+                                    AMS_DMNT2_GDB_LOG_DEBUG("DebuggerBreak %lx, last=%lx\n", thread_id, m_debug_process.GetLastThreadId());
+
                                     m_debug_process.SetLastThreadId(thread_id);
+                                    m_debug_process.SetThreadIdOverride(thread_id);
                                 }
                                 break;
                             case svc::DebugException_UndefinedInstruction:
@@ -1873,6 +1932,8 @@ namespace ams::dmnt {
         char *command = reinterpret_cast<char *>(m_buffer);
         if (ParsePrefix(command, "help")) {
             SetReply(m_buffer, "get info\n"
+                               "get mappings\n"
+                               "get mapping {address}\n"
                                "wait application\n"
                                "wait {program id}\n"
                                "wait homebrew\n");
@@ -1888,10 +1949,10 @@ namespace ams::dmnt {
                                "Hbl:         %d\n"
                                "Layout:\n", m_process_id.value, m_debug_process.GetProcessName(), m_debug_process.GetProgramLocation().program_id.value, m_debug_process.IsApplication(), m_debug_process.GetOverrideStatus().IsHbl());
 
-            AppendReply(m_buffer, "    Alias: 0x%010lx - 0x%010lx\n"
-                                  "    Heap:  0x%010lx - 0x%010lx\n"
-                                  "    Aslr:  0x%010lx - 0x%010lx\n"
-                                  "    Stack: 0x%010lx - 0x%010lx\n"
+            AppendReply(m_buffer, "  Alias: 0x%010lx - 0x%010lx\n"
+                                  "  Heap:  0x%010lx - 0x%010lx\n"
+                                  "  Aslr:  0x%010lx - 0x%010lx\n"
+                                  "  Stack: 0x%010lx - 0x%010lx\n"
                                   "Modules:\n", m_debug_process.GetAliasRegionAddress(), m_debug_process.GetAliasRegionAddress() + m_debug_process.GetAliasRegionSize() - 1,
                                                 m_debug_process.GetHeapRegionAddress(),  m_debug_process.GetHeapRegionAddress()  + m_debug_process.GetHeapRegionSize()  - 1,
                                                 m_debug_process.GetAslrRegionAddress(),  m_debug_process.GetAslrRegionAddress()  + m_debug_process.GetAslrRegionSize()  - 1,
@@ -1902,11 +1963,75 @@ namespace ams::dmnt {
                 const char *module_name = m_debug_process.GetModuleName(i);
                 const auto name_len = std::strlen(module_name);
                 if (name_len < 5 || (std::strcmp(module_name + name_len - 4, ".elf") != 0 && std::strcmp(module_name + name_len - 4, ".nss") != 0)) {
-                    AppendReply(m_buffer, "    0x%010lx - 0x%010lx %s.elf\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
+                    AppendReply(m_buffer, "  0x%010lx - 0x%010lx %s.elf\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
                 } else {
-                    AppendReply(m_buffer, "    0x%010lx - 0x%010lx %s\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
+                    AppendReply(m_buffer, "  0x%010lx - 0x%010lx %s\n", m_debug_process.GetModuleBaseAddress(i), m_debug_process.GetModuleBaseAddress(i) + m_debug_process.GetModuleSize(i) - 1, module_name);
                 }
             }
+        } else if (ParsePrefix(command, "get mappings")) {
+            if (!this->HasDebugProcess()) {
+                SetReply(m_buffer, "Not attached.\n");
+                return;
+            }
+
+            SetReply(m_buffer, "Mappings:\n");
+
+            uintptr_t cur_addr = 0;
+            while (true) {
+                /* Get mapping. */
+                svc::MemoryInfo mem_info;
+                if (R_FAILED(m_debug_process.QueryMemory(std::addressof(mem_info), cur_addr))) {
+                    break;
+                }
+
+                if (mem_info.state != svc::MemoryState_Inaccessible || mem_info.base_address + mem_info.size - 1 != std::numeric_limits<u64>::max()) {
+                    const char *state = GetMemoryStateName(mem_info.state);
+                    const char *perm  = GetMemoryPermissionString(mem_info);
+
+                    const char l = (mem_info.attribute & svc::MemoryAttribute_Locked)       ? 'L' : '-';
+                    const char i = (mem_info.attribute & svc::MemoryAttribute_IpcLocked)    ? 'I' : '-';
+                    const char d = (mem_info.attribute & svc::MemoryAttribute_DeviceShared) ? 'D' : '-';
+                    const char u = (mem_info.attribute & svc::MemoryAttribute_Uncached)     ? 'U' : '-';
+
+                    AppendReply(m_buffer, "  0x%010lx - 0x%010lx %s %s %c%c%c%c [%d, %d]\n", mem_info.base_address, mem_info.base_address + mem_info.size - 1, perm, state, l, i, d, u, mem_info.ipc_count, mem_info.device_count);
+                }
+
+                /* Advance. */
+                const uintptr_t next_address = mem_info.base_address + mem_info.size;
+                if (next_address <= cur_addr) {
+                    break;
+                }
+
+                cur_addr = next_address;
+            }
+
+        } else if (ParsePrefix(command, "get mapping ")) {
+            if (!this->HasDebugProcess()) {
+                SetReply(m_buffer, "Not attached.\n");
+                return;
+            }
+
+            /* Allow optional "0x" prefix. */
+            ParsePrefix(command, "0x");
+
+            /* Decode address. */
+            const u64 address = DecodeHex(command);
+
+            /* Get mapping. */
+            svc::MemoryInfo mem_info;
+            if (R_FAILED(m_debug_process.QueryMemory(std::addressof(mem_info), address))) {
+                SetReply(m_buffer, "0x%016lx: No mapping.\n", address);
+            }
+
+            const char *state = GetMemoryStateName(mem_info.state);
+            const char *perm  = GetMemoryPermissionString(mem_info);
+
+            const char l = (mem_info.attribute & svc::MemoryAttribute_Locked)       ? 'L' : '-';
+            const char i = (mem_info.attribute & svc::MemoryAttribute_IpcLocked)    ? 'I' : '-';
+            const char d = (mem_info.attribute & svc::MemoryAttribute_DeviceShared) ? 'D' : '-';
+            const char u = (mem_info.attribute & svc::MemoryAttribute_Uncached)     ? 'U' : '-';
+
+            SetReply(m_buffer, "0x%010lx - 0x%010lx %s %s %c%c%c%c [%d, %d]\n", mem_info.base_address, mem_info.base_address + mem_info.size - 1, perm, state, l, i, d, u, mem_info.ipc_count, mem_info.device_count);
         } else if (ParsePrefix(command, "wait application") || ParsePrefix(command, "wait app")) {
             /* Wait for an application process. */
             {
@@ -2163,8 +2288,13 @@ namespace ams::dmnt {
                     u32 core = 0;
                     m_debug_process.GetThreadCurrentCore(std::addressof(core), thread_ids[i]);
 
-                    /* TODO: `name=\"%s\"`? */
-                    AppendReply(g_annex_buffer, "<thread id=\"p%lx.%lx\" core=\"%u\"/>", m_process_id.value, thread_ids[i], core);
+                    /* Get the thread name. */
+                    char name[os::ThreadNameLengthMax + 1];
+                    m_debug_process.GetThreadName(name, thread_ids[i]);
+                    name[sizeof(name) - 1] = '\x00';
+
+                    /* Set the thread entry */
+                    AppendReply(g_annex_buffer, "<thread id=\"p%lx.%lx\" core=\"%u\" name=\"%s\" />", m_process_id.value, thread_ids[i], core, name);
                 }
             }
 

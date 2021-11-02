@@ -50,9 +50,9 @@ namespace ams::osdbg {
         } else {
             /* Special-case libnx threads. */
             if (thread_info->_thread_type_type == ThreadTypeType_Libnx) {
-                util::TSNPrintf(dst, os::ThreadNameLengthMax, "libnx Thread_0x%p", reinterpret_cast<void *>(thread_info->_thread_type));
+                util::TSNPrintf(dst, os::ThreadNameLengthMax, "libnx Thread_%p", reinterpret_cast<void *>(thread_info->_thread_type));
             } else {
-                util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_0x%p", reinterpret_cast<void *>(thread_info->_thread_type));
+                util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_%p", reinterpret_cast<void *>(thread_info->_thread_type));
             }
 
             return ResultSuccess();

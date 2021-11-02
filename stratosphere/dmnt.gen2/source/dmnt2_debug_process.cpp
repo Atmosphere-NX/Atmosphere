@@ -593,5 +593,25 @@ namespace ams::dmnt {
         return ResultSuccess();
     }
 
+    void DebugProcess::GetThreadName(char *dst, u64 thread_id) const {
+        for (size_t i = 0; i < ThreadCountMax; ++i) {
+            if (m_thread_valid[i] && m_thread_ids[i] == thread_id) {
+                if (R_FAILED(osdbg::GetThreadName(dst, std::addressof(m_thread_infos[i])))) {
+                    if (m_thread_infos[i]._thread_type != 0) {
+                        if (m_thread_infos[i]._thread_type_type == osdbg::ThreadTypeType_Libnx) {
+                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "libnx Thread_%p", reinterpret_cast<void *>(m_thread_infos[i]._thread_type));
+                        } else {
+                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_%p", reinterpret_cast<void *>(m_thread_infos[i]._thread_type));
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                return;
+            }
+        }
+
+        util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_ID=%lu", thread_id);
+    }
 
 }

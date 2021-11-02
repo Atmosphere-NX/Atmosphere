@@ -19,7 +19,7 @@ namespace ams::kern {
 
     namespace {
 
-        constexpr std::tuple<KMemoryState, const char *> MemoryStateNames[] = {
+        constexpr const std::pair<KMemoryState, const char *> MemoryStateNames[] = {
             {KMemoryState_Free               , "----- Free -----"},
             {KMemoryState_Io                 , "Io              "},
             {KMemoryState_Static             , "Static          "},
@@ -41,6 +41,7 @@ namespace ams::kern {
             {KMemoryState_Kernel             , "Kernel          "},
             {KMemoryState_GeneratedCode      , "GeneratedCode   "},
             {KMemoryState_CodeOut            , "CodeOut         "},
+            {KMemoryState_Coverage           , "Coverage        "},
         };
 
         constexpr const char *GetMemoryStateName(KMemoryState state) {

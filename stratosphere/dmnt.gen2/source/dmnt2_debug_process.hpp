@@ -50,6 +50,7 @@ namespace ams::dmnt {
             u64 m_last_thread_id{};
             u64 m_thread_id_override{};
             u64 m_continue_thread_id{};
+            u64 m_preferred_debug_break_thread_id{};
             GdbSignal m_last_signal{};
             bool m_stepping{false};
             bool m_use_hardware_single_step{false};
@@ -107,13 +108,16 @@ namespace ams::dmnt {
             u64 GetLastThreadId();
             u64 GetThreadIdOverride() { this->GetLastThreadId(); return m_thread_id_override; }
 
+            u64 GetPreferredDebuggerBreakThreadId() { return m_preferred_debug_break_thread_id; }
+
             void SetLastThreadId(u64 tid) {
                 m_last_thread_id     = tid;
                 m_thread_id_override = tid;
             }
 
             void SetThreadIdOverride(u64 tid) {
-                m_thread_id_override = tid;
+                m_thread_id_override              = tid;
+                m_preferred_debug_break_thread_id = tid;
             }
 
             void SetDebugBreaked() {
@@ -174,6 +178,8 @@ namespace ams::dmnt {
             void GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target);
 
             Result CollectModules();
+
+            void GetThreadName(char *dst, u64 thread_id) const;
         private:
             Result Start();
 

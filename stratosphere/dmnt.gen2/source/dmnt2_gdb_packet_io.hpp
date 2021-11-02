@@ -19,7 +19,7 @@
 
 namespace ams::dmnt {
 
-    static constexpr size_t GdbPacketBufferSize = 16_KB;
+    static constexpr size_t GdbPacketBufferSize = 32_KB;
 
     class GdbPacketIo {
         private:
