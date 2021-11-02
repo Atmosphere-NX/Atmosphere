@@ -433,7 +433,7 @@ namespace ams::dmnt {
             return 0;
         }
 
-        void SetGdbRegister32(char *dst, char * const dst_end, u32 value) {
+        void SetGdbRegister32(char * &dst, char * const dst_end, u32 value) {
             if (value != 0) {
                 AppendReplyFormat(dst, dst_end, "%08x", util::ConvertToBigEndian(value));
             } else {
@@ -441,7 +441,7 @@ namespace ams::dmnt {
             }
         }
 
-        void SetGdbRegister64(char *dst, char * const dst_end, u64 value) {
+        void SetGdbRegister64(char * &dst, char * const dst_end, u64 value) {
             if (value != 0) {
                 AppendReplyFormat(dst, dst_end, "%016lx", util::ConvertToBigEndian(value));
             } else {
@@ -449,7 +449,7 @@ namespace ams::dmnt {
             }
         }
 
-        void SetGdbRegister128(char *dst, char * const dst_end, u128 value) {
+        void SetGdbRegister128(char * &dst, char * const dst_end, u128 value) {
             if (value != 0) {
                 AppendReplyFormat(dst, dst_end, "%016lx%016lx", util::ConvertToBigEndian(static_cast<u64>(value >> 0)), util::ConvertToBigEndian(static_cast<u64>(value >> BITSIZEOF(u64))));
             } else {
@@ -457,7 +457,7 @@ namespace ams::dmnt {
             }
         }
 
-        void SetGdbRegisterPacket(char *dst, char * const dst_end, const svc::ThreadContext &thread_context, bool is_64_bit) {
+        void SetGdbRegisterPacket(char * &dst, char * const dst_end, const svc::ThreadContext &thread_context, bool is_64_bit) {
             /* Clear packet. */
             dst[0] = 0;
 
@@ -502,7 +502,7 @@ namespace ams::dmnt {
             }
         }
 
-        void SetGdbRegisterPacket(char *dst, char * const dst_end, const svc::ThreadContext &thread_context, u64 reg_num, bool is_64_bit) {
+        void SetGdbRegisterPacket(char * &dst, char * const dst_end, const svc::ThreadContext &thread_context, u64 reg_num, bool is_64_bit) {
             /* Clear packet. */
             dst[0] = 0;
 
