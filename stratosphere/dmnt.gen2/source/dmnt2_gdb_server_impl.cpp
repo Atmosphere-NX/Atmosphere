@@ -2061,7 +2061,7 @@ namespace ams::dmnt {
             SetReply(m_buffer, "[TODO] wait for program id 0x%lx\n", program_id);
         } else {
             SetReply(m_reply_packet, "Unknown command `%s`\n", command);
-            std::memcpy(m_buffer, m_reply_packet, std::strlen(m_reply_packet));
+            std::memcpy(m_buffer, m_reply_packet, std::strlen(m_reply_packet) + 1);
         }
     }
 
