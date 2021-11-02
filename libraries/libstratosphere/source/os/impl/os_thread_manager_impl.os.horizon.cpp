@@ -52,6 +52,26 @@ namespace ams::os::impl {
         /* Get the thread impl object from libnx. */
         ThreadImpl *thread_impl = ::threadGetSelf();
 
+        /* Hack around libnx's main thread, to ensure stratosphere thread type consistency. */
+        {
+            auto *tlr = reinterpret_cast<uintptr_t *>(svc::GetThreadLocalRegion());
+            for (size_t i = sizeof(svc::ThreadLocalRegion) / sizeof(uintptr_t); i > 0; --i) {
+                if (auto *candidate = reinterpret_cast<ThreadImpl *>(tlr[i - 1]); candidate == thread_impl) {
+                    ThreadImpl *embedded_thread = std::addressof(main_thread->thread_impl_storage);
+
+                    *embedded_thread = *thread_impl;
+
+                    if (embedded_thread->next) {
+                        embedded_thread->next->prev_next = std::addressof(embedded_thread->next);
+                    }
+
+                    thread_impl = embedded_thread;
+                    tlr[i-1]    = reinterpret_cast<uintptr_t>(thread_impl);
+                    break;
+                }
+            }
+        }
+
         /* Get the thread priority. */
         s32 horizon_priority;
         R_ABORT_UNLESS(svc::GetThreadPriority(std::addressof(horizon_priority), thread_impl->handle));
