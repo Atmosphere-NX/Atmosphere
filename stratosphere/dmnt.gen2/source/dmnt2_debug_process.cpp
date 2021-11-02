@@ -601,9 +601,9 @@ namespace ams::dmnt {
                 if (R_FAILED(osdbg::GetThreadName(dst, std::addressof(m_thread_infos[i])))) {
                     if (m_thread_infos[i]._thread_type != 0) {
                         if (m_thread_infos[i]._thread_type_type == osdbg::ThreadTypeType_Libnx) {
-                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "libnx Thread_%p", reinterpret_cast<void *>(m_thread_infos[i]._thread_type));
+                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "libnx Thread_0x%010lx", reinterpret_cast<uintptr_t>(m_thread_infos[i]._thread_type));
                         } else {
-                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_%p", reinterpret_cast<void *>(m_thread_infos[i]._thread_type));
+                            util::TSNPrintf(dst, os::ThreadNameLengthMax, "Thread_0x%010lx", reinterpret_cast<uintptr_t>(m_thread_infos[i]._thread_type));
                         }
                     } else {
                         break;

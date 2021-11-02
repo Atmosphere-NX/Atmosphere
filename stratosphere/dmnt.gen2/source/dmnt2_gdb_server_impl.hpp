@@ -34,7 +34,8 @@ namespace ams::dmnt {
             TransportSession m_session;
             GdbPacketIo m_packet_io;
             char *m_receive_packet{nullptr};
-            char *m_reply_packet{nullptr};
+            char *m_reply_cur{nullptr};
+            char *m_reply_end{nullptr};
             char m_buffer[GdbPacketBufferSize / 2];
             bool m_killed{false};
             os::ThreadType m_events_thread;
@@ -61,7 +62,7 @@ namespace ams::dmnt {
             static void DebugEventsThreadEntry(void *arg) { static_cast<GdbServerImpl *>(arg)->DebugEventsThread(); }
             void DebugEventsThread();
             void ProcessDebugEvents();
-            void SetStopReplyPacket(GdbSignal signal);
+            void AppendStopReplyPacket(GdbSignal signal);
         private:
             void D();
 
