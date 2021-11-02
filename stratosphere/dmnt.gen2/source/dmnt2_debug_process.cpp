@@ -196,9 +196,11 @@ namespace ams::dmnt {
                         char path[ModuleDefinition::PathLengthMax];
                     } module_path;
                     if (R_SUCCEEDED(this->ReadMemory(std::addressof(module_path), memory_info.base_address + memory_info.size, sizeof(module_path)))) {
-                        if (module_path.zero == 0 && module_path.path_length == util::Strnlen(module_path.path, sizeof(module_path.path))) {
-                            std::memcpy(module_name, module_path.path, ModuleDefinition::PathLengthMax);
+                        if (module_path.zero == 0 && module_path.path_length > 0) {
+                            std::memcpy(module_name, module_path.path, std::min<size_t>(ModuleDefinition::PathLengthMax, module_path.path_length));
                         }
+                    } else {
+                        module_path.path_length = 0;
                     }
 
                     /* Truncate module name. */
@@ -208,7 +210,7 @@ namespace ams::dmnt {
                     module.SetNameStart(0);
 
                     /* Ignore leading directories. */
-                    for (size_t i = 0; i < static_cast<size_t>(module_path.path_length); ++i) {
+                    for (size_t i = 0; i < std::min<size_t>(ModuleDefinition::PathLengthMax, module_path.path_length) && module_name[i] != 0; ++i) {
                         if (module_name[i] == '/' || module_name[i] == '\\') {
                             module.SetNameStart(i + 1);
                         }

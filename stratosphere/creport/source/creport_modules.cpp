@@ -27,7 +27,7 @@ namespace ams::creport {
 
         struct ModulePath {
             u32  zero;
-            u32  path_length;
+            s32  path_length;
             char path[ModulePathLengthMax];
         };
         static_assert(sizeof(ModulePath) == 0x208, "ModulePath definition!");
@@ -210,7 +210,7 @@ namespace ams::creport {
             }
 
             /* Also validate that we're looking at a valid name. */
-            if (rodata_start.module_path.zero != 0 || rodata_start.module_path.path_length != strnlen(rodata_start.module_path.path, sizeof(rodata_start.module_path.path))) {
+            if (rodata_start.module_path.zero != 0 || rodata_start.module_path.path_length <= 0)) {
                 return;
             }
         }
@@ -219,7 +219,7 @@ namespace ams::creport {
         /* Start after last slash in path. */
         const char *path = rodata_start.module_path.path;
         int ofs;
-        for (ofs = rodata_start.module_path.path_length; ofs >= 0; ofs--) {
+        for (ofs = std::min<size_t>(rodata_start.module_path.path_length, sizeof(rodata_start.module_path.path)); ofs >= 0; ofs--) {
             if (path[ofs] == '/' || path[ofs] == '\\') {
                 break;
             }
@@ -227,8 +227,8 @@ namespace ams::creport {
         ofs++;
 
         /* Copy name to output. */
-        const size_t name_size = std::min(ModuleNameLengthMax, sizeof(rodata_start.module_path.path) - ofs);
-        std::strncpy(out_name, path + ofs, name_size);
+        const size_t name_size = std::min(ModuleNameLengthMax, std::min<size_t>(rodata_start.module_path.path_length, sizeof(rodata_start.module_path.path)) - ofs);
+        std::memcpy(out_name, path + ofs, name_size);
         out_name[ModuleNameLengthMax - 1] = '\x00';
     }
 
