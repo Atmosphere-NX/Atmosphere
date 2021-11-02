@@ -947,6 +947,9 @@ namespace ams::dmnt {
     void GdbServerImpl::ProcessDebugEvents() {
         AMS_DMNT2_GDB_LOG_DEBUG("Processing debug events for %016lx\n", m_process_id.value);
 
+        u64 new_hb_nro_addr = 0;
+        u32 new_hb_nro_insn = 0;
+
         while (true) {
             /* Wait for an event to come in. */
             const Result wait_result = [&] ALWAYS_INLINE_LAMBDA {
@@ -1028,6 +1031,25 @@ namespace ams::dmnt {
                                             /* Re-collect the process's modules. */
                                             m_debug_process.CollectModules();
                                         }
+
+                                        if (m_debug_process.GetOverrideStatus().IsHbl() && reason == svc::BreakReason_PostLoadDll) {
+                                            if (R_SUCCEEDED(m_debug_process.ReadMemory(std::addressof(new_hb_nro_insn), info.address, sizeof(new_hb_nro_insn)))) {
+                                                const u32 break_insn = SdkBreakPoint;
+                                                if (R_SUCCEEDED(m_debug_process.WriteMemory(std::addressof(break_insn), info.address, sizeof(break_insn)))) {
+                                                    AMS_DMNT2_GDB_LOG_DEBUG("Set automatic break on new homebrew NRO (%lx, %lx)\n", info.address, info.size);
+
+                                                    new_hb_nro_addr = info.address;
+                                                } else {
+                                                    AMS_DMNT2_GDB_LOG_DEBUG("Failed to set automatic break on new homebrew NRO (%lx, %lx)\n", info.address, info.size);
+                                                }
+                                            } else {
+                                                AMS_DMNT2_GDB_LOG_DEBUG("Failed to read first insn on new homebrew NRO (%lx, %lx)\n", info.address, info.size);
+                                            }
+                                        }
+
+                                        /* This was just a notification, so we should continue. */
+                                        m_debug_process.Continue();
+                                        continue;
                                     }
 
                                     /* Check if we should automatically continue. */
@@ -1074,6 +1096,8 @@ namespace ams::dmnt {
                                     const u32 insn    = d.info.exception.specific.undefined_instruction.insn;
                                     u32 new_insn      = 0;
 
+                                    bool is_new_hb_nro = false;
+
                                     svc::ThreadContext ctx;
                                     if (R_SUCCEEDED(m_debug_process.GetThreadContext(std::addressof(ctx), thread_id, svc::ThreadContextFlag_Control))) {
                                         bool insn_changed = false;
@@ -1115,6 +1139,19 @@ namespace ams::dmnt {
                                             {
                                                 signal = GdbSignal_BreakpointTrap;
                                             }
+
+                                            if (m_debug_process.GetOverrideStatus().IsHbl() && address == new_hb_nro_addr && insn == SdkBreakPoint) {
+                                                if (R_SUCCEEDED(m_debug_process.WriteMemory(std::addressof(new_hb_nro_insn), new_hb_nro_addr, sizeof(new_hb_nro_insn)))) {
+                                                    AMS_DMNT2_GDB_LOG_DEBUG("Did automatic break on new homebrew NRO (%lx)\n", address);
+
+                                                    new_hb_nro_addr = 0;
+                                                    new_hb_nro_insn = 0;
+
+                                                    is_new_hb_nro = true;
+                                                } else {
+                                                    AMS_DMNT2_GDB_LOG_ERROR("Failed to restore instruction for new homebrew NRO (%lx)!\n", address);
+                                                }
+                                            }
                                         }
 
                                         if (insn_changed) {
@@ -1128,7 +1165,7 @@ namespace ams::dmnt {
                                         AMS_DMNT2_GDB_LOG_DEBUG("Non-SDK BreakPoint %lx, address=%p, insn=%08x\n", thread_id, reinterpret_cast<void *>(address), insn);
                                     }
 
-                                    if (signal == GdbSignal_BreakpointTrap) {
+                                    if (signal == GdbSignal_BreakpointTrap && !is_new_hb_nro) {
                                         SetReply(send_buffer, "T%02Xthread:p%lx.%lx;swbreak:;", static_cast<u32>(signal), m_process_id.value, thread_id);
                                         reply = true;
                                     }
@@ -2049,8 +2086,6 @@ namespace ams::dmnt {
 
             /* Note that we're attaching. */
             SetReply(m_buffer, "Attach to 0x%lx.\n", m_wait_process_id.value);
-        } else if (ParsePrefix(command, "wait homebrew") || ParsePrefix(command, "wait hb")) {
-            SetReply(m_buffer, "[TODO] wait for next homebrew\n");
         } else if (ParsePrefix(command, "wait ")) {
             /* Allow optional "0x" prefix. */
             ParsePrefix(command, "0x");
@@ -2074,8 +2109,8 @@ namespace ams::dmnt {
         AppendReply(m_reply_packet, ";qXfer:osdata:read+");
         AppendReply(m_reply_packet, ";qXfer:features:read+");
         AppendReply(m_reply_packet, ";qXfer:libraries:read+");
-        AppendReply(m_reply_packet, ";qXfer:libraries-svr4:read+");
-        AppendReply(m_reply_packet, ";augmented-libraries-svr4-read+");
+        // TODO: AppendReply(m_reply_packet, ";qXfer:libraries-svr4:read+");
+        // TODO: AppendReply(m_reply_packet, ";augmented-libraries-svr4-read+");
         AppendReply(m_reply_packet, ";qXfer:threads:read+");
         AppendReply(m_reply_packet, ";qXfer:exec-file:read+");
         AppendReply(m_reply_packet, ";swbreak+");
