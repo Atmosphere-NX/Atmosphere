@@ -210,7 +210,7 @@ namespace ams::creport {
             }
 
             /* Also validate that we're looking at a valid name. */
-            if (rodata_start.module_path.zero != 0 || rodata_start.module_path.path_length <= 0)) {
+            if (rodata_start.module_path.zero != 0 || rodata_start.module_path.path_length <= 0) {
                 return;
             }
         }
