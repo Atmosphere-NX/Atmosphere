@@ -63,6 +63,7 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(-7, mitm,            InitializeThread);
     AMS_DEFINE_SYSTEM_THREAD(-1, mitm_sf,         QueryServerProcessThread);
     AMS_DEFINE_SYSTEM_THREAD(16, mitm_fs,         RomFileSystemInitializeThread);
+    AMS_DEFINE_SYSTEM_THREAD(16, mitm_fs,         RomFileSystemFinalizeThread);
     AMS_DEFINE_SYSTEM_THREAD(21, mitm,            DebugThrowThread);
     AMS_DEFINE_SYSTEM_THREAD(21, mitm_sysupdater, IpcServer);
     AMS_DEFINE_SYSTEM_THREAD(21, mitm_sysupdater, AsyncPrepareSdCardUpdateTask);

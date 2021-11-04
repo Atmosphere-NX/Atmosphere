@@ -33,44 +33,6 @@ namespace ams::mitm::fs {
         constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
         constexpr const char ProgramWebContentDir[] = "/manual_html/";
 
-        constinit os::SdkMutex g_data_storage_lock;
-        constinit os::SdkMutex g_storage_cache_lock;
-
-        class StorageCacheEntry : public util::IntrusiveRedBlackTreeBaseNode<StorageCacheEntry> {
-            public:
-                using RedBlackKeyType = u64;
-            private:
-                ncm::ProgramId m_program_id;
-                std::weak_ptr<fs::IStorage> m_storage;
-            public:
-                StorageCacheEntry(ncm::ProgramId program_id, const std::shared_ptr<fs::IStorage> *sp) : m_program_id(program_id), m_storage(*sp) { /* ... */ }
-
-                constexpr ncm::ProgramId GetProgramId() const { return m_program_id; }
-                constexpr const std::weak_ptr<fs::IStorage> &GetStorage() const { return m_storage; }
-
-                void SetStorage(const std::shared_ptr<fs::IStorage> *sp) { m_storage = *sp; }
-
-                static constexpr ALWAYS_INLINE int Compare(const RedBlackKeyType &lval, const StorageCacheEntry &rhs) {
-                    const auto rval = rhs.GetProgramId().value;
-
-                    if (lval < rval) {
-                        return -1;
-                    } else if (lval == rval) {
-                        return 0;
-                    } else {
-                        return 1;
-                    }
-                }
-
-                static constexpr ALWAYS_INLINE int Compare(const StorageCacheEntry &lhs, const StorageCacheEntry &rhs) {
-                    return Compare(lhs.GetProgramId().value, rhs);
-                }
-        };
-
-        using StorageCache = typename util::IntrusiveRedBlackTreeBaseTraits<StorageCacheEntry>::TreeType<StorageCacheEntry>;
-
-        constinit StorageCache g_storage_cache;
-
         constinit os::SdkMutex g_boot0_detect_lock;
         constinit bool g_detected_boot0_kind = false;
         constinit bool g_is_boot0_custom_public_key = false;
@@ -88,30 +50,6 @@ namespace ams::mitm::fs {
             }
 
             return g_is_boot0_custom_public_key;
-        }
-
-        std::shared_ptr<fs::IStorage> GetStorageCacheEntry(ncm::ProgramId program_id) {
-            std::scoped_lock lk(g_storage_cache_lock);
-
-            if (const auto it = g_storage_cache.find_key(program_id.value); it != g_storage_cache.end()) {
-                return it->GetStorage().lock();
-            } else {
-                return nullptr;
-            }
-        }
-
-        void SetStorageCacheEntry(ncm::ProgramId program_id, std::shared_ptr<fs::IStorage> *new_intf) {
-            std::scoped_lock lk(g_storage_cache_lock);
-
-            if (auto it = g_storage_cache.find_key(program_id.value); it != g_storage_cache.end()) {
-                if (auto cur_intf = it->GetStorage().lock(); cur_intf != nullptr) {
-                    *new_intf = cur_intf;
-                    return;
-                }
-            }
-
-            auto *new_entry = new StorageCacheEntry(program_id, new_intf);
-            g_storage_cache.insert(*new_entry);
         }
 
         bool GetSettingsItemBooleanValue(const char *name, const char *key) {
@@ -358,38 +296,8 @@ namespace ams::mitm::fs {
         R_TRY(fsOpenDataStorageByCurrentProcessFwd(m_forward_service.get(), std::addressof(data_storage)));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
 
-        /* Get a scoped lock. */
-        std::scoped_lock lk(g_data_storage_lock);
-
-        /* Try to get a storage from the cache. */
-        {
-            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(m_client_info.program_id);
-            if (cached_storage != nullptr) {
-                out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
-                return ResultSuccess();
-            }
-        }
-
-        /* Make a new layered romfs, and cache to storage. */
-        {
-            std::shared_ptr<fs::IStorage> new_storage = nullptr;
-
-            /* Create the layered storage. */
-            FsFile data_file;
-            if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), m_client_info.program_id, "romfs.bin", OpenMode_Read))) {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), m_client_info.program_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            } else {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, m_client_info.program_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            }
-
-            SetStorageCacheEntry(m_client_info.program_id, std::addressof(new_storage));
-            out.SetValue(MakeSharedStorage(new_storage), target_object_id);
-        }
-
+        /* Get a layered storage for the process romfs. */
+        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(m_client_info.program_id, data_storage, true)), target_object_id);
         return ResultSuccess();
     }
 
@@ -403,43 +311,13 @@ namespace ams::mitm::fs {
         /* Only mitm if there is actually an override romfs. */
         R_UNLESS(mitm::fs::HasSdRomfsContent(data_id),                  sm::mitm::ResultShouldForwardToSession());
 
-        /* Try to open the process romfs. */
+        /* Try to open the data id. */
         FsStorage data_storage;
         R_TRY(fsOpenDataStorageByDataIdFwd(m_forward_service.get(), std::addressof(data_storage), static_cast<u64>(data_id), static_cast<NcmStorageId>(storage_id)));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
 
-        /* Get a scoped lock. */
-        std::scoped_lock lk(g_data_storage_lock);
-
-        /* Try to get a storage from the cache. */
-        {
-            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(data_id);
-            if (cached_storage != nullptr) {
-                out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
-                return ResultSuccess();
-            }
-        }
-
-        /* Make a new layered romfs, and cache to storage. */
-        {
-            std::shared_ptr<fs::IStorage> new_storage = nullptr;
-
-            /* Create the layered storage. */
-            FsFile data_file;
-            if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), data_id, "romfs.bin", OpenMode_Read))) {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), data_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            } else {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, data_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            }
-
-            SetStorageCacheEntry(data_id, std::addressof(new_storage));
-            out.SetValue(MakeSharedStorage(new_storage), target_object_id);
-        }
-
+        /* Get a layered storage for the data id. */
+        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(data_id, data_storage, false)), target_object_id);
         return ResultSuccess();
     }
 
@@ -459,38 +337,8 @@ namespace ams::mitm::fs {
         R_TRY(fsOpenDataStorageWithProgramIndexFwd(m_forward_service.get(), std::addressof(data_storage), program_index));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(data_storage.s))};
 
-        /* Get a scoped lock. */
-        std::scoped_lock lk(g_data_storage_lock);
-
-        /* Try to get a storage from the cache. */
-        {
-            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(program_id);
-            if (cached_storage != nullptr) {
-                out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
-                return ResultSuccess();
-            }
-        }
-
-        /* Make a new layered romfs, and cache to storage. */
-        {
-            std::shared_ptr<fs::IStorage> new_storage = nullptr;
-
-            /* Create the layered storage. */
-            FsFile data_file;
-            if (R_SUCCEEDED(OpenAtmosphereSdFile(std::addressof(data_file), program_id, "romfs.bin", OpenMode_Read))) {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), program_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            } else {
-                auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, program_id);
-                layered_storage->BeginInitialize();
-                new_storage = std::move(layered_storage);
-            }
-
-            SetStorageCacheEntry(program_id, std::addressof(new_storage));
-            out.SetValue(MakeSharedStorage(new_storage), target_object_id);
-        }
-
+        /* Get a layered storage for the process romfs. */
+        out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(program_id, data_storage, true)), target_object_id);
         return ResultSuccess();
     }
 

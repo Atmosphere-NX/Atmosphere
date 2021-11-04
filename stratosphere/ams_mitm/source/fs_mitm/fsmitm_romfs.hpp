@@ -16,6 +16,7 @@
 
 #pragma once
 #include <stratosphere.hpp>
+#include "../dns_mitm/dnsmitm_debug.hpp"
 
 namespace ams::mitm::fs::romfs {
 

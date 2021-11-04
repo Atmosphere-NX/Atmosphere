@@ -1,4 +1,13 @@
 # Changelog
+## 1.2.4
++ Changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
+  + Cache management (to avoid unnecessary rebuild) was revised, to add a grace period of ~500ms-1s between process closing romfs image and ams.mitm needing to rebuild if romfs is re-opened.
+    + This makes our cache much more effective, previously we were re-building romfs several times.
+  + RomFS image ownership was overhauled, with a new reference-counting implementation added (used to implement the above grace period).
+    + Certain games (e.g. Puyo Puyo Tetris 2, probably others) were sensitive to this timing, and could use access patterns which would trigger creation of romfs image while previous romfs image was in the middle of destructor.
+    + This could cause a fatal error, because the destructor for the old image could run simultaneously with building the new image.
+  + This also provides a speedup versus the 1.2.3 code, with Animal Crossing now taking ~8 fewer seconds to get past the Nintendo Switch logo.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.3
 + Because ams.TMA is taking longer to develop than expected, experimental support for Atmosphère's gdbstub as a standalone is now available.
   + To enable it, set `atmosphere!enable_standalone_gdbstub` = u8!0x1 in system_settings.ini.

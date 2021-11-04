@@ -20,7 +20,7 @@
 
 namespace ams::mitm::fs {
 
-    class LayeredRomfsStorage : public std::enable_shared_from_this<LayeredRomfsStorage>, public ams::fs::IStorage {
+    class LayeredRomfsStorageImpl {
         private:
             std::vector<romfs::SourceInfo> m_source_infos;
             std::unique_ptr<ams::fs::IStorage> m_storage_romfs;
@@ -35,32 +35,20 @@ namespace ams::mitm::fs {
                 return back.virtual_offset + back.size;
             }
         public:
-            LayeredRomfsStorage(std::unique_ptr<ams::fs::IStorage> s_r, std::unique_ptr<ams::fs::IStorage> f_r, ncm::ProgramId pr_id);
-            virtual ~LayeredRomfsStorage();
+            LayeredRomfsStorageImpl(std::unique_ptr<ams::fs::IStorage> s_r, std::unique_ptr<ams::fs::IStorage> f_r, ncm::ProgramId pr_id);
+            ~LayeredRomfsStorageImpl();
 
             void BeginInitialize();
             void InitializeImpl();
 
-            std::shared_ptr<LayeredRomfsStorage> GetShared() {
-                return this->shared_from_this();
-            }
+            constexpr ncm::ProgramId GetProgramId() const { return m_program_id; }
 
-            virtual Result Read(s64 offset, void *buffer, size_t size) override;
-            virtual Result GetSize(s64 *out_size) override;
-            virtual Result Flush() override;
-            virtual Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
-
-            virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                /* TODO: Better result code? */
-                AMS_UNUSED(offset, buffer, size);
-                return ams::fs::ResultUnsupportedOperation();
-            }
-
-            virtual Result SetSize(s64 size) override {
-                /* TODO: Better result code? */
-                AMS_UNUSED(size);
-                return ams::fs::ResultUnsupportedOperation();
-            }
+            Result Read(s64 offset, void *buffer, size_t size);
+            Result GetSize(s64 *out_size);
+            Result Flush();
+            Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size);
     };
+
+    std::shared_ptr<ams::fs::IStorage> GetLayeredRomfsStorage(ncm::ProgramId program_id, ::FsStorage &data_storage, bool is_process_romfs);
 
 }
