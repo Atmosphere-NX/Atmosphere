@@ -201,7 +201,7 @@ namespace ams::util {
 
             constexpr size_type find(basic_string_view str, size_type pos = 0) const noexcept { return this->find(str.m_str, pos, str.m_len); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type find(const _CharT *str, size_type pos = 0) const noexcept { return this->find(str, pos, traits_type::length(str)); }
 
             constexpr size_type rfind(const _CharT *str, size_type pos, size_type n) const noexcept {
@@ -234,7 +234,7 @@ namespace ams::util {
 
             constexpr size_type rfind(basic_string_view str, size_type pos = 0) const noexcept { return this->rfind(str.m_str, pos, str.m_len); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type rfind(const _CharT *str, size_type pos = 0) const noexcept { return this->rfind(str, pos, traits_type::length(str)); }
 
             constexpr size_type find_first_of(const _CharT *str, size_type pos, size_t n) const noexcept {
@@ -249,7 +249,7 @@ namespace ams::util {
             constexpr size_type find_first_of(basic_string_view str, size_type pos = 0) const noexcept { return this->find_first_of(str.m_str, pos, str.m_len); }
             constexpr size_type find_first_of(_CharT c, size_type pos = 0) const noexcept { return this->find(c, pos); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type find_first_of(const _CharT *str, size_type pos = 0) const noexcept { return this->find_first_of(str, pos, traits_type::length(str)); }
 
             constexpr size_type find_last_of(const _CharT *str, size_type pos, size_t n) const noexcept {
@@ -270,7 +270,7 @@ namespace ams::util {
             constexpr size_type find_last_of(basic_string_view str, size_type pos = 0) const noexcept { return this->find_last_of(str.m_str, pos, str.m_len); }
             constexpr size_type find_last_of(_CharT c, size_type pos = 0) const noexcept { return this->rfind(c, pos); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type find_last_of(const _CharT *str, size_type pos = 0) const noexcept { return this->find_first_of(str, pos, traits_type::length(str)); }
 
             constexpr size_type find_first_not_of(const _CharT *str, size_type pos, size_t n) const noexcept {
@@ -293,7 +293,7 @@ namespace ams::util {
 
             constexpr size_type find_first_not_of(basic_string_view str, size_type pos = 0) const noexcept { return this->find_first_not_of(str.m_str, pos, str.m_len); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type find_first_not_of(const _CharT *str, size_type pos = 0) const noexcept { return this->find_first_not_of(str, pos, traits_type::length(str)); }
 
             constexpr size_type find_last_not_of(const _CharT *str, size_type pos, size_t n) const noexcept {
@@ -328,7 +328,7 @@ namespace ams::util {
 
             constexpr size_type find_last_not_of(basic_string_view str, size_type pos = 0) const noexcept { return this->find_last_not_of(str.m_str, pos, str.m_len); }
 
-            __attribute__((nonnull(1)))
+            __attribute__((nonnull(2)))
             constexpr size_type find_last_not_of(const _CharT *str, size_type pos = 0) const noexcept { return this->find_last_not_of(str, pos, traits_type::length(str)); }
 
             constexpr friend bool operator==(const basic_string_view &lhs, const basic_string_view &rhs) noexcept { return lhs.compare(rhs) == 0; }
