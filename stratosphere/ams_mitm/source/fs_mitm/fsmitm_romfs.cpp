@@ -64,28 +64,61 @@ namespace ams::mitm::fs {
             };
             static_assert(util::is_pod<FileEntry>::value && sizeof(FileEntry) == 0x20);
 
+            class DynamicTableCache {
+                NON_COPYABLE(DynamicTableCache);
+                NON_MOVEABLE(DynamicTableCache);
+                private:
+                    static constexpr size_t MaxCachedSize = (1_MB / 4);
+                private:
+                    size_t m_cache_bitsize;
+                protected:
+                    void *m_cache;
+                protected:
+                    DynamicTableCache(size_t sz) {
+                        size_t cache_size = util::CeilingPowerOfTwo(std::min(sz, MaxCachedSize));
+                        m_cache = std::malloc(cache_size);
+                        while (m_cache == nullptr) {
+                            cache_size >>= 1;
+                            AMS_ABORT_UNLESS(cache_size >= 16_KB);
+                        }
+                        m_cache_bitsize = util::CountTrailingZeros(cache_size);
+                    }
+
+                    ~DynamicTableCache() {
+                        std::free(m_cache);
+                    }
+
+                    ALWAYS_INLINE size_t GetCacheSize() const { return static_cast<size_t>(1) << m_cache_bitsize; }
+            };
+
+            class HashTableStorage : public DynamicTableCache {
+                public:
+                    HashTableStorage(size_t sz) : DynamicTableCache(sz) { /* ... */ }
+
+                    ALWAYS_INLINE u32 *GetBuffer() { return reinterpret_cast<u32 *>(m_cache); }
+                    ALWAYS_INLINE size_t GetBufferSize() const { return DynamicTableCache::GetCacheSize(); }
+            };
+
             template<typename Entry>
-            class TableReader {
+            class TableReader : public DynamicTableCache {
                 NON_COPYABLE(TableReader);
                 NON_MOVEABLE(TableReader);
                 private:
-                    static constexpr size_t MaxCachedSize = (1_MB / 4);
                     static constexpr size_t FallbackCacheSize = 1_KB;
                 private:
                     ams::fs::IStorage *m_storage;
                     size_t m_offset;
                     size_t m_size;
                     size_t m_cache_idx;
-                    void *m_cache;
                     u8 m_fallback_cache[FallbackCacheSize];
                 private:
                     ALWAYS_INLINE void Read(size_t ofs, void *dst, size_t size) {
                         R_ABORT_UNLESS(m_storage->Read(m_offset + ofs, dst, size));
                     }
                     ALWAYS_INLINE void ReloadCacheImpl(size_t idx) {
-                        const size_t rel_ofs = idx * MaxCachedSize;
+                        const size_t rel_ofs = idx * this->GetCacheSize();
                         AMS_ABORT_UNLESS(rel_ofs < m_size);
-                        const size_t new_cache_size = std::min(m_size - rel_ofs, MaxCachedSize);
+                        const size_t new_cache_size = std::min(m_size - rel_ofs, this->GetCacheSize());
                         this->Read(rel_ofs, m_cache, new_cache_size);
                         m_cache_idx = idx;
                     }
@@ -97,23 +130,18 @@ namespace ams::mitm::fs {
                     }
 
                     ALWAYS_INLINE size_t GetCacheIndex(u32 ofs) {
-                        return ofs / MaxCachedSize;
+                        return ofs / this->GetCacheSize();
                     }
                 public:
-                    TableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : m_storage(s), m_offset(ofs), m_size(sz), m_cache_idx(0) {
-                        m_cache = std::malloc(std::min(sz, MaxCachedSize));
+                    TableReader(ams::fs::IStorage *s, size_t ofs, size_t sz) : DynamicTableCache(sz), m_storage(s), m_offset(ofs), m_size(sz), m_cache_idx(0) {
                         AMS_ABORT_UNLESS(m_cache != nullptr);
                         this->ReloadCacheImpl(0);
-                    }
-
-                    ~TableReader() {
-                        std::free(m_cache);
                     }
 
                     const Entry *GetEntry(u32 entry_offset) {
                         this->ReloadCache(this->GetCacheIndex(entry_offset));
 
-                        const size_t ofs = entry_offset % MaxCachedSize;
+                        const size_t ofs = entry_offset % this->GetCacheSize();
 
                         const Entry *entry = reinterpret_cast<const Entry *>(reinterpret_cast<uintptr_t>(m_cache) + ofs);
                         if (AMS_UNLIKELY(this->GetCacheIndex(entry_offset) != this->GetCacheIndex(entry_offset + sizeof(Entry) + entry->name_size + sizeof(u32)))) {
@@ -125,18 +153,16 @@ namespace ams::mitm::fs {
             };
 
             template<typename Entry>
-            class TableWriter {
+            class TableWriter : public DynamicTableCache {
                 NON_COPYABLE(TableWriter);
                 NON_MOVEABLE(TableWriter);
                 private:
-                    static constexpr size_t MaxCachedSize = (1_MB / 4);
                     static constexpr size_t FallbackCacheSize = 1_KB;
                 private:
                     ::FsFile *m_file;
                     size_t m_offset;
                     size_t m_size;
                     size_t m_cache_idx;
-                    void *m_cache;
                     u8 m_fallback_cache[FallbackCacheSize];
                     size_t m_fallback_cache_entry_offset;
                     size_t m_fallback_cache_entry_size;
@@ -157,8 +183,8 @@ namespace ams::mitm::fs {
                         AMS_ABORT_UNLESS(!(m_cache_dirty && m_fallback_cache_dirty));
 
                         if (m_cache_dirty) {
-                            const size_t ofs = m_cache_idx * MaxCachedSize;
-                            this->Write(ofs, m_cache, std::min(m_size - ofs, MaxCachedSize));
+                            const size_t ofs = m_cache_idx * this->GetCacheSize();
+                            this->Write(ofs, m_cache, std::min(m_size - ofs, this->GetCacheSize()));
                             m_cache_dirty = false;
                         }
                         if (m_fallback_cache_dirty) {
@@ -168,12 +194,12 @@ namespace ams::mitm::fs {
                     }
 
                     ALWAYS_INLINE size_t GetCacheIndex(u32 ofs) {
-                        return ofs / MaxCachedSize;
+                        return ofs / this->GetCacheSize();
                     }
 
                     ALWAYS_INLINE void RefreshCacheImpl() {
-                        const size_t cur_cache = m_cache_idx * MaxCachedSize;
-                        this->Read(cur_cache, m_cache, std::min(m_size - cur_cache, MaxCachedSize));
+                        const size_t cur_cache = m_cache_idx * this->GetCacheSize();
+                        this->Read(cur_cache, m_cache, std::min(m_size - cur_cache, this->GetCacheSize()));
                     }
 
                     ALWAYS_INLINE void RefreshCache(u32 entry_offset) {
@@ -184,29 +210,27 @@ namespace ams::mitm::fs {
                         }
                     }
                 public:
-                    TableWriter(::FsFile *f, size_t ofs, size_t sz) : m_file(f), m_offset(ofs), m_size(sz), m_cache_idx(0), m_fallback_cache_entry_offset(), m_fallback_cache_entry_size(), m_cache_dirty(), m_fallback_cache_dirty() {
-                        const size_t cache_size = std::min(sz, MaxCachedSize);
-                        m_cache = std::malloc(cache_size);
+                    TableWriter(::FsFile *f, size_t ofs, size_t sz) : DynamicTableCache(sz), m_file(f), m_offset(ofs), m_size(sz), m_cache_idx(0), m_fallback_cache_entry_offset(), m_fallback_cache_entry_size(), m_cache_dirty(), m_fallback_cache_dirty() {
                         AMS_ABORT_UNLESS(m_cache != nullptr);
-                        std::memset(m_cache, 0, cache_size);
+
+                        std::memset(m_cache, 0, this->GetCacheSize());
                         std::memset(m_fallback_cache, 0, sizeof(m_fallback_cache));
-                        for (size_t cur = 0; cur < m_size; cur += MaxCachedSize) {
-                            this->Write(cur, m_cache, std::min(m_size - cur, MaxCachedSize));
+                        for (size_t cur = 0; cur < m_size; cur += this->GetCacheSize()) {
+                            this->Write(cur, m_cache, std::min(m_size - cur, this->GetCacheSize()));
                         }
                     }
 
                     ~TableWriter() {
                         this->Flush();
-                        std::free(m_cache);
                     }
 
                     Entry *GetEntry(u32 entry_offset, u32 name_len) {
                         this->RefreshCache(entry_offset);
 
-                        const size_t ofs = entry_offset % MaxCachedSize;
+                        const size_t ofs = entry_offset % this->GetCacheSize();
 
                         Entry *entry = reinterpret_cast<Entry *>(reinterpret_cast<uintptr_t>(m_cache) + ofs);
-                        if (ofs + sizeof(Entry) + util::AlignUp(name_len, sizeof(u32)) > MaxCachedSize) {
+                        if (ofs + sizeof(Entry) + util::AlignUp(name_len, sizeof(u32)) > this->GetCacheSize()) {
                             this->Flush();
 
                             m_fallback_cache_entry_offset = entry_offset;
@@ -225,7 +249,6 @@ namespace ams::mitm::fs {
 
             using DirectoryTableWriter = TableWriter<DirectoryEntry>;
             using FileTableWriter      = TableWriter<FileEntry>;
-
 
             constexpr inline u32 CalculatePathHash(u32 parent, const char *_path, u32 start, size_t path_len) {
                 const unsigned char *path = reinterpret_cast<const unsigned char *>(_path);
@@ -526,113 +549,151 @@ namespace ams::mitm::fs {
                 }
             }
 
-            /* Populate file tables. */
-            {
-                /* Allocate the hash table. */
-                void *fht_buf = std::malloc(m_file_hash_table_size);
-                AMS_ABORT_UNLESS(fht_buf != nullptr);
-                u32 *file_hash_table = reinterpret_cast<u32 *>(fht_buf);
-                std::memset(file_hash_table, 0xFF, m_file_hash_table_size);
-                ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size, file_hash_table, m_file_hash_table_size, FsWriteOption_None));
-                    std::free(fht_buf);
-                };
+            /* Set all files' hash value = hash index. */
+            for (const auto &it : m_files) {
+                BuildFileContext *cur_file = it.get();
+                cur_file->hash_value = CalculatePathHash(cur_file->parent->entry_offset, cur_file->path.get(), 0, cur_file->path_len) % num_file_hash_table_entries;
+            }
 
-                /* Write the file table. */
-                {
-                    FileTableWriter file_table(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size + m_file_hash_table_size, m_file_table_size);
+            /* Set all directories' hash value = hash index. */
+            for (const auto &it : m_directories) {
+                BuildDirectoryContext *cur_dir = it.get();
+                cur_dir->hash_value = CalculatePathHash(cur_dir == m_root ? 0 : cur_dir->parent->entry_offset, cur_dir->path.get(), 0, cur_dir->path_len) % num_dir_hash_table_entries;
+            }
+
+            /* Write hash tables. */
+            {
+                HashTableStorage hash_table_storage(std::max(m_dir_hash_table_size, m_file_hash_table_size));
+
+                u32 *hash_table = hash_table_storage.GetBuffer();
+                size_t hash_table_size = hash_table_storage.GetBufferSize();
+
+                /* Write the file hash table. */
+                for (size_t ofs = 0; ofs < m_file_hash_table_size; ofs += hash_table_size) {
+                    std::memset(hash_table, 0xFF, hash_table_size);
+
+                    const u32 ofs_ind = ofs / sizeof(u32);
+                    const u32 end_ind = (ofs + hash_table_size) / sizeof(u32);
 
                     for (const auto &it : m_files) {
                         BuildFileContext *cur_file = it.get();
-                        FileEntry *cur_entry = file_table.GetEntry(cur_file->entry_offset, cur_file->path_len);
+                        if (cur_file->HasHashMark()) {
+                            continue;
+                        }
 
-                        /* Set entry fields. */
-                        cur_entry->parent = cur_file->parent->entry_offset;
-                        cur_entry->sibling = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
-                        cur_entry->offset = cur_file->offset;
-                        cur_entry->size = cur_file->size;
+                        if (const auto hash_ind = cur_file->hash_value; ofs_ind <= hash_ind && hash_ind < end_ind) {
+                            cur_file->hash_value = hash_table[hash_ind - ofs_ind];
+                            hash_table[hash_ind - ofs_ind] = cur_file->entry_offset;
 
-                        /* Insert into hash table. */
-                        const u32 name_size = cur_file->path_len;
-                        const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_file->path.get(), 0, name_size) % num_file_hash_table_entries;
-                        cur_entry->hash = file_hash_table[hash_ind];
-                        file_hash_table[hash_ind] = cur_file->entry_offset;
+                            cur_file->SetHashMark();
+                        }
+                    }
 
-                        /* Set name. */
-                        cur_entry->name_size = name_size;
-                        if (name_size) {
-                            std::memcpy(cur_entry->name, cur_file->path.get(), name_size);
-                            for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
-                                cur_entry->name[i] = 0;
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size + ofs, hash_table, std::min(m_file_hash_table_size - ofs, hash_table_size), FsWriteOption_None));
+                }
+
+                /* Write the directory hash table. */
+                for (size_t ofs = 0; ofs < m_dir_hash_table_size; ofs += hash_table_size) {
+                    std::memset(hash_table, 0xFF, hash_table_size);
+
+                    const u32 ofs_ind = ofs / sizeof(u32);
+                    const u32 end_ind = (ofs + hash_table_size) / sizeof(u32);
+
+                    for (const auto &it : m_directories) {
+                        BuildDirectoryContext *cur_dir = it.get();
+                        if (cur_dir->HasHashMark()) {
+                            continue;
+                        }
+
+                        if (const auto hash_ind = cur_dir->hash_value; ofs_ind <= hash_ind && hash_ind < end_ind) {
+                            cur_dir->hash_value = hash_table[hash_ind - ofs_ind];
+                            hash_table[hash_ind - ofs_ind] = cur_dir->entry_offset;
+
+                            cur_dir->SetHashMark();
+                        }
+                    }
+
+                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), ofs, hash_table, std::min(m_dir_hash_table_size - ofs, hash_table_size), FsWriteOption_None));
+                }
+            }
+
+            /* Write the file table. */
+            {
+                FileTableWriter file_table(std::addressof(metadata_file), m_dir_hash_table_size + m_dir_table_size + m_file_hash_table_size, m_file_table_size);
+
+                for (const auto &it : m_files) {
+                    BuildFileContext *cur_file = it.get();
+                    FileEntry *cur_entry = file_table.GetEntry(cur_file->entry_offset, cur_file->path_len);
+
+                    cur_file->ClearHashMark();
+
+                    /* Set entry fields. */
+                    cur_entry->parent  = cur_file->parent->entry_offset;
+                    cur_entry->sibling = (cur_file->sibling == nullptr) ? EmptyEntry : cur_file->sibling->entry_offset;
+                    cur_entry->offset  = cur_file->offset;
+                    cur_entry->size    = cur_file->size;
+                    cur_entry->hash    = cur_file->hash_value;
+
+                    /* Set name. */
+                    const u32 name_size = cur_file->path_len;
+                    cur_entry->name_size = name_size;
+                    if (name_size) {
+                        std::memcpy(cur_entry->name, cur_file->path.get(), name_size);
+                        for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                            cur_entry->name[i] = 0;
+                        }
+                    }
+
+                    /* Emplace a source. */
+                    switch (cur_file->source_type) {
+                        case DataSourceType::Storage:
+                        case DataSourceType::File:
+                            {
+                                /* Try to compact if possible. */
+                                auto &back = out_infos->back();
+                                if (back.source_type == cur_file->source_type) {
+                                    back.size = cur_file->offset + FilePartitionOffset + cur_file->size - back.virtual_offset;
+                                } else {
+                                    out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, cur_file->orig_offset + FilePartitionOffset);
+                                }
                             }
-                        }
-
-                        /* Emplace a source. */
-                        switch (cur_file->source_type) {
-                            case DataSourceType::Storage:
-                            case DataSourceType::File:
-                                {
-                                    /* Try to compact if possible. */
-                                    auto &back = out_infos->back();
-                                    if (back.source_type == cur_file->source_type) {
-                                        back.size = cur_file->offset + FilePartitionOffset + cur_file->size - back.virtual_offset;
-                                    } else {
-                                        out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, cur_file->orig_offset + FilePartitionOffset);
-                                    }
-                                }
-                                break;
-                            case DataSourceType::LooseSdFile:
-                                {
-                                    char *new_path = new char[cur_file->GetPathLength() + 1];
-                                    cur_file->GetPath(new_path);
-                                    out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
-                                }
-                                break;
-                            AMS_UNREACHABLE_DEFAULT_CASE();
-                        }
+                            break;
+                        case DataSourceType::LooseSdFile:
+                            {
+                                char *new_path = new char[cur_file->GetPathLength() + 1];
+                                cur_file->GetPath(new_path);
+                                out_infos->emplace_back(cur_file->offset + FilePartitionOffset, cur_file->size, cur_file->source_type, new_path);
+                            }
+                            break;
+                        AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }
             }
 
-            /* Populate directory tables. */
+            /* Write the directory table. */
             {
-                /* Allocate the hash table. */
-                void *dht_buf = std::malloc(m_dir_hash_table_size);
-                AMS_ABORT_UNLESS(dht_buf != nullptr);
-                u32 *dir_hash_table = reinterpret_cast<u32 *>(dht_buf);
-                std::memset(dir_hash_table, 0xFF, m_dir_hash_table_size);
-                ON_SCOPE_EXIT {
-                    R_ABORT_UNLESS(fsFileWrite(std::addressof(metadata_file), 0, dir_hash_table, m_dir_hash_table_size, FsWriteOption_None));
-                    std::free(dht_buf);
-                };
+                DirectoryTableWriter dir_table(std::addressof(metadata_file), m_dir_hash_table_size, m_dir_table_size);
 
-                /* Write the file table. */
-                {
-                    DirectoryTableWriter dir_table(std::addressof(metadata_file), m_dir_hash_table_size, m_dir_table_size);
+                for (const auto &it : m_directories) {
+                    BuildDirectoryContext *cur_dir = it.get();
+                    DirectoryEntry *cur_entry = dir_table.GetEntry(cur_dir->entry_offset, cur_dir->path_len);
 
-                    for (const auto &it : m_directories) {
-                        BuildDirectoryContext *cur_dir = it.get();
-                        DirectoryEntry *cur_entry = dir_table.GetEntry(cur_dir->entry_offset, cur_dir->path_len);
+                    cur_dir->ClearHashMark();
 
-                        /* Set entry fields. */
-                        cur_entry->parent = cur_dir == m_root ? 0 : cur_dir->parent->entry_offset;
-                        cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
-                        cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
-                        cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+                    /* Set entry fields. */
+                    cur_entry->parent  = cur_dir == m_root ? 0 : cur_dir->parent->entry_offset;
+                    cur_entry->sibling = (cur_dir->sibling == nullptr) ? EmptyEntry : cur_dir->sibling->entry_offset;
+                    cur_entry->child   = (cur_dir->child   == nullptr) ? EmptyEntry : cur_dir->child->entry_offset;
+                    cur_entry->file    = (cur_dir->file    == nullptr) ? EmptyEntry : cur_dir->file->entry_offset;
+                    cur_entry->hash    = cur_dir->hash_value;
 
-                        /* Insert into hash table. */
-                        const u32 name_size = cur_dir->path_len;
-                        const size_t hash_ind = CalculatePathHash(cur_entry->parent, cur_dir->path.get(), 0, name_size) % num_dir_hash_table_entries;
-                        cur_entry->hash = dir_hash_table[hash_ind];
-                        dir_hash_table[hash_ind] = cur_dir->entry_offset;
-
-                        /* Set name. */
-                        cur_entry->name_size = name_size;
-                        if (name_size) {
-                            std::memcpy(cur_entry->name, cur_dir->path.get(), name_size);
-                            for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
-                                cur_entry->name[i] = 0;
-                            }
+                    /* Set name. */
+                    const u32 name_size = cur_dir->path_len;
+                    cur_entry->name_size = name_size;
+                    if (name_size) {
+                        std::memcpy(cur_entry->name, cur_dir->path.get(), name_size);
+                        for (size_t i = name_size; i < util::AlignUp(name_size, 4); i++) {
+                            cur_entry->name[i] = 0;
                         }
                     }
                 }

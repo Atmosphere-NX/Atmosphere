@@ -19,7 +19,7 @@
 
 namespace ams::mitm::fs::romfs {
 
-    enum class DataSourceType {
+    enum class DataSourceType : u8 {
         Storage,
         File,
         LooseSdFile,
@@ -120,10 +120,11 @@ namespace ams::mitm::fs::romfs {
         BuildFileContext *file;
         u32 path_len;
         u32 entry_offset;
+        u32 hash_value;
 
         struct RootTag{};
 
-        BuildDirectoryContext(RootTag) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), path_len(0), entry_offset(0) {
+        BuildDirectoryContext(RootTag) : parent(nullptr), child(nullptr), sibling(nullptr), file(nullptr), path_len(0), entry_offset(0), hash_value(0xFFFFFFFF) {
             this->path = std::make_unique<char[]>(1);
         }
 
@@ -154,6 +155,18 @@ namespace ams::mitm::fs::romfs {
             dst[parent_len + 1 + this->path_len] = '\x00';
             return parent_len + 1 + this->path_len;
         }
+
+        bool HasHashMark() const {
+            return reinterpret_cast<uintptr_t>(this->sibling) & UINT64_C(0x8000000000000000);
+        }
+
+        void SetHashMark() {
+            this->sibling = reinterpret_cast<BuildDirectoryContext *>(reinterpret_cast<uintptr_t>(this->sibling) | UINT64_C(0x8000000000000000));
+        }
+
+        void ClearHashMark() {
+            this->sibling = reinterpret_cast<BuildDirectoryContext *>(reinterpret_cast<uintptr_t>(this->sibling) & ~UINT64_C(0x8000000000000000));
+        }
     };
 
     struct BuildFileContext {
@@ -168,9 +181,10 @@ namespace ams::mitm::fs::romfs {
         s64 orig_offset;
         u32 path_len;
         u32 entry_offset;
+        u32 hash_value;
         DataSourceType source_type;
 
-        BuildFileContext(const char *entry_name, size_t entry_name_len, s64 sz, s64 o_o, DataSourceType type) : parent(nullptr), sibling(nullptr), offset(0), size(sz), orig_offset(o_o), entry_offset(0), source_type(type) {
+        BuildFileContext(const char *entry_name, size_t entry_name_len, s64 sz, s64 o_o, DataSourceType type) : parent(nullptr), sibling(nullptr), offset(0), size(sz), orig_offset(o_o), entry_offset(0), hash_value(0xFFFFFFFF), source_type(type) {
             this->path_len = entry_name_len;
             this->path = std::unique_ptr<char[]>(new char[this->path_len + 1]);
             std::memcpy(this->path.get(), entry_name, entry_name_len);
@@ -196,6 +210,18 @@ namespace ams::mitm::fs::romfs {
             std::memcpy(dst + parent_len + 1, this->path.get(), this->path_len);
             dst[parent_len + 1 + this->path_len] = '\x00';
             return parent_len + 1 + this->path_len;
+        }
+
+        bool HasHashMark() const {
+            return reinterpret_cast<uintptr_t>(this->sibling) & UINT64_C(0x8000000000000000);
+        }
+
+        void SetHashMark() {
+            this->sibling = reinterpret_cast<BuildFileContext *>(reinterpret_cast<uintptr_t>(this->sibling) | UINT64_C(0x8000000000000000));
+        }
+
+        void ClearHashMark() {
+            this->sibling = reinterpret_cast<BuildFileContext *>(reinterpret_cast<uintptr_t>(this->sibling) & ~UINT64_C(0x8000000000000000));
         }
     };
 
