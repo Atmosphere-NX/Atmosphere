@@ -1,4 +1,32 @@
 # Changelog
+## 1.2.3
++ Because ams.TMA is taking longer to develop than expected, experimental support for Atmosphère's gdbstub as a standalone is now available.
+  + To enable it, set `atmosphere!enable_standalone_gdbstub` = u8!0x1 in system_settings.ini.
+    + The standalone also requires `atmosphere!enable_htc` = u8!0x0, but this should be the case for everyone since ams.TMA isn't actually usable yet.
+  + Once enabled, open the devkitPro provided-gdb (`aarch64-none-elf-gdb` for 64-bit or `arm-none-eabi-gdb` for 32-bit).
+    + The standalone stub exposes itself on port 22225 -- so the command to connect is `target extended-remote <ip address>:22225`.
+    + Type `info os processes` to get a list of process IDs that can be attached to.
+      + The stub should work on both system programs, games, and homebrew -- but please note that debugging certain processes (like sockets) can cause hang due to the stub using them itself.
+  + Software break-points, hardware break-points, hardware watch-points, and hardware single-step are all supported/implemented.
+  + The following monitor commands are currently supported:
+    + `monitor get info`: Get process info, address space layout, and information on modules.
+    + `monitor get mappings`: Get all memory mappings.
+    + `monitor get mapping <addr>`: Get the memory mapping for a specific address.
+    + `monitor wait application`: Causes the stub to wait for an application to be launched. The next application will be started suspended.
+      + User is expected to send `attach <pid>` after launching, which will cause attach-on-first-instruction. Failure to attach may cause system instability, this probably needs work.
+  + **Please Note**: The GDBstub is new and may have bugs/need work. If you find issues, please report them to SciresM#0524 -- all help finding/fixing bugs is appreciated, here.
+  + Generally speaking, if you would like to report information about fixes needed/discuss development of the gdbstub, join ReSwitched's #dev-support channel.
++ Changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
+  + Animal Crossing's 2.0.0 update contains >99000 files, and has tables so big that we ran out of memory even after the optimizations made in 0.10.5.
+    + Previously, we used fixed-sized 0x40000 work buffers for file/directory tables and simultaneously built hash/content tables in one loop over files/directories.
+    + We now iterate over the file/directory tables multiple times, first once to determine the hash table indices, then repeatedly to build hash tables, then once to build content tables.
+    + We also now allow smaller-than-0x40000 work buffers, trying half-as-big buffers until allocation succeeds (or work buffer would be <0x4000, which is a safeguard against truly horrible performance).
+  + There is a slight speed penalty to these changes, but it's on the order of seconds for the worst case (Animal Crossing) and trivial for most games with reasonable tables.
+  + If you encounter a game that exhausts ams.mitm's memory (crashing it) when loading layeredfs mods, please contact `SciresM#0524`.
+    + It's really hard to imagine any game being worse than Animal Crossing, but if it happens again I will drop everything to fix it as usual.
++ `creport` now attempts to parse symbol tables if present.
+  + If a game executable has a symbol for a given address, the function-relative-offset will now be printed after the module-relative-offset.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.2
 + A number of fixes were made to Atmosphère's implementation of the new "sprofile" service added in 13.0.0.
   + Nintendo is finally transmitting data over the internet to certain consoles, which has allowed for validating our service implementation.
