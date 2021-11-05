@@ -152,7 +152,7 @@ namespace ams::mitm::sysupdater {
             ON_SCOPE_EXIT { std::free(data_buffer); };
 
             /* Declare helper for result validation. */
-            auto ValidateResult = [&] ALWAYS_INLINE_LAMBDA (Result result) -> Result {
+            auto ValidateResult = [&](Result result) ALWAYS_INLINE_LAMBDA -> Result {
                 *out_result = result;
                 return result;
             };

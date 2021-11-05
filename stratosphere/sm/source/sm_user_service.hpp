@@ -41,7 +41,7 @@ namespace ams::sm {
 
             Result GetServiceHandle(tipc::OutMoveHandle out_h, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
                     return impl::GetServiceHandle(out_h.GetPointer(), m_process_id, service);
                 });
             }
@@ -66,7 +66,7 @@ namespace ams::sm {
             /* Atmosphere commands. */
             Result AtmosphereInstallMitm(tipc::OutMoveHandle srv_h, tipc::OutMoveHandle qry_h, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
                     return impl::InstallMitm(srv_h.GetPointer(), qry_h.GetPointer(), m_process_id, service);
                 });
             }
@@ -88,7 +88,7 @@ namespace ams::sm {
 
             Result AtmosphereWaitMitm(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
                     return impl::WaitMitm(service);
                 });
             }
@@ -110,7 +110,7 @@ namespace ams::sm {
 
             Result AtmosphereWaitService(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
                     return impl::WaitService(service);
                 });
             }

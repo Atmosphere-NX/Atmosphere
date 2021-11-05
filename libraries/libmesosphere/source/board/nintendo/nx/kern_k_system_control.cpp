@@ -312,7 +312,7 @@ namespace ams::kern::board::nintendo::nx {
 
     size_t KSystemControl::Init::GetApplicationPoolSize() {
         /* Get the base pool size. */
-        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+        const size_t base_pool_size = []() ALWAYS_INLINE_LAMBDA -> size_t {
             switch (GetMemoryArrangeForInit()) {
                 case smc::MemoryArrangement_4GB:
                 default:
@@ -336,7 +336,7 @@ namespace ams::kern::board::nintendo::nx {
 
     size_t KSystemControl::Init::GetAppletPoolSize() {
         /* Get the base pool size. */
-        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+        const size_t base_pool_size = []() ALWAYS_INLINE_LAMBDA -> size_t {
             switch (GetMemoryArrangeForInit()) {
                 case smc::MemoryArrangement_4GB:
                 default:
@@ -490,7 +490,7 @@ namespace ams::kern::board::nintendo::nx {
 
 
         if (AMS_LIKELY(s_initialized_random_generator)) {
-            return KSystemControlBase::GenerateUniformRange(min, max, [] ALWAYS_INLINE_LAMBDA () -> u64 { return s_random_generator.GenerateRandomU64(); });
+            return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
         } else {
             return KSystemControlBase::GenerateUniformRange(min, max, GenerateRandomU64FromSmc);
         }

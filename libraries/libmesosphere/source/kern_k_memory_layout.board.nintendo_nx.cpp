@@ -195,7 +195,7 @@ namespace ams::kern {
                 static_assert(KMemoryManager::Pool_Secure == KMemoryManager::Pool_System);
 
                 /* Get Secure pool size. */
-                const size_t secure_pool_size = [] ALWAYS_INLINE_LAMBDA (auto target_firmware) -> size_t {
+                const size_t secure_pool_size = [](auto target_firmware) ALWAYS_INLINE_LAMBDA -> size_t {
                     constexpr size_t LegacySecureKernelSize = 8_MB;          /* KPageBuffer pages, other small kernel allocations. */
                     constexpr size_t LegacySecureMiscSize   = 1_MB;          /* Miscellaneous pages for secure process mapping. */
                     constexpr size_t LegacySecureHeapSize   = 24_MB;         /* Heap pages for secure process mapping (fs). */

@@ -548,11 +548,11 @@ namespace ams::kern::board::nintendo::nx {
 
                         /* Print the interrupt. */
                         {
-                            constexpr auto GetBits = [] ALWAYS_INLINE_LAMBDA (u32 value, size_t ofs, size_t count) {
+                            constexpr auto GetBits = [](u32 value, size_t ofs, size_t count) ALWAYS_INLINE_LAMBDA {
                                 return (value >> ofs) & ((1u << count) - 1);
                             };
 
-                            constexpr auto GetBit = [GetBits] ALWAYS_INLINE_LAMBDA (u32 value, size_t ofs) {
+                            constexpr auto GetBit = [GetBits](u32 value, size_t ofs) ALWAYS_INLINE_LAMBDA {
                                 return (value >> ofs) & 1u;
                             };
 
