@@ -62,16 +62,12 @@ namespace ams::settings {
 
         char name[MaxLength];
 
-        static constexpr LanguageCode Encode(const char *name, size_t name_size) {
+        static constexpr LanguageCode Encode(util::string_view name) {
             LanguageCode out{};
-            for (size_t i = 0; i < MaxLength && i < name_size; i++) {
+            for (size_t i = 0; i < MaxLength && i < name.size(); i++) {
                 out.name[i] = name[i];
             }
             return out;
-        }
-
-        static constexpr LanguageCode Encode(const char *name) {
-            return Encode(name, std::strlen(name));
         }
 
         template<Language Lang>

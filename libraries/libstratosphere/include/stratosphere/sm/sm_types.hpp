@@ -40,8 +40,8 @@ namespace ams::sm {
             return out;
         }
 
-        static constexpr ServiceName Encode(const char *name) {
-            return Encode(name, std::strlen(name));
+        static constexpr ServiceName Encode(util::string_view name) {
+            return Encode(name.data(), name.size());
         }
     };
 
