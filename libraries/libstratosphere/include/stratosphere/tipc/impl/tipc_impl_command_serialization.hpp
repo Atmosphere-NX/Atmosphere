@@ -472,7 +472,7 @@ namespace ams::tipc::impl {
             using OutRawHolderType      = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign, CommandMeta::OutMessageRawDataIndex>;
             using OutHandleHolderType   = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles, CommandMeta::OutMessageHandleIndex>;
         private:
-            static consteval u64 GetMessageHeaderForCheck(const svc::ipc::MessageBuffer::MessageHeader &header) {
+            static constexpr u64 GetMessageHeaderForCheck(const svc::ipc::MessageBuffer::MessageHeader &header) {
                 using Value = util::BitPack32::Field<0, BITSIZEOF(util::BitPack32)>;
 
                 const util::BitPack32 *data = header.GetData();
@@ -482,7 +482,7 @@ namespace ams::tipc::impl {
                 return static_cast<u64>(lower) | (static_cast<u64>(upper) << BITSIZEOF(u32));
             }
 
-            static consteval u32 GetSpecialHeaderForCheck(const svc::ipc::MessageBuffer::SpecialHeader &header) {
+            static constexpr u32 GetSpecialHeaderForCheck(const svc::ipc::MessageBuffer::SpecialHeader &header) {
                 using Value = util::BitPack32::Field<0, BITSIZEOF(util::BitPack32)>;
 
                 return header.GetHeader()->Get<Value>();
