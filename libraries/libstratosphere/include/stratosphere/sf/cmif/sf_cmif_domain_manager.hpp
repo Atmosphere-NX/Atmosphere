@@ -54,11 +54,11 @@ namespace ams::sf::cmif {
 
                     void DisposeImpl();
 
-                    virtual void AddReference() {
+                    virtual void AddReference() override {
                         ServiceObjectImplBase2::AddReferenceImpl();
                     }
 
-                    virtual void Release() {
+                    virtual void Release() override {
                         if (ServiceObjectImplBase2::ReleaseImpl()) {
                             this->DisposeImpl();
                         }

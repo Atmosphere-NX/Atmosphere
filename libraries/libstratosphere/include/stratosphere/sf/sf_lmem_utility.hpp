@@ -43,7 +43,7 @@ namespace ams::sf {
                 return lmem::FreeToExpHeap(m_handle, buffer);
             }
 
-            virtual bool IsEqualImpl(const MemoryResource &resource) const {
+            virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                 return this == std::addressof(resource);
             }
     };
@@ -76,7 +76,7 @@ namespace ams::sf {
                 return lmem::FreeToUnitHeap(m_handle, buffer);
             }
 
-            virtual bool IsEqualImpl(const MemoryResource &resource) const {
+            virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                 return this == std::addressof(resource);
             }
     };
