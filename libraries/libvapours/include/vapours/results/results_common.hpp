@@ -177,7 +177,11 @@ namespace ams {
                 static_assert(Value != Base::SuccessValue, "Value != Base::SuccessValue");
             public:
                 constexpr ALWAYS_INLINE operator Result() const { return MakeResult(Value); }
-                constexpr ALWAYS_INLINE operator ResultSuccess() const { OnResultAbort(Value); }
+                constexpr ALWAYS_INLINE operator ResultSuccess() const {
+                    OnResultAbort(Value);
+                    __builtin_unreachable();
+                    return ResultSuccess();
+                }
 
                 constexpr ALWAYS_INLINE bool IsSuccess() const { return false; }
                 constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
