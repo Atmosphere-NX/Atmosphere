@@ -747,7 +747,7 @@ namespace ams::tipc {
                 using PortManager = PortManagerImpl;
             private:
                 PortManager m_port_manager;
-                PortInfo::Allocator m_port_allocator;
+                typename PortInfo::Allocator m_port_allocator;
             public:
                 constexpr ServerManagerImpl() : m_port_manager(), m_port_allocator() { /* ... */ }
 
