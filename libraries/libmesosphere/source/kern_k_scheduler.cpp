@@ -249,22 +249,18 @@ namespace ams::kern {
 
         #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
         /* Ensure the single-step bit in mdscr reflects the correct single-step state for the new thread. */
+        /* NOTE: Per ARM docs, changing the single-step bit requires a "context synchronization event" to */
+        /* be sure that our new configuration takes. However, there are three types of synchronization event: */
+        /* Taking an exception, returning from an exception, and ISB. The single-step bit change only matters */
+        /* in EL0...which implies a return-from-exception has occurred since we set the bit. Thus, forcing */
+        /* an ISB is unnecessary, and we can modify the register safely and be confident it will affect the next */
+        /* userland instruction executed. */
         cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(next_thread->IsSingleStep()).Store();
         #endif
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
             KProcess::Switch(cur_process, next_process);
-        } else {
-            /* The single-step bit set up above requires an instruction synchronization barrier, to ensure */
-            /* the state change takes before we actually perform a return which might break-to-step. */
-            /* KProcess::Switch performs an isb incidentally, and so when we're changing process we */
-            /* can piggy-back off of that isb to avoid unnecessarily emptying the pipeline twice. */
-            /* However, this means that when we're switching to thread in a different process, */
-            /* we must ensure that we still isb. In practice, gcc will deduplicate into a single isb. */
-            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-            cpu::InstructionMemoryBarrier();
-            #endif
         }
 
         /* Set the new thread. */
