@@ -20,7 +20,7 @@
 namespace ams::sm {
 
     /* Service definition. */
-    class UserService : public tipc::DeferrableBase {
+    class UserService : public tipc::DeferrableBase<sm::impl::IUserInterface> {
         private:
             os::ProcessId m_process_id;
             bool m_initialized;

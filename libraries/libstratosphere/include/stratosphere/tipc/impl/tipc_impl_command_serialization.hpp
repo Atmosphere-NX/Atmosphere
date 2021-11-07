@@ -319,6 +319,9 @@ namespace ams::tipc::impl {
             static constexpr auto OutMessageResultIndex  = svc::ipc::MessageBuffer::GetRawDataIndex(OutMessageHeader, OutSpecialHeader);
             static constexpr auto OutMessageRawDataIndex = OutMessageResultIndex + 1;
 
+            static constexpr size_t InMessageTotalSize  = (InMessageRawDataIndex  * sizeof(u32)) + InDataSize;
+            static constexpr size_t OutMessageTotalSize = (OutMessageRawDataIndex * sizeof(u32)) + OutDataSize;
+
         /* Construction of argument serialization structs. */
         private:
             template<typename>

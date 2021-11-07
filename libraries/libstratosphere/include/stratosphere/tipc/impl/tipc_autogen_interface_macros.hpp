@@ -40,12 +40,28 @@ namespace ams::tipc::impl {
     #define AMS_TIPC_IMPL_EXTRACT_SYNC_METHOD_ARGUMENTS(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX) \
         using NAME##ArgumentsType = ::ams::tipc::impl::SyncFunctionArgsType<&NAME##ArgumentsFunctionHolder::f>;
 
+    #define AMS_TIPC_IMPL_GET_MAXIMUM_REQUEST_SIZE(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX) \
+        , ::ams::tipc::impl::CommandMetaInfo<CMD_ID + 0x10, NAME##ArgumentsType>::InMessageTotalSize
+
+    #define AMS_TIPC_IMPL_GET_MAXIMUM_RESPONSE_SIZE(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX) \
+        , ::ams::tipc::impl::CommandMetaInfo<CMD_ID + 0x10, NAME##ArgumentsType>::OutMessageTotalSize
+
     #define AMS_TIPC_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO)       \
         class CLASSNAME : public BASECLASS {                                      \
             private:                                                              \
                 CMD_MACRO(CLASSNAME, AMS_TIPC_IMPL_DEFINE_SYNC_METHOD_HOLDER)     \
             public:                                                               \
                 CMD_MACRO(CLASSNAME, AMS_TIPC_IMPL_EXTRACT_SYNC_METHOD_ARGUMENTS) \
+            public:                                                               \
+                static constexpr size_t MaximumRequestSize = std::max<size_t>({   \
+                    0                                                             \
+                    CMD_MACRO(CLASSNAME, AMS_TIPC_IMPL_GET_MAXIMUM_REQUEST_SIZE)  \
+                });                                                               \
+                                                                                  \
+                static constexpr size_t MaximumResponseSize = std::max<size_t>({  \
+                    0                                                             \
+                    CMD_MACRO(CLASSNAME, AMS_TIPC_IMPL_GET_MAXIMUM_RESPONSE_SIZE) \
+                });                                                               \
         };
 
     #define AMS_TIPC_IMPL_DEFINE_CONCEPT_HELPERS(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, ARGNAMES, VERSION_MIN, VERSION_MAX)               \

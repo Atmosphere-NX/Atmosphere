@@ -44,16 +44,17 @@ namespace ams::tipc {
 
     }
 
-    class DeferrableBase : public impl::DeferrableBaseTag {
+    class DeferrableBaseImpl : public impl::DeferrableBaseTag {
         private:
             DeferralManagerBase *m_deferral_manager;
             ObjectHolder m_object_holder;
             uintptr_t m_resume_key;
-            u8 m_message_buffer[svc::ipc::MessageBufferSize];
+            const u32 m_message_buffer_size;
+            u8 m_message_buffer_base[0];
         public:
-            ALWAYS_INLINE DeferrableBase() : m_deferral_manager(nullptr), m_object_holder(), m_resume_key() { /* ... */ }
+            ALWAYS_INLINE DeferrableBaseImpl(u32 mb_size) : m_deferral_manager(nullptr), m_object_holder(), m_resume_key(), m_message_buffer_size(mb_size) { /* ... */ }
 
-            ~DeferrableBase();
+            ~DeferrableBaseImpl();
 
             ALWAYS_INLINE void SetDeferralManager(DeferralManagerBase *manager, os::NativeHandle reply_target, ServiceObjectBase *object) {
                 m_deferral_manager = manager;
@@ -67,7 +68,7 @@ namespace ams::tipc {
             template<IsResumeKey ResumeKey>
             ALWAYS_INLINE void RegisterRetry(ResumeKey key) {
                 m_resume_key = ConvertToInternalResumeKey(key);
-                std::memcpy(m_message_buffer, svc::ipc::GetMessageBuffer(), sizeof(m_message_buffer));
+                std::memcpy(m_message_buffer_base, svc::ipc::GetMessageBuffer(), m_message_buffer_size);
             }
 
             template<IsResumeKey ResumeKey, typename F>
@@ -85,12 +86,42 @@ namespace ams::tipc {
                 m_resume_key = 0;
 
                 /* Restore message buffer. */
-                std::memcpy(svc::ipc::GetMessageBuffer(), m_message_buffer, sizeof(m_message_buffer));
+                std::memcpy(svc::ipc::GetMessageBuffer(), m_message_buffer_base, m_message_buffer_size);
 
                 /* Process the request. */
                 return port_manager->ProcessDeferredRequest(m_object_holder);
             }
+        protected:
+            static consteval size_t GetMessageBufferOffsetBase();
     };
+    static_assert(std::is_standard_layout<DeferrableBaseImpl>::value);
+
+    template<typename Interface>
+    class DeferrableBase : public DeferrableBaseImpl {
+        private:
+            static constexpr size_t MessageBufferRequiredSize = Interface::MaximumRequestSize;
+        private:
+            u8 m_message_buffer[MessageBufferRequiredSize];
+        public:
+            DeferrableBase();
+        private:
+            static consteval size_t GetMessageBufferOffset();
+    };
+
+    consteval size_t DeferrableBaseImpl::GetMessageBufferOffsetBase() {
+        return AMS_OFFSETOF(DeferrableBaseImpl, m_message_buffer_base);
+    }
+
+    template<typename Interface>
+    consteval size_t DeferrableBase<Interface>::GetMessageBufferOffset() {
+        return AMS_OFFSETOF(DeferrableBase<Interface>, m_message_buffer);
+    }
+
+    template<typename Interface>
+    ALWAYS_INLINE DeferrableBase<Interface>::DeferrableBase() : DeferrableBaseImpl(MessageBufferRequiredSize) {
+        static_assert(GetMessageBufferOffsetBase() == GetMessageBufferOffset());
+        static_assert(sizeof(DeferrableBase<Interface>) >= sizeof(DeferrableBaseImpl) + MessageBufferRequiredSize);
+    }
 
     template<class T>
     concept IsDeferrable = std::derived_from<T, impl::DeferrableBaseTag>;
@@ -100,11 +131,11 @@ namespace ams::tipc {
         NON_MOVEABLE(DeferralManagerBase);
         private:
             size_t m_object_count;
-            DeferrableBase *m_objects_base[0];
+            DeferrableBaseImpl *m_objects_base[0];
         public:
             ALWAYS_INLINE DeferralManagerBase() : m_object_count(0) { /* ... */  }
 
-            void AddObject(DeferrableBase &object, os::NativeHandle reply_target, ServiceObjectBase *service_object) {
+            void AddObject(DeferrableBaseImpl &object, os::NativeHandle reply_target, ServiceObjectBase *service_object) {
                 /* Set ourselves as the manager for the object. */
                 object.SetDeferralManager(this, reply_target, service_object);
 
@@ -113,7 +144,7 @@ namespace ams::tipc {
                 m_objects_base[m_object_count++] = std::addressof(object);
             }
 
-            void RemoveObject(DeferrableBase *object) {
+            void RemoveObject(DeferrableBaseImpl *object) {
                 /* If the object is present, remove it. */
                 for (size_t i = 0; i < m_object_count; ++i) {
                     if (m_objects_base[i] == object) {
@@ -148,7 +179,7 @@ namespace ams::tipc {
     };
     static_assert(std::is_standard_layout<DeferralManagerBase>::value);
 
-    inline DeferrableBase::~DeferrableBase() {
+    inline DeferrableBaseImpl::~DeferrableBaseImpl() {
         AMS_ASSUME(m_deferral_manager != nullptr);
         m_deferral_manager->RemoveObject(this);
     }
@@ -156,7 +187,7 @@ namespace ams::tipc {
     template<size_t N> requires (N > 0)
     class DeferralManager final : public DeferralManagerBase {
         private:
-            DeferrableBase *m_objects[N];
+            DeferrableBaseImpl *m_objects[N];
         public:
             DeferralManager();
         private:
@@ -175,7 +206,7 @@ namespace ams::tipc {
     template<size_t N> requires (N > 0)
     inline DeferralManager<N>::DeferralManager() : DeferralManagerBase() {
         static_assert(GetObjectPointersOffset() == GetObjectPointersOffsetBase());
-        static_assert(sizeof(DeferralManager<N>) == sizeof(DeferralManagerBase) + N * sizeof(DeferrableBase *));
+        static_assert(sizeof(DeferralManager<N>) == sizeof(DeferralManagerBase) + N * sizeof(DeferrableBaseImpl *));
     }
 
 }
