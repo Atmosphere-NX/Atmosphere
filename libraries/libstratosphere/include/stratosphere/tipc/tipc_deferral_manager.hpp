@@ -96,14 +96,14 @@ namespace ams::tipc {
     };
     static_assert(std::is_standard_layout<DeferrableBaseImpl>::value);
 
-    template<typename Interface>
-    class DeferrableBase : public DeferrableBaseImpl {
+    template<size_t _MessageBufferRequiredSize>
+    class DeferrableBaseImplWithBuffer : public DeferrableBaseImpl {
         private:
-            static constexpr size_t MessageBufferRequiredSize = Interface::MaximumRequestSize;
+            static constexpr size_t MessageBufferRequiredSize = _MessageBufferRequiredSize;
         private:
             u8 m_message_buffer[MessageBufferRequiredSize];
         public:
-            DeferrableBase();
+            DeferrableBaseImplWithBuffer();
         private:
             static consteval size_t GetMessageBufferOffset();
     };
@@ -112,16 +112,24 @@ namespace ams::tipc {
         return AMS_OFFSETOF(DeferrableBaseImpl, m_message_buffer_base);
     }
 
-    template<typename Interface>
-    consteval size_t DeferrableBase<Interface>::GetMessageBufferOffset() {
-        return AMS_OFFSETOF(DeferrableBase<Interface>, m_message_buffer);
+    template<size_t _MessageBufferRequiredSize>
+    consteval size_t DeferrableBaseImplWithBuffer<_MessageBufferRequiredSize>::GetMessageBufferOffset() {
+        return AMS_OFFSETOF(DeferrableBaseImplWithBuffer<_MessageBufferRequiredSize>, m_message_buffer);
     }
 
-    template<typename Interface>
-    ALWAYS_INLINE DeferrableBase<Interface>::DeferrableBase() : DeferrableBaseImpl(MessageBufferRequiredSize) {
+    template<size_t _MessageBufferRequiredSize>
+    ALWAYS_INLINE DeferrableBaseImplWithBuffer<_MessageBufferRequiredSize>::DeferrableBaseImplWithBuffer() : DeferrableBaseImpl(MessageBufferRequiredSize) {
         static_assert(GetMessageBufferOffsetBase() == GetMessageBufferOffset());
-        static_assert(sizeof(DeferrableBase<Interface>) >= sizeof(DeferrableBaseImpl) + MessageBufferRequiredSize);
+        static_assert(sizeof(DeferrableBaseImplWithBuffer<_MessageBufferRequiredSize>) >= sizeof(DeferrableBaseImpl) + MessageBufferRequiredSize);
     }
+
+    template<typename Interface, size_t MaximumDefaultRequestSize = 0>
+    class DeferrableBase : public DeferrableBaseImplWithBuffer<std::max(Interface::MaximumRequestSize, MaximumDefaultRequestSize)> {
+        private:
+            using BaseImpl = DeferrableBaseImplWithBuffer<std::max(Interface::MaximumRequestSize, MaximumDefaultRequestSize)>;
+        public:
+            using BaseImpl::BaseImpl;
+    };
 
     template<class T>
     concept IsDeferrable = std::derived_from<T, impl::DeferrableBaseTag>;

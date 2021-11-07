@@ -20,7 +20,7 @@
 namespace ams::sm {
 
     /* Service definition. */
-    class UserService : public tipc::DeferrableBase<sm::impl::IUserInterface> {
+    class UserService : public tipc::DeferrableBase<sm::impl::IUserInterface, /* Maximum deferrable CMIF message size: */ 0x20 + util::AlignUp(sizeof(sm::ServiceName), sizeof(u32))> {
         private:
             os::ProcessId m_process_id;
             bool m_initialized;
