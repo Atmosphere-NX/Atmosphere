@@ -96,7 +96,7 @@ namespace ams::kern {
             s_initialized_random_generator = true;
         }
 
-        return KSystemControlBase::GenerateUniformRange(min, max, [] ALWAYS_INLINE_LAMBDA () -> u64 { return s_random_generator.GenerateRandomU64(); });
+        return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
     }
 
     /* System Initialization. */
@@ -194,7 +194,7 @@ namespace ams::kern {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(s_random_lock);
 
-        return KSystemControlBase::GenerateUniformRange(min, max, [] ALWAYS_INLINE_LAMBDA () -> u64 { return s_random_generator.GenerateRandomU64(); });
+        return KSystemControlBase::GenerateUniformRange(min, max, []() ALWAYS_INLINE_LAMBDA -> u64 { return s_random_generator.GenerateRandomU64(); });
     }
 
     u64 KSystemControlBase::GenerateRandomU64() {

@@ -167,12 +167,12 @@ namespace ams::tipc {
         return AMS_OFFSETOF(DeferralManagerBase, m_objects_base);
     }
 
-    template<size_t N>
+    template<size_t N> requires (N > 0)
     consteval size_t DeferralManager<N>::GetObjectPointersOffset() {
         return AMS_OFFSETOF(DeferralManager<N>, m_objects);
     }
 
-    template<size_t N>
+    template<size_t N> requires (N > 0)
     inline DeferralManager<N>::DeferralManager() : DeferralManagerBase() {
         static_assert(GetObjectPointersOffset() == GetObjectPointersOffsetBase());
         static_assert(sizeof(DeferralManager<N>) == sizeof(DeferralManagerBase) + N * sizeof(DeferrableBase *));

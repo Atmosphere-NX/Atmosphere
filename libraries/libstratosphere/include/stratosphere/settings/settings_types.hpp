@@ -62,20 +62,16 @@ namespace ams::settings {
 
         char name[MaxLength];
 
-        static constexpr LanguageCode Encode(const char *name, size_t name_size) {
+        static constexpr LanguageCode Encode(util::string_view name) {
             LanguageCode out{};
-            for (size_t i = 0; i < MaxLength && i < name_size; i++) {
+            for (size_t i = 0; i < MaxLength && i < name.size(); i++) {
                 out.name[i] = name[i];
             }
             return out;
         }
 
-        static constexpr LanguageCode Encode(const char *name) {
-            return Encode(name, std::strlen(name));
-        }
-
         template<Language Lang>
-        static constexpr inline LanguageCode EncodeLanguage = [] {
+        static constexpr inline LanguageCode EncodeLanguage() {
             if constexpr (false) { /* ... */ }
             #define AMS_MATCH_LANGUAGE(lang, enc) else if constexpr (Lang == Language_##lang) { return LanguageCode::Encode(enc); }
             AMS_MATCH_LANGUAGE(Japanese,                "ja")
@@ -98,28 +94,28 @@ namespace ams::settings {
             AMS_MATCH_LANGUAGE(TraditionalChinese,      "zh-Hant")
             #undef AMS_MATCH_LANGUAGE
             else { static_assert(Lang != Language_Japanese); }
-        }();
+        }
 
         static constexpr inline LanguageCode Encode(const Language language) {
             constexpr LanguageCode EncodedLanguages[Language_Count] = {
-                EncodeLanguage<Language_Japanese>,
-                EncodeLanguage<Language_AmericanEnglish>,
-                EncodeLanguage<Language_French>,
-                EncodeLanguage<Language_German>,
-                EncodeLanguage<Language_Italian>,
-                EncodeLanguage<Language_Spanish>,
-                EncodeLanguage<Language_Chinese>,
-                EncodeLanguage<Language_Korean>,
-                EncodeLanguage<Language_Dutch>,
-                EncodeLanguage<Language_Portuguese>,
-                EncodeLanguage<Language_Russian>,
-                EncodeLanguage<Language_Taiwanese>,
-                EncodeLanguage<Language_BritishEnglish>,
-                EncodeLanguage<Language_CanadianFrench>,
-                EncodeLanguage<Language_LatinAmericanSpanish>,
+                EncodeLanguage<Language_Japanese>(),
+                EncodeLanguage<Language_AmericanEnglish>(),
+                EncodeLanguage<Language_French>(),
+                EncodeLanguage<Language_German>(),
+                EncodeLanguage<Language_Italian>(),
+                EncodeLanguage<Language_Spanish>(),
+                EncodeLanguage<Language_Chinese>(),
+                EncodeLanguage<Language_Korean>(),
+                EncodeLanguage<Language_Dutch>(),
+                EncodeLanguage<Language_Portuguese>(),
+                EncodeLanguage<Language_Russian>(),
+                EncodeLanguage<Language_Taiwanese>(),
+                EncodeLanguage<Language_BritishEnglish>(),
+                EncodeLanguage<Language_CanadianFrench>(),
+                EncodeLanguage<Language_LatinAmericanSpanish>(),
                 /* 4.0.0+ */
-                EncodeLanguage<Language_SimplifiedChinese>,
-                EncodeLanguage<Language_TraditionalChinese>,
+                EncodeLanguage<Language_SimplifiedChinese>(),
+                EncodeLanguage<Language_TraditionalChinese>(),
             };
             return EncodedLanguages[language];
         }

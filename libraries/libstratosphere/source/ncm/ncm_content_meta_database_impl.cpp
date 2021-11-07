@@ -308,7 +308,7 @@ namespace ams::ncm {
             out_orphaned[i] = true;
         }
 
-        auto IsOrphanedContent = [] ALWAYS_INLINE_LAMBDA (const sf::InArray<ContentId> &list, const ncm::ContentId &id) -> util::optional<size_t> {
+        auto IsOrphanedContent = [](const sf::InArray<ContentId> &list, const ncm::ContentId &id) ALWAYS_INLINE_LAMBDA -> util::optional<size_t> {
             /* Check if any input content ids match our found content id. */
             for (size_t i = 0; i < list.GetSize(); i++) {
                 if (list[i] == id) {

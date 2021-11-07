@@ -48,7 +48,7 @@ namespace ams::kern::svc {
             /* Check whether the address is aligned. */
             const bool aligned = util::IsAligned(phys_addr, PageSize);
 
-            auto QueryIoMappingFromPageTable = [&] ALWAYS_INLINE_LAMBDA (uint64_t phys_addr, size_t size) -> Result {
+            auto QueryIoMappingFromPageTable = [&](uint64_t phys_addr, size_t size) ALWAYS_INLINE_LAMBDA -> Result {
                 /* The size must be non-zero. */
                 R_UNLESS(size > 0, svc::ResultInvalidSize());
 

@@ -37,7 +37,7 @@ namespace ams::sf {
                 return m_standard_allocator->Free(buffer);
             }
 
-            virtual bool IsEqualImpl(const MemoryResource &resource) const {
+            virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                 return this == std::addressof(resource);
             }
     };

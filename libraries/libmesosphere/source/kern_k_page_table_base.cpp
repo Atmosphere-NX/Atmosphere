@@ -2398,7 +2398,7 @@ namespace ams::kern {
         size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
         size_t tot_size = cur_size;
 
-        auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+        auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
             /* Ensure the address is linear mapped. */
             R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 
@@ -2484,7 +2484,7 @@ namespace ams::kern {
         size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
         size_t tot_size = cur_size;
 
-        auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+        auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
             /* Ensure the address is linear mapped. */
             R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 
@@ -2943,7 +2943,7 @@ namespace ams::kern {
             size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
             size_t tot_size = cur_size;
 
-            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
                 /* Ensure the address is linear mapped. */
                 R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 
@@ -3023,7 +3023,7 @@ namespace ams::kern {
             size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
             size_t tot_size = cur_size;
 
-            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
                 /* Ensure the address is linear mapped. */
                 R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 
@@ -3092,7 +3092,7 @@ namespace ams::kern {
             size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
             size_t tot_size = cur_size;
 
-            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
                 /* Ensure the address is linear mapped. */
                 R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 
@@ -3172,7 +3172,7 @@ namespace ams::kern {
             size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
             size_t tot_size = cur_size;
 
-            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            auto PerformCopy = [&]() ALWAYS_INLINE_LAMBDA -> Result {
                 /* Ensure the address is linear mapped. */
                 R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
 

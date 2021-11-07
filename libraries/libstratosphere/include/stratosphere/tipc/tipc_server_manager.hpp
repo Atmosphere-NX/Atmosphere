@@ -686,7 +686,7 @@ namespace ams::tipc {
                             }
 
                             /* Try to reply/receive. */
-                            const Result result = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                            const Result result = [&]() ALWAYS_INLINE_LAMBDA -> Result {
                                 os::MultiWaitHolderType *signaled_holder = nullptr;
                                 ON_SCOPE_EXIT { AMS_ABORT_UNLESS(signaled_holder == nullptr); };
                                 return m_object_manager->ReplyAndReceive(std::addressof(signaled_holder), out_object, reply_target, std::addressof(m_multi_wait));
@@ -747,7 +747,7 @@ namespace ams::tipc {
                 using PortManager = PortManagerImpl;
             private:
                 PortManager m_port_manager;
-                PortInfo::Allocator m_port_allocator;
+                typename PortInfo::Allocator m_port_allocator;
             public:
                 constexpr ServerManagerImpl() : m_port_manager(), m_port_allocator() { /* ... */ }
 

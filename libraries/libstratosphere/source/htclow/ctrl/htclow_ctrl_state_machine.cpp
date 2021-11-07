@@ -196,7 +196,7 @@ namespace ams::htclow::ctrl {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        auto IsSupportedServiceChannel = [] ALWAYS_INLINE_LAMBDA (const impl::ChannelInternalType &channel, const impl::ChannelInternalType *supported, int num_supported) -> bool {
+        auto IsSupportedServiceChannel = [](const impl::ChannelInternalType &channel, const impl::ChannelInternalType *supported, int num_supported) ALWAYS_INLINE_LAMBDA -> bool {
             for (auto i = 0; i < num_supported; ++i) {
                 if (channel.module_id == supported[i].module_id && channel.channel_id == supported[i].channel_id) {
                     return true;

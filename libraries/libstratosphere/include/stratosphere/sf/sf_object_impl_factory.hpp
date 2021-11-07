@@ -31,7 +31,7 @@ namespace ams::sf {
             public:
                 class Object;
                 using Allocator = StatelessDummyAllocator;
-                using StatelessAllocator = typename Policy::StatelessAllocator<Object>;
+                using StatelessAllocator = typename Policy::template StatelessAllocator<Object>;
 
                 class Object final : private ::ams::sf::impl::ServiceObjectImplBase2, public Base {
                     NON_COPYABLE(Object);

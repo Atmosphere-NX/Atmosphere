@@ -295,7 +295,7 @@ namespace ams::util {
                 private:
                     constexpr explicit ALWAYS_INLINE Iterator(ImplIterator it) : m_impl(it) { /* ... */ }
 
-                    constexpr explicit ALWAYS_INLINE Iterator(ImplIterator::pointer p) : m_impl(p) { /* ... */ }
+                    constexpr explicit ALWAYS_INLINE Iterator(typename ImplIterator::pointer p) : m_impl(p) { /* ... */ }
 
                     constexpr ALWAYS_INLINE ImplIterator GetImplIterator() const {
                         return m_impl;

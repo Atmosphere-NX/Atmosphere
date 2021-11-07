@@ -210,7 +210,7 @@ namespace ams::kern::svc {
             KResourceLimit *process_resource_limit = resource_limit.IsNotNull() ? resource_limit.GetPointerUnsafe() : std::addressof(Kernel::GetSystemResourceLimit());
 
             /* Get the pool for the process. */
-            const auto pool = [] ALWAYS_INLINE_LAMBDA (u32 flags) -> KMemoryManager::Pool {
+            const auto pool = [](u32 flags) ALWAYS_INLINE_LAMBDA -> KMemoryManager::Pool {
                 if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
                     switch (flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
                         case ams::svc::CreateProcessFlag_PoolPartitionApplication:

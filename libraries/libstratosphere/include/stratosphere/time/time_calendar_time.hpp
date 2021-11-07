@@ -50,7 +50,7 @@ namespace ams::time {
                 AMS_ASSERT(rhs.IsValid());
             }
 
-            constexpr auto ToUint64 = [] ALWAYS_INLINE_LAMBDA (const time::CalendarTime &time) {
+            constexpr auto ToUint64 = [](const time::CalendarTime &time) ALWAYS_INLINE_LAMBDA {
                 return (static_cast<u64>(time.year)   << 40) |
                        (static_cast<u64>(time.month)  << 32) |
                        (static_cast<u64>(time.day)    << 24) |

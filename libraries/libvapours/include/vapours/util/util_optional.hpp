@@ -225,7 +225,7 @@ namespace ams::util {
         template<typename T, typename Derived>
         class OptionalBaseImpl {
             protected:
-                using StoredType = std::remove_const<T>::type;
+                using StoredType = std::remove_const_t<T>;
 
                 template<typename... Args>
                 constexpr void ConstructImpl(Args &&... args) { static_cast<Derived *>(this)->m_payload.Construct(std::forward<Args>(args)...); }
