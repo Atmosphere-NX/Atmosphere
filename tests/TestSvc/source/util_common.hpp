@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "util_catch.hpp"
+#include "util_test_framework.hpp"
 
 namespace ams::test {
 

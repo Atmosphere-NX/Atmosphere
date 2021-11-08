@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "util_catch.hpp"
+#include "util_test_framework.hpp"
 
 namespace ams::test {
 
@@ -31,14 +31,14 @@ namespace ams::test {
 
             ~ScopedHeap() {
                 const auto result = svc::SetHeapSize(std::addressof(m_address), 0);
-                CATCH_REQUIRE(R_SUCCEEDED(result));
+                DOCTEST_CHECK(R_SUCCEEDED(result));
             }
 
             void SetHeapSize(size_t size) {
                 m_size = util::AlignUp(size, svc::HeapSizeAlignment);
 
                 const auto result = svc::SetHeapSize(std::addressof(m_address), m_size);
-                CATCH_REQUIRE(R_SUCCEEDED(result));
+                DOCTEST_CHECK(R_SUCCEEDED(result));
             }
 
             uintptr_t GetAddress() const { return m_address; }

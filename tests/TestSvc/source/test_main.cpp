@@ -15,8 +15,8 @@
  */
 #include <stratosphere.hpp>
 
-#define CATCH_CONFIG_RUNNER
-#include "util_catch.hpp"
+#define DOCTEST_CONFIG_IMPLEMENT
+#include "util_test_framework.hpp"
 
 namespace ams {
 
@@ -62,7 +62,13 @@ namespace ams {
         }
 
         /* Run tests. */
-        Catch::Session().run(os::GetHostArgc(), os::GetHostArgv());
+        {
+            doctest::Context ctx;
+
+            ctx.applyCommandLine(os::GetHostArgc(), os::GetHostArgv());
+
+            ctx.run();
+        }
 
         AMS_INFINITE_LOOP();
 
@@ -72,7 +78,7 @@ namespace ams {
 
 }
 
-namespace Catch {
+namespace doctest {
 
     namespace {
 
@@ -89,14 +95,13 @@ namespace Catch {
 
     }
 
-    std::ostream& cout() {
+    std::ostream& get_cout() {
         static std::ostream ret(new OutputDebugStringStream);
         return ret;
     }
-    std::ostream& clog() {
-        return cout();
+
+    std::ostream& get_cerr() {
+        return get_cout();
     }
-    std::ostream& cerr() {
-        return clog();
-    }
+
 }

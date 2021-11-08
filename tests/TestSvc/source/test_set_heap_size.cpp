@@ -52,81 +52,81 @@ namespace ams::test {
 
     }
 
-    CATCH_TEST_CASE("svc::SetHeapSize") {
+    DOCTEST_TEST_CASE("svc::SetHeapSize") {
         svc::MemoryInfo mem_info;
         svc::PageInfo page_info;
         uintptr_t dummy;
 
         /* Reset the heap. */
         uintptr_t addr;
-        CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
+        DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
 
         /* Ensure that we don't leak memory. */
         const size_t initial_memory = GetPhysicalMemorySizeAvailable();
-        ON_SCOPE_EXIT { CATCH_REQUIRE(initial_memory == GetPhysicalMemorySizeAvailable()); };
+        ON_SCOPE_EXIT { DOCTEST_CHECK(initial_memory == GetPhysicalMemorySizeAvailable()); };
 
-        CATCH_SECTION("Unaligned and too big sizes fail") {
+        DOCTEST_SUBCASE("Unaligned and too big sizes fail") {
             for (size_t i = 1; i < svc::HeapSizeAlignment; i = util::AlignUp(i + 1, os::MemoryPageSize)){
-                CATCH_REQUIRE(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), i)));
+                DOCTEST_CHECK(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), i)));
             }
-            CATCH_REQUIRE(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), 64_GB)));
+            DOCTEST_CHECK(svc::ResultInvalidSize::Includes(svc::SetHeapSize(std::addressof(dummy), 64_GB)));
         }
 
-        CATCH_SECTION("Larger size than address space fails") {
-            CATCH_REQUIRE(svc::ResultOutOfMemory::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(svc::AddressMemoryRegionHeap39Size + 1, svc::HeapSizeAlignment))));
+        DOCTEST_SUBCASE("Larger size than address space fails") {
+            DOCTEST_CHECK(svc::ResultOutOfMemory::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(svc::AddressMemoryRegionHeap39Size + 1, svc::HeapSizeAlignment))));
         }
 
-        CATCH_SECTION("Bounded by resource limit") {
-            CATCH_REQUIRE(svc::ResultLimitReached::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(GetPhysicalMemorySizeMax() + 1, svc::HeapSizeAlignment))));
-            CATCH_REQUIRE(svc::ResultLimitReached::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(GetPhysicalMemorySizeAvailable() + 1, svc::HeapSizeAlignment))));
+        DOCTEST_SUBCASE("Bounded by resource limit") {
+            DOCTEST_CHECK(svc::ResultLimitReached::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(GetPhysicalMemorySizeMax() + 1, svc::HeapSizeAlignment))));
+            DOCTEST_CHECK(svc::ResultLimitReached::Includes(svc::SetHeapSize(std::addressof(dummy), util::AlignUp(GetPhysicalMemorySizeAvailable() + 1, svc::HeapSizeAlignment))));
         }
 
-        CATCH_SECTION("SetHeapSize gives heap memory") {
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
+        DOCTEST_SUBCASE("SetHeapSize gives heap memory") {
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
             TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
         }
 
-        CATCH_SECTION("SetHeapSize cannot remove read-only heap") {
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
+        DOCTEST_SUBCASE("SetHeapSize cannot remove read-only heap") {
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), addr)));
             TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_Read)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_Read)));
             TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_Read, 0);
 
-            CATCH_REQUIRE(svc::ResultInvalidCurrentMemory::Includes(svc::SetHeapSize(std::addressof(dummy), 0)));
+            DOCTEST_CHECK(svc::ResultInvalidCurrentMemory::Includes(svc::SetHeapSize(std::addressof(dummy), 0)));
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_ReadWrite)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(addr, svc::HeapSizeAlignment, svc::MemoryPermission_ReadWrite)));
             TestMemory(addr, svc::HeapSizeAlignment, svc::MemoryState_Normal, svc::MemoryPermission_ReadWrite, 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
         }
 
-        CATCH_SECTION("Heap memory does not survive unmap/re-map") {
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 2 * svc::HeapSizeAlignment)));
+        DOCTEST_SUBCASE("Heap memory does not survive unmap/re-map") {
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 2 * svc::HeapSizeAlignment)));
 
             u8 * const heap = reinterpret_cast<u8 *>(addr);
 
             std::memset(heap, 0xAA, svc::HeapSizeAlignment);
             std::memset(heap + svc::HeapSizeAlignment, 0xBB, svc::HeapSizeAlignment);
 
-            CATCH_REQUIRE(heap[svc::HeapSizeAlignment] == 0xBB);
-            CATCH_REQUIRE(std::memcmp(heap + svc::HeapSizeAlignment, heap + svc::HeapSizeAlignment + 1, svc::HeapSizeAlignment - 1) == 0);
+            DOCTEST_CHECK(heap[svc::HeapSizeAlignment] == 0xBB);
+            DOCTEST_CHECK(std::memcmp(heap + svc::HeapSizeAlignment, heap + svc::HeapSizeAlignment + 1, svc::HeapSizeAlignment - 1) == 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), svc::HeapSizeAlignment)));
 
-            CATCH_REQUIRE(heap[0] == 0xAA);
-            CATCH_REQUIRE(std::memcmp(heap, heap + 1, svc::HeapSizeAlignment - 1) == 0);
+            DOCTEST_CHECK(heap[0] == 0xAA);
+            DOCTEST_CHECK(std::memcmp(heap, heap + 1, svc::HeapSizeAlignment - 1) == 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 2 * svc::HeapSizeAlignment)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 2 * svc::HeapSizeAlignment)));
 
-            CATCH_REQUIRE(heap[svc::HeapSizeAlignment] == 0x00);
-            CATCH_REQUIRE(std::memcmp(heap + svc::HeapSizeAlignment, heap + svc::HeapSizeAlignment + 1, svc::HeapSizeAlignment - 1) == 0);
+            DOCTEST_CHECK(heap[svc::HeapSizeAlignment] == 0x00);
+            DOCTEST_CHECK(std::memcmp(heap + svc::HeapSizeAlignment, heap + svc::HeapSizeAlignment + 1, svc::HeapSizeAlignment - 1) == 0);
 
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetHeapSize(std::addressof(addr), 0)));
         }
     }
 

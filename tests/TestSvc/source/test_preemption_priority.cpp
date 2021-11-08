@@ -37,12 +37,12 @@ namespace ams::test {
 
     }
 
-    CATCH_TEST_CASE( "The scheduler is preemptive at the preemptive priority and cooperative for all other priorities" ) {
+    DOCTEST_TEST_CASE( "The scheduler is preemptive at the preemptive priority and cooperative for all other priorities" ) {
         /* Create heap. */
         ScopedHeap heap(3 * os::MemoryPageSize);
-        CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_None)));
+        DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_None)));
         ON_SCOPE_EXIT {
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_ReadWrite)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_ReadWrite)));
         };
         const uintptr_t sp_0 = heap.GetAddress() + 1 * os::MemoryPageSize;
         const uintptr_t sp_1 = heap.GetAddress() + 3 * os::MemoryPageSize;
@@ -56,21 +56,21 @@ namespace ams::test {
                     g_spinloop = true;
 
                     /* Create threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestPreemptionPriorityThreadFunction), reinterpret_cast<uintptr_t>(thread_executed + 0), sp_0, priority, core)));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestPreemptionPriorityThreadFunction), reinterpret_cast<uintptr_t>(thread_executed + 1), sp_1, priority, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestPreemptionPriorityThreadFunction), reinterpret_cast<uintptr_t>(thread_executed + 0), sp_0, priority, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestPreemptionPriorityThreadFunction), reinterpret_cast<uintptr_t>(thread_executed + 1), sp_1, priority, core)));
 
                     /* Start threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
 
                     /* Wait long enough that we can be confident the threads have been balanced. */
                     svc::SleepThread(PreemptionTimeSpan.GetNanoSeconds() * 10);
 
                     /* Check that we're in a coherent state. */
                     if (IsPreemptionPriority(core, priority)) {
-                        CATCH_REQUIRE(thread_executed[0] & thread_executed[1]);
+                        DOCTEST_CHECK((thread_executed[0] & thread_executed[1]));
                     } else {
-                        CATCH_REQUIRE(thread_executed[0] ^ thread_executed[1]);
+                        DOCTEST_CHECK((thread_executed[0] ^ thread_executed[1]));
                     }
 
                     /* Stop spinlooping. */
@@ -78,12 +78,12 @@ namespace ams::test {
 
                     /* Wait for threads to exit. */
                     s32 dummy;
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::WaitSynchronization(std::addressof(dummy), thread_handles + 0, 1, -1)));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::WaitSynchronization(std::addressof(dummy), thread_handles + 1, 1, -1)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::WaitSynchronization(std::addressof(dummy), thread_handles + 0, 1, -1)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::WaitSynchronization(std::addressof(dummy), thread_handles + 1, 1, -1)));
 
                     /* Close thread handles. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
             }
         }
     }

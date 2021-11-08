@@ -86,26 +86,26 @@ namespace ams::test {
                     svc::Handle thread_handles[2];
 
                     /* Create threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestYieldHigherOrSamePriorityThread), 0, sp_higher, priority, core)));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestYieldLowerOrSamePriorityThread), 0, sp_lower, priority, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestYieldHigherOrSamePriorityThread), 0, sp_higher, priority, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestYieldLowerOrSamePriorityThread), 0, sp_lower, priority, core)));
 
                     /* Start threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
 
                     /* Wait for higher priority thread. */
                     WaitSynchronization(thread_handles[0]);
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
 
                     /* Signal the lower priority thread to exit. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::SignalEvent(g_write_handles[2])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::SignalEvent(g_write_handles[2])));
 
                     /* Wait for the lower priority thread. */
                     WaitSynchronization(thread_handles[1]);
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
 
                     /* Check that the switch was correct. */
-                    CATCH_REQUIRE(g_correct_switch_threads);
+                    DOCTEST_CHECK(g_correct_switch_threads);
                 }
             }
         }
@@ -118,55 +118,55 @@ namespace ams::test {
                     svc::Handle thread_handles[2];
 
                     /* Create threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestYieldHigherOrSamePriorityThread), 0, sp_higher, priority, core)));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestYieldLowerOrSamePriorityThread), 0, sp_lower, priority + 1, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 0, reinterpret_cast<uintptr_t>(&TestYieldHigherOrSamePriorityThread), 0, sp_higher, priority, core)));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CreateThread(thread_handles + 1, reinterpret_cast<uintptr_t>(&TestYieldLowerOrSamePriorityThread), 0, sp_lower, priority + 1, core)));
 
                     /* Start threads. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::StartThread(thread_handles[0])));
 
                     /* Wait for higher priority thread. */
                     WaitSynchronization(thread_handles[0]);
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[0])));
 
                     /* Signal the lower priority thread to exit. */
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::SignalEvent(g_write_handles[2])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::SignalEvent(g_write_handles[2])));
 
                     /* Wait for the lower priority thread. */
                     WaitSynchronization(thread_handles[1]);
-                    CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
+                    DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(thread_handles[1])));
 
                     /* Check that the switch was correct. */
-                    CATCH_REQUIRE(g_correct_switch_threads);
+                    DOCTEST_CHECK(g_correct_switch_threads);
                 }
             }
         }
 
     }
 
-    CATCH_TEST_CASE( "svc::SleepThread: Thread sleeps for time specified" ) {
+    DOCTEST_TEST_CASE( "svc::SleepThread: Thread sleeps for time specified" ) {
         for (s64 ns = 1; ns < TimeSpan::FromSeconds(1).GetNanoSeconds(); ns *= 2) {
             const auto start = os::GetSystemTickOrdered();
             svc::SleepThread(ns);
             const auto end   = os::GetSystemTickOrdered();
 
             const s64 taken_ns = (end - start).ToTimeSpan().GetNanoSeconds();
-            CATCH_REQUIRE( taken_ns >= ns );
+            DOCTEST_CHECK( taken_ns >= ns );
         }
     }
 
-    CATCH_TEST_CASE( "svc::SleepThread: Yield is behaviorally correct" ) {
+    DOCTEST_TEST_CASE( "svc::SleepThread: Yield is behaviorally correct" ) {
         /* Create events. */
         for (size_t i = 0; i < util::size(g_write_handles); ++i) {
             g_read_handles[i]  = svc::InvalidHandle;
             g_write_handles[i] = svc::InvalidHandle;
-            CATCH_REQUIRE(R_SUCCEEDED(svc::CreateEvent(g_write_handles + i, g_read_handles + i)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::CreateEvent(g_write_handles + i, g_read_handles + i)));
         }
 
         ON_SCOPE_EXIT {
             for (size_t i = 0; i < util::size(g_write_handles); ++i) {
-                CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(g_read_handles[i])));
-                CATCH_REQUIRE(R_SUCCEEDED(svc::CloseHandle(g_write_handles[i])));
+                DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(g_read_handles[i])));
+                DOCTEST_CHECK(R_SUCCEEDED(svc::CloseHandle(g_write_handles[i])));
                 g_read_handles[i]  = svc::InvalidHandle;
                 g_write_handles[i] = svc::InvalidHandle;
             }
@@ -174,14 +174,14 @@ namespace ams::test {
 
         /* Create heap. */
         ScopedHeap heap(3 * os::MemoryPageSize);
-        CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_None)));
+        DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_None)));
         ON_SCOPE_EXIT {
-            CATCH_REQUIRE(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_ReadWrite)));
+            DOCTEST_CHECK(R_SUCCEEDED(svc::SetMemoryPermission(heap.GetAddress() + os::MemoryPageSize, os::MemoryPageSize, svc::MemoryPermission_ReadWrite)));
         };
         const uintptr_t sp_higher = heap.GetAddress() + 1 * os::MemoryPageSize;
         const uintptr_t sp_lower  = heap.GetAddress() + 3 * os::MemoryPageSize;
 
-        CATCH_SECTION("svc::SleepThread: Yields do not switch to a thread of lower priority.") {
+        DOCTEST_SUBCASE("svc::SleepThread: Yields do not switch to a thread of lower priority.") {
             /* Test yield without migration. */
             {
                 /* Configure for yield test. */
@@ -201,7 +201,7 @@ namespace ams::test {
             }
         }
 
-        CATCH_SECTION("svc::SleepThread: ToAnyThread switches to a thread of same or lower priority.") {
+        DOCTEST_SUBCASE("svc::SleepThread: ToAnyThread switches to a thread of same or lower priority.") {
             /* Test to same priority. */
             {
                 /* Configure for yield test. */
@@ -221,7 +221,7 @@ namespace ams::test {
             }
         }
 
-        CATCH_SECTION("svc::SleepThread: Yield switches to another thread of same priority.") {
+        DOCTEST_SUBCASE("svc::SleepThread: Yield switches to another thread of same priority.") {
             /* Test yield without migration. */
             {
                 /* Configure for yield test. */
@@ -241,7 +241,7 @@ namespace ams::test {
             }
         }
 
-        CATCH_SECTION("svc::SleepThread: Yield with bogus timeout does not switch to another thread same priority") {
+        DOCTEST_SUBCASE("svc::SleepThread: Yield with bogus timeout does not switch to another thread same priority") {
             /* Configure for yield test. */
             g_should_switch_threads = false;
             g_thread_wait_ns        = INT64_C(-5);
