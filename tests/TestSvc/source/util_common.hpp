@@ -46,7 +46,7 @@ namespace ams::test {
 
         /* Wait long enough that we can be confident preemption will occur, and therefore our interrupt flag will be set. */
         {
-            constexpr auto MinimumTicksToGuaranteeInterruptFlag = ::ams::svc::Tick(PreemptionTimeSpan) + 1;
+            constexpr auto MinimumTicksToGuaranteeInterruptFlag = ::ams::svc::Tick(PreemptionTimeSpan) + ::ams::svc::Tick(PreemptionTimeSpan) + 2;
 
             auto GetSystemTickForPinnedThread = []() ALWAYS_INLINE_LAMBDA -> ::ams::svc::Tick {
                 s64 v;
