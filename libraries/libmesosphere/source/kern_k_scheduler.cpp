@@ -15,10 +15,10 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern {
+#pragma GCC push_options
+#pragma GCC optimize ("-O3")
 
-    #pragma GCC push_options
-    #pragma GCC optimize ("-O3")
+namespace ams::kern {
 
     bool KScheduler::s_scheduler_update_needed;
     KScheduler::LockType KScheduler::s_scheduler_lock;
@@ -598,6 +598,6 @@ namespace ams::kern {
         }
     }
 
-    #pragma GCC pop_options
-
 }
+
+#pragma GCC pop_options

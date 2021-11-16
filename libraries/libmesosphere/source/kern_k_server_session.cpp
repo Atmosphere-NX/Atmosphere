@@ -15,10 +15,10 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern {
+#pragma GCC push_options
+#pragma GCC optimize ("-O3")
 
-    #pragma GCC push_options
-    #pragma GCC optimize ("-O3")
+namespace ams::kern {
 
     namespace ipc {
 
@@ -1385,8 +1385,6 @@ namespace ams::kern {
         this->NotifyAvailable(svc::ResultSessionClosed());
     }
 
-    #pragma GCC pop_options
-
     void KServerSession::Dump() {
         MESOSPHERE_ASSERT_THIS();
 
@@ -1420,3 +1418,5 @@ namespace ams::kern {
     }
 
 }
+
+#pragma GCC pop_options

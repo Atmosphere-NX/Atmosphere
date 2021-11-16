@@ -15,10 +15,10 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::svc {
+#pragma GCC push_options
+#pragma GCC optimize ("-O3")
 
-    #pragma GCC push_options
-    #pragma GCC optimize ("-O3")
+namespace ams::kern::svc {
 
     /* =============================    Common    ============================= */
 
@@ -315,6 +315,6 @@ namespace ams::kern::svc {
         return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
     }
 
-    #pragma GCC pop_options
-
 }
+
+#pragma GCC pop_options
