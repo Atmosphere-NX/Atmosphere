@@ -893,7 +893,7 @@ namespace ams::kern {
     size_t KProcess::GetTotalUserPhysicalMemorySize() const {
         /* Get the amount of free and used size. */
         const size_t free_size = m_resource_limit->GetFreeValue(ams::svc::LimitableResource_PhysicalMemoryMax);
-        const size_t used_size = this->GetUsedNonSystemUserPhysicalMemorySize();
+        const size_t used_size = this->GetUsedUserPhysicalMemorySize();
         const size_t max_size  = m_max_process_memory;
 
         if (used_size + free_size > max_size) {
