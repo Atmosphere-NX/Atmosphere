@@ -23,8 +23,8 @@ namespace ams::dmnt::cheat::impl {
     namespace {
 
         /* Helper definitions. */
-        constexpr size_t MaxCheatCount = 0x80;
-        constexpr size_t MaxFrozenAddressCount = 0x80;
+        constexpr size_t MaxCheatCount = 0x1000;
+        constexpr size_t MaxFrozenAddressCount = 0x1000;
 
         class FrozenAddressMapEntry : public util::IntrusiveRedBlackTreeBaseNode<FrozenAddressMapEntry> {
             public:
@@ -58,7 +58,7 @@ namespace ams::dmnt::cheat::impl {
         };
 
         constinit os::SdkMutex g_text_file_buffer_lock;
-        constinit char g_text_file_buffer[64_KB];
+        constinit char g_text_file_buffer[256_KB];
 
         constinit u8 g_frozen_address_map_memory[sizeof(FrozenAddressMapEntry) * MaxFrozenAddressCount];
         constinit lmem::HeapHandle g_frozen_address_map_heap;
