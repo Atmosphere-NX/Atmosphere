@@ -1,4 +1,14 @@
 # Changelog
+## 1.2.5
++ Support was added for 13.2.0.
++ A number of minor issues were fixed and improvements were made, including:
+  + A bug was fixed that caused `mesosphère` to underreport the total memory size by 8MB for certain games which use newer system-resource-size memory management.
+    + This caused FIFA 19 to crash, and possibly other issues.
+  + Memory management changes were made to `sm` that save 0x5000 of memory.
+  + A microoptimization was made to the way `mesosphère` manages updating the debug register for hardware single-step support.
+  + Support was fixed for enabling `usb!usb30_force_enabled` on 13.0.0+.
+  + The work-in-progress unit testing framework was updated to use doctest instead of catch2.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.4
 + Changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
   + Cache management (to avoid unnecessary rebuild) was revised, to add a grace period of ~500ms-1s between process closing romfs image and ams.mitm needing to rebuild if romfs is re-opened.
