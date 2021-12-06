@@ -38,7 +38,7 @@ namespace ams::sf::impl {
             class ImplTemplateBaseT<::NAMESPACE::INTERFACE, Base, ImplHolder, ImplGetter, Root> : public Base, public ImplHolder { \
                 public:                                                                                                            \
                     template<typename... Args>                                                                                     \
-                    constexpr explicit ImplTemplateBaseT(Args &&...args) : ImplHolder(std::forward<Args>(args)...) { /* ... */ }   \
+                    constexpr explicit ImplTemplateBaseT(Args &&...args) : ImplHolder(std::forward<Args>(args)...) { }             \
                 private:                                                                                                           \
                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_IMPL_SYNC_METHOD)                                                      \
             };                                                                                                                     \
@@ -66,7 +66,7 @@ namespace ams::sf::impl {
                     using BaseImplTemplateBase = ImplTemplateBaseT<BASE, Base, ImplHolder, ImplGetter, Root>;                                                          \
                 public:                                                                                                                                                \
                     template<typename... Args>                                                                                                                         \
-                    constexpr explicit ImplTemplateBaseT(Args &&...args) : BaseImplTemplateBase(std::forward<Args>(args)...) { /* ... */ }                             \
+                    constexpr explicit ImplTemplateBaseT(Args &&...args) : BaseImplTemplateBase(std::forward<Args>(args)...) { }                                       \
                 private:                                                                                                                                               \
                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_IMPL_SYNC_METHOD)                                                                                          \
             };                                                                                                                                                         \
