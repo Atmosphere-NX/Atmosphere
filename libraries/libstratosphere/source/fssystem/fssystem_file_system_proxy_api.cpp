@@ -22,6 +22,8 @@ namespace ams::fssystem {
 
     namespace {
 
+        /* TODO: Heap sizes need to match FS, when this is FS in master rather than ams.mitm. */
+
         /* Official FS has a 4.5 MB exp heap, a 6 MB buffer pool, an 8 MB device buffer manager heap, and a 14 MB buffer manager heap. */
         /* We don't need so much memory for ams.mitm (as we're servicing a much more limited context). */
         /* We'll give ourselves a 1.5 MB exp heap, a 1 MB buffer pool, a 1 MB device buffer manager heap, and a 1 MB buffer manager heap. */
@@ -68,6 +70,7 @@ namespace ams::fssystem {
         alignas(os::MemoryPageSize) u8 g_device_buffer[DeviceBufferSize];
 
         alignas(os::MemoryPageSize) u8 g_buffer_pool[BufferPoolSize];
+
         util::TypedStorage<mem::StandardAllocator> g_buffer_allocator;
         util::TypedStorage<fssrv::MemoryResourceFromStandardAllocator> g_allocator;
 
@@ -87,13 +90,22 @@ namespace ams::fssystem {
     }
 
     void InitializeForFileSystemProxy() {
-        /* TODO FS-REIMPL: fssystem::RegisterServiceContext */
+        /* TODO FS-REIMPL: Setup MainThreadStackUsageReporter. */
 
-        /* TODO FS-REIMPL: spl::InitializeForFs(); */
+        /* Register service context for main thread. */
+        fssystem::ServiceContext context;
+        fssystem::RegisterServiceContext(std::addressof(context));
+
+        /* Initialize spl library. */
+        spl::InitializeForFs();
+        /* TODO FS-REIMPL: spl::SetIsAvailableAccessKeyHandler(fssrv::IsAvailableAccessKey) */
 
         /* Determine whether we're prod or dev. */
         bool is_prod                         = !spl::IsDevelopment();
         bool is_development_function_enabled = spl::IsDevelopmentFunctionEnabled();
+
+        /* Set debug flags. */
+        fssrv::SetDebugFlagEnabled(is_development_function_enabled);
 
         /* Setup our crypto configuration. */
         SetUpKekAccessKeys(is_prod);
@@ -106,6 +118,7 @@ namespace ams::fssystem {
         util::ConstructAt(g_allocator, GetPointer(g_buffer_allocator));
 
         /* Set allocators. */
+        /* TODO FS-REIMPL: sf::SetGlobalDefaultMemoryResource() */
         fs::SetAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
         fssystem::InitializeAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
 
@@ -114,11 +127,16 @@ namespace ams::fssystem {
         util::ConstructAt(g_buffer_manager);
         GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
 
-        /* TODO FS-REIMPL: Memory Report Creators, fssrv::SetMemoryReportCreator */
+        /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
+        /* TODO FS-REIMPL: fssrv::storage::CreateDeviceAddressSpace(...); */
+        fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
 
-        /* TODO FS-REIMPL: Create Pooled Threads, fssystem::RegisterThreadPool. */
+        /* TODO FS-REIMPL: Create Pooled Threads/Stack Usage Reporter, fssystem::RegisterThreadPool. */
+
+        /* TODO FS-REIMPL: fssrv::GetFileSystemProxyServices(), some service creation. */
 
         /* Initialize fs creators. */
+        /* TODO FS-REIMPL: Revise for accuracy. */
         util::ConstructAt(g_rom_fs_creator, GetPointer(g_allocator));
         util::ConstructAt(g_partition_fs_creator);
         util::ConstructAt(g_storage_on_nca_creator, GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), is_prod, GetPointer(g_buffer_manager));
@@ -131,18 +149,33 @@ namespace ams::fssystem {
             .storage_on_nca_creator = GetPointer(g_storage_on_nca_creator),
         };
 
+        /* TODO FS-REIMPL: Revise above for latest firmware, all the new Services creation. */
+
+        /* TODO FS-REIMPL: Memory Report Creators, fssrv::SetMemoryReportCreator */
+
         /* TODO FS-REIMPL: Sd Card detection, speed emulation. */
 
         /* Initialize fssrv. TODO FS-REIMPL: More arguments, more actions taken. */
         fssrv::InitializeForFileSystemProxy(std::addressof(g_fs_creator_interfaces), GetPointer(g_buffer_manager), is_development_function_enabled);
+
+        /* TODO FS-REIMPL: GetFileSystemProxyServiceObject(), set current process, initialize global service object. */
 
         /* Disable auto-abort in fs library code. */
         /* TODO: fs::SetEnabledAutoAbort(false); */
 
         /* TODO FS-REIMPL: Initialize fsp server. */
 
-        /* NOTE: This is done in fsp server init, normally. */
-        fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+        /* TODO FS-REIMPL: Cleanup calls. */
+
+        /* TODO FS-REIMPL: Spawn worker threads. */
+
+        /* TODO FS-REIMPL: Set mmc devices ready. */
+
+        /* TODO FS-REIMPL: fssrv::LoopPmEventServer(...); */
+
+        /* TODO FS-REIMPL: Wait/destroy threads. */
+
+        /* TODO FS-REIMPL: spl::Finalize(); */
     }
 
     const ::ams::fssrv::fscreator::FileSystemCreatorInterfaces *GetFileSystemCreatorInterfaces() {

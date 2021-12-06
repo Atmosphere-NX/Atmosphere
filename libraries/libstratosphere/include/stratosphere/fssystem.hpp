@@ -41,6 +41,7 @@
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
 #include <stratosphere/fssystem/fssystem_pooled_buffer.hpp>
+#include <stratosphere/fssystem/fssystem_service_context.hpp>
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage_impl.hpp>
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage.hpp>
 #include <stratosphere/fssystem/save/fssystem_buffered_storage.hpp>
