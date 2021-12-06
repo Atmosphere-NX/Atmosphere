@@ -85,16 +85,41 @@ namespace ams::sf::impl {
                         constexpr const auto &BaseEntries = ::ams::sf::cmif::ServiceDispatchTraits<BASECLASS>::DispatchTable.GetEntries();                                       \
                         constexpr size_t BaseSize         = BaseEntries.size();                                                                                                  \
                                                                                                                                                                                  \
-                        std::array<::ams::sf::cmif::ServiceCommandMeta, BaseSize + CurSize> combined_entries{};                                                                  \
-                        for (size_t i = 0; i < BaseSize; ++i) {                                                                                                                  \
-                            combined_entries[i] = BaseEntries[i];                                                                                                                \
+                        constexpr size_t CombinedSize = BaseSize + CurSize;                                                                                                      \
+                                                                                                                                                                                 \
+                        std::array<size_t, CombinedSize> map{};                                                                                                                  \
+                        for (size_t i = 0; i < CombinedSize; ++i) { map[i] = i; }                                                                                                \
+                                                                                                                                                                                 \
+                        for (size_t i = 1; i < CombinedSize; ++i) {                                                                                                              \
+                            size_t j = i;                                                                                                                                        \
+                            while (j > 0) {                                                                                                                                      \
+                                const auto li = map[j];                                                                                                                          \
+                                const auto ri = map[j - 1];                                                                                                                      \
+                                                                                                                                                                                 \
+                                const auto &lhs = (li < BaseSize) ? BaseEntries[li] : cur_entries[li - BaseSize];                                                                \
+                                const auto &rhs = (ri < BaseSize) ? BaseEntries[ri] : cur_entries[ri - BaseSize];                                                                \
+                                                                                                                                                                                 \
+                                if (!(rhs > lhs)) {                                                                                                                              \
+                                    break;                                                                                                                                       \
+                                }                                                                                                                                                \
+                                                                                                                                                                                 \
+                                std::swap(map[j], map[j - 1]);                                                                                                                   \
+                                                                                                                                                                                 \
+                                --j;                                                                                                                                             \
+                            }                                                                                                                                                    \
                         }                                                                                                                                                        \
-                        for (size_t i = 0; i < CurSize; ++i) {                                                                                                                   \
-                            combined_entries[BaseSize + i] = cur_entries[i];                                                                                                     \
+                                                                                                                                                                                 \
+                        std::array<::ams::sf::cmif::ServiceCommandMeta, CombinedSize> combined_entries{};                                                                        \
+                        for (size_t i = 0; i < CombinedSize; ++i) {                                                                                                              \
+                            if (map[i] < BaseSize) {                                                                                                                             \
+                                combined_entries[i] = BaseEntries[map[i]];                                                                                                       \
+                            } else {                                                                                                                                             \
+                                combined_entries[i] = cur_entries[map[i] - BaseSize];                                                                                            \
+                            }                                                                                                                                                    \
                         }                                                                                                                                                        \
                                                                                                                                                                                  \
                         return ::ams::sf::cmif::ServiceDispatchTable { combined_entries };                                                                                       \
-                    } ()                                                                                                                                                         \
+                    }()                                                                                                                                                          \
                 };                                                                                                                                                               \
         };
 

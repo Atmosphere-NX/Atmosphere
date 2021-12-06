@@ -53,15 +53,31 @@ namespace ams::sf::cmif {
         u32 cmd_id;
         Result (*handler)(CmifOutHeader **out_header_ptr, ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data);
 
-        constexpr inline bool Matches(u32 cmd_id, hos::Version hosver) const {
+        constexpr inline bool MatchesVersion(hos::Version hosver) const {
             const bool min_valid = this->hosver_low == hos::Version_Min;
             const bool max_valid = this->hosver_high == hos::Version_Max;
 
-            return this->cmd_id == cmd_id && (min_valid || this->hosver_low <= hosver) && (max_valid || hosver <= this->hosver_high);
+            return (min_valid || this->hosver_low <= hosver) && (max_valid || hosver <= this->hosver_high);
+        }
+
+        constexpr inline bool Matches(u32 cmd_id, hos::Version hosver) const {
+            return this->cmd_id == cmd_id && this->MatchesVersion(hosver);
         }
 
         constexpr inline decltype(handler) GetHandler() const {
             return this->handler;
+        }
+
+        constexpr inline bool operator>(const ServiceCommandMeta &rhs) const {
+            if (this->cmd_id > rhs.cmd_id) {
+                return true;
+            } else if (this->cmd_id == rhs.cmd_id && this->hosver_low > rhs.hosver_low) {
+                return true;
+            } else if (this->cmd_id == rhs.cmd_id && this->hosver_low == rhs.hosver_low && this->hosver_high == rhs.hosver_high){
+                return true;
+            } else {
+                return false;
+            }
         }
     };
     static_assert(util::is_pod<ServiceCommandMeta>::value && sizeof(ServiceCommandMeta) == 0x18, "sizeof(ServiceCommandMeta)");

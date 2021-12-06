@@ -17,6 +17,65 @@
 
 namespace ams::sf::cmif {
 
+    namespace {
+
+        ALWAYS_INLINE decltype(ServiceCommandMeta::handler) FindCommandHandlerByBinarySearch(const ServiceCommandMeta *entries, const size_t entry_count, const u32 cmd_id, const hos::Version hos_version) {
+            /* Binary search for the handler. */
+            ssize_t lo = 0;
+            ssize_t hi = entry_count - 1;
+            while (lo <= hi) {
+                const size_t mid = (lo + hi) / 2;
+                if (entries[mid].cmd_id < cmd_id) {
+                    lo = mid + 1;
+                } else if (entries[mid].cmd_id > cmd_id) {
+                    hi = mid - 1;
+                } else {
+                    /* Find start. */
+                    size_t start = mid;
+                    while (start > 0 && entries[start - 1].cmd_id == cmd_id) {
+                        --start;
+                    }
+
+                    /* Find end. */
+                    size_t end = mid + 1;
+                    while (end < entry_count && entries[end].cmd_id == cmd_id) {
+                        ++end;
+                    }
+
+                    for (size_t idx = start; idx < end; ++idx) {
+                        if (entries[idx].MatchesVersion(hos_version)) {
+                            return entries[idx].GetHandler();
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            return nullptr;
+        }
+
+        ALWAYS_INLINE decltype(ServiceCommandMeta::handler) FindCommandHandlerByLinearSearch(const ServiceCommandMeta *entries, const size_t entry_count, const u32 cmd_id, const hos::Version hos_version) {
+            for (size_t i = 0; i < entry_count; ++i) {
+                if (entries[i].Matches(cmd_id, hos_version)) {
+                    return entries[i].GetHandler();
+                    break;
+                }
+            }
+
+            return nullptr;
+        }
+
+        ALWAYS_INLINE decltype(ServiceCommandMeta::handler) FindCommandHandler(const ServiceCommandMeta *entries, const size_t entry_count, const u32 cmd_id, const hos::Version hos_version) {
+            if (entry_count >= 8) {
+                return FindCommandHandlerByBinarySearch(entries, entry_count, cmd_id, hos_version);
+            } else {
+                return FindCommandHandlerByLinearSearch(entries, entry_count, cmd_id, hos_version);
+            }
+        }
+
+    }
+
     Result impl::ServiceDispatchTableBase::ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
@@ -30,13 +89,7 @@ namespace ams::sf::cmif {
         const u32 cmd_id = in_header->command_id;
 
         /* Find a handler. */
-        decltype(ServiceCommandMeta::handler) cmd_handler = nullptr;
-        for (size_t i = 0; i < entry_count; i++) {
-            if (entries[i].Matches(cmd_id, hos_version)) {
-                cmd_handler = entries[i].GetHandler();
-                break;
-            }
-        }
+        const auto cmd_handler = FindCommandHandler(entries, entry_count, cmd_id, hos_version);
         R_UNLESS(cmd_handler != nullptr, sf::cmif::ResultUnknownCommandId());
 
         /* Invoke handler. */
@@ -73,13 +126,7 @@ namespace ams::sf::cmif {
         const u32 cmd_id = in_header->command_id;
 
         /* Find a handler. */
-        decltype(ServiceCommandMeta::handler) cmd_handler = nullptr;
-        for (size_t i = 0; i < entry_count; i++) {
-            if (entries[i].Matches(cmd_id, hos_version)) {
-                cmd_handler = entries[i].GetHandler();
-                break;
-            }
-        }
+        const auto cmd_handler = FindCommandHandler(entries, entry_count, cmd_id, hos_version);
 
         /* If we didn't find a handler, forward the request. */
         if (cmd_handler == nullptr) {
