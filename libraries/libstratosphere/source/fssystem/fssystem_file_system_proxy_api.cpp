@@ -124,6 +124,7 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: sf::SetGlobalDefaultMemoryResource() */
         fs::SetAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
         fssystem::InitializeAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
+        fssystem::InitializeAllocatorForSystem(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
 
         /* Initialize the buffer manager. */
         /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
