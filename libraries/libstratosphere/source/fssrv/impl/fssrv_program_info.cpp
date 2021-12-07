@@ -28,6 +28,34 @@ namespace ams::fssrv::impl {
 
         constinit u64 g_current_process_id = 0;
 
+        constinit std::aligned_storage<0x80>::type g_static_buffer_for_program_info_for_initial_process;
+
+        template<typename T>
+        class StaticAllocatorForProgramInfoForInitialProcess : public std::allocator<T> {
+            public:
+                StaticAllocatorForProgramInfoForInitialProcess() { /* ... */ }
+
+                template<typename U>
+                StaticAllocatorForProgramInfoForInitialProcess(const StaticAllocatorForProgramInfoForInitialProcess<U> &) { /* ... */ }
+
+                template<typename U>
+                struct rebind {
+                    using other = StaticAllocatorForProgramInfoForInitialProcess<U>;
+                };
+
+                [[nodiscard]] T *allocate(::std::size_t n) {
+                    AMS_ABORT_UNLESS(sizeof(T) * n <= sizeof(g_static_buffer_for_program_info_for_initial_process));
+                    return reinterpret_cast<T *>(std::addressof(g_static_buffer_for_program_info_for_initial_process));
+                }
+
+                void deallocate(T *p, ::std::size_t n) {
+                    AMS_UNUSED(p, n);
+                }
+        };
+
+        constexpr const u32 FileAccessControlForInitialProgram[0x1C / sizeof(u32)]     = {0x00000001, 0x00000000, 0x80000000, 0x0000001C, 0x00000000, 0x0000001C, 0x00000000};
+        constexpr const u32 FileAccessControlDescForInitialProgram[0x2C / sizeof(u32)] = {0x00000001, 0x00000000, 0x80000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF};
+
         ALWAYS_INLINE void InitializeInitialAndCurrentProcessId() {
             if (AMS_UNLIKELY(!g_initialized)) {
                 std::scoped_lock lk(g_mutex);
@@ -48,6 +76,28 @@ namespace ams::fssrv::impl {
             }
         }
 
+    }
+
+    std::shared_ptr<ProgramInfo> ProgramInfo::GetProgramInfoForInitialProcess() {
+        static constinit os::SdkMutex s_mutex;
+        static constinit bool s_initialized = false;
+        static constinit std::shared_ptr<ProgramInfo> s_initial_program_info = nullptr;
+
+        /* Ensure we've initialized the program info. */
+        if (AMS_UNLIKELY(!s_initialized)) {
+            std::scoped_lock lk(s_mutex);
+            if (AMS_LIKELY(!s_initialized)) {
+                class ProgramInfoHelper : public ProgramInfo {
+                    public:
+                        ProgramInfoHelper(const void *data, s64 data_size, const void *desc, s64 desc_size) : ProgramInfo(data, data_size, desc, desc_size) { /* ... */ }
+                };
+
+                s_initial_program_info = std::allocate_shared<ProgramInfoHelper>(StaticAllocatorForProgramInfoForInitialProcess<char>{}, FileAccessControlForInitialProgram, sizeof(FileAccessControlForInitialProgram), FileAccessControlDescForInitialProgram, sizeof(FileAccessControlDescForInitialProgram));
+                s_initialized = true;
+            }
+        }
+
+        return s_initial_program_info;
     }
 
     bool IsInitialProgram(u64 process_id) {

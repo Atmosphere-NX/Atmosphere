@@ -32,6 +32,19 @@ namespace ams::fssrv::impl {
                 /* TODO */
                 AMS_UNUSED(data, data_size, desc, desc_size);
             }
+
+            bool Contains(u64 process_id) const { return m_process_id == process_id; }
+            u64 GetProcessId() const { return m_process_id; }
+            ncm::ProgramId GetProgramId() const { return m_program_id; }
+            u64 GetProgramIdValue() const { return m_program_id.value; }
+            ncm::StorageId GetStorageId() const { return m_storage_id; }
+        public:
+            static std::shared_ptr<ProgramInfo> GetProgramInfoForInitialProcess();
+        private:
+            ProgramInfo(const void *data, s64 data_size, const void *desc, s64 desc_size) : m_process_id(0), m_program_id(0), m_storage_id(static_cast<ncm::StorageId>(0)) /* TODO: m_access_control */ {
+                /* TODO */
+                AMS_UNUSED(data, data_size, desc, desc_size);
+            }
     };
 
     struct ProgramInfoNode : public util::IntrusiveListBaseNode<ProgramInfoNode>, public ::ams::fs::impl::Newable {
