@@ -16,16 +16,9 @@
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
 #include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/fs/fs_code_verification_data.hpp>
 
 namespace ams::fs {
-
-    struct CodeVerificationData {
-        u8 signature[crypto::Rsa2048PssSha256Verifier::SignatureSize];
-        u8 target_hash[crypto::Rsa2048PssSha256Verifier::HashSize];
-        bool has_data;
-        u8 reserved[3];
-    };
-    static_assert(sizeof(CodeVerificationData) == crypto::Rsa2048PssSha256Verifier::SignatureSize + crypto::Rsa2048PssSha256Verifier::HashSize + 4);
 
     Result MountCode(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id);
 

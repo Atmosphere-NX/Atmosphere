@@ -20,7 +20,7 @@
 
 namespace ams::fssrv::sf {
 
-    struct Path : ams::sf::LargeData {
+    struct Path : public ams::sf::LargeData {
         char str[fs::EntryNameLengthMax + 1];
 
         static constexpr Path Encode(const char *p) {

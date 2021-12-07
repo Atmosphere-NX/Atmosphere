@@ -15,23 +15,12 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/sm/sm_types.hpp>
 
-namespace ams::fssrv::fscreator {
+namespace ams::fs::impl {
 
-    struct FileSystemCreatorInterfaces;
-
-}
-
-namespace ams::fssystem {
-
-    class IBufferManager;
-
-}
-
-namespace ams::fssrv {
-
-    void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled);
-
-    void InitializeFileSystemProxyServer(int threads);
+    constexpr inline const sm::ServiceName FileSystemProxyServiceName          = sm::ServiceName::Encode("fsp-srv");
+    constexpr inline const sm::ServiceName ProgramRegistryServiceName          = sm::ServiceName::Encode("fsp-pr");
+    constexpr inline const sm::ServiceName FileSystemProxyForLoaderServiceName = sm::ServiceName::Encode("fsp-ldr");
 
 }

@@ -22,6 +22,8 @@ namespace ams::fssystem {
 
     namespace {
 
+        constexpr inline auto FileSystemProxyServerThreadCount = 5;
+
         /* TODO: Heap sizes need to match FS, when this is FS in master rather than ams.mitm. */
 
         /* Official FS has a 4.5 MB exp heap, a 6 MB buffer pool, an 8 MB device buffer manager heap, and a 14 MB buffer manager heap. */
@@ -161,9 +163,10 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: GetFileSystemProxyServiceObject(), set current process, initialize global service object. */
 
         /* Disable auto-abort in fs library code. */
-        /* TODO: fs::SetEnabledAutoAbort(false); */
+        fs::SetEnabledAutoAbort(false);
 
-        /* TODO FS-REIMPL: Initialize fsp server. */
+        /* Initialize fsp server. */
+        fssrv::InitializeFileSystemProxyServer(fssrv::FileSystemProxyServerActiveSessionCount);
 
         /* TODO FS-REIMPL: Cleanup calls. */
 
