@@ -364,6 +364,7 @@ namespace ams::fs {
 
                 R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 
+                R_DEFINE_ERROR_RESULT(PortAcceptableCountLimited, 6450);
                 R_DEFINE_ERROR_RESULT(NeedFlush, 6454);
                 R_DEFINE_ERROR_RESULT(FileNotClosed, 6455);
                 R_DEFINE_ERROR_RESULT(DirectoryNotClosed, 6456);
