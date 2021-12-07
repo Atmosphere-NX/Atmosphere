@@ -27,12 +27,16 @@ namespace ams::fssrv {
 
     }
 
+    class NcaFileSystemService;
+    class SaveDataFileSystemService;
+
     class FileSystemProxyImpl {
         NON_COPYABLE(FileSystemProxyImpl);
         NON_MOVEABLE(FileSystemProxyImpl);
         private:
             impl::FileSystemProxyCoreImpl *m_impl;
-            /* TODO: service pointers. */
+            std::shared_ptr<NcaFileSystemService> m_nca_service;
+            std::shared_ptr<SaveDataFileSystemService> m_save_data_service;
             u64 m_process_id;
         public:
             FileSystemProxyImpl();

@@ -19,6 +19,8 @@
 
 namespace ams::fssrv {
 
+    class ProgramRegistryServiceImpl;
+
     namespace impl {
 
         class ProgramInfo;
@@ -33,6 +35,8 @@ namespace ams::fssrv {
         public:
             ProgramRegistryImpl();
             ~ProgramRegistryImpl();
+        public:
+            static void Initialize(ProgramRegistryServiceImpl *service);
         public:
             Result RegisterProgram(u64 process_id, u64 program_id, u8 storage_id, const ams::sf::InBuffer &data, s64 data_size, const ams::sf::InBuffer &desc, s64 desc_size);
             Result UnregisterProgram(u64 process_id);

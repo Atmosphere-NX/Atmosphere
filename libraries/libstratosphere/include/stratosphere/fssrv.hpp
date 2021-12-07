@@ -31,4 +31,5 @@
 #include <stratosphere/fssrv/fssrv_file_system_proxy_server_session_resource_manager.hpp>
 #include <stratosphere/fssrv/impl/fssrv_file_system_proxy_service_object.hpp>
 #include <stratosphere/fssrv/fssrv_program_registry_impl.hpp>
+#include <stratosphere/fssrv/fssrv_program_registry_service.hpp>
 #include <stratosphere/fssrv/fssrv_file_system_proxy_api.hpp>
