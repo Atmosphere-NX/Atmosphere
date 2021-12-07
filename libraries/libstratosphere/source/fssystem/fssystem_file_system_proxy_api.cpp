@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "../fssrv/impl/fssrv_program_registry_manager.hpp"
 
 namespace ams::fssystem {
 
@@ -22,7 +23,7 @@ namespace ams::fssystem {
 
     namespace {
 
-        constexpr inline auto FileSystemProxyServerThreadCount = 5;
+        constexpr inline auto FileSystemProxyServerThreadCount = fssrv::FileSystemProxyServerActiveSessionCount;
 
         /* TODO: Heap sizes need to match FS, when this is FS in master rather than ams.mitm. */
 
@@ -152,6 +153,8 @@ namespace ams::fssystem {
         };
 
         /* TODO FS-REIMPL: Revise above for latest firmware, all the new Services creation. */
+        fssrv::ProgramRegistryServiceImpl program_registry_service(fssrv::ProgramRegistryServiceImpl::Configuration{});
+        fssrv::ProgramRegistryImpl::Initialize(std::addressof(program_registry_service));
 
         /* TODO FS-REIMPL: Memory Report Creators, fssrv::SetMemoryReportCreator */
 
@@ -166,7 +169,7 @@ namespace ams::fssystem {
         fs::SetEnabledAutoAbort(false);
 
         /* Initialize fsp server. */
-        fssrv::InitializeFileSystemProxyServer(fssrv::FileSystemProxyServerActiveSessionCount);
+        fssrv::InitializeFileSystemProxyServer(FileSystemProxyServerThreadCount);
 
         /* TODO FS-REIMPL: Cleanup calls. */
 
