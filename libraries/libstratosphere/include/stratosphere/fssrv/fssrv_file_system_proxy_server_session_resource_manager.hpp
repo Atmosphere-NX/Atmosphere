@@ -16,22 +16,15 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::fssrv::fscreator {
-
-    struct FileSystemCreatorInterfaces;
-
-}
-
-namespace ams::fssystem {
-
-    class IBufferManager;
-
-}
-
 namespace ams::fssrv {
 
-    void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled);
+    enum class FileSystemProxyServerSessionType : s32 {
+        Any        = 0,
+        Realtime   = 1,
+        Background = 2,
+        Other      = 3,
+    };
 
-    void InitializeFileSystemProxyServer(int threads);
+    constexpr inline auto FileSystemProxyServerActiveSessionCount = 5;
 
 }

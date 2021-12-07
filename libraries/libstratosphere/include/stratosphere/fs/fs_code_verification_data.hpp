@@ -15,23 +15,16 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
-namespace ams::fssrv::fscreator {
+namespace ams::fs {
 
-    struct FileSystemCreatorInterfaces;
-
-}
-
-namespace ams::fssystem {
-
-    class IBufferManager;
-
-}
-
-namespace ams::fssrv {
-
-    void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled);
-
-    void InitializeFileSystemProxyServer(int threads);
+    struct CodeVerificationData : public ams::sf::LargeData {
+        u8 signature[crypto::Rsa2048PssSha256Verifier::SignatureSize];
+        u8 target_hash[crypto::Rsa2048PssSha256Verifier::HashSize];
+        bool has_data;
+        u8 reserved[3];
+    };
+    static_assert(sizeof(CodeVerificationData) == crypto::Rsa2048PssSha256Verifier::SignatureSize + crypto::Rsa2048PssSha256Verifier::HashSize + 4);
 
 }
