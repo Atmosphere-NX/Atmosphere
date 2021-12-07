@@ -97,9 +97,9 @@ namespace ams::fs {
                 Impl::LockAllocatorMutex();
 
                 /* Check that we can allocate memory (using overestimate of 0x80 + sizeof(T)). */
-                if (auto * const p = Impl::Allocate(0x80 + sizeof(T)); AMS_LIKELY(p != nullptr)) {
+                if (auto * const p = Impl::AllocateUnsafe(0x80 + sizeof(T)); AMS_LIKELY(p != nullptr)) {
                     /* Free the memory we allocated. */
-                    Impl::Deallocate(p, 0x80 + sizeof(T));
+                    Impl::DeallocateUnsafe(p, 0x80 + sizeof(T));
 
                     /* Get allocator type. */
                     using AllocatorType = AllocatorTemplateT<T, Impl>;
