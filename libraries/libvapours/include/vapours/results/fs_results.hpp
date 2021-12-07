@@ -82,6 +82,7 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,              3249);
             R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplD,      3256);
             R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplE,      3257);
+            R_DEFINE_ERROR_RESULT(AllocationFailureInProgramRegistryManagerA,       3258);
             R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA,   3280);
             R_DEFINE_ERROR_RESULT(AllocationFailureInRomFileSystemCreatorA,         3281);
             R_DEFINE_ERROR_RESULT(AllocationFailureInStorageOnNcaCreatorA,          3288);
@@ -375,6 +376,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(UserNotExist,           6465);
 
         R_DEFINE_ERROR_RANGE(NotFound, 6600, 6699);
+            R_DEFINE_ERROR_RESULT(ProgramInfoNotFound, 6605);
 
         R_DEFINE_ERROR_RANGE(OutOfResource, 6700, 6799);
             R_DEFINE_ERROR_RESULT(BufferAllocationFailed, 6705);

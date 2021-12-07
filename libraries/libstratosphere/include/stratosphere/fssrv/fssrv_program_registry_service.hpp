@@ -41,6 +41,16 @@ namespace ams::fssrv {
 
             Result RegisterProgramInfo(u64 process_id, u64 program_id, u8 storage_id, const void *data, s64 data_size, const void *desc, s64 desc_size);
             Result UnregisterProgramInfo(u64 process_id);
+
+            Result ResetProgramIndexMapInfo(const fs::ProgramIndexMapInfo *infos, int count);
+
+            Result GetProgramInfo(std::shared_ptr<impl::ProgramInfo> *out, u64 process_id);
+            Result GetProgramInfoByProgramId(std::shared_ptr<impl::ProgramInfo> *out, u64 program_id);
+
+            size_t GetProgramIndexMapInfoCount();
+            util::optional<fs::ProgramIndexMapInfo> GetProgramIndexMapInfo(const ncm::ProgramId &program_id);
+
+            ncm::ProgramId GetProgramIdByIndex(const ncm::ProgramId &program_id, u8 index);
     };
 
 }
