@@ -352,7 +352,7 @@ namespace ams::fssystem {
         R_UNLESS(storage_size > 0, fs::ResultInvalidNcaHeader());
 
         /* Allocate a substorage. */
-        *out = AllocateShared<DerivedStorageHolder<fs::SubStorage, 0>>(m_reader->GetBodyStorage(), storage_offset, storage_size, m_reader);
+        *out = fssystem::AllocateShared<DerivedStorageHolder<fs::SubStorage, 0>>(m_reader->GetBodyStorage(), storage_offset, storage_size, m_reader);
         R_UNLESS(*out != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         return ResultSuccess();
