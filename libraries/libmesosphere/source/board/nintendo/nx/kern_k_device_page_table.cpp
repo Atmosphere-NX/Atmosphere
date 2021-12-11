@@ -114,6 +114,7 @@ namespace ams::kern::board::nintendo::nx {
             ams::svc::DeviceName_Hda,
             ams::svc::DeviceName_Isp2,
             ams::svc::DeviceName_Sata,
+            ams::svc::DeviceName_Vi,
             ams::svc::DeviceName_XusbHost,
             ams::svc::DeviceName_XusbDev,
             ams::svc::DeviceName_Tsec,
