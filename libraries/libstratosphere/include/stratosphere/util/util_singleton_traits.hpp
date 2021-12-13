@@ -18,41 +18,28 @@
 #include <vapours.hpp>
 #include <stratosphere/os/os_sdk_mutex.hpp>
 
-#define AMS_SINGLETON_TRAITS(_CLASSNAME_)                                                \
-    private:                                                                             \
-        NON_COPYABLE(_CLASSNAME_);                                                       \
-        NON_MOVEABLE(_CLASSNAME_);                                                       \
-    private:                                                                             \
-        _CLASSNAME_ ();                                                                  \
-    public:                                                                              \
-        static _CLASSNAME_ &GetInstance() {                                              \
-            /* Declare singleton instance variables. */                                  \
-            static constinit ::ams::util::TypedStorage<_CLASSNAME_> s_singleton_storage; \
-            static constinit ::ams::os::SdkMutex s_singleton_mutex;                      \
-            static constinit bool s_initialized_singleton = false;                       \
-                                                                                         \
-            /* Ensure the instance is created. */                                        \
-            if (AMS_UNLIKELY(!s_initialized_singleton)) {                                \
-                std::scoped_lock lk(s_singleton_mutex);                                  \
-                                                                                         \
-                if (AMS_LIKELY(!s_initialized_singleton)) {                              \
-                    new (::ams::util::GetPointer(s_singleton_storage)) _CLASSNAME_;      \
-                    s_initialized_singleton = true;                                      \
-                }                                                                        \
-            }                                                                            \
-                                                                                         \
-            return ::ams::util::GetReference(s_singleton_storage);                       \
+#define AMS_SINGLETON_TRAITS(_CLASSNAME_)                                 \
+    private:                                                              \
+        NON_COPYABLE(_CLASSNAME_);                                        \
+        NON_MOVEABLE(_CLASSNAME_);                                        \
+    private:                                                              \
+        _CLASSNAME_ ();                                                   \
+    public:                                                               \
+        static _CLASSNAME_ &GetInstance() {                               \
+            AMS_FUNCTION_LOCAL_STATIC(_CLASSNAME_, s_singleton_instance); \
+                                                                          \
+            return s_singleton_instance;                                  \
         }
 
-#define AMS_CONSTINIT_SINGLETON_TRAITS(_CLASSNAME_)            \
-    private:                                                   \
-        NON_COPYABLE(_CLASSNAME_);                             \
-        NON_MOVEABLE(_CLASSNAME_);                             \
-    private:                                                   \
-        constexpr _CLASSNAME_ () = default;                    \
-    public:                                                    \
-        static _CLASSNAME_ &GetInstance() {                    \
-            /* Declare singleton instance variables. */        \
-            static constinit _CLASSNAME_ s_singleton_instance; \
-            return s_singleton_instance;                       \
+#define AMS_CONSTINIT_SINGLETON_TRAITS(_CLASSNAME_)                                 \
+    private:                                                                        \
+        NON_COPYABLE(_CLASSNAME_);                                                  \
+        NON_MOVEABLE(_CLASSNAME_);                                                  \
+    private:                                                                        \
+        constexpr _CLASSNAME_ () = default;                                         \
+    public:                                                                         \
+        static _CLASSNAME_ &GetInstance() {                                         \
+            /* Declare singleton instance variables. */                             \
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(_CLASSNAME_, s_singleton_instance); \
+            return s_singleton_instance;                                            \
         }

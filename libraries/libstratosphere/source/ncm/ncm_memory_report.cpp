@@ -44,7 +44,8 @@ namespace ams::ncm {
     }
 
     HeapState &GetHeapState() {
-        static HeapState s_heap_state = {};
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(HeapState, s_heap_state);
+
         return s_heap_state;
     }
 

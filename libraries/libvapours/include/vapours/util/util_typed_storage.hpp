@@ -45,9 +45,18 @@ namespace ams::util {
         return *GetPointer(ts);
     }
 
+    namespace impl {
+
+        template<typename T>
+        static ALWAYS_INLINE T *GetPointerForConstructAt(TypedStorage<T> &ts) {
+            return reinterpret_cast<T *>(std::addressof(ts._storage));
+        }
+
+    }
+
     template<typename T, typename... Args>
     static ALWAYS_INLINE T *ConstructAt(TypedStorage<T> &ts, Args &&... args) {
-        return std::construct_at(reinterpret_cast<T *>(std::addressof(ts._storage)), std::forward<Args>(args)...);
+        return std::construct_at(impl::GetPointerForConstructAt(ts), std::forward<Args>(args)...);
     }
 
     template<typename T>

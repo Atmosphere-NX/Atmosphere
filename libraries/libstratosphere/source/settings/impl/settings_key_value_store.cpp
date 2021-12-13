@@ -289,14 +289,8 @@ namespace ams::settings::impl {
         }
 
         lmem::HeapHandle &GetHeapHandle() {
-            static constinit bool s_is_initialized = false;
-            static constinit lmem::HeapHandle s_heap_handle;
-            static constinit u8 s_heap_memory[HeapMemorySize];
-
-            if (!s_is_initialized) {
-                s_heap_handle = lmem::CreateExpHeap(s_heap_memory, sizeof(s_heap_memory), lmem::CreateOption_None);
-                s_is_initialized = true;
-            }
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(u8, s_heap_memory[HeapMemorySize]);
+            AMS_FUNCTION_LOCAL_STATIC(lmem::HeapHandle, s_heap_handle, lmem::CreateExpHeap(s_heap_memory, sizeof(s_heap_memory), lmem::CreateOption_ThreadSafe));
 
             return s_heap_handle;
         }
@@ -314,24 +308,15 @@ namespace ams::settings::impl {
             AMS_ASSERT(out != nullptr);
 
             /* Declare static instance variables. */
-            static constinit util::TypedStorage<Map> s_storage = {};
-            static constinit bool s_is_initialized = false;
-            static constinit bool s_is_loaded = false;
+            AMS_FUNCTION_LOCAL_STATIC(Map, s_map);
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_is_map_loaded, false);
 
             /* Get pointer to the map. */
-            Map *map = util::GetPointer(s_storage);
+            Map * const map = std::addressof(s_map);
 
-            /* Construct the map, if we haven't already. */
-            if (AMS_UNLIKELY(!s_is_initialized)) {
-                /* Construct the instance. */
-                util::ConstructAt(s_storage);
-
-                /* Note that we constructed. */
-                s_is_initialized = true;
-            }
-
+            /* TODO: Mutex? */
             /* Load the map, if we haven't already. */
-            if (AMS_UNLIKELY(!s_is_loaded)) {
+            if (AMS_UNLIKELY(!s_is_map_loaded)) {
                 /* Attempt to load the map, allowing for failure if acceptable. */
                 const auto result = LoadKeyValueStoreMap(map);
 
@@ -340,7 +325,7 @@ namespace ams::settings::impl {
                 }
 
                 /* Note that the map is loaded. */
-                s_is_loaded = true;
+                s_is_map_loaded = true;
             }
 
             /* Set the output pointer. */
@@ -425,26 +410,13 @@ namespace ams::settings::impl {
             AMS_ASSERT(out_data != nullptr);
 
             /* Declare static instance variables. */
-            static constinit util::TypedStorage<SystemData> s_storage = {};
-            static constinit bool s_initialized = false;
-            static constinit bool s_mounted = false;
+            AMS_FUNCTION_LOCAL_STATIC(SystemData, s_data, id, GetSystemDataMountName<T>());
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_mounted, false);
 
             /* Get pointer to the system data. */
-            SystemData *data = util::GetPointer(s_storage);
+            SystemData *data = std::addressof(s_data);
 
-            /* Construct the system data, if we haven't already. */
-            if (AMS_UNLIKELY(!s_initialized)) {
-                /* Construct the instance. */
-                util::ConstructAt(s_storage);
-
-                /* Setup system data. */
-                data->SetSystemDataId(id);
-                data->SetMountName(GetSystemDataMountName<T>());
-
-                /* Note that we constructed. */
-                s_initialized = true;
-            }
-
+            /* TODO: Mutex? */
             /* Mount the system data, if we haven't already. */
             if (AMS_UNLIKELY(!s_mounted)) {
                 /* Mount the system data. */
@@ -464,28 +436,11 @@ namespace ams::settings::impl {
             AMS_ASSERT(out_data != nullptr);
 
             /* Declare static instance variables. */
-            static constinit util::TypedStorage<SystemSaveData> s_storage = {};
-            static constinit bool s_initialized = false;
-            static constinit bool s_mounted = false;
+            AMS_FUNCTION_LOCAL_STATIC(SystemSaveData, s_data, SystemSaveDataId, SystemSaveDataSize, SystemSaveDataJournalSize, SystemSaveDataFlags, SystemSaveDataMountName);
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_mounted, false);
 
-            /* Get pointer to the system data. */
-            SystemSaveData *data = util::GetPointer(s_storage);
-
-            /* Construct the system data, if we haven't already. */
-            if (AMS_UNLIKELY(!s_initialized)) {
-                /* Construct the instance. */
-                util::ConstructAt(s_storage);
-
-                /* Setup system data. */
-                data->SetSystemSaveDataId(SystemSaveDataId);
-                data->SetTotalSize(SystemSaveDataSize);
-                data->SetJournalSize(SystemSaveDataJournalSize);
-                data->SetFlags(SystemSaveDataFlags);
-                data->SetMountName(SystemSaveDataMountName);
-
-                /* Note that we constructed. */
-                s_initialized = true;
-            }
+            /* Get pointer to the system save data. */
+            SystemSaveData *data = std::addressof(s_data);
 
             /* Mount the system data, if we haven't already. */
             if (AMS_UNLIKELY(!s_mounted)) {

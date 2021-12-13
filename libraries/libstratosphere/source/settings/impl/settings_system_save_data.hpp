@@ -30,6 +30,14 @@ namespace ams::settings::impl {
         public:
             SystemSaveData() : m_system_save_data_id(0), m_save_data_space_id(fs::SaveDataSpaceId::System), m_total_size(0), m_journal_size(0), m_flags(0) { /* ... */ }
 
+            SystemSaveData(u64 id, s64 total_size, s64 journal_size, u32 flags, const char *mn) : SystemSaveData() {
+                this->SetSystemSaveDataId(id);
+                this->SetTotalSize(total_size);
+                this->SetJournalSize(journal_size);
+                this->SetFlags(flags);
+                this->SetMountName(mn);
+            }
+
             void SetSystemSaveDataId(u64 id);
             void SetTotalSize(s64 size);
             void SetJournalSize(s64 size);

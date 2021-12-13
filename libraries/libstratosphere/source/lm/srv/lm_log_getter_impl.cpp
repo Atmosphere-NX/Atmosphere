@@ -19,8 +19,9 @@
 namespace ams::lm::srv {
 
     CustomSinkBuffer &LogGetterImpl::GetBuffer() {
-        static constinit u8 s_buffer[32_KB];
-        static constinit CustomSinkBuffer s_custom_sink_buffer(s_buffer, sizeof(s_buffer), FlushFunction);
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(u8, s_buffer[32_KB]);
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(CustomSinkBuffer, s_custom_sink_buffer, s_buffer, sizeof(s_buffer), FlushFunction);
+
         return s_custom_sink_buffer;
     }
 

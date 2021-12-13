@@ -55,6 +55,8 @@
 
 #include <vapours/util/util_atomic.hpp>
 
+#include <vapours/util/util_function_local_static.hpp>
+
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 #include <vapours/util/util_mutex_utils.hpp>
 #endif

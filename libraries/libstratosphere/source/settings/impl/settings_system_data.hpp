@@ -30,6 +30,11 @@ namespace ams::settings::impl {
         public:
             SystemData() : m_system_data_id(), m_mount_name(), m_file_path() { /* ... */ }
 
+            SystemData(ncm::SystemDataId id, const char *mn) : SystemData() {
+                this->SetSystemDataId(id);
+                this->SetMountName(mn);
+            }
+
             void SetSystemDataId(ncm::SystemDataId id);
             void SetMountName(const char *name);
             Result Mount();

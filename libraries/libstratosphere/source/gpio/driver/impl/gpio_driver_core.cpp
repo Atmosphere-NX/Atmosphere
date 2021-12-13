@@ -26,42 +26,20 @@ namespace ams::gpio::driver::impl {
         alignas(os::MemoryPageSize) u8 g_interrupt_thread_stack[InterruptThreadStackSize];
 
         gpio::driver::IGpioDriver::List &GetGpioDriverList() {
-            static constinit gpio::driver::IGpioDriver::List s_gpio_driver_list;
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(gpio::driver::IGpioDriver::List, s_gpio_driver_list);
             return s_gpio_driver_list;
         }
 
         ddsf::EventHandlerManager &GetInterruptHandlerManager() {
-            static constinit util::TypedStorage<ddsf::EventHandlerManager> s_interrupt_handler_manager;
-            static constinit bool s_initialized = false;
-            static constinit os::SdkMutex s_mutex;
+            AMS_FUNCTION_LOCAL_STATIC(ddsf::EventHandlerManager, s_interrupt_handler_manager);
 
-            if (AMS_UNLIKELY(!s_initialized)) {
-                std::scoped_lock lk(s_mutex);
-
-                if (AMS_LIKELY(!s_initialized)) {
-                    util::ConstructAt(s_interrupt_handler_manager);
-                    s_initialized = true;
-                }
-            }
-
-            return util::GetReference(s_interrupt_handler_manager);
+            return s_interrupt_handler_manager;
         }
 
         ddsf::DeviceCodeEntryManager &GetDeviceCodeEntryManager() {
-            static constinit util::TypedStorage<ddsf::DeviceCodeEntryManager> s_device_code_entry_manager;
-            static constinit bool s_initialized = false;
-            static constinit os::SdkMutex s_mutex;
+            AMS_FUNCTION_LOCAL_STATIC(ddsf::DeviceCodeEntryManager, s_device_code_entry_manager, ddsf::GetDeviceCodeEntryHolderMemoryResource());
 
-            if (AMS_UNLIKELY(!s_initialized)) {
-                std::scoped_lock lk(s_mutex);
-
-                if (AMS_LIKELY(!s_initialized)) {
-                    util::ConstructAt(s_device_code_entry_manager, ddsf::GetDeviceCodeEntryHolderMemoryResource());
-                    s_initialized = true;
-                }
-            }
-
-            return util::GetReference(s_device_code_entry_manager);
+            return s_device_code_entry_manager;
         }
 
         void InterruptThreadFunction(void *arg) {

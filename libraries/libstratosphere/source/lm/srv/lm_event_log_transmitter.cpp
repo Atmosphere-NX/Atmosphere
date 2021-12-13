@@ -34,7 +34,8 @@ namespace ams::lm::srv {
     }
 
     EventLogTransmitter &EventLogTransmitter::GetDefaultInstance() {
-        static constinit EventLogTransmitter s_default_event_log_transmitter(DefaultFlushFunction);
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(EventLogTransmitter, s_default_event_log_transmitter, DefaultFlushFunction);
+
         return s_default_event_log_transmitter;
     }
 

@@ -95,16 +95,17 @@ namespace ams::i2c::driver::board::nintendo::nx {
             }
         }
 
+        constinit util::TypedStorage<impl::I2cBusAccessorManager> g_bus_accessor_manager;
+        constinit util::TypedStorage<impl::I2cDevicePropertyManager> g_device_manager;
+
     }
 
     void Initialize() {
-        static constinit util::TypedStorage<impl::I2cBusAccessorManager> s_bus_accessor_manager;
-        static constinit util::TypedStorage<impl::I2cDevicePropertyManager> s_device_manager;
+        /* Initialize managers. */
+        util::ConstructAt(g_bus_accessor_manager, ddsf::GetMemoryResource());
+        util::ConstructAt(g_device_manager, ddsf::GetMemoryResource());
 
-        util::ConstructAt(s_bus_accessor_manager, ddsf::GetMemoryResource());
-        util::ConstructAt(s_device_manager, ddsf::GetMemoryResource());
-
-        return Initialize(util::GetReference(s_bus_accessor_manager), util::GetReference(s_device_manager));
+        return Initialize(util::GetReference(g_bus_accessor_manager), util::GetReference(g_device_manager));
     }
 
 }

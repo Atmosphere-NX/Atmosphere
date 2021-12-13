@@ -188,7 +188,7 @@ namespace ams::lm::srv {
             size_t carry_size;
             bool ends_with_text_log;
         };
-        static constinit PreviousPacketContext s_previous_packet_context = {};
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(PreviousPacketContext, s_previous_packet_context);
 
         /* Get the packet header. */
         auto *header  = static_cast<const impl::LogPacketHeader *>(buffer);

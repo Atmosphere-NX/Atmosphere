@@ -56,27 +56,33 @@ namespace ams::settings::impl {
         }
 
         SplConfig GetSplConfig() {
-            static constinit bool s_is_initialized = false;
-            static constinit SplConfig s_config;
+            class SplConfigHolder {
+                NON_COPYABLE(SplConfigHolder);
+                NON_MOVEABLE(SplConfigHolder);
+                private:
+                    SplConfig m_config;
+                public:
+                    SplConfigHolder() {
+                        /* Initialize spl. */
+                        spl::Initialize();
+                        ON_SCOPE_EXIT { spl::Finalize(); };
 
-            if (!s_is_initialized) {
-                /* Initialize spl. */
-                spl::Initialize();
-                ON_SCOPE_EXIT { spl::Finalize(); };
+                        /* Create the config. */
+                        m_config = {
+                            .is_development = spl::IsDevelopment(),
+                            .hardware_type  = ConvertToSplHardwareType(spl::GetHardwareType()),
+                            .is_quest       = IsSplRetailInteractiveDisplayStateEnabled(spl::GetRetailInteractiveDisplayState()),
+                            .device_id_low  = spl::GetDeviceIdLow(),
+                        };
+                    }
 
-                /* Create the config. */
-                s_config = {
-                    .is_development = spl::IsDevelopment(),
-                    .hardware_type  = ConvertToSplHardwareType(spl::GetHardwareType()),
-                    .is_quest       = IsSplRetailInteractiveDisplayStateEnabled(spl::GetRetailInteractiveDisplayState()),
-                    .device_id_low  = spl::GetDeviceIdLow(),
-                };
+                    ALWAYS_INLINE operator SplConfig() {
+                        return m_config;
+                    }
+            };
 
-                /* Mark as initialized. */
-                s_is_initialized = true;
-            }
-
-            return s_config;
+            AMS_FUNCTION_LOCAL_STATIC(SplConfigHolder, s_config_holder);
+            return s_config_holder;
         }
 
     }

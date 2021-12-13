@@ -63,8 +63,10 @@ namespace ams::lm::srv {
         }
 
         bool DefaultFlushFunction(const u8 *data, size_t size) {
+            /* Declare persistent clock-updated state storage. */
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_is_user_system_clock_updated, false);
+
             /* Update clock. */
-            static constinit bool s_is_user_system_clock_updated = false;
             if (!s_is_user_system_clock_updated) {
                 UpdateUserSystemClock(data, size);
                 s_is_user_system_clock_updated = true;
@@ -84,8 +86,8 @@ namespace ams::lm::srv {
     }
 
     LogBuffer &LogBuffer::GetDefaultInstance() {
-        static constinit u8 s_default_buffers[128_KB * 2];
-        static constinit LogBuffer s_default_log_buffer(s_default_buffers, sizeof(s_default_buffers), DefaultFlushFunction);
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(u8, s_default_buffers[128_KB * 2]);
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(LogBuffer, s_default_log_buffer, s_default_buffers, sizeof(s_default_buffers), DefaultFlushFunction);
 
         return s_default_log_buffer;
     }

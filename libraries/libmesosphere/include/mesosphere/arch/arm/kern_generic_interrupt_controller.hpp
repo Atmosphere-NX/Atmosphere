@@ -133,7 +133,7 @@ namespace ams::kern::arch::arm {
                 PriorityLevel_Scheduler = 2,
             };
         private:
-            static inline u32 s_mask[cpu::NumCores];
+            static constinit inline u32 s_mask[cpu::NumCores];
         private:
             volatile GicDistributor  *m_gicd;
             volatile GicCpuInterface *m_gicc;

@@ -25,27 +25,9 @@ namespace ams::settings::impl {
         StaticObject();
         public:
             static T &Get() {
-                /* Declare static instance variables. */
-                static constinit util::TypedStorage<T> s_storage = {};
-                static constinit bool s_initialized = false;
-                static constinit os::SdkMutex s_mutex;
+                AMS_FUNCTION_LOCAL_STATIC(T, s_object);
 
-                /* If we haven't already done so, construct the instance. */
-                if (AMS_UNLIKELY(!s_initialized)) {
-                    std::scoped_lock lk(s_mutex);
-
-                    /* Check that we didn't concurrently construct the instance. */
-                    if (AMS_LIKELY(!s_initialized)) {
-                        /* Construct the instance. */
-                        util::ConstructAt(s_storage);
-
-                        /* Note that we constructed. */
-                        s_initialized = true;
-                    }
-                }
-
-                /* Return the constructed instance. */
-                return util::GetReference(s_storage);
+                return s_object;
             }
     };
 

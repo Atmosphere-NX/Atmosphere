@@ -44,7 +44,7 @@ namespace ams::kern::arch::arm64::cpu {
 
         class KPerformanceCounterInterruptHandler : public KInterruptHandler {
             private:
-                static inline KLightLock s_lock;
+                static constinit inline KLightLock s_lock;
             private:
                 u64 m_counter;
                 s32 m_which;
