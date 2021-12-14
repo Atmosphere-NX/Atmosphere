@@ -63,6 +63,9 @@ namespace ams::fs {
                 AMS_ABORT_UNLESS(sub->m_size >= o + sz);
             }
 
+            ALWAYS_INLINE ::ams::fs::IStorage *operator->() {
+                return this;
+            }
         public:
             void SetResizable(bool rsz) {
                 m_resizable = rsz;

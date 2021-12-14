@@ -174,7 +174,7 @@ namespace ams::fssystem {
             NcaAesCtrUpperIv upper_iv = { .part = { .generation = static_cast<u32>(cur_entry.generation), .secure_value = m_secure_value } };
 
             u8 iv[IvSize];
-            AesCtrStorage::MakeIv(iv, IvSize, upper_iv.value, counter_offset);
+            AesCtrStorageByPointer::MakeIv(iv, IvSize, upper_iv.value, counter_offset);
 
             /* Decrypt. */
             m_decryptor->Decrypt(cur_data, cur_size, m_key, KeySize, iv, IvSize);

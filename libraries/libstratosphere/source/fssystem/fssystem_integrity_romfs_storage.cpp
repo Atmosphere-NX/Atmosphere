@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    Result IntegrityRomFsStorage::Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm) {
+    Result IntegrityRomFsStorage::Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(bm != nullptr);
 
@@ -35,7 +35,7 @@ namespace ams::fssystem {
         }
 
         /* Initialize our integrity storage. */
-        return m_integrity_storage.Initialize(level_hash_info, storage_info, std::addressof(m_buffers), std::addressof(m_mutex), fs::StorageType_RomFs);
+        return m_integrity_storage.Initialize(level_hash_info, storage_info, std::addressof(m_buffers), hgf, std::addressof(m_mutex), fs::StorageType_RomFs);
     }
 
     void IntegrityRomFsStorage::Finalize() {

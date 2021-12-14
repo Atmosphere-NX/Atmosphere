@@ -181,6 +181,11 @@ namespace ams::fssystem {
     };
     static_assert(util::is_pod<NcaSparseInfo>::value);
 
+    struct NcaCompressionInfo {
+        NcaBucketInfo bucket;
+    };
+    static_assert(util::is_pod<NcaCompressionInfo>::value);
+
     struct NcaFsHeader {
         static constexpr size_t Size           = 0x200;
         static constexpr size_t HashDataOffset = 0x8;
@@ -263,7 +268,8 @@ namespace ams::fssystem {
         NcaPatchInfo patch_info;
         NcaAesCtrUpperIv aes_ctr_upper_iv;
         NcaSparseInfo sparse_info;
-        u8 pad[0x88];
+        NcaCompressionInfo compression_info;
+        u8 pad[0x68];
     };
     static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
     static_assert(util::is_pod<NcaFsHeader>::value);

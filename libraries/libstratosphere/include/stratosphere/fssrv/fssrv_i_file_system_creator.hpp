@@ -35,6 +35,8 @@ namespace ams::fssystem {
     class NcaReader;
     class NcaFsHeaderReader;
 
+    class IAsynchronousAccessSplitter;
+
     namespace save {
 
         /* TODO */
@@ -60,11 +62,9 @@ namespace ams::fssrv::fscreator {
     class IStorageOnNcaCreator {
         public:
             virtual ~IStorageOnNcaCreator() { /* ... */ }
-            virtual Result Create(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index, bool verify_header_sign_2) = 0;
-            virtual Result CreateWithPatch(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index, bool verify_header_sign_2) = 0;
+            virtual Result Create(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index) = 0;
+            virtual Result CreateWithPatch(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index) = 0;
             virtual Result CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) = 0;
-            virtual Result VerifyAcid(fs::fsa::IFileSystem *fs, fssystem::NcaReader *nca_reader) = 0;
-            virtual void   SetEnabledProgramVerification(bool en) = 0;
     };
 
     struct FileSystemCreatorInterfaces {

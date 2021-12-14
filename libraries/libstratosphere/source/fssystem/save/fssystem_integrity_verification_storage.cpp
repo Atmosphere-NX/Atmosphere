@@ -17,14 +17,18 @@
 
 namespace ams::fssystem::save {
 
-    Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type) {
+    Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type) {
         /* Validate preconditions. */
         AMS_ASSERT(verif_block_size >= HashSize);
         AMS_ASSERT(bm != nullptr);
+        AMS_ASSERT(hgf != nullptr);
 
         /* Set storages. */
         m_hash_storage = hs;
         m_data_storage = ds;
+
+        /* Set hash generator factory. */
+        m_hash_generator_factory = hgf;
 
         /* Set verification block sizes. */
         m_verification_block_size  = verif_block_size;
@@ -111,13 +115,16 @@ namespace ams::fssystem::save {
             clear_guard.Cancel();
         }
 
+        /* Verify the signatures. */
+        Result verify_hash_result = ResultSuccess();
+
+        /* Create hash generator. */
+        auto generator = m_hash_generator_factory->Create();
+
         /* Prepare to validate the signatures. */
         const auto signature_count = size >> m_verification_block_order;
         PooledBuffer signature_buffer(signature_count * sizeof(BlockHash), sizeof(BlockHash));
         const auto buffer_count = std::min(signature_count, signature_buffer.GetSize() / sizeof(BlockHash));
-
-        /* Verify the signatures. */
-        Result verify_hash_result = ResultSuccess();
 
         size_t verified_count = 0;
         while (verified_count < signature_count) {
@@ -132,7 +139,7 @@ namespace ams::fssystem::save {
             for (size_t i = 0; i < cur_count && R_SUCCEEDED(cur_result); ++i) {
                 const auto verified_size = (verified_count + i) << m_verification_block_order;
                 u8 *cur_buf = static_cast<u8 *>(buffer) + verified_size;
-                cur_result = this->VerifyHash(cur_buf, reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i);
+                cur_result = this->VerifyHash(cur_buf, reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i, generator);
 
                 /* If the data is corrupted, clear the corrupted parts. */
                 if (fs::ResultIntegrityVerificationStorageCorrupted::Includes(cur_result)) {
@@ -211,6 +218,8 @@ namespace ams::fssystem::save {
             PooledBuffer signature_buffer(signature_count * sizeof(BlockHash), sizeof(BlockHash));
             const auto buffer_count = std::min(signature_count, signature_buffer.GetSize() / sizeof(BlockHash));
 
+            auto generator = m_hash_generator_factory->Create();
+
             while (updated_count < signature_count) {
                 const auto cur_count = std::min(buffer_count, signature_count - updated_count);
 
@@ -220,7 +229,7 @@ namespace ams::fssystem::save {
 
                     for (size_t i = 0; i < cur_count; ++i) {
                         const auto updated_size = (updated_count + i) << m_verification_block_order;
-                        this->CalcBlockHash(reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i, reinterpret_cast<const u8 *>(buffer) + updated_size);
+                        this->CalcBlockHash(reinterpret_cast<BlockHash *>(signature_buffer.GetBuffer()) + i, reinterpret_cast<const u8 *>(buffer) + updated_size, generator);
                     }
                 }
 
@@ -360,19 +369,18 @@ namespace ams::fssystem::save {
         }
     }
 
-    void IntegrityVerificationStorage::CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const {
-        /* Create a sha256 generator. */
-        crypto::Sha256Generator sha;
-        sha.Initialize();
+    void IntegrityVerificationStorage::CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
+        /* Initialize the generator. */
+        generator->Initialize();
 
         /* If calculating for save data, hash the salt. */
         if (m_storage_type == fs::StorageType_SaveData) {
-            sha.Update(m_salt.value, sizeof(m_salt));
+            generator->Update(m_salt.value, sizeof(m_salt));
         }
 
         /* Update with the buffer and get the hash. */
-        sha.Update(buffer, block_size);
-        sha.GetHash(out, sizeof(*out));
+        generator->Update(buffer, block_size);
+        generator->GetHash(out, sizeof(*out));
 
         /* Set the validation bit, if the hash is for save data. */
         if (m_storage_type == fs::StorageType_SaveData) {
@@ -428,7 +436,7 @@ namespace ams::fssystem::save {
         return ResultSuccess();
     }
 
-    Result IntegrityVerificationStorage::VerifyHash(const void *buf, BlockHash *hash) {
+    Result IntegrityVerificationStorage::VerifyHash(const void *buf, BlockHash *hash, std::unique_ptr<fssystem::IHash256Generator> &generator) {
         /* Validate preconditions. */
         AMS_ASSERT(buf != nullptr);
         AMS_ASSERT(hash != nullptr);
@@ -445,7 +453,7 @@ namespace ams::fssystem::save {
 
         /* Get the calculated hash. */
         BlockHash calc_hash;
-        this->CalcBlockHash(std::addressof(calc_hash), buf);
+        this->CalcBlockHash(std::addressof(calc_hash), buf, generator);
 
         /* Check that the signatures are equal. */
         if (!crypto::IsSameBytes(std::addressof(cmp_hash), std::addressof(calc_hash), sizeof(BlockHash))) {

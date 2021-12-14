@@ -33,16 +33,19 @@ namespace ams::fssystem {
 
     }
 
-    Result HierarchicalSha256Storage::Initialize(IStorage **base_storages, s32 layer_count, size_t htbs, void *hash_buf, size_t hash_buf_size) {
+    template<typename BaseStorageType>
+    Result HierarchicalSha256Storage<BaseStorageType>::Initialize(BaseStorageType *base_storages, s32 layer_count, size_t htbs, void *hash_buf, size_t hash_buf_size, fssystem::IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(layer_count == LayerCount);
         AMS_ASSERT(util::IsPowerOfTwo(htbs));
         AMS_ASSERT(hash_buf != nullptr);
+        AMS_ASSERT(hgf != nullptr);
         AMS_UNUSED(layer_count);
 
         /* Set size tracking members. */
         m_hash_target_block_size = htbs;
         m_log_size_ratio         = Log2(m_hash_target_block_size / HashSize);
+        m_hash_generator_factory = hgf;
 
         /* Get the base storage size. */
         R_TRY(base_storages[2]->GetSize(std::addressof(m_base_storage_size)));
@@ -72,13 +75,14 @@ namespace ams::fssystem {
 
         /* Calculate and verify the master hash. */
         u8 calc_hash[HashSize];
-        crypto::GenerateSha256Hash(calc_hash, sizeof(calc_hash), m_hash_buffer, static_cast<size_t>(hash_storage_size));
+        m_hash_generator_factory->GenerateHash(calc_hash, sizeof(calc_hash), m_hash_buffer, static_cast<size_t>(hash_storage_size));
         R_UNLESS(crypto::IsSameBytes(master_hash, calc_hash, HashSize), fs::ResultHierarchicalSha256HashVerificationFailed());
 
         return ResultSuccess();
     }
 
-    Result HierarchicalSha256Storage::Read(s64 offset, void *buffer, size_t size) {
+    template<typename BaseStorageType>
+    Result HierarchicalSha256Storage<BaseStorageType>::Read(s64 offset, void *buffer, size_t size) {
         /* Succeed if zero-size. */
         R_SUCCEED_IF(size == 0);
 
@@ -103,7 +107,7 @@ namespace ams::fssystem {
             /* Generate the hash of the region we're validating. */
             u8 hash[HashSize];
             const auto cur_size = static_cast<size_t>(std::min<s64>(m_hash_target_block_size, remaining_size));
-            crypto::GenerateSha256Hash(hash, sizeof(hash), static_cast<u8 *>(buffer) + (cur_offset - offset), cur_size);
+            m_hash_generator_factory->GenerateHash(hash, sizeof(hash), static_cast<u8 *>(buffer) + (cur_offset - offset), cur_size);
 
             AMS_ASSERT(static_cast<size_t>(cur_offset >> m_log_size_ratio) < m_hash_buffer_size);
 
@@ -125,7 +129,8 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result HierarchicalSha256Storage::Write(s64 offset, const void *buffer, size_t size) {
+    template<typename BaseStorageType>
+    Result HierarchicalSha256Storage<BaseStorageType>::Write(s64 offset, const void *buffer, size_t size) {
         /* Succeed if zero-size. */
         R_SUCCEED_IF(size == 0);
 
@@ -147,7 +152,7 @@ namespace ams::fssystem {
             {
                 /* Temporarily increase our thread priority. */
                 ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
-                crypto::GenerateSha256Hash(hash, sizeof(hash), static_cast<const u8 *>(buffer) + (cur_offset - offset), cur_size);
+                m_hash_generator_factory->GenerateHash(hash, sizeof(hash), static_cast<const u8 *>(buffer) + (cur_offset - offset), cur_size);
             }
 
             /* Write the data. */
@@ -167,19 +172,26 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result HierarchicalSha256Storage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
-        /* Succeed if zero-size. */
-        R_SUCCEED_IF(size == 0);
+    template<typename BaseStorageType>
+    Result HierarchicalSha256Storage<BaseStorageType>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+        if (op_id == fs::OperationId::Invalidate) {
+            return m_base_storage->OperateRange(fs::OperationId::Invalidate, offset, size);
+        } else {
+            /* Succeed if zero-size. */
+            R_SUCCEED_IF(size == 0);
 
-        /* Validate preconditions. */
-        R_UNLESS(util::IsAligned(offset, m_hash_target_block_size), fs::ResultInvalidArgument());
-        R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
+            /* Validate preconditions. */
+            R_UNLESS(util::IsAligned(offset, m_hash_target_block_size), fs::ResultInvalidArgument());
+            R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
-        /* Determine size to use. */
-        const auto reduced_size = std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size)) - offset;
+            /* Determine size to use. */
+            const auto reduced_size = std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size)) - offset;
 
-        /* Operate on the base storage. */
-        return m_base_storage->OperateRange(dst, dst_size, op_id, offset, reduced_size, src, src_size);
+            /* Operate on the base storage. */
+            return m_base_storage->OperateRange(dst, dst_size, op_id, offset, reduced_size, src, src_size);
+        }
     }
+
+    template class HierarchicalSha256Storage<fs::SubStorage>;
 
 }

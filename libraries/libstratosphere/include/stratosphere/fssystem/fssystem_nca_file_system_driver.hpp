@@ -17,11 +17,15 @@
 #include <vapours.hpp>
 #include <stratosphere/fs/impl/fs_newable.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fssystem/fssystem_compression_common.hpp>
+#include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
+#include <stratosphere/fssystem/fssystem_asynchronous_access.hpp>
 #include <stratosphere/fssystem/fssystem_nca_header.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
 
 namespace ams::fssystem {
 
+    class CompressedStorage;
     class AesCtrCounterExtendedStorage;
     class IndirectStorage;
     class SparseStorage;
@@ -57,6 +61,11 @@ namespace ams::fssystem {
     };
     static_assert(util::is_pod<NcaCryptoConfiguration>::value);
 
+    struct NcaCompressionConfiguration {
+        GetDecompressorFunction get_decompressor;
+    };
+    static_assert(util::is_pod<NcaCompressionConfiguration>::value);
+
     constexpr inline bool IsInvalidKeyTypeValue(s32 key_type) {
         return key_type < 0;
     }
@@ -87,22 +96,22 @@ namespace ams::fssystem {
         private:
             NcaHeader m_header;
             u8 m_decryption_keys[NcaHeader::DecryptionKey_Count][NcaCryptoConfiguration::Aes128KeySize];
-            std::shared_ptr<fs::IStorage> m_shared_base_storage;
+            std::shared_ptr<fs::IStorage> m_body_storage;
             std::unique_ptr<fs::IStorage> m_header_storage;
-            fs::IStorage *m_body_storage;
             u8 m_external_decryption_key[NcaCryptoConfiguration::Aes128KeySize];
             DecryptAesCtrFunction m_decrypt_aes_ctr;
             DecryptAesCtrFunction m_decrypt_aes_ctr_external;
             bool m_is_software_aes_prioritized;
             NcaHeader::EncryptionType m_header_encryption_type;
+            GetDecompressorFunction m_get_decompressor;
+            IHash256GeneratorFactory *m_hash_generator_factory;
         public:
             NcaReader();
             ~NcaReader();
 
-            Result Initialize(fs::IStorage *base_storage, const NcaCryptoConfiguration &crypto_cfg);
-            Result Initialize(std::shared_ptr<fs::IStorage> base_storage, const NcaCryptoConfiguration &crypto_cfg);
+            Result Initialize(std::shared_ptr<fs::IStorage> base_storage, const NcaCryptoConfiguration &crypto_cfg, const NcaCompressionConfiguration &compression_cfg, IHash256GeneratorFactorySelector *hgf_selector);
 
-            fs::IStorage *GetBodyStorage();
+            std::shared_ptr<fs::IStorage> GetSharedBodyStorage();
             u32 GetMagic() const;
             NcaHeader::DistributionType GetDistributionType() const;
             NcaHeader::ContentType GetContentType() const;
@@ -124,7 +133,7 @@ namespace ams::fssystem {
             void GetEncryptedKey(void *dst, size_t size) const;
             const void *GetDecryptionKey(s32 index) const;
             bool HasValidInternalKey() const;
-            bool HasInternalDecryptionKeyForAesHardwareSpeedEmulation() const;
+            bool HasInternalDecryptionKeyForAesHw() const;
             bool IsSoftwareAesPrioritized() const;
             void PrioritizeSoftwareAes();
             bool HasExternalDecryptionKey() const;
@@ -136,7 +145,11 @@ namespace ams::fssystem {
             NcaHeader::EncryptionType GetEncryptionType() const;
             Result ReadHeader(NcaFsHeader *dst, s32 index) const;
 
-            Result VerifyHeaderSign2(const void *key, size_t key_size);
+            GetDecompressorFunction GetDecompressor() const;
+            IHash256GeneratorFactory *GetHashGeneratorFactory() const;
+
+            void GetHeaderSign2(void *dst, size_t size);
+            void GetHeaderSign2TargetHash(void *dst, size_t size);
     };
 
     class NcaFsHeaderReader : public ::ams::fs::impl::Newable {
@@ -153,8 +166,9 @@ namespace ams::fssystem {
             Result Initialize(const NcaReader &reader, s32 index);
             bool IsInitialized() const { return m_fs_index >= 0; }
 
-            NcaFsHeader &GetData() { return m_data; }
-            const NcaFsHeader &GetData() const { return m_data; }
+            // NcaFsHeader &GetData() { return m_data; }
+            // const NcaFsHeader &GetData() const { return m_data; }
+
             void GetRawData(void *dst, size_t dst_size) const;
 
             NcaFsHeader::HashData &GetHashData();
@@ -170,57 +184,85 @@ namespace ams::fssystem {
             bool ExistsSparseLayer() const;
             NcaSparseInfo &GetSparseInfo();
             const NcaSparseInfo &GetSparseInfo() const;
+            bool ExistsCompressionLayer() const;
+            NcaCompressionInfo &GetCompressionInfo();
+            const NcaCompressionInfo &GetCompressionInfo() const;
     };
 
     class NcaFileSystemDriver : public ::ams::fs::impl::Newable {
         NON_COPYABLE(NcaFileSystemDriver);
         NON_MOVEABLE(NcaFileSystemDriver);
-        public:
-            class StorageOption;
-            class StorageOptionWithHeaderReader;
+        private:
+            struct StorageContext {
+                bool open_raw_storage;
+                std::shared_ptr<fs::IStorage> body_substorage;
+                std::shared_ptr<fssystem::SparseStorage> current_sparse_storage;
+                std::shared_ptr<fs::IStorage> sparse_storage_meta_storage;
+                std::shared_ptr<fssystem::SparseStorage> original_sparse_storage;
+                void *external_current_sparse_storage;  /* TODO: Add real type? */
+                void *external_original_sparse_storage; /* TODO: Add real type? */
+                std::shared_ptr<fs::IStorage> aes_ctr_ex_storage_meta_storage;
+                std::shared_ptr<fs::IStorage> aes_ctr_ex_storage_data_storage;
+                std::shared_ptr<fssystem::AesCtrCounterExtendedStorage> aes_ctr_ex_storage;
+                std::shared_ptr<fs::IStorage> indirect_storage_meta_storage;
+                std::shared_ptr<fssystem::IndirectStorage> indirect_storage;
+                std::shared_ptr<fs::IStorage> fs_data_storage;
+                std::shared_ptr<fs::IStorage> compressed_storage_meta_storage;
+                std::shared_ptr<fssystem::CompressedStorage> compressed_storage;
+            };
+
+            enum AlignmentStorageRequirement {
+                /* TODO */
+                AlignmentStorageRequirement_CacheBlockSize = 0,
+                AlignmentStorageRequirement_None           = 1,
+            };
         private:
             std::shared_ptr<NcaReader> m_original_reader;
             std::shared_ptr<NcaReader> m_reader;
             MemoryResource * const m_allocator;
             fssystem::IBufferManager * const m_buffer_manager;
+            fssystem::IHash256GeneratorFactorySelector * const m_hash_generator_factory_selector;
         public:
             static Result SetupFsHeaderReader(NcaFsHeaderReader *out, const NcaReader &reader, s32 fs_index);
         public:
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : m_original_reader(), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager) {
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
                 AMS_ASSERT(m_reader != nullptr);
+                AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
             }
 
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager) : m_original_reader(original_reader), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager) {
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(original_reader), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
                 AMS_ASSERT(m_reader != nullptr);
+                AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
             }
 
-            Result OpenRawStorage(std::shared_ptr<fs::IStorage> *out, s32 fs_index);
-
-            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, NcaFsHeaderReader *out_header_reader, s32 fs_index);
-            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, StorageOption *option);
-
-            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, s32 fs_index) {
-                NcaFsHeaderReader dummy;
-                return this->OpenStorage(out, std::addressof(dummy), fs_index);
-            }
-
-            Result OpenDecryptableStorage(std::shared_ptr<fs::IStorage> *out, StorageOption *option, bool indirect_needed);
-
+            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index);
         private:
-            class BaseStorage;
+            Result OpenStorageImpl(std::shared_ptr<fs::IStorage> *out, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx);
 
-            Result CreateBaseStorage(BaseStorage *out, StorageOption *option);
+            Result OpenIndirectableStorageAsOriginal(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, StorageContext *ctx);
 
-            Result CreateDecryptableStorage(std::unique_ptr<fs::IStorage> *out, StorageOption *option, BaseStorage *base_storage);
-            Result CreateAesXtsStorage(std::unique_ptr<fs::IStorage> *out, BaseStorage *base_storage);
-            Result CreateAesCtrStorage(std::unique_ptr<fs::IStorage> *out, BaseStorage *base_storage);
-            Result CreateAesCtrExStorage(std::unique_ptr<fs::IStorage> *out, StorageOption *option, BaseStorage *base_storage);
+            Result CreateBodySubStorage(std::shared_ptr<fs::IStorage> *out, s64 offset, s64 size);
 
-            Result CreateIndirectStorage(std::unique_ptr<fs::IStorage> *out, StorageOption *option, std::unique_ptr<fs::IStorage> base_storage);
+            Result CreateAesCtrStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, AlignmentStorageRequirement alignment_storage_requirement);
+            Result CreateAesXtsStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset);
 
-            Result CreateVerificationStorage(std::unique_ptr<fs::IStorage> *out, std::unique_ptr<fs::IStorage> base_storage, NcaFsHeaderReader *header_reader);
-            Result CreateSha256Storage(std::unique_ptr<fs::IStorage> *out, std::unique_ptr<fs::IStorage> base_storage, NcaFsHeaderReader *header_reader);
-            Result CreateIntegrityVerificationStorage(std::unique_ptr<fs::IStorage> *out, std::unique_ptr<fs::IStorage> base_storage, NcaFsHeaderReader *header_reader);
+            Result CreateSparseStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info);
+            Result CreateSparseStorageCore(std::shared_ptr<fssystem::SparseStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 base_size, std::shared_ptr<fs::IStorage> meta_storage, const NcaSparseInfo &sparse_info, bool external_info);
+            Result CreateSparseStorage(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info);
+
+            Result CreateAesCtrExMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info);
+            Result CreateAesCtrExStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::AesCtrCounterExtendedStorage> *out_ext, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> meta_storage, s64 counter_offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info);
+
+            Result CreateIndirectStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaPatchInfo &patch_info);
+            Result CreateIndirectStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IndirectStorage> *out_ind, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> original_data_storage, std::shared_ptr<fs::IStorage> meta_storage, const NcaPatchInfo &patch_info);
+
+            Result CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &sha256_data);
+
+            Result CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info);
+
+            Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info);
+        public:
+            Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, IBufferManager *buffer_manager);
     };
 
 }

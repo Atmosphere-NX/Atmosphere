@@ -143,7 +143,7 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: Revise for accuracy. */
         util::ConstructAt(g_rom_fs_creator, GetPointer(g_allocator));
         util::ConstructAt(g_partition_fs_creator);
-        util::ConstructAt(g_storage_on_nca_creator, GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), is_prod, GetPointer(g_buffer_manager));
+        util::ConstructAt(g_storage_on_nca_creator, GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), *GetNcaCompressionConfiguration(), GetPointer(g_buffer_manager), fs::impl::GetNcaHashGeneratorFactorySelector());
 
         /* TODO FS-REIMPL: Initialize other creators. */
 

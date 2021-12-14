@@ -47,11 +47,12 @@ namespace ams::fssystem::save {
             fs::HashSalt m_salt;
             bool m_is_real_data;
             fs::StorageType m_storage_type;
+            fssystem::IHash256GeneratorFactory *m_hash_generator_factory;
         public:
             IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
+            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
@@ -65,7 +66,10 @@ namespace ams::fssystem::save {
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
             using IStorage::OperateRange;
 
-            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const;
+            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const {
+                auto generator = m_hash_generator_factory->Create();
+                return this->CalcBlockHash(out, buffer, block_size, generator);
+            }
 
             s64 GetBlockSize() const {
                 return m_verification_block_size;
@@ -73,9 +77,11 @@ namespace ams::fssystem::save {
         private:
             Result ReadBlockSignature(void *dst, size_t dst_size, s64 offset, size_t size);
             Result WriteBlockSignature(const void *src, size_t src_size, s64 offset, size_t size);
-            Result VerifyHash(const void *buf, BlockHash *hash);
+            Result VerifyHash(const void *buf, BlockHash *hash, std::unique_ptr<fssystem::IHash256Generator> &generator);
 
-            void CalcBlockHash(BlockHash *out, const void *buffer) const {
+            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const;
+
+            void CalcBlockHash(BlockHash *out, const void *buffer, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
                 return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size));
             }
 

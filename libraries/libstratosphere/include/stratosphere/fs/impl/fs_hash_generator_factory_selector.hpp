@@ -13,20 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
+#pragma once
+#include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
 
-namespace ams::fssystem {
+namespace ams::fs::impl {
 
-    u8 NcaHeader::GetProperKeyGeneration() const {
-        return std::max(this->key_generation, this->key_generation_2);
-    }
-
-    bool NcaPatchInfo::HasIndirectTable() const {
-        return this->indirect_size != 0;
-    }
-
-    bool NcaPatchInfo::HasAesCtrExTable() const {
-        return this->aes_ctr_ex_size != 0;
-    }
+    fssystem::IHash256GeneratorFactorySelector *GetNcaHashGeneratorFactorySelector();
+    fssystem::IHash256GeneratorFactorySelector *GetSaveDataHashGeneratorFactorySelector();
 
 }

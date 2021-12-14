@@ -17,8 +17,8 @@
 
 namespace ams::fssystem {
 
-    void AesCtrStorage::MakeIv(void *dst, size_t dst_size, u64 upper, s64 offset) {
-        /* TODO: util::BytePtr? */
+    template<typename BasePointer>
+    void AesCtrStorage<BasePointer>::MakeIv(void *dst, size_t dst_size, u64 upper, s64 offset) {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(dst_size == IvSize);
         AMS_ASSERT(offset >= 0);
@@ -30,7 +30,8 @@ namespace ams::fssystem {
         util::StoreBigEndian(reinterpret_cast<s64 *>(out_addr + sizeof(u64)), static_cast<s64>(offset / BlockSize));
     }
 
-    AesCtrStorage::AesCtrStorage(IStorage *base, const void *key, size_t key_size, const void *iv, size_t iv_size) : m_base_storage(base) {
+    template<typename BasePointer>
+    AesCtrStorage<BasePointer>::AesCtrStorage(BasePointer base, const void *key, size_t key_size, const void *iv, size_t iv_size) : m_base_storage(std::move(base)) {
         AMS_ASSERT(base != nullptr);
         AMS_ASSERT(key  != nullptr);
         AMS_ASSERT(iv   != nullptr);
@@ -42,7 +43,8 @@ namespace ams::fssystem {
         std::memcpy(m_iv, iv, IvSize);
     }
 
-    Result AesCtrStorage::Read(s64 offset, void *buffer, size_t size) {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::Read(s64 offset, void *buffer, size_t size) {
         /* Allow zero-size reads. */
         R_SUCCEED_IF(size == 0);
 
@@ -71,7 +73,8 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result AesCtrStorage::Write(s64 offset, const void *buffer, size_t size) {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::Write(s64 offset, const void *buffer, size_t size) {
         /* Allow zero-size writes. */
         R_SUCCEED_IF(size == 0);
 
@@ -124,20 +127,24 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result AesCtrStorage::Flush() {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::Flush() {
         return m_base_storage->Flush();
     }
 
-    Result AesCtrStorage::SetSize(s64 size) {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::SetSize(s64 size) {
         AMS_UNUSED(size);
         return fs::ResultUnsupportedOperationInAesCtrStorageA();
     }
 
-    Result AesCtrStorage::GetSize(s64 *out) {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::GetSize(s64 *out) {
         return m_base_storage->GetSize(out);
     }
 
-    Result AesCtrStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+    template<typename BasePointer>
+    Result AesCtrStorage<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Handle the zero size case. */
         if (size == 0) {
             if (op_id == fs::OperationId::QueryRange) {
@@ -178,5 +185,8 @@ namespace ams::fssystem {
 
         return ResultSuccess();
     }
+
+    template class AesCtrStorage<fs::IStorage *>;
+    template class AesCtrStorage<std::shared_ptr<fs::IStorage>>;
 
 }

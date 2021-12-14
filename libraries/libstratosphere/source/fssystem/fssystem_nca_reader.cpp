@@ -35,7 +35,7 @@ namespace ams::fssystem {
 
     }
 
-    NcaReader::NcaReader() : m_shared_base_storage(), m_header_storage(), m_body_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto) {
+    NcaReader::NcaReader() : m_body_storage(), m_header_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto), m_get_decompressor(), m_hash_generator_factory() {
         std::memset(std::addressof(m_header), 0, sizeof(m_header));
         std::memset(std::addressof(m_decryption_keys), 0, sizeof(m_decryption_keys));
         std::memset(std::addressof(m_external_decryption_key), 0, sizeof(m_external_decryption_key));
@@ -45,33 +45,33 @@ namespace ams::fssystem {
         /* ... */
     }
 
-    Result NcaReader::Initialize(std::shared_ptr<fs::IStorage> base_storage, const NcaCryptoConfiguration &crypto_cfg) {
-        m_shared_base_storage = base_storage;
-        return this->Initialize(m_shared_base_storage.get(), crypto_cfg);
-    }
-
-    Result NcaReader::Initialize(fs::IStorage *base_storage, const NcaCryptoConfiguration &crypto_cfg) {
+    Result NcaReader::Initialize(std::shared_ptr<fs::IStorage> base_storage, const NcaCryptoConfiguration &crypto_cfg, const NcaCompressionConfiguration &compression_cfg, IHash256GeneratorFactorySelector *hgf_selector) {
         /* Validate preconditions. */
         AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(hgf_selector != nullptr);
         AMS_ASSERT(m_body_storage == nullptr);
+
+        /* Check that the crypto config is valid. */
         R_UNLESS(crypto_cfg.generate_key != nullptr, fs::ResultInvalidArgument());
 
         /* Generate keys for header. */
+        using AesXtsStorageForNcaHeader = AesXtsStorageBySharedPointer;
+
         u8 header_decryption_keys[NcaCryptoConfiguration::HeaderEncryptionKeyCount][NcaCryptoConfiguration::Aes128KeySize];
         for (size_t i = 0; i < NcaCryptoConfiguration::HeaderEncryptionKeyCount; i++) {
-            crypto_cfg.generate_key(header_decryption_keys[i], AesXtsStorage::KeySize, crypto_cfg.header_encrypted_encryption_keys[i], AesXtsStorage::KeySize, static_cast<s32>(KeyType::NcaHeaderKey), crypto_cfg);
+            crypto_cfg.generate_key(header_decryption_keys[i], AesXtsStorageForNcaHeader::KeySize, crypto_cfg.header_encrypted_encryption_keys[i], AesXtsStorageForNcaHeader::KeySize, static_cast<s32>(KeyType::NcaHeaderKey), crypto_cfg);
         }
 
         /* Create the header storage. */
-        const u8 header_iv[AesXtsStorage::IvSize] = {};
-        std::unique_ptr<fs::IStorage> work_header_storage = std::make_unique<AesXtsStorage>(base_storage, header_decryption_keys[0], header_decryption_keys[1], AesXtsStorage::KeySize, header_iv, AesXtsStorage::IvSize, NcaHeader::XtsBlockSize);
+        const u8 header_iv[AesXtsStorageForNcaHeader::IvSize] = {};
+        std::unique_ptr<fs::IStorage> work_header_storage = std::make_unique<AesXtsStorageForNcaHeader>(base_storage, header_decryption_keys[0], header_decryption_keys[1], AesXtsStorageForNcaHeader::KeySize, header_iv, AesXtsStorageForNcaHeader::IvSize, NcaHeader::XtsBlockSize);
         R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationFailureInNcaReaderA());
 
         /* Read the header. */
         R_TRY(work_header_storage->Read(0, std::addressof(m_header), sizeof(m_header)));
 
         /* Validate the magic. */
-        if (Result magic_result = CheckNcaMagic(m_header.magic); R_FAILED(magic_result)) {
+        if (const Result magic_result = CheckNcaMagic(m_header.magic); R_FAILED(magic_result)) {
             /* If we're not allowed to use plaintext headers, stop here. */
             R_UNLESS(crypto_cfg.is_plaintext_header_available, magic_result);
 
@@ -85,6 +85,7 @@ namespace ams::fssystem {
             work_header_storage.reset(new fs::SubStorage(base_storage, 0, base_storage_size));
             R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationFailureInNcaReaderA());
 
+            /* Set encryption type as plaintext. */
             m_header_encryption_type = NcaHeader::EncryptionType::None;
         }
 
@@ -101,6 +102,7 @@ namespace ams::fssystem {
             const size_t exp_size = NcaCryptoConfiguration::Rsa2048KeyPublicExponentSize;
             const u8 *msg         = static_cast<const u8 *>(static_cast<const void *>(std::addressof(m_header.magic)));
             const size_t msg_size = NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount;
+
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
             R_UNLESS(is_signature_valid, fs::ResultNcaHeaderSignature1VerificationFailed());
         }
@@ -128,14 +130,22 @@ namespace ams::fssystem {
         m_decrypt_aes_ctr          = crypto_cfg.decrypt_aes_ctr;
         m_decrypt_aes_ctr_external = crypto_cfg.decrypt_aes_ctr_external;
 
+        /* Set our decompressor function getter. */
+        m_get_decompressor = compression_cfg.get_decompressor;
+
+        /* Set our hash generator factory. */
+        m_hash_generator_factory = hgf_selector->GetFactory();
+        AMS_ASSERT(m_hash_generator_factory != nullptr);
+
         /* Set our storages. */
         m_header_storage = std::move(work_header_storage);
-        m_body_storage   = base_storage;
+        m_body_storage   = std::move(base_storage);
 
         return ResultSuccess();
     }
 
-    fs::IStorage *NcaReader::GetBodyStorage() {
+    std::shared_ptr<fs::IStorage> NcaReader::GetSharedBodyStorage() {
+        AMS_ASSERT(m_body_storage != nullptr);
         return m_body_storage;
     }
 
@@ -270,7 +280,7 @@ namespace ams::fssystem {
         return false;
     }
 
-    bool NcaReader::HasInternalDecryptionKeyForAesHardwareSpeedEmulation() const {
+    bool NcaReader::HasInternalDecryptionKeyForAesHw() const {
         constexpr const u8 ZeroKey[crypto::AesDecryptor128::KeySize] = {};
         return !crypto::IsSameBytes(ZeroKey, this->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), crypto::AesDecryptor128::KeySize);
     }
@@ -319,6 +329,16 @@ namespace ams::fssystem {
         return m_decrypt_aes_ctr_external;
     }
 
+    GetDecompressorFunction NcaReader::GetDecompressor() const {
+        AMS_ASSERT(m_get_decompressor != nullptr);
+        return m_get_decompressor;
+    }
+
+    IHash256GeneratorFactory *NcaReader::GetHashGeneratorFactory() const {
+        AMS_ASSERT(m_hash_generator_factory != nullptr);
+        return m_hash_generator_factory;
+    }
+
     NcaHeader::EncryptionType NcaReader::GetEncryptionType() const {
         return m_header_encryption_type;
     }
@@ -331,20 +351,19 @@ namespace ams::fssystem {
         return m_header_storage->Read(offset, dst, sizeof(NcaFsHeader));
     }
 
-    Result NcaReader::VerifyHeaderSign2(const void *mod, size_t mod_size) {
-        AMS_ASSERT(m_body_storage != nullptr);
-        constexpr const u8 HeaderSign2KeyPublicExponent[] = { 0x01, 0x00, 0x01 };
+    void NcaReader::GetHeaderSign2(void *dst, size_t size) {
+        AMS_ASSERT(dst != nullptr);
+        AMS_ASSERT(size == NcaHeader::HeaderSignSize);
 
-        const u8 *sig         = m_header.header_sign_2;
-        const size_t sig_size = NcaHeader::HeaderSignSize;
-        const u8 *exp         = HeaderSign2KeyPublicExponent;
-        const size_t exp_size = sizeof(HeaderSign2KeyPublicExponent);
-        const u8 *msg         = static_cast<const u8 *>(static_cast<const void *>(std::addressof(m_header.magic)));
-        const size_t msg_size = NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount;
-        const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
-        R_UNLESS(is_signature_valid, fs::ResultNcaHeaderSignature2VerificationFailed());
+        std::memcpy(dst, m_header.header_sign_2, size);
+    }
 
-        return ResultSuccess();
+    void NcaReader::GetHeaderSign2TargetHash(void *dst, size_t size) {
+        AMS_ASSERT(m_hash_generator_factory != nullptr);
+        AMS_ASSERT(dst != nullptr);
+        AMS_ASSERT(size == IHash256Generator::HashSize);
+
+        return m_hash_generator_factory->GenerateHash(dst, size, static_cast<const void *>(std::addressof(m_header.magic)), NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount);
     }
 
     Result NcaFsHeaderReader::Initialize(const NcaReader &reader, s32 index) {
@@ -438,6 +457,21 @@ namespace ams::fssystem {
     const NcaSparseInfo &NcaFsHeaderReader::GetSparseInfo() const {
         AMS_ASSERT(this->IsInitialized());
         return m_data.sparse_info;
+    }
+
+    bool NcaFsHeaderReader::ExistsCompressionLayer() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.compression_info.bucket.offset != 0 && m_data.compression_info.bucket.size != 0;
+    }
+
+    NcaCompressionInfo &NcaFsHeaderReader::GetCompressionInfo() {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.compression_info;
+    }
+
+    const NcaCompressionInfo &NcaFsHeaderReader::GetCompressionInfo() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.compression_info;
     }
 
 }
