@@ -35,7 +35,6 @@
 #include <stratosphere/fssystem/fssystem_sparse_storage.hpp>
 #include <stratosphere/fssystem/fssystem_nca_header.hpp>
 #include <stratosphere/fssystem/fssystem_nca_file_system_driver.hpp>
-#include <stratosphere/fssystem/fssystem_nca_file_system_driver_impl.hpp>
 #include <stratosphere/fssystem/fssystem_crypto_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_compression_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_aes_ctr_counter_extended_storage.hpp>
