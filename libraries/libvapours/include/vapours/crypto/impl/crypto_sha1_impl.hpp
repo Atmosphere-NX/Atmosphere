@@ -39,7 +39,7 @@ namespace ams::crypto::impl {
         private:
             State m_state;
         public:
-            Sha1Impl() { /* ... */ }
+            Sha1Impl() { m_state.finalized = false; }
             ~Sha1Impl() {
                 static_assert(std::is_trivially_destructible<State>::value);
                 ClearMemory(std::addressof(m_state), sizeof(m_state));

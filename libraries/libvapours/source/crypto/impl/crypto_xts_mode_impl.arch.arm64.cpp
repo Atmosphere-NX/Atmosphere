@@ -21,7 +21,6 @@
 
 namespace ams::crypto::impl {
 
-
     /* Variable management macros. */
     #define DECLARE_ROUND_KEY_VAR(n) \
     const uint8x16_t round_key_##n = vld1q_u8(keys + (BlockSize * n))
