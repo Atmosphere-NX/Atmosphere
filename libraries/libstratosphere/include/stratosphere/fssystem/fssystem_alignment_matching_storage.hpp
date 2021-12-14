@@ -44,7 +44,7 @@ namespace ams::fssystem {
                 /* ... */
             }
 
-            explicit AlignmentMatchingStorage(std::shared_ptr<fs::IStorage> bs) : m_shared_base_storage(bs), m_base_storage(m_shared_base_storage.get()), m_is_base_storage_size_dirty(true) {
+            explicit AlignmentMatchingStorage(std::shared_ptr<fs::IStorage> bs) : m_shared_base_storage(std::move(bs)), m_base_storage(m_shared_base_storage.get()), m_is_base_storage_size_dirty(true) {
                 /* ... */
             }
 
@@ -109,25 +109,29 @@ namespace ams::fssystem {
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                /* Succeed if zero size. */
-                R_SUCCEED_IF(size == 0);
+                if (op_id == fs::OperationId::Invalidate) {
+                    return m_base_storage->OperateRange(fs::OperationId::Invalidate, offset, size);
+                } else {
+                    /* Succeed if zero size. */
+                    R_SUCCEED_IF(size == 0);
 
-                /* Get the base storage size. */
-                s64 bs_size = 0;
-                R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    /* Get the base storage size. */
+                    s64 bs_size = 0;
+                    R_TRY(this->GetSize(std::addressof(bs_size)));
+                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
 
-                /* Operate on the base storage. */
-                const auto valid_size         = std::min(size, bs_size - offset);
-                const auto aligned_offset     = util::AlignDown(offset, DataAlign);
-                const auto aligned_offset_end = util::AlignUp(offset + valid_size, DataAlign);
-                const auto aligned_size       = aligned_offset_end - aligned_offset;
+                    /* Operate on the base storage. */
+                    const auto valid_size         = std::min(size, bs_size - offset);
+                    const auto aligned_offset     = util::AlignDown(offset, DataAlign);
+                    const auto aligned_offset_end = util::AlignUp(offset + valid_size, DataAlign);
+                    const auto aligned_size       = aligned_offset_end - aligned_offset;
 
-                return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                    return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                }
             }
     };
 
-    template<size_t _BufferAlign>
+    template<typename BaseStorageType, size_t _BufferAlign>
     class AlignmentMatchingStoragePooledBuffer : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AlignmentMatchingStoragePooledBuffer);
         NON_MOVEABLE(AlignmentMatchingStoragePooledBuffer);
@@ -136,12 +140,12 @@ namespace ams::fssystem {
 
             static_assert(util::IsPowerOfTwo(BufferAlign));
         private:
-            fs::IStorage * const m_base_storage;
+            BaseStorageType m_base_storage;
             s64 m_base_storage_size;
             size_t m_data_align;
             bool m_is_base_storage_size_dirty;
         public:
-            explicit AlignmentMatchingStoragePooledBuffer(fs::IStorage *bs, size_t da) : m_base_storage(bs), m_data_align(da), m_is_base_storage_size_dirty(true) {
+            explicit AlignmentMatchingStoragePooledBuffer(BaseStorageType bs, size_t da) : m_base_storage(std::move(bs)), m_data_align(da), m_is_base_storage_size_dirty(true) {
                 AMS_ASSERT(util::IsPowerOfTwo(da));
             }
 
@@ -206,21 +210,25 @@ namespace ams::fssystem {
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                /* Succeed if zero size. */
-                R_SUCCEED_IF(size == 0);
+                if (op_id == fs::OperationId::Invalidate) {
+                    return m_base_storage->OperateRange(fs::OperationId::Invalidate, offset, size);
+                } else {
+                    /* Succeed if zero size. */
+                    R_SUCCEED_IF(size == 0);
 
-                /* Get the base storage size. */
-                s64 bs_size = 0;
-                R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    /* Get the base storage size. */
+                    s64 bs_size = 0;
+                    R_TRY(this->GetSize(std::addressof(bs_size)));
+                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
 
-                /* Operate on the base storage. */
-                const auto valid_size         = std::min(size, bs_size - offset);
-                const auto aligned_offset     = util::AlignDown(offset, m_data_align);
-                const auto aligned_offset_end = util::AlignUp(offset + valid_size, m_data_align);
-                const auto aligned_size       = aligned_offset_end - aligned_offset;
+                    /* Operate on the base storage. */
+                    const auto valid_size         = std::min(size, bs_size - offset);
+                    const auto aligned_offset     = util::AlignDown(offset, m_data_align);
+                    const auto aligned_offset_end = util::AlignUp(offset + valid_size, m_data_align);
+                    const auto aligned_size       = aligned_offset_end - aligned_offset;
 
-                return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                    return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                }
             }
     };
 
@@ -288,21 +296,25 @@ namespace ams::fssystem {
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                /* Succeed if zero size. */
-                R_SUCCEED_IF(size == 0);
+                if (op_id == fs::OperationId::Invalidate) {
+                    return m_base_storage->OperateRange(fs::OperationId::Invalidate, offset, size);
+                } else {
+                    /* Succeed if zero size. */
+                    R_SUCCEED_IF(size == 0);
 
-                /* Get the base storage size. */
-                s64 bs_size = 0;
-                R_TRY(this->GetSize(std::addressof(bs_size)));
-                R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                    /* Get the base storage size. */
+                    s64 bs_size = 0;
+                    R_TRY(this->GetSize(std::addressof(bs_size)));
+                    R_UNLESS(fs::IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
 
-                /* Operate on the base storage. */
-                const auto valid_size         = std::min(size, bs_size - offset);
-                const auto aligned_offset     = util::AlignDown(offset, m_data_align);
-                const auto aligned_offset_end = util::AlignUp(offset + valid_size, m_data_align);
-                const auto aligned_size       = aligned_offset_end - aligned_offset;
+                    /* Operate on the base storage. */
+                    const auto valid_size         = std::min(size, bs_size - offset);
+                    const auto aligned_offset     = util::AlignDown(offset, m_data_align);
+                    const auto aligned_offset_end = util::AlignUp(offset + valid_size, m_data_align);
+                    const auto aligned_size       = aligned_offset_end - aligned_offset;
 
-                return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                    return m_base_storage->OperateRange(dst, dst_size, op_id, aligned_offset, aligned_size, src, src_size);
+                }
             }
     };
 

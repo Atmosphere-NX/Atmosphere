@@ -20,6 +20,7 @@
 
 namespace ams::fssystem {
 
+    template<typename BasePointer>
     class AesCtrStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AesCtrStorage);
         NON_MOVEABLE(AesCtrStorage);
@@ -28,13 +29,13 @@ namespace ams::fssystem {
             static constexpr size_t KeySize   = crypto::Aes128CtrEncryptor::KeySize;
             static constexpr size_t IvSize    = crypto::Aes128CtrEncryptor::IvSize;
         private:
-            IStorage * const m_base_storage;
+            BasePointer m_base_storage;
             char m_key[KeySize];
             char m_iv[IvSize];
         public:
             static void MakeIv(void *dst, size_t dst_size, u64 upper, s64 offset);
         public:
-            AesCtrStorage(IStorage *base, const void *key, size_t key_size, const void *iv, size_t iv_size);
+            AesCtrStorage(BasePointer base, const void *key, size_t key_size, const void *iv, size_t iv_size);
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
@@ -46,5 +47,8 @@ namespace ams::fssystem {
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
     };
+
+    using AesCtrStorageByPointer       = AesCtrStorage<fs::IStorage *>;
+    using AesCtrStorageBySharedPointer = AesCtrStorage<std::shared_ptr<fs::IStorage>>;
 
 }

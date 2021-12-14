@@ -206,8 +206,10 @@ namespace ams::fs {
             R_DEFINE_ERROR_RANGE(NcaCorrupted, 4501, 4599);
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeA, 4508);
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeB, 4509);
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeC, 4510);
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeD, 4511);
 
-                R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4511, 4529);
+                R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4512, 4529);
                     R_DEFINE_ERROR_RESULT(InvalidNcaFileSystemType,              4512);
                     R_DEFINE_ERROR_RESULT(InvalidAcidFileSize,                   4513);
                     R_DEFINE_ERROR_RESULT(InvalidAcidSize,                       4514);
@@ -227,6 +229,8 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(InvalidNcaHeader,                      4528);
                     R_DEFINE_ERROR_RESULT(InvalidNcaFsHeader,                    4529);
 
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeE, 4530);
+
                 R_DEFINE_ERROR_RANGE(NcaHierarchicalSha256StorageCorrupted, 4531, 4539);
                     R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256BlockSize,       4532);
                     R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256LayerCount,      4533);
@@ -235,6 +239,9 @@ namespace ams::fs {
 
                 /* TODO: Range? */
                 R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration, 4543);
+
+                /* TODO: Range? */
+                R_DEFINE_ERROR_RESULT(InvalidCompressedStorageSize, 4547);
 
             R_DEFINE_ERROR_RANGE(IntegrityVerificationStorageCorrupted, 4601, 4639);
                  R_DEFINE_ERROR_RESULT(IncorrectIntegrityVerificationMagic,                4602);
@@ -362,6 +369,7 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemB,                       6375);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileA,                             6376);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileB,                             6377);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperationInCompressedStorageA,                         6387);
 
                 R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 

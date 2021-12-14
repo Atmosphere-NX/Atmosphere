@@ -21,6 +21,7 @@
 
 namespace ams::fssystem {
 
+    template<typename BasePointer>
     class AesXtsStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AesXtsStorage);
         NON_MOVEABLE(AesXtsStorage);
@@ -29,13 +30,15 @@ namespace ams::fssystem {
             static constexpr size_t KeySize      = crypto::Aes128XtsEncryptor::KeySize;
             static constexpr size_t IvSize       = crypto::Aes128XtsEncryptor::IvSize;
         private:
-            IStorage * const m_base_storage;
+            BasePointer m_base_storage;
             char m_key[2][KeySize];
             char m_iv[IvSize];
             const size_t m_block_size;
             os::SdkMutex m_mutex;
         public:
-            AesXtsStorage(IStorage *base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size);
+            static void MakeAesXtsIv(void *dst, size_t dst_size, s64 offset, size_t block_size);
+        public:
+            AesXtsStorage(BasePointer base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size);
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
@@ -47,5 +50,8 @@ namespace ams::fssystem {
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
     };
+
+    using AesXtsStorageByPointer       = AesXtsStorage<fs::IStorage *>;
+    using AesXtsStorageBySharedPointer = AesXtsStorage<std::shared_ptr<fs::IStorage>>;
 
 }

@@ -17,10 +17,12 @@
 #include <vapours.hpp>
 #include <stratosphere/fssrv/fssrv_i_file_system_creator.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
+#include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
 
 namespace ams::fssystem {
 
     struct NcaCryptoConfiguration;
+    struct NcaCompressionConfiguration;
 
 }
 
@@ -31,22 +33,20 @@ namespace ams::fssrv::fscreator {
         NON_MOVEABLE(StorageOnNcaCreator);
         private:
             MemoryResource *m_allocator;
-            fssystem::IBufferManager * const m_buffer_manager;
             const fssystem::NcaCryptoConfiguration &m_nca_crypto_cfg;
-            bool m_is_prod;
-            bool m_is_enabled_program_verification;
-        private:
-            Result VerifyNcaHeaderSign2(fssystem::NcaReader *nca_reader, fs::IStorage *storage);
+            const fssystem::NcaCompressionConfiguration &m_nca_compression_cfg;
+            fssystem::IBufferManager * const m_buffer_manager;
+            fssystem::IHash256GeneratorFactorySelector * const m_hash_generator_factory_selector;
         public:
-            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, bool prod, fssystem::IBufferManager *bm) : m_allocator(mr), m_buffer_manager(bm), m_nca_crypto_cfg(cfg), m_is_prod(prod), m_is_enabled_program_verification(true) {
+            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, const fssystem::NcaCompressionConfiguration &c_cfg, fssystem::IBufferManager *bm, fssystem::IHash256GeneratorFactorySelector *hgfs)
+                : m_allocator(mr), m_nca_crypto_cfg(cfg), m_nca_compression_cfg(c_cfg), m_buffer_manager(bm), m_hash_generator_factory_selector(hgfs)
+            {
                 /* ... */
             }
 
-            virtual Result Create(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index, bool verify_header_sign_2) override;
-            virtual Result CreateWithPatch(std::shared_ptr<fs::IStorage> *out, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index, bool verify_header_sign_2) override;
+            virtual Result Create(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index) override;
+            virtual Result CreateWithPatch(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index) override;
             virtual Result CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) override;
-            virtual Result VerifyAcid(fs::fsa::IFileSystem *fs, fssystem::NcaReader *nca_reader) override;
-            virtual void   SetEnabledProgramVerification(bool en) override;
     };
 
 }

@@ -27,10 +27,10 @@ namespace ams::fssystem {
         private:
             os::SdkMutex m_mutex;
             BlockCache m_block_cache;
-            fs::IStorage * const m_base_storage;
+            std::shared_ptr<fs::IStorage> m_base_storage;
             s32 m_block_size;
         public:
-            ReadOnlyBlockCacheStorage(IStorage *bs, s32 bsz, char *buf, size_t buf_size, s32 cache_block_count) : m_mutex(), m_block_cache(), m_base_storage(bs), m_block_size(bsz) {
+            ReadOnlyBlockCacheStorage(std::shared_ptr<fs::IStorage> bs, s32 bsz, char *buf, size_t buf_size, s32 cache_block_count) : m_mutex(), m_block_cache(), m_base_storage(std::move(bs)), m_block_size(bsz) {
                 /* Validate preconditions. */
                 AMS_ASSERT(buf_size >= static_cast<size_t>(m_block_size));
                 AMS_ASSERT(util::IsPowerOfTwo(m_block_size));
@@ -88,32 +88,21 @@ namespace ams::fssystem {
                 }
             }
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                /* Validate preconditions. */
-                AMS_ASSERT(util::IsAligned(offset, m_block_size));
-                AMS_ASSERT(util::IsAligned(size,   m_block_size));
-
                 /* If invalidating cache, invalidate our blocks. */
                 if (op_id == fs::OperationId::Invalidate) {
-                    R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
-
                     std::scoped_lock lk(m_mutex);
 
                     const size_t cache_block_count = m_block_cache.GetSize();
-                    BlockCache valid_cache;
-
-                    for (size_t count = 0; count < cache_block_count; ++count) {
+                    for (size_t i = 0; i < cache_block_count; ++i) {
                         auto lru = m_block_cache.PopLruNode();
-                        if (offset <= lru->m_key && lru->m_key < offset + size) {
-                            m_block_cache.PushMruNode(std::move(lru), -1);
-                        } else {
-                            valid_cache.PushMruNode(std::move(lru), lru->m_key);
-                        }
+                        m_block_cache.PushMruNode(std::move(lru), -1);
                     }
 
-                    while (!valid_cache.IsEmpty()) {
-                        auto lru = valid_cache.PopLruNode();
-                        m_block_cache.PushMruNode(std::move(lru), lru->m_key);
-                    }
+                    return ResultSuccess();
+                } else {
+                    /* Validate preconditions. */
+                    AMS_ASSERT(util::IsAligned(offset, m_block_size));
+                    AMS_ASSERT(util::IsAligned(size,   m_block_size));
                 }
 
                 /* Operate on the base storage. */

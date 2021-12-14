@@ -23,6 +23,14 @@ namespace ams::fssystem {
         public:
             static Result Read(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, char *buffer, size_t size);
             static Result Write(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, const char *buffer, size_t size);
+
+            static Result Read(std::shared_ptr<fs::IStorage> &base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, char *buffer, size_t size) {
+                return Read(base_storage.get(), work_buf, work_buf_size, data_alignment, buffer_alignment, offset, buffer, size);
+            }
+
+            static Result Write(std::shared_ptr<fs::IStorage> &base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, const char *buffer, size_t size) {
+                return Write(base_storage.get(), work_buf, work_buf_size, data_alignment, buffer_alignment, offset, buffer, size);
+            }
     };
 
 }

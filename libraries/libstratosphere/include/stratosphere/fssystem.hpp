@@ -37,6 +37,7 @@
 #include <stratosphere/fssystem/fssystem_nca_file_system_driver.hpp>
 #include <stratosphere/fssystem/fssystem_nca_file_system_driver_impl.hpp>
 #include <stratosphere/fssystem/fssystem_crypto_configuration.hpp>
+#include <stratosphere/fssystem/fssystem_compression_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_aes_ctr_counter_extended_storage.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
@@ -44,6 +45,7 @@
 #include <stratosphere/fssystem/fssystem_service_context.hpp>
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage_impl.hpp>
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage.hpp>
+#include <stratosphere/fssystem/fssystem_compressed_storage.hpp>
 #include <stratosphere/fssystem/save/fssystem_buffered_storage.hpp>
 #include <stratosphere/fssystem/save/fssystem_hierarchical_integrity_verification_storage.hpp>
 #include <stratosphere/fssystem/fssystem_integrity_romfs_storage.hpp>

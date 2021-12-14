@@ -150,7 +150,7 @@ namespace ams::fssystem::save {
         m_storage = fs::SubStorage();
     }
 
-    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type) {
+    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type) {
         /* Validate preconditions. */
         AMS_ASSERT(bufs != nullptr);
         AMS_ASSERT(IntegrityMinLayerCount <= info.max_layers && info.max_layers <= IntegrityMaxLayerCount);
@@ -168,7 +168,7 @@ namespace ams::fssystem::save {
         {
             fs::HashSalt mac;
             crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[0].key, KeyArray[0].size);
-            m_verify_storages[0].Initialize(storage[HierarchicalStorageInformation::MasterStorage], storage[HierarchicalStorageInformation::Layer1Storage], static_cast<s64>(1) << info.info[0].block_order, HashSize, m_buffers->buffers[m_max_layers - 2], mac, false, storage_type);
+            m_verify_storages[0].Initialize(storage[HierarchicalStorageInformation::MasterStorage], storage[HierarchicalStorageInformation::Layer1Storage], static_cast<s64>(1) << info.info[0].block_order, HashSize, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
         }
 
         /* Ensure we don't leak state if further initialization goes wrong. */
@@ -203,7 +203,7 @@ namespace ams::fssystem::save {
                 fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
                 fs::HashSalt mac;
                 crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
-                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], mac, false, storage_type);
+                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
             }
 
             /* Initialize the buffer storage. */
@@ -217,7 +217,7 @@ namespace ams::fssystem::save {
                 fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
                 fs::HashSalt mac;
                 crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
-                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], mac, true, storage_type);
+                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, true, storage_type);
             }
 
             /* Initialize the buffer storage. */

@@ -13,20 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
+#pragma once
+#include <vapours.hpp>
+#include <stratosphere/fssystem/fssystem_nca_file_system_driver.hpp>
 
 namespace ams::fssystem {
 
-    u8 NcaHeader::GetProperKeyGeneration() const {
-        return std::max(this->key_generation, this->key_generation_2);
-    }
-
-    bool NcaPatchInfo::HasIndirectTable() const {
-        return this->indirect_size != 0;
-    }
-
-    bool NcaPatchInfo::HasAesCtrExTable() const {
-        return this->aes_ctr_ex_size != 0;
-    }
+    const ::ams::fssystem::NcaCompressionConfiguration *GetNcaCompressionConfiguration();
 
 }
