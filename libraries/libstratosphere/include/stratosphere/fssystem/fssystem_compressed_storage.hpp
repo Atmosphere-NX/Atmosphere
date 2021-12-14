@@ -66,6 +66,7 @@ namespace ams::fssystem {
         public:
             virtual Result QueryAppropriateOffset(s64 *out, s64 offset, s64 access_size, s64 alignment_size) override {
                 AMS_ABORT("TODO");
+                AMS_UNUSED(out, offset, access_size, alignment_size);
                 /* return m_core.QueryAppropriateOffsetForAsynchronousAccess(out, offset, access_size, alignment_size); */
             }
         public:
@@ -74,6 +75,7 @@ namespace ams::fssystem {
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ABORT("TODO");
+                AMS_UNUSED(out);
                 /* return m_core.GetSize(out); */
             }
 

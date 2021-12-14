@@ -40,7 +40,7 @@ namespace ams::fssystem {
         }
 
         constexpr bool IsRandomAccessible(CompressionType type) {
-            return CompressionType_None;
+            return type == CompressionType_None;
         }
 
         constexpr bool IsUnknownType(CompressionType type) {

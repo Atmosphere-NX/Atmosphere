@@ -44,7 +44,7 @@ namespace ams::crypto::impl {
         private:
             State m_state;
         public:
-            Sha256Impl() { /* ... */ }
+            Sha256Impl() { m_state.finalized = false; }
             ~Sha256Impl() {
                 static_assert(std::is_trivially_destructible<State>::value);
                 ClearMemory(std::addressof(m_state), sizeof(m_state));

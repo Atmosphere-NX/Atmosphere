@@ -82,7 +82,7 @@ namespace ams::fssystem::save {
             void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const;
 
             void CalcBlockHash(BlockHash *out, const void *buffer, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
-                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size));
+                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size), generator);
             }
 
             Result IsCleared(bool *is_cleared, const BlockHash &hash);
