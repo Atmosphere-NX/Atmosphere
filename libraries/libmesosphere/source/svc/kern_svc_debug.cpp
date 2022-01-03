@@ -277,6 +277,9 @@ namespace ams::kern::svc {
         }
 
         Result WriteDebugProcessMemory(ams::svc::Handle debug_handle, uintptr_t buffer, uintptr_t address, size_t size) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
             /* Validate address / size. */
             R_UNLESS(size > 0,                   svc::ResultInvalidSize());
             R_UNLESS((address < address + size), svc::ResultInvalidCurrentMemory());
