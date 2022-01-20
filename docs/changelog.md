@@ -1,4 +1,10 @@
 # Changelog
+## 1.2.6
++ Support was added for 13.2.1.
++ A number of minor issues were fixed and improvements were made, including:
+  + A minor performance improvement was implemented in service table dispatch by sorting and binary-searching the service command table instead of using linear search.
+  + Static initialization logic in Atmosphere was made much more regular.
++ General system stability improvements to enhance the user's experience.
 ## 1.2.5
 + Support was added for 13.2.0.
 + A number of minor issues were fixed and improvements were made, including:
