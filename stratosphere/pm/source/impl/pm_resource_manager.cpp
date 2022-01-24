@@ -99,14 +99,11 @@ namespace ams::pm::resource {
             const u64 old_memory_limit = g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax];
             g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = new_memory_limit;
 
-            {
-                /* If we fail, restore the old memory limit. */
-                auto limit_guard = SCOPE_GUARD { g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = old_memory_limit; };
-                R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), svc::LimitableResource_PhysicalMemoryMax, g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax]));
-                limit_guard.Cancel();
-            }
+            /* Restore the old memory limit if we fail. */
+            ON_RESULT_FAILURE { g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = old_memory_limit; };
 
-            return ResultSuccess();
+            /* Set the resource limit. */
+            R_RETURN(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), svc::LimitableResource_PhysicalMemoryMax, g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax]));
         }
 
         Result SetResourceLimitLimitValues(ResourceLimitGroup group, u64 new_memory_limit) {
