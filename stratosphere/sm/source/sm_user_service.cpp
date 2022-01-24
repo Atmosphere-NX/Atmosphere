@@ -78,7 +78,7 @@ namespace ams::sm {
             /* We do not have a pointer buffer, and so our pointer buffer size is zero. */
             /* Return the relevant hardcoded response. */
             std::memcpy(message_buffer.GetBufferForDebug(), CmifResponseToQueryPointerBufferSize, sizeof(CmifResponseToQueryPointerBufferSize));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* We only support request (with context), from this point forwards. */
@@ -124,7 +124,7 @@ namespace ams::sm {
                 /* Invoke the handler for DetachClient. */
                 R_ABORT_UNLESS(this->DetachClient(tipc::ClientProcessId{ client_process_id }));
             } else {
-                return tipc::ResultInvalidMethod();
+                R_THROW(tipc::ResultInvalidMethod());
             }
 
             /* Serialize output. */
@@ -158,7 +158,7 @@ namespace ams::sm {
                 std::memcpy(out_message_buffer + 0x00, CmifResponseToUnregisterService, sizeof(CmifResponseToUnregisterService));
                 std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
             } else {
-                return tipc::ResultInvalidMethod();
+                R_THROW(tipc::ResultInvalidMethod());
             }
         } else if (std::memcmp(raw_message_buffer, CmifExpectedRequestHeaderForRegisterService, sizeof(CmifExpectedRequestHeaderForRegisterService)) == 0) {
             /* Get the command id. */
@@ -186,13 +186,13 @@ namespace ams::sm {
                 std::memcpy(out_message_buffer + 0x0C, std::addressof(out_handle), sizeof(out_handle));
                 std::memcpy(out_message_buffer + 0x18, std::addressof(result),  sizeof(result));
             } else {
-                return tipc::ResultInvalidMethod();
+                R_THROW(tipc::ResultInvalidMethod());
             }
         } else {
-            return tipc::ResultInvalidMethod();
+            R_THROW(tipc::ResultInvalidMethod());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

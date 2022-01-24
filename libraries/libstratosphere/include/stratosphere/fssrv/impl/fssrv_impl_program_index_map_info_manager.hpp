@@ -97,7 +97,7 @@ namespace ams::fssrv::impl {
 
                 /* Clear the map, and ensure we remain clear if we fail after this point. */
                 this->ClearImpl();
-                auto clear_guard = SCOPE_GUARD { this->ClearImpl(); };
+                ON_RESULT_FAILURE { this->ClearImpl(); };
 
                 /* Add each info to the list. */
                 for (int i = 0; i < count; ++i) {
@@ -115,8 +115,7 @@ namespace ams::fssrv::impl {
                 }
 
                 /* We successfully imported the map. */
-                clear_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
         private:
             void ClearImpl() {

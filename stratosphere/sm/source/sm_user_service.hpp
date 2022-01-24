@@ -36,83 +36,96 @@ namespace ams::sm {
             Result RegisterClient(const tipc::ClientProcessId client_process_id) {
                 m_process_id  = client_process_id.value;
                 m_initialized = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetServiceHandle(tipc::OutMoveHandle out_h, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
-                    return impl::GetServiceHandle(out_h.GetPointer(), m_process_id, service);
-                });
+
+                TIPC_REGISTER_RETRY_ON_RESULT_REQUEST_DEFERRED(service);
+
+                R_RETURN(impl::GetServiceHandle(out_h.GetPointer(), m_process_id, service));
             }
 
             Result RegisterService(tipc::OutMoveHandle out_h, ServiceName service, u32 max_sessions, bool is_light) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::RegisterService(out_h.GetPointer(), m_process_id, service, max_sessions, is_light);
+
+                R_RETURN(impl::RegisterService(out_h.GetPointer(), m_process_id, service, max_sessions, is_light));
             }
 
             Result UnregisterService(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::UnregisterService(m_process_id, service);
+
+                R_RETURN(impl::UnregisterService(m_process_id, service));
             }
 
             Result DetachClient(const tipc::ClientProcessId client_process_id) {
                 AMS_UNUSED(client_process_id);
 
                 m_initialized = false;
-                return ResultSuccess();
+
+                R_SUCCEED();
             }
 
             /* Atmosphere commands. */
             Result AtmosphereInstallMitm(tipc::OutMoveHandle srv_h, tipc::OutMoveHandle qry_h, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
-                    return impl::InstallMitm(srv_h.GetPointer(), qry_h.GetPointer(), m_process_id, service);
-                });
+
+                TIPC_REGISTER_RETRY_ON_RESULT_REQUEST_DEFERRED(service);
+
+                R_RETURN(impl::InstallMitm(srv_h.GetPointer(), qry_h.GetPointer(), m_process_id, service));
             }
 
             Result AtmosphereUninstallMitm(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::UninstallMitm(m_process_id, service);
+
+                R_RETURN(impl::UninstallMitm(m_process_id, service));
             }
 
             Result AtmosphereAcknowledgeMitmSession(tipc::Out<MitmProcessInfo> client_info, tipc::OutMoveHandle fwd_h, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::AcknowledgeMitmSession(client_info.GetPointer(), fwd_h.GetPointer(), m_process_id, service);
+
+                R_RETURN(impl::AcknowledgeMitmSession(client_info.GetPointer(), fwd_h.GetPointer(), m_process_id, service));
             }
 
             Result AtmosphereHasMitm(tipc::Out<bool> out, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::HasMitm(out.GetPointer(), service);
+
+                R_RETURN(impl::HasMitm(out.GetPointer(), service));
             }
 
             Result AtmosphereWaitMitm(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
-                    return impl::WaitMitm(service);
-                });
+
+                TIPC_REGISTER_RETRY_ON_RESULT_REQUEST_DEFERRED(service);
+
+                R_RETURN(impl::WaitMitm(service));
             }
 
             Result AtmosphereDeclareFutureMitm(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::DeclareFutureMitm(m_process_id, service);
+
+                R_RETURN(impl::DeclareFutureMitm(m_process_id, service));
             }
 
             Result AtmosphereClearFutureMitm(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::ClearFutureMitm(m_process_id, service);
+
+                R_RETURN(impl::ClearFutureMitm(m_process_id, service));
             }
 
             Result AtmosphereHasService(tipc::Out<bool> out, ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return impl::HasService(out.GetPointer(), service);
+
+                R_RETURN(impl::HasService(out.GetPointer(), service));
             }
 
             Result AtmosphereWaitService(ServiceName service) {
                 R_UNLESS(m_initialized, sm::ResultInvalidClient());
-                return this->RegisterRetryIfDeferred(service, [&]() ALWAYS_INLINE_LAMBDA -> Result {
-                    return impl::WaitService(service);
-                });
+
+                TIPC_REGISTER_RETRY_ON_RESULT_REQUEST_DEFERRED(service);
+
+                R_RETURN(impl::WaitService(service));
             }
         public:
             /* Backwards compatibility layer for cmif. */

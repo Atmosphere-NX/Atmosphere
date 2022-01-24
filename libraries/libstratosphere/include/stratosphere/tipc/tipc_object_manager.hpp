@@ -145,38 +145,44 @@ namespace ams::tipc {
                 /* Get the method id. */
                 const auto method_id = svc::ipc::MessageBuffer::MessageHeader(message_buffer).GetTag();
 
-                /* Ensure that we clean up any handles that get sent our way. */
-                auto handle_guard = SCOPE_GUARD {
-                    const svc::ipc::MessageBuffer::MessageHeader message_header(message_buffer);
-                    const svc::ipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
+                /* Process for the method id. */
+                {
+                    /* Ensure that if we fail, we clean up any handles that get sent our way. */
+                    ON_RESULT_FAILURE {
+                        const svc::ipc::MessageBuffer::MessageHeader message_header(message_buffer);
+                        const svc::ipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
 
-                    /* Determine the offset to the start of handles. */
-                    auto offset = message_buffer.GetSpecialDataIndex(message_header, special_header);
-                    if (special_header.GetHasProcessId()) {
-                        offset += sizeof(u64) / sizeof(u32);
-                    }
+                        /* Determine the offset to the start of handles. */
+                        auto offset = message_buffer.GetSpecialDataIndex(message_header, special_header);
+                        if (special_header.GetHasProcessId()) {
+                            offset += sizeof(u64) / sizeof(u32);
+                        }
 
-                    /* Close all copy handles. */
-                    for (auto i = 0; i < special_header.GetCopyHandleCount(); ++i) {
-                        svc::CloseHandle(message_buffer.GetHandle(offset));
-                        offset += sizeof(ams::svc::Handle) / sizeof(u32);
-                    }
-                };
+                        /* Close all copy handles. */
+                        for (auto i = 0; i < special_header.GetCopyHandleCount(); ++i) {
+                            svc::CloseHandle(message_buffer.GetHandle(offset));
+                            offset += sizeof(ams::svc::Handle) / sizeof(u32);
+                        }
+                    };
 
-                /* Check that the method id is valid. */
-                R_UNLESS(method_id != MethodId_Invalid, tipc::ResultInvalidMethod());
+                    /* Check that the method id is valid. */
+                    R_UNLESS(method_id != MethodId_Invalid, tipc::ResultInvalidMethod());
 
-                /* If we're closing the object, do so. */
-                if (method_id == MethodId_CloseSession) {
-                    /* Validate the command format. */
-                    {
+                    /* Process the request. */
+                    if (method_id != MethodId_CloseSession) {
+                        /* Process the generic method for the object. */
+                        R_TRY(object.GetObject()->ProcessRequest());
+                    } else {
+                        /* Validate that the close request is of valid format. */
                         using CloseSessionCommandMeta = impl::CommandMetaInfo<MethodId_CloseSession, std::tuple<>>;
                         using CloseSessionProcessor   = impl::CommandProcessor<CloseSessionCommandMeta>;
 
-                        /* Validate that the command is valid. */
                         R_TRY(CloseSessionProcessor::ValidateCommandFormat(message_buffer));
                     }
+                }
 
+                /* If we were asked to close the object, do so. */
+                if (method_id == MethodId_CloseSession) {
                     /* Get the object handle. */
                     const auto handle = object.GetHandle();
 
@@ -187,17 +193,12 @@ namespace ams::tipc {
                     /* NOTE: Nintendo does not check that this succeeds. */
                     R_ABORT_UNLESS(svc::CloseHandle(handle));
 
-                    /* Return result to signify we closed the object (and don't close input handles). */
-                    handle_guard.Cancel();
-                    return tipc::ResultSessionClosed();
+                    /* Return an error to signify we closed the object. */
+                    R_THROW(tipc::ResultSessionClosed());
                 }
 
-                /* Process the generic method for the object. */
-                R_TRY(object.GetObject()->ProcessRequest());
-
                 /* We successfully processed, so we don't need to clean up handles. */
-                handle_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

@@ -96,6 +96,8 @@ namespace ams::tipc {
     };
     static_assert(std::is_standard_layout<DeferrableBaseImpl>::value);
 
+    #define TIPC_REGISTER_RETRY_ON_RESULT_REQUEST_DEFERRED(KEY) ON_RESULT_INCLUDED(tipc::ResultRequestDeferred) { this->RegisterRetry(KEY); }
+
     template<size_t _MessageBufferRequiredSize>
     class DeferrableBaseImplWithBuffer : public DeferrableBaseImpl {
         private:

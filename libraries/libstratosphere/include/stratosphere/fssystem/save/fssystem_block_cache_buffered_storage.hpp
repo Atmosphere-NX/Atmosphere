@@ -143,12 +143,11 @@ namespace ams::fssystem::save {
             Result StoreOrDestroyBuffer(const MemoryRange &range, CacheEntry *entry) {
                 AMS_ASSERT(entry != nullptr);
 
-                auto buf_guard = SCOPE_GUARD { this->DestroyBuffer(entry, range); };
+                ON_RESULT_FAILURE { this->DestroyBuffer(entry, range); };
 
                 R_TRY(this->StoreAssociateBuffer(range, *entry));
 
-                buf_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result FlushCacheEntry(CacheIndex index, bool invalidate);
