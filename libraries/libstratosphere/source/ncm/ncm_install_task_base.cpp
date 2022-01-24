@@ -484,9 +484,6 @@ namespace ams::ncm {
 
                 /* Mark storage id to be committed later. */
                 commit_list.Push(reader.GetStorageId());
-
-                /* We successfully commited this meta, so we want to check for errors when updating. */
-                update_guard.Cancel();
             }
 
             /* Try to update our data. */
@@ -724,7 +721,6 @@ namespace ams::ncm {
         R_TRY(this->WritePlaceHolder(meta_info.key, out_install_content_info));
 
         /* Don't delete the placeholder. Set state to installed. */
-        placeholder_guard.Cancel();
         out_install_content_info->install_state = InstallState::Installed;
         R_SUCCEED();
     }

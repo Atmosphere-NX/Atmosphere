@@ -230,7 +230,7 @@ namespace ams::kern {
                 }
             }
 
-            return result;
+            R_RETURN(result);
         }
 
         ALWAYS_INLINE Result ProcessReceiveMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
@@ -278,7 +278,7 @@ namespace ams::kern {
             /* Set the output descriptor. */
             dst_msg.Set(cur_offset, ipc::MessageBuffer::PointerDescriptor(reinterpret_cast<void *>(recv_pointer), recv_size, src_desc.GetIndex()));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr ALWAYS_INLINE Result GetMapAliasMemoryState(KMemoryState &out, ipc::MessageBuffer::MapAliasDescriptor::Attribute attr) {
@@ -286,10 +286,10 @@ namespace ams::kern {
                 case ipc::MessageBuffer::MapAliasDescriptor::Attribute_Ipc:          out = KMemoryState_Ipc;          break;
                 case ipc::MessageBuffer::MapAliasDescriptor::Attribute_NonSecureIpc: out = KMemoryState_NonSecureIpc; break;
                 case ipc::MessageBuffer::MapAliasDescriptor::Attribute_NonDeviceIpc: out = KMemoryState_NonDeviceIpc; break;
-                default: return svc::ResultInvalidCombination();
+                default: R_THROW(svc::ResultInvalidCombination());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr ALWAYS_INLINE Result GetMapAliasTestStateAndAttributeMask(u32 &out_state, u32 &out_attr_mask, KMemoryState state) {
@@ -307,10 +307,10 @@ namespace ams::kern {
                     out_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                     break;
                 default:
-                    return svc::ResultInvalidCombination();
+                    R_THROW(svc::ResultInvalidCombination());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE void CleanupSpecialData(KProcess &dst_process, u32 *dst_msg_ptr, size_t dst_buffer_size) {
@@ -388,7 +388,7 @@ namespace ams::kern {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result CleanupServerMap(KSessionRequest *request, KProcess *server_process) {
@@ -413,7 +413,7 @@ namespace ams::kern {
                 R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result CleanupClientMap(KSessionRequest *request, KProcessPageTable *client_page_table) {
@@ -435,7 +435,7 @@ namespace ams::kern {
                 R_TRY(client_page_table->CleanupForIpcClient(request->GetExchangeClientAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result CleanupMap(KSessionRequest *request, KProcess *server_process, KProcessPageTable *client_page_table) {
@@ -445,7 +445,7 @@ namespace ams::kern {
             /* Cleanup the client map. */
             R_TRY(CleanupClientMap(request, client_page_table));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ProcessReceiveMessageMapAliasDescriptors(int &offset, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, KSessionRequest *request, KMemoryPermission perm, bool send) {
@@ -471,7 +471,7 @@ namespace ams::kern {
                 R_TRY(dst_page_table.SetupForIpc(std::addressof(dst_address), size, src_address, src_page_table, perm, dst_state, send));
 
                 /* Ensure that we clean up on failure. */
-                auto setup_guard = SCOPE_GUARD {
+                ON_RESULT_FAILURE {
                     dst_page_table.CleanupForIpcServer(dst_address, size, dst_state);
                     src_page_table.CleanupForIpcClient(src_address, size, dst_state);
                 };
@@ -484,15 +484,12 @@ namespace ams::kern {
                 } else {
                     R_TRY(request->PushReceive(src_address, dst_address, size, dst_state));
                 }
-
-                /* We successfully pushed the mapping. */
-                setup_guard.Cancel();
             }
 
             /* Set the output descriptor. */
             dst_msg.Set(cur_offset, ipc::MessageBuffer::MapAliasDescriptor(GetVoidPointer(dst_address), size, src_desc.GetAttribute()));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ReceiveMessage(bool &recv_list_broken, uintptr_t dst_message_buffer, size_t dst_buffer_size, KPhysicalAddress dst_message_paddr, KThread &src_thread, uintptr_t src_message_buffer, size_t src_buffer_size, KServerSession *session, KSessionRequest *request) {
@@ -579,7 +576,7 @@ namespace ams::kern {
             int offset = dst_msg.Set(src_header);
 
             /* Set up a guard to make sure that we end up in a clean state on error. */
-            auto cleanup_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 /* Cleanup mappings. */
                 CleanupMap(request, std::addressof(dst_process), std::addressof(src_page_table));
 
@@ -678,8 +675,7 @@ namespace ams::kern {
             }
 
             /* We succeeded! */
-            cleanup_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ProcessSendMessageReceiveMapping(KProcessPageTable &dst_page_table, KProcessAddress client_address, KProcessAddress server_address, size_t size, KMemoryState src_state) {
@@ -720,7 +716,7 @@ namespace ams::kern {
                                                                 mapping_src_end));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ProcessSendMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
@@ -759,7 +755,7 @@ namespace ams::kern {
             /* Set the output descriptor. */
             dst_msg.Set(cur_offset, ipc::MessageBuffer::PointerDescriptor(reinterpret_cast<void *>(recv_pointer), recv_size, src_desc.GetIndex()));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result SendMessage(uintptr_t src_message_buffer, size_t src_buffer_size, KPhysicalAddress src_message_paddr, KThread &dst_thread, uintptr_t dst_message_buffer, size_t dst_buffer_size, KServerSession *session, KSessionRequest *request) {
@@ -820,124 +816,125 @@ namespace ams::kern {
             int pointer_key = 0;
             bool processed_special_data = false;
 
-            /* Set up a guard to make sure that we end up in a clean state on error. */
-            auto cleanup_guard = SCOPE_GUARD {
-                /* Cleanup special data. */
-                if (processed_special_data) {
-                    if (src_header.GetHasSpecialHeader()) {
-                        CleanupSpecialData(dst_process, dst_msg_ptr, dst_buffer_size);
+            /* Send the message. */
+            {
+                /* Make sure that we end up in a clean state on error. */
+                ON_RESULT_FAILURE {
+                    /* Cleanup special data. */
+                    if (processed_special_data) {
+                        if (src_header.GetHasSpecialHeader()) {
+                            CleanupSpecialData(dst_process, dst_msg_ptr, dst_buffer_size);
+                        }
+                    } else {
+                        CleanupServerHandles(src_user ? src_message_buffer : 0, src_buffer_size, src_message_paddr);
                     }
-                } else {
-                    CleanupServerHandles(src_user ? src_message_buffer : 0, src_buffer_size, src_message_paddr);
+
+                    /* Cleanup mappings. */
+                    CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table));
+                };
+
+                /* Ensure that the headers fit. */
+                R_UNLESS(ipc::MessageBuffer::GetMessageBufferSize(src_header, src_special_header) <= src_buffer_size, svc::ResultInvalidCombination());
+                R_UNLESS(ipc::MessageBuffer::GetMessageBufferSize(dst_header, dst_special_header) <= dst_buffer_size, svc::ResultInvalidCombination());
+
+                /* Ensure the receive list offset is after the end of raw data. */
+                if (dst_header.GetReceiveListOffset()) {
+                    R_UNLESS(dst_header.GetReceiveListOffset() >= ipc::MessageBuffer::GetRawDataIndex(dst_header, dst_special_header) + dst_header.GetRawCount(), svc::ResultInvalidCombination());
                 }
 
-                /* Cleanup mappings. */
-                CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table));
-            };
+                /* Ensure that the destination buffer is big enough to receive the source. */
+                R_UNLESS(dst_buffer_size >= src_end_offset * sizeof(u32), svc::ResultMessageTooLarge());
 
-            /* Ensure that the headers fit. */
-            R_UNLESS(ipc::MessageBuffer::GetMessageBufferSize(src_header, src_special_header) <= src_buffer_size, svc::ResultInvalidCombination());
-            R_UNLESS(ipc::MessageBuffer::GetMessageBufferSize(dst_header, dst_special_header) <= dst_buffer_size, svc::ResultInvalidCombination());
+                /* Replies must have no buffers. */
+                R_UNLESS(src_header.GetSendCount() == 0,     svc::ResultInvalidCombination());
+                R_UNLESS(src_header.GetReceiveCount() == 0,  svc::ResultInvalidCombination());
+                R_UNLESS(src_header.GetExchangeCount() == 0, svc::ResultInvalidCombination());
 
-            /* Ensure the receive list offset is after the end of raw data. */
-            if (dst_header.GetReceiveListOffset()) {
-                R_UNLESS(dst_header.GetReceiveListOffset() >= ipc::MessageBuffer::GetRawDataIndex(dst_header, dst_special_header) + dst_header.GetRawCount(), svc::ResultInvalidCombination());
-            }
+                /* Get the receive list. */
+                const s32 dst_recv_list_idx = ipc::MessageBuffer::GetReceiveListIndex(dst_header, dst_special_header);
+                ReceiveList dst_recv_list(dst_msg_ptr, dst_message_buffer, dst_page_table, dst_header, dst_special_header, dst_buffer_size, src_end_offset, dst_recv_list_idx, !dst_user);
 
-            /* Ensure that the destination buffer is big enough to receive the source. */
-            R_UNLESS(dst_buffer_size >= src_end_offset * sizeof(u32), svc::ResultMessageTooLarge());
+                /* Handle any receive buffers. */
+                for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
+                    R_TRY(ProcessSendMessageReceiveMapping(dst_page_table, request->GetReceiveClientAddress(i), request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
+                }
 
-            /* Replies must have no buffers. */
-            R_UNLESS(src_header.GetSendCount() == 0,     svc::ResultInvalidCombination());
-            R_UNLESS(src_header.GetReceiveCount() == 0,  svc::ResultInvalidCombination());
-            R_UNLESS(src_header.GetExchangeCount() == 0, svc::ResultInvalidCombination());
+                /* Handle any exchange buffers. */
+                for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
+                    R_TRY(ProcessSendMessageReceiveMapping(dst_page_table, request->GetExchangeClientAddress(i), request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
+                }
 
-            /* Get the receive list. */
-            const s32 dst_recv_list_idx = ipc::MessageBuffer::GetReceiveListIndex(dst_header, dst_special_header);
-            ReceiveList dst_recv_list(dst_msg_ptr, dst_message_buffer, dst_page_table, dst_header, dst_special_header, dst_buffer_size, src_end_offset, dst_recv_list_idx, !dst_user);
+                /* Set the header. */
+                offset = dst_msg.Set(src_header);
 
-            /* Handle any receive buffers. */
-            for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
-                R_TRY(ProcessSendMessageReceiveMapping(dst_page_table, request->GetReceiveClientAddress(i), request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
-            }
+                /* Process any special data. */
+                MESOSPHERE_ASSERT(GetCurrentThreadPointer() == std::addressof(src_thread));
+                processed_special_data = true;
+                if (src_header.GetHasSpecialHeader()) {
+                    R_TRY(ProcessMessageSpecialData<true>(offset, dst_process, src_process, src_thread, dst_msg, src_msg, src_special_header));
+                }
 
-            /* Handle any exchange buffers. */
-            for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
-                R_TRY(ProcessSendMessageReceiveMapping(dst_page_table, request->GetExchangeClientAddress(i), request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
-            }
+                /* Process any pointer buffers. */
+                for (auto i = 0; i < src_header.GetPointerCount(); ++i) {
+                    R_TRY(ProcessSendMessagePointerDescriptors(offset, pointer_key, dst_page_table, dst_msg, src_msg, dst_recv_list, dst_user && dst_header.GetReceiveListCount() == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer));
+                }
 
-            /* Set the header. */
-            offset = dst_msg.Set(src_header);
+                /* Clear any map alias buffers. */
+                for (auto i = 0; i < src_header.GetMapAliasCount(); ++i) {
+                    offset = dst_msg.Set(offset, ipc::MessageBuffer::MapAliasDescriptor());
+                }
 
-            /* Process any special data. */
-            MESOSPHERE_ASSERT(GetCurrentThreadPointer() == std::addressof(src_thread));
-            processed_special_data = true;
-            if (src_header.GetHasSpecialHeader()) {
-                R_TRY(ProcessMessageSpecialData<true>(offset, dst_process, src_process, src_thread, dst_msg, src_msg, src_special_header));
-            }
+                /* Process any raw data. */
+                if (const auto raw_count = src_header.GetRawCount(); raw_count != 0) {
+                    /* Get the offset and size. */
+                    const size_t offset_words = offset * sizeof(u32);
+                    const size_t raw_size     = raw_count * sizeof(u32);
 
-            /* Process any pointer buffers. */
-            for (auto i = 0; i < src_header.GetPointerCount(); ++i) {
-                R_TRY(ProcessSendMessagePointerDescriptors(offset, pointer_key, dst_page_table, dst_msg, src_msg, dst_recv_list, dst_user && dst_header.GetReceiveListCount() == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer));
-            }
+                    /* Fast case is TLS -> TLS, do raw memcpy if we can. */
+                    if (!dst_user && !src_user) {
+                        std::memcpy(dst_msg_ptr + offset, src_msg_ptr + offset, raw_size);
+                    } else if (src_user) {
+                        /* Determine how much fast size we can copy. */
+                        const size_t max_fast_size = std::min<size_t>(offset_words + raw_size, PageSize);
+                        const size_t fast_size     = max_fast_size - offset_words;
 
-            /* Clear any map alias buffers. */
-            for (auto i = 0; i < src_header.GetMapAliasCount(); ++i) {
-                offset = dst_msg.Set(offset, ipc::MessageBuffer::MapAliasDescriptor());
-            }
+                        /* Determine the dst permission. User buffer should be unmapped + read, TLS should be user readable. */
+                        const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
 
-            /* Process any raw data. */
-            if (const auto raw_count = src_header.GetRawCount(); raw_count != 0) {
-                /* Get the offset and size. */
-                const size_t offset_words = offset * sizeof(u32);
-                const size_t raw_size     = raw_count * sizeof(u32);
+                        /* Perform the fast part of the copy. */
+                        R_TRY(dst_page_table.CopyMemoryFromKernelToLinear(dst_message_buffer + offset_words, fast_size,
+                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          dst_perm,
+                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None,
+                                                                          reinterpret_cast<uintptr_t>(src_msg_ptr) + offset_words));
 
-                /* Fast case is TLS -> TLS, do raw memcpy if we can. */
-                if (!dst_user && !src_user) {
-                    std::memcpy(dst_msg_ptr + offset, src_msg_ptr + offset, raw_size);
-                } else if (src_user) {
-                    /* Determine how much fast size we can copy. */
-                    const size_t max_fast_size = std::min<size_t>(offset_words + raw_size, PageSize);
-                    const size_t fast_size     = max_fast_size - offset_words;
+                        /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
+                        if (fast_size < raw_size) {
+                            R_TRY(dst_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
+                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          dst_perm,
+                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None,
+                                                                          src_message_buffer + max_fast_size,
+                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead),
+                                                                          KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked));
+                        }
+                    } else /* if (dst_user) */ {
+                        /* The destination is a user buffer, so it should be unmapped + readable. */
+                        constexpr KMemoryPermission DestinationPermission = static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite);
 
-                    /* Determine the dst permission. User buffer should be unmapped + read, TLS should be user readable. */
-                    const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
-
-                    /* Perform the fast part of the copy. */
-                    R_TRY(dst_page_table.CopyMemoryFromKernelToLinear(dst_message_buffer + offset_words, fast_size,
-                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                      dst_perm,
-                                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None,
-                                                                      reinterpret_cast<uintptr_t>(src_msg_ptr) + offset_words));
-
-                    /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
-                    if (fast_size < raw_size) {
-                        R_TRY(dst_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
-                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                      dst_perm,
-                                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None,
-                                                                      src_message_buffer + max_fast_size,
-                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                      static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead),
-                                                                      KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked));
+                        /* Copy the memory. */
+                        R_TRY(dst_page_table.CopyMemoryFromUserToLinear(dst_message_buffer + offset_words, raw_size,
+                                                                        KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                        DestinationPermission,
+                                                                        KMemoryAttribute_Uncached, KMemoryAttribute_None,
+                                                                        src_message_buffer + offset_words));
                     }
-                } else /* if (dst_user) */ {
-                    /* The destination is a user buffer, so it should be unmapped + readable. */
-                    constexpr KMemoryPermission DestinationPermission = static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite);
-
-                    /* Copy the memory. */
-                    R_TRY(dst_page_table.CopyMemoryFromUserToLinear(dst_message_buffer + offset_words, raw_size,
-                                                                    KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                    DestinationPermission,
-                                                                    KMemoryAttribute_Uncached, KMemoryAttribute_None,
-                                                                    src_message_buffer + offset_words));
                 }
             }
 
-            /* We succeeded. Perform cleanup with validation. */
-            cleanup_guard.Cancel();
-
-            return CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table));
+            /* Perform (and validate) any remaining cleanup. */
+            R_RETURN(CleanupMap(request, std::addressof(src_process), std::addressof(dst_page_table)));
         }
 
         ALWAYS_INLINE void ReplyAsyncError(KProcess *to_process, uintptr_t to_msg_buf, size_t to_msg_buf_size, Result result) {
@@ -1065,7 +1062,7 @@ namespace ams::kern {
             }
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result KServerSession::SendReply(uintptr_t server_message, uintptr_t server_buffer_size, KPhysicalAddress server_message_paddr) {
@@ -1161,7 +1158,7 @@ namespace ams::kern {
             }
         }
 
-        return result;
+        R_RETURN(result);
     }
 
     Result KServerSession::OnRequest(KSessionRequest *request) {
@@ -1200,7 +1197,7 @@ namespace ams::kern {
             GetCurrentThread().BeginWait(std::addressof(wait_queue));
         }
 
-        return GetCurrentThread().GetWaitResult();
+        R_RETURN(GetCurrentThread().GetWaitResult());
     }
 
     bool KServerSession::IsSignaledImpl() const {

@@ -294,8 +294,20 @@ namespace ams::result::impl {
     constexpr ALWAYS_INLINE bool EvaluateResultSuccess(const ::ams::Result &r) { return R_SUCCEEDED(r); }
     constexpr ALWAYS_INLINE bool EvaluateResultFailure(const ::ams::Result &r) { return R_FAILED(r); }
 
+    template<typename R>
+    constexpr ALWAYS_INLINE bool EvaluateResultIncludedImplForSuccessCompatibility(const ::ams::Result &r) {
+        if constexpr (std::same_as<R, ::ams::ResultSuccess>) {
+            return R_SUCCEEDED(r);
+        } else {
+            return R::Includes(r);
+        }
+    }
+
     template<typename... Rs>
-    constexpr ALWAYS_INLINE bool EvaluateAnyResultIncludes(const ::ams::Result &r) { return (Rs::Includes(r) || ...); }
+    constexpr ALWAYS_INLINE bool EvaluateAnyResultIncludes(const ::ams::Result &r) { return (EvaluateResultIncludedImplForSuccessCompatibility<Rs>(r) || ...); }
+
+    template<typename... Rs>
+    constexpr ALWAYS_INLINE bool EvaluateResultNotIncluded(const ::ams::Result &r) { return !EvaluateAnyResultIncludes<Rs...>(r); }
 
 }
 
@@ -305,9 +317,9 @@ namespace ams::result::impl {
     [[maybe_unused]] Result __tmp_result_##COUNTER_VALUE = ResultSuccess();                                                          \
     ::ams::Result &__TmpCurrentResultReference = HasPrevRef_##COUNTER_VALUE ? PrevRef_##COUNTER_VALUE : __tmp_result_##COUNTER_VALUE
 
-#define ON_RESULT_RETURN_IMPL(EVALUATE_RESULT)                                                                                                                                         \
-    static_assert(std::same_as<decltype(__TmpCurrentResultReference), Result &>);                                                                                                      \
-    auto ANONYMOUS_VARIABLE(RESULT_GUARD_STATE_) = ::ams::result::impl::ResultReferenceForScopedResultGuard<EVALUATE_RESULT>(__TmpCurrentResultReference) + [&]() ALWAYS_INLINE_LAMBDA
+#define ON_RESULT_RETURN_IMPL(...)                                                                                                                                                 \
+    static_assert(std::same_as<decltype(__TmpCurrentResultReference), Result &>);                                                                                                  \
+    auto ANONYMOUS_VARIABLE(RESULT_GUARD_STATE_) = ::ams::result::impl::ResultReferenceForScopedResultGuard<__VA_ARGS__>(__TmpCurrentResultReference) + [&]() ALWAYS_INLINE_LAMBDA
 
 #define ON_RESULT_FAILURE_2 ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateResultFailure)
 
@@ -321,11 +333,21 @@ namespace ams::result::impl {
     AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
     ON_RESULT_SUCCESS_2
 
-#define ON_RESULT_INCLUDED_2(RS) ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateAnyResultIncludes<RS>)
+#define ON_RESULT_INCLUDED_2(...) ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateAnyResultIncludes<__VA_ARGS__>)
 
-#define ON_RESULT_INCLUDED(RS)                                                                                                                                               \
+#define ON_RESULT_INCLUDED(...)                                                                                                                                              \
     AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
-    ON_RESULT_INCLUDED_2(RS)
+    ON_RESULT_INCLUDED_2(__VA_ARGS__)
+
+#define ON_RESULT_NOT_INCLUDED_2(...) ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateResultNotIncluded<__VA_ARGS__>)
+
+#define ON_RESULT_NOT_INCLUDED(...)                                                                                                                                          \
+    AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
+    ON_RESULT_NOT_INCLUDED_2(__VA_ARGS__)
+
+#define ON_RESULT_FAILURE_BESIDES(...)   ON_RESULT_NOT_INCLUDED(::ams::ResultSuccess, ## __VA_ARGS__)
+
+#define ON_RESULT_FAILURE_BESIDES_2(...) ON_RESULT_NOT_INCLUDED_2(::ams::ResultSuccess, ## __VA_ARGS__)
 
 /* =================================================================== */
 

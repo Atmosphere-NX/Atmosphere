@@ -26,14 +26,10 @@ namespace ams::kern {
         /* Allocate a new page. */
         KPageBuffer *page_buf = KPageBuffer::Allocate();
         R_UNLESS(page_buf != nullptr, svc::ResultOutOfMemory());
-        auto page_buf_guard = SCOPE_GUARD { KPageBuffer::Free(page_buf); };
+        ON_RESULT_FAILURE { KPageBuffer::Free(page_buf); };
 
         /* Map the address in. */
-        R_TRY(m_owner->GetPageTable().MapPages(std::addressof(m_virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
-
-        /* We succeeded. */
-        page_buf_guard.Cancel();
-        return ResultSuccess();
+        R_RETURN(m_owner->GetPageTable().MapPages(std::addressof(m_virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
     }
 
     Result KThreadLocalPage::Finalize() {
@@ -48,7 +44,7 @@ namespace ams::kern {
 
         /* Free the page. */
         KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(phys_addr));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     KProcessAddress KThreadLocalPage::Reserve() {

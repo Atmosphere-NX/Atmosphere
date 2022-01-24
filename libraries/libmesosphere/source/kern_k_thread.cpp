@@ -235,7 +235,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KThread::InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type) {
@@ -250,23 +250,23 @@ namespace ams::kern {
         /* Map the stack page. */
         KProcessAddress stack_top = Null<KProcessAddress>;
         {
+            /* If we fail to map, avoid leaking the page. */
+            ON_RESULT_FAILURE { KPageBuffer::Free(page); };
+
+            /* Perform the mapping. */
             KProcessAddress stack_bottom = Null<KProcessAddress>;
-            auto page_guard = SCOPE_GUARD { KPageBuffer::Free(page); };
             R_TRY(Kernel::GetKernelPageTable().MapPages(std::addressof(stack_bottom), 1, PageSize, page->GetPhysicalAddress(), stack_region.GetAddress(),
                                                         stack_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
-            page_guard.Cancel();
-
 
             /* Calculate top of the stack. */
             stack_top = stack_bottom + PageSize;
         }
 
-        /* Initialize the thread. */
-        auto map_guard = SCOPE_GUARD { CleanupKernelStack(GetInteger(stack_top)); };
-        R_TRY(thread->Initialize(func, arg, GetVoidPointer(stack_top), user_stack_top, prio, core, owner, type));
-        map_guard.Cancel();
+        /* If we fail, cleanup the stack we mapped. */
+        ON_RESULT_FAILURE { CleanupKernelStack(GetInteger(stack_top)); };
 
-        return ResultSuccess();
+        /* Initialize the thread. */
+        R_RETURN(thread->Initialize(func, arg, GetVoidPointer(stack_top), user_stack_top, prio, core, owner, type));
     }
 
     void KThread::PostDestroy(uintptr_t arg) {
@@ -576,7 +576,7 @@ namespace ams::kern {
             *out_affinity_mask = m_virtual_affinity_mask;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KThread::GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask) {
@@ -595,7 +595,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KThread::SetCoreMask(int32_t core_id, u64 v_affinity_mask) {
@@ -700,7 +700,7 @@ namespace ams::kern {
             } while (retry_update);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KThread::SetBasePriority(s32 priority) {
@@ -752,7 +752,7 @@ namespace ams::kern {
         m_base_priority = IdleThreadPriority;
         KScheduler::OnThreadPriorityChanged(this, old_priority);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KThread::RequestSuspend(SuspendType type) {
@@ -923,7 +923,7 @@ namespace ams::kern {
             } while (thread_is_current);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KThread::GetThreadContext3(ams::svc::ThreadContext *out) {
@@ -944,7 +944,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KThread::AddWaiterImpl(KThread *thread) {
@@ -1121,7 +1121,7 @@ namespace ams::kern {
 
             /* Set our state and finish. */
             this->SetState(KThread::ThreadState_Runnable);
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -1165,15 +1165,15 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this != GetCurrentThreadPointer());
 
-        /* Request the thread terminate. */
+        /* Request the thread terminate if it hasn't already. */
         if (const auto new_state = this->RequestTerminate(); new_state != ThreadState_Terminated) {
             /* If the thread isn't terminated, wait for it to terminate. */
             s32 index;
             KSynchronizationObject *objects[] = { this };
-            return KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
-        } else {
-            return ResultSuccess();
+            R_TRY(KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite));
         }
+
+        R_SUCCEED();
     }
 
     KThread::ThreadState KThread::RequestTerminate() {
@@ -1248,7 +1248,7 @@ namespace ams::kern {
             /* Check if the thread should terminate. */
             if (this->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Wait for the sleep to end. */
@@ -1256,7 +1256,7 @@ namespace ams::kern {
             this->BeginWait(std::addressof(wait_queue));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KThread::BeginWait(KThreadQueue *queue) {
@@ -1357,7 +1357,7 @@ namespace ams::kern {
 
         /* We successfully iterated the list. */
         *out_num_threads = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

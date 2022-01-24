@@ -45,7 +45,7 @@ namespace ams::kern {
 
         /* Mark initialized. */
         m_is_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KInterruptEvent::Finalize() {
@@ -69,7 +69,7 @@ namespace ams::kern {
         /* Clear the interrupt. */
         Kernel::GetInterruptManager().ClearInterrupt(m_interrupt_id, m_core_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptEventTask::Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event) {
@@ -91,7 +91,7 @@ namespace ams::kern {
         }
 
         /* Ensure that the task is cleaned up if anything goes wrong. */
-        auto task_guard = SCOPE_GUARD { if (allocated) { KInterruptEventTask::Free(task); } };
+        ON_RESULT_FAILURE { if (allocated) { KInterruptEventTask::Free(task); } };
 
         /* Register/bind the interrupt task. */
         {
@@ -110,9 +110,7 @@ namespace ams::kern {
             g_interrupt_event_task_table[interrupt_id] = task;
         }
 
-        /* We successfully registered, so we don't need to free the task. */
-        task_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KInterruptEventTask::Unregister(s32 interrupt_id, s32 core_id) {
