@@ -61,7 +61,7 @@ namespace ams::kern::svc {
             /* Add the code memory to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out, code_mem));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ControlCodeMemory(ams::svc::Handle code_memory_handle, ams::svc::CodeMemoryOperation operation, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
@@ -132,10 +132,10 @@ namespace ams::kern::svc {
                     }
                     break;
                 default:
-                    return svc::ResultInvalidEnumValue();
+                    R_THROW(svc::ResultInvalidEnumValue());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -143,21 +143,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateCodeMemory64(ams::svc::Handle *out_handle, ams::svc::Address address, ams::svc::Size size) {
-        return CreateCodeMemory(out_handle, address, size);
+        R_RETURN(CreateCodeMemory(out_handle, address, size));
     }
 
     Result ControlCodeMemory64(ams::svc::Handle code_memory_handle, ams::svc::CodeMemoryOperation operation, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        return ControlCodeMemory(code_memory_handle, operation, address, size, perm);
+        R_RETURN(ControlCodeMemory(code_memory_handle, operation, address, size, perm));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateCodeMemory64From32(ams::svc::Handle *out_handle, ams::svc::Address address, ams::svc::Size size) {
-        return CreateCodeMemory(out_handle, address, size);
+        R_RETURN(CreateCodeMemory(out_handle, address, size));
     }
 
     Result ControlCodeMemory64From32(ams::svc::Handle code_memory_handle, ams::svc::CodeMemoryOperation operation, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        return ControlCodeMemory(code_memory_handle, operation, address, size, perm);
+        R_RETURN(ControlCodeMemory(code_memory_handle, operation, address, size, perm));
     }
 
 }

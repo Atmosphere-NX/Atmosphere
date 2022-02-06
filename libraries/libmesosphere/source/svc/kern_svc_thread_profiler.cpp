@@ -46,7 +46,7 @@ namespace ams::kern::svc {
                 *out_flags |= ams::svc::LastThreadInfoFlag_ThreadInSystemCall;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SynchronizeCurrentProcessToFutureTime(int64_t ns) {
@@ -68,7 +68,7 @@ namespace ams::kern::svc {
             /* Synchronize to the desired time. */
             R_TRY(wait_object->Synchronize(timeout));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetDebugFutureThreadInfo(ams::svc::LastThreadContext *out_context, uint64_t *out_thread_id, ams::svc::Handle debug_handle, int64_t ns) {
@@ -85,7 +85,7 @@ namespace ams::kern::svc {
             /* Get the running thread info. */
             R_TRY(debug->GetRunningThreadInfo(out_context, out_thread_id));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LegacyGetFutureThreadInfo(ams::svc::LastThreadContext *out_context, uintptr_t *out_tls_address, uint32_t *out_flags, int64_t ns) {
@@ -98,7 +98,7 @@ namespace ams::kern::svc {
             /* Get the thread info. */
             R_TRY(GetLastThreadInfoImpl(out_context, out_tls_address, out_flags));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetLastThreadInfo(ams::svc::LastThreadContext *out_context, uintptr_t *out_tls_address, uint32_t *out_flags) {
@@ -108,7 +108,7 @@ namespace ams::kern::svc {
             /* Get the thread info. */
             R_TRY(GetLastThreadInfoImpl(out_context, out_tls_address, out_flags));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -116,16 +116,16 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result GetDebugFutureThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, uint64_t *out_thread_id, ams::svc::Handle debug_handle, int64_t ns) {
-        return GetDebugFutureThreadInfo(out_context, out_thread_id, debug_handle, ns);
+        R_RETURN(GetDebugFutureThreadInfo(out_context, out_thread_id, debug_handle, ns));
     }
 
     Result LegacyGetFutureThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags, int64_t ns) {
-        return LegacyGetFutureThreadInfo(out_context, reinterpret_cast<uintptr_t *>(out_tls_address), out_flags, ns);
+        R_RETURN(LegacyGetFutureThreadInfo(out_context, reinterpret_cast<uintptr_t *>(out_tls_address), out_flags, ns));
     }
 
     Result GetLastThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags) {
         static_assert(sizeof(*out_tls_address) == sizeof(uintptr_t));
-        return GetLastThreadInfo(out_context, reinterpret_cast<uintptr_t *>(out_tls_address), out_flags);
+        R_RETURN(GetLastThreadInfo(out_context, reinterpret_cast<uintptr_t *>(out_tls_address), out_flags));
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -140,7 +140,7 @@ namespace ams::kern::svc {
             .lr = static_cast<u32>(context.lr),
             .pc = static_cast<u32>(context.pc),
         };
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LegacyGetFutureThreadInfo64From32(ams::svc::ilp32::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags, int64_t ns) {
@@ -155,7 +155,7 @@ namespace ams::kern::svc {
             .lr = static_cast<u32>(context.lr),
             .pc = static_cast<u32>(context.pc),
         };
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetLastThreadInfo64From32(ams::svc::ilp32::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags) {
@@ -170,7 +170,7 @@ namespace ams::kern::svc {
             .lr = static_cast<u32>(context.lr),
             .pc = static_cast<u32>(context.pc),
         };
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

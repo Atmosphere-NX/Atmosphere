@@ -334,7 +334,7 @@ namespace ams::kern::board::nintendo::nx {
                     for (size_t i = 0; i < num_reserved; i++) {
                         this->ReleaseImpl(out[i]);
                     }
-                    return svc::ResultOutOfResource();
+                    R_THROW(svc::ResultOutOfResource());
                 }
 
                 void Release(u8 asid) {

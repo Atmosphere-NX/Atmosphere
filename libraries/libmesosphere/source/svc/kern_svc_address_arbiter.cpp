@@ -69,7 +69,7 @@ namespace ams::kern::svc {
                 timeout = timeout_ns;
             }
 
-            return GetCurrentProcess().WaitAddressArbiter(address, arb_type, value, timeout);
+            R_RETURN(GetCurrentProcess().WaitAddressArbiter(address, arb_type, value, timeout));
         }
 
         Result SignalToAddress(uintptr_t address, ams::svc::SignalType signal_type, int32_t value, int32_t count) {
@@ -78,7 +78,7 @@ namespace ams::kern::svc {
             R_UNLESS(util::IsAligned(address, sizeof(int32_t)), svc::ResultInvalidAddress());
             R_UNLESS(IsValidSignalType(signal_type),            svc::ResultInvalidEnumValue());
 
-            return GetCurrentProcess().SignalAddressArbiter(address, signal_type, value, count);
+            R_RETURN(GetCurrentProcess().SignalAddressArbiter(address, signal_type, value, count));
         }
 
     }
@@ -86,21 +86,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result WaitForAddress64(ams::svc::Address address, ams::svc::ArbitrationType arb_type, int32_t value, int64_t timeout_ns) {
-        return WaitForAddress(address, arb_type, value, timeout_ns);
+        R_RETURN(WaitForAddress(address, arb_type, value, timeout_ns));
     }
 
     Result SignalToAddress64(ams::svc::Address address, ams::svc::SignalType signal_type, int32_t value, int32_t count) {
-        return SignalToAddress(address, signal_type, value, count);
+        R_RETURN(SignalToAddress(address, signal_type, value, count));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result WaitForAddress64From32(ams::svc::Address address, ams::svc::ArbitrationType arb_type, int32_t value, int64_t timeout_ns) {
-        return WaitForAddress(address, arb_type, value, timeout_ns);
+        R_RETURN(WaitForAddress(address, arb_type, value, timeout_ns));
     }
 
     Result SignalToAddress64From32(ams::svc::Address address, ams::svc::SignalType signal_type, int32_t value, int32_t count) {
-        return SignalToAddress(address, signal_type, value, count);
+        R_RETURN(SignalToAddress(address, signal_type, value, count));
     }
 
 }

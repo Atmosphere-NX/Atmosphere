@@ -98,12 +98,12 @@ namespace ams::kern {
 
                 /* Signal the next owner thread. */
                 next_owner_thread->EndWait(result);
-                return result;
+                R_RETURN(result);
             } else {
                 /* Just write the value to userspace. */
                 R_UNLESS(WriteToUser(addr, std::addressof(next_value)), svc::ResultInvalidCurrentMemory());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
     }
@@ -143,7 +143,7 @@ namespace ams::kern {
         owner_thread->Close();
 
         /* Get the wait result. */
-        return cur_thread->GetWaitResult();
+        R_RETURN(cur_thread->GetWaitResult());
     }
 
     void KConditionVariable::SignalImpl(KThread *thread) {
@@ -224,7 +224,7 @@ namespace ams::kern {
             /* Check that the thread isn't terminating. */
             if (cur_thread->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Update the value and process for the next owner. */
@@ -256,7 +256,7 @@ namespace ams::kern {
                 /* Write the value to userspace. */
                 if (!WriteToUser(addr, std::addressof(next_value))) {
                     slp.CancelSleep();
-                    return svc::ResultInvalidCurrentMemory();
+                    R_THROW(svc::ResultInvalidCurrentMemory());
                 }
             }
 
@@ -273,7 +273,7 @@ namespace ams::kern {
         }
 
         /* Get the wait result. */
-        return cur_thread->GetWaitResult();
+        R_RETURN(cur_thread->GetWaitResult());
     }
 
 }

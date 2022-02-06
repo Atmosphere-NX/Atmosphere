@@ -62,7 +62,7 @@ namespace ams::kern {
             bool IsServerClosed() const { return m_state != State::Normal; }
             bool IsClientClosed() const { return m_state != State::Normal; }
 
-            Result OnRequest(KThread *request_thread) { return m_server.OnRequest(request_thread); }
+            Result OnRequest(KThread *request_thread) { R_RETURN(m_server.OnRequest(request_thread)); }
 
             KLightClientSession &GetClientSession() { return m_client; }
             KLightServerSession &GetServerSession() { return m_server; }

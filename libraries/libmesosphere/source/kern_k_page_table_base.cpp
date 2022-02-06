@@ -2829,57 +2829,57 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
-        return this->LockMemoryAndOpen(nullptr, out, address, size,
+        R_RETURN(this->LockMemoryAndOpen(nullptr, out, address, size,
                                        KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, nullptr);
+                                  KMemoryAttribute_Locked, nullptr));
     }
 
     Result KPageTableBase::LockForTransferMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm) {
-        return this->LockMemoryAndOpen(out, nullptr, address, size,
+        R_RETURN(this->LockMemoryAndOpen(out, nullptr, address, size,
                                        KMemoryState_FlagCanTransfer, KMemoryState_FlagCanTransfer,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        perm,
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanTransfer, KMemoryState_FlagCanTransfer,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg)));
     }
 
     Result KPageTableBase::LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size) {
-        return this->LockMemoryAndOpen(out, nullptr, address, size,
+        R_RETURN(this->LockMemoryAndOpen(out, nullptr, address, size,
                                        KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg)));
     }
 
     Result KPageTableBase::OpenMemoryRangeForProcessCacheOperation(MemoryRange *out, KProcessAddress address, size_t size) {

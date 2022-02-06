@@ -55,14 +55,14 @@ namespace ams::kern {
             KScopedAutoObject existing_object = FindImpl(name);
             if (existing_object.IsNull()) {
                 g_object_list.push_back(*new_name);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* The object already exists, which is an error condition. Perform cleanup. */
         obj->Close();
         KObjectName::Free(new_name);
-        return svc::ResultInvalidState();
+        R_THROW(svc::ResultInvalidState());
     }
 
     Result KObjectName::Delete(KAutoObject *obj, const char *compare_name) {
@@ -76,12 +76,12 @@ namespace ams::kern {
                 obj->Close();
                 g_object_list.erase(g_object_list.iterator_to(name));
                 KObjectName::Free(std::addressof(name));
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* We didn't find the object in the list. */
-        return svc::ResultNotFound();
+        R_THROW(svc::ResultNotFound());
     }
 
     KScopedAutoObject<KAutoObject> KObjectName::Find(const char *name) {

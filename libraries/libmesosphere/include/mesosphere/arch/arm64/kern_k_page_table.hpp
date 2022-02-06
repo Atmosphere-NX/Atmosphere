@@ -191,7 +191,7 @@ namespace ams::kern::arch::arm64 {
             Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
                 switch (page_size) {
                     case L1BlockSize:
-                        return this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll);
+                        R_RETURN(this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     case L2ContiguousBlockSize:
                         entry_template.SetContiguous(true);
                         [[fallthrough]];
@@ -199,12 +199,12 @@ namespace ams::kern::arch::arm64 {
                     case L2TegraSmmuBlockSize:
 #endif
                     case L2BlockSize:
-                        return this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll);
+                        R_RETURN(this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     case L3ContiguousBlockSize:
                         entry_template.SetContiguous(true);
                         [[fallthrough]];
                     case L3BlockSize:
-                        return this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll);
+                        R_RETURN(this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
             }

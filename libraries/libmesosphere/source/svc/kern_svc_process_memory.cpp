@@ -54,7 +54,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
 
             /* Set the memory permission. */
-            return page_table.SetProcessMemoryPermission(address, size, perm);
+            R_RETURN(page_table.SetProcessMemoryPermission(address, size, perm));
         }
 
         Result MapProcessMemory(uintptr_t dst_address, ams::svc::Handle process_handle, uint64_t src_address, size_t size) {
@@ -96,7 +96,7 @@ namespace ams::kern::svc {
             /* Map the group. */
             R_TRY(dst_pt.MapPageGroup(dst_address, pg, KMemoryState_SharedCode, KMemoryPermission_UserReadWrite));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UnmapProcessMemory(uintptr_t dst_address, ams::svc::Handle process_handle, uint64_t src_address, size_t size) {
@@ -125,7 +125,7 @@ namespace ams::kern::svc {
             /* Unmap the memory. */
             R_TRY(dst_pt.UnmapProcessMemory(dst_address, size, src_pt, src_address));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result MapProcessCodeMemory(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
@@ -152,7 +152,7 @@ namespace ams::kern::svc {
             /* Map the memory. */
             R_TRY(page_table.MapCodeMemory(dst_address, src_address, size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UnmapProcessCodeMemory(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
@@ -179,7 +179,7 @@ namespace ams::kern::svc {
             /* Unmap the memory. */
             R_TRY(page_table.UnmapCodeMemory(dst_address, src_address, size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -187,45 +187,45 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SetProcessMemoryPermission64(ams::svc::Handle process_handle, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        return SetProcessMemoryPermission(process_handle, address, size, perm);
+        R_RETURN(SetProcessMemoryPermission(process_handle, address, size, perm));
     }
 
     Result MapProcessMemory64(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
-        return MapProcessMemory(dst_address, process_handle, src_address, size);
+        R_RETURN(MapProcessMemory(dst_address, process_handle, src_address, size));
     }
 
     Result UnmapProcessMemory64(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
-        return UnmapProcessMemory(dst_address, process_handle, src_address, size);
+        R_RETURN(UnmapProcessMemory(dst_address, process_handle, src_address, size));
     }
 
     Result MapProcessCodeMemory64(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        return MapProcessCodeMemory(process_handle, dst_address, src_address, size);
+        R_RETURN(MapProcessCodeMemory(process_handle, dst_address, src_address, size));
     }
 
     Result UnmapProcessCodeMemory64(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        return UnmapProcessCodeMemory(process_handle, dst_address, src_address, size);
+        R_RETURN(UnmapProcessCodeMemory(process_handle, dst_address, src_address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SetProcessMemoryPermission64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        return SetProcessMemoryPermission(process_handle, address, size, perm);
+        R_RETURN(SetProcessMemoryPermission(process_handle, address, size, perm));
     }
 
     Result MapProcessMemory64From32(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
-        return MapProcessMemory(dst_address, process_handle, src_address, size);
+        R_RETURN(MapProcessMemory(dst_address, process_handle, src_address, size));
     }
 
     Result UnmapProcessMemory64From32(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
-        return UnmapProcessMemory(dst_address, process_handle, src_address, size);
+        R_RETURN(UnmapProcessMemory(dst_address, process_handle, src_address, size));
     }
 
     Result MapProcessCodeMemory64From32(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        return MapProcessCodeMemory(process_handle, dst_address, src_address, size);
+        R_RETURN(MapProcessCodeMemory(process_handle, dst_address, src_address, size));
     }
 
     Result UnmapProcessCodeMemory64From32(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        return UnmapProcessCodeMemory(process_handle, dst_address, src_address, size);
+        R_RETURN(UnmapProcessCodeMemory(process_handle, dst_address, src_address, size));
     }
 
 }

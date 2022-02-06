@@ -150,12 +150,12 @@ namespace ams::kern::arch::arm64 {
         /* Lock the context, if we're a main thread. */
         m_locked = is_main;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KThreadContext::Finalize() {
         /* This doesn't actually do anything. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KThreadContext::SetArguments(uintptr_t arg0, uintptr_t arg1) {

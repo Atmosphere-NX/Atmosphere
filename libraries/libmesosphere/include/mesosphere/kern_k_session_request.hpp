@@ -190,15 +190,15 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE size_t GetExchangeCount() const { return m_mappings.GetExchangeCount(); }
 
             ALWAYS_INLINE Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return m_mappings.PushSend(client, server, size, state);
+                R_RETURN(m_mappings.PushSend(client, server, size, state));
             }
 
             ALWAYS_INLINE Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return m_mappings.PushReceive(client, server, size, state);
+                R_RETURN(m_mappings.PushReceive(client, server, size, state));
             }
 
             ALWAYS_INLINE Result PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return m_mappings.PushExchange(client, server, size, state);
+                R_RETURN(m_mappings.PushExchange(client, server, size, state));
             }
 
             constexpr ALWAYS_INLINE KProcessAddress GetSendClientAddress(size_t i) const { return m_mappings.GetSendClientAddress(i); }

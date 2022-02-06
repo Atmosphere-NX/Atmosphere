@@ -42,11 +42,11 @@ namespace ams::kern {
             Result Detach(ams::svc::DeviceName device_name);
 
             Result MapByForce(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
-                return this->Map(page_table, process_address, size, device_address, device_perm, false);
+                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, false));
             }
 
             Result MapAligned(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
-                return this->Map(page_table, process_address, size, device_address, device_perm, true);
+                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, true));
             }
 
             Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address);

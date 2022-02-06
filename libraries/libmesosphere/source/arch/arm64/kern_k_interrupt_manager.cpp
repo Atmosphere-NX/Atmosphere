@@ -215,12 +215,12 @@ namespace ams::kern::arch::arm64 {
         if (KInterruptController::IsGlobal(irq)) {
             KScopedInterruptDisable di;
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
-            return this->BindGlobal(handler, irq, core_id, priority, manual_clear, level);
+            R_RETURN(this->BindGlobal(handler, irq, core_id, priority, manual_clear, level));
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
 
             KScopedInterruptDisable di;
-            return this->BindLocal(handler, irq, priority, manual_clear);
+            R_RETURN(this->BindLocal(handler, irq, priority, manual_clear));
         }
     }
 
@@ -234,12 +234,12 @@ namespace ams::kern::arch::arm64 {
             KScopedInterruptDisable di;
 
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
-            return this->UnbindGlobal(irq);
+            R_RETURN(this->UnbindGlobal(irq));
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
 
             KScopedInterruptDisable di;
-            return this->UnbindLocal(irq);
+            R_RETURN(this->UnbindLocal(irq));
         }
     }
 
@@ -252,12 +252,12 @@ namespace ams::kern::arch::arm64 {
         if (KInterruptController::IsGlobal(irq)) {
             KScopedInterruptDisable di;
             KScopedSpinLock lk(this->GetGlobalInterruptLock());
-            return this->ClearGlobal(irq);
+            R_RETURN(this->ClearGlobal(irq));
         } else {
             MESOSPHERE_ASSERT(core_id == GetCurrentCoreId());
 
             KScopedInterruptDisable di;
-            return this->ClearLocal(irq);
+            R_RETURN(this->ClearLocal(irq));
         }
     }
 
@@ -288,7 +288,7 @@ namespace ams::kern::arch::arm64 {
         m_interrupt_controller.SetPriorityLevel(irq, priority);
         m_interrupt_controller.Enable(irq);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptManager::BindLocal(KInterruptHandler *handler, s32 irq, s32 priority, bool manual_clear) {
@@ -311,7 +311,7 @@ namespace ams::kern::arch::arm64 {
         m_interrupt_controller.SetPriorityLevel(irq, priority);
         m_interrupt_controller.Enable(irq);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptManager::UnbindGlobal(s32 irq) {
@@ -323,7 +323,7 @@ namespace ams::kern::arch::arm64 {
 
         GetGlobalInterruptEntry(irq).handler = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptManager::UnbindLocal(s32 irq) {
@@ -335,7 +335,7 @@ namespace ams::kern::arch::arm64 {
 
         entry.handler = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptManager::ClearGlobal(s32 irq) {
@@ -350,7 +350,7 @@ namespace ams::kern::arch::arm64 {
         /* Clear and enable. */
         entry.needs_clear = false;
         m_interrupt_controller.Enable(irq);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInterruptManager::ClearLocal(s32 irq) {
@@ -365,7 +365,7 @@ namespace ams::kern::arch::arm64 {
         /* Clear and set priority. */
         entry.needs_clear = false;
         m_interrupt_controller.SetPriorityLevel(irq, entry.priority);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

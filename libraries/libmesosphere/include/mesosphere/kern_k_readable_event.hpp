@@ -44,7 +44,7 @@ namespace ams::kern {
                 /* Try to perform a reset, succeeding unconditionally. */
                 this->Reset();
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual bool IsSignaled() const override;

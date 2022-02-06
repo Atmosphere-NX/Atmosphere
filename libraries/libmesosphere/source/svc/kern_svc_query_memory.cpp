@@ -32,7 +32,7 @@ namespace ams::kern::svc {
 
             /* Write output. */
             *out_memory_info = info.GetSvcMemoryInfo();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         template<typename T>
@@ -62,14 +62,14 @@ namespace ams::kern::svc {
                 R_TRY(out_memory_info.CopyFrom(std::addressof(converted_info)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
 
         template<typename T>
         Result QueryMemory(KUserPointer<T *> out_memory_info, ams::svc::PageInfo *out_page_info, uintptr_t address) {
             /* Query memory is just QueryProcessMemory on the current process. */
-            return QueryProcessMemory(out_memory_info, out_page_info, ams::svc::PseudoHandle::CurrentProcess, address);
+            R_RETURN(QueryProcessMemory(out_memory_info, out_page_info, ams::svc::PseudoHandle::CurrentProcess, address));
         }
 
     }
@@ -77,21 +77,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result QueryMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Address address) {
-        return QueryMemory(out_memory_info, out_page_info, address);
+        R_RETURN(QueryMemory(out_memory_info, out_page_info, address));
     }
 
     Result QueryProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
-        return QueryProcessMemory(out_memory_info, out_page_info, process_handle, address);
+        R_RETURN(QueryProcessMemory(out_memory_info, out_page_info, process_handle, address));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result QueryMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Address address) {
-        return QueryMemory(out_memory_info, out_page_info, address);
+        R_RETURN(QueryMemory(out_memory_info, out_page_info, address));
     }
 
     Result QueryProcessMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
-        return QueryProcessMemory(out_memory_info, out_page_info, process_handle, address);
+        R_RETURN(QueryProcessMemory(out_memory_info, out_page_info, process_handle, address));
     }
 
 }

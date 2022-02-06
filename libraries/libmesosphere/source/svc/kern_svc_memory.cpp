@@ -47,7 +47,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
 
             /* Set the memory attribute. */
-            return page_table.SetMemoryPermission(address, size, perm);
+            R_RETURN(page_table.SetMemoryPermission(address, size, perm));
         }
 
         Result SetMemoryAttribute(uintptr_t address, size_t size, uint32_t mask, uint32_t attr) {
@@ -67,7 +67,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
 
             /* Set the memory attribute. */
-            return page_table.SetMemoryAttribute(address, size, mask, attr);
+            R_RETURN(page_table.SetMemoryAttribute(address, size, mask, attr));
         }
 
         Result MapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
@@ -91,7 +91,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.CanContain(dst_address, size, KMemoryState_Stack), svc::ResultInvalidMemoryRegion());
 
             /* Map the memory. */
-            return page_table.MapMemory(dst_address, src_address, size);
+            R_RETURN(page_table.MapMemory(dst_address, src_address, size));
         }
 
         Result UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
@@ -115,7 +115,7 @@ namespace ams::kern::svc {
             R_UNLESS(page_table.CanContain(dst_address, size, KMemoryState_Stack), svc::ResultInvalidMemoryRegion());
 
             /* Unmap the memory. */
-            return page_table.UnmapMemory(dst_address, src_address, size);
+            R_RETURN(page_table.UnmapMemory(dst_address, src_address, size));
         }
 
     }
@@ -123,37 +123,37 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SetMemoryPermission64(ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        return SetMemoryPermission(address, size, perm);
+        R_RETURN(SetMemoryPermission(address, size, perm));
     }
 
     Result SetMemoryAttribute64(ams::svc::Address address, ams::svc::Size size, uint32_t mask, uint32_t attr) {
-        return SetMemoryAttribute(address, size, mask, attr);
+        R_RETURN(SetMemoryAttribute(address, size, mask, attr));
     }
 
     Result MapMemory64(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        return MapMemory(dst_address, src_address, size);
+        R_RETURN(MapMemory(dst_address, src_address, size));
     }
 
     Result UnmapMemory64(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        return UnmapMemory(dst_address, src_address, size);
+        R_RETURN(UnmapMemory(dst_address, src_address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SetMemoryPermission64From32(ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        return SetMemoryPermission(address, size, perm);
+        R_RETURN(SetMemoryPermission(address, size, perm));
     }
 
     Result SetMemoryAttribute64From32(ams::svc::Address address, ams::svc::Size size, uint32_t mask, uint32_t attr) {
-        return SetMemoryAttribute(address, size, mask, attr);
+        R_RETURN(SetMemoryAttribute(address, size, mask, attr));
     }
 
     Result MapMemory64From32(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        return MapMemory(dst_address, src_address, size);
+        R_RETURN(MapMemory(dst_address, src_address, size));
     }
 
     Result UnmapMemory64From32(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        return UnmapMemory(dst_address, src_address, size);
+        R_RETURN(UnmapMemory(dst_address, src_address, size));
     }
 
 }

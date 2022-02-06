@@ -81,7 +81,7 @@ namespace ams::kern {
         }
         m_last_block = new_block;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KPageGroup::Open() const {

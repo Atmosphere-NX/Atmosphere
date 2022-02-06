@@ -29,7 +29,7 @@ namespace ams::kern::svc {
             R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(debug_str.GetUnsafePointer()), len), svc::ResultInvalidCurrentMemory());
 
             /* Output the string. */
-            return KDebugLog::PrintUserString(debug_str, len);
+            R_RETURN(KDebugLog::PrintUserString(debug_str, len));
         }
 
     }
@@ -37,13 +37,13 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result OutputDebugString64(KUserPointer<const char *> debug_str, ams::svc::Size len) {
-        return OutputDebugString(debug_str, len);
+        R_RETURN(OutputDebugString(debug_str, len));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result OutputDebugString64From32(KUserPointer<const char *> debug_str, ams::svc::Size len) {
-        return OutputDebugString(debug_str, len);
+        R_RETURN(OutputDebugString(debug_str, len));
     }
 
 }

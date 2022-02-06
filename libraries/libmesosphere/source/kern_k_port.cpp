@@ -59,7 +59,7 @@ namespace ams::kern {
         R_UNLESS(m_state == State::Normal, svc::ResultPortClosed());
 
         m_server.EnqueueSession(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPort::EnqueueSession(KLightServerSession *session) {
@@ -68,7 +68,7 @@ namespace ams::kern {
         R_UNLESS(m_state == State::Normal, svc::ResultPortClosed());
 
         m_server.EnqueueSession(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

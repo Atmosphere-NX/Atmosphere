@@ -62,7 +62,7 @@ namespace ams::kern::svc {
             }
             MESOSPHERE_ASSERT(remaining == 0);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void FlushEntireDataCache() {
@@ -88,7 +88,7 @@ namespace ams::kern::svc {
             /* Flush the cache. */
             R_TRY(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result InvalidateProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -104,7 +104,7 @@ namespace ams::kern::svc {
             /* Invalidate the cache. */
             R_TRY(process->GetPageTable().InvalidateProcessDataCache(address, size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result StoreProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -123,14 +123,14 @@ namespace ams::kern::svc {
 
             /* Perform the operation. */
             if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
-                return cpu::StoreDataCache(reinterpret_cast<void *>(address), size);
+                R_RETURN(cpu::StoreDataCache(reinterpret_cast<void *>(address), size));
             } else {
                 class StoreCacheOperation : public CacheOperation {
                     public:
                         virtual void Operate(void *address, size_t size) const override { cpu::StoreDataCache(address, size); }
                 } operation;
 
-                return DoProcessCacheOperation(operation, page_table, address, size);
+                R_RETURN(DoProcessCacheOperation(operation, page_table, address, size));
             }
         }
 
@@ -150,14 +150,14 @@ namespace ams::kern::svc {
 
             /* Perform the operation. */
             if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
-                return cpu::FlushDataCache(reinterpret_cast<void *>(address), size);
+                R_RETURN(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));
             } else {
                 class FlushCacheOperation : public CacheOperation {
                     public:
                         virtual void Operate(void *address, size_t size) const override { cpu::FlushDataCache(address, size); }
                 } operation;
 
-                return DoProcessCacheOperation(operation, page_table, address, size);
+                R_RETURN(DoProcessCacheOperation(operation, page_table, address, size));
             }
         }
 
@@ -170,19 +170,19 @@ namespace ams::kern::svc {
     }
 
     Result FlushDataCache64(ams::svc::Address address, ams::svc::Size size) {
-        return FlushDataCache(address, size);
+        R_RETURN(FlushDataCache(address, size));
     }
 
     Result InvalidateProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return InvalidateProcessDataCache(process_handle, address, size);
+        R_RETURN(InvalidateProcessDataCache(process_handle, address, size));
     }
 
     Result StoreProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return StoreProcessDataCache(process_handle, address, size);
+        R_RETURN(StoreProcessDataCache(process_handle, address, size));
     }
 
     Result FlushProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return FlushProcessDataCache(process_handle, address, size);
+        R_RETURN(FlushProcessDataCache(process_handle, address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -192,19 +192,19 @@ namespace ams::kern::svc {
     }
 
     Result FlushDataCache64From32(ams::svc::Address address, ams::svc::Size size) {
-        return FlushDataCache(address, size);
+        R_RETURN(FlushDataCache(address, size));
     }
 
     Result InvalidateProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return InvalidateProcessDataCache(process_handle, address, size);
+        R_RETURN(InvalidateProcessDataCache(process_handle, address, size));
     }
 
     Result StoreProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return StoreProcessDataCache(process_handle, address, size);
+        R_RETURN(StoreProcessDataCache(process_handle, address, size));
     }
 
     Result FlushProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return FlushProcessDataCache(process_handle, address, size);
+        R_RETURN(FlushProcessDataCache(process_handle, address, size));
     }
 
 }

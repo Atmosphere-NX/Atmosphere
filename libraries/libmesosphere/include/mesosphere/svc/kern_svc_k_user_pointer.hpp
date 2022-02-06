@@ -56,12 +56,12 @@ namespace ams::kern::svc {
             public:
                 static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUser(dst, src, size), svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUser(dst, src, size),   svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -72,12 +72,12 @@ namespace ams::kern::svc {
             public:
                 static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(dst, src, size), svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(dst, src, size),   svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -88,12 +88,12 @@ namespace ams::kern::svc {
             public:
                 static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned64Bit(dst, src, size), svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned64Bit(dst, src, size),   svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -111,21 +111,21 @@ namespace ams::kern::svc {
                 CT *m_ptr;
             private:
                 ALWAYS_INLINE Result CopyToImpl(void *p, size_t size) const {
-                    return Traits::CopyFromUserspace(p, m_ptr, size);
+                    R_RETURN(Traits::CopyFromUserspace(p, m_ptr, size));
                 }
 
                 ALWAYS_INLINE Result CopyFromImpl(const void *p, size_t size) const {
-                    return Traits::CopyToUserspace(m_ptr, p, size);
+                    R_RETURN(Traits::CopyToUserspace(m_ptr, p, size));
                 }
             protected:
-                ALWAYS_INLINE Result CopyTo(T *p)         const { return this->CopyToImpl(p, sizeof(*p)); }
-                ALWAYS_INLINE Result CopyFrom(const T *p) const { return this->CopyFromImpl(p, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyTo(T *p)         const { R_RETURN(this->CopyToImpl(p, sizeof(*p))); }
+                ALWAYS_INLINE Result CopyFrom(const T *p) const { R_RETURN(this->CopyFromImpl(p, sizeof(*p))); }
 
-                ALWAYS_INLINE Result CopyArrayElementTo(T *p, size_t index)         const { return Traits::CopyFromUserspace(p, m_ptr + index, sizeof(*p)); }
-                ALWAYS_INLINE Result CopyArrayElementFrom(const T *p, size_t index) const { return Traits::CopyToUserspace(m_ptr + index, p, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyArrayElementTo(T *p, size_t index)         const { R_RETURN(Traits::CopyFromUserspace(p, m_ptr + index, sizeof(*p))); }
+                ALWAYS_INLINE Result CopyArrayElementFrom(const T *p, size_t index) const { R_RETURN(Traits::CopyToUserspace(m_ptr + index, p, sizeof(*p))); }
 
-                ALWAYS_INLINE Result CopyArrayTo(T *arr, size_t count)         const { return this->CopyToImpl(arr, sizeof(*arr) * count); }
-                ALWAYS_INLINE Result CopyArrayFrom(const T *arr, size_t count) const { return this->CopyFromImpl(arr, sizeof(*arr) * count); }
+                ALWAYS_INLINE Result CopyArrayTo(T *arr, size_t count)         const { R_RETURN(this->CopyToImpl(arr, sizeof(*arr) * count)); }
+                ALWAYS_INLINE Result CopyArrayFrom(const T *arr, size_t count) const { R_RETURN(this->CopyFromImpl(arr, sizeof(*arr) * count)); }
 
                 constexpr ALWAYS_INLINE bool IsNull() const { return m_ptr == nullptr; }
 
@@ -145,11 +145,11 @@ namespace ams::kern::svc {
                 ALWAYS_INLINE Result CopyStringTo(char *dst, size_t size) const {
                     static_assert(sizeof(char) == 1);
                     R_UNLESS(UserspaceAccess::CopyStringFromUser(dst, m_ptr, size) > 0, svc::ResultInvalidPointer());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 ALWAYS_INLINE Result CopyArrayElementTo(char *dst, size_t index) const {
-                    return Traits::CopyFromUserspace(dst, m_ptr + index, sizeof(*dst));
+                    R_RETURN(Traits::CopyFromUserspace(dst, m_ptr + index, sizeof(*dst)));
                 }
 
                 constexpr ALWAYS_INLINE bool IsNull() const { return m_ptr == nullptr; }

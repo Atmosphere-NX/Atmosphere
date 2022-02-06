@@ -80,7 +80,7 @@ namespace ams::kern {
         m_pool_type      = pool_type;
         m_is_initialized = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KIoPool::Finalize() {
@@ -113,7 +113,7 @@ namespace ams::kern {
         /* Add the region to our pool. */
         m_io_region_list.push_back(*new_region);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KIoPool::RemoveIoRegion(KIoRegion *region) {

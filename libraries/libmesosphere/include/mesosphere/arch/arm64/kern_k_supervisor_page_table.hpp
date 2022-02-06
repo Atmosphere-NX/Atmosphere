@@ -42,19 +42,19 @@ namespace ams::kern::arch::arm64 {
             }
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
-                return m_page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
+                R_RETURN(m_page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm));
             }
 
             Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
-                return m_page_table.UnmapPages(address, num_pages, state);
+                R_RETURN(m_page_table.UnmapPages(address, num_pages, state));
             }
 
             Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
-                return m_page_table.MapPageGroup(out_addr, pg, region_start, region_num_pages, state, perm);
+                R_RETURN(m_page_table.MapPageGroup(out_addr, pg, region_start, region_num_pages, state, perm));
             }
 
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
-                return m_page_table.UnmapPageGroup(address, pg, state);
+                R_RETURN(m_page_table.UnmapPageGroup(address, pg, state));
             }
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {

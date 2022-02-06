@@ -49,7 +49,7 @@ namespace ams::kern {
 
         /* We succeeded. */
         pg_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KCodeMemory::Finalize() {
@@ -87,7 +87,7 @@ namespace ams::kern {
         /* Mark ourselves as mapped. */
         m_is_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::Unmap(KProcessAddress address, size_t size) {
@@ -106,7 +106,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_is_mapped);
         m_is_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::MapToOwner(KProcessAddress address, size_t size, ams::svc::MemoryPermission perm) {
@@ -135,7 +135,7 @@ namespace ams::kern {
         /* Mark ourselves as mapped. */
         m_is_owner_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::UnmapFromOwner(KProcessAddress address, size_t size) {
@@ -154,7 +154,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_is_owner_mapped);
         m_is_owner_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

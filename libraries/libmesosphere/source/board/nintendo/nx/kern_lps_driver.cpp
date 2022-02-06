@@ -392,7 +392,7 @@ namespace ams::kern::board::nintendo::nx::lps {
         /* Instruct BPMP to enable suspend-to-sc7. */
         R_UNLESS(BpmpEnableSuspend(TEGRA_BPMP_PM_SC7, 0) == 0, svc::ResultInvalidState());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry) {

@@ -304,7 +304,7 @@ namespace ams::kern::arch::arm64::cpu {
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
             R_UNLESS(UserspaceAccess::InvalidateDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result StoreDataCacheRange(uintptr_t start, uintptr_t end) {
@@ -312,7 +312,7 @@ namespace ams::kern::arch::arm64::cpu {
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
             R_UNLESS(UserspaceAccess::StoreDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result FlushDataCacheRange(uintptr_t start, uintptr_t end) {
@@ -320,7 +320,7 @@ namespace ams::kern::arch::arm64::cpu {
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
             R_UNLESS(UserspaceAccess::FlushDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result InvalidateInstructionCacheRange(uintptr_t start, uintptr_t end) {
@@ -328,7 +328,7 @@ namespace ams::kern::arch::arm64::cpu {
             MESOSPHERE_ASSERT(util::IsAligned(end,   InstructionCacheLineSize));
             R_UNLESS(UserspaceAccess::InvalidateInstructionCache(start, end), svc::ResultInvalidCurrentMemory());
             EnsureInstructionConsistency();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE void InvalidateEntireInstructionCacheLocalImpl() {
@@ -440,7 +440,7 @@ namespace ams::kern::arch::arm64::cpu {
             R_TRY(InvalidateDataCacheRange(aligned_start, aligned_end));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result StoreDataCache(const void *addr, size_t size) {
@@ -448,7 +448,7 @@ namespace ams::kern::arch::arm64::cpu {
         const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
         const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
 
-        return StoreDataCacheRange(start, end);
+        R_RETURN(StoreDataCacheRange(start, end));
     }
 
     Result FlushDataCache(const void *addr, size_t size) {
@@ -456,7 +456,7 @@ namespace ams::kern::arch::arm64::cpu {
         const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
         const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
 
-        return FlushDataCacheRange(start, end);
+        R_RETURN(FlushDataCacheRange(start, end));
     }
 
     Result InvalidateInstructionCache(void *addr, size_t size) {
@@ -469,7 +469,7 @@ namespace ams::kern::arch::arm64::cpu {
         /* Request the interrupt helper to perform an instruction memory barrier. */
         g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InstructionMemoryBarrier);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InvalidateEntireInstructionCache() {

@@ -47,7 +47,7 @@ namespace ams::kern::svc {
             }
 
             /* Wait on the condition variable. */
-            return GetCurrentProcess().WaitConditionVariable(address, util::AlignDown(cv_key, sizeof(u32)), tag, timeout);
+            R_RETURN(GetCurrentProcess().WaitConditionVariable(address, util::AlignDown(cv_key, sizeof(u32)), tag, timeout));
         }
 
         void SignalProcessWideKey(uintptr_t cv_key, int32_t count) {
@@ -60,7 +60,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result WaitProcessWideKeyAtomic64(ams::svc::Address address, ams::svc::Address cv_key, uint32_t tag, int64_t timeout_ns) {
-        return WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns);
+        R_RETURN(WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns));
     }
 
     void SignalProcessWideKey64(ams::svc::Address cv_key, int32_t count) {
@@ -70,7 +70,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result WaitProcessWideKeyAtomic64From32(ams::svc::Address address, ams::svc::Address cv_key, uint32_t tag, int64_t timeout_ns) {
-        return WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns);
+        R_RETURN(WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns));
     }
 
     void SignalProcessWideKey64From32(ams::svc::Address cv_key, int32_t count) {

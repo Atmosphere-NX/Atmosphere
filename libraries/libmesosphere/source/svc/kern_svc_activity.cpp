@@ -56,7 +56,7 @@ namespace ams::kern::svc {
             /* Set the activity. */
             R_TRY(thread->SetActivity(thread_activity));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetProcessActivity(ams::svc::Handle process_handle, ams::svc::ProcessActivity process_activity) {
@@ -73,7 +73,7 @@ namespace ams::kern::svc {
             /* Set the activity. */
             R_TRY(process->SetActivity(process_activity));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -81,21 +81,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SetThreadActivity64(ams::svc::Handle thread_handle, ams::svc::ThreadActivity thread_activity) {
-        return SetThreadActivity(thread_handle, thread_activity);
+        R_RETURN(SetThreadActivity(thread_handle, thread_activity));
     }
 
     Result SetProcessActivity64(ams::svc::Handle process_handle, ams::svc::ProcessActivity process_activity) {
-        return SetProcessActivity(process_handle, process_activity);
+        R_RETURN(SetProcessActivity(process_handle, process_activity));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SetThreadActivity64From32(ams::svc::Handle thread_handle, ams::svc::ThreadActivity thread_activity) {
-        return SetThreadActivity(thread_handle, thread_activity);
+        R_RETURN(SetThreadActivity(thread_handle, thread_activity));
     }
 
     Result SetProcessActivity64From32(ams::svc::Handle process_handle, ams::svc::ProcessActivity process_activity) {
-        return SetProcessActivity(process_handle, process_activity);
+        R_RETURN(SetProcessActivity(process_handle, process_activity));
     }
 
 }
