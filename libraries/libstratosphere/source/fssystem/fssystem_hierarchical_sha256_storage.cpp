@@ -90,7 +90,7 @@ namespace ams::fssystem {
         R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Read the data. */
-        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset));
+        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size)) - offset);
         R_TRY(m_base_storage->Read(offset, buffer, reduced_size));
 
         /* Temporarily increase our thread priority. */
