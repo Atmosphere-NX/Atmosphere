@@ -137,7 +137,7 @@ namespace ams::fssystem {
         R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Setup tracking variables. */
-        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset));
+        const size_t reduced_size = static_cast<size_t>(std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size)) - offset);
         auto cur_offset     = offset;
         auto remaining_size = reduced_size;
         while (remaining_size > 0) {
@@ -176,7 +176,7 @@ namespace ams::fssystem {
         R_UNLESS(util::IsAligned(size,   m_hash_target_block_size), fs::ResultInvalidArgument());
 
         /* Determine size to use. */
-        const auto reduced_size = std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size) - offset);
+        const auto reduced_size = std::min<s64>(m_base_storage_size, util::AlignUp(offset + size, m_hash_target_block_size)) - offset;
 
         /* Operate on the base storage. */
         return m_base_storage->OperateRange(dst, dst_size, op_id, offset, reduced_size, src, src_size);
