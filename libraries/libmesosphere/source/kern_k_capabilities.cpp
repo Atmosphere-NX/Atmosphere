@@ -38,7 +38,7 @@ namespace ams::kern {
         m_intended_kernel_version.Set<KernelVersion::MinorVersion>(ams::svc::SupportedKernelMinorVersion);
 
         /* Parse the capabilities array. */
-        return this->SetCapabilities(caps, num_caps, page_table);
+        R_RETURN(this->SetCapabilities(caps, num_caps, page_table));
     }
 
      Result KCapabilities::Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table) {
@@ -55,7 +55,7 @@ namespace ams::kern {
         m_priority_mask = 0;
 
         /* Parse the user capabilities array. */
-        return this->SetCapabilities(user_caps, num_caps, page_table);
+        R_RETURN(this->SetCapabilities(user_caps, num_caps, page_table));
      }
 
     Result KCapabilities::SetCorePriorityCapability(const util::BitPack32 cap) {
@@ -93,7 +93,7 @@ namespace ams::kern {
         /* Processes must not have access to kernel thread priorities. */
         R_UNLESS((m_priority_mask & 0xF) == 0, svc::ResultInvalidArgument());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetSyscallMaskCapability(const util::BitPack32 cap, u32 &set_svc) {
@@ -113,7 +113,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::MapRange(const util::BitPack32 cap, const util::BitPack32 size_cap, KProcessPageTable *page_table) {
@@ -136,9 +136,9 @@ namespace ams::kern {
         /* Do the mapping. */
         const KMemoryPermission perm = cap.Get<MapRange::ReadOnly>() ? KMemoryPermission_UserRead : KMemoryPermission_UserReadWrite;
         if (size_cap.Get<MapRangeSize::Normal>()) {
-            return page_table->MapStatic(phys_addr, size, perm);
+            R_RETURN(page_table->MapStatic(phys_addr, size, perm));
         } else {
-            return page_table->MapIo(phys_addr, size, perm);
+            R_RETURN(page_table->MapIo(phys_addr, size, perm));
         }
     }
 
@@ -153,7 +153,7 @@ namespace ams::kern {
         R_UNLESS(((phys_addr + size - 1) & ~PhysicalMapAllowedMask) == 0, svc::ResultInvalidAddress());
 
         /* Do the mapping. */
-        return page_table->MapIo(phys_addr, size, KMemoryPermission_UserReadWrite);
+        R_RETURN(page_table->MapIo(phys_addr, size, KMemoryPermission_UserReadWrite));
     }
 
     Result KCapabilities::MapRegion(const util::BitPack32 cap, KProcessPageTable *page_table) {
@@ -181,11 +181,11 @@ namespace ams::kern {
                     R_TRY(page_table->MapRegion(MemoryRegions[static_cast<u32>(type)], perm));
                     break;
                 default:
-                    return svc::ResultNotFound();
+                    R_THROW(svc::ResultNotFound());
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetInterruptPairCapability(const util::BitPack32 cap) {
@@ -199,7 +199,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetProgramTypeCapability(const util::BitPack32 cap) {
@@ -207,7 +207,7 @@ namespace ams::kern {
         R_UNLESS(cap.Get<ProgramType::Reserved>() == 0, svc::ResultReservedUsed());
 
         m_program_type = cap.Get<ProgramType::Type>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetKernelVersionCapability(const util::BitPack32 cap) {
@@ -218,7 +218,7 @@ namespace ams::kern {
         m_intended_kernel_version = cap;
         R_UNLESS(m_intended_kernel_version.Get<KernelVersion::MajorVersion>() != 0, svc::ResultInvalidArgument());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetHandleTableCapability(const util::BitPack32 cap) {
@@ -226,7 +226,7 @@ namespace ams::kern {
         R_UNLESS(cap.Get<HandleTable::Reserved>() == 0, svc::ResultReservedUsed());
 
         m_handle_table_size = cap.Get<HandleTable::Size>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetDebugFlagsCapability(const util::BitPack32 cap) {
@@ -235,7 +235,7 @@ namespace ams::kern {
 
         m_debug_capabilities.Set<DebugFlags::AllowDebug>(cap.Get<DebugFlags::AllowDebug>());
         m_debug_capabilities.Set<DebugFlags::ForceDebug>(cap.Get<DebugFlags::ForceDebug>());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetCapability(const util::BitPack32 cap, u32 &set_flags, u32 &set_svc, KProcessPageTable *page_table) {
@@ -253,16 +253,16 @@ namespace ams::kern {
 
         /* Process the capability. */
         switch (type) {
-            case CapabilityType::CorePriority:  return this->SetCorePriorityCapability(cap);
-            case CapabilityType::SyscallMask:   return this->SetSyscallMaskCapability(cap, set_svc);
-            case CapabilityType::MapIoPage:     return this->MapIoPage(cap, page_table);
-            case CapabilityType::MapRegion:     return this->MapRegion(cap, page_table);
-            case CapabilityType::InterruptPair: return this->SetInterruptPairCapability(cap);
-            case CapabilityType::ProgramType:   return this->SetProgramTypeCapability(cap);
-            case CapabilityType::KernelVersion: return this->SetKernelVersionCapability(cap);
-            case CapabilityType::HandleTable:   return this->SetHandleTableCapability(cap);
-            case CapabilityType::DebugFlags:    return this->SetDebugFlagsCapability(cap);
-            default:                            return svc::ResultInvalidArgument();
+            case CapabilityType::CorePriority:  R_RETURN(this->SetCorePriorityCapability(cap));
+            case CapabilityType::SyscallMask:   R_RETURN(this->SetSyscallMaskCapability(cap, set_svc));
+            case CapabilityType::MapIoPage:     R_RETURN(this->MapIoPage(cap, page_table));
+            case CapabilityType::MapRegion:     R_RETURN(this->MapRegion(cap, page_table));
+            case CapabilityType::InterruptPair: R_RETURN(this->SetInterruptPairCapability(cap));
+            case CapabilityType::ProgramType:   R_RETURN(this->SetProgramTypeCapability(cap));
+            case CapabilityType::KernelVersion: R_RETURN(this->SetKernelVersionCapability(cap));
+            case CapabilityType::HandleTable:   R_RETURN(this->SetHandleTableCapability(cap));
+            case CapabilityType::DebugFlags:    R_RETURN(this->SetDebugFlagsCapability(cap));
+            default:                            R_THROW(svc::ResultInvalidArgument());
         }
     }
 
@@ -286,7 +286,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCapabilities::SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table) {
@@ -317,7 +317,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -75,7 +75,7 @@ namespace ams::kern {
             bool IsServerClosed() const { return this->GetState() != State::Normal; }
             bool IsClientClosed() const { return this->GetState() != State::Normal; }
 
-            Result OnRequest(KSessionRequest *request) { return m_server.OnRequest(request); }
+            Result OnRequest(KSessionRequest *request) { R_RETURN(m_server.OnRequest(request)); }
 
             KClientSession &GetClientSession() { return m_client; }
             KServerSession &GetServerSession() { return m_server; }

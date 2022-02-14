@@ -143,7 +143,7 @@ namespace ams::kern {
         /* All initial processes should disable device address space merge. */
         out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params, KProcessAddress src) const {
@@ -187,7 +187,7 @@ namespace ams::kern {
         cpu::FlushEntireDataCache();
         cpu::InvalidateEntireInstructionCache();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInitialProcessReader::SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const {
@@ -215,7 +215,7 @@ namespace ams::kern {
             R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(end - start, PageSize), ams::svc::MemoryPermission_ReadWrite));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

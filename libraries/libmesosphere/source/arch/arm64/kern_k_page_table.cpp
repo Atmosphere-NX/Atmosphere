@@ -178,7 +178,7 @@ namespace ams::kern::arch::arm64 {
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
@@ -187,7 +187,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Get an ASID */
         m_asid = g_asid_manager.Reserve();
-        auto asid_guard = SCOPE_GUARD { g_asid_manager.Release(m_asid); };
+        ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
 
         /* Set our manager. */
         m_manager = pt_manager;
@@ -196,7 +196,7 @@ namespace ams::kern::arch::arm64 {
         const KVirtualAddress new_table = m_manager->Allocate();
         R_UNLESS(new_table != Null<KVirtualAddress>, svc::ResultOutOfResource());
         m_ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), m_asid);
-        auto table_guard = SCOPE_GUARD { m_manager->Free(new_table); };
+        ON_RESULT_FAILURE_2 { m_manager->Free(new_table); };
 
         /* Initialize our base table. */
         const size_t as_width = GetAddressSpaceWidth(as_type);
@@ -204,13 +204,9 @@ namespace ams::kern::arch::arm64 {
         const KProcessAddress as_end   = (1ul << as_width);
         R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager, resource_limit));
 
-        /* We succeeded! */
-        table_guard.Cancel();
-        asid_guard.Cancel();
-
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::Finalize() {
@@ -316,7 +312,7 @@ namespace ams::kern::arch::arm64 {
         /* Release our asid. */
         g_asid_manager.Release(m_asid);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
@@ -334,17 +330,17 @@ namespace ams::kern::arch::arm64 {
         }
 
         if (operation == OperationType_Unmap) {
-            return this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll);
+            R_RETURN(this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll));
         } else {
             auto entry_template = this->GetEntryTemplate(properties);
 
             switch (operation) {
                 case OperationType_Map:
-                    return this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll);
+                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
-                    return this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, page_list, reuse_ll);
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, page_list, reuse_ll));
                 case OperationType_ChangePermissionsAndRefresh:
-                    return this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, page_list, reuse_ll);
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, page_list, reuse_ll));
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -361,7 +357,7 @@ namespace ams::kern::arch::arm64 {
         auto entry_template = this->GetEntryTemplate(properties);
         switch (operation) {
             case OperationType_MapGroup:
-                return this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll);
+                R_RETURN(this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
@@ -388,7 +384,7 @@ namespace ams::kern::arch::arm64 {
             phys_addr += L1BlockSize;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
@@ -447,7 +443,7 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l2_virt, l2_open_count);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
@@ -503,7 +499,8 @@ namespace ams::kern::arch::arm64 {
                             } else if (this->GetPageTableManager().IsInPageTableHeap(l2_virt) && l2_open_count > 0) {
                                 this->GetPageTableManager().Open(l2_virt, l2_open_count);
                             }
-                            return svc::ResultOutOfResource();
+
+                            R_THROW(svc::ResultOutOfResource());
                         }
 
                         /* Set the entry. */
@@ -551,7 +548,7 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l3_virt, l3_open_count);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll) {
@@ -563,13 +560,13 @@ namespace ams::kern::arch::arm64 {
         if (!force) {
             const size_t size = num_pages * PageSize;
             R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
+            ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
+
             if (num_pages > 1) {
                 const auto end_page  = virt_addr + size;
                 const auto last_page = end_page - PageSize;
 
-                auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
                 R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
-                merge_guard.Cancel();
             }
         }
 
@@ -717,7 +714,7 @@ namespace ams::kern::arch::arm64 {
             this->NoteUpdated();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
@@ -731,7 +728,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Map the pages, using a guard to ensure we don't leak. */
         {
-            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
+            ON_RESULT_FAILURE { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge && virt_addr == orig_virt_addr, L3BlockSize, page_list, reuse_ll));
@@ -778,9 +775,6 @@ namespace ams::kern::arch::arm64 {
                     }
                 }
             }
-
-            /* We successfully mapped, so cancel our guard. */
-            map_guard.Cancel();
         }
 
         /* Perform what coalescing we can. */
@@ -794,7 +788,7 @@ namespace ams::kern::arch::arm64 {
             Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
@@ -810,7 +804,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Map the pages, using a guard to ensure we don't leak. */
         {
-            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
+            ON_RESULT_FAILURE { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 for (const auto &block : pg) {
@@ -875,9 +869,6 @@ namespace ams::kern::arch::arm64 {
                     }
                 }
             }
-
-            /* We successfully mapped, so cancel our guard. */
-            map_guard.Cancel();
         }
         MESOSPHERE_ASSERT(mapped_pages == num_pages);
 
@@ -889,7 +880,7 @@ namespace ams::kern::arch::arm64 {
 
         /* We succeeded! We want to persist the reference to the pages. */
         spg.CancelClose();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool KPageTable::MergePages(KProcessAddress virt_addr, PageLinkedList *page_list) {
@@ -1184,18 +1175,17 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* We're done! */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-        /* Try to separate pages, re-merging if we fail. */
-        auto guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-        R_TRY(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
-        guard.Cancel();
+        /* If we fail while separating, re-merge. */
+        ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
 
-        return ResultSuccess();
+        /* Try to separate pages. */
+        R_RETURN(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
     }
 
     Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
@@ -1208,9 +1198,9 @@ namespace ams::kern::arch::arm64 {
             const auto end_page  = virt_addr + size;
             const auto last_page = end_page - PageSize;
 
-            auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
+            ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
+
             R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
-            merge_guard.Cancel();
         }
 
         /* ===================================================== */
@@ -1426,7 +1416,7 @@ namespace ams::kern::arch::arm64 {
             this->MergePages(virt_addr + (num_pages - 1) * PageSize, page_list);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KPageTable::FinalizeUpdateImpl(PageLinkedList *page_list) {

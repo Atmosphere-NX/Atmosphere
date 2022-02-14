@@ -29,7 +29,7 @@ namespace ams::kern::svc {
             KScopedAutoObject event = handle_table.GetObject<KEvent>(event_handle);
             R_UNLESS(event.IsNotNull(), svc::ResultInvalidHandle());
 
-            return event->Signal();
+            R_RETURN(event->Signal());
         }
 
         Result ClearEvent(ams::svc::Handle event_handle) {
@@ -40,7 +40,7 @@ namespace ams::kern::svc {
             {
                 KScopedAutoObject event = handle_table.GetObject<KEvent>(event_handle);
                 if (event.IsNotNull()) {
-                    return event->Clear();
+                    R_RETURN(event->Clear());
                 }
             }
 
@@ -49,14 +49,14 @@ namespace ams::kern::svc {
                 KScopedAutoObject readable_event = handle_table.GetObject<KReadableEvent>(event_handle);
                 if (readable_event.IsNotNull()) {
                     if (auto * const interrupt_event = readable_event->DynamicCast<KInterruptEvent *>(); interrupt_event != nullptr) {
-                        return interrupt_event->Clear();
+                        R_RETURN(interrupt_event->Clear());
                     } else {
-                        return readable_event->Clear();
+                        R_RETURN(readable_event->Clear());
                     }
                 }
             }
 
-            return svc::ResultInvalidHandle();
+            R_THROW(svc::ResultInvalidHandle());
         }
 
         Result CreateEvent(ams::svc::Handle *out_write, ams::svc::Handle *out_read) {
@@ -107,14 +107,10 @@ namespace ams::kern::svc {
             R_TRY(handle_table.Add(out_write, event));
 
             /* Ensure that we maintaing a clean handle state on exit. */
-            auto handle_guard = SCOPE_GUARD { handle_table.Remove(*out_write); };
+            ON_RESULT_FAILURE { handle_table.Remove(*out_write); };
 
             /* Add the readable event to the handle table. */
-            R_TRY(handle_table.Add(out_read, std::addressof(event->GetReadableEvent())));
-
-            /* We succeeded! */
-            handle_guard.Cancel();
-            return ResultSuccess();
+            R_RETURN(handle_table.Add(out_read, std::addressof(event->GetReadableEvent())));
         }
 
     }
@@ -122,29 +118,29 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SignalEvent64(ams::svc::Handle event_handle) {
-        return SignalEvent(event_handle);
+        R_RETURN(SignalEvent(event_handle));
     }
 
     Result ClearEvent64(ams::svc::Handle event_handle) {
-        return ClearEvent(event_handle);
+        R_RETURN(ClearEvent(event_handle));
     }
 
     Result CreateEvent64(ams::svc::Handle *out_write_handle, ams::svc::Handle *out_read_handle) {
-        return CreateEvent(out_write_handle, out_read_handle);
+        R_RETURN(CreateEvent(out_write_handle, out_read_handle));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SignalEvent64From32(ams::svc::Handle event_handle) {
-        return SignalEvent(event_handle);
+        R_RETURN(SignalEvent(event_handle));
     }
 
     Result ClearEvent64From32(ams::svc::Handle event_handle) {
-        return ClearEvent(event_handle);
+        R_RETURN(ClearEvent(event_handle));
     }
 
     Result CreateEvent64From32(ams::svc::Handle *out_write_handle, ams::svc::Handle *out_read_handle) {
-        return CreateEvent(out_write_handle, out_read_handle);
+        R_RETURN(CreateEvent(out_write_handle, out_read_handle));
     }
 
 }

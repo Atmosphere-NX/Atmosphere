@@ -55,7 +55,7 @@ namespace ams::kern {
         Result PutUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len) {
             /* Only print if the implementation is initialized. */
             if (!g_initialized_impl) {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             #if defined(MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING)
@@ -78,7 +78,7 @@ namespace ams::kern {
             KDebugLogImpl::Flush();
             #endif
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         #endif
@@ -173,7 +173,7 @@ namespace ams::kern {
             MESOSPHERE_UNUSED(user_str, len);
         #endif
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KDebugLog::Save() {

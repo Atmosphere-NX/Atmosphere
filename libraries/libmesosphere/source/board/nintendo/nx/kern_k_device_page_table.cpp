@@ -334,7 +334,7 @@ namespace ams::kern::board::nintendo::nx {
                     for (size_t i = 0; i < num_reserved; i++) {
                         this->ReleaseImpl(out[i]);
                     }
-                    return svc::ResultOutOfResource();
+                    R_THROW(svc::ResultOutOfResource());
                 }
 
                 void Release(u8 asid) {
@@ -788,7 +788,7 @@ namespace ams::kern::board::nintendo::nx {
         }
 
         /* Ensure that we clean up the tables on failure. */
-        auto table_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             for (size_t i = start_index; i <= end_index; ++i) {
                 if (m_tables[i] != Null<KVirtualAddress> && ptm.Close(m_tables[i], 1)) {
                     ptm.Free(m_tables[i]);
@@ -834,8 +834,7 @@ namespace ams::kern::board::nintendo::nx {
         }
 
         /* We succeeded. */
-        table_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KDevicePageTable::Finalize() {
@@ -915,14 +914,15 @@ namespace ams::kern::board::nintendo::nx {
             if (ReadMcRegister(reg_offset) != new_val) {
                 WriteMcRegister(reg_offset, old_val);
                 SmmuSynchronizationBarrier();
-                return svc::ResultNotFound();
+
+                R_THROW(svc::ResultNotFound());
             }
         }
 
         /* Mark the device as attached. */
         m_attached_device |= (1ul << device_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDevicePageTable::Detach(ams::svc::DeviceName device_name) {
@@ -962,7 +962,7 @@ namespace ams::kern::board::nintendo::nx {
         /* Mark the device as detached. */
         m_attached_device &= ~(1ul << device_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool KDevicePageTable::IsFree(KDeviceVirtualAddress address, u64 size) const {
@@ -1112,7 +1112,7 @@ namespace ams::kern::board::nintendo::nx {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDevicePageTable::MapImpl(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned) {
@@ -1120,7 +1120,7 @@ namespace ams::kern::board::nintendo::nx {
         R_UNLESS(this->IsFree(device_address, size), svc::ResultInvalidCurrentMemory());
 
         /* Ensure that if we fail, we unmap anything we mapped. */
-        auto unmap_guard = SCOPE_GUARD { this->UnmapImpl(device_address, size, false); };
+        ON_RESULT_FAILURE { this->UnmapImpl(device_address, size, false); };
 
         /* Iterate, mapping device pages. */
         KDeviceVirtualAddress cur_addr = device_address;
@@ -1148,10 +1148,7 @@ namespace ams::kern::board::nintendo::nx {
             mapped_size += cur_size;
         }
 
-        /* We're done, so cancel our guard. */
-        unmap_guard.Cancel();
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KDevicePageTable::UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force) {
@@ -1423,7 +1420,7 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
 
         /* Map the pages. */
-        return this->MapImpl(page_table, process_address, size, device_address, device_perm, is_aligned);
+        R_RETURN(this->MapImpl(page_table, process_address, size, device_address, device_perm, is_aligned));
     }
 
     Result KDevicePageTable::Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address) {
@@ -1437,7 +1434,7 @@ namespace ams::kern::board::nintendo::nx {
         /* Unmap the pages. */
         this->UnmapImpl(device_address, size, false);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

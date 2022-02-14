@@ -93,7 +93,7 @@ namespace ams::kern {
                     m_free_head_index                = i;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             constexpr ALWAYS_INLINE size_t GetTableSize() const { return m_table_size; }

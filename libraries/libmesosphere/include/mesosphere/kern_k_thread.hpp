@@ -256,15 +256,15 @@ namespace ams::kern {
             static Result InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
         public:
             static Result InitializeKernelThread(KThread *thread, KThreadFunction func, uintptr_t arg, s32 prio, s32 virt_core) {
-                return InitializeThread(thread, func, arg, Null<KProcessAddress>, prio, virt_core, nullptr, ThreadType_Kernel);
+                R_RETURN(InitializeThread(thread, func, arg, Null<KProcessAddress>, prio, virt_core, nullptr, ThreadType_Kernel));
             }
 
             static Result InitializeHighPriorityThread(KThread *thread, KThreadFunction func, uintptr_t arg) {
-                return InitializeThread(thread, func, arg, Null<KProcessAddress>, 0, GetCurrentCoreId(), nullptr, ThreadType_HighPriority);
+                R_RETURN(InitializeThread(thread, func, arg, Null<KProcessAddress>, 0, GetCurrentCoreId(), nullptr, ThreadType_HighPriority));
             }
 
             static Result InitializeUserThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner) {
-                return InitializeThread(thread, func, arg, user_stack_top, prio, virt_core, owner, ThreadType_User);
+                R_RETURN(InitializeThread(thread, func, arg, user_stack_top, prio, virt_core, owner, ThreadType_User));
             }
 
             static void ResumeThreadsSuspendedForInit();

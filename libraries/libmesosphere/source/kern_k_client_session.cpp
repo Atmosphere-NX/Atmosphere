@@ -40,7 +40,7 @@ namespace ams::kern {
         request->Initialize(nullptr, address, size);
 
         /* Send the request. */
-        return m_parent->OnRequest(request);
+        R_RETURN(m_parent->OnRequest(request));
     }
 
     Result KClientSession::SendAsyncRequest(KEvent *event, uintptr_t address, size_t size) {
@@ -55,7 +55,7 @@ namespace ams::kern {
         request->Initialize(event, address, size);
 
         /* Send the request. */
-        return m_parent->OnRequest(request);
+        R_RETURN(m_parent->OnRequest(request));
     }
 
 }

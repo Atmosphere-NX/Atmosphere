@@ -234,19 +234,21 @@ namespace ams::pm::impl {
             /* Fix the program location to use the right program id. */
             const ncm::ProgramLocation location = ncm::ProgramLocation::Make(program_info.program_id, static_cast<ncm::StorageId>(args.location.storage_id));
 
-            /* Pin the program with loader. */
-            ldr::PinId pin_id;
-            R_TRY(ldr::pm::AtmospherePinProgram(std::addressof(pin_id), location, override_status));
-
-            /* Ensure resources are available. */
-            resource::WaitResourceAvailable(std::addressof(program_info));
-
-            /* Actually create the process. */
+            /* Pin and create the process. */
             os::NativeHandle process_handle;
+            ldr::PinId pin_id;
             {
-                auto pin_guard = SCOPE_GUARD { ldr::pm::UnpinProgram(pin_id); };
+                /* Pin the program with loader. */
+                R_TRY(ldr::pm::AtmospherePinProgram(std::addressof(pin_id), location, override_status));
+
+                /* If we fail after now, unpin. */
+                ON_RESULT_FAILURE { ldr::pm::UnpinProgram(pin_id); };
+
+                /* Ensure resources are available. */
+                resource::WaitResourceAvailable(std::addressof(program_info));
+
+                /* Actually create the process. */
                 R_TRY(ldr::pm::CreateProcess(std::addressof(process_handle), pin_id, GetLoaderCreateProcessFlags(args.flags), resource::GetResourceLimitHandle(std::addressof(program_info))));
-                pin_guard.Cancel();
             }
 
             /* Get the process id. */
@@ -264,7 +266,7 @@ namespace ams::pm::impl {
             }
 
             /* Prevent resource leakage if register fails. */
-            auto cleanup_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 ProcessListAccessor list(g_process_list);
                 process_info->Cleanup();
                 CleanupProcessInfo(list, process_info);
@@ -304,11 +306,8 @@ namespace ams::pm::impl {
                 R_TRY(StartProcess(process_info, std::addressof(program_info)));
             }
 
-            /* We succeeded, so we can cancel our cleanup. */
-            cleanup_guard.Cancel();
-
             *args.out_process_id = process_id;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void OnProcessSignaled(ProcessListAccessor &list, ProcessInfo *process_info) {

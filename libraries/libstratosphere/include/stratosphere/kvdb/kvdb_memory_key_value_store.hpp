@@ -325,19 +325,18 @@ namespace ams::kvdb {
                         /* Allocate memory for value. */
                         void *new_value = m_memory_resource->Allocate(value_size);
                         R_UNLESS(new_value != nullptr, kvdb::ResultAllocationFailed());
-                        auto value_guard = SCOPE_GUARD { m_memory_resource->Deallocate(new_value, value_size); };
+
+                        /* If we fail before adding to the index, deallocate our value. */
+                        ON_RESULT_FAILURE { m_memory_resource->Deallocate(new_value, value_size); };
 
                         /* Read key and value. */
                         Key key;
                         R_TRY(reader.ReadEntry(std::addressof(key), sizeof(key), new_value, value_size));
                         R_TRY(m_index.AddUnsafe(key, new_value, value_size));
-
-                        /* We succeeded, so cancel the value guard to prevent deallocation. */
-                        value_guard.Cancel();
                     }
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Save(bool destructive = false) {

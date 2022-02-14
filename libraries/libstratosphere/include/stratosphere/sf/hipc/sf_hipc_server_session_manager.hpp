@@ -98,15 +98,14 @@ namespace ams::sf::hipc {
                 /* Allocate session. */
                 ServerSession *session_memory = this->AllocateSession();
                 R_UNLESS(session_memory != nullptr, sf::hipc::ResultOutOfSessionMemory());
+                ON_RESULT_FAILURE { this->DestroySession(session_memory); };
 
                 /* Register session. */
-                auto register_guard = SCOPE_GUARD { this->DestroySession(session_memory); };
                 R_TRY(ctor(session_memory));
 
                 /* Save new session to output. */
-                register_guard.Cancel();
                 *out = session_memory;
-                return ResultSuccess();
+                R_SUCCEED();
             }
             void DestroySession(ServerSession *session);
 

@@ -41,7 +41,7 @@ namespace ams::kern {
 
         /* We succeeded. */
         pg_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KTransferMemory::Finalize() {
@@ -86,7 +86,7 @@ namespace ams::kern {
         /* Mark ourselves as mapped. */
         m_is_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KTransferMemory::Unmap(KProcessAddress address, size_t size) {
@@ -106,7 +106,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(m_is_mapped);
         m_is_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

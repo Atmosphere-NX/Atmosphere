@@ -37,7 +37,7 @@ namespace ams::kern {
         cur_thread->SetLightSessionData(data);
 
         /* Send the request. */
-        return m_parent->OnRequest(cur_thread);
+        R_RETURN(m_parent->OnRequest(cur_thread));
     }
 
 }

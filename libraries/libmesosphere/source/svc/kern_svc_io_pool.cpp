@@ -69,10 +69,10 @@ namespace ams::kern::svc {
                 /* Add the io pool to the handle table. */
                 R_TRY(GetCurrentProcess().GetHandleTable().Add(out, io_pool));
 
-                return ResultSuccess();
+                R_SUCCEED();
             } else {
                 MESOSPHERE_UNUSED(out, pool_type);
-                return svc::ResultNotImplemented();
+                R_THROW(svc::ResultNotImplemented());
             }
         }
 
@@ -111,10 +111,10 @@ namespace ams::kern::svc {
                 /* Add the io region to the handle table. */
                 R_TRY(handle_table.Add(out, io_region));
 
-                return ResultSuccess();
+                R_SUCCEED();
             } else {
                 MESOSPHERE_UNUSED(out, io_pool_handle, phys_addr, size, mapping, perm);
-                return svc::ResultNotImplemented();
+                R_THROW(svc::ResultNotImplemented());
             }
         }
 
@@ -140,10 +140,10 @@ namespace ams::kern::svc {
                 R_TRY(io_region->Map(address, size, map_perm));
 
                 /* We succeeded. */
-                return ResultSuccess();
+                R_SUCCEED();
             } else {
                 MESOSPHERE_UNUSED(io_region_handle, address, size, map_perm);
-                return svc::ResultNotImplemented();
+                R_THROW(svc::ResultNotImplemented());
             }
         }
 
@@ -166,10 +166,10 @@ namespace ams::kern::svc {
                 R_TRY(io_region->Unmap(address, size));
 
                 /* We succeeded. */
-                return ResultSuccess();
+                R_SUCCEED();
             } else {
                 MESOSPHERE_UNUSED(io_region_handle, address, size);
-                return svc::ResultNotImplemented();
+                R_THROW(svc::ResultNotImplemented());
             }
         }
 
@@ -178,37 +178,37 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateIoPool64(ams::svc::Handle *out_handle, ams::svc::IoPoolType pool_type) {
-        return CreateIoPool(out_handle, pool_type);
+        R_RETURN(CreateIoPool(out_handle, pool_type));
     }
 
     Result CreateIoRegion64(ams::svc::Handle *out_handle, ams::svc::Handle io_pool, ams::svc::PhysicalAddress physical_address, ams::svc::Size size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm) {
-        return CreateIoRegion(out_handle, io_pool, physical_address, size, mapping, perm);
+        R_RETURN(CreateIoRegion(out_handle, io_pool, physical_address, size, mapping, perm));
     }
 
     Result MapIoRegion64(ams::svc::Handle io_region, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        return MapIoRegion(io_region, address, size, perm);
+        R_RETURN(MapIoRegion(io_region, address, size, perm));
     }
 
     Result UnmapIoRegion64(ams::svc::Handle io_region, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapIoRegion(io_region, address, size);
+        R_RETURN(UnmapIoRegion(io_region, address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateIoPool64From32(ams::svc::Handle *out_handle, ams::svc::IoPoolType pool_type) {
-        return CreateIoPool(out_handle, pool_type);
+        R_RETURN(CreateIoPool(out_handle, pool_type));
     }
 
     Result CreateIoRegion64From32(ams::svc::Handle *out_handle, ams::svc::Handle io_pool, ams::svc::PhysicalAddress physical_address, ams::svc::Size size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission perm) {
-        return CreateIoRegion(out_handle, io_pool, physical_address, size, mapping, perm);
+        R_RETURN(CreateIoRegion(out_handle, io_pool, physical_address, size, mapping, perm));
     }
 
     Result MapIoRegion64From32(ams::svc::Handle io_region, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        return MapIoRegion(io_region, address, size, perm);
+        R_RETURN(MapIoRegion(io_region, address, size, perm));
     }
 
     Result UnmapIoRegion64From32(ams::svc::Handle io_region, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapIoRegion(io_region, address, size);
+        R_RETURN(UnmapIoRegion(io_region, address, size));
     }
 
 }

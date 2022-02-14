@@ -72,7 +72,7 @@ namespace ams::kern {
 
                 R_UNLESS(size >= m_current_size, svc::ResultLimitReached());
                 m_limit_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 }

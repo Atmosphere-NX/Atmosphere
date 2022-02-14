@@ -56,7 +56,7 @@ namespace ams::kern {
             this->NotifyAvailable();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KReadableEvent::Reset() {
@@ -67,7 +67,7 @@ namespace ams::kern {
         R_UNLESS(m_is_signaled, svc::ResultInvalidState());
 
         m_is_signaled = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

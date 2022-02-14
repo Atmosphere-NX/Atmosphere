@@ -23,11 +23,11 @@ namespace ams::sm {
     class ManagerService {
         public:
             Result RegisterProcess(os::ProcessId process_id, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac) {
-                return impl::RegisterProcess(process_id, ncm::InvalidProgramId, cfg::OverrideStatus{}, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
+                R_RETURN(impl::RegisterProcess(process_id, ncm::InvalidProgramId, cfg::OverrideStatus{}, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize()));
             }
 
             Result UnregisterProcess(os::ProcessId process_id) {
-                return impl::UnregisterProcess(process_id);
+                R_RETURN(impl::UnregisterProcess(process_id));
             }
 
             void AtmosphereEndInitDefers() {
@@ -40,7 +40,7 @@ namespace ams::sm {
 
             Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const tipc::InBuffer acid_sac, const tipc::InBuffer aci_sac) {
                 /* This takes in a program id and override status, unlike RegisterProcess. */
-                return impl::RegisterProcess(process_id, program_id, override_status, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
+                R_RETURN(impl::RegisterProcess(process_id, program_id, override_status, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize()));
             }
     };
     static_assert(sm::impl::IsIManagerInterface<ManagerService>);

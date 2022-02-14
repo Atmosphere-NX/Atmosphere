@@ -72,7 +72,7 @@ namespace ams::kern {
                     m_page_bitmap.SetBit(i);
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             constexpr KVirtualAddress GetAddress() const { return m_address; }

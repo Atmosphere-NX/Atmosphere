@@ -82,7 +82,7 @@ namespace ams::kern {
                 ++num_waiters;
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KAddressArbiter::SignalAndIncrementIfEqual(uintptr_t addr, s32 value, s32 count) {
@@ -109,7 +109,7 @@ namespace ams::kern {
                 ++num_waiters;
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KAddressArbiter::SignalAndModifyByWaitingCountIfEqual(uintptr_t addr, s32 value, s32 count) {
@@ -171,7 +171,7 @@ namespace ams::kern {
                 ++num_waiters;
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KAddressArbiter::WaitIfLessThan(uintptr_t addr, s32 value, bool decrement, s64 timeout) {
@@ -186,7 +186,7 @@ namespace ams::kern {
             /* Check that the thread isn't terminating. */
             if (cur_thread->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Read the value from userspace. */
@@ -200,19 +200,19 @@ namespace ams::kern {
 
             if (!succeeded) {
                 slp.CancelSleep();
-                return svc::ResultInvalidCurrentMemory();
+                R_THROW(svc::ResultInvalidCurrentMemory());
             }
 
             /* Check that the value is less than the specified one. */
             if (user_value >= value) {
                 slp.CancelSleep();
-                return svc::ResultInvalidState();
+                R_THROW(svc::ResultInvalidState());
             }
 
             /* Check that the timeout is non-zero. */
             if (timeout == 0) {
                 slp.CancelSleep();
-                return svc::ResultTimedOut();
+                R_THROW(svc::ResultTimedOut());
             }
 
             /* Set the arbiter. */
@@ -225,7 +225,7 @@ namespace ams::kern {
         }
 
         /* Get the wait result. */
-        return cur_thread->GetWaitResult();
+        R_RETURN(cur_thread->GetWaitResult());
     }
 
     Result KAddressArbiter::WaitIfEqual(uintptr_t addr, s32 value, s64 timeout) {
@@ -240,26 +240,26 @@ namespace ams::kern {
             /* Check that the thread isn't terminating. */
             if (cur_thread->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Read the value from userspace. */
             s32 user_value;
             if (!ReadFromUser(std::addressof(user_value), addr)) {
                 slp.CancelSleep();
-                return svc::ResultInvalidCurrentMemory();
+                R_THROW(svc::ResultInvalidCurrentMemory());
             }
 
             /* Check that the value is equal. */
             if (value != user_value) {
                 slp.CancelSleep();
-                return svc::ResultInvalidState();
+                R_THROW(svc::ResultInvalidState());
             }
 
             /* Check that the timeout is non-zero. */
             if (timeout == 0) {
                 slp.CancelSleep();
-                return svc::ResultTimedOut();
+                R_THROW(svc::ResultTimedOut());
             }
 
             /* Set the arbiter. */
@@ -272,7 +272,7 @@ namespace ams::kern {
         }
 
         /* Get the wait result. */
-        return cur_thread->GetWaitResult();
+        R_RETURN(cur_thread->GetWaitResult());
     }
 
 }

@@ -102,7 +102,7 @@ namespace ams::kern {
         start_block->Initialize(m_start_address, (m_end_address - m_start_address) / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
         m_memory_block_tree.insert(*start_block);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KMemoryBlockManager::Finalize(KMemoryBlockSlabManager *slab_manager) {

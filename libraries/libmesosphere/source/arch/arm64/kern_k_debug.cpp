@@ -131,7 +131,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Get the FPU context. */
-        return this->GetFpuContext(out, thread, context_flags);
+        R_RETURN(this->GetFpuContext(out, thread, context_flags));
     }
 
     Result KDebug::SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) {
@@ -180,7 +180,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Set the FPU context. */
-        return this->SetFpuContext(ctx, thread, context_flags);
+        R_RETURN(this->SetFpuContext(ctx, thread, context_flags));
     }
 
     Result KDebug::GetFpuContext(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) {
@@ -218,7 +218,7 @@ namespace ams::kern::arch::arm64 {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebug::SetFpuContext(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) {
@@ -243,11 +243,11 @@ namespace ams::kern::arch::arm64 {
             t_ctx->SetFpuRegisters(ctx.v, this->Is64Bit());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebug::BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
-        return KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size);
+        R_RETURN(KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size));
     }
 
     #define MESOSPHERE_SET_HW_BREAK_POINT(ID, FLAGS, VALUE) \
@@ -384,10 +384,10 @@ namespace ams::kern::arch::arm64 {
             }
         } else {
             /* Invalid name. */
-            return svc::ResultInvalidEnumValue();
+            R_THROW(svc::ResultInvalidEnumValue());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     #undef MESOSPHERE_SET_HW_WATCH_POINT

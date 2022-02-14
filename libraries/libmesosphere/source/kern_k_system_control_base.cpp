@@ -177,7 +177,7 @@ namespace ams::kern {
 
     Result KSystemControlBase::ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
         MESOSPHERE_UNUSED(out, address, mask, value);
-        return svc::ResultNotImplemented();
+        R_THROW(svc::ResultNotImplemented());
     }
 
     /* Randomness. */
@@ -278,7 +278,7 @@ namespace ams::kern {
         R_UNLESS(paddr != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
 
         *out = KPageTable::GetHeapVirtualAddress(paddr);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KSystemControlBase::FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool) {

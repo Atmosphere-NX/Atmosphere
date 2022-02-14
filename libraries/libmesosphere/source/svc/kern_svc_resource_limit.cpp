@@ -36,7 +36,7 @@ namespace ams::kern::svc {
             /* Get the limit value. */
             *out_limit_value = resource_limit->GetLimitValue(which);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetResourceLimitCurrentValue(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
@@ -50,7 +50,7 @@ namespace ams::kern::svc {
             /* Get the current value. */
             *out_current_value = resource_limit->GetCurrentValue(which);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetResourceLimitPeakValue(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
@@ -64,7 +64,7 @@ namespace ams::kern::svc {
             /* Get the peak value. */
             *out_peak_value = resource_limit->GetPeakValue(which);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateResourceLimit(ams::svc::Handle *out_handle) {
@@ -84,7 +84,7 @@ namespace ams::kern::svc {
             /* Add the limit to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out_handle, resource_limit));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetResourceLimitLimitValue(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
@@ -98,7 +98,7 @@ namespace ams::kern::svc {
             /* Set the limit value. */
             R_TRY(resource_limit->SetLimitValue(which, limit_value));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -106,45 +106,45 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result GetResourceLimitLimitValue64(int64_t *out_limit_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which));
     }
 
     Result GetResourceLimitCurrentValue64(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which));
     }
 
     Result GetResourceLimitPeakValue64(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which));
     }
 
     Result CreateResourceLimit64(ams::svc::Handle *out_handle) {
-        return CreateResourceLimit(out_handle);
+        R_RETURN(CreateResourceLimit(out_handle));
     }
 
     Result SetResourceLimitLimitValue64(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
-        return SetResourceLimitLimitValue(resource_limit_handle, which, limit_value);
+        R_RETURN(SetResourceLimitLimitValue(resource_limit_handle, which, limit_value));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result GetResourceLimitLimitValue64From32(int64_t *out_limit_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which));
     }
 
     Result GetResourceLimitCurrentValue64From32(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which));
     }
 
     Result GetResourceLimitPeakValue64From32(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        return GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which);
+        R_RETURN(GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which));
     }
 
     Result CreateResourceLimit64From32(ams::svc::Handle *out_handle) {
-        return CreateResourceLimit(out_handle);
+        R_RETURN(CreateResourceLimit(out_handle));
     }
 
     Result SetResourceLimitLimitValue64From32(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
-        return SetResourceLimitLimitValue(resource_limit_handle, which, limit_value);
+        R_RETURN(SetResourceLimitLimitValue(resource_limit_handle, which, limit_value));
     }
 
 }

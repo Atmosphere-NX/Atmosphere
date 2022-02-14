@@ -26,7 +26,7 @@ namespace ams::kern::svc {
             *out = 0;
 
             /* Read/write the register. */
-            return KSystemControl::ReadWriteRegister(out, address, mask, value);
+            R_RETURN(KSystemControl::ReadWriteRegister(out, address, mask, value));
         }
 
     }
@@ -34,13 +34,13 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result ReadWriteRegister64(uint32_t *out_value, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
-        return ReadWriteRegister(out_value, address, mask, value);
+        R_RETURN(ReadWriteRegister(out_value, address, mask, value));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result ReadWriteRegister64From32(uint32_t *out_value, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
-        return ReadWriteRegister(out_value, address, mask, value);
+        R_RETURN(ReadWriteRegister(out_value, address, mask, value));
     }
 
 }

@@ -53,7 +53,7 @@ namespace ams::kern::svc {
             R_TRY(trmem->Map(address, size, map_perm));
 
             /* We succeeded. */
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UnmapTransferMemory(ams::svc::Handle trmem_handle, uintptr_t address, size_t size) {
@@ -73,7 +73,7 @@ namespace ams::kern::svc {
             /* Unmap the transfer memory. */
             R_TRY(trmem->Unmap(address, size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateTransferMemory(ams::svc::Handle *out, uintptr_t address, size_t size, ams::svc::MemoryPermission map_perm) {
@@ -116,7 +116,7 @@ namespace ams::kern::svc {
             /* Add the transfer memory to the handle table. */
             R_TRY(handle_table.Add(out, trmem));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -124,29 +124,29 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result MapTransferMemory64(ams::svc::Handle trmem_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission owner_perm) {
-        return MapTransferMemory(trmem_handle, address, size, owner_perm);
+        R_RETURN(MapTransferMemory(trmem_handle, address, size, owner_perm));
     }
 
     Result UnmapTransferMemory64(ams::svc::Handle trmem_handle, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapTransferMemory(trmem_handle, address, size);
+        R_RETURN(UnmapTransferMemory(trmem_handle, address, size));
     }
 
     Result CreateTransferMemory64(ams::svc::Handle *out_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission map_perm) {
-        return CreateTransferMemory(out_handle, address, size, map_perm);
+        R_RETURN(CreateTransferMemory(out_handle, address, size, map_perm));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result MapTransferMemory64From32(ams::svc::Handle trmem_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission owner_perm) {
-        return MapTransferMemory(trmem_handle, address, size, owner_perm);
+        R_RETURN(MapTransferMemory(trmem_handle, address, size, owner_perm));
     }
 
     Result UnmapTransferMemory64From32(ams::svc::Handle trmem_handle, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapTransferMemory(trmem_handle, address, size);
+        R_RETURN(UnmapTransferMemory(trmem_handle, address, size));
     }
 
     Result CreateTransferMemory64From32(ams::svc::Handle *out_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission map_perm) {
-        return CreateTransferMemory(out_handle, address, size, map_perm);
+        R_RETURN(CreateTransferMemory(out_handle, address, size, map_perm));
     }
 
 }

@@ -79,12 +79,12 @@ namespace ams::kern {
                 /* Terminate and close the thread. */
                 ON_SCOPE_EXIT { cur_child->Close(); };
 
-                if (Result terminate_result = cur_child->Terminate(); svc::ResultTerminationRequested::Includes(terminate_result)) {
-                    return terminate_result;
+                if (const Result terminate_result = cur_child->Terminate(); svc::ResultTerminationRequested::Includes(terminate_result)) {
+                    R_THROW(terminate_result);
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         class ThreadQueueImplForKProcessEnterUserException final : public KThreadQueue {
@@ -259,7 +259,7 @@ namespace ams::kern {
         /* We're initialized! */
         m_is_initialized = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal) {
@@ -287,7 +287,7 @@ namespace ams::kern {
             auto *pt_manager            = std::addressof(is_app ? Kernel::GetApplicationPageTableManager() : Kernel::GetSystemPageTableManager());
             R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
-        auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
+        ON_RESULT_FAILURE { m_page_table.Finalize(); };
 
         /* Ensure we can insert the code region. */
         R_UNLESS(m_page_table.CanContain(params.code_address, params.code_num_pages * PageSize, KMemoryState_Code), svc::ResultInvalidMemoryRegion());
@@ -310,8 +310,7 @@ namespace ams::kern {
         m_resource_limit->Open();
 
         /* We succeeded! */
-        pt_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
@@ -372,7 +371,7 @@ namespace ams::kern {
         }
 
         /* Ensure we don't leak any secure memory we allocated. */
-        auto sys_resource_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (m_system_resource_address != Null<KVirtualAddress>) {
                 /* Check that we have no outstanding allocations. */
                 MESOSPHERE_ABORT_UNLESS(m_memory_block_slab_manager.GetUsed() == 0);
@@ -397,7 +396,7 @@ namespace ams::kern {
             const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
             R_TRY(m_page_table.Initialize(m_process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager, res_limit));
         }
-        auto pt_guard = SCOPE_GUARD { m_page_table.Finalize(); };
+        ON_RESULT_FAILURE_2 { m_page_table.Finalize(); };
 
         /* Ensure we can insert the code region. */
         R_UNLESS(m_page_table.CanContain(params.code_address, code_size, KMemoryState_Code), svc::ResultInvalidMemoryRegion());
@@ -424,12 +423,9 @@ namespace ams::kern {
         /* Open a reference to the resource limit. */
         m_resource_limit->Open();
 
-        /* We succeeded, so commit our memory reservation and cancel our guards. */
-        sys_resource_guard.Cancel();
-        pt_guard.Cancel();
+        /* We succeeded, so commit our memory reservation. */
         memory_reservation.Commit();
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KProcess::DoWorkerTaskImpl() {
@@ -457,7 +453,7 @@ namespace ams::kern {
         };
 
         /* Terminate child threads other than the current one. */
-        return TerminateChildren(this, GetCurrentThreadPointer());
+        R_RETURN(TerminateChildren(this, GetCurrentThreadPointer()));
     }
 
     void KProcess::FinishTermination() {
@@ -556,7 +552,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
@@ -590,7 +586,7 @@ namespace ams::kern {
         shmem->Open();
         info->Open();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KProcess::RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
@@ -665,14 +661,14 @@ namespace ams::kern {
                 }
 
                 *out = tlr;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* Allocate a new page. */
         tlp = KThreadLocalPage::Allocate();
         R_UNLESS(tlp != nullptr, svc::ResultOutOfMemory());
-        auto tlp_guard = SCOPE_GUARD { KThreadLocalPage::Free(tlp); };
+        ON_RESULT_FAILURE { KThreadLocalPage::Free(tlp); };
 
         /* Initialize the new page. */
         R_TRY(tlp->Initialize(this));
@@ -692,9 +688,8 @@ namespace ams::kern {
         }
 
         /* We succeeded! */
-        tlp_guard.Cancel();
         *out = tlr;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::DeleteThreadLocalRegion(KProcessAddress addr) {
@@ -742,7 +737,7 @@ namespace ams::kern {
             KThreadLocalPage::Free(page_to_free);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void *KProcess::GetThreadLocalRegionPointer(KProcessAddress addr) {
@@ -961,7 +956,7 @@ namespace ams::kern {
         }
 
         /* Ensure our stack is safe to clean up on exit. */
-        auto stack_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (m_main_thread_stack_size) {
                 MESOSPHERE_R_ABORT_UNLESS(m_page_table.UnmapPages(stack_top - m_main_thread_stack_size, m_main_thread_stack_size / PageSize, KMemoryState_Stack));
                 m_main_thread_stack_size = 0;
@@ -973,7 +968,7 @@ namespace ams::kern {
 
         /* Initialize our handle table. */
         R_TRY(this->InitializeHandleTable(m_capabilities.GetHandleTableSize()));
-        auto ht_guard = SCOPE_GUARD { this->FinalizeHandleTable(); };
+        ON_RESULT_FAILURE_2 { this->FinalizeHandleTable(); };
 
         /* Create a new thread for the process. */
         KThread *main_thread = KThread::Create();
@@ -996,7 +991,7 @@ namespace ams::kern {
 
         /* Update our state. */
         this->ChangeState((state == State_Created) ? State_Running : State_RunningAttached);
-        auto state_guard = SCOPE_GUARD { this->ChangeState(state); };
+        ON_RESULT_FAILURE_2 { this->ChangeState(state); };
 
         /* Run our thread. */
         R_TRY(main_thread->Run());
@@ -1004,16 +999,13 @@ namespace ams::kern {
         /* Open a reference to represent that we're running. */
         this->Open();
 
-        /* We succeeded! Cancel our guards. */
-        state_guard.Cancel();
-        ht_guard.Cancel();
-        stack_guard.Cancel();
+        /* We succeeded! Commit our memory reservation. */
         mem_reservation.Commit();
 
         /* Note for debug that we're running a new process. */
         MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", m_process_id, m_name, main_thread->GetId(), main_thread->GetVirtualAffinityMask(), main_thread->GetIdealVirtualCore(), main_thread->GetActiveCore());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::Reset() {
@@ -1029,7 +1021,7 @@ namespace ams::kern {
 
         /* Clear signaled. */
         m_is_signaled = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KProcess::SetActivity(ams::svc::ProcessActivity activity) {
@@ -1071,7 +1063,7 @@ namespace ams::kern {
             this->SetSuspended(false);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KProcess::PinCurrentThread() {
@@ -1145,7 +1137,7 @@ namespace ams::kern {
 
         /* We successfully iterated the list. */
         *out_num_threads = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     KProcess::State KProcess::SetDebugObject(void *debug_object) {
@@ -1343,7 +1335,7 @@ namespace ams::kern {
 
         /* We successfully iterated the list. */
         *out_num_processes = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

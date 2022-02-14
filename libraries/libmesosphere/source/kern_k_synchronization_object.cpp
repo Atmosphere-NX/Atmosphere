@@ -103,7 +103,7 @@ namespace ams::kern {
             /* Check if the thread should terminate. */
             if (thread->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Check if any of the objects are already signaled. */
@@ -113,21 +113,21 @@ namespace ams::kern {
                 if (objects[i]->IsSignaled()) {
                     *out_index = i;
                     slp.CancelSleep();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
 
             /* Check if the timeout is zero. */
             if (timeout == 0) {
                 slp.CancelSleep();
-                return svc::ResultTimedOut();
+                R_THROW(svc::ResultTimedOut());
             }
 
             /* Check if waiting was canceled. */
             if (thread->IsWaitCancelled()) {
                 slp.CancelSleep();
                 thread->ClearWaitCancelled();
-                return svc::ResultCancelled();
+                R_THROW(svc::ResultCancelled());
             }
 
             /* Add the waiters. */
@@ -153,7 +153,7 @@ namespace ams::kern {
         *out_index = thread->GetSyncedIndex();
 
         /* Get the wait result. */
-        return thread->GetWaitResult();
+        R_RETURN(thread->GetWaitResult());
     }
 
     void KSynchronizationObject::NotifyAvailable(Result result) {

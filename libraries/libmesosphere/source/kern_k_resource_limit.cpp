@@ -108,7 +108,7 @@ namespace ams::kern {
         m_limit_values[which] = value;
         m_peak_values[which]  = m_current_values[which];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KResourceLimit::Add(ams::svc::LimitableResource which, s64 value) {

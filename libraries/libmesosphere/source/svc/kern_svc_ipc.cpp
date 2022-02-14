@@ -34,7 +34,7 @@ namespace ams::kern::svc {
             MESOSPHERE_ASSERT(parent.IsNotNull());
 
             /* Send the request. */
-            return session->SendSyncRequest(message, buffer_size);
+            R_RETURN(session->SendSyncRequest(message, buffer_size));
         }
 
         ALWAYS_INLINE Result ReplyAndReceiveImpl(int32_t *out_index, uintptr_t message, size_t buffer_size, KPhysicalAddress message_paddr, KSynchronizationObject **objs, int32_t num_objects, ams::svc::Handle reply_target, int64_t timeout_ns) {
@@ -44,13 +44,10 @@ namespace ams::kern::svc {
                 R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
 
                 /* If we fail to reply, we want to set the output index to -1. */
-                auto reply_idx_guard = SCOPE_GUARD { *out_index = -1; };
+                ON_RESULT_FAILURE { *out_index = -1; };
 
                 /* Send the reply. */
                 R_TRY(session->SendReply(message, buffer_size, message_paddr));
-
-                /* Cancel our guard. */
-                reply_idx_guard.Cancel();
             }
 
             /* Receive a message. */
@@ -81,7 +78,7 @@ namespace ams::kern::svc {
                     s32 index;
                     Result result = KSynchronizationObject::Wait(std::addressof(index), objs, num_objects, timeout);
                     if (svc::ResultTimedOut::Includes(result)) {
-                        return result;
+                        R_THROW(result);
                     }
 
                     /* Receive the request. */
@@ -96,7 +93,7 @@ namespace ams::kern::svc {
                     }
 
                     *out_index = index;
-                    return result;
+                    R_RETURN(result);
                 }
             }
         }
@@ -129,11 +126,11 @@ namespace ams::kern::svc {
                 }
             };
 
-            return ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, objs, num_handles, reply_target, timeout_ns);
+            R_RETURN(ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, objs, num_handles, reply_target, timeout_ns));
         }
 
         ALWAYS_INLINE Result SendSyncRequest(ams::svc::Handle session_handle) {
-            return SendSyncRequestImpl(0, 0, session_handle);
+            R_RETURN(SendSyncRequestImpl(0, 0, session_handle));
         }
 
         ALWAYS_INLINE Result SendSyncRequestWithUserBuffer(uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
@@ -149,16 +146,17 @@ namespace ams::kern::svc {
             /* Lock the mesage buffer. */
             R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
 
-            /* Ensure that even if we fail, we unlock the message buffer when done. */
-            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+            {
+                /* If we fail to send the message, unlock the message buffer. */
+                ON_RESULT_FAILURE { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
 
-            /* Send the request. */
-            MESOSPHERE_ASSERT(message != 0);
-            R_TRY(SendSyncRequestImpl(message, buffer_size, session_handle));
+                /* Send the request. */
+                MESOSPHERE_ASSERT(message != 0);
+                R_TRY(SendSyncRequestImpl(message, buffer_size, session_handle));
+            }
 
-            /* We sent the request successfully, so cancel our guard and check the unlock result. */
-            unlock_guard.Cancel();
-            return page_table.UnlockForIpcUserBuffer(message, buffer_size);
+            /* We successfully processed, so try to unlock the message buffer. */
+            R_RETURN(page_table.UnlockForIpcUserBuffer(message, buffer_size));
         }
 
         ALWAYS_INLINE Result SendAsyncRequestWithUserBufferImpl(ams::svc::Handle *out_event_handle, uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
@@ -201,14 +199,10 @@ namespace ams::kern::svc {
             R_TRY(handle_table.Add(out_event_handle, std::addressof(event->GetReadableEvent())));
 
             /* Ensure that if we fail to send the request, we close the readable handle. */
-            auto read_guard = SCOPE_GUARD { handle_table.Remove(*out_event_handle); };
+            ON_RESULT_FAILURE { handle_table.Remove(*out_event_handle); };
 
             /* Send the async request. */
-            R_TRY(session->SendAsyncRequest(event, message, buffer_size));
-
-            /* We succeeded. */
-            read_guard.Cancel();
-            return ResultSuccess();
+            R_RETURN(session->SendAsyncRequest(event, message, buffer_size));
         }
 
         ALWAYS_INLINE Result SendAsyncRequestWithUserBuffer(ams::svc::Handle *out_event_handle, uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
@@ -224,23 +218,18 @@ namespace ams::kern::svc {
             /* Lock the mesage buffer. */
             R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
 
-            /* Ensure that if we fail, we unlock the message buffer. */
-            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+            /* Ensure that if we fail and aren't terminating that we unlock the user buffer. */
+            ON_RESULT_FAILURE_BESIDES(svc::ResultTerminationRequested) {
+                page_table.UnlockForIpcUserBuffer(message, buffer_size);
+            };
 
             /* Send the request. */
             MESOSPHERE_ASSERT(message != 0);
-            const Result result = SendAsyncRequestWithUserBufferImpl(out_event_handle, message, buffer_size, session_handle);
-
-            /* If the request succeeds (or the thread is terminating), don't unlock the user buffer. */
-            if (R_SUCCEEDED(result) || svc::ResultTerminationRequested::Includes(result)) {
-                unlock_guard.Cancel();
-            }
-
-            return result;
+            R_RETURN(SendAsyncRequestWithUserBufferImpl(out_event_handle, message, buffer_size, session_handle));
         }
 
         ALWAYS_INLINE Result ReplyAndReceive(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-            return ReplyAndReceiveImpl(out_index, 0, 0, Null<KPhysicalAddress>, handles, num_handles, reply_target, timeout_ns);
+            R_RETURN(ReplyAndReceiveImpl(out_index, 0, 0, Null<KPhysicalAddress>, handles, num_handles, reply_target, timeout_ns));
         }
 
         ALWAYS_INLINE Result ReplyAndReceiveWithUserBuffer(int32_t *out_index, uintptr_t message, size_t buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
@@ -257,16 +246,17 @@ namespace ams::kern::svc {
             KPhysicalAddress message_paddr;
             R_TRY(page_table.LockForIpcUserBuffer(std::addressof(message_paddr), message, buffer_size));
 
-            /* Ensure that even if we fail, we unlock the message buffer when done. */
-            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+            {
+                /* If we fail to send the message, unlock the message buffer. */
+                ON_RESULT_FAILURE { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
 
-            /* Send the request. */
-            MESOSPHERE_ASSERT(message != 0);
-            R_TRY(ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, handles, num_handles, reply_target, timeout_ns));
+                /* Reply/Receive the request. */
+                MESOSPHERE_ASSERT(message != 0);
+                R_TRY(ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, handles, num_handles, reply_target, timeout_ns));
+            }
 
-            /* We sent the request successfully, so cancel our guard and check the unlock result. */
-            unlock_guard.Cancel();
-            return page_table.UnlockForIpcUserBuffer(message, buffer_size);
+            /* We successfully processed, so try to unlock the message buffer. */
+            R_RETURN(page_table.UnlockForIpcUserBuffer(message, buffer_size));
         }
 
     }
@@ -274,45 +264,45 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SendSyncRequest64(ams::svc::Handle session_handle) {
-        return SendSyncRequest(session_handle);
+        R_RETURN(SendSyncRequest(session_handle));
     }
 
     Result SendSyncRequestWithUserBuffer64(ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        return SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle);
+        R_RETURN(SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle));
     }
 
     Result SendAsyncRequestWithUserBuffer64(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        return SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle);
+        R_RETURN(SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle));
     }
 
     Result ReplyAndReceive64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        return ReplyAndReceive(out_index, handles, num_handles, reply_target, timeout_ns);
+        R_RETURN(ReplyAndReceive(out_index, handles, num_handles, reply_target, timeout_ns));
     }
 
     Result ReplyAndReceiveWithUserBuffer64(int32_t *out_index, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
+        R_RETURN(ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SendSyncRequest64From32(ams::svc::Handle session_handle) {
-        return SendSyncRequest(session_handle);
+        R_RETURN(SendSyncRequest(session_handle));
     }
 
     Result SendSyncRequestWithUserBuffer64From32(ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        return SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle);
+        R_RETURN(SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle));
     }
 
     Result SendAsyncRequestWithUserBuffer64From32(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        return SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle);
+        R_RETURN(SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle));
     }
 
     Result ReplyAndReceive64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        return ReplyAndReceive(out_index, handles, num_handles, reply_target, timeout_ns);
+        R_RETURN(ReplyAndReceive(out_index, handles, num_handles, reply_target, timeout_ns));
     }
 
     Result ReplyAndReceiveWithUserBuffer64From32(int32_t *out_index, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
+        R_RETURN(ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns));
     }
 
 }

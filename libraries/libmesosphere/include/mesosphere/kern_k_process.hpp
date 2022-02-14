@@ -356,15 +356,15 @@ namespace ams::kern {
             }
 
             Result WaitConditionVariable(KProcessAddress address, uintptr_t cv_key, u32 tag, s64 ns) {
-                return m_cond_var.Wait(address, cv_key, tag, ns);
+                R_RETURN(m_cond_var.Wait(address, cv_key, tag, ns));
             }
 
             Result SignalAddressArbiter(uintptr_t address, ams::svc::SignalType signal_type, s32 value, s32 count) {
-                return m_address_arbiter.SignalToAddress(address, signal_type, value, count);
+                R_RETURN(m_address_arbiter.SignalToAddress(address, signal_type, value, count));
             }
 
             Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
-                return m_address_arbiter.WaitForAddress(address, arb_type, value, timeout);
+                R_RETURN(m_address_arbiter.WaitForAddress(address, arb_type, value, timeout));
             }
 
             Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
@@ -415,7 +415,7 @@ namespace ams::kern {
 
                 /* We succeeded, so note that we did. */
                 m_is_handle_table_initialized = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             ALWAYS_INLINE void FinalizeHandleTable() {

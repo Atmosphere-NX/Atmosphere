@@ -41,7 +41,7 @@ namespace ams::kern {
                     R_UNLESS(m_blocks[m_index + i] != nullptr, svc::ResultOutOfResource());
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             KMemoryBlockManagerUpdateAllocator(Result *out_result, KMemoryBlockSlabManager *sm, size_t num_blocks = MaxBlocks) : m_blocks(), m_index(MaxBlocks), m_slab_manager(sm) {

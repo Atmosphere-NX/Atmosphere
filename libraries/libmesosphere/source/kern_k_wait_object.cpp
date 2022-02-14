@@ -61,7 +61,7 @@ namespace ams::kern {
             /* Check that the thread isn't terminating. */
             if (cur_thread->IsTerminationRequested()) {
                 slp.CancelSleep();
-                return svc::ResultTerminationRequested();
+                R_THROW(svc::ResultTerminationRequested());
             }
 
             /* Handle the case where timeout is non-negative/infinite. */
@@ -69,7 +69,7 @@ namespace ams::kern {
                 /* Check if we're already waiting. */
                 if (m_next_thread != nullptr) {
                     slp.CancelSleep();
-                    return svc::ResultBusy();
+                    R_THROW(svc::ResultBusy());
                 }
 
                 /* If timeout is zero, handle the special case by canceling all waiting threads. */
@@ -79,7 +79,7 @@ namespace ams::kern {
                     }
 
                     slp.CancelSleep();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
 
@@ -96,7 +96,7 @@ namespace ams::kern {
             cur_thread->BeginWait(std::addressof(wait_queue));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

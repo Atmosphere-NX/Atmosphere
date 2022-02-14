@@ -54,7 +54,7 @@ namespace ams::kern {
             std::memset(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress())), 0, block.GetSize());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KSharedMemory::Finalize() {
@@ -88,7 +88,7 @@ namespace ams::kern {
         }
 
         /* Map the memory. */
-        return table->MapPageGroup(address, m_page_group, KMemoryState_Shared, ConvertToKMemoryPermission(map_perm));
+        R_RETURN(table->MapPageGroup(address, m_page_group, KMemoryState_Shared, ConvertToKMemoryPermission(map_perm)));
     }
 
     Result KSharedMemory::Unmap(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process) {
@@ -99,7 +99,7 @@ namespace ams::kern {
         R_UNLESS(m_page_group.GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Unmap the memory. */
-        return table->UnmapPageGroup(address, m_page_group, KMemoryState_Shared);
+        R_RETURN(table->UnmapPageGroup(address, m_page_group, KMemoryState_Shared));
     }
 
 }

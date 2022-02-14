@@ -256,7 +256,7 @@ namespace ams::kern::board::nintendo::nx {
             g_secure_applet_memory_used = true;
             *out = g_secure_applet_memory_address;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void FreeSecureMemoryForApplet(KVirtualAddress address, size_t size) {
@@ -475,7 +475,7 @@ namespace ams::kern::board::nintendo::nx {
         R_UNLESS(AMS_LIKELY(util::IsAligned(address, sizeof(u32))),             svc::ResultInvalidAddress());
         R_UNLESS(AMS_LIKELY(IsRegisterAccessibleToUser(address)),               svc::ResultInvalidAddress());
         R_UNLESS(AMS_LIKELY(smc::ReadWriteRegister(out, address, mask, value)), svc::ResultInvalidAddress());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Randomness. */
@@ -622,7 +622,7 @@ namespace ams::kern::board::nintendo::nx {
     Result KSystemControl::AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool) {
         /* Applet secure memory is handled separately. */
         if (pool == KMemoryManager::Pool_Applet) {
-            return AllocateSecureMemoryForApplet(out, size);
+            R_RETURN(AllocateSecureMemoryForApplet(out, size));
         }
 
         /* Ensure the size is aligned. */
@@ -635,7 +635,7 @@ namespace ams::kern::board::nintendo::nx {
         R_UNLESS(paddr != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
 
         /* Ensure we don't leak references to the memory on error. */
-        auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(paddr, num_pages); };
+        ON_RESULT_FAILURE { Kernel::GetMemoryManager().Close(paddr, num_pages); };
 
         /* If the memory isn't already secure, set it as secure. */
         if (pool != KMemoryManager::Pool_System) {
@@ -644,9 +644,8 @@ namespace ams::kern::board::nintendo::nx {
         }
 
         /* We succeeded. */
-        mem_guard.Cancel();
         *out = KPageTable::GetHeapVirtualAddress(paddr);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KSystemControl::FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool) {

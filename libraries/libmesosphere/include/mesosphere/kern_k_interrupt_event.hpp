@@ -46,7 +46,7 @@ namespace ams::kern {
                 /* Try to perform a reset, succeeding unconditionally. */
                 this->Reset();
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             bool IsInitialized() const { return m_is_initialized; }

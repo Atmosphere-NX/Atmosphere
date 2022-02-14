@@ -69,7 +69,7 @@ namespace ams::kern {
         /* Write output. */
         *out_memory_info = info.GetSvcMemoryInfo();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
@@ -132,7 +132,7 @@ namespace ams::kern {
             remaining   -= cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
@@ -195,7 +195,7 @@ namespace ams::kern {
             remaining   -= cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::GetRunningThreadInfo(ams::svc::LastThreadContext *out_context, u64 *out_thread_id) {
@@ -233,7 +233,7 @@ namespace ams::kern {
             *out_thread_id = thread->GetId();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::Attach(KProcess *target) {
@@ -265,10 +265,10 @@ namespace ams::kern {
                     case KProcess::State_CreatedAttached:
                     case KProcess::State_RunningAttached:
                     case KProcess::State_DebugBreak:
-                        return svc::ResultBusy();
+                        R_THROW(svc::ResultBusy());
                     case KProcess::State_Terminating:
                     case KProcess::State_Terminated:
-                        return svc::ResultProcessTerminated();
+                        R_THROW(svc::ResultProcessTerminated());
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
 
@@ -313,7 +313,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::BreakProcess() {
@@ -385,7 +385,7 @@ namespace ams::kern {
         /* Set the process as breaked. */
         target->SetDebugBreak();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::TerminateProcess() {
@@ -467,7 +467,7 @@ namespace ams::kern {
         /* Terminate the process. */
         target->Terminate();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::GetThreadContext(ams::svc::ThreadContext *out, u64 thread_id, u32 context_flags) {
@@ -529,7 +529,7 @@ namespace ams::kern {
 
             /* Get the thread context. */
             static_assert(std::derived_from<KDebug, KDebugBase>);
-            return static_cast<KDebug *>(this)->GetThreadContextImpl(out, thread, context_flags);
+            R_RETURN(static_cast<KDebug *>(this)->GetThreadContextImpl(out, thread, context_flags));
         }
     }
 
@@ -621,7 +621,7 @@ namespace ams::kern {
 
             /* Set the thread context. */
             static_assert(std::derived_from<KDebug, KDebugBase>);
-            return static_cast<KDebug *>(this)->SetThreadContextImpl(ctx, thread, context_flags);
+            R_RETURN(static_cast<KDebug *>(this)->SetThreadContextImpl(ctx, thread, context_flags));
         }
     }
 
@@ -722,7 +722,7 @@ namespace ams::kern {
             target->SetAttached();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     KEventInfo *KDebugBase::CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 cur_thread_id) {
@@ -975,15 +975,15 @@ namespace ams::kern {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out) {
-        return this->GetDebugEventInfoImpl(out);
+        R_RETURN(this->GetDebugEventInfoImpl(out));
     }
 
     Result KDebugBase::GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out) {
-        return this->GetDebugEventInfoImpl(out);
+        R_RETURN(this->GetDebugEventInfoImpl(out));
     }
 
     void KDebugBase::Finalize() {
@@ -1091,7 +1091,7 @@ namespace ams::kern {
             /* If the event is an exception and we don't have exception events enabled, we can't handle the event. */
             if (event == ams::svc::DebugEvent_Exception && (debug->m_continue_flags & ams::svc::ContinueFlag_EnableExceptionEvent) == 0) {
                 GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
-                return svc::ResultNotHandled();
+                R_THROW(svc::ResultNotHandled());
             }
 
             /* If the current thread is suspended, retry. */
@@ -1134,21 +1134,21 @@ namespace ams::kern {
             /* Get the debug object. */
             if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
                 /* If we have one, check the debug exception. */
-                return GetCurrentThread().GetDebugExceptionResult();
+                R_RETURN(GetCurrentThread().GetDebugExceptionResult());
             } else {
                 /* We don't have a debug object, so stop processing the exception. */
-                return svc::ResultStopProcessingException();
+                R_THROW(svc::ResultStopProcessingException());
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
         if (KProcess *process = GetCurrentProcessPointer(); process != nullptr && process->IsAttachedToDebugger()) {
-            return ProcessDebugEvent(event, param0, param1, param2, param3, param4);
+            R_RETURN(ProcessDebugEvent(event, param0, param1, param2, param3, param4));
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::OnExitProcess(KProcess *process) {
@@ -1166,7 +1166,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::OnTerminateProcess(KProcess *process) {
@@ -1184,7 +1184,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KDebugBase::OnExitThread(KThread *thread) {
@@ -1196,7 +1196,7 @@ namespace ams::kern {
             R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, thread->GetId(), thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

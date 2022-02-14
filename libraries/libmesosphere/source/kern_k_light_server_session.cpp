@@ -120,7 +120,7 @@ namespace ams::kern {
         /* NOTE: Nintendo returns GetCurrentThread().GetWaitResult() here. */
         /* This is technically incorrect, although it doesn't cause problems in practice */
         /* because this is only ever called with request_thread = GetCurrentThreadPointer(). */
-        return request_thread->GetWaitResult();
+        R_RETURN(request_thread->GetWaitResult());
     }
 
     Result KLightServerSession::ReplyAndReceive(u32 *data) {
@@ -193,7 +193,7 @@ namespace ams::kern {
                     std::memcpy(GetCurrentThread().GetLightSessionData(), m_current_request->GetLightSessionData(), KLightSession::DataSize);
 
                     /* We successfully received. */
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* We need to wait for a request to come in. */
@@ -201,7 +201,7 @@ namespace ams::kern {
                 /* Check if we were cancelled. */
                 if (GetCurrentThread().IsWaitCancelled()) {
                     GetCurrentThread().ClearWaitCancelled();
-                    return svc::ResultCancelled();
+                    R_THROW(svc::ResultCancelled());
                 }
 
                 /* Mark ourselves as cancellable. */

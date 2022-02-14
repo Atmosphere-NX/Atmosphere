@@ -32,10 +32,10 @@ namespace ams::kern::svc {
                     *out = GetInitialProcessIdMax();
                     break;
                 default:
-                    return svc::ResultInvalidCombination();
+                    R_THROW(svc::ResultInvalidCombination());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetInfoImpl(u64 *out, ams::svc::InfoType info_type, KProcess *process) {
@@ -109,7 +109,7 @@ namespace ams::kern::svc {
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetInfo(u64 *out, ams::svc::InfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
@@ -144,7 +144,7 @@ namespace ams::kern::svc {
                         #if defined(MESOSPHERE_ENABLE_GET_INFO_OF_DEBUG_PROCESS)
                         /* If we the process is valid, use it. */
                         if (process.IsNotNull()) {
-                            return GetInfoImpl(out, info_type, process.GetPointerUnsafe());
+                            R_RETURN(GetInfoImpl(out, info_type, process.GetPointerUnsafe()));
                         }
 
                         /* Otherwise, as a mesosphere extension check if we were passed a usable KDebug. */
@@ -160,13 +160,13 @@ namespace ams::kern::svc {
                         ON_SCOPE_EXIT { debug->CloseProcess(); };
 
                         /* Return the info. */
-                        return GetInfoImpl(out, info_type, debug->GetProcessUnsafe());
+                        R_RETURN(GetInfoImpl(out, info_type, debug->GetProcessUnsafe()));
                         #else
                         /* Verify that the process is valid. */
                         R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
                         /* Return the relevant info. */
-                        return GetInfoImpl(out, info_type, process.GetPointerUnsafe());
+                        R_RETURN(GetInfoImpl(out, info_type, process.GetPointerUnsafe()));
                         #endif
                     }
                     break;
@@ -315,7 +315,7 @@ namespace ams::kern::svc {
                                 }
                                 break;
                             default:
-                                return svc::ResultInvalidCombination();
+                                R_THROW(svc::ResultInvalidCombination());
                         }
                     }
                     break;
@@ -343,10 +343,10 @@ namespace ams::kern::svc {
                         /* For debug, log the invalid info call. */
                         MESOSPHERE_LOG("GetInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
                     }
-                    return svc::ResultInvalidEnumValue();
+                    R_THROW(svc::ResultInvalidEnumValue());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr bool IsValidMemoryPool(u64 pool) {
@@ -398,10 +398,10 @@ namespace ams::kern::svc {
                     }
                     break;
                 default:
-                    return svc::ResultInvalidEnumValue();
+                    R_THROW(svc::ResultInvalidEnumValue());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -409,21 +409,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result GetInfo64(uint64_t *out, ams::svc::InfoType info_type, ams::svc::Handle handle, uint64_t info_subtype) {
-        return GetInfo(out, info_type, handle, info_subtype);
+        R_RETURN(GetInfo(out, info_type, handle, info_subtype));
     }
 
     Result GetSystemInfo64(uint64_t *out, ams::svc::SystemInfoType info_type, ams::svc::Handle handle, uint64_t info_subtype) {
-        return GetSystemInfo(out, info_type, handle, info_subtype);
+        R_RETURN(GetSystemInfo(out, info_type, handle, info_subtype));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result GetInfo64From32(uint64_t *out, ams::svc::InfoType info_type, ams::svc::Handle handle, uint64_t info_subtype) {
-        return GetInfo(out, info_type, handle, info_subtype);
+        R_RETURN(GetInfo(out, info_type, handle, info_subtype));
     }
 
     Result GetSystemInfo64From32(uint64_t *out, ams::svc::SystemInfoType info_type, ams::svc::Handle handle, uint64_t info_subtype) {
-        return GetSystemInfo(out, info_type, handle, info_subtype);
+        R_RETURN(GetSystemInfo(out, info_type, handle, info_subtype));
     }
 
 }

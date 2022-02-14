@@ -121,9 +121,7 @@ namespace ams::kern {
         m_impl.InitializeForKernel(table, start, end);
 
         /* Initialize our memory block manager. */
-        return m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager);
-
-        return ResultSuccess();
+        R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
     Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KResourceLimit *resource_limit) {
@@ -131,8 +129,6 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
         MESOSPHERE_ABORT_UNLESS(code_address + code_size - 1 <= end - 1);
-
-        /* Declare variables to hold our region sizes. */
 
         /* Define helpers. */
         auto GetSpaceStart = [&](KAddressSpaceInfo::Type type) ALWAYS_INLINE_LAMBDA {
@@ -331,9 +327,7 @@ namespace ams::kern {
         m_impl.InitializeForProcess(table, GetInteger(start), GetInteger(end));
 
         /* Initialize our memory block manager. */
-        return m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager);
-
-        return ResultSuccess();
+        R_RETURN(m_memory_block_manager.Initialize(m_address_space_start, m_address_space_end, m_memory_block_slab_manager));
     }
 
 
@@ -472,7 +466,7 @@ namespace ams::kern {
         R_UNLESS((info.m_permission & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
         R_UNLESS((info.m_attribute  & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CheckMemoryStateContiguous(size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
@@ -508,7 +502,7 @@ namespace ams::kern {
             *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
@@ -562,7 +556,7 @@ namespace ams::kern {
         if (out_blocks_needed != nullptr) {
             *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::LockMemoryAndOpen(KPageGroup *out_pg, KPhysicalAddress *out_paddr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr) {
@@ -625,7 +619,7 @@ namespace ams::kern {
             out_pg->Open();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnlockMemory(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr, const KPageGroup *pg) {
@@ -673,7 +667,7 @@ namespace ams::kern {
         /* Apply the memory block updates. */
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Locked);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const {
@@ -686,7 +680,7 @@ namespace ams::kern {
 
         *out_info = block->GetMemoryInfo();
         out_page->flags = 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, KMemoryState state) const {
@@ -726,7 +720,7 @@ namespace ams::kern {
                     if (R_SUCCEEDED(this->CheckMemoryState(mapped_address, size, KMemoryState_All, state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
                         /* It is! */
                         *out = mapped_address;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                 }
 
@@ -756,7 +750,7 @@ namespace ams::kern {
 
         /* We found the region. */
         *out = mapped_address;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
@@ -803,7 +797,7 @@ namespace ams::kern {
             R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
 
             /* Ensure that we unprotect the source pages on failure. */
-            auto unprot_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 const KPageProperties unprotect_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_EnableHeadBodyTail };
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, unprotect_properties, OperationType_ChangePermissions, true));
             };
@@ -812,15 +806,12 @@ namespace ams::kern {
             const KPageProperties dst_map_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_DisableHead };
             R_TRY(this->MapPageGroupImpl(updater.GetPageList(), dst_address, pg, dst_map_properties, false));
 
-            /* We successfully mapped the alias pages, so we don't need to unprotect the src pages on failure. */
-            unprot_guard.Cancel();
-
             /* Apply the memory block updates. */
             m_memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state, new_src_perm, new_src_attr, KMemoryBlockDisableMergeAttribute_Locked, KMemoryBlockDisableMergeAttribute_None);
             m_memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_Stack, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
@@ -869,7 +860,7 @@ namespace ams::kern {
             R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, dst_unmap_properties, OperationType_Unmap, false));
 
             /* Ensure that we re-map the aliased pages on failure. */
-            auto remap_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 this->RemapPageGroup(updater.GetPageList(), dst_address, size, pg);
             };
 
@@ -877,15 +868,12 @@ namespace ams::kern {
             const KPageProperties src_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_EnableAndMergeHeadBodyTail };
             R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
 
-            /* We successfully changed the permissions for the source pages, so we don't need to re-map the dst pages on failure. */
-            remap_guard.Cancel();
-
             /* Apply the memory block updates. */
             m_memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,         KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Locked);
             m_memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None, KMemoryPermission_None,          KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
@@ -935,7 +923,7 @@ namespace ams::kern {
             R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
 
             /* Ensure that we unprotect the source pages on failure. */
-            auto unprot_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 const KPageProperties unprotect_properties = { src_perm, false, false, DisableMergeAttribute_EnableHeadBodyTail };
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, unprotect_properties, OperationType_ChangePermissions, true));
             };
@@ -944,15 +932,12 @@ namespace ams::kern {
             const KPageProperties dst_properties = { new_perm, false, false, DisableMergeAttribute_DisableHead };
             R_TRY(this->MapPageGroupImpl(updater.GetPageList(), dst_address, pg, dst_properties, false));
 
-            /* We successfully mapped the alias pages, so we don't need to unprotect the src pages on failure. */
-            unprot_guard.Cancel();
-
             /* Apply the memory block updates. */
             m_memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,              new_perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Locked, KMemoryBlockDisableMergeAttribute_None);
             m_memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_AliasCode, new_perm, KMemoryAttribute_None,   KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
@@ -1034,16 +1019,13 @@ namespace ams::kern {
             R_TRY(this->Operate(updater.GetPageList(), dst_address, num_pages, Null<KPhysicalAddress>, false, dst_unmap_properties, OperationType_Unmap, false));
 
             /* Ensure that we re-map the aliased pages on failure. */
-            auto remap_guard = SCOPE_GUARD {
+            ON_RESULT_FAILURE {
                 this->RemapPageGroup(updater.GetPageList(), dst_address, size, pg);
             };
 
             /* Try to set the permissions for the source pages back to what they should be. */
             const KPageProperties src_properties = { KMemoryPermission_UserReadWrite, false, false, DisableMergeAttribute_EnableAndMergeHeadBodyTail };
             R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
-
-            /* We successfully changed the permissions for the source pages, so we don't need to re-map the dst pages on failure. */
-            remap_guard.Cancel();
 
             /* Apply the memory block updates. */
             m_memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None,   KMemoryPermission_None,          KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
@@ -1053,7 +1035,7 @@ namespace ams::kern {
             reprotected_pages = true;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     KProcessAddress KPageTableBase::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
@@ -1149,7 +1131,7 @@ namespace ams::kern {
 
         /* Map the pages. */
         const KPageProperties properties = { perm, false, false, DisableMergeAttribute_None };
-        return this->Operate(page_list, address, num_pages, pg, properties, OperationType_MapGroup, false);
+        R_RETURN(this->Operate(page_list, address, num_pages, pg, properties, OperationType_MapGroup, false));
     }
 
     Result KPageTableBase::MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll) {
@@ -1160,7 +1142,7 @@ namespace ams::kern {
         KProcessAddress cur_address = address;
 
         /* Ensure that we clean up on failure. */
-        auto mapping_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             MESOSPHERE_ABORT_UNLESS(!reuse_ll);
             if (cur_address != start_address) {
                 const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
@@ -1177,8 +1159,7 @@ namespace ams::kern {
         }
 
         /* We succeeded! */
-        mapping_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KPageTableBase::RemapPageGroup(PageLinkedList *page_list, KProcessAddress address, size_t size, const KPageGroup &pg) {
@@ -1301,7 +1282,7 @@ namespace ams::kern {
         R_UNLESS(IsHeapPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
         R_TRY(pg.AddBlock(cur_addr, cur_pages));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool KPageTableBase::IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) {
@@ -1433,7 +1414,7 @@ namespace ams::kern {
             .size    = size,
         };
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
@@ -1467,7 +1448,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
@@ -1533,7 +1514,7 @@ namespace ams::kern {
             cpu::InvalidateEntireInstructionCache();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetMemoryAttribute(KProcessAddress addr, size_t size, u32 mask, u32 attr) {
@@ -1573,7 +1554,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, old_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetHeapSize(KProcessAddress *out, size_t size) {
@@ -1627,11 +1608,11 @@ namespace ams::kern {
 
                 /* Set the output. */
                 *out = m_heap_region_start;
-                return ResultSuccess();
+                R_SUCCEED();
             } else if (size == static_cast<size_t>(m_current_heap_end - m_heap_region_start)) {
                 /* The size requested is exactly the current size. */
                 *out = m_heap_region_start;
-                return ResultSuccess();
+                R_SUCCEED();
             } else {
                 /* We have to allocate memory. Determine how much to allocate and where while the table is locked. */
                 cur_address     = m_current_heap_end;
@@ -1692,7 +1673,7 @@ namespace ams::kern {
 
             /* Set the output. */
             *out = m_heap_region_start;
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -1705,7 +1686,7 @@ namespace ams::kern {
 
         m_max_heap_size = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const {
@@ -1727,12 +1708,12 @@ namespace ams::kern {
             };
             out_page_info->flags = 0;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Otherwise, lock the table and query. */
         KScopedLightLock lk(m_general_lock);
-        return this->QueryInfoImpl(out_info, out_page_info, addr);
+        R_RETURN(this->QueryInfoImpl(out_info, out_page_info, addr));
     }
 
     Result KPageTableBase::QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out, KProcessAddress address) const {
@@ -1808,7 +1789,7 @@ namespace ams::kern {
         out->physical_address = GetInteger(phys_addr);
         out->virtual_address  = GetInteger(virt_addr);
         out->size             = phys_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapIoImpl(KProcessAddress *out, PageLinkedList *page_list, KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
@@ -1882,7 +1863,7 @@ namespace ams::kern {
         /* Set the output address. */
         *out = addr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
@@ -1905,7 +1886,7 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), addr, size / PageSize, KMemoryState_Io, perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size, ams::svc::MemoryMapping mapping, ams::svc::MemoryPermission svc_perm) {
@@ -1935,7 +1916,7 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Io, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddress phys_addr, size_t size) {
@@ -1986,7 +1967,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
@@ -2054,7 +2035,7 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, KMemoryState_Static, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
@@ -2070,7 +2051,7 @@ namespace ams::kern {
             R_CONVERT(svc::ResultInvalidAddress, svc::ResultOutOfRange())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
@@ -2111,7 +2092,7 @@ namespace ams::kern {
 
         /* We successfully mapped the pages. */
         *out_addr = addr;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapPages(KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm) {
@@ -2140,7 +2121,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
@@ -2170,7 +2151,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
@@ -2207,7 +2188,7 @@ namespace ams::kern {
 
         /* We successfully mapped the pages. */
         *out_addr = addr;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapPageGroup(KProcessAddress addr, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm) {
@@ -2241,7 +2222,7 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), addr, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
@@ -2277,7 +2258,7 @@ namespace ams::kern {
         /* Update the blocks. */
         m_memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
@@ -2300,7 +2281,7 @@ namespace ams::kern {
         /* Open a new reference to the pages in the group. */
         out->Open();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::InvalidateProcessDataCache(KProcessAddress address, size_t size) {
@@ -2367,7 +2348,7 @@ namespace ams::kern {
             cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
@@ -2420,7 +2401,7 @@ namespace ams::kern {
                 R_UNLESS(UserspaceAccess::CopyMemoryToUser(buffer, copy_src, cur_size), svc::ResultInvalidPointer());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         /* Iterate. */
@@ -2453,7 +2434,7 @@ namespace ams::kern {
         /* Perform copy for the last block. */
         R_TRY(PerformCopy());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
@@ -2505,7 +2486,7 @@ namespace ams::kern {
                 cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         /* Iterate. */
@@ -2541,7 +2522,7 @@ namespace ams::kern {
         /* Invalidate the entire instruction cache, as this svc allows modifying executable pages. */
         cpu::InvalidateEntireInstructionCache();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::ReadIoMemoryImpl(void *buffer, KPhysicalAddress phys_addr, size_t size) {
@@ -2586,7 +2567,7 @@ namespace ams::kern {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::WriteIoMemoryImpl(KPhysicalAddress phys_addr, const void *buffer, size_t size) {
@@ -2631,7 +2612,7 @@ namespace ams::kern {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::ReadDebugIoMemory(void *buffer, KProcessAddress address, size_t size) {
@@ -2667,7 +2648,7 @@ namespace ams::kern {
             dst     += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::WriteDebugIoMemory(KProcessAddress address, const void *buffer, size_t size) {
@@ -2703,7 +2684,7 @@ namespace ams::kern {
             src     += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::LockForMapDeviceAddressSpace(KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
@@ -2727,7 +2708,7 @@ namespace ams::kern {
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::LockForUnmapDeviceAddressSpace(KProcessAddress address, size_t size) {
@@ -2755,7 +2736,7 @@ namespace ams::kern {
         const KMemoryBlockManager::MemoryBlockLockFunction lock_func = m_enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForShare : &KMemoryBlock::UpdateDeviceDisableMergeStateForShareRight;
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, lock_func, KMemoryPermission_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {
@@ -2782,7 +2763,7 @@ namespace ams::kern {
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UnshareToDevice, KMemoryPermission_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size) {
@@ -2809,7 +2790,7 @@ namespace ams::kern {
         /* Update the memory blocks. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, m_enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshare : &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareRight, KMemoryPermission_None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::OpenMemoryRangeForMapDeviceAddressSpace(KPageTableBase::MemoryRange *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
@@ -2827,7 +2808,7 @@ namespace ams::kern {
         /* We got the range, so open it. */
         Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::OpenMemoryRangeForUnmapDeviceAddressSpace(MemoryRange *out, KProcessAddress address, size_t size) {
@@ -2844,61 +2825,61 @@ namespace ams::kern {
         /* We got the range, so open it. */
         Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
-        return this->LockMemoryAndOpen(nullptr, out, address, size,
+        R_RETURN(this->LockMemoryAndOpen(nullptr, out, address, size,
                                        KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, nullptr);
+                                  KMemoryAttribute_Locked, nullptr));
     }
 
     Result KPageTableBase::LockForTransferMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm) {
-        return this->LockMemoryAndOpen(out, nullptr, address, size,
+        R_RETURN(this->LockMemoryAndOpen(out, nullptr, address, size,
                                        KMemoryState_FlagCanTransfer, KMemoryState_FlagCanTransfer,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        perm,
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanTransfer, KMemoryState_FlagCanTransfer,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg)));
     }
 
     Result KPageTableBase::LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size) {
-        return this->LockMemoryAndOpen(out, nullptr, address, size,
+        R_RETURN(this->LockMemoryAndOpen(out, nullptr, address, size,
                                        KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked));
     }
 
     Result KPageTableBase::UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
-        return this->UnlockMemory(address, size,
+        R_RETURN(this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                   KMemoryPermission_None, KMemoryPermission_None,
                                   KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg)));
     }
 
     Result KPageTableBase::OpenMemoryRangeForProcessCacheOperation(MemoryRange *out, KProcessAddress address, size_t size) {
@@ -2915,7 +2896,7 @@ namespace ams::kern {
         /* We got the range, so open it. */
         Kernel::GetMemoryManager().Open(out->address, out->size / PageSize);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -2961,7 +2942,7 @@ namespace ams::kern {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUser(GetVoidPointer(dst_addr), GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size), svc::ResultInvalidCurrentMemory());
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             /* Iterate. */
@@ -2995,7 +2976,7 @@ namespace ams::kern {
             R_TRY(PerformCopy());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -3030,7 +3011,7 @@ namespace ams::kern {
                 /* Copy the data. */
                 std::memcpy(GetVoidPointer(dst_addr), GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
 
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             /* Iterate. */
@@ -3064,7 +3045,7 @@ namespace ams::kern {
             R_TRY(PerformCopy());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
@@ -3110,7 +3091,7 @@ namespace ams::kern {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), GetVoidPointer(src_addr), cur_size), svc::ResultInvalidCurrentMemory());
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             /* Iterate. */
@@ -3144,7 +3125,7 @@ namespace ams::kern {
             R_TRY(PerformCopy());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
@@ -3179,7 +3160,7 @@ namespace ams::kern {
                 /* Copy the data. */
                 std::memcpy(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), GetVoidPointer(src_addr), cur_size);
 
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             /* Iterate. */
@@ -3213,7 +3194,7 @@ namespace ams::kern {
             R_TRY(PerformCopy());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromHeapToHeap(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -3330,7 +3311,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CopyMemoryFromHeapToHeapWithoutCheckDestination(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -3449,7 +3430,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     #pragma GCC push_options
@@ -3492,12 +3473,12 @@ namespace ams::kern {
                 test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             default:
-                return svc::ResultInvalidCombination();
+                R_THROW(svc::ResultInvalidCombination());
         }
 
         /* Ensure that on failure, we roll back appropriately. */
         size_t mapped_size = 0;
-        auto cleanup_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (mapped_size > 0) {
                 this->CleanupForIpcClientOnServerSetupFailure(page_list, mapping_src_start, mapped_size, src_perm);
             }
@@ -3547,15 +3528,12 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(it != m_memory_block_manager.end());
         }
 
-        /* We succeeded, so no need to cleanup. */
-        cleanup_guard.Cancel();
-
         if (out_blocks_needed != nullptr) {
             MESOSPHERE_ASSERT(blocks_needed <= KMemoryBlockManagerUpdateAllocator::MaxBlocks);
             *out_blocks_needed = blocks_needed;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send) {
@@ -3621,7 +3599,7 @@ namespace ams::kern {
             }
         };
 
-        auto cleanup_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (cur_mapped_addr != dst_addr) {
                 const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), dst_addr, (cur_mapped_addr - dst_addr) / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
@@ -3767,9 +3745,8 @@ namespace ams::kern {
         *out_addr = dst_addr + (src_start - aligned_src_start);
 
         /* We succeeded. */
-        cleanup_guard.Cancel();
         memory_reservation.Commit();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send) {
@@ -3798,7 +3775,7 @@ namespace ams::kern {
 
         /* Ensure that we clean up appropriately if we fail after this. */
         const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
-        auto cleanup_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (src_map_end > src_map_start) {
                 src_page_table.CleanupForIpcClientOnServerSetupFailure(updater.GetPageList(), src_map_start, src_map_size, src_perm);
             }
@@ -3813,10 +3790,7 @@ namespace ams::kern {
             src_page_table.m_memory_block_manager.UpdateLock(std::addressof(allocator), src_map_start, (src_map_end - src_map_start) / PageSize, &KMemoryBlock::LockForIpc, src_perm);
         }
 
-        /* We succeeded, so cancel our cleanup guard. */
-        cleanup_guard.Cancel();
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state) {
@@ -3857,7 +3831,7 @@ namespace ams::kern {
         const size_t mapping_size           = (mapping_start < mapping_end) ? mapping_end - mapping_start : 0;
         m_resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_size - mapping_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {
@@ -3890,7 +3864,7 @@ namespace ams::kern {
                 test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             default:
-                return svc::ResultInvalidCombination();
+                R_THROW(svc::ResultInvalidCombination());
         }
 
         /* Lock the table. */
@@ -3902,7 +3876,7 @@ namespace ams::kern {
 
         /* Ensure that on failure, we roll back appropriately. */
         size_t mapped_size = 0;
-        auto unmap_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (mapped_size > 0) {
                 /* Determine where the mapping ends. */
                 const auto mapped_end  = GetInteger(mapping_start) + mapped_size;
@@ -4040,10 +4014,7 @@ namespace ams::kern {
         /* Unlock the pages. */
         m_memory_block_manager.UpdateLock(std::addressof(allocator), mapping_start, mapping_size / PageSize, &KMemoryBlock::UnlockForIpc, KMemoryPermission_None);
 
-        /* We succeeded, so no need to unmap. */
-        unmap_guard.Cancel();
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KPageTableBase::CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm) {
@@ -4237,7 +4208,7 @@ namespace ams::kern {
 
                     /* Reset the current tracking address, and make sure we clean up on failure. */
                     cur_address = address;
-                    auto unmap_guard = SCOPE_GUARD {
+                    ON_RESULT_FAILURE {
                         if (cur_address > address) {
                             const KProcessAddress last_unmap_address = cur_address - 1;
 
@@ -4340,10 +4311,7 @@ namespace ams::kern {
                                                              KMemoryState_Free,   KMemoryPermission_None,          KMemoryAttribute_None,
                                                              KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
 
-                    /* Cancel our guard. */
-                    unmap_guard.Cancel();
-
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
@@ -4479,7 +4447,7 @@ namespace ams::kern {
 
         /* Reset the current tracking address, and make sure we clean up on failure. */
         cur_address = address;
-        auto remap_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             if (cur_address > address) {
                 const KProcessAddress last_map_address = cur_address - 1;
                 cur_address = address;
@@ -4574,8 +4542,7 @@ namespace ams::kern {
         m_memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         /* We succeeded. */
-        remap_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
@@ -4583,7 +4550,7 @@ namespace ams::kern {
         R_UNLESS(Kernel::GetUnsafeMemory().TryReserve(size), svc::ResultLimitReached());
 
         /* Ensure we release our reservation on failure. */
-        auto reserve_guard = SCOPE_GUARD { Kernel::GetUnsafeMemory().Release(size); };
+        ON_RESULT_FAILURE { Kernel::GetUnsafeMemory().Release(size); };
 
         /* Create a page group for the new memory. */
         KPageGroup pg(m_block_info_manager);
@@ -4628,8 +4595,7 @@ namespace ams::kern {
             m_mapped_unsafe_physical_memory += size;
 
             /* We succeeded. */
-            reserve_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -4666,7 +4632,7 @@ namespace ams::kern {
         /* Update our mapped unsafe size. */
         m_mapped_unsafe_physical_memory -= size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTableBase::UnmapProcessMemory(KProcessAddress dst_address, size_t size, KPageTableBase &src_page_table, KProcessAddress src_address) {
@@ -4770,7 +4736,7 @@ namespace ams::kern {
         /* Apply the memory block update. */
         m_memory_block_manager.Update(std::addressof(allocator), dst_address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

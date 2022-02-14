@@ -37,7 +37,7 @@ namespace ams::kern {
         /* Mark ourselves as initialized. */
         m_is_initialized = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KIoRegion::Finalize() {
@@ -72,7 +72,7 @@ namespace ams::kern {
         /* Note that we're mapped. */
         m_is_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KIoRegion::Unmap(KProcessAddress address, size_t size) {
@@ -93,7 +93,7 @@ namespace ams::kern {
         /* Note that we're unmapped. */
         m_is_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

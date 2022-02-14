@@ -77,19 +77,15 @@ namespace ams::kern {
             /* Try to allocate a session from unused slab memory. */
             session = KSession::CreateFromUnusedSlabMemory();
             R_UNLESS(session != nullptr, svc::ResultLimitReached());
+            ON_RESULT_FAILURE { session->Close(); };
 
-            /* Ensure that if we fail to allocate our session requests, we close the session we created. */
-            auto session_guard = SCOPE_GUARD { session->Close(); };
-            {
-                /* We want to add two KSessionRequests to the heap, to prevent request exhaustion. */
-                for (size_t i = 0; i < 2; ++i) {
-                    KSessionRequest *request = KSessionRequest::CreateFromUnusedSlabMemory();
-                    R_UNLESS(request != nullptr, svc::ResultLimitReached());
+            /* We want to add two KSessionRequests to the heap, to prevent request exhaustion. */
+            for (size_t i = 0; i < 2; ++i) {
+                KSessionRequest *request = KSessionRequest::CreateFromUnusedSlabMemory();
+                R_UNLESS(request != nullptr, svc::ResultLimitReached());
 
-                    request->Close();
-                }
+                request->Close();
             }
-            session_guard.Cancel();
 
             /* We successfully allocated a session, so add the object we allocated to the resource limit. */
             Kernel::GetSystemResourceLimit().Add(ams::svc::LimitableResource_SessionCountMax, 1);
@@ -99,8 +95,9 @@ namespace ams::kern {
         R_UNLESS(session != nullptr, svc::ResultOutOfResource());
 
         /* Update the session counts. */
-        auto count_guard = SCOPE_GUARD { session->Close(); };
         {
+            ON_RESULT_FAILURE { session->Close(); };
+
             /* Atomically increment the number of sessions. */
             s32 new_sessions;
             {
@@ -123,7 +120,6 @@ namespace ams::kern {
                 } while (!m_peak_sessions.CompareExchangeWeak<std::memory_order_relaxed>(peak, new_sessions));
             }
         }
-        count_guard.Cancel();
 
         /* Initialize the session. */
         session->Initialize(this, m_parent->GetName());
@@ -133,7 +129,7 @@ namespace ams::kern {
 
         /* Register the session. */
         KSession::Register(session);
-        auto session_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             session->GetClientSession().Close();
             session->GetServerSession().Close();
         };
@@ -142,9 +138,8 @@ namespace ams::kern {
         R_TRY(m_parent->EnqueueSession(std::addressof(session->GetServerSession())));
 
         /* We succeeded, so set the output. */
-        session_guard.Cancel();
         *out = std::addressof(session->GetClientSession());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KClientPort::CreateLightSession(KLightClientSession **out) {
@@ -175,8 +170,9 @@ namespace ams::kern {
         R_UNLESS(session != nullptr, svc::ResultOutOfResource());
 
         /* Update the session counts. */
-        auto count_guard = SCOPE_GUARD { session->Close(); };
         {
+            ON_RESULT_FAILURE { session->Close(); };
+
             /* Atomically increment the number of sessions. */
             s32 new_sessions;
             {
@@ -199,7 +195,6 @@ namespace ams::kern {
                 } while (!m_peak_sessions.CompareExchangeWeak<std::memory_order_relaxed>(peak, new_sessions));
             }
         }
-        count_guard.Cancel();
 
         /* Initialize the session. */
         session->Initialize(this, m_parent->GetName());
@@ -209,7 +204,7 @@ namespace ams::kern {
 
         /* Register the session. */
         KLightSession::Register(session);
-        auto session_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             session->GetClientSession().Close();
             session->GetServerSession().Close();
         };
@@ -218,9 +213,8 @@ namespace ams::kern {
         R_TRY(m_parent->EnqueueSession(std::addressof(session->GetServerSession())));
 
         /* We succeeded, so set the output. */
-        session_guard.Cancel();
         *out = std::addressof(session->GetClientSession());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -171,7 +171,7 @@ namespace ams::kern {
             manager->InitializeOptimizedMemory();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KMemoryManager::FinalizeOptimizedMemory(u64 process_id, Pool pool) {
@@ -236,7 +236,7 @@ namespace ams::kern {
         R_UNLESS(0 <= heap_index, svc::ResultOutOfMemory());
 
         /* Ensure that we don't leave anything un-freed. */
-        auto group_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             for (const auto &it : *out) {
                 auto &manager = this->GetManager(it.GetAddress());
                 const size_t num_pages = std::min(it.GetNumPages(), (manager.GetEndAddress() - it.GetAddress()) / PageSize);
@@ -256,12 +256,11 @@ namespace ams::kern {
                         break;
                     }
 
-                    /* Safely add it to our group. */
-                    {
-                        auto block_guard = SCOPE_GUARD { cur_manager->Free(allocated_block, pages_per_alloc); };
-                        R_TRY(out->AddBlock(allocated_block, pages_per_alloc));
-                        block_guard.Cancel();
-                    }
+                    /* Ensure we don't leak the block if we fail. */
+                    ON_RESULT_FAILURE { cur_manager->Free(allocated_block, pages_per_alloc); };
+
+                    /* Add the block to our group. */
+                    R_TRY(out->AddBlock(allocated_block, pages_per_alloc));
 
                     /* Maintain the optimized memory bitmap, if we should. */
                     if (unoptimized) {
@@ -277,8 +276,7 @@ namespace ams::kern {
         R_UNLESS(num_pages == 0, svc::ResultOutOfMemory());
 
         /* We succeeded! */
-        group_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KMemoryManager::AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option) {
@@ -313,7 +311,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KMemoryManager::AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
@@ -419,7 +417,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     size_t KMemoryManager::Impl::Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p) {

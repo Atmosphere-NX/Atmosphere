@@ -29,7 +29,7 @@ namespace ams::kern::svc {
             /* Send the request. */
             R_TRY(session->SendSyncRequest(args));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ReplyAndReceiveLight(ams::svc::Handle session_handle, u32 *args) {
@@ -40,7 +40,7 @@ namespace ams::kern::svc {
             /* Handle the request. */
             R_TRY(session->ReplyAndReceive(args));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -48,21 +48,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SendSyncRequestLight64(ams::svc::Handle session_handle, u32 *args) {
-        return SendSyncRequestLight(session_handle, args);
+        R_RETURN(SendSyncRequestLight(session_handle, args));
     }
 
     Result ReplyAndReceiveLight64(ams::svc::Handle session_handle, u32 *args) {
-        return ReplyAndReceiveLight(session_handle, args);
+        R_RETURN(ReplyAndReceiveLight(session_handle, args));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result SendSyncRequestLight64From32(ams::svc::Handle session_handle, u32 *args) {
-        return SendSyncRequestLight(session_handle, args);
+        R_RETURN(SendSyncRequestLight(session_handle, args));
     }
 
     Result ReplyAndReceiveLight64From32(ams::svc::Handle session_handle, u32 *args) {
-        return ReplyAndReceiveLight(session_handle, args);
+        R_RETURN(ReplyAndReceiveLight(session_handle, args));
     }
 
 }

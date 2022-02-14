@@ -36,7 +36,7 @@ namespace ams::kern {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool KHandleTable::Remove(ams::svc::Handle handle) {
@@ -95,7 +95,7 @@ namespace ams::kern {
             *out_handle = EncodeHandle(index, linear_id);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KHandleTable::Reserve(ams::svc::Handle *out_handle) {
@@ -107,7 +107,7 @@ namespace ams::kern {
         R_UNLESS(m_count < m_table_size, svc::ResultOutOfHandles());
 
         *out_handle = EncodeHandle(this->AllocateEntry(), this->AllocateLinearId());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KHandleTable::Unreserve(ams::svc::Handle handle) {

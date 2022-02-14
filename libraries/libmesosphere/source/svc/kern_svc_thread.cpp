@@ -66,7 +66,7 @@ namespace ams::kern::svc {
             /* Add the thread to the handle table. */
             R_TRY(process.GetHandleTable().Add(out, thread));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result StartThread(ams::svc::Handle thread_handle) {
@@ -75,7 +75,7 @@ namespace ams::kern::svc {
             R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Try to start the thread. */
-            return thread->Run();
+            R_RETURN(thread->Run());
         }
 
         void ExitThread() {
@@ -121,7 +121,7 @@ namespace ams::kern::svc {
 
             /* Get the thread's priority. */
             *out_priority = thread->GetPriority();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetThreadPriority(ams::svc::Handle thread_handle, int32_t priority) {
@@ -141,7 +141,7 @@ namespace ams::kern::svc {
 
             /* Set the thread priority. */
             thread->SetBasePriority(priority);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetThreadCoreMask(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
@@ -152,7 +152,7 @@ namespace ams::kern::svc {
             /* Get the core mask. */
             R_TRY(thread->GetCoreMask(out_core_id, out_affinity_mask));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetThreadCoreMask(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
@@ -184,7 +184,7 @@ namespace ams::kern::svc {
             /* Set the core mask. */
             R_TRY(thread->SetCoreMask(core_id, affinity_mask));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetThreadId(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
@@ -194,7 +194,7 @@ namespace ams::kern::svc {
 
             /* Get the thread's id. */
             *out_thread_id = thread->GetId();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetThreadContext3(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
@@ -213,7 +213,7 @@ namespace ams::kern::svc {
             /* Copy the thread context to user space. */
             R_TRY(out_context.CopyFrom(std::addressof(context)));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetThreadList(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
@@ -252,7 +252,7 @@ namespace ams::kern::svc {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -260,11 +260,11 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateThread64(ams::svc::Handle *out_handle, ams::svc::ThreadFunc func, ams::svc::Address arg, ams::svc::Address stack_bottom, int32_t priority, int32_t core_id) {
-        return CreateThread(out_handle, func, arg, stack_bottom, priority, core_id);
+        R_RETURN(CreateThread(out_handle, func, arg, stack_bottom, priority, core_id));
     }
 
     Result StartThread64(ams::svc::Handle thread_handle) {
-        return StartThread(thread_handle);
+        R_RETURN(StartThread(thread_handle));
     }
 
     void ExitThread64() {
@@ -276,41 +276,41 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadPriority64(int32_t *out_priority, ams::svc::Handle thread_handle) {
-        return GetThreadPriority(out_priority, thread_handle);
+        R_RETURN(GetThreadPriority(out_priority, thread_handle));
     }
 
     Result SetThreadPriority64(ams::svc::Handle thread_handle, int32_t priority) {
-        return SetThreadPriority(thread_handle, priority);
+        R_RETURN(SetThreadPriority(thread_handle, priority));
     }
 
     Result GetThreadCoreMask64(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
-        return GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle);
+        R_RETURN(GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle));
     }
 
     Result SetThreadCoreMask64(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
-        return SetThreadCoreMask(thread_handle, core_id, affinity_mask);
+        R_RETURN(SetThreadCoreMask(thread_handle, core_id, affinity_mask));
     }
 
     Result GetThreadId64(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
-        return GetThreadId(out_thread_id, thread_handle);
+        R_RETURN(GetThreadId(out_thread_id, thread_handle));
     }
 
     Result GetThreadContext364(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
-        return GetThreadContext3(out_context, thread_handle);
+        R_RETURN(GetThreadContext3(out_context, thread_handle));
     }
 
     Result GetThreadList64(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
-        return GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle);
+        R_RETURN(GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateThread64From32(ams::svc::Handle *out_handle, ams::svc::ThreadFunc func, ams::svc::Address arg, ams::svc::Address stack_bottom, int32_t priority, int32_t core_id) {
-        return CreateThread(out_handle, func, arg, stack_bottom, priority, core_id);
+        R_RETURN(CreateThread(out_handle, func, arg, stack_bottom, priority, core_id));
     }
 
     Result StartThread64From32(ams::svc::Handle thread_handle) {
-        return StartThread(thread_handle);
+        R_RETURN(StartThread(thread_handle));
     }
 
     void ExitThread64From32() {
@@ -322,31 +322,31 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadPriority64From32(int32_t *out_priority, ams::svc::Handle thread_handle) {
-        return GetThreadPriority(out_priority, thread_handle);
+        R_RETURN(GetThreadPriority(out_priority, thread_handle));
     }
 
     Result SetThreadPriority64From32(ams::svc::Handle thread_handle, int32_t priority) {
-        return SetThreadPriority(thread_handle, priority);
+        R_RETURN(SetThreadPriority(thread_handle, priority));
     }
 
     Result GetThreadCoreMask64From32(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
-        return GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle);
+        R_RETURN(GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle));
     }
 
     Result SetThreadCoreMask64From32(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
-        return SetThreadCoreMask(thread_handle, core_id, affinity_mask);
+        R_RETURN(SetThreadCoreMask(thread_handle, core_id, affinity_mask));
     }
 
     Result GetThreadId64From32(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
-        return GetThreadId(out_thread_id, thread_handle);
+        R_RETURN(GetThreadId(out_thread_id, thread_handle));
     }
 
     Result GetThreadContext364From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
-        return GetThreadContext3(out_context, thread_handle);
+        R_RETURN(GetThreadContext3(out_context, thread_handle));
     }
 
     Result GetThreadList64From32(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
-        return GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle);
+        R_RETURN(GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle));
     }
 
 }

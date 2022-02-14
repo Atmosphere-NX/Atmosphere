@@ -258,14 +258,120 @@ namespace ams {
 #define R_FAILED(res)    (static_cast<::ams::Result>(res).IsFailure())
 
 
-/// Evaluates an expression that returns a result, and returns the result if it would fail.
-#define R_TRY(res_expr) \
-    ({ \
-        const auto _tmp_r_try_rc = (res_expr); \
-        if (R_FAILED(_tmp_r_try_rc)) { \
-            return _tmp_r_try_rc; \
-        } \
+/* NOTE: The following are experimental and cannot be safely used yet. */
+/* =================================================================== */
+constinit inline ::ams::Result __TmpCurrentResultReference = ::ams::ResultSuccess();
+
+namespace ams::result::impl {
+
+    template<auto EvaluateResult, class F>
+    class ScopedResultGuard {
+        NON_COPYABLE(ScopedResultGuard);
+        NON_MOVEABLE(ScopedResultGuard);
+        private:
+            Result &m_ref;
+            F m_f;
+        public:
+            constexpr ALWAYS_INLINE ScopedResultGuard(Result &ref, F f) : m_ref(ref), m_f(std::move(f)) { }
+            constexpr ALWAYS_INLINE ~ScopedResultGuard() { if (EvaluateResult(m_ref)) { m_f(); } }
+    };
+
+    template<auto EvaluateResult>
+    class ResultReferenceForScopedResultGuard {
+        private:
+            Result &m_ref;
+        public:
+            constexpr ALWAYS_INLINE ResultReferenceForScopedResultGuard(Result &r) : m_ref(r) { /* ... */ }
+
+            constexpr ALWAYS_INLINE operator Result &() const { return m_ref; }
+    };
+
+    template<auto EvaluateResult, typename F>
+    constexpr ALWAYS_INLINE ScopedResultGuard<EvaluateResult, F> operator+(ResultReferenceForScopedResultGuard<EvaluateResult> ref, F&& f) {
+        return ScopedResultGuard<EvaluateResult, F>(static_cast<Result &>(ref), std::forward<F>(f));
+    }
+
+    constexpr ALWAYS_INLINE bool EvaluateResultSuccess(const ::ams::Result &r) { return R_SUCCEEDED(r); }
+    constexpr ALWAYS_INLINE bool EvaluateResultFailure(const ::ams::Result &r) { return R_FAILED(r); }
+
+    template<typename R>
+    constexpr ALWAYS_INLINE bool EvaluateResultIncludedImplForSuccessCompatibility(const ::ams::Result &r) {
+        if constexpr (std::same_as<R, ::ams::ResultSuccess>) {
+            return R_SUCCEEDED(r);
+        } else {
+            return R::Includes(r);
+        }
+    }
+
+    template<typename... Rs>
+    constexpr ALWAYS_INLINE bool EvaluateAnyResultIncludes(const ::ams::Result &r) { return (EvaluateResultIncludedImplForSuccessCompatibility<Rs>(r) || ...); }
+
+    template<typename... Rs>
+    constexpr ALWAYS_INLINE bool EvaluateResultNotIncluded(const ::ams::Result &r) { return !EvaluateAnyResultIncludes<Rs...>(r); }
+
+}
+
+#define AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(COUNTER_VALUE)                                                              \
+    [[maybe_unused]] constexpr bool HasPrevRef_##COUNTER_VALUE = std::same_as<decltype(__TmpCurrentResultReference), Result &>;      \
+    [[maybe_unused]] auto &PrevRef_##COUNTER_VALUE = __TmpCurrentResultReference;                                                    \
+    [[maybe_unused]] Result __tmp_result_##COUNTER_VALUE = ResultSuccess();                                                          \
+    ::ams::Result &__TmpCurrentResultReference = HasPrevRef_##COUNTER_VALUE ? PrevRef_##COUNTER_VALUE : __tmp_result_##COUNTER_VALUE
+
+#define ON_RESULT_RETURN_IMPL(...)                                                                                                                                                 \
+    static_assert(std::same_as<decltype(__TmpCurrentResultReference), Result &>);                                                                                                  \
+    auto ANONYMOUS_VARIABLE(RESULT_GUARD_STATE_) = ::ams::result::impl::ResultReferenceForScopedResultGuard<__VA_ARGS__>(__TmpCurrentResultReference) + [&]() ALWAYS_INLINE_LAMBDA
+
+#define ON_RESULT_FAILURE_2 ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateResultFailure)
+
+#define ON_RESULT_FAILURE                                                                                                                                                   \
+    AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                          \
+    ON_RESULT_FAILURE_2
+
+#define ON_RESULT_SUCCESS_2 ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateResultSuccess)
+
+#define ON_RESULT_SUCCESS                                                                                                                                                    \
+    AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
+    ON_RESULT_SUCCESS_2
+
+#define ON_RESULT_INCLUDED_2(...) ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateAnyResultIncludes<__VA_ARGS__>)
+
+#define ON_RESULT_INCLUDED(...)                                                                                                                                              \
+    AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
+    ON_RESULT_INCLUDED_2(__VA_ARGS__)
+
+#define ON_RESULT_NOT_INCLUDED_2(...) ON_RESULT_RETURN_IMPL(::ams::result::impl::EvaluateResultNotIncluded<__VA_ARGS__>)
+
+#define ON_RESULT_NOT_INCLUDED(...)                                                                                                                                          \
+    AMS_DECLARE_CURRENT_RESULT_REFERENCE_AND_STORAGE(__COUNTER__);                                                                                                           \
+    ON_RESULT_NOT_INCLUDED_2(__VA_ARGS__)
+
+#define ON_RESULT_FAILURE_BESIDES(...)   ON_RESULT_NOT_INCLUDED(::ams::ResultSuccess, ## __VA_ARGS__)
+
+#define ON_RESULT_FAILURE_BESIDES_2(...) ON_RESULT_NOT_INCLUDED_2(::ams::ResultSuccess, ## __VA_ARGS__)
+
+/* =================================================================== */
+
+/// Returns a result.
+#define R_THROW(res_expr)                                                                                                                      \
+    ({                                                                                                                                         \
+        const ::ams::Result _tmp_r_throw_rc = (res_expr);                                                                                      \
+        if constexpr (std::same_as<decltype(__TmpCurrentResultReference), ::ams::Result &>) { __TmpCurrentResultReference = _tmp_r_throw_rc; } \
+        return _tmp_r_throw_rc;                                                                                                                \
     })
+
+/// Returns ResultSuccess()
+#define R_SUCCEED() R_THROW(::ams::ResultSuccess())
+
+/// Evaluates an expression that returns a result, and returns the result if it would fail.
+#define R_TRY(res_expr)                                                       \
+    ({                                                                        \
+        if (const auto _tmp_r_try_rc = (res_expr); R_FAILED(_tmp_r_try_rc)) { \
+            R_THROW(_tmp_r_try_rc);                                           \
+        }                                                                     \
+    })
+
+/// Return a result.
+#define R_RETURN(res_expr) R_THROW(res_expr)
 
 #ifdef AMS_ENABLE_DEBUG_PRINT
 #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
@@ -277,39 +383,37 @@ namespace ams {
 
 /// Evaluates an expression that returns a result, and asserts the result if it would fail.
 #ifdef AMS_ENABLE_ASSERTIONS
-#define R_ASSERT(res_expr) \
-    ({ \
-        const auto _tmp_r_assert_rc = (res_expr); \
-        if (AMS_UNLIKELY(R_FAILED(_tmp_r_assert_rc))) {  \
-            AMS_CALL_ON_RESULT_ASSERTION_IMPL(#res_expr, _tmp_r_assert_rc); \
-        } \
+#define R_ASSERT(res_expr)                                                                        \
+    ({                                                                                            \
+        if (const auto _tmp_r_assert_rc = (res_expr); AMS_UNLIKELY(R_FAILED(_tmp_r_assert_rc))) { \
+            AMS_CALL_ON_RESULT_ASSERTION_IMPL(#res_expr, _tmp_r_assert_rc);                       \
+        }                                                                                         \
     })
 #else
 #define R_ASSERT(res_expr) AMS_UNUSED((res_expr));
 #endif
 
 /// Evaluates an expression that returns a result, and aborts if the result would fail.
-#define R_ABORT_UNLESS(res_expr) \
-    ({ \
-        const auto _tmp_r_abort_rc = (res_expr); \
-        if (AMS_UNLIKELY(R_FAILED(_tmp_r_abort_rc))) {  \
-            AMS_CALL_ON_RESULT_ABORT_IMPL(#res_expr, _tmp_r_abort_rc); \
-        } \
+#define R_ABORT_UNLESS(res_expr)                                                                \
+    ({                                                                                          \
+        if (const auto _tmp_r_abort_rc = (res_expr); AMS_UNLIKELY(R_FAILED(_tmp_r_abort_rc))) { \
+            AMS_CALL_ON_RESULT_ABORT_IMPL(#res_expr, _tmp_r_abort_rc);                          \
+        }                                                                                       \
     })
 
 /// Evaluates a boolean expression, and returns a result unless that expression is true.
 #define R_UNLESS(expr, res) \
-    ({ \
-        if (!(expr)) { \
-            return static_cast<::ams::Result>(res); \
-        } \
+    ({                      \
+        if (!(expr)) {      \
+            R_THROW(res);   \
+        }                   \
     })
 
 /// Evaluates a boolean expression, and succeeds if that expression is true.
 #define R_SUCCEED_IF(expr) R_UNLESS(!(expr), ResultSuccess())
 
 /// Helpers for pattern-matching on a result expression, if the result would fail.
-#define R_CURRENT_RESULT _tmp_r_current_result
+#define R_CURRENT_RESULT _tmp_r_try_catch_current_result
 
 #define R_TRY_CATCH(res_expr) \
     ({ \
@@ -317,17 +421,8 @@ namespace ams {
         if (R_FAILED(R_CURRENT_RESULT)) { \
             if (false)
 
-namespace ams::result::impl {
-
-    template<typename... Rs>
-    constexpr ALWAYS_INLINE bool AnyIncludes(Result result) {
-        return (Rs::Includes(result) || ...);
-    }
-
-}
-
 #define R_CATCH(...) \
-            } else if (::ams::result::impl::AnyIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
+            } else if (::ams::result::impl::EvaluateAnyResultIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
                 if (true)
 
 #define R_CATCH_MODULE(__module__) \
@@ -335,21 +430,21 @@ namespace ams::result::impl {
                 if (true)
 
 #define R_CONVERT(catch_type, convert_type) \
-        R_CATCH(catch_type) { return static_cast<::ams::Result>(convert_type); }
+        R_CATCH(catch_type) { R_THROW(static_cast<::ams::Result>(convert_type)); }
 
 #define R_CATCH_ALL() \
             } else if (R_FAILED(R_CURRENT_RESULT)) { \
                 if (true)
 
 #define R_CONVERT_ALL(convert_type) \
-        R_CATCH_ALL() { return static_cast<::ams::Result>(convert_type); }
+        R_CATCH_ALL() { R_THROW(static_cast<::ams::Result>(convert_type)); }
 
 #define R_CATCH_RETHROW(catch_type) \
         R_CONVERT(catch_type, R_CURRENT_RESULT)
 
 #define R_END_TRY_CATCH \
             else if (R_FAILED(R_CURRENT_RESULT)) { \
-                return R_CURRENT_RESULT; \
+                R_THROW(R_CURRENT_RESULT); \
             } \
         } \
     })
@@ -368,3 +463,5 @@ namespace ams::result::impl {
             } \
         } \
     })
+
+

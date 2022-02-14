@@ -239,7 +239,7 @@ namespace ams::sm::impl {
                 access_control = access_control.GetNextEntry();
             }
 
-            return sm::ResultNotAllowed();
+            R_THROW(sm::ResultNotAllowed());
         }
 
         Result ValidateAccessControl(AccessControlEntry restriction, AccessControlEntry access) {
@@ -249,7 +249,7 @@ namespace ams::sm::impl {
                 access = access.GetNextEntry();
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateServiceName(ServiceName service) {
@@ -269,7 +269,7 @@ namespace ams::sm::impl {
                 R_UNLESS(service.name[name_len++] == 0, sm::ResultInvalidServiceName());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool ShouldDeferForInit(ServiceName service) {
@@ -355,11 +355,11 @@ namespace ams::sm::impl {
             for (auto &future_mitm : g_future_mitm_list) {
                 if (future_mitm == InvalidServiceName) {
                     future_mitm = service;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
 
-            return sm::ResultOutOfServices();
+            R_THROW(sm::ResultOutOfServices());
         }
 
         bool HasFutureMitmDeclaration(ServiceName service) {
@@ -414,7 +414,7 @@ namespace ams::sm::impl {
             /* Set the output handles. */
             *out_server = server_port;
             *out_client = client_port;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ConnectToPortImpl(os::NativeHandle *out, os::NativeHandle port) {
@@ -424,7 +424,7 @@ namespace ams::sm::impl {
 
             /* Set the output handle. */
             *out = session;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetMitmServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
@@ -456,7 +456,7 @@ namespace ams::sm::impl {
             mitm_info->waiting_ack_process_id = client_info.process_id;
             mitm_info->waiting_ack            = true;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetServiceHandleImpl(os::NativeHandle *out, ServiceInfo *service_info, os::ProcessId process_id) {
@@ -470,12 +470,12 @@ namespace ams::sm::impl {
                 GetMitmProcessInfo(std::addressof(client_info), process_id);
                 if (!IsMitmDisallowed(client_info.program_id)) {
                     /* Get a mitm service handle. */
-                    return GetMitmServiceHandleImpl(out, service_info, client_info);
+                    R_RETURN(GetMitmServiceHandleImpl(out, service_info, client_info));
                 }
             }
 
             /* We're not returning a mitm handle, so just return a normal port handle. */
-            return ConnectToPortImpl(out, service_info->port_h);
+            R_RETURN(ConnectToPortImpl(out, service_info->port_h));
         }
 
         Result RegisterServiceImpl(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
@@ -501,7 +501,7 @@ namespace ams::sm::impl {
             /* This might undefer some requests. */
             TriggerResume(service);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void UnregisterServiceImpl(ServiceInfo *service_info) {
@@ -567,7 +567,7 @@ namespace ams::sm::impl {
         proc->access_control_size = aci_sac_size;
         std::memcpy(proc->access_control, aci_sac, proc->access_control_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnregisterProcess(os::ProcessId process_id) {
@@ -581,7 +581,7 @@ namespace ams::sm::impl {
         /* Free the process. */
         *proc = InvalidProcessInfo;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Service management. */
@@ -593,7 +593,7 @@ namespace ams::sm::impl {
         R_TRY(ValidateServiceName(service));
 
         *out = HasServiceInfo(service);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result WaitService(ServiceName service) {
@@ -607,7 +607,7 @@ namespace ams::sm::impl {
         /* If we don't, we want to wait until the service is registered. */
         R_UNLESS(has_service, tipc::ResultRequestDeferred());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetServiceHandle(os::NativeHandle *out, os::ProcessId process_id, ServiceName service) {
@@ -639,7 +639,7 @@ namespace ams::sm::impl {
             R_CONVERT(svc::ResultOutOfSessions, sm::ResultOutOfSessions())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RegisterService(os::NativeHandle *out, os::ProcessId process_id, ServiceName service, size_t max_sessions, bool is_light) {
@@ -660,14 +660,14 @@ namespace ams::sm::impl {
         /* Check that the service isn't already registered. */
         R_UNLESS(!HasServiceInfo(service), sm::ResultAlreadyRegistered());
 
-        return RegisterServiceImpl(out, process_id, service, max_sessions, is_light);
+        R_RETURN(RegisterServiceImpl(out, process_id, service, max_sessions, is_light));
     }
 
     Result RegisterServiceForSelf(os::NativeHandle *out, ServiceName service, size_t max_sessions) {
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_mutex);
 
-        return RegisterServiceImpl(out, os::GetCurrentProcessId(), service, max_sessions, false);
+        R_RETURN(RegisterServiceImpl(out, os::GetCurrentProcessId(), service, max_sessions, false));
     }
 
     Result UnregisterService(os::ProcessId process_id, ServiceName service) {
@@ -692,7 +692,7 @@ namespace ams::sm::impl {
         /* Unregister the service. */
         UnregisterServiceImpl(service_info);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Mitm extensions. */
@@ -706,7 +706,7 @@ namespace ams::sm::impl {
         /* Get whether we have a mitm. */
         *out = HasMitm(service);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result WaitMitm(ServiceName service) {
@@ -720,7 +720,7 @@ namespace ams::sm::impl {
         /* If we don't, we want to wait until the mitm is installed. */
         R_UNLESS(has_mitm, tipc::ResultRequestDeferred());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallMitm(os::NativeHandle *out, os::NativeHandle *out_query, os::ProcessId process_id, ServiceName service) {
@@ -757,7 +757,8 @@ namespace ams::sm::impl {
             R_TRY(AddFutureMitmDeclaration(service));
         }
 
-        auto future_guard = SCOPE_GUARD { if (!has_existing_future_declaration) { ClearFutureMitmDeclaration(service); } };
+        /* If we fail past this point, clean up the future mitm declaration we just added. */
+        ON_RESULT_FAILURE { if (!has_existing_future_declaration) { ClearFutureMitmDeclaration(service); } };
 
         /* Create mitm handles. */
         {
@@ -766,14 +767,11 @@ namespace ams::sm::impl {
             R_TRY(CreatePortImpl(std::addressof(hnd), std::addressof(port_hnd), service_info->max_sessions, service_info->is_light, service_info->name));
 
             /* Ensure that we clean up the port handles, if something goes wrong creating the query sessions. */
-            auto port_guard = SCOPE_GUARD { os::CloseNativeHandle(hnd); os::CloseNativeHandle(port_hnd); };
+            ON_RESULT_FAILURE { os::CloseNativeHandle(hnd); os::CloseNativeHandle(port_hnd); };
 
             /* Create the session for our query service. */
             os::NativeHandle qry_hnd, mitm_qry_hnd;
             R_TRY(svc::CreateSession(std::addressof(qry_hnd), std::addressof(mitm_qry_hnd), false, 0));
-
-            /* We created the query service session, so we no longer need to clean up the port handles. */
-            port_guard.Cancel();
 
             /* Setup the mitm info. */
             mitm_info->process_id = process_id;
@@ -791,8 +789,7 @@ namespace ams::sm::impl {
             TriggerResume(service);
         }
 
-        future_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UninstallMitm(os::ProcessId process_id, ServiceName service) {
@@ -833,7 +830,7 @@ namespace ams::sm::impl {
             service_info->mitm_index = MitmCountMax;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service) {
@@ -857,7 +854,7 @@ namespace ams::sm::impl {
         /* Try to forward declare it. */
         R_TRY(AddFutureMitmDeclaration(service));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClearFutureMitm(os::ProcessId process_id, ServiceName service) {
@@ -889,7 +886,7 @@ namespace ams::sm::impl {
         /* Clear the forward declaration. */
         ClearFutureMitmDeclaration(service);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AcknowledgeMitmSession(MitmProcessInfo *out_info, os::NativeHandle *out_hnd, os::ProcessId process_id, ServiceName service) {
@@ -934,7 +931,7 @@ namespace ams::sm::impl {
         /* Undefer requests to the session. */
         TriggerResume(service);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Deferral extension (works around FS bug). */
@@ -954,7 +951,7 @@ namespace ams::sm::impl {
             TriggerResume(service_name);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

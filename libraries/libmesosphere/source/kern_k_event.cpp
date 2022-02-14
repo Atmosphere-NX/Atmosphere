@@ -43,7 +43,7 @@ namespace ams::kern {
 
         R_SUCCEED_IF(m_readable_event_destroyed);
 
-        return m_readable_event.Signal();
+        R_RETURN(m_readable_event.Signal());
     }
 
     Result KEvent::Clear() {
@@ -51,7 +51,7 @@ namespace ams::kern {
 
         R_SUCCEED_IF(m_readable_event_destroyed);
 
-        return m_readable_event.Clear();
+        R_RETURN(m_readable_event.Clear());
     }
 
     void KEvent::PostDestroy(uintptr_t arg) {

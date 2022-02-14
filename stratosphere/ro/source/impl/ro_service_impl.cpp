@@ -556,23 +556,23 @@ namespace ams::ro::impl {
         /* Validate the NRO (parsing region extents). */
         u64 rx_size = 0, ro_size = 0, rw_size = 0;
         {
-            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
+            ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, nro_size, 0); };
+
             R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size), std::addressof(ro_size), std::addressof(rw_size), nro_info->base_address, nro_size, bss_size));
-            unmap_guard.Cancel();
         }
 
         /* Set NRO perms. */
         {
-            auto unmap_guard = SCOPE_GUARD { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
+            ON_RESULT_FAILURE { UnmapNro(context->GetProcessHandle(), nro_info->base_address, nro_address, bss_address, bss_size, rx_size + ro_size, rw_size); };
+
             R_TRY(SetNroPerms(context->GetProcessHandle(), nro_info->base_address, rx_size, ro_size, rw_size + bss_size));
-            unmap_guard.Cancel();
         }
 
         context->SetNroInfoInUse(nro_info, true);
         nro_info->code_size = rx_size + ro_size;
         nro_info->rw_size = rw_size;
         *out_address = nro_info->base_address;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnmapManualLoadModuleMemory(size_t context_id, u64 nro_address) {

@@ -30,11 +30,11 @@ namespace ams::kern {
             Result SignalToAddress(uintptr_t addr, ams::svc::SignalType type, s32 value, s32 count) {
                 switch (type) {
                     case ams::svc::SignalType_Signal:
-                        return this->Signal(addr, count);
+                        R_RETURN(this->Signal(addr, count));
                     case ams::svc::SignalType_SignalAndIncrementIfEqual:
-                        return this->SignalAndIncrementIfEqual(addr, value, count);
+                        R_RETURN(this->SignalAndIncrementIfEqual(addr, value, count));
                     case ams::svc::SignalType_SignalAndModifyByWaitingCountIfEqual:
-                        return this->SignalAndModifyByWaitingCountIfEqual(addr, value, count);
+                        R_RETURN(this->SignalAndModifyByWaitingCountIfEqual(addr, value, count));
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
             }
@@ -42,11 +42,11 @@ namespace ams::kern {
             Result WaitForAddress(uintptr_t addr, ams::svc::ArbitrationType type, s32 value, s64 timeout) {
                 switch (type) {
                     case ams::svc::ArbitrationType_WaitIfLessThan:
-                        return this->WaitIfLessThan(addr, value, false, timeout);
+                        R_RETURN(this->WaitIfLessThan(addr, value, false, timeout));
                     case ams::svc::ArbitrationType_DecrementAndWaitIfLessThan:
-                        return this->WaitIfLessThan(addr, value, true, timeout);
+                        R_RETURN(this->WaitIfLessThan(addr, value, true, timeout));
                     case ams::svc::ArbitrationType_WaitIfEqual:
-                        return this->WaitIfEqual(addr, value, timeout);
+                        R_RETURN(this->WaitIfEqual(addr, value, timeout));
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
             }

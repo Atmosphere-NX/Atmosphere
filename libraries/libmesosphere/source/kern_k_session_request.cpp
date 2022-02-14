@@ -40,22 +40,22 @@ namespace ams::kern {
         /* Set the mapping. */
         mapping->Set(client, server, size, state);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KSessionRequest::SessionMappings::PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
         MESOSPHERE_ASSERT(m_num_recv == 0);
         MESOSPHERE_ASSERT(m_num_exch == 0);
-        return this->PushMap(client, server, size, state, m_num_send++);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send++));
     }
 
     Result KSessionRequest::SessionMappings::PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
         MESOSPHERE_ASSERT(m_num_exch == 0);
-        return this->PushMap(client, server, size, state, m_num_send + m_num_recv++);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send + m_num_recv++));
     }
 
     Result KSessionRequest::SessionMappings::PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-        return this->PushMap(client, server, size, state, m_num_send + m_num_recv + m_num_exch++);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send + m_num_recv + m_num_exch++));
     }
 
     void KSessionRequest::SessionMappings::Finalize() {
