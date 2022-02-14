@@ -26,7 +26,7 @@ CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
 endif
 
-export LDFLAGS	=	-specs=$(TOPDIR)/$(notdir $(TOPDIR)).specs -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -fno-rtti -fno-use-cxa-atexit -nostdlib -nostartfiles -g -gdwarf-4 $(CXXFLAGS) -Wl,-Map,$(notdir $*.map) -Wl,-z,relro,-z,now
+export LDFLAGS	=	-specs=$(TOPDIR)/$(notdir $(TOPDIR)).specs -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-exceptions -fno-rtti -fno-use-cxa-atexit -nostdlib -nostartfiles -g $(CXXFLAGS) -Wl,-Map,$(notdir $*.map) -Wl,-z,relro,-z,now
 
 export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,__cxa_throw \

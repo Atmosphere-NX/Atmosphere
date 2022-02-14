@@ -18,7 +18,7 @@ endif
 ATMOSPHERE_BUILD_SETTINGS ?=
 
 export ATMOSPHERE_DEFINES  := -DATMOSPHERE
-export ATMOSPHERE_SETTINGS := -fPIE -g -gdwarf-4 $(ATMOSPHERE_BUILD_SETTINGS)
+export ATMOSPHERE_SETTINGS := -fPIE -g $(ATMOSPHERE_BUILD_SETTINGS)
 export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv  \
                               -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector \
                               -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation
