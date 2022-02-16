@@ -1,0 +1,70 @@
+name: Feature Request
+description: Suggest a new feature for Atmosphère.
+#assignees:
+labels: [enhancement]
+#title:
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If any section does not apply, replace its contents with "N/A".
+        If you do not have the information needed for a section, replace its contents with "Unknown".
+        
+        Please search for existing [feature requests](https://github.com/Atmosphere-NX/Atmosphere/issues?q=label%3Aenhancement) before you make your own request.
+        Duplicate requests will be marked as such and you will be referred to the original request.
+  - type: markdown
+    attributes:
+      value: "## What feature are you suggesting?"
+  - type: textarea
+    attributes:
+      label: Overview
+      description: Include the basic, high-level concepts for this feature here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Smaller Details
+      description: These may include specific methods of implementation etc.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Nature of Request
+      description: Remove all that do you apply to your request
+      value: |
+        Addition
+        - Ex: Addition of certain original features or features from other community projects.
+        - If you are suggesting porting features or including features from other projects, include what license they are distributed under and what, if any libraries those projects use.
+        
+        Change
+        
+        Removal
+        - Ex: Removal of certain features or implementation due to a specific issue/bug or because of low quality code, etc.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: What component do you feel this would best fit within?
+      description: |
+        [Fusée](https://github.com/Atmosphere-NX/Atmosphere#components): Atmosphère's custom bootloader.
+        [Exosphère](https://github.com/Atmosphere-NX/Atmosphere#components): Fully-featured custom secure monitor.
+        [Stratosphère](https://github.com/Atmosphere-NX/Atmosphere#components): Custom system modules.
+        [**Thermosphère**](https://github.com/Atmosphere-NX/Atmosphere#components): Atmosphère's emuNAND implementation.
+        [**Troposphère**](https://github.com/Atmosphere-NX/Atmosphere#components): Application-level patches to the Horizon OS.  
+        Note: **Bolded components are not implemented** or are still at the prototyping phase.
+      options:
+        - Fusée
+        - Exosphère
+        - Stratosphère
+        - Thermosphère
+        - Troposphère
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Why would this feature be useful?
+      description: |
+        If this is a feature for an end-user, how does it benefit the end-user?
+        If this feature is for developers, what does it add to Atmosphère that did not already exist?
+    validations:
+      required: true
