@@ -712,7 +712,7 @@ namespace ams::ncm {
 
         /* Create the placeholder. */
         R_TRY(storage->CreatePlaceHolder(placeholder_id, meta_info.content_id, meta_info.content_size));
-        ON_RESULT_FAILURE { storage->DeletePlaceHolder(placeholder_id); }
+        ON_RESULT_FAILURE { storage->DeletePlaceHolder(placeholder_id); };
 
         /* Output install content info. */
         *out_install_content_info = this->MakeInstallContentInfoFrom(meta_info, placeholder_id, is_temporary);
