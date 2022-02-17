@@ -681,7 +681,7 @@ namespace ams::ldr {
         /* Load NSOs into process memory. */
         {
             /* Ensure we close the process handle, if we fail. */
-            ON_RESULT_FAILURE { os::CloseNativeHandle(info.process_handle); }
+            ON_RESULT_FAILURE { os::CloseNativeHandle(info.process_handle); };
 
             /* Load all NSOs. */
             R_TRY(LoadAutoLoadModules(std::addressof(info), g_nso_headers, g_has_nso, argument));
