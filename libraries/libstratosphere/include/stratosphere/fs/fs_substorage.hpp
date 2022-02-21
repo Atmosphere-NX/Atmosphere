@@ -33,13 +33,14 @@ namespace ams::fs {
         public:
             SubStorage() : m_shared_base_storage(), m_base_storage(nullptr), m_offset(0), m_size(0), m_resizable(false) { /* ... */ }
 
-            SubStorage(const SubStorage &rhs) : m_shared_base_storage(), m_base_storage(rhs.m_base_storage), m_offset(rhs.m_offset), m_size(rhs.m_size), m_resizable(rhs.m_resizable) { /* ... */}
+            SubStorage(const SubStorage &rhs) : m_shared_base_storage(rhs.m_shared_base_storage), m_base_storage(rhs.m_base_storage), m_offset(rhs.m_offset), m_size(rhs.m_size), m_resizable(rhs.m_resizable) { /* ... */}
             SubStorage &operator=(const SubStorage &rhs) {
                 if (this != std::addressof(rhs)) {
-                    m_base_storage = rhs.m_base_storage;
-                    m_offset       = rhs.m_offset;
-                    m_size         = rhs.m_size;
-                    m_resizable    = rhs.m_resizable;
+                    m_shared_base_storage = rhs.m_shared_base_storage;
+                    m_base_storage        = rhs.m_base_storage;
+                    m_offset              = rhs.m_offset;
+                    m_size                = rhs.m_size;
+                    m_resizable           = rhs.m_resizable;
                 }
                 return *this;
             }
@@ -56,7 +57,7 @@ namespace ams::fs {
                 AMS_ABORT_UNLESS(m_size    >= 0);
             }
 
-            SubStorage(SubStorage *sub, s64 o, s64 sz) : m_shared_base_storage(), m_base_storage(sub->m_base_storage), m_offset(o + sub->m_offset), m_size(sz), m_resizable(false) {
+            SubStorage(SubStorage *sub, s64 o, s64 sz) : m_shared_base_storage(sub->m_shared_base_storage), m_base_storage(sub->m_base_storage), m_offset(o + sub->m_offset), m_size(sz), m_resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
                 AMS_ABORT_UNLESS(m_offset    >= 0);
                 AMS_ABORT_UNLESS(m_size      >= 0);
