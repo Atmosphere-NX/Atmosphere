@@ -28,7 +28,7 @@ namespace ams::fssystem {
             Result QueryNextOffset(s64 *out, s64 start_offset, s64 end_offset, s64 access_size, s64 alignment_size);
         public:
             virtual Result QueryAppropriateOffset(s64 *out, s64 offset, s64 access_size, s64 alignment_size) = 0;
-            virtual Result QueryInvocationCount(s64 *out, s64 start_offset, s64 end_offset, s64 access_size, s64 alignment_size);
+            virtual Result QueryInvocationCount(s64 *out, s64 start_offset, s64 end_offset, s64 access_size, s64 alignment_size) { AMS_UNUSED(out, start_offset, end_offset, access_size, alignment_size); AMS_ABORT("TODO"); }
     };
 
     class DefaultAsynchronousAccessSplitter final : public IAsynchronousAccessSplitter {

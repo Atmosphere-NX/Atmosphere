@@ -56,7 +56,10 @@ namespace ams::fssystem {
             CompressedStorage() { /* ... */ }
             virtual ~CompressedStorage() { this->Finalize(); }
 
-            Result Initialize(MemoryResource *bktr_allocator, IBufferManager *cache_allocator, fs::SubStorage data_storage, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 bktr_entry_count, size_t block_size_max, size_t continuous_reading_size_max, GetDecompressorFunction get_decompressor, size_t cache_size_0, size_t cache_size_1, s32 max_cache_entries);
+            Result Initialize(MemoryResource *bktr_allocator, IBufferManager *cache_allocator, fs::SubStorage data_storage, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 bktr_entry_count, size_t block_size_max, size_t continuous_reading_size_max, GetDecompressorFunction get_decompressor, size_t cache_size_0, size_t cache_size_1, s32 max_cache_entries) {
+                AMS_UNUSED(bktr_allocator, cache_allocator, data_storage, node_storage, entry_storage, bktr_entry_count, block_size_max, continuous_reading_size_max, get_decompressor, cache_size_0, cache_size_1, max_cache_entries);
+                AMS_ABORT("TODO");
+            }
 
             void Finalize() {
                 AMS_ABORT("TODO");
@@ -70,8 +73,8 @@ namespace ams::fssystem {
                 /* return m_core.QueryAppropriateOffsetForAsynchronousAccess(out, offset, access_size, alignment_size); */
             }
         public:
-            virtual Result Read(s64 offset, void *buffer, size_t size) override;
-            virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
+            virtual Result Read(s64 offset, void *buffer, size_t size) override { AMS_UNUSED(offset, buffer, size); AMS_ABORT("TODO"); }
+            virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override { AMS_UNUSED(dst, dst_size, op_id, offset, size, src, src_size); AMS_ABORT("TODO"); }
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ABORT("TODO");
