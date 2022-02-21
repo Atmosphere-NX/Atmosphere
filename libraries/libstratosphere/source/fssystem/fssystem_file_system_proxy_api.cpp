@@ -185,6 +185,73 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: spl::Finalize(); */
     }
 
+    void InitializeForAtmosphereMitm() {
+        /* Initialize spl library. */
+        spl::InitializeForFs();
+
+        /* TODO FS-REIMPL: spl::SetIsAvailableAccessKeyHandler(fssrv::IsAvailableAccessKey) */
+
+        /* Determine whether we're prod or dev. */
+        bool is_prod                         = !spl::IsDevelopment();
+        bool is_development_function_enabled = spl::IsDevelopmentFunctionEnabled();
+
+        /* Set debug flags. */
+        fssrv::SetDebugFlagEnabled(is_development_function_enabled);
+
+        /* Setup our crypto configuration. */
+        SetUpKekAccessKeys(is_prod);
+
+        /* Setup our heap. */
+        InitializeExpHeap();
+
+        /* Initialize buffer allocator. */
+        util::ConstructAt(g_buffer_allocator, g_buffer_pool, BufferPoolSize);
+        util::ConstructAt(g_allocator, GetPointer(g_buffer_allocator));
+
+        /* Set allocators. */
+        /* TODO FS-REIMPL: sf::SetGlobalDefaultMemoryResource() */
+        fs::SetAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
+        fssystem::InitializeAllocator(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
+        fssystem::InitializeAllocatorForSystem(AllocateForFileSystemProxy, DeallocateForFileSystemProxy);
+
+        /* Initialize the buffer manager. */
+        /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
+        util::ConstructAt(g_buffer_manager);
+        GetReference(g_buffer_manager).Initialize(MaxCacheCount, reinterpret_cast<uintptr_t>(g_buffer_manager_heap), BufferManagerHeapSize, BlockSize);
+
+        /* TODO FS-REIMPL: os::AllocateMemoryBlock(...); */
+        /* TODO FS-REIMPL: fssrv::storage::CreateDeviceAddressSpace(...); */
+        fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize);
+
+        /* TODO FS-REIMPL: Create Pooled Threads/Stack Usage Reporter, fssystem::RegisterThreadPool. */
+
+        /* TODO FS-REIMPL: fssrv::GetFileSystemProxyServices(), some service creation. */
+
+        /* Initialize fs creators. */
+        /* TODO FS-REIMPL: Revise for accuracy. */
+        util::ConstructAt(g_rom_fs_creator, GetPointer(g_allocator));
+        util::ConstructAt(g_partition_fs_creator);
+        util::ConstructAt(g_storage_on_nca_creator, GetPointer(g_allocator), *GetNcaCryptoConfiguration(is_prod), *GetNcaCompressionConfiguration(), GetPointer(g_buffer_manager), fs::impl::GetNcaHashGeneratorFactorySelector());
+
+        /* TODO FS-REIMPL: Initialize other creators. */
+        g_fs_creator_interfaces = {
+            .rom_fs_creator         = GetPointer(g_rom_fs_creator),
+            .partition_fs_creator   = GetPointer(g_partition_fs_creator),
+            .storage_on_nca_creator = GetPointer(g_storage_on_nca_creator),
+        };
+
+        /* Initialize fssrv. TODO FS-REIMPL: More arguments, more actions taken. */
+        fssrv::InitializeForFileSystemProxy(std::addressof(g_fs_creator_interfaces), GetPointer(g_buffer_manager), is_development_function_enabled);
+
+        /* Disable auto-abort in fs library code. */
+        fs::SetEnabledAutoAbort(false);
+
+        /* Quick sanity check, before we leave. */
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        AMS_ABORT_UNLESS(os::GetCurrentProgramId() == ncm::AtmosphereProgramId::Mitm);
+        #endif
+    }
+
     const ::ams::fssrv::fscreator::FileSystemCreatorInterfaces *GetFileSystemCreatorInterfaces() {
         return std::addressof(g_fs_creator_interfaces);
     }

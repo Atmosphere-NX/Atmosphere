@@ -43,7 +43,6 @@ namespace ams {
             R_ABORT_UNLESS(pmdmntInitialize());
             R_ABORT_UNLESS(pminfoInitialize());
             ncm::Initialize();
-            spl::InitializeForFs();
 
             /* Verify that we can sanely execute. */
             ams::CheckApiVersion();
@@ -79,7 +78,7 @@ namespace ams {
         }
 
         /* Initialize fssystem library. */
-        fssystem::InitializeForFileSystemProxy();
+        fssystem::InitializeForAtmosphereMitm();
 
         /* Configure ncm to use fssystem library to mount content from the sd card. */
         ncm::SetMountContentMetaFunction(mitm::sysupdater::MountSdCardContentMeta);

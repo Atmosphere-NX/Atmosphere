@@ -28,6 +28,8 @@ namespace ams::fssystem {
     /* This should be re-examined when FS is reimplemented. */
     void InitializeForFileSystemProxy();
 
+    void InitializeForAtmosphereMitm();
+
     const ::ams::fssrv::fscreator::FileSystemCreatorInterfaces *GetFileSystemCreatorInterfaces();
 
 }

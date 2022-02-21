@@ -1022,7 +1022,7 @@ namespace ams::fssystem {
         R_TRY(buffer_hold_storage->GetSize(std::addressof(base_size)));
 
         /* Check that we're within range. */
-        R_UNLESS(data_region.offset + data_region.size <= base_size, fs::ResultNcaBaseStorageOutOfRangeC());
+        R_UNLESS(hash_region.offset + hash_region.size <= base_size, fs::ResultNcaBaseStorageOutOfRangeC());
         R_UNLESS(data_region.offset + data_region.size <= base_size, fs::ResultNcaBaseStorageOutOfRangeC());
 
         /* Create the master hash storage. */
