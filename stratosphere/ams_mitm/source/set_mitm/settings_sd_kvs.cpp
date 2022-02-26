@@ -393,6 +393,12 @@ namespace ams::settings::fwdbg {
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_log_manager", "u8!0x0"));
 
+            /* Controls whether the bluetooth pairing database is redirected to sd card for synchronization between sysnand and/or multiple emummcs. */
+            /* Note that in firmware 13.0.0 the database size was doubled to 20 entries. Booting to a pre-13.0.0 firmware will cause the */
+            /* database to be truncated to 10 entries. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_external_bluetooth_db", "u8!0x0"));
+
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */
