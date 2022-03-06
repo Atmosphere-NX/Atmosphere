@@ -97,4 +97,9 @@ namespace ams::os::impl {
         }
     }
 
+    Result MultiWaitMacosImpl::ReplyAndReceiveImpl(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns, NativeHandle reply_target) {
+        AMS_UNUSED(out_index, num, arr, array_size, ns, reply_target);
+        R_ABORT_UNLESS(os::ResultNotImplemented());
+    }
+
 }

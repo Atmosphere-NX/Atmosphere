@@ -543,7 +543,7 @@ namespace ams::fs::impl {
 
     bool IsEnabledFileSystemAccessorAccessLog(const char *mount_name) {
         /* Get the accessor. */
-        impl::FileSystemAccessor *accessor;
+        impl::FileSystemAccessor *accessor = nullptr;
         if (R_FAILED(impl::Find(std::addressof(accessor), mount_name))) {
             return true;
         }
@@ -553,7 +553,7 @@ namespace ams::fs::impl {
 
     void EnableFileSystemAccessorAccessLog(const char *mount_name) {
         /* Get the accessor. */
-        impl::FileSystemAccessor *accessor;
+        impl::FileSystemAccessor *accessor = nullptr;
         AMS_FS_R_ABORT_UNLESS(impl::Find(std::addressof(accessor), mount_name));
         accessor->SetAccessLogEnabled(true);
     }

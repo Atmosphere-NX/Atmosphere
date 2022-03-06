@@ -41,8 +41,11 @@ namespace ams::os::impl {
                 res = ::ppoll(std::addressof(pfd), 1, ns >= 0 ? std::addressof(ts) : nullptr, nullptr);
             } while (res < 0 && errno == EINTR);
 
-            AMS_ASSERT(res == 0);
-            return pfd.revents & POLLIN;
+            AMS_ASSERT(res == 0 || res == 1);
+
+            const bool signaled = pfd.revents & POLLIN;
+            AMS_ASSERT(signaled == (res == 1));
+            return signaled;
         }
 
     }

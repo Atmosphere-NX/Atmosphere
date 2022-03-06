@@ -62,7 +62,7 @@ namespace ams::os::impl {
         const auto res = pthread_cond_timedwait(std::addressof(m_pthread_cond), std::addressof(cs->Get()->m_pthread_mutex), std::addressof(ts));
 
         if (res != 0) {
-            AMS_ABORT_UNLESS(errno == ETIMEDOUT);
+            AMS_ABORT_UNLESS(res == ETIMEDOUT);
             return ConditionVariableStatus::TimedOut;
         }
 
