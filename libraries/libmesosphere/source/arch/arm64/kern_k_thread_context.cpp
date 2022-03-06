@@ -251,7 +251,7 @@ namespace ams::kern::arch::arm64 {
         } else {
             /* Set special registers. */
             out->pc     = static_cast<u32>(e_ctx->pc);
-            out->pstate = e_ctx->psr & 0xFF0FFE20;
+            out->pstate = e_ctx->psr & El0PsrMask;
 
             /* Get the thread's general purpose registers. */
             for (size_t i = 0; i < 15; ++i) {
