@@ -114,7 +114,7 @@ namespace ams::mitm {
             Sha256Hash calc_hash;
             ON_SCOPE_EXIT { ::ams::crypto::ClearMemory(std::addressof(calc_hash), sizeof(calc_hash)); };
 
-            ::ams::crypto::GenerateSha256Hash(std::addressof(calc_hash), sizeof(calc_hash), data, data_size);
+            ::ams::crypto::GenerateSha256(std::addressof(calc_hash), sizeof(calc_hash), data, data_size);
             return ::ams::crypto::IsSameBytes(std::addressof(calc_hash), std::addressof(hash), sizeof(Sha256Hash));
         }
 
@@ -182,7 +182,7 @@ namespace ams::mitm {
             } else {
                 static_assert(Block::IsShaBlock);
                 std::memset(std::addressof(block), 0, Block::Size);
-                ::ams::crypto::GenerateSha256Hash(std::addressof(block.sha256_hash), sizeof(block.sha256_hash), std::addressof(block), Block::Size - sizeof(block.sha256_hash));
+                ::ams::crypto::GenerateSha256(std::addressof(block.sha256_hash), sizeof(block.sha256_hash), std::addressof(block), Block::Size - sizeof(block.sha256_hash));
             }
         }
 
@@ -224,7 +224,7 @@ namespace ams::mitm {
             Blank(info.GetBlock<ExtendedSslKeyBlock>());
 
             /* Set header hash. */
-            crypto::GenerateSha256Hash(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
+            crypto::GenerateSha256(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
         }
 
         bool IsValidHeader(const CalibrationInfo &cal) {
@@ -375,7 +375,7 @@ namespace ams::mitm {
             AMS_ABORT_UNLESS(IsValidForSecureBackup(src->info));
 
             /* Set the Sha256 hash. */
-            crypto::GenerateSha256Hash(std::addressof(src->hash), sizeof(src->hash), std::addressof(src->info), sizeof(src->info));
+            crypto::GenerateSha256(std::addressof(src->hash), sizeof(src->hash), std::addressof(src->info), sizeof(src->info));
 
             /* Validate the hash. */
             AMS_ABORT_UNLESS(IsValidSha256Hash(src->hash, std::addressof(src->info), sizeof(src->info)));
@@ -407,7 +407,7 @@ namespace ams::mitm {
                 util::SNPrintf(dst, dst_size, "automatic_backups/%s_PRODINFO.bin", sn);
             } else {
                 Sha256Hash hash;
-                crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(info), sizeof(info));
+                crypto::GenerateSha256(std::addressof(hash), sizeof(hash), std::addressof(info), sizeof(info));
                 ON_SCOPE_EXIT { crypto::ClearMemory(std::addressof(hash), sizeof(hash)); };
 
                 if (IsValid(info)) {
@@ -484,7 +484,7 @@ namespace ams::mitm {
                 data_buffer[2] = os::GetSystemTick().GetInt64Value();
             }
 
-            return crypto::GenerateSha256Hash(dst, sizeof(*dst), data_buffer, sizeof(data_buffer));
+            return crypto::GenerateSha256(dst, sizeof(*dst), data_buffer, sizeof(data_buffer));
         }
 
         void FillWithGarbage(void *dst, size_t dst_size) {
@@ -579,7 +579,7 @@ namespace ams::mitm {
             } else {
                 Sha256Hash hash;
                 ON_SCOPE_EXIT { crypto::ClearMemory(std::addressof(hash), sizeof(hash)); };
-                crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(g_calibration_info), sizeof(g_calibration_info));
+                crypto::GenerateSha256(std::addressof(hash), sizeof(hash), std::addressof(g_calibration_info), sizeof(g_calibration_info));
 
                 util::SNPrintf(out_name, out_name_size, "%02X%02X%02X%02X", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
             }

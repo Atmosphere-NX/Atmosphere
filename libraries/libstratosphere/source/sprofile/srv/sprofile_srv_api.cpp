@@ -50,19 +50,19 @@ namespace ams::sprofile::srv {
 
         using ServerManager = sf::hipc::ServerManager<PortCountMax, ServerManagerOptions, SessionCountMax>;
 
-        constinit util::TypedStorage<ProfileManager> g_profile_manager;
+        constinit util::TypedStorage<ProfileManager> g_profile_manager = {};
 
-        constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForBgAgent, ServiceForBgAgent>> g_bg_service_object;
-        constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForSystemProcess, ServiceForSystemProcess>> g_sp_service_object;
+        constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForBgAgent, ServiceForBgAgent>> g_bg_service_object = {};
+        constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForSystemProcess, ServiceForSystemProcess>> g_sp_service_object = {};
 
-        constinit util::TypedStorage<ServerManager> g_server_manager;
+        constinit util::TypedStorage<ServerManager> g_server_manager = {};
 
         alignas(os::ThreadStackAlignment) constinit u8 g_ipc_thread_stack[0x3000];
         constinit u8 g_heap[16_KB];
 
-        constinit os::ThreadType g_ipc_thread;
+        constinit os::ThreadType g_ipc_thread = {};
 
-        constinit lmem::HeapHandle g_heap_handle;
+        constinit lmem::HeapHandle g_heap_handle  = nullptr;
         constinit sf::ExpHeapMemoryResource g_sf_memory_resource;
 
         void IpcServerThreadFunction(void *) {

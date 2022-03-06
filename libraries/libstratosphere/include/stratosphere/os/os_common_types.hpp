@@ -15,6 +15,11 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/os_common_config.hpp>
+
+#if defined(AMS_OS_IMPL_USE_PTHREADS)
+#include <pthread.h>
+#endif
 
 namespace ams::os {
 

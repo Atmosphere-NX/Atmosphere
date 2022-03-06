@@ -43,14 +43,14 @@ namespace ams::pgl::srv {
         constinit bool g_enable_jit_debug               = false;
 
         constexpr inline size_t ProcessControlTaskStackSize = 8_KB;
-        constinit os::ThreadType g_process_control_task_thread;
+        constinit os::ThreadType g_process_control_task_thread = {};
         alignas(os::ThreadStackAlignment) constinit u8 g_process_control_task_stack[ProcessControlTaskStackSize];
 
         constinit os::SdkMutex g_observer_list_mutex;
         constinit util::IntrusiveListBaseTraits<ShellEventObserverHolder>::ListType g_observer_list;
 
         constinit os::SdkMutex g_process_data_mutex;
-        constinit ProcessData g_process_data[ProcessDataCount];
+        constinit ProcessData g_process_data[ProcessDataCount] = {};
 
         constinit os::ProcessId g_crashed_process_id = os::InvalidProcessId;
         constinit os::ProcessId g_creport_process_id = os::InvalidProcessId;
@@ -215,7 +215,7 @@ namespace ams::pgl::srv {
 
             /* Generate arguments. */
             char arguments[0x40];
-            const size_t len = util::SNPrintf(arguments, sizeof(arguments), "%ld %d %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags), g_enable_jit_debug);
+            const size_t len = util::SNPrintf(arguments, sizeof(arguments), "%" PRId64 " %d %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags), g_enable_jit_debug);
             if (R_FAILED(ldr::SetProgramArgument(ncm::SystemProgramId::Creport, arguments, len + 1))) {
                 return;
             }

@@ -43,13 +43,106 @@ namespace ams::fssrv {
             ~FileSystemProxyImpl();
 
             /* TODO */
-
+        public:
+            /* fsp-srv */
+            Result OpenFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u32 type);
+            Result SetCurrentProcess(const ams::sf::ClientProcessId &client_pid);
+            Result OpenDataFileSystemByCurrentProcess(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out);
+            Result OpenFileSystemWithPatch(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 type);
+            Result OpenFileSystemWithId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u64 program_id, u32 type);
+            Result OpenDataFileSystemByProgramId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id);
+            Result OpenBisFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u32 id);
+            Result OpenBisStorage(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, u32 id);
+            Result InvalidateBisCache();
+            Result OpenHostFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path);
+            Result OpenSdCardFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out);
+            Result FormatSdCardFileSystem();
+            Result DeleteSaveDataFileSystem(u64 save_data_id);
+            Result CreateSaveDataFileSystem(const fs::SaveDataAttribute &attribute, const fs::SaveDataCreationInfo &creation_info, const fs::SaveDataMetaInfo &meta_info);
+            Result CreateSaveDataFileSystemBySystemSaveDataId(const fs::SaveDataAttribute &attribute, const fs::SaveDataCreationInfo &creation_info);
+            Result RegisterSaveDataFileSystemAtomicDeletion(const ams::sf::InBuffer &save_data_ids);
+            Result DeleteSaveDataFileSystemBySaveDataSpaceId(u8 indexer_space_id, u64 save_data_id);
+            Result FormatSdCardDryRun();
+            Result IsExFatSupported(ams::sf::Out<bool> out);
+            Result DeleteSaveDataFileSystemBySaveDataAttribute(u8 space_id, const fs::SaveDataAttribute &attribute);
+            Result OpenGameCardStorage(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, u32 handle, u32 partition);
+            Result OpenGameCardFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u32 handle, u32 partition);
+            Result ExtendSaveDataFileSystem(u8 space_id, u64 save_data_id, s64 available_size, s64 journal_size);
+            Result DeleteCacheStorage(u16 index);
+            Result GetCacheStorageSize(ams::sf::Out<s64> out_size, ams::sf::Out<s64> out_journal_size, u16 index);
+            Result CreateSaveDataFileSystemWithHashSalt(const fs::SaveDataAttribute &attribute, const fs::SaveDataCreationInfo &creation_info, const fs::SaveDataMetaInfo &meta_info, const fs::HashSalt &salt);
+            Result OpenHostFileSystemWithOption(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u32 option);
+            Result OpenSaveDataFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u8 space_id, const fs::SaveDataAttribute &attribute);
+            Result OpenSaveDataFileSystemBySystemSaveDataId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u8 space_id, const fs::SaveDataAttribute &attribute);
+            Result OpenReadOnlySaveDataFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u8 space_id, const fs::SaveDataAttribute &attribute);
+            Result ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(const ams::sf::OutBuffer &buffer, u8 space_id, u64 save_data_id);
+            Result ReadSaveDataFileSystemExtraData(const ams::sf::OutBuffer &buffer, u64 save_data_id);
+            Result WriteSaveDataFileSystemExtraData(u64 save_data_id, u8 space_id, const ams::sf::InBuffer &buffer);
+            /* ... */
+            Result OpenImageDirectoryFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u32 id);
+            /* ... */
+            Result OpenContentStorageFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u32 id);
+            /* ... */
+            Result OpenDataStorageByCurrentProcess(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out);
+            Result OpenDataStorageByProgramId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, ncm::ProgramId program_id);
+            Result OpenDataStorageByDataId(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id);
+            Result OpenPatchDataStorageByCurrentProcess(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out);
+            Result OpenDataFileSystemWithProgramIndex(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, u8 index);
+            Result OpenDataStorageWithProgramIndex(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, u8 index);
+            Result OpenDataStorageByPath(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IStorage>> out, const fssrv::sf::FspPath &path, u32 type);
+            Result OpenDeviceOperator(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IDeviceOperator>> out);
+            Result OpenSdCardDetectionEventNotifier(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IEventNotifier>> out);
+            Result OpenGameCardDetectionEventNotifier(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IEventNotifier>> out);
+            Result OpenSystemDataUpdateEventNotifier(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IEventNotifier>> out);
+            Result NotifySystemDataUpdateEvent();
+            /* ... */
+            Result SetCurrentPosixTime(s64 posix_time);
+            /* ... */
+            Result GetRightsId(ams::sf::Out<fs::RightsId> out, ncm::ProgramId program_id, ncm::StorageId storage_id);
+            Result RegisterExternalKey(const fs::RightsId &rights_id, const spl::AccessKey &access_key);
+            Result UnregisterAllExternalKey();
+            Result GetRightsIdByPath(ams::sf::Out<fs::RightsId> out, const fssrv::sf::FspPath &path);
+            Result GetRightsIdAndKeyGenerationByPath(ams::sf::Out<fs::RightsId> out, ams::sf::Out<u8> out_key_generation, const fssrv::sf::FspPath &path);
+            Result SetCurrentPosixTimeWithTimeDifference(s64 posix_time, s32 time_difference);
+            Result GetFreeSpaceSizeForSaveData(ams::sf::Out<s64> out, u8 space_id);
+            Result VerifySaveDataFileSystemBySaveDataSpaceId();
+            Result CorruptSaveDataFileSystemBySaveDataSpaceId();
+            Result QuerySaveDataInternalStorageTotalSize();
+            Result GetSaveDataCommitId();
+            Result UnregisterExternalKey(const fs::RightsId &rights_id);
+            Result SetSdCardEncryptionSeed(const fs::EncryptionSeed &seed);
+            Result SetSdCardAccessibility(bool accessible);
+            Result IsSdCardAccessible(ams::sf::Out<bool> out);
+            Result IsSignedSystemPartitionOnSdCardValid(ams::sf::Out<bool> out);
+            Result OpenAccessFailureDetectionEventNotifier();
+            /* ... */
+            Result RegisterProgramIndexMapInfo(const ams::sf::InBuffer &buffer, s32 count);
+            Result SetBisRootForHost(u32 id, const fssrv::sf::FspPath &path);
+            Result SetSaveDataSize(s64 size, s64 journal_size);
+            Result SetSaveDataRootPath(const fssrv::sf::FspPath &path);
+            Result DisableAutoSaveDataCreation();
+            Result SetGlobalAccessLogMode(u32 mode);
+            Result GetGlobalAccessLogMode(ams::sf::Out<u32> out);
+            Result OutputAccessLogToSdCard(const ams::sf::InBuffer &buf);
+            Result RegisterUpdatePartition();
+            Result OpenRegisteredUpdatePartition(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out);
+            /* ... */
+            Result GetProgramIndexForAccessLog(ams::sf::Out<u32> out_idx, ams::sf::Out<u32> out_count);
+            Result GetFsStackUsage(ams::sf::Out<u32> out, u32 type);
+            Result UnsetSaveDataRootPath();
+            Result OutputMultiProgramTagAccessLog();
+            Result FlushAccessLogOnSdCard();
+            Result OutputApplicationInfoAccessLog();
+            Result RegisterDebugConfiguration(u32 key, s64 value);
+            Result UnregisterDebugConfiguration(u32 key);
+            Result OverrideSaveDataTransferTokenSignVerificationKey(const ams::sf::InBuffer &buf);
+            Result CorruptSaveDataFileSystemByOffset(u8 space_id, u64 save_data_id, s64 offset);
+            /* ... */
         public:
             /* fsp-ldr */
             Result OpenCodeFileSystemDeprecated(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const fssrv::sf::Path &path, ncm::ProgramId program_id);
             Result OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, ncm::ProgramId program_id);
             Result IsArchivedProgram(ams::sf::Out<bool> out, u64 process_id);
-            Result SetCurrentProcess(const ams::sf::ClientProcessId &client_pid);
     };
     static_assert(sf::IsIFileSystemProxy<FileSystemProxyImpl>);
     static_assert(sf::IsIFileSystemProxyForLoader<FileSystemProxyImpl>);

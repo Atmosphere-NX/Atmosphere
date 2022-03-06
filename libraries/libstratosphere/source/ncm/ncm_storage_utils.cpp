@@ -80,28 +80,6 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    namespace {
-
-        constexpr const char * const StorageIdStrings[] = {
-            "None",
-            "Host",
-            "GameCard",
-            "BuiltInSystem",
-            "BuiltInUser",
-            "SdCard"
-        };
-
-        constexpr const char * const StorageIdStringsForPlayReport[] = {
-            "None",
-            "Host",
-            "Card",
-            "BuildInSystem",
-            "BuildInUser",
-            "SdCard"
-        };
-
-    }
-
     const char *GetStorageIdString(StorageId storage_id) {
         switch (storage_id) {
             case StorageId::None:          return "None";

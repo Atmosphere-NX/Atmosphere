@@ -30,7 +30,7 @@
 
 #else
 
-    #error "Unknown board for ams::pwm::driver::"
+    // TODO: #error "Unknown board for ams::pwm::driver::"
 
 #endif
 

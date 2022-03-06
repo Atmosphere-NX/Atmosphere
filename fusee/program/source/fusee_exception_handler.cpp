@@ -49,6 +49,22 @@ namespace ams::diag {
         nxboot::ShowFatalError("Abort called, lr=%p\n", reinterpret_cast<void *>(lr));
     }
 
+    NORETURN void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
+        AMS_UNUSED(file, line, func, expr, value);
+
+        u32 lr;
+        __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+        nxboot::ShowFatalError("Assert called, lr=%p\n", reinterpret_cast<void *>(lr));
+    }
+
+   NORETURN void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
+        AMS_UNUSED(file, line, func, expr, value, format);
+
+        u32 lr;
+        __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+        nxboot::ShowFatalError("Assert called, lr=%p\n", reinterpret_cast<void *>(lr));
+    }
+
 }
 
 namespace ams::result::impl {

@@ -16,8 +16,12 @@
 #pragma once
 #include <stratosphere.hpp>
 
-#ifdef ATMOSPHERE_OS_HORIZON
+#if defined(AMS_OS_IMPL_USE_PTHREADS)
+    #include "os_thread_manager_impl.pthread.hpp"
+#elif defined(ATMOSPHERE_OS_HORIZON)
     #include "os_thread_manager_impl.os.horizon.hpp"
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include "os_thread_manager_impl.os.windows.hpp"
 #else
     #error "Unknown OS for ThreadManagerImpl"
 #endif
@@ -65,12 +69,14 @@ namespace ams::os::impl {
             ThreadManager();
 
             void CleanupThread();
+            void CleanupThread(ThreadType *thread);
             s32 GetThreadCountForDebug() const { return m_num_created_threads; }
 
             Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority, s32 ideal_core);
             Result CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority);
 
             void DestroyThread(ThreadType *thread);
+            void DestroyThreadObject(ThreadType *thread);
             void StartThread(ThreadType *thread);
             void WaitThread(ThreadType *thread);
             bool TryWaitThread(ThreadType *thread);
@@ -84,8 +90,8 @@ namespace ams::os::impl {
             s32 SuspendThread(ThreadType *thread);
             s32 ResumeThread(ThreadType *thread);
 
-            void CancelThreadSynchronization(ThreadType *thread);
-
+            void ExitProcess() { return m_impl.ExitProcessImpl(); }
+            void QuickExit() { return m_impl.QuickExit(); }
             /* TODO void GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
 
             void SetInitialThreadNameUnsafe(ThreadType *thread);
@@ -96,6 +102,8 @@ namespace ams::os::impl {
             void SetThreadCoreMask(ThreadType *thread, s32 ideal_core, u64 affinity_mask) const { return m_impl.SetThreadCoreMask(thread, ideal_core, affinity_mask); }
             void GetThreadCoreMask(s32 *out_ideal_core, u64 *out_affinity_mask, const ThreadType *thread) const { return m_impl.GetThreadCoreMask(out_ideal_core, out_affinity_mask, thread); }
             u64 GetThreadAvailableCoreMask() const { return m_impl.GetThreadAvailableCoreMask(); }
+
+            void SetZeroToAllThreadsTlsSafe(int slot);
 
             void PushBackToAllThreadsListUnsafe(ThreadType *thread) {
                 m_all_threads_list.push_back(*thread);
@@ -128,11 +136,11 @@ namespace ams::os::impl {
             }
 
             ThreadType *AllocateThreadType() const {
-                return reinterpret_cast<ThreadType *>(std::malloc(sizeof(ThreadType)));
+                return static_cast<ThreadType *>(ams::Malloc(sizeof(ThreadType)));
             }
 
             void FreeThreadType(ThreadType *thread) const {
-                std::free(thread);
+                ams::Free(thread);
             }
 
             const ThreadType *GetMainThread() const {
@@ -146,6 +154,22 @@ namespace ams::os::impl {
             ThreadId GetThreadId(const ThreadType *thread) {
                 return m_impl.GetThreadId(thread);
             }
+
+            ThreadType *FindThreadTypeById(ThreadId id) {
+                std::scoped_lock lk(m_cs);
+
+                for (auto rit = m_all_threads_list.rbegin(); rit != m_all_threads_list.rend(); ++rit) {
+                    auto * const thread = std::addressof(*rit);
+                    if (this->GetThreadId(thread) == id) {
+                        return thread;
+                    }
+                }
+
+                return nullptr;
+            }
+        private:
+            bool CreateAliasStackUnsafe(ThreadType *thread);
+            void DeleteAliasStackUnsafe(ThreadType *thread);
         public:
             static void InvokeThread(ThreadType *thread);
     };

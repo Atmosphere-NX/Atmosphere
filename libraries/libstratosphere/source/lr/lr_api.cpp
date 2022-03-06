@@ -14,67 +14,52 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "lr_remote_location_resolver_impl.hpp"
-#include "lr_remote_registered_location_resolver_impl.hpp"
+#include "lr_location_resolver_manager_factory.hpp"
 
 namespace ams::lr {
 
     namespace {
 
-        bool g_initialized;
+        constinit sf::SharedPointer<ILocationResolverManager> g_location_resolver_manager;
 
-        /* TODO: This belongs inside lr_location_resolver_manager_factory */
-        struct LocationResolverManagerAllocatorTag;
-        using LocationResolverManagerAllocator = sf::ExpHeapStaticAllocator<1_KB, LocationResolverManagerAllocatorTag>;
-
-        using LocationResolverManagerFactory = sf::ObjectFactory<typename LocationResolverManagerAllocator::Policy>;
-
-        class StaticAllocatorInitializer {
-            public:
-                StaticAllocatorInitializer() {
-                    LocationResolverManagerAllocator::Initialize(lmem::CreateOption_None);
-                }
-        } g_static_allocator_initializer;
     }
 
     void Initialize() {
-        AMS_ASSERT(!g_initialized);
-        R_ABORT_UNLESS(lrInitialize());
-        g_initialized = true;
+        AMS_ASSERT(g_location_resolver_manager == nullptr);
+        g_location_resolver_manager = GetLocationResolverManagerService();
     }
 
     void Finalize() {
-        AMS_ASSERT(g_initialized);
-        lrExit();
-        g_initialized = false;
+        AMS_ASSERT(g_location_resolver_manager != nullptr);
+        g_location_resolver_manager = nullptr;
     }
 
 
     Result OpenLocationResolver(LocationResolver *out, ncm::StorageId storage_id) {
-        LrLocationResolver lr;
-        R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(storage_id), std::addressof(lr)));
+        sf::SharedPointer<lr::ILocationResolver> lr;
+        R_TRY(g_location_resolver_manager->OpenLocationResolver(std::addressof(lr), storage_id));
 
-        *out = LocationResolver(LocationResolverManagerFactory::CreateSharedEmplaced<ILocationResolver, RemoteLocationResolverImpl>(lr));
-        return ResultSuccess();
+        *out = LocationResolver(std::move(lr));
+        R_SUCCEED();
     }
 
     Result OpenRegisteredLocationResolver(RegisteredLocationResolver *out) {
-        LrRegisteredLocationResolver lr;
-        R_TRY(lrOpenRegisteredLocationResolver(std::addressof(lr)));
+        sf::SharedPointer<lr::IRegisteredLocationResolver> lr;
+        R_TRY(g_location_resolver_manager->OpenRegisteredLocationResolver(std::addressof(lr)));
 
-        *out = RegisteredLocationResolver(LocationResolverManagerFactory::CreateSharedEmplaced<IRegisteredLocationResolver, RemoteRegisteredLocationResolverImpl>(lr));
-        return ResultSuccess();
+        *out = RegisteredLocationResolver(std::move(lr));
+        R_SUCCEED();
     }
 
     Result OpenAddOnContentLocationResolver(AddOnContentLocationResolver *out) {
-        /* TODO: libnx binding */
-        AMS_UNUSED(out);
-        AMS_ABORT();
+        sf::SharedPointer<lr::IAddOnContentLocationResolver> lr;
+        R_TRY(g_location_resolver_manager->OpenAddOnContentLocationResolver(std::addressof(lr)));
+
+        *out = AddOnContentLocationResolver(std::move(lr));
+        R_SUCCEED();
     }
 
     Result RefreshLocationResolver(ncm::StorageId storage_id) {
-        /* TODO: libnx binding */
-        AMS_UNUSED(storage_id);
-        AMS_ABORT();
+        R_RETURN(g_location_resolver_manager->RefreshLocationResolver(storage_id));
     }
 }

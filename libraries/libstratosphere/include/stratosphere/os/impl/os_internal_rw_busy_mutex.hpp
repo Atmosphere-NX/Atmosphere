@@ -19,6 +19,12 @@
 
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/os/impl/os_internal_rw_busy_mutex_impl.os.horizon.hpp>
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include <stratosphere/os/impl/os_internal_rw_busy_mutex_impl.os.windows.hpp>
+#elif defined(ATMOSPHERE_OS_LINUX)
+    #include <stratosphere/os/impl/os_internal_rw_busy_mutex_impl.os.linux.hpp>
+#elif defined(ATMOSPHERE_OS_MACOS)
+    #include <stratosphere/os/impl/os_internal_rw_busy_mutex_impl.os.macos.hpp>
 #else
     #error "Unknown OS for ams::os::impl::InternalReaderWriterBusyMutexImpl"
 #endif

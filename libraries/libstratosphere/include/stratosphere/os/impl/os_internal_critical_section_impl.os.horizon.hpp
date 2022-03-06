@@ -55,4 +55,10 @@ namespace ams::os::impl {
             ALWAYS_INLINE void unlock()   { return this->Unlock(); }
     };
 
+    using InternalCriticalSectionStorageTypeForConstantInitialize = u32;
+
+    #define AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CONSTANT_INITIALIZER {0}
+
+    #define AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD
+
 }

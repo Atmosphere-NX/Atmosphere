@@ -51,7 +51,7 @@ namespace ams::os {
     }
 
     void FinalizeMessageQueue(MessageQueueType *mq) {
-        AMS_ASSERT(mq->state = MessageQueueType::State_Initialized);
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
 
         AMS_ASSERT(GetReference(mq->waitlist_not_empty).IsEmpty());
         AMS_ASSERT(GetReference(mq->waitlist_not_full).IsEmpty());

@@ -49,6 +49,8 @@ namespace ams {
             ALWAYS_INLINE bool IsEqual(const MemoryResource &resource) const {
                 return this->IsEqualImpl(resource);
             }
+        public:
+            constexpr ~MemoryResource() = default;
         protected:
             virtual void *AllocateImpl(size_t size, size_t alignment) = 0;
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) = 0;

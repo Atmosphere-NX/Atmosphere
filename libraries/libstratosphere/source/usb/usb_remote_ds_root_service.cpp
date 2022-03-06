@@ -19,6 +19,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result RemoteDsRootService::GetService(sf::Out<sf::SharedPointer<usb::ds::IDsService>> out) {
         Service srv;
 
@@ -29,5 +30,6 @@ namespace ams::usb {
 
         return ResultSuccess();
     }
+    #endif
 
 }

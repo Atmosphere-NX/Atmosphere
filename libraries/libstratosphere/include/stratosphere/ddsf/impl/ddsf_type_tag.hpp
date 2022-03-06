@@ -42,13 +42,13 @@ namespace ams::ddsf::impl {
         public:
             #if !(defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING))
                 constexpr TypeTag() : m_class_name(nullptr), m_base(nullptr) { /* ... */}
-                constexpr TypeTag(const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { AMS_ASSERT(this != m_base); }
+                constexpr TypeTag(const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { if (!std::is_constant_evaluated()) { AMS_ASSERT(this != m_base); } }
 
                 constexpr TypeTag(const char *c) : m_class_name(nullptr), m_base(nullptr) { AMS_UNUSED(c); }
-                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { AMS_UNUSED(c); AMS_ASSERT(this != m_base); }
+                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(nullptr), m_base(std::addressof(b)) { if (!std::is_constant_evaluated()) { AMS_UNUSED(c); AMS_ASSERT(this != m_base); } }
             #else
                 constexpr TypeTag(const char *c) : m_class_name(c), m_base(nullptr) { /* ... */ }
-                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(c), m_base(std::addressof(b)) { AMS_ASSERT(this != m_base); }
+                constexpr TypeTag(const char *c, const TypeTag &b) : m_class_name(c), m_base(std::addressof(b)) { if (!std::is_constant_evaluated()) { AMS_ASSERT(this != m_base); } }
             #endif
 
             constexpr const char * GetClassName() const { return m_class_name; }

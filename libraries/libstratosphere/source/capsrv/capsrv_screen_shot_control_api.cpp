@@ -18,18 +18,32 @@
 namespace ams::capsrv {
 
     Result InitializeScreenShotControl() {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         return ::capsscInitialize();
+        #else
+        AMS_ABORT("TODO");
+        #endif
     }
 
     void FinalizeScreenShotControl() {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         return ::capsscExit();
+        #else
+        AMS_ABORT("TODO");
+        #endif
     }
 
     Result CaptureJpegScreenshot(u64 *out_size, void *dst, size_t dst_size, vi::LayerStack layer_stack, TimeSpan timeout) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         return ::capsscCaptureJpegScreenShot(out_size, dst, dst_size, static_cast<::ViLayerStack>(layer_stack), timeout.GetNanoSeconds());
+        #else
+        AMS_UNUSED(out_size, dst, dst_size, layer_stack, timeout);
+        AMS_ABORT("TODO");
+        #endif
     }
 
     Result OpenRawScreenShotReadStreamForDevelop(size_t *out_data_size, s32 *out_width, s32 *out_height, vi::LayerStack layer_stack, TimeSpan timeout) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         u64 data_size, width, height;
         R_TRY(::capsscOpenRawScreenShotReadStream(std::addressof(data_size), std::addressof(width), std::addressof(height), static_cast<::ViLayerStack>(layer_stack), timeout.GetNanoSeconds()));
 
@@ -38,18 +52,32 @@ namespace ams::capsrv {
         *out_height    = static_cast<s32>(height);
 
         return ResultSuccess();
+        #else
+        AMS_UNUSED(out_data_size, out_width, out_height, layer_stack, timeout);
+        AMS_ABORT("TODO");
+        #endif
     }
 
     Result ReadRawScreenShotReadStreamForDevelop(size_t *out_read_size, void *dst, size_t dst_size, std::ptrdiff_t offset) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         u64 read_size;
         R_TRY(::capsscReadRawScreenShotReadStream(std::addressof(read_size), dst, dst_size, static_cast<u64>(offset)));
 
         *out_read_size = static_cast<size_t>(read_size);
         return ResultSuccess();
+        #else
+        AMS_UNUSED(out_read_size, dst, dst_size, offset);
+        AMS_ABORT("TODO");
+        #endif
     }
 
     void CloseRawScreenShotReadStreamForDevelop() {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         ::capsscCloseRawScreenShotReadStream();
+        #else
+        AMS_UNUSED();
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

@@ -28,11 +28,17 @@ namespace ams::spl::impl {
             DeviceAddressMapper(dd::DeviceAddressSpaceType *das, u64 process_address, size_t size, dd::DeviceVirtualAddress device_address, dd::MemoryPermission permission)
                 : m_das(das), m_process_address(process_address), m_size(size), m_device_address(device_address)
             {
+                #if defined(ATMOSPHERE_OS_HORIZON)
                 R_ABORT_UNLESS(dd::MapDeviceAddressSpaceAligned(m_das, dd::GetCurrentProcessHandle(), m_process_address, m_size, m_device_address, permission));
+                #else
+                AMS_UNUSED(permission);
+                #endif
             }
 
             ~DeviceAddressMapper() {
+                #if defined(ATMOSPHERE_OS_HORIZON)
                 dd::UnmapDeviceAddressSpace(m_das, dd::GetCurrentProcessHandle(), m_process_address, m_size, m_device_address);
+                #endif
             }
     };
 

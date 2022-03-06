@@ -18,6 +18,7 @@
 
 namespace ams::ncm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteContentStorageImpl {
         private:
             ::NcmContentStorage m_srv;
@@ -209,5 +210,6 @@ namespace ams::ncm {
             }
     };
     static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
+    #endif
 
 }

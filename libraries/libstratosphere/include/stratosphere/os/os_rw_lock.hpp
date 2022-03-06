@@ -27,9 +27,15 @@ namespace ams::os {
         private:
             ReaderWriterLockType m_rw_lock;
         public:
-            constexpr explicit ReaderWriterLock() : m_rw_lock{{}, 0, ::ams::os::ReaderWriterLockType::State_Initialized, nullptr, 0, {}, {}} { /* ... */ }
+            constexpr explicit ReaderWriterLock() : m_rw_lock {{ { MakeConstantInitializedLockCount(), 0 } }, 0, ::ams::os::ReaderWriterLockType::State_Initialized, nullptr, 0, {AMS_OS_INTERNAL_CONDITION_VARIABLE_IMPL_CONSTANT_INITIALIZER}, {AMS_OS_INTERNAL_CONDITION_VARIABLE_IMPL_CONSTANT_INITIALIZER} } {
+                /* ... */
+            }
 
-            ~ReaderWriterLock() { os::FinalizeReaderWriterLock(std::addressof(m_rw_lock)); }
+            constexpr ~ReaderWriterLock() {
+                if (!std::is_constant_evaluated()) {
+                    os::FinalizeReaderWriterLock(std::addressof(m_rw_lock));
+                }
+            }
 
             void AcquireReadLock() {
                 return os::AcquireReadLock(std::addressof(m_rw_lock));

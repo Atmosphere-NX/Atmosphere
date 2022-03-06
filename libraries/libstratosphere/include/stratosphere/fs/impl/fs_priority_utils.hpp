@@ -27,11 +27,13 @@ namespace ams::fs::impl {
         TlsIoPriority_Background = 3,
     };
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     /* Ensure that TlsIo priority matches libnx priority. */
     static_assert(TlsIoPriority_Normal     == static_cast<TlsIoPriority>(::FsPriority_Normal));
     static_assert(TlsIoPriority_Realtime   == static_cast<TlsIoPriority>(::FsPriority_Realtime));
     static_assert(TlsIoPriority_Low        == static_cast<TlsIoPriority>(::FsPriority_Low));
     static_assert(TlsIoPriority_Background == static_cast<TlsIoPriority>(::FsPriority_Background));
+    #endif
 
     constexpr inline Result ConvertFsPriorityToTlsIoPriority(u8 *out, PriorityRaw priority) {
         AMS_ASSERT(out != nullptr);

@@ -22,15 +22,43 @@ namespace ams::fssrv::fscreator {
 
 }
 
-namespace ams::fssystem {
+namespace ams::fssrv {
 
-    class IBufferManager;
+    class BaseStorageServiceImpl;
+    class BaseFileSystemServiceImpl;
+    class NcaFileSystemServiceImpl;
+    class SaveDataFileSystemServiceImpl;
+    class AccessFailureManagementServiceImpl;
+    class TimeServiceImpl;
+    class StatusReportServiceImpl;
+    class ProgramRegistryServiceImpl;
+    class AccessLogServiceImpl;
+    class DebugConfigurationServiceImpl;
+
+    struct FileSystemProxyConfiguration {
+        fscreator::FileSystemCreatorInterfaces *m_fs_creator_interfaces;
+        BaseStorageServiceImpl *m_base_storage_service_impl;
+        BaseFileSystemServiceImpl *m_base_file_system_service_impl;
+        NcaFileSystemServiceImpl *m_nca_file_system_service_impl;
+        SaveDataFileSystemServiceImpl *m_save_data_file_system_service_impl;
+        AccessFailureManagementServiceImpl *m_access_failure_management_service_impl;
+        TimeServiceImpl *m_time_service_impl;
+        StatusReportServiceImpl *m_status_report_service_impl;
+        ProgramRegistryServiceImpl *m_program_registry_service_impl;
+        AccessLogServiceImpl *m_access_log_service_impl;
+        DebugConfigurationServiceImpl *m_debug_configuration_service_impl;
+    };
+
+    struct InternalProgramIdRangeForSpeedEmulation {
+        u64 program_id_value_min;
+        u64 program_id_value_max;
+    };
 
 }
 
 namespace ams::fssrv {
 
-    void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled);
+    void InitializeForFileSystemProxy(const FileSystemProxyConfiguration &config);
 
     void InitializeFileSystemProxyServer(int threads);
 

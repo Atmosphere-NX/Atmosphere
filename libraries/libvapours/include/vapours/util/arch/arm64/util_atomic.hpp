@@ -52,7 +52,9 @@ namespace ams::util {
         template<UsableAtomicType T>
         using AtomicStorage = typename AtomicIntegerStorage<T>::Type;
 
-        static_assert(std::same_as<AtomicStorage<void *>, uintptr_t>);
+
+        static_assert(std::same_as<AtomicStorage<void *>, u64>);
+
         static_assert(std::same_as<AtomicStorage<s8>, u8>);
         static_assert(std::same_as<AtomicStorage<u8>, u8>);
         static_assert(std::same_as<AtomicStorage<s16>, u16>);

@@ -18,6 +18,7 @@
 
 namespace ams::lr {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteLocationResolverImpl {
         private:
             ::LrLocationResolver m_srv;
@@ -155,5 +156,6 @@ namespace ams::lr {
             }
     };
     static_assert(lr::IsILocationResolver<RemoteLocationResolverImpl>);
+    #endif
 
 }

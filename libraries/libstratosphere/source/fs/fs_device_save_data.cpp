@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -26,12 +28,13 @@ namespace ams::fs {
             /* Validate the mount name. */
             R_TRY(impl::CheckMountName(name));
 
-            /* Open the filesystem, use libnx bindings. */
-            ::FsFileSystem fs;
-            R_TRY(fsOpenSaveDataFileSystem(std::addressof(fs), static_cast<::FsSaveDataSpaceId>(DeviceSaveDataSpaceId), reinterpret_cast<const ::FsSaveDataAttribute *>(std::addressof(attribute))));
+            /* Open the filesystem. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenSaveDataFileSystem(std::addressof(fs), static_cast<u8>(DeviceSaveDataSpaceId), attribute));
 
             /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInDeviceSaveDataA());
 
             /* Register. */
@@ -41,11 +44,27 @@ namespace ams::fs {
     }
 
     Result MountDeviceSaveData(const char *name) {
-        return MountDeviceSaveDataImpl(name, SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::Device, InvalidUserId, InvalidSystemSaveDataId));
+        const auto attr = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::Device, InvalidUserId, InvalidSystemSaveDataId);
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_MOUNT(MountDeviceSaveDataImpl(name, attr), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, name));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
     Result MountDeviceSaveData(const char *name, const ncm::ApplicationId application_id) {
-        return MountDeviceSaveDataImpl(name, SaveDataAttribute::Make(application_id, SaveDataType::Device, InvalidUserId, InvalidSystemSaveDataId));
+        const auto attr = SaveDataAttribute::Make(application_id, SaveDataType::Device, InvalidUserId, InvalidSystemSaveDataId);
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_MOUNT(MountDeviceSaveDataImpl(name, attr), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_DEVICE_SAVE_DATA_APPLICATION_ID(name, application_id)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
 }

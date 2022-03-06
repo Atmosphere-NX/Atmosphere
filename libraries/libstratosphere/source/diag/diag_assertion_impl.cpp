@@ -14,12 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/diag_print_debug_string.hpp"
 
 namespace ams::diag {
 
     namespace {
 
         inline NORETURN void AbortWithValue(u64 debug) {
+            #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
             /* Just perform a data abort. */
             register u64 addr __asm__("x27") = FatalErrorContext::StdAbortMagicAddress;
             register u64 val __asm__("x28")  = FatalErrorContext::StdAbortMagicValue;
@@ -32,6 +34,10 @@ namespace ams::diag {
                     : "x0"
                 );
             }
+            #else
+            AMS_UNUSED(debug);
+            std::abort();
+            #endif
             __builtin_unreachable();
         }
 
@@ -46,7 +52,7 @@ namespace ams::diag {
 
             util::VSNPrintf(g_debug_buffer, sizeof(g_debug_buffer), format, vl);
 
-            svc::OutputDebugString(g_debug_buffer, strlen(g_debug_buffer));
+            diag::impl::PrintDebugString(g_debug_buffer, strlen(g_debug_buffer));
         }
 
         void DebugLog(const char *format, ...) {
@@ -62,8 +68,12 @@ namespace ams::diag {
 
     }
 
-    NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
+    NORETURN NOINLINE WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        DebugLog("%016" PRIx64 ": Assertion Failure\n", os::GetCurrentProgramId().value);
+        #else
+        DebugLog("0100000000000000: Assertion Failure\n");
+        #endif
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -84,8 +94,12 @@ namespace ams::diag {
         AbortWithValue(value);
     }
 
-    NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
+    NORETURN NOINLINE WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        DebugLog("%016" PRIx64 ": Assertion Failure\n", os::GetCurrentProgramId().value);
+        #else
+        DebugLog("0100000000000000: Assertion Failure\n");
+        #endif
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -96,8 +110,12 @@ namespace ams::diag {
         AbortWithValue(value);
     }
 
-    NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
+    NORETURN NOINLINE WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        DebugLog("%016" PRIx64 ": Abort Called\n", os::GetCurrentProgramId().value);
+        #else
+        DebugLog("0100000000000000: Abort Called\n");
+        #endif
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -118,8 +136,12 @@ namespace ams::diag {
         AbortWithValue(value);
     }
 
-    NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
+    NORETURN NOINLINE WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        DebugLog("%016" PRIx64 ": Abort Called\n", os::GetCurrentProgramId().value);
+        #else
+        DebugLog("0100000000000000: Abort Called\n");
+        #endif
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
@@ -130,7 +152,7 @@ namespace ams::diag {
         AbortWithValue(value);
     }
 
-    NORETURN WEAK_SYMBOL void AbortImpl() {
+    NORETURN NOINLINE WEAK_SYMBOL void AbortImpl() {
         AbortWithValue(0);
     }
 

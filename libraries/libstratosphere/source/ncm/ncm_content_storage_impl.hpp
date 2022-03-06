@@ -38,7 +38,7 @@ namespace ams::ncm {
                     fs::DirectoryEntry m_entries[MaxDirectoryEntries]{};
                     s64 m_entry_count{};
                 public:
-                   constexpr ContentIterator() = default;
+                    constexpr ContentIterator() { /* ... */ }
                     ~ContentIterator();
 
                     Result Initialize(const char *root_path, size_t max_depth);
@@ -48,6 +48,7 @@ namespace ams::ncm {
                     Result OpenDirectory(const char *dir);
                     Result LoadEntries();
             };
+            static_assert(std::is_constructible<ContentIterator>::value);
         protected:
             PlaceHolderAccessor m_placeholder_accessor;
             ContentId m_cached_content_id;

@@ -68,13 +68,13 @@ namespace ams::fs {
             std::unique_ptr<IStorage> m_unique_storage;
             IStorage *m_storage;
         public:
-            ReadOnlyStorageAdapter(IStorage *s) : m_unique_storage(s) {
+            explicit ReadOnlyStorageAdapter(IStorage *s) : m_unique_storage(s) {
                 m_storage = m_unique_storage.get();
             }
-            ReadOnlyStorageAdapter(std::shared_ptr<IStorage> s) : m_shared_storage(s) {
+            explicit ReadOnlyStorageAdapter(std::shared_ptr<IStorage> s) : m_shared_storage(s) {
                 m_storage = m_shared_storage.get();
             }
-            ReadOnlyStorageAdapter(std::unique_ptr<IStorage> s) : m_unique_storage(std::move(s)) {
+            explicit ReadOnlyStorageAdapter(std::unique_ptr<IStorage> s) : m_unique_storage(std::move(s)) {
                 m_storage = m_unique_storage.get();
             }
 

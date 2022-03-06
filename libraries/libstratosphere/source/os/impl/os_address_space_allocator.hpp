@@ -47,8 +47,8 @@ namespace ams::os::impl {
 
 }
 
-#ifdef ATMOSPHERE_OS_HORIZON
+#if defined(ATMOSPHERE_OS_HORIZON)
     #include "os_address_space_allocator_impl.os.horizon.hpp"
 #else
-    #error "Unknown OS for AddressSpaceAllocator"
+    #include "os_address_space_allocator_impl.generic.hpp"
 #endif

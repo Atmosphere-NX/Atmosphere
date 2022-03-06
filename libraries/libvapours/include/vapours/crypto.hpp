@@ -22,6 +22,7 @@
 #include <vapours/crypto/crypto_md5_generator.hpp>
 #include <vapours/crypto/crypto_sha1_generator.hpp>
 #include <vapours/crypto/crypto_sha256_generator.hpp>
+#include <vapours/crypto/crypto_sha3_generator.hpp>
 #include <vapours/crypto/crypto_aes_encryptor.hpp>
 #include <vapours/crypto/crypto_aes_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_ctr_encryptor_decryptor.hpp>

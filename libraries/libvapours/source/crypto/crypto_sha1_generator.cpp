@@ -17,7 +17,7 @@
 
 namespace ams::crypto {
 
-    void GenerateSha1Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    void GenerateSha1(void *dst, size_t dst_size, const void *src, size_t src_size) {
         Sha1Generator gen;
 
         gen.Initialize();

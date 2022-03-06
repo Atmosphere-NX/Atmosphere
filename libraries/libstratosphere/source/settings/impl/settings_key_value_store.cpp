@@ -646,7 +646,6 @@ namespace ams::settings::impl {
         Result LoadKeyValueStoreMapEntries(Map *out, T &data, F load) {
             /* Check pre-conditions. */
             AMS_ASSERT(out != nullptr);
-            AMS_ASSERT(load != nullptr);
 
             /* Read the number of entries. */
             s64 offset = 0;
@@ -665,7 +664,6 @@ namespace ams::settings::impl {
         Result LoadKeyValueStoreMapEntry(Map *out, T &data, s64 &offset, F load) {
             /* Check pre-conditions. */
             AMS_ASSERT(out != nullptr);
-            AMS_ASSERT(load != nullptr);
 
             /* Read the size of the key. */
             u32 key_size = 0;
@@ -892,9 +890,6 @@ namespace ams::settings::impl {
 
         template<typename T, typename F>
         Result SaveKeyValueStoreMap(T &data, const Map &map, F test) {
-            /* Check preconditions. */
-            AMS_ASSERT(test != nullptr);
-
             /* Create the save data if necessary. */
             R_TRY_CATCH(data.Create(HeapMemorySize)) {
                 R_CATCH(fs::ResultPathAlreadyExists) { /* It's okay if the save data already exists. */ }
@@ -1114,7 +1109,7 @@ namespace ams::settings::impl {
 
     Result KeyValueStore::GetValueSize(u64 *out_value_size, const SettingsItemKey &item_key) {
         /* Check preconditions. */
-        AMS_ASSERT(out_count != nullptr);
+        AMS_ASSERT(out_value_size != nullptr);
 
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_key_value_store_mutex);
@@ -1380,7 +1375,7 @@ namespace ams::settings::impl {
 
     Result GetKeyValueStoreItemCountForDebug(u64 *out_count) {
         /* Check preconditions. */
-        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(out_count != nullptr);
 
         /* Acquire exclusive access to global state. */
         std::scoped_lock lk(g_key_value_store_mutex);

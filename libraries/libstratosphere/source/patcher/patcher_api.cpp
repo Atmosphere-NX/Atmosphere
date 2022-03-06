@@ -27,7 +27,7 @@ namespace ams::patcher {
         constexpr const char Ips32HeadMagic[5] = {'I', 'P', 'S', '3', '2'};
         constexpr const char Ips32TailMagic[4] = {'E', 'E', 'O', 'F'};
         constexpr const char *IpsFileExtension = ".ips";
-        constexpr size_t IpsFileExtensionLength = std::strlen(IpsFileExtension);
+        constexpr size_t IpsFileExtensionLength = util::Strlen(IpsFileExtension);
         constexpr size_t ModuleIpsPatchLength = 2 * sizeof(ro::ModuleId) + IpsFileExtensionLength;
 
         /* Global data. */

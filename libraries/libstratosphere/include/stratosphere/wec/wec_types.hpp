@@ -17,13 +17,9 @@
 #include <vapours.hpp>
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
-
     #include <stratosphere/wec/wec_wake_event.board.nintendo_nx.hpp>
-
 #else
-
-    #error "Unknown board for ams::wec::WakeEvent"
-
+    #include <stratosphere/wec/wec_wake_event.generic.hpp>
 #endif
 
 namespace ams::wec {

@@ -24,6 +24,19 @@ namespace ams::kern {
 
 }
 
+namespace ams::diag {
+
+    NORETURN ALWAYS_INLINE void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
+        #if defined(MESOSPHERE_ENABLE_DEBUG_PRINT)
+        ::ams::kern::Panic(file, line, "ams::diag::AssertionFailureImpl: %s:%s 0x%016" PRIx64 "", func, expr, value);
+        #else
+        ::ams::kern::Panic();
+        AMS_UNUSED(file, line, func, expr, value);
+        #endif
+    }
+
+}
+
 #define MESOSPHERE_UNUSED(...) AMS_UNUSED(__VA_ARGS__)
 
 #ifdef MESOSPHERE_ENABLE_DEBUG_PRINT

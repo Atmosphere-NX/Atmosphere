@@ -14,9 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+
+#if !defined(ATMOSPHERE_OS_WINDOWS)
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
+
 #include <stratosphere/socket/socket_types.hpp>
 #include <stratosphere/socket/socket_options.hpp>
 #include <stratosphere/socket/socket_errno.hpp>

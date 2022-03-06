@@ -46,6 +46,9 @@ namespace ams::sf {
             constexpr Out(T *p) : m_ptr(p) { /* ... */ }
             constexpr Out(const cmif::PointerAndSize &pas) : m_ptr(reinterpret_cast<T *>(pas.GetAddress())) { /* TODO: Is AMS_ABORT_UNLESS(pas.GetSize() >= sizeof(T)); necessary? */ }
 
+            template<typename U> requires (std::integral<T> && std::is_enum<U>::value && std::same_as<typename std::underlying_type<U>::type, T>)
+            constexpr Out(U *p) : m_ptr(reinterpret_cast<T *>(p)) { static_assert(sizeof(U) == sizeof(T)); static_assert(alignof(U) == alignof(T)); }
+
             void SetValue(const T& value) const {
                 *m_ptr = value;
             }

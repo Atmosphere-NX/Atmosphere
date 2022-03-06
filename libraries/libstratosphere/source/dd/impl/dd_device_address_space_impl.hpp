@@ -19,5 +19,5 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "dd_device_address_space_impl.os.horizon.hpp"
 #else
-    #error "Unknown os for dd::DeviceAddressSpaceImpl"
+    #include "dd_device_address_space_impl.generic.hpp"
 #endif

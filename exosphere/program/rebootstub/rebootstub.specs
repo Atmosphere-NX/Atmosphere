@@ -1,4 +1,4 @@
 %rename link old_link
 
 *link:
-%(old_link) -T %:getenv(TOPDIR /rebootstub.ld) --gc-sections --nmagic
+%(old_link) -T %:getenv(ATMOSPHERE_TOPDIR /rebootstub.ld) --gc-sections --nmagic

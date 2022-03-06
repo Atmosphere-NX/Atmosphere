@@ -53,7 +53,7 @@ namespace ams::ddsf {
         public:
             IEventHandler() : m_holder(), m_user_data(0), m_is_initialized(false), m_is_registered(false) { /* ... */ }
 
-            ~IEventHandler() {
+            virtual ~IEventHandler() {
                 if (this->IsRegistered()) {
                     this->Unlink();
                 }

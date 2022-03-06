@@ -14,11 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/os_thread_manager.hpp"
+#include "impl/os_tls_manager.hpp"
 
 namespace ams::os {
 
-    /* TODO: How will this work without libnx? */
-
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
         using LibnxTlsDestructor = void (*)(void *);
@@ -44,5 +45,28 @@ namespace ams::os {
     void SetTlsValue(TlsSlot slot, uintptr_t value) {
         ::threadTlsSet(static_cast<s32>(slot._value), reinterpret_cast<void *>(value));
     }
+    #else
+
+    Result AllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
+        R_UNLESS(impl::GetTlsManager().AllocateTlsSlot(out, destructor, false), os::ResultOutOfResource());
+        R_SUCCEED();
+    }
+
+    void FreeTlsSlot(TlsSlot slot) {
+        AMS_ASSERT(slot._value < impl::TotalTlsSlotCountMax);
+        impl::GetTlsManager().FreeTlsSlot(slot);
+    }
+
+    uintptr_t GetTlsValue(TlsSlot slot) {
+        AMS_ASSERT(slot._value < impl::TotalTlsSlotCountMax);
+        return impl::GetCurrentThread()->tls_value_array[slot._value];
+    }
+
+    void SetTlsValue(TlsSlot slot, uintptr_t value) {
+        AMS_ASSERT(slot._value < impl::TotalTlsSlotCountMax);
+        impl::GetCurrentThread()->tls_value_array[slot._value] = value;
+    }
+
+    #endif
 
 }

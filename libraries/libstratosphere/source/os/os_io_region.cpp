@@ -39,7 +39,7 @@ namespace ams::os {
     Result CreateIoRegion(IoRegionType *io_region, NativeHandle io_pool_handle, uintptr_t address, size_t size, MemoryMapping mapping, MemoryPermission permission) {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region != nullptr);
-        AMS_ASSERT(io_pool_handle != svc::InvalidHandle);
+        AMS_ASSERT(io_pool_handle != os::InvalidNativeHandle);
         AMS_ASSERT(util::IsAligned(address, os::MemoryPageSize));
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
         AMS_ASSERT(mapping == MemoryMapping_IoRegister || mapping == MemoryMapping_Uncached || mapping == MemoryMapping_Memory);
@@ -63,7 +63,7 @@ namespace ams::os {
         /* Check pre-conditions. */
         AMS_ASSERT(io_region != nullptr);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
-        AMS_ASSERT(handle != svc::InvalidHandle);
+        AMS_ASSERT(handle != os::InvalidNativeHandle);
 
         /* Setup the object. */
         InitializeIoRegion(io_region, handle, size, managed);
@@ -85,7 +85,7 @@ namespace ams::os {
         }
 
         /* Clear members. */
-        io_region->handle         = svc::InvalidHandle;
+        io_region->handle         = os::InvalidNativeHandle;
         io_region->handle_managed = false;
         io_region->mapped_address = nullptr;
         io_region->size           = 0;

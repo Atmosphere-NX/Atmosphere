@@ -21,6 +21,13 @@
 
 namespace ams::fatal {
 
+    enum FatalPolicy {
+        FatalPolicy_ErrorReportAndErrorScreen = 0,
+        FatalPolicy_ErrorReport               = 1,
+        FatalPolicy_ErrorScreen               = 2
+    };
+
+    #if defined(ATMOSPHERE_ARCH_ARM64)
     namespace aarch64 {
 
         enum RegisterName {
@@ -150,7 +157,7 @@ namespace ams::fatal {
             void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
                 /* Right now, we mux program ID in through afsr when creport. */
                 /* TODO: Better way to do this? */
-                this->afsr0 = static_cast<RegisterType>(program_id);
+                this->afsr0 = static_cast<RegisterType>(program_id.value);
             }
 
             ncm::ProgramId GetProgramIdForAtmosphere() const {
@@ -172,7 +179,9 @@ namespace ams::fatal {
         };
 
     }
+    #endif
 
+    #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_ARM)
     namespace aarch32 {
 
         enum RegisterName {
@@ -268,8 +277,8 @@ namespace ams::fatal {
             void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
                 /* Right now, we mux program ID in through afsr when creport. */
                 /* TODO: Better way to do this? */
-                this->afsr0 = static_cast<RegisterType>(static_cast<u64>(program_id) >> 0);
-                this->afsr1 = static_cast<RegisterType>(static_cast<u64>(program_id) >> 32);
+                this->afsr0 = static_cast<RegisterType>(static_cast<u64>(program_id.value) >> 0);
+                this->afsr1 = static_cast<RegisterType>(static_cast<u64>(program_id.value) >> 32);
             }
 
             ncm::ProgramId GetProgramIdForAtmosphere() const {
@@ -291,16 +300,158 @@ namespace ams::fatal {
         };
 
     }
+    #endif
+
+    #if defined(ATMOSPHERE_ARCH_X64)
+    namespace x64 {
+
+        enum RegisterName {
+            /* TODO */
+            RegisterName_Count,
+        };
+
+        struct CpuContext {
+            using RegisterType = u64;
+            static constexpr size_t MaxStackTraceDepth = 0x20;
+
+            static constexpr const char *RegisterNameStrings[RegisterName_Count] = {
+                /* TODO */
+            };
+
+            /* Registers, exception context. N left names for these fields in fatal .rodata. */
+            union {
+                // struct {
+                //     /* TODO */
+                // };
+                RegisterType registers[RegisterName_Count];
+            };
+
+            /* Misc. */
+            RegisterType stack_trace[MaxStackTraceDepth];
+            RegisterType base_address;
+            RegisterType register_set_flags;
+            u32 stack_trace_size;
+
+            void ClearState() {
+                std::memset(this, 0, sizeof(*this));
+            }
+
+            void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
+                AMS_UNUSED(program_id);
+                AMS_ABORT("TODO");
+            }
+
+            ncm::ProgramId GetProgramIdForAtmosphere() const {
+                AMS_ABORT("TODO");
+            }
+
+            void SetRegisterValue(RegisterName name, RegisterType value) {
+                this->registers[name] = value;
+                this->register_set_flags |= (RegisterType(1) << name);
+            }
+
+            bool HasRegisterValue(RegisterName name) const {
+                return this->register_set_flags & (RegisterType(1) << name);
+            }
+
+            void SetBaseAddress(RegisterType base_addr) {
+                this->base_address = base_addr;
+            }
+        };
+
+    }
+    #endif
+
+    #if defined(ATMOSPHERE_ARCH_X64) || defined(ATMOSPHERE_ARCH_X86)
+    namespace x86 {
+
+        enum RegisterName {
+            /* TODO */
+            RegisterName_Count,
+        };
+
+        struct CpuContext {
+            using RegisterType = u32;
+            static constexpr size_t MaxStackTraceDepth = 0x20;
+
+            static constexpr const char *RegisterNameStrings[RegisterName_Count] = {
+                /* TODO */
+            };
+
+            /* Registers, exception context. N left names for these fields in fatal .rodata. */
+            union {
+                // struct {
+                //     /* TODO */
+                // };
+                RegisterType registers[RegisterName_Count];
+            };
+
+            /* Misc. Yes, stack_trace_size is really laid out differently than aarch64... */
+            RegisterType stack_trace[MaxStackTraceDepth];
+            u32 stack_trace_size;
+            RegisterType base_address;
+            RegisterType register_set_flags;
+
+            void ClearState() {
+                std::memset(this, 0, sizeof(*this));
+            }
+
+            void SetProgramIdForAtmosphere(ncm::ProgramId program_id) {
+                AMS_UNUSED(program_id);
+                AMS_ABORT("TODO");
+            }
+
+            ncm::ProgramId GetProgramIdForAtmosphere() const {
+                AMS_ABORT("TODO");
+            }
+
+            void SetRegisterValue(RegisterName name, RegisterType value) {
+                this->registers[name] = value;
+                this->register_set_flags |= (RegisterType(1) << name);
+            }
+
+            bool HasRegisterValue(RegisterName name) const {
+                return this->register_set_flags & (RegisterType(1) << name);
+            }
+
+            void SetBaseAddress(RegisterType base_addr) {
+                this->base_address = base_addr;
+            }
+        };
+
+    }
+    #endif
 
     struct CpuContext : sf::LargeData, sf::PrefersMapAliasTransferMode {
         enum Architecture {
-            Architecture_Aarch64 = 0,
-            Architecture_Aarch32 = 1,
+            #if defined(ATMOSPHERE_ARCH_ARM64)
+            Architecture_Aarch64,
+            #endif
+            #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_ARM)
+            Architecture_Aarch32,
+            #endif
+            #if defined(ATMOSPHERE_X64)
+            Architecture_X64,
+            #endif
+            #if defined(ATMOSPHERE_X64) || defined(ATMOSPHERE_ARCH_X86)
+            Architecture_X86,
+            #endif
         };
 
         union {
+            #if defined(ATMOSPHERE_ARCH_ARM64)
             aarch64::CpuContext aarch64_ctx;
+            #endif
+            #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_ARM)
             aarch32::CpuContext aarch32_ctx;
+            #endif
+            #if defined(ATMOSPHERE_X64)
+            aarch64::CpuContext x64_ctx;
+            #endif
+            #if defined(ATMOSPHERE_X64) || defined(ATMOSPHERE_ARCH_X86)
+            aarch64::CpuContext x86_ctx;
+            #endif
+            u8 raw_storage[0x248];
         };
 
         Architecture architecture;
@@ -311,8 +462,12 @@ namespace ams::fatal {
         }
     };
 
+    #if defined(ATMOSPHERE_ARCH_ARM64)
     static_assert(util::is_pod<aarch64::CpuContext>::value && sizeof(aarch64::CpuContext) == 0x248, "aarch64::CpuContext definition!");
+    #endif
+    #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_ARM)
     static_assert(util::is_pod<aarch32::CpuContext>::value && sizeof(aarch32::CpuContext) == 0xE0,  "aarch32::CpuContext definition!");
+    #endif
     static_assert(util::is_pod<CpuContext>::value          && sizeof(CpuContext) == 0x250,          "CpuContext definition!");
 
     namespace srv {

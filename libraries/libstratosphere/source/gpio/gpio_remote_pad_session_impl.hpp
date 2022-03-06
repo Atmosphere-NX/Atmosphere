@@ -18,6 +18,7 @@
 
 namespace ams::gpio {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemotePadSessionImpl {
         private:
             ::GpioPadSession m_srv;
@@ -111,5 +112,6 @@ namespace ams::gpio {
             }
     };
     static_assert(gpio::sf::IsIPadSession<RemotePadSessionImpl>);
+    #endif
 
 }

@@ -21,10 +21,12 @@ namespace ams::ncm {
     struct ProgramId {
         u64 value;
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         inline explicit operator svc::ProgramId() const {
             static_assert(sizeof(value) == sizeof(svc::ProgramId));
             return { this->value };
         }
+        #endif
     };
 
     inline constexpr bool operator==(const ProgramId &lhs, const ProgramId &rhs) {

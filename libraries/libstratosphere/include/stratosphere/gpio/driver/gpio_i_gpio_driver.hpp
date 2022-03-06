@@ -59,7 +59,7 @@ namespace ams::gpio::driver {
             virtual Result SetDebounceTime(Pad *pad, s32 ms)            = 0;
 
             virtual Result GetUnknown22(u32 *out) = 0;
-            virtual void Unknown23();
+            virtual void Unknown23() = 0;
 
             virtual Result SetValueForSleepState(Pad *pad, GpioValue value) = 0;
             virtual Result IsWakeEventActive(bool *out, Pad *pad) const = 0;

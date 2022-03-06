@@ -19,6 +19,7 @@ namespace ams::hos {
 
     namespace {
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         settings::FirmwareVersion GetSettingsFirmwareVersion() {
             /* Mount the system version title. */
             R_ABORT_UNLESS(ams::fs::MountSystemData("sysver", ncm::SystemDataId::SystemVersion));
@@ -35,12 +36,14 @@ namespace ams::hos {
 
             return firmware_version;
         }
+        #endif
 
     }
 
     void InitializeVersionInternal(bool allow_approximate);
 
     void SetNonApproximateVersionInternal() {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         /* Get the settings . */
         const auto firmware_version = GetSettingsFirmwareVersion();
 
@@ -49,6 +52,7 @@ namespace ams::hos {
 
         /* Update our own version value. */
         InitializeVersionInternal(false);
+        #endif
     }
 
 }

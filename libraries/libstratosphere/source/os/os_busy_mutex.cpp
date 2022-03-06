@@ -19,7 +19,7 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "impl/os_internal_busy_mutex_impl.os.horizon.hpp"
 #else
-    #error "Unknown OS for ams::os::impl::InternalBusyMutexImpl"
+    /* Generic implementation already included in <stratosphere.hpp> */
 #endif
 
 namespace ams::os {

@@ -39,19 +39,19 @@ namespace ams::ncm {
 
         u16 Get16BitSha256HashPrefix(ContentId id) {
             u8 hash[crypto::Sha256Generator::HashSize];
-            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
+            crypto::GenerateSha256(hash, sizeof(hash), std::addressof(id), sizeof(id));
             return static_cast<u16>(hash[0]) | (static_cast<u16>(hash[1]) << 8);
         }
 
         u8 Get8BitSha256HashPrefix(ContentId id) {
             u8 hash[crypto::Sha256Generator::HashSize];
-            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
+            crypto::GenerateSha256(hash, sizeof(hash), std::addressof(id), sizeof(id));
             return hash[0];
         }
 
         u8 Get8BitSha256HashPrefix(PlaceHolderId id) {
             u8 hash[crypto::Sha256Generator::HashSize];
-            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
+            crypto::GenerateSha256(hash, sizeof(hash), std::addressof(id), sizeof(id));
             return hash[0];
         }
 

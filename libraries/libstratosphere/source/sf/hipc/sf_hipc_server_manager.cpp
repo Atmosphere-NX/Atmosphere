@@ -18,6 +18,7 @@
 
 namespace ams::sf::hipc {
 
+    #if AMS_SF_MITM_SUPPORTED
     Result ServerManagerBase::InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
         os::NativeHandle query_handle;
@@ -31,6 +32,7 @@ namespace ams::sf::hipc {
 
         return ResultSuccess();
     }
+    #endif
 
     void ServerManagerBase::RegisterServerSessionToWait(ServerSession *session) {
         session->m_has_received = false;
@@ -79,8 +81,10 @@ namespace ams::sf::hipc {
     void ServerManagerBase::AddUserMultiWaitHolder(os::MultiWaitHolderType *holder) {
         const auto user_data_tag = static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder));
         AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Server);
-        AMS_ABORT_UNLESS(user_data_tag != UserDataTag::MitmServer);
         AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Session);
+        #if AMS_SF_MITM_SUPPORTED
+        AMS_ABORT_UNLESS(user_data_tag != UserDataTag::MitmServer);
+        #endif
         this->LinkToDeferredList(holder);
     }
 
@@ -98,6 +102,7 @@ namespace ams::sf::hipc {
         }
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result ServerManagerBase::ProcessForMitmServer(os::MultiWaitHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder)) == UserDataTag::MitmServer);
 
@@ -107,13 +112,14 @@ namespace ams::sf::hipc {
         /* Create resources for new session. */
         return this->OnNeedsToAccept(server->m_index, server);
     }
+    #endif
 
     Result ServerManagerBase::ProcessForSession(os::MultiWaitHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder)) == UserDataTag::Session);
 
         ServerSession *session = static_cast<ServerSession *>(holder);
 
-        cmif::PointerAndSize tls_message(svc::GetThreadLocalRegion()->message_buffer, hipc::TlsMessageBufferSize);
+        cmif::PointerAndSize tls_message(hipc::GetMessageBufferOnTls(), hipc::TlsMessageBufferSize);
         if (this->CanDeferInvokeRequest()) {
             const cmif::PointerAndSize &saved_message = session->m_saved_message;
             AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
@@ -136,12 +142,14 @@ namespace ams::sf::hipc {
                 R_TRY(this->ReceiveRequest(session, tls_message));
                 session->m_has_received = true;
 
+                #if AMS_SF_MITM_SUPPORTED
                 if (this->CanManageMitmServers()) {
                     const cmif::PointerAndSize &saved_message = session->m_saved_message;
                     AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
 
                     std::memcpy(saved_message.GetPointer(), tls_message.GetPointer(), tls_message.GetSize());
                 }
+                #endif
             }
 
             R_TRY_CATCH(this->ProcessRequest(session, tls_message)) {
@@ -157,11 +165,13 @@ namespace ams::sf::hipc {
         switch (static_cast<UserDataTag>(os::GetMultiWaitHolderUserData(holder))) {
             case UserDataTag::Server:
                 return this->ProcessForServer(holder);
+            case UserDataTag::Session:
+                return this->ProcessForSession(holder);
+            #if AMS_SF_MITM_SUPPORTED
             case UserDataTag::MitmServer:
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
                 return this->ProcessForMitmServer(holder);
-            case UserDataTag::Session:
-                return this->ProcessForSession(holder);
+            #endif
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }

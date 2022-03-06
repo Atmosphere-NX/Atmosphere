@@ -297,6 +297,7 @@ namespace ams::updater {
                     }
 
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
+                    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
@@ -305,6 +306,9 @@ namespace ams::updater {
                             R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
                         }
                     } else {
+                    #else
+                    {
+                    #endif
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
                         if (!custom_public_key) {
                             R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
@@ -366,6 +370,7 @@ namespace ams::updater {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
                     /* Only preserve autorcm if on a unit with unpatched rcm bug. */
+                    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
@@ -374,6 +379,9 @@ namespace ams::updater {
                             R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
                         }
                     } else {
+                    #else
+                    {
+                    #endif
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
                         if (!custom_public_key) {
                             R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
@@ -428,7 +436,7 @@ namespace ams::updater {
             }
 
             u8 file_hash[crypto::Sha256Generator::HashSize];
-            crypto::GenerateSha256Hash(file_hash, sizeof(file_hash), bct, BctSize);
+            crypto::GenerateSha256(file_hash, sizeof(file_hash), bct, BctSize);
 
             return CompareHash(file_hash, stored_hash, sizeof(file_hash));
         }

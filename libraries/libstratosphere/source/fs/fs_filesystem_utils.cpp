@@ -19,24 +19,35 @@
 
 namespace ams::fs {
 
-    Result EnsureDirectoryRecursively(const char *path) {
+    Result EnsureDirectory(const char *path) {
         /* Get the filesystem accessor and sub path. */
         impl::FileSystemAccessor *accessor;
         const char *sub_path;
         R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
+        /* Set up the true sub path. */
+        fs::Path sub_fs_path;
+        R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
+
         /* Use the system implementation. */
-        return fssystem::EnsureDirectoryRecursively(accessor->GetRawFileSystemUnsafe(), sub_path);
+        return fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path);
     }
 
-    Result EnsureParentDirectoryRecursively(const char *path) {
+    Result EnsureParentDirectory(const char *path) {
         /* Get the filesystem accessor and sub path. */
         impl::FileSystemAccessor *accessor;
         const char *sub_path;
         R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
+        /* Set up the true sub path. */
+        fs::Path sub_fs_path;
+        R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
+
+        /* Convert the path to the parent directory path. */
+        R_TRY(sub_fs_path.RemoveChild());
+
         /* Use the system implementation. */
-        return fssystem::EnsureParentDirectoryRecursively(accessor->GetRawFileSystemUnsafe(), sub_path);
+        return fssystem::EnsureDirectory(accessor->GetRawFileSystemUnsafe(), sub_fs_path);
     }
 
     Result HasFile(bool *out, const char *path) {
@@ -45,7 +56,11 @@ namespace ams::fs {
         const char *sub_path;
         R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return fssystem::HasFile(out, accessor->GetRawFileSystemUnsafe(), sub_path);
+        /* Set up the true sub path. */
+        fs::Path sub_fs_path;
+        R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
+
+        return fssystem::HasFile(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path);
     }
 
     Result HasDirectory(bool *out, const char *path) {
@@ -54,7 +69,11 @@ namespace ams::fs {
         const char *sub_path;
         R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return fssystem::HasDirectory(out, accessor->GetRawFileSystemUnsafe(), sub_path);
+        /* Set up the true sub path. */
+        fs::Path sub_fs_path;
+        R_TRY(accessor->SetUpPath(std::addressof(sub_fs_path), sub_path));
+
+        return fssystem::HasDirectory(out, accessor->GetRawFileSystemUnsafe(), sub_fs_path);
     }
 
 }

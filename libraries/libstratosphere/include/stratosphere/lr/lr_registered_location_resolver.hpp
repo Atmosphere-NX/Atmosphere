@@ -43,12 +43,12 @@ namespace ams::lr {
         public:
             /* Actual commands. */
             Result ResolveProgramPath(Path *out, ncm::ProgramId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->ResolveProgramPath(out, id);
             }
 
             Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return m_interface->RegisterProgramPath(path, id, owner_id);
                 } else {
@@ -57,12 +57,12 @@ namespace ams::lr {
             }
 
             Result UnregisterProgramPath(ncm::ProgramId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->UnregisterProgramPath(id);
             }
 
             void RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(m_interface->RedirectProgramPath(path, id, owner_id));
                 } else {
@@ -71,12 +71,12 @@ namespace ams::lr {
             }
 
             Result ResolveHtmlDocumentPath(Path *out, ncm::ProgramId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->ResolveHtmlDocumentPath(out, id);
             }
 
             Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return m_interface->RegisterHtmlDocumentPath(path, id, owner_id);
                 } else {
@@ -85,12 +85,12 @@ namespace ams::lr {
             }
 
             Result UnregisterHtmlDocumentPath(ncm::ProgramId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->UnregisterHtmlDocumentPath(id);
             }
 
             void RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(m_interface->RedirectHtmlDocumentPath(path, id, owner_id));
                 } else {
@@ -99,12 +99,12 @@ namespace ams::lr {
             }
 
             Result Refresh() {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->Refresh();
             }
 
             Result RefreshExcluding(const ncm::ProgramId *excluding_ids, size_t num_ids) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->RefreshExcluding(sf::InArray<ncm::ProgramId>(excluding_ids, num_ids));
             }
 

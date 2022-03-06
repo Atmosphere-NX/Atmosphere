@@ -84,6 +84,9 @@ dkms.conf
 
 .**/
 
+# macOS horseshittery
+.DS_Store
+
 # NOTE: make sure to make exceptions to this pattern when needed!
 *.bin
 *.enc

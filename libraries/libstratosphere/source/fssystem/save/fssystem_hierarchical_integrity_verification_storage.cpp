@@ -167,7 +167,7 @@ namespace ams::fssystem::save {
         /* Initialize the top level verification storage. */
         {
             fs::HashSalt mac;
-            crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[0].key, KeyArray[0].size);
+            crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[0].key, KeyArray[0].size);
             m_verify_storages[0].Initialize(storage[HierarchicalStorageInformation::MasterStorage], storage[HierarchicalStorageInformation::Layer1Storage], static_cast<s64>(1) << info.info[0].block_order, HashSize, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
         }
 
@@ -202,7 +202,7 @@ namespace ams::fssystem::save {
             {
                 fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
                 fs::HashSalt mac;
-                crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
+                crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
                 m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
             }
 
@@ -216,7 +216,7 @@ namespace ams::fssystem::save {
             {
                 fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
                 fs::HashSalt mac;
-                crypto::GenerateHmacSha256Mac(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
+                crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
                 m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, true, storage_type);
             }
 

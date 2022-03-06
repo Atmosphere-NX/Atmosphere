@@ -102,7 +102,7 @@ namespace ams::updater {
 
         size_t written = 0;
         while (written < size) {
-            size_t cur_write_size = std::min(work_buffer_size, size - written);
+            size_t cur_write_size = std::min<size_t>(work_buffer_size, size - written);
             R_TRY(this->Write(offset + written, work_buffer, cur_write_size));
             written += cur_write_size;
         }
@@ -118,8 +118,8 @@ namespace ams::updater {
 
         size_t total_read = 0;
         while (total_read < hash_size) {
-            size_t cur_read_size = std::min(work_buffer_size, size - total_read);
-            size_t cur_update_size = std::min(cur_read_size, hash_size - total_read);
+            size_t cur_read_size = std::min<size_t>(work_buffer_size, size - total_read);
+            size_t cur_update_size = std::min<size_t>(cur_read_size, hash_size - total_read);
             R_TRY(this->Read(work_buffer, cur_read_size, offset + total_read));
             generator.Update(work_buffer, cur_update_size);
 

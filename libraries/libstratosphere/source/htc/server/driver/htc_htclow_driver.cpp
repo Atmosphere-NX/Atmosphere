@@ -75,7 +75,7 @@ namespace ams::htc::server::driver {
         R_UNLESS(!m_disconnection_emulation_enabled, htclow::ResultConnectionFailure());
 
         /* Begin connecting. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->ConnectBegin(std::addressof(task_id), GetHtclowChannel(channel, m_module_id)));
 
         /* Wait for the task to complete. */
@@ -104,7 +104,7 @@ namespace ams::htc::server::driver {
         size_t sent;
         for (sent = 0; sent < static_cast<size_t>(src_size); sent += cur_send) {
             /* Begin sending. */
-            u32 task_id;
+            u32 task_id{};
             R_TRY(m_manager->SendBegin(std::addressof(task_id), std::addressof(cur_send), static_cast<const u8 *>(src) + sent, static_cast<size_t>(src_size) - sent, GetHtclowChannel(channel, m_module_id)));
 
             /* Wait for the task to complete. */
@@ -125,7 +125,7 @@ namespace ams::htc::server::driver {
         const bool blocking = option != htclow::ReceiveOption_NonBlocking;
 
         /* Begin receiving. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->ReceiveBegin(std::addressof(task_id), GetHtclowChannel(channel, m_module_id), blocking ? 1 : 0));
 
         /* Wait for the task to complete. */

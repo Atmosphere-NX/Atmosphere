@@ -18,6 +18,8 @@
 
 namespace ams::sm::mitm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    #if AMS_SF_MITM_SUPPORTED
     /* Mitm API. */
     Result InstallMitm(os::NativeHandle *out_port, os::NativeHandle *out_query, ServiceName name) {
         return impl::DoWithPerThreadSession([&](TipcService *fwd) {
@@ -50,5 +52,7 @@ namespace ams::sm::mitm {
     Result WaitMitm(ServiceName name) {
         return smAtmosphereWaitMitm(impl::ConvertName(name));
     }
+    #endif
+    #endif
 
 }

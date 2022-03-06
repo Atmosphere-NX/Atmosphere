@@ -32,7 +32,7 @@
 
 #else
 
-    #error "Unknown board for ams::gpio::driver::"
+    // TODO: #error "Unknown board for ams::gpio::driver::"
 
 #endif
 

@@ -42,8 +42,11 @@ namespace ams::fssrv::sf {
             return len;
         }
     };
+    static_assert(util::is_pod<Path>::value);
 
-    static_assert(util::is_pod<Path>::value && sizeof(Path) == FS_MAX_PATH);
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    static_assert(sizeof(Path) == FS_MAX_PATH);
+    #endif
 
     using FspPath = Path;
 

@@ -1,130 +1,41 @@
-#---------------------------------------------------------------------------------
-# pull in common stratosphere sysmodule configuration
-#---------------------------------------------------------------------------------
-include $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../libraries/config/templates/stratosphere.mk
+ATMOSPHERE_BUILD_CONFIGS :=
+all: nx_release
 
-#---------------------------------------------------------------------------------
-# jpegdec uses libjpeg-turbo.
-#---------------------------------------------------------------------------------
-LIBS     +=	-ljpeg
+THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
 
-#---------------------------------------------------------------------------------
-# jpegdec overrides libjpeg-turbo's memory allocation routines.
-#---------------------------------------------------------------------------------
-CXXWRAPS +=	-Wl,--wrap,jpeg_get_small
-CXXWRAPS +=	-Wl,--wrap,jpeg_get_large
-CXXWRAPS +=	-Wl,--wrap,jpeg_free_small
-CXXWRAPS +=	-Wl,--wrap,jpeg_free_large
-CXXWRAPS +=	-Wl,--wrap,sprintf
-CXXWRAPS +=	-Wl,--wrap,fprintf
-CXXWRAPS +=	-Wl,--wrap,getenv
-CXXWRAPS +=	-Wl,--wrap,sscanf
+define ATMOSPHERE_ADD_TARGET
 
-#---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
-# rules for different file extensions
-#---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-#---------------------------------------------------------------------------------
+ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
-export TOPDIR	:=	$(CURDIR)
+$(strip $1):
+	@echo "Building $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/system_module.mk ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+clean-$(strip $1):
+	@echo "Cleaning $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/system_module.mk clean ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
-export DEPSDIR	:=	$(CURDIR)/$(BUILD)
+endef
 
-CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
-CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
-SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
+define ATMOSPHERE_ADD_TARGETS
 
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_release, release, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4)" \
+))
 
-#---------------------------------------------------------------------------------
-# use CXX for linking C++ projects, CC for standard C
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(CPPFILES)),)
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CC)
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CXX)
-#---------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_debug, debug, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_DEBUGGING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 \
+))
 
-export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
-			$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_audit, audit, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_AUDITING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 ATMOSPHERE_BUILD_FOR_AUDITING=1 \
+))
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+endef
 
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+$(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm-cortex-a57,))
 
-export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
+clean: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
 
-ifeq ($(strip $(CONFIG_JSON)),)
-	jsons := $(wildcard *.json)
-	ifneq (,$(findstring $(TARGET).json,$(jsons)))
-		export APP_JSON := $(TOPDIR)/$(TARGET).json
-	else
-		ifneq (,$(findstring config.json,$(jsons)))
-			export APP_JSON := $(TOPDIR)/config.json
-		endif
-	endif
-else
-	export APP_JSON := $(TOPDIR)/$(CONFIG_JSON)
-endif
-
-.PHONY: $(BUILD) clean all
-
-#---------------------------------------------------------------------------------
-all: $(BUILD)
-
-$(BUILD):
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-
-#---------------------------------------------------------------------------------
-clean:
-	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).npdm $(TARGET).nso $(TARGET).elf
-
-
-#---------------------------------------------------------------------------------
-else
-.PHONY:	all
-
-DEPENDS	:=	$(OFILES:.o=.d)
-
-#---------------------------------------------------------------------------------
-# main targets
-#---------------------------------------------------------------------------------
-all	:	$(OUTPUT).nsp
-
-ifeq ($(strip $(APP_JSON)),)
-$(OUTPUT).nsp	:	$(OUTPUT).nso
-else
-$(OUTPUT).nsp	:	$(OUTPUT).nso $(OUTPUT).npdm
-endif
-
-$(OUTPUT).nso	:	$(OUTPUT).elf
-
-$(OUTPUT).elf	:	$(OFILES)
-
-#---------------------------------------------------------------------------------
-# you need a rule like this for each extension you use as binary data
-#---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
-
--include $(DEPENDS)
-
-#---------------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------------
+.PHONY: all clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))

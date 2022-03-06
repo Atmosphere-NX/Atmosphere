@@ -21,9 +21,11 @@ namespace ams::sf::cmif {
         return this->ProcessMessageImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data);
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result DomainServiceObjectDispatchTable::ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
         return this->ProcessMessageForMitmImpl(ctx, static_cast<DomainServiceObject *>(ctx.srv_obj)->GetServerDomain(), in_raw_data);
     }
+    #endif
 
     Result DomainServiceObjectDispatchTable::ProcessMessageImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const {
         const CmifDomainInHeader *in_header = reinterpret_cast<const CmifDomainInHeader *>(in_raw_data.GetPointer());
@@ -59,6 +61,7 @@ namespace ams::sf::cmif {
         }
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result DomainServiceObjectDispatchTable::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, ServerDomainBase *domain, const cmif::PointerAndSize &in_raw_data) const {
         const CmifDomainInHeader *in_header = reinterpret_cast<const CmifDomainInHeader *>(in_raw_data.GetPointer());
         R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
@@ -106,6 +109,7 @@ namespace ams::sf::cmif {
                 return sf::cmif::ResultInvalidInHeader();
         }
     }
+    #endif
 
     Result DomainServiceObjectProcessor::PrepareForProcess(const ServiceDispatchContext &ctx, const ServerMessageRuntimeMetadata runtime_metadata) const {
         /* Validate in object count. */

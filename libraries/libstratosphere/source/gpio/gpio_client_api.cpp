@@ -22,10 +22,12 @@ namespace ams::gpio {
 
         constinit os::SdkMutex g_init_mutex;
         constinit int g_initialize_count = 0;
-        constinit bool g_remote = false;
         ams::sf::SharedPointer<gpio::sf::IManager> g_manager;
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        constinit bool g_remote = false;
         ams::sf::UnmanagedServiceObject<gpio::sf::IManager, RemoteManagerImpl> g_remote_manager_impl;
+        #endif
 
         gpio::sf::IPadSession *GetInterface(GpioPadSession *session) {
             AMS_ASSERT(session->_session != nullptr);
@@ -38,9 +40,13 @@ namespace ams::gpio {
         std::scoped_lock lk(g_init_mutex);
 
         if ((g_initialize_count++) == 0) {
+            #if defined(ATMOSPHERE_OS_HORIZON)
             R_ABORT_UNLESS(::gpioInitialize());
             g_manager = g_remote_manager_impl.GetShared();
             g_remote  = true;
+            #else
+            AMS_ABORT("TODO");
+            #endif
         }
     }
 
@@ -60,9 +66,13 @@ namespace ams::gpio {
 
         if ((--g_initialize_count) == 0) {
             g_manager = nullptr;
+            #if defined(ATMOSPHERE_OS_HORIZON)
             if (g_remote) {
                 ::gpioExit();
             }
+            #else
+            AMS_ABORT("TODO");
+            #endif
         }
     }
 

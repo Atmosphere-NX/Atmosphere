@@ -26,7 +26,7 @@ namespace ams::os {
         private:
             BusyMutexType m_mutex;
         public:
-            constexpr explicit BusyMutex() : m_mutex{::ams::os::BusyMutexType::State_Initialized, nullptr, {{}}} { /* ... */ }
+            constexpr explicit BusyMutex() : m_mutex{::ams::os::BusyMutexType::State_Initialized, nullptr, {{AMS_OS_INTERNAL_BUSY_MUTEX_IMPL_CONSTANT_INITIALIZE_ARRAY_VALUES}}} { /* ... */ }
 
             ~BusyMutex() { FinalizeBusyMutex(std::addressof(m_mutex)); }
 

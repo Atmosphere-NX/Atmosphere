@@ -137,7 +137,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             *out = ChargeCurrentState_NotCharging;
         } else {
             /* Get force 20 percent charge state. */
-            bool force_20_percent;
+            bool force_20_percent = false;
             AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetForce20PercentChargeCurrent(std::addressof(force_20_percent)));
 
             /* Set output appropriately. */
@@ -277,7 +277,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Validate arguments. */
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
-        bq24193::ChargerStatus bq_status;
+        bq24193::ChargerStatus bq_status = static_cast<bq24193::ChargerStatus>(~0);
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetChargerStatus(std::addressof(bq_status)));
 
         switch (bq_status) {

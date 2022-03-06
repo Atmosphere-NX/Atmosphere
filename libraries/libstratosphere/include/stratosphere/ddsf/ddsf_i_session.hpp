@@ -58,7 +58,7 @@ namespace ams::ddsf {
         public:
             ISession() : m_list_node(), m_device(nullptr), m_access_mode() { /* ... */ }
         protected:
-            ~ISession() { this->DetachDevice(); AMS_ASSERT(!this->IsOpen()); }
+            virtual ~ISession() { this->DetachDevice(); AMS_ASSERT(!this->IsOpen()); }
         public:
             void AddTo(List &list) {
                 list.push_back(*this);

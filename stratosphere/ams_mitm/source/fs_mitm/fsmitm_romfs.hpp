@@ -269,7 +269,7 @@ namespace ams::mitm::fs::romfs {
             size_t m_file_hash_table_size;
             size_t m_file_partition_size;
 
-            ams::fs::DirectoryEntry m_dir_entry;
+            ::FsDirectoryEntry m_dir_entry;
             DataSourceType m_cur_source_type;
         private:
             void VisitDirectory(FsFileSystem *fs, BuildDirectoryContext *parent);

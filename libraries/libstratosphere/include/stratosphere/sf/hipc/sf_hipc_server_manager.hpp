@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <stratosphere/sf/sf_mitm_config.hpp>
 #include <stratosphere/sf/hipc/sf_hipc_server_domain_session_manager.hpp>
 #include <stratosphere/sm.hpp>
 
@@ -38,12 +39,16 @@ namespace ams::sf::hipc {
         NON_COPYABLE(ServerManagerBase);
         NON_MOVEABLE(ServerManagerBase);
         public:
+            #if AMS_SF_MITM_SUPPORTED
             using MitmQueryFunction = bool (*)(const sm::MitmProcessInfo &);
+            #endif
         private:
             enum class UserDataTag : uintptr_t {
                 Server      = 1,
                 Session     = 2,
+                #if AMS_SF_MITM_SUPPORTED
                 MitmServer  = 3,
+                #endif
             };
         protected:
             using ServerDomainSessionManager::DomainEntryStorage;
@@ -61,8 +66,11 @@ namespace ams::sf::hipc {
                     sm::ServiceName m_service_name;
                     int m_index;
                     bool m_service_managed;
+                    #if AMS_SF_MITM_SUPPORTED
                     bool m_is_mitm_server;
+                    #endif
                 public:
+                    #if AMS_SF_MITM_SUPPORTED
                     void AcknowledgeMitmSession(std::shared_ptr<::Service> *out_fsrv, sm::MitmProcessInfo *out_client_info) {
                         /* Check mitm server. */
                         AMS_ABORT_UNLESS(m_is_mitm_server);
@@ -73,10 +81,13 @@ namespace ams::sf::hipc {
                         /* Get client info. */
                         R_ABORT_UNLESS(sm::mitm::AcknowledgeSession(out_fsrv->get(), out_client_info, m_service_name));
                     }
+                    #endif
             };
         protected:
             static constinit inline bool g_is_any_deferred_supported = false;
+            #if AMS_SF_MITM_SUPPORTED
             static constinit inline bool g_is_any_mitm_supported = false;
+            #endif
         private:
             /* Multiple wait management. */
             os::MultiWaitType m_multi_wait;
@@ -101,13 +112,17 @@ namespace ams::sf::hipc {
             bool WaitAndProcessImpl();
 
             Result ProcessForServer(os::MultiWaitHolderType *holder);
-            Result ProcessForMitmServer(os::MultiWaitHolderType *holder);
             Result ProcessForSession(os::MultiWaitHolderType *holder);
+
+            #if AMS_SF_MITM_SUPPORTED
+            Result ProcessForMitmServer(os::MultiWaitHolderType *holder);
+            #endif
 
             void RegisterServerImpl(Server *server, os::NativeHandle port_handle, bool is_mitm_server) {
                 server->m_port_handle = port_handle;
                 hipc::AttachMultiWaitHolderForAccept(server, port_handle);
 
+                #if AMS_SF_MITM_SUPPORTED
                 server->m_is_mitm_server = is_mitm_server;
                 if (is_mitm_server) {
                     /* Mitm server. */
@@ -117,6 +132,10 @@ namespace ams::sf::hipc {
                     /* Non-mitm server. */
                     os::SetMultiWaitHolderUserData(server, static_cast<uintptr_t>(UserDataTag::Server));
                 }
+                #else
+                AMS_UNUSED(is_mitm_server);
+                os::SetMultiWaitHolderUserData(server, static_cast<uintptr_t>(UserDataTag::Server));
+                #endif
 
                 os::LinkMultiWaitHolder(std::addressof(m_multi_wait), server);
             }
@@ -158,7 +177,9 @@ namespace ams::sf::hipc {
                 return ResultSuccess();
             }
 
+            #if AMS_SF_MITM_SUPPORTED
             Result InstallMitmServerImpl(os::NativeHandle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
+            #endif
         protected:
             virtual Server *AllocateServer() = 0;
             virtual void DestroyServer(Server *server)  = 0;
@@ -172,6 +193,7 @@ namespace ams::sf::hipc {
                 return ServerSessionManager::AcceptSession(server->m_port_handle, std::move(p));
             }
 
+            #if AMS_SF_MITM_SUPPORTED
             template<typename Interface>
             Result AcceptMitmImpl(Server *server, SharedPointer<Interface> p, std::shared_ptr<::Service> forward_service) {
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
@@ -200,6 +222,7 @@ namespace ams::sf::hipc {
 
                 return ResultSuccess();
             }
+            #endif
         public:
             ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count, bool defer_supported, bool mitm_supported) :
                 ServerDomainSessionManager(entry_storage, entry_count),
@@ -216,21 +239,28 @@ namespace ams::sf::hipc {
                 os::InitializeMultiWait(std::addressof(m_deferred_list));
             }
 
+            virtual ~ServerManagerBase() = default;
+
             static ALWAYS_INLINE bool CanAnyDeferInvokeRequest() {
                 return g_is_any_deferred_supported;
-            }
-
-            static ALWAYS_INLINE bool CanAnyManageMitmServers() {
-                return g_is_any_mitm_supported;
             }
 
             ALWAYS_INLINE bool CanDeferInvokeRequest() const {
                 return CanAnyDeferInvokeRequest() && m_is_defer_supported;
             }
 
+            #if AMS_SF_MITM_SUPPORTED
+            static ALWAYS_INLINE bool CanAnyManageMitmServers() {
+                return g_is_any_mitm_supported;
+            }
+
             ALWAYS_INLINE bool CanManageMitmServers() const {
                 return CanAnyManageMitmServers() && m_is_mitm_supported;
             }
+            #else
+            static consteval bool CanAnyManageMitmServers() { return false; }
+            static consteval bool CanManageMitmServers() { return false; }
+            #endif
 
             template<typename Interface>
             void RegisterObjectForServer(SharedPointer<Interface> static_object, os::NativeHandle port_handle) {
@@ -278,6 +308,10 @@ namespace ams::sf::hipc {
                 }
             }();
             static_assert(DomainCountsValid, "Invalid Domain Counts");
+
+            #if !(AMS_SF_MITM_SUPPORTED)
+            static_assert(!ManagerOptions::CanManageMitmServers);
+            #endif
         protected:
             using ServerManagerBase::DomainEntryStorage;
             using ServerManagerBase::DomainStorage;
@@ -289,7 +323,11 @@ namespace ams::sf::hipc {
             util::TypedStorage<ServerSession> m_session_storages[MaxSessions];
             bool m_session_allocated[MaxSessions];
             u8 m_pointer_buffer_storage[0x10 + (MaxSessions * ManagerOptions::PointerBufferSize)];
+            #if AMS_SF_MITM_SUPPORTED
             u8 m_saved_message_storage[0x10 + (MaxSessions * ((ManagerOptions::CanDeferInvokeRequest || ManagerOptions::CanManageMitmServers) ? hipc::TlsMessageBufferSize : 0))];
+            #else
+            u8 m_saved_message_storage[0x10 + (MaxSessions * ((ManagerOptions::CanDeferInvokeRequest) ? hipc::TlsMessageBufferSize : 0))];
+            #endif
             uintptr_t m_pointer_buffers_start;
             uintptr_t m_saved_messages_start;
 
@@ -359,6 +397,7 @@ namespace ams::sf::hipc {
                     os::UnlinkMultiWaitHolder(server);
                     os::FinalizeMultiWaitHolder(server);
                     if (server->m_service_managed) {
+                        #if AMS_SF_MITM_SUPPORTED
                         if constexpr (ManagerOptions::CanManageMitmServers) {
                             if (server->m_is_mitm_server) {
                                 R_ABORT_UNLESS(sm::mitm::UninstallMitm(server->m_service_name));
@@ -368,6 +407,9 @@ namespace ams::sf::hipc {
                         } else {
                             R_ABORT_UNLESS(sm::UnregisterService(server->m_service_name));
                         }
+                        #else
+                        R_ABORT_UNLESS(sm::UnregisterService(server->m_service_name));
+                        #endif
                         os::CloseNativeHandle(server->m_port_handle);
                     }
                 }
@@ -430,9 +472,11 @@ namespace ams::sf::hipc {
                 if constexpr (ManagerOptions::CanDeferInvokeRequest) {
                     ServerManagerBase::g_is_any_deferred_supported = true;
                 }
+                #if AMS_SF_MITM_SUPPORTED
                 if constexpr (ManagerOptions::CanManageMitmServers) {
                     ServerManagerBase::g_is_any_mitm_supported = true;
                 }
+                #endif
             }
 
             ~ServerManager() {
@@ -455,11 +499,13 @@ namespace ams::sf::hipc {
                 }
             }
         public:
+            #if AMS_SF_MITM_SUPPORTED
             template<typename Interface, bool Enable = ManagerOptions::CanManageMitmServers, typename = typename std::enable_if<Enable>::type>
             Result RegisterMitmServer(int port_index, sm::ServiceName service_name) {
                 AMS_ABORT_UNLESS(this->CanManageMitmServers());
                 return this->template RegisterMitmServerImpl<Interface>(port_index, cmif::ServiceObjectHolder(), service_name);
             }
+            #endif
     };
 
 }

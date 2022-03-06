@@ -174,12 +174,12 @@ namespace ams::sdmmc::impl {
                 return false;
             }
 
-            virtual Result Tuning(SpeedMode speed_mode, u32 command_index) {
+            virtual Result Tuning(SpeedMode speed_mode, u32 command_index) override {
                 AMS_UNUSED(speed_mode, command_index);
                 AMS_ABORT("Tuning not supported\n");
             }
 
-            virtual void SaveTuningStatusForHs400() {
+            virtual void SaveTuningStatusForHs400() override {
                 AMS_ABORT("SaveTuningStatusForHs400 not supported\n");
             }
 

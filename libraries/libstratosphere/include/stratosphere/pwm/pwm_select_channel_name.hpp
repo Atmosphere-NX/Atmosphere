@@ -20,5 +20,5 @@
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     #include <stratosphere/pwm/pwm_channel_name.board.nintendo_nx.hpp>
 #else
-    /* Error? */
+    #include <stratosphere/pwm/pwm_channel_name.generic.hpp>
 #endif

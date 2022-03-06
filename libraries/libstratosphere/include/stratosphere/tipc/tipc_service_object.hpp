@@ -30,7 +30,7 @@ namespace ams::tipc {
 
         template<typename Impl>
         class EmplacedImplHolder {
-            template<typename, typename, typename, typename>
+            template<typename, typename, typename, typename, typename>
             friend class impl::ImplTemplateBaseT;
             private:
                 using Impl2 = typename EmplacedImplHolderBaseGetter<Impl>::Type;

@@ -18,7 +18,11 @@
 namespace ams::hos {
 
     WEAK_SYMBOL bool IsUnitTestProgramForSetVersion() {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         return false;
+        #else
+        return true;
+        #endif
     }
 
 }

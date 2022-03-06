@@ -20,7 +20,9 @@
 namespace ams {
 
     /* Will be called by libstratosphere on crash. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     void CrashHandler(ThreadExceptionDump *ctx);
+    #endif
 
     /* API for boot sysmodule. */
     void InitializeForBoot();

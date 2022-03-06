@@ -82,6 +82,20 @@ namespace ams::fs {
         SaveDataFlags_NeedsSecureDelete                                   = (1 << 3),
     };
 
+    enum class SaveDataMetaType : u8 {
+        None             = 0,
+        Thumbnail        = 1,
+        ExtensionContext = 2,
+    };
+
+    struct SaveDataMetaInfo {
+        u32 size;
+        SaveDataMetaType type;
+        u8 reserved[0xB];
+    };
+    static_assert(util::is_pod<SaveDataMetaInfo>::value);
+    static_assert(sizeof(SaveDataMetaInfo) == 0x10);
+
     struct SaveDataCreationInfo {
         s64 size;
         s64 journal_size;

@@ -22,6 +22,10 @@ namespace ams::crypto {
 
     using HmacSha256Generator = HmacGenerator<Sha256Generator>;
 
-    void GenerateHmacSha256Mac(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size);
+    void GenerateHmacSha256(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size);
+
+    ALWAYS_INLINE void GenerateHmacSha256Mac(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size) {
+        return GenerateHmacSha256(dst, dst_size, data, data_size, key, key_size);
+    }
 
 }

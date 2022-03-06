@@ -20,7 +20,7 @@ namespace ams::htclow::mux {
 
     os::EventType *TaskManager::GetTaskEvent(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         return std::addressof(m_tasks[task_id].event);
@@ -28,7 +28,7 @@ namespace ams::htclow::mux {
 
     EventTrigger TaskManager::GetTrigger(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         return m_tasks[task_id].event_trigger;
@@ -61,7 +61,7 @@ namespace ams::htclow::mux {
 
     void TaskManager::FreeTask(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
 
         /* Invalidate the task. */
         if (m_valid[task_id]) {
@@ -72,7 +72,7 @@ namespace ams::htclow::mux {
 
     void TaskManager::ConfigureConnectTask(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         /* Set the task type. */
@@ -81,7 +81,7 @@ namespace ams::htclow::mux {
 
     void TaskManager::ConfigureFlushTask(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         /* Set the task type. */
@@ -90,7 +90,7 @@ namespace ams::htclow::mux {
 
     void TaskManager::ConfigureReceiveTask(u32 task_id, size_t size) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         /* Set the task type. */
@@ -102,7 +102,7 @@ namespace ams::htclow::mux {
 
     void TaskManager::ConfigureSendTask(u32 task_id) {
         /* Check pre-conditions. */
-        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(task_id < MaxTaskCount);
         AMS_ASSERT(m_valid[task_id]);
 
         /* Set the task type. */

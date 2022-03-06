@@ -15,11 +15,12 @@
  */
 #include <stratosphere.hpp>
 
-#include "pm_ams.h"
+#include "pm_ams.os.horizon.h"
 
 namespace ams::pm::dmnt {
 
     /* Debug Monitor API. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result StartProcess(os::ProcessId process_id) {
         return pmdmntStartProcess(static_cast<u64>(process_id));
     }
@@ -52,5 +53,6 @@ namespace ams::pm::dmnt {
         *out_limit_value   = 0;
         return pmdmntAtmosphereGetCurrentLimitInfo(out_current_value, out_limit_value, group, resource);
     }
+    #endif
 
 }

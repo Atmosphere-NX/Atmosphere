@@ -1,0 +1,52 @@
+#---------------------------------------------------------------------------------
+# the prefix on the compiler executables
+#---------------------------------------------------------------------------------
+PREFIX		:=
+
+ifeq ($(strip $(ATMOSPHERE_COMPILER_NAME)),gcc)
+
+export CC	:=	gcc
+export CXX	:=	g++
+export AS	:=	as
+export AR	:=	gcc-ar
+export OBJCOPY	:=	objcopy
+export STRIP	:=	strip
+export NM	:=	gcc-nm
+export RANLIB	:=	gcc-ranlib
+
+else ifeq ($(strip $(ATMOSPHERE_COMPILER_NAME)),clang)
+
+export CC	:=	clang
+export CXX	:=	clang++
+export AS	:=	llvm-as
+export AR	:=	llvm-ar
+export OBJCOPY	:=	llvm-objcopy
+export STRIP	:=	llvm-strip
+export NM	:=	llvm-nm
+export RANLIB	:=	llvm-ranlib
+
+endif
+
+ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSIONSPATH))
+
+ifneq (,$(ISVC))
+	ERROR_FILTER	:=	2>&1 | sed -e 's/\(.[a-zA-Z]\+\):\([0-9]\+\):/\1(\2):/g'
+endif
+
+#---------------------------------------------------------------------------------
+# allow seeing compiler command lines with make V=1 (similar to autotools' silent)
+#---------------------------------------------------------------------------------
+ifeq ($(V),1)
+    SILENTMSG := @true
+    SILENTCMD :=
+else
+    SILENTMSG := @echo
+    SILENTCMD := @
+endif
+
+#---------------------------------------------------------------------------------
+# canned command sequence for binary data
+#---------------------------------------------------------------------------------
+define bin2o
+	bin2s -a 8 -H `(echo $(<F) | tr . _)`.h $< | $(AS) -o $(<F).o
+endef

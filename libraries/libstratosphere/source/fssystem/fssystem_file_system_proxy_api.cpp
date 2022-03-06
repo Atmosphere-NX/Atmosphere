@@ -39,9 +39,9 @@ namespace ams::fssystem {
         constexpr size_t MaxCacheCount = 1024;
         constexpr size_t BlockSize     = 16_KB;
 
-        alignas(os::MemoryPageSize) u8 g_exp_heap_buffer[ExpHeapSize];
-        lmem::HeapHandle g_exp_heap_handle = nullptr;
-        fssrv::PeakCheckableMemoryResourceFromExpHeap g_exp_allocator(ExpHeapSize);
+        alignas(os::MemoryPageSize) constinit u8 g_exp_heap_buffer[ExpHeapSize];
+        constinit lmem::HeapHandle g_exp_heap_handle = nullptr;
+        constinit fssrv::PeakCheckableMemoryResourceFromExpHeap g_exp_allocator(ExpHeapSize);
 
         void InitializeExpHeap() {
             if (g_exp_heap_handle == nullptr) {
@@ -70,25 +70,25 @@ namespace ams::fssystem {
             lmem::FreeToExpHeap(g_exp_heap_handle, p);
         }
 
-        alignas(os::MemoryPageSize) u8 g_device_buffer[DeviceBufferSize];
+        alignas(os::MemoryPageSize) constinit u8 g_device_buffer[DeviceBufferSize] = {};
 
-        alignas(os::MemoryPageSize) u8 g_buffer_pool[BufferPoolSize];
+        alignas(os::MemoryPageSize) constinit u8 g_buffer_pool[BufferPoolSize] = {};
 
-        util::TypedStorage<mem::StandardAllocator> g_buffer_allocator;
-        util::TypedStorage<fssrv::MemoryResourceFromStandardAllocator> g_allocator;
+        constinit util::TypedStorage<mem::StandardAllocator> g_buffer_allocator = {};
+        constinit util::TypedStorage<fssrv::MemoryResourceFromStandardAllocator> g_allocator = {};
 
         /* TODO: Nintendo uses os::SetMemoryHeapSize (svc::SetHeapSize) and os::AllocateMemoryBlock for the BufferManager heap. */
         /* It's unclear how we should handle this in ams.mitm (especially hoping to reuse some logic for fs reimpl). */
         /* Should we be doing the same(?) */
-        util::TypedStorage<fssystem::FileSystemBufferManager> g_buffer_manager;
-        alignas(os::MemoryPageSize) u8 g_buffer_manager_heap[BufferManagerHeapSize];
+        constinit util::TypedStorage<fssystem::FileSystemBufferManager> g_buffer_manager = {};
+        alignas(os::MemoryPageSize) constinit u8 g_buffer_manager_heap[BufferManagerHeapSize] = {};
 
         /* FileSystem creators. */
-        util::TypedStorage<fssrv::fscreator::RomFileSystemCreator>       g_rom_fs_creator;
-        util::TypedStorage<fssrv::fscreator::PartitionFileSystemCreator> g_partition_fs_creator;
-        util::TypedStorage<fssrv::fscreator::StorageOnNcaCreator>        g_storage_on_nca_creator;
+        constinit util::TypedStorage<fssrv::fscreator::RomFileSystemCreator>       g_rom_fs_creator = {};
+        constinit util::TypedStorage<fssrv::fscreator::PartitionFileSystemCreator> g_partition_fs_creator = {};
+        constinit util::TypedStorage<fssrv::fscreator::StorageOnNcaCreator>        g_storage_on_nca_creator = {};
 
-        fssrv::fscreator::FileSystemCreatorInterfaces g_fs_creator_interfaces = {};
+        constinit fssrv::fscreator::FileSystemCreatorInterfaces g_fs_creator_interfaces = {};
 
     }
 
@@ -162,7 +162,21 @@ namespace ams::fssystem {
         /* TODO FS-REIMPL: Sd Card detection, speed emulation. */
 
         /* Initialize fssrv. TODO FS-REIMPL: More arguments, more actions taken. */
-        fssrv::InitializeForFileSystemProxy(std::addressof(g_fs_creator_interfaces), GetPointer(g_buffer_manager), is_development_function_enabled);
+        const fssrv::FileSystemProxyConfiguration config  = {
+            .m_fs_creator_interfaces = std::addressof(g_fs_creator_interfaces),
+            .m_base_storage_service_impl = nullptr /* TODO */,
+            .m_base_file_system_service_impl = nullptr /* TODO */,
+            .m_nca_file_system_service_impl = nullptr /* TODO */,
+            .m_save_data_file_system_service_impl = nullptr /* TODO */,
+            .m_access_failure_management_service_impl = nullptr /* TODO */,
+            .m_time_service_impl = nullptr /* TODO */,
+            .m_status_report_service_impl = nullptr /* TODO */,
+            .m_program_registry_service_impl = std::addressof(program_registry_service),
+            .m_access_log_service_impl = nullptr /* TODO */,
+            .m_debug_configuration_service_impl = nullptr /* TODO */,
+        };
+
+        fssrv::InitializeForFileSystemProxy(config);
 
         /* TODO FS-REIMPL: GetFileSystemProxyServiceObject(), set current process, initialize global service object. */
 
@@ -241,7 +255,21 @@ namespace ams::fssystem {
         };
 
         /* Initialize fssrv. TODO FS-REIMPL: More arguments, more actions taken. */
-        fssrv::InitializeForFileSystemProxy(std::addressof(g_fs_creator_interfaces), GetPointer(g_buffer_manager), is_development_function_enabled);
+        const fssrv::FileSystemProxyConfiguration config  = {
+            .m_fs_creator_interfaces = std::addressof(g_fs_creator_interfaces),
+            .m_base_storage_service_impl = nullptr /* TODO */,
+            .m_base_file_system_service_impl = nullptr /* TODO */,
+            .m_nca_file_system_service_impl = nullptr /* TODO */,
+            .m_save_data_file_system_service_impl = nullptr /* TODO */,
+            .m_access_failure_management_service_impl = nullptr /* TODO */,
+            .m_time_service_impl = nullptr /* TODO */,
+            .m_status_report_service_impl = nullptr /* TODO */,
+            .m_program_registry_service_impl = nullptr /* TODO */,
+            .m_access_log_service_impl = nullptr /* TODO */,
+            .m_debug_configuration_service_impl = nullptr /* TODO */,
+        };
+
+        fssrv::InitializeForFileSystemProxy(config);
 
         /* Disable auto-abort in fs library code. */
         fs::SetEnabledAutoAbort(false);

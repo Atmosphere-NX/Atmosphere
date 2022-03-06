@@ -20,35 +20,35 @@
 
 namespace ams::fs {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteStorage : public IStorage, public impl::Newable {
+        NON_COPYABLE(RemoteStorage);
+        NON_MOVEABLE(RemoteStorage);
         private:
-            std::unique_ptr<::FsStorage, impl::Deleter> m_base_storage;
+            ::FsStorage m_base_storage;
         public:
-            RemoteStorage(::FsStorage &s) {
-                m_base_storage = impl::MakeUnique<::FsStorage>();
-                *m_base_storage = s;
-            }
+            RemoteStorage(::FsStorage &s) : m_base_storage(s) { /* ... */}
 
-            virtual ~RemoteStorage() { fsStorageClose(m_base_storage.get()); }
+            virtual ~RemoteStorage() { fsStorageClose(std::addressof(m_base_storage)); }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                return fsStorageRead(m_base_storage.get(), offset, buffer, size);
+                return fsStorageRead(std::addressof(m_base_storage), offset, buffer, size);
             };
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                return fsStorageWrite(m_base_storage.get(), offset, buffer, size);
+                return fsStorageWrite(std::addressof(m_base_storage), offset, buffer, size);
             };
 
             virtual Result Flush() override {
-                return fsStorageFlush(m_base_storage.get());
+                return fsStorageFlush(std::addressof(m_base_storage));
             };
 
             virtual Result GetSize(s64 *out_size) override {
-                return fsStorageGetSize(m_base_storage.get(), out_size);
+                return fsStorageGetSize(std::addressof(m_base_storage), out_size);
             };
 
             virtual Result SetSize(s64 size) override {
-                return fsStorageSetSize(m_base_storage.get(), size);
+                return fsStorageSetSize(std::addressof(m_base_storage), size);
             };
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -57,5 +57,6 @@ namespace ams::fs {
                 return fs::ResultUnsupportedOperation();
             };
     };
+    #endif
 
 }

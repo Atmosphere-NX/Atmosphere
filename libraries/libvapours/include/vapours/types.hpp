@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdbool>
-#include <cstdalign>
 
 /* NOTE: This file serves as a substitute for libnx <switch/types.h>. */
 

@@ -82,7 +82,7 @@ namespace ams::fs {
         public:
             constexpr FileStorageBasedFileSystem() : FileStorage(), m_base_file_system(nullptr) { /* ... */ }
 
-            Result Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const char *path, fs::OpenMode mode);
+            Result Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const fs::Path &path, fs::OpenMode mode);
     };
 
     class FileHandleStorage : public IStorage, public impl::Newable {

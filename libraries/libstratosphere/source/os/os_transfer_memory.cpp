@@ -57,7 +57,7 @@ namespace ams::os {
     void AttachTransferMemory(TransferMemoryType *tmem, size_t size, NativeHandle handle, bool managed) {
         AMS_ASSERT(size > 0);
         AMS_ASSERT(util::IsAligned(size, os::MemoryPageSize));
-        AMS_ASSERT(handle != svc::InvalidHandle);
+        AMS_ASSERT(handle != os::InvalidNativeHandle);
 
         /* Setup the object. */
         SetupTransferMemoryType(tmem, size, handle, managed);

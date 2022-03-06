@@ -91,7 +91,10 @@ namespace ams::os {
 
         AMS_ASSERT(!holder_base->IsLinked());
 
-        std::destroy_at(holder_base);
+        /* Destroy. */
+        static_assert(std::is_trivially_destructible<impl::MultiWaitHolderBase>::value);
+        /* std::destroy_at(holder_base); */
+        AMS_UNUSED(holder_base);
     }
 
     void LinkMultiWaitHolder(MultiWaitType *multi_wait, MultiWaitHolderType *holder) {

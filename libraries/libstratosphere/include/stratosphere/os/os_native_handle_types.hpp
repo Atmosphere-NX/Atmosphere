@@ -20,10 +20,24 @@
 namespace ams::os {
 
     #if defined(ATMOSPHERE_OS_HORIZON)
+
         using NativeHandle = svc::Handle;
         static_assert(std::unsigned_integral<NativeHandle>);
 
         constexpr inline NativeHandle InvalidNativeHandle = svc::InvalidHandle;
+
+    #elif defined(ATMOSPHERE_OS_WINDOWS)
+
+        using NativeHandle = void *;
+
+        constexpr inline NativeHandle InvalidNativeHandle = nullptr;
+
+    #elif defined(ATMOSPHERE_OS_LINUX) || defined(ATMOSPHERE_OS_MACOS)
+
+        using NativeHandle = s32;
+
+        constexpr inline NativeHandle InvalidNativeHandle = -1;
+
     #else
         #error "Unknown OS for os::NativeHandle"
     #endif

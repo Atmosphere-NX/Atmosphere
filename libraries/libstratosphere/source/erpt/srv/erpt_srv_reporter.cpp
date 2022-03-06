@@ -33,9 +33,6 @@ namespace ams::erpt::srv {
 
     namespace {
 
-        constinit os::SdkMutex g_limit_mutex;
-        constinit bool g_submitted_limit = false;
-
         class AppletActiveTimeInfoList {
             private:
                 struct AppletActiveTimeInfo {
@@ -91,6 +88,7 @@ namespace ams::erpt::srv {
 
         constinit AppletActiveTimeInfoList g_applet_active_time_info_list;
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         Result PullErrorContext(size_t *out_total_size, size_t *out_size, void *dst, size_t dst_size, const err::ContextDescriptor &descriptor, Result result) {
             s32 unk0;
             u32 total_size, size;
@@ -134,6 +132,9 @@ namespace ams::erpt::srv {
             record->Add(FieldId_ErrorContextSize, error_context_size);
             record->Add(FieldId_ErrorContext, error_context, error_context_size);
         }
+
+        constinit os::SdkMutex g_limit_mutex;
+        constinit bool g_submitted_limit = false;
 
         void SubmitResourceLimitLimitContext() {
             std::scoped_lock lk(g_limit_mutex);
@@ -222,6 +223,11 @@ namespace ams::erpt::srv {
             SubmitResourceLimitLimitContext();
             SubmitResourceLimitPeakContext();
         }
+        #else
+        void SubmitErrorContext(ContextRecord *record, Result result) {
+            AMS_UNUSED(record, result);
+        }
+        #endif
 
         Result ValidateCreateReportContext(const ContextEntry *ctx) {
             R_UNLESS(ctx->category == CategoryId_ErrorInfo, erpt::ResultRequiredContextMissing());
@@ -520,7 +526,9 @@ namespace ams::erpt::srv {
         R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         /* Submit context for resource limits. */
+        #if defined(ATMOSPHERE_OS_HORIZON)
         SubmitResourceLimitContexts();
+        #endif
 
         return ResultSuccess();
     }

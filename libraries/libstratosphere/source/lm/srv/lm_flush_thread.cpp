@@ -30,7 +30,7 @@ namespace ams::lm::srv {
         constinit u8 g_fs_heap[32_KB];
         constinit lmem::HeapHandle g_fs_heap_handle;
 
-        constinit os::ThreadType g_flush_thread;
+        constinit os::ThreadType g_flush_thread = {};
 
         os::Event g_stop_event(os::EventClearMode_ManualClear);
         os::Event g_sd_logging_event(os::EventClearMode_ManualClear);

@@ -408,6 +408,7 @@ namespace ams::secmon::smc {
             /* Log our suspension. */
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
             if (true /* !pkg1::IsProduction() */) {
+                log::Initialize(secmon::GetLogPort(), secmon::GetLogBaudRate(), secmon::GetLogFlags());
                 log::SendText("OYASUMI\n", 8);
                 log::Flush();
             }

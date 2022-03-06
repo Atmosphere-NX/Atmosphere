@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_mitm_config.hpp>
 #include <stratosphere/sf/sf_out.hpp>
 
 namespace ams::sf {

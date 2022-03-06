@@ -1,59 +1,42 @@
 ATMOSPHERE_BUILD_CONFIGS :=
-all: release
+all: nx_release
+
+THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
 
 define ATMOSPHERE_ADD_TARGET
 
 ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-$(strip $1): mesosphere$(strip $2).bin
-
-mesosphere$(strip $2).bin: kernel/kernel$(strip $2).bin kernel_ldr/kernel_ldr$(strip $2).bin
-	@python build_mesosphere.py kernel_ldr/kernel_ldr$(strip $2).bin kernel/kernel$(strip $2).bin mesosphere$(strip $2).bin $(4)
-	@echo "Built mesosphere$(strip $2).bin..."
-
-kernel/kernel$(strip $2).bin: check_libmeso$(strip $1)
-	@$$(MAKE) -C kernel $(strip $1) $(3)
-
-kernel_ldr/kernel_ldr$(strip $2).bin: check_libmeso$(strip $1)
-	@$$(MAKE) -C kernel_ldr $(strip $1) $(3)
-
-check_libmeso$(strip $1):
-	@$$(MAKE) -C ../libraries/libmesosphere $(strip $1) $(3)
+$(strip $1):
+	@echo "Building $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/mesosphere.mk ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
 clean-$(strip $1):
-	@$$(MAKE) -C ../libraries/libmesosphere clean-$(strip $1) $(3)
-	@$$(MAKE) -C kernel clean-$(strip $1) $(3)
-	@$$(MAKE) -C kernel_ldr clean-$(strip $1) $(3)
-	@rm -f mesosphere$(strip $2).bin
+	@echo "Cleaning $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/mesosphere.mk clean ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
 endef
 
-$(eval $(call ATMOSPHERE_ADD_TARGET, release,      ,,))
-$(eval $(call ATMOSPHERE_ADD_TARGET, debug,  _debug,,))
-$(eval $(call ATMOSPHERE_ADD_TARGET, audit,  _audit,,))
+define ATMOSPHERE_ADD_TARGETS
 
-$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_release, _qemu_virt, \
-	ATMOSPHERE_BOARD="qemu-virt" \
-    ATMOSPHERE_CPU="arm-cortex-a57" \
-    , ../tests/TestSvc/TestSvc.kip \
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_release, release, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4)" \
 ))
 
-$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_debug, _qemu_virt_debug, \
-	ATMOSPHERE_BOARD="qemu-virt" \
-    ATMOSPHERE_CPU="arm-cortex-a57" \
-    , ../tests/TestSvc/TestSvc.kip \
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_debug, debug, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_DEBUGGING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 \
 ))
 
-$(eval $(call ATMOSPHERE_ADD_TARGET, qemu_virt_audit, _qemu_virt_audit, \
-	ATMOSPHERE_BOARD="qemu-virt" \
-    ATMOSPHERE_CPU="arm-cortex-a57" \
-    , ../tests/TestSvc/TestSvc.kip \
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_audit, audit, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_AUDITING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 ATMOSPHERE_BUILD_FOR_AUDITING=1 \
 ))
 
-clean:
-	@$(MAKE) -C ../libraries/libmesosphere clean
-	@$(MAKE) -C kernel clean
-	@$(MAKE) -C kernel_ldr clean
-	@rm -f mesosphere*.bin
+endef
 
-.PHONY: all clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),$(config) clean-$(config))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm-cortex-a57,))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, qemu_virt_a57, qemu-virt, arm-cortex-a57,))
+
+clean: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
+
+.PHONY: all clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))

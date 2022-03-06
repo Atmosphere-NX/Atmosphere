@@ -26,7 +26,7 @@ namespace ams::os {
 
     using TlsDestructor = void (*)(uintptr_t arg);
 
-    constexpr inline size_t TlsSlotCountMax = 16;
+    constexpr inline size_t TlsSlotCountMax    = 16;
     constexpr inline size_t SdkTlsSlotCountMax = 16;
 
 }

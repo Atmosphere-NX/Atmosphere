@@ -16,6 +16,9 @@
 
 #pragma once
 
+/* Unconditionally include type-traits as first header. */
+#include <type_traits>
+
 /* C headers. */
 #include <cstdint>
 #include <cstdarg>
@@ -28,7 +31,6 @@
 #include <cinttypes>
 
 /* C++ headers. */
-#include <type_traits>
 #include <concepts>
 #include <algorithm>
 #include <iterator>
@@ -52,8 +54,17 @@
 #include <unordered_map>
 #include <set>
 
+#if defined(ATMOSPHERE_OS_HORIZON) && defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+
 /* Libnx. */
 #include <switch.h>
+
+#else
+
+/* Non-switch code can't include libnx. */
+#include "types.hpp"
+
+#endif
 
 #else
 

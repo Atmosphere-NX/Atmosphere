@@ -29,7 +29,7 @@ namespace ams::lm::srv {
             size_t m_used_buffer_size;
             FlushFunction m_flush_function;
         public:
-            constexpr explicit CustomSinkBuffer(void *buffer, size_t buffer_size, FlushFunction f) : m_buffer(static_cast<u8 *>(buffer)), m_buffer_size(buffer_size), m_used_buffer_size(0), m_flush_function(f) {
+            constexpr explicit CustomSinkBuffer(u8 *buffer, size_t buffer_size, FlushFunction f) : m_buffer(buffer), m_buffer_size(buffer_size), m_used_buffer_size(0), m_flush_function(f) {
                 AMS_ASSERT(m_buffer != nullptr);
                 AMS_ASSERT(m_buffer_size > 0);
                 AMS_ASSERT(m_flush_function != nullptr);

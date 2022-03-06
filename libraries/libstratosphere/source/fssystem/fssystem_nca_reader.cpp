@@ -375,7 +375,7 @@ namespace ams::fssystem {
 
         /* Generate the hash. */
         Hash hash;
-        crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(m_data), sizeof(NcaFsHeader));
+        crypto::GenerateSha256(std::addressof(hash), sizeof(hash), std::addressof(m_data), sizeof(NcaFsHeader));
 
         /* Validate the hash. */
         R_UNLESS(crypto::IsSameBytes(std::addressof(reader.GetFsHeaderHash(index)), std::addressof(hash), sizeof(Hash)), fs::ResultNcaFsHeaderHashVerificationFailed());

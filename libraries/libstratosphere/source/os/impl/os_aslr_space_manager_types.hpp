@@ -17,8 +17,14 @@
 #include <stratosphere.hpp>
 #include "os_address_space_allocator.hpp"
 
-#ifdef ATMOSPHERE_OS_HORIZON
+#if defined(ATMOSPHERE_OS_HORIZON)
     #include "os_aslr_space_manager_impl.os.horizon.hpp"
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include "os_aslr_space_manager_impl.os.windows.hpp"
+#elif defined(ATMOSPHERE_OS_LINUX)
+    #include "os_aslr_space_manager_impl.os.linux.hpp"
+#elif defined(ATMOSPHERE_OS_MACOS)
+    #include "os_aslr_space_manager_impl.os.macos.hpp"
 #else
     #error "Unknown OS for AslrSpaceManagerImpl"
 #endif

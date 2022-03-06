@@ -124,17 +124,47 @@ namespace ams::util {
         template<auto MemberPtr, typename RealParentType = GetParentType<MemberPtr>> requires (std::derived_from<RealParentType, GetParentType<MemberPtr>> || std::same_as<RealParentType, GetParentType<MemberPtr>>)
         struct OffsetOf : public std::integral_constant<std::ptrdiff_t, OffsetOfCalculator<RealParentType, GetMemberType<MemberPtr>, MemberPtr>::Value> {};
 
+        #if defined(ATMOSPHERE_COMPILER_CLANG)
+        template<typename ParentType, typename MemberType, auto Ptr>
+        struct OffsetOfCalculatorTheSadWayForClangSupport {
+            static ALWAYS_INLINE std::ptrdiff_t Calculate() {
+                const union Union {
+                    ParentType p;
+                    char c;
+
+                    Union() : c() { /* ... */ }
+                    ~Union() { /* ... */ }
+                } U;
+
+                const auto *parent = std::addressof(U.p);
+                const auto *target = std::addressof(parent->*Ptr);
+
+                return static_cast<const uint8_t *>(static_cast<const void *>(target)) - static_cast<const uint8_t *>(static_cast<const void *>(parent));
+            }
+        };
+        #endif
+
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     ALWAYS_INLINE RealParentType &GetParentReference(impl::GetMemberType<MemberPtr> *member) {
+        /* TODO: If clang resolves compiler-bugs in consteval (or if my std proposal makes it into a future C++ standard), we should go back to constexpr. */
+        #if defined(ATMOSPHERE_COMPILER_CLANG)
+        const     std::ptrdiff_t Offset = impl::OffsetOfCalculatorTheSadWayForClangSupport<RealParentType, impl::GetMemberType<MemberPtr>, MemberPtr>::Calculate();
+        #else
         constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::value;
+        #endif
         return *static_cast<RealParentType *>(static_cast<void *>(static_cast<uint8_t *>(static_cast<void *>(member)) - Offset));
     }
 
     template<auto MemberPtr, typename RealParentType = impl::GetParentType<MemberPtr>>
     ALWAYS_INLINE RealParentType const &GetParentReference(impl::GetMemberType<MemberPtr> const *member) {
+        /* TODO: If clang resolves compiler-bugs in consteval (or if my std proposal makes it into a future C++ standard), we should go back to constexpr. */
+        #if defined(ATMOSPHERE_COMPILER_CLANG)
+        const     std::ptrdiff_t Offset = impl::OffsetOfCalculatorTheSadWayForClangSupport<RealParentType, impl::GetMemberType<MemberPtr>, MemberPtr>::Calculate();
+        #else
         constexpr std::ptrdiff_t Offset = impl::OffsetOf<MemberPtr, RealParentType>::value;
+        #endif
         return *static_cast<const RealParentType *>(static_cast<const void *>(static_cast<const uint8_t *>(static_cast<const void *>(member)) - Offset));
     }
 

@@ -25,6 +25,30 @@
 
 #else
 
-    #error "Unknown board for pinmux driver"
+    // TODO: #error "Unknown board for pinmux driver"
+
+    namespace ams::pinmux::driver::board {
+
+        inline void Initialize() {
+            AMS_ABORT("TODO");
+        }
+
+        inline void Finalize() {
+            AMS_ABORT("TODO");
+        }
+
+        inline bool IsInitialized() {
+            AMS_ABORT("TODO");
+        }
+
+        inline void SetInitialConfig() {
+            AMS_ABORT("TODO");
+        }
+
+        inline void SetInitialDrivePadConfig() {
+            AMS_ABORT("TODO");
+        }
+
+    }
 
 #endif

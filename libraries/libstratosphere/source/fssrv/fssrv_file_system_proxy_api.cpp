@@ -42,8 +42,8 @@ namespace ams::fssrv {
 
         constexpr size_t NumSessions = FileSystemProxyMaxSessions + ProgramRegistryMaxSessions + FileSystemProxyForLoaderMaxSessions;
 
-        constinit os::SemaphoreType g_semaphore_for_file_system_proxy_for_loader;
-        constinit os::SemaphoreType g_semaphore_for_program_registry;
+        constinit os::SemaphoreType g_semaphore_for_file_system_proxy_for_loader = {};
+        constinit os::SemaphoreType g_semaphore_for_program_registry = {};
 
         class FileSystemProxyServerManager final : public ams::sf::hipc::ServerManager<PortIndex_Count, FileSystemProxyServerOptions, NumSessions> {
             private:
@@ -89,11 +89,11 @@ namespace ams::fssrv {
                 }
         };
 
-        constinit util::TypedStorage<FileSystemProxyServerManager> g_server_manager_storage;
+        constinit util::TypedStorage<FileSystemProxyServerManager> g_server_manager_storage = {};
         constinit FileSystemProxyServerManager *g_server_manager = nullptr;
 
-        constinit os::BarrierType g_server_loop_barrier;
-        constinit os::EventType g_resume_wait_event;
+        constinit os::BarrierType g_server_loop_barrier = {};
+        constinit os::EventType g_resume_wait_event = {};
 
         constinit bool g_is_suspended = false;
 
@@ -103,9 +103,9 @@ namespace ams::fssrv {
 
     }
 
-    void InitializeForFileSystemProxy(fscreator::FileSystemCreatorInterfaces *fs_creator_interfaces, fssystem::IBufferManager *buffer_manager, bool is_development_function_enabled) {
+    void InitializeForFileSystemProxy(const FileSystemProxyConfiguration &config) {
         /* TODO FS-REIMPL */
-        AMS_UNUSED(fs_creator_interfaces, buffer_manager, is_development_function_enabled);
+        AMS_UNUSED(config);
     }
 
     void InitializeFileSystemProxyServer(int threads) {

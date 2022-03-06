@@ -248,6 +248,7 @@ namespace ams::spl {
 
 }
 
+#if defined(ATMOSPHERE_OS_HORIZON)
 /* Extensions to libnx spl config item enum. */
 constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion       = static_cast<SplConfigItem>(65000);
 constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot      = static_cast<SplConfigItem>(65001);
@@ -260,3 +261,4 @@ constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType       = static_
 constexpr inline SplConfigItem SplConfigItem_ExospherePayloadAddress   = static_cast<SplConfigItem>(65008);
 constexpr inline SplConfigItem SplConfigItem_ExosphereLogConfiguration = static_cast<SplConfigItem>(65009);
 constexpr inline SplConfigItem SplConfigItem_ExosphereForceEnableUsb30 = static_cast<SplConfigItem>(65010);
+#endif

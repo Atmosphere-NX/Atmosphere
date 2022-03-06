@@ -1,145 +1,50 @@
-#---------------------------------------------------------------------------------
-# pull in common atmosphere configuration
-#---------------------------------------------------------------------------------
+ATMOSPHERE_BUILD_CONFIGS :=
+all: nx_release
+
 THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
-include $(CURRENT_DIRECTORY)/../config/common.mk
 
-#---------------------------------------------------------------------------------
-# pull in switch rules
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>/devkitpro")
-endif
+define ATMOSPHERE_ADD_TARGET
 
-include $(DEVKITPRO)/libnx/switch_rules
+ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-#---------------------------------------------------------------------------------
-# options for code generation
-#---------------------------------------------------------------------------------
-PRECOMPILED_HEADERS := $(CURRENT_DIRECTORY)/include/stratosphere.hpp
-#PRECOMPILED_HEADERS :=
+$(strip $1):
+	@echo "Building $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/libstratosphere.mk ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
-DEFINES	    := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -Wextra -Werror -Wno-missing-field-initializers -flto
-CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
-CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
-ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
+clean-$(strip $1):
+	@echo "Cleaning $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/libstratosphere.mk clean ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
-LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) -Wl,-Map,$(notdir $*.map)
+endef
 
-SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
-SOURCES     += $(call UNFILTERED_SOURCE_DIRS,source/os)
+define ATMOSPHERE_ADD_TARGETS
 
-LIBS        := -lnx
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_release, $(strip $2)release, $(strip $3), $(strip $4), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $5)" $(strip $6) \
+))
 
-#---------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level containing
-# include and lib
-#---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(ATMOSPHERE_LIBRARIES_DIR)/libvapours
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_debug, $(strip $2)debug, $(strip $3), $(strip $4), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $5) -DAMS_BUILD_FOR_DEBUGGING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 $(strip $6) \
+))
 
-#---------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add additional
-# rules for different file extensions
-#---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
-#---------------------------------------------------------------------------------
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_audit, $(strip $2)audit, $(strip $3), $(strip $4), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $5) -DAMS_BUILD_FOR_AUDITING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 ATMOSPHERE_BUILD_FOR_AUDITING=1 $(strip $6) \
+))
 
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(CURDIR)/include \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+endef
 
-CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
-CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
-SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
+$(eval $(call ATMOSPHERE_ADD_TARGETS, nx,                      , nx-hac-001, arm-cortex-a57,,))
 
-#---------------------------------------------------------------------------------
-# use CXX for linking C++ projects, CC for standard C
-#---------------------------------------------------------------------------------
-ifeq ($(strip $(CPPFILES)),)
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CC)
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CXX)
-#---------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------
+$(eval $(call ATMOSPHERE_ADD_TARGETS, win_x64,                 , generic_windows, generic_x64,,))
 
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
-export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export GCH_FILES    :=	$(PRECOMPILED_HEADERS:.hpp=.hpp.gch)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, linux_x64,               , generic_linux, generic_x64,,))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, linux_x64_clang,   clang_, generic_linux, generic_x64,, ATMOSPHERE_COMPILER_NAME="clang"))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, linux_arm64_clang, clang_, generic_linux, generic_arm64,, ATMOSPHERE_COMPILER_NAME="clang"))
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I.
+$(eval $(call ATMOSPHERE_ADD_TARGETS, macos_x64,               , generic_macos, generic_x64,,))
+$(eval $(call ATMOSPHERE_ADD_TARGETS, macos_arm64,             , generic_macos, generic_arm64,,))
 
-.PHONY: clean all lib/$(TARGET).a
+clean: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
 
-#---------------------------------------------------------------------------------
-all: lib/$(TARGET).a
-
-lib:
-	@[ -d $@ ] || mkdir -p $@
-
-release:
-	@[ -d $@ ] || mkdir -p $@
-
-lib/$(TARGET).a : lib release $(SOURCES) $(INCLUDES)
-	@$(MAKE) BUILD=release OUTPUT=$(CURDIR)/$@ \
-	BUILD_CFLAGS="-DNDEBUG=1 -O2" \
-	DEPSDIR=$(CURDIR)/release \
-	--no-print-directory -C release \
-	-f $(CURDIR)/Makefile
-
-dist-bin: all
-	@tar --exclude=*~ -cjf $(TARGET).tar.bz2 include lib
-
-dist-src:
-	@tar --exclude=*~ -cjf $(TARGET)-src.tar.bz2 include source Makefile
-
-dist: dist-src dist-bin
-
-#---------------------------------------------------------------------------------
-clean:
-	@echo clean ...
-	@rm -fr release lib *.bz2 $(GCH_FILES)
-
-#---------------------------------------------------------------------------------
-else
-
-DEPENDS	:=	$(OFILES:.o=.d) $(foreach hdr,$(GCH_FILES:.hpp.gch=.d),$(notdir $(hdr)))
-
-#---------------------------------------------------------------------------------
-# main targets
-#---------------------------------------------------------------------------------
-$(OUTPUT)	:	$(OFILES)
-
-$(OFILES)	:	$(GCH_FILES)
-
-$(OFILES_SRC)	: $(HFILES_BIN)
-
-ams_environment_weak.o: CXXFLAGS += -fno-lto
-hos_version_api_weak_for_unit_test.o: CXXFLAGS += -fno-lto
-pm_info_api_weak.o: CXXFLAGS += -fno-lto
-hos_stratosphere_api.o: CXXFLAGS += -fno-lto
-
-init_operator_new.o: CXXFLAGS += -fno-lto
-init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
-
-#---------------------------------------------------------------------------------
-%_bin.h %.bin.o	:	%.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(bin2o)
-
-
--include $(DEPENDS)
-
-#---------------------------------------------------------------------------------------
-endif
-#---------------------------------------------------------------------------------------
-
+.PHONY: all clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))

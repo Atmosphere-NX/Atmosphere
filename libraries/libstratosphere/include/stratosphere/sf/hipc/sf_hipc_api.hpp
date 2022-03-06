@@ -20,7 +20,15 @@
 
 namespace ams::sf::hipc {
 
+    void *GetMessageBufferOnTls();
+
     constexpr size_t TlsMessageBufferSize = 0x100;
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    ALWAYS_INLINE void *GetMessageBufferOnTls() {
+        return svc::GetThreadLocalRegion()->message_buffer;
+    }
+    #endif
 
     enum class ReceiveResult {
         Success,
@@ -36,5 +44,6 @@ namespace ams::sf::hipc {
     Result Reply(os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
 
     Result CreateSession(os::NativeHandle *out_server_handle, os::NativeHandle *out_client_handle);
+
 
 }

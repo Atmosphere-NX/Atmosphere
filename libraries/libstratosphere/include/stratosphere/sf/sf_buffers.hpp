@@ -116,8 +116,8 @@ namespace ams::sf {
                 constexpr InBufferBase(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr InBufferBase(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
-                constexpr InBufferBase(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
-                constexpr InBufferBase(const u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                InBufferBase(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                InBufferBase(const u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
         };
 
         class OutBufferBase : public BufferBase {
@@ -130,8 +130,8 @@ namespace ams::sf {
                 constexpr OutBufferBase(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr OutBufferBase(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
-                constexpr OutBufferBase(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
-                constexpr OutBufferBase(u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                OutBufferBase(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                OutBufferBase(u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
         };
 
         template<BufferTransferMode TMode, u32 ExtraAttributes = 0>
@@ -146,8 +146,8 @@ namespace ams::sf {
                 constexpr InBufferImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr InBufferImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
-                constexpr InBufferImpl(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
-                constexpr InBufferImpl(const u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                InBufferImpl(const void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                InBufferImpl(const u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
 
                 constexpr const u8 *GetPointer() const {
                     return reinterpret_cast<const u8 *>(this->GetAddressImpl());
@@ -170,8 +170,8 @@ namespace ams::sf {
                 constexpr OutBufferImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
                 constexpr OutBufferImpl(uintptr_t ptr, size_t sz) : BaseType(ptr, sz) { /* ... */ }
 
-                constexpr OutBufferImpl(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
-                constexpr OutBufferImpl(u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                OutBufferImpl(void *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+                OutBufferImpl(u8 *ptr, size_t sz) : BaseType(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
 
                 constexpr u8 *GetPointer() const {
                     return reinterpret_cast<u8 *>(this->GetAddressImpl());
@@ -191,7 +191,7 @@ namespace ams::sf {
             public:
                 constexpr InArrayImpl() : BaseType() { /* ... */ }
                 constexpr InArrayImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
-                constexpr InArrayImpl(const T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
+                InArrayImpl(const T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr const T *GetPointer() const {
                     return reinterpret_cast<const T *>(this->GetAddressImpl());
@@ -223,7 +223,7 @@ namespace ams::sf {
             public:
                 constexpr OutArrayImpl() : BaseType() { /* ... */ }
                 constexpr OutArrayImpl(const cmif::PointerAndSize &pas) : BaseType(pas) { /* ... */ }
-                constexpr OutArrayImpl(T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
+                OutArrayImpl(T *ptr, size_t num_elements) : BaseType(reinterpret_cast<uintptr_t>(ptr), num_elements * sizeof(T)) { /* ... */ }
 
                 constexpr T *GetPointer() const {
                     return reinterpret_cast<T *>(this->GetAddressImpl());

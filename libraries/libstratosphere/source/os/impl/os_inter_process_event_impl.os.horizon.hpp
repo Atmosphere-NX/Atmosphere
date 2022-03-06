@@ -18,7 +18,7 @@
 
 namespace ams::os::impl {
 
-    class InterProcessEventImpl {
+    class InterProcessEventHorizonImpl {
         public:
             static Result Create(NativeHandle *out_write, NativeHandle *out_read);
             static void Close(NativeHandle handle);
@@ -28,5 +28,7 @@ namespace ams::os::impl {
             static bool TryWait(NativeHandle handle, bool auto_clear);
             static bool TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout);
     };
+
+    using InterProcessEventImpl = InterProcessEventHorizonImpl;
 
 }

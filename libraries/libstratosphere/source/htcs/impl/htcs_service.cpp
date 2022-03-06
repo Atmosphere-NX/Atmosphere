@@ -29,7 +29,7 @@ namespace ams::htcs::impl {
         m_driver->SetDisconnectionEmulationEnabled(enable_disconnection_emulation);
 
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::SocketTask>(std::addressof(task_id)));
 
         /* Wait for the task to complete. */
@@ -48,7 +48,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::DestroySocket(s32 desc) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::CloseTask>(std::addressof(task_id), desc));
 
         /* Wait for the task to complete. */
@@ -71,7 +71,7 @@ namespace ams::htcs::impl {
         R_UNLESS(IsValidName(address.port_name), htcs::ResultInvalidArgument());
 
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ConnectTask>(std::addressof(task_id), desc, address.peer_name, address.port_name));
 
         /* Wait for the task to complete. */
@@ -93,7 +93,7 @@ namespace ams::htcs::impl {
         R_UNLESS(IsValidName(address.port_name), htcs::ResultInvalidArgument());
 
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::BindTask>(std::addressof(task_id), desc, address.peer_name, address.port_name));
 
         /* Wait for the task to complete. */
@@ -110,7 +110,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::Listen(s32 *out_err, s32 desc, s32 backlog_count) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ListenTask>(std::addressof(task_id), desc, backlog_count));
 
         /* Wait for the task to complete. */
@@ -127,7 +127,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::Receive(s32 *out_err, s64 *out_size, char *buffer, s64 size, s32 desc, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ReceiveTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Wait for the task to complete. */
@@ -141,7 +141,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::Send(s32 *out_err, s64 *out_size, const char *buffer, s64 size, s32 desc, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::SendTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Send the data. */
@@ -162,7 +162,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::Shutdown(s32 *out_err, s32 desc, s32 how) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ShutdownTask>(std::addressof(task_id), desc, static_cast<htcs::ShutdownType>(how)));
 
         /* Wait for the task to complete. */
@@ -179,7 +179,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::Fcntl(s32 *out_err, s32 *out_res, s32 desc, s32 command, s32 value) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::FcntlTask>(std::addressof(task_id), desc, command, value));
 
         /* Wait for the task to complete. */
@@ -198,7 +198,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::AcceptStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::AcceptTask>(std::addressof(task_id), desc));
 
         /* Detach the task. */
@@ -224,7 +224,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::ReceiveSmallStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ReceiveSmallTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Detach the task. */
@@ -251,7 +251,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SendSmallStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::SendSmallTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Detach the task. */
@@ -287,7 +287,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::SendTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Detach the task. */
@@ -333,7 +333,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::ReceiveStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::ReceiveTask>(std::addressof(task_id), desc, size, static_cast<htcs::MessageFlag>(flags)));
 
         /* Detach the task. */
@@ -348,8 +348,8 @@ namespace ams::htcs::impl {
         R_TRY(m_rpc_client->VerifyTaskIdWithHandle<rpc::ReceiveTask>(task_id, desc));
 
         /* Get the result. */
-        htcs::SocketError err;
-        s64 recv_size;
+        htcs::SocketError err{};
+        s64 recv_size{};
         const Result result = m_rpc_client->GetResult<rpc::ReceiveTask>(task_id, std::addressof(err), std::addressof(recv_size));
         if (R_FAILED(result) || err != HTCS_ENONE) {
             /* Finish the task. */
@@ -385,7 +385,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SelectStart(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client->Begin<rpc::SelectTask>(std::addressof(task_id), read_handles, write_handles, exception_handles, tv_sec, tv_usec));
 
         /* Detach the task. */

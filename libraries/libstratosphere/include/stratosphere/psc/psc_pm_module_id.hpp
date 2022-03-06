@@ -20,6 +20,8 @@
 namespace ams::psc {
 
     enum PmModuleId : u32 {
+        PmModuleId_Reserved0     = 0,
+
         PmModuleId_Usb           = 4,
         PmModuleId_Ethernet      = 5,
         PmModuleId_Fgm           = 6,

@@ -19,15 +19,15 @@ WEAK_SYMBOL void *operator new(size_t size) {
     return std::malloc(size);
 }
 
-WEAK_SYMBOL void *operator new(size_t size, const std::nothrow_t &) {
+WEAK_SYMBOL void *operator new(size_t size, const std::nothrow_t &) noexcept {
     return std::malloc(size);
 }
 
-WEAK_SYMBOL void operator delete(void *p) {
+WEAK_SYMBOL void operator delete(void *p) noexcept {
     return std::free(p);
 }
 
-WEAK_SYMBOL void operator delete(void *p, size_t) {
+WEAK_SYMBOL void operator delete(void *p, size_t) noexcept {
     return std::free(p);
 }
 
@@ -35,14 +35,14 @@ WEAK_SYMBOL void *operator new[](size_t size) {
     return std::malloc(size);
 }
 
-WEAK_SYMBOL void *operator new[](size_t size, const std::nothrow_t &) {
+WEAK_SYMBOL void *operator new[](size_t size, const std::nothrow_t &) noexcept {
     return std::malloc(size);
 }
 
-WEAK_SYMBOL void operator delete[](void *p) {
+WEAK_SYMBOL void operator delete[](void *p) noexcept {
     return std::free(p);
 }
 
-WEAK_SYMBOL void operator delete[](void *p, size_t) {
+WEAK_SYMBOL void operator delete[](void *p, size_t) noexcept {
     return std::free(p);
 }

@@ -17,7 +17,7 @@
 
 namespace ams::crypto {
 
-    void GenerateHmacSha1Mac(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size) {
+    void GenerateHmacSha1(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size) {
         HmacSha1Generator hmac;
 
         hmac.Initialize(key, key_size);

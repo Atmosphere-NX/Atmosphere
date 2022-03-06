@@ -22,10 +22,16 @@ namespace ams::os {
 
     class SdkConditionVariable;
 
+    struct ThreadType;
+
     struct SdkMutexType {
+        #if !defined(AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD)
+        os::ThreadType *owner_thread;
+        #endif
         union {
             s32 _arr[sizeof(impl::InternalCriticalSectionStorage) / sizeof(s32)];
             impl::InternalCriticalSectionStorage _storage;
+            impl::InternalCriticalSectionStorageTypeForConstantInitialize _storage_for_constant_initialize;
         };
     };
     static_assert(std::is_trivial<SdkMutexType>::value);
@@ -44,7 +50,11 @@ namespace ams::os {
         private:
             SdkMutexType m_mutex;
         public:
-            constexpr SdkMutex() : m_mutex{{0}} { /* ... */ }
+            #if defined(AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD)
+            constexpr SdkMutex() : m_mutex{{AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CONSTANT_INITIALIZER}} { /* ... */ }
+            #else
+            constexpr SdkMutex() : m_mutex{nullptr, {AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CONSTANT_INITIALIZER}} { /* ... */ }
+            #endif
 
             ALWAYS_INLINE void Lock()    { return os::LockSdkMutex(std::addressof(m_mutex)); }
             ALWAYS_INLINE bool TryLock() { return os::TryLockSdkMutex(std::addressof(m_mutex)); }

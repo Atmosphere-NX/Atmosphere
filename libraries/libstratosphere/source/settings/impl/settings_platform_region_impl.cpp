@@ -19,8 +19,13 @@
 namespace ams::settings::impl {
 
     Result GetPlatformRegion(s32 *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetSysPlatformRegion));
         return ::setsysGetPlatformRegion(reinterpret_cast<::SetSysPlatformRegion *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

@@ -26,6 +26,7 @@ namespace ams::exosphere {
         return ApiInfo{ util::BitPack64{exosphere_cfg} };
     }
 
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     void ForceRebootToRcm() {
         R_ABORT_UNLESS(spl::impl::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 1));
     }
@@ -81,5 +82,6 @@ namespace ams::exosphere {
         R_ABORT_UNLESS(spl::impl::GetConfig(std::addressof(device_id), spl::ConfigItem::DeviceId));
         return device_id;
     }
+    #endif
 
 }

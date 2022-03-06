@@ -19,8 +19,13 @@
 namespace ams::settings::impl {
 
     Result GetProductModel(s32 *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetSysProductModel));
         return ::setsysGetProductModel(reinterpret_cast<::SetSysProductModel *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

@@ -18,8 +18,13 @@
 namespace ams::time {
 
     Result StandardUserSystemClock::GetCurrentTime(PosixTime *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(u64));
         return ::timeGetCurrentTime(::TimeType_UserSystemClock, reinterpret_cast<u64 *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
     StandardUserSystemClock::time_point StandardUserSystemClock::now() {

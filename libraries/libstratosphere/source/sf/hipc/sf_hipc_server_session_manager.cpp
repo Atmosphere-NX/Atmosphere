@@ -19,6 +19,7 @@ namespace ams::sf::hipc {
 
     namespace {
 
+        #if AMS_SF_MITM_SUPPORTED
         constexpr inline void PreProcessCommandBufferForMitm(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &pointer_buffer, uintptr_t cmd_buffer) {
             /* TODO: Less gross method of editing command buffer? */
             if (ctx.request.meta.send_pid) {
@@ -36,9 +37,11 @@ namespace ams::sf::hipc {
                 *reinterpret_cast<HipcRecvListEntry *>(cmd_buffer + old_recv_list_offset) = hipcMakeRecvStatic(pointer_buffer.GetPointer(), pointer_buffer.GetSize());
             }
         }
+        #endif
 
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result ServerSession::ForwardRequest(const cmif::ServiceDispatchContext &ctx) const {
         AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
         AMS_ABORT_UNLESS(this->IsMitmSession());
@@ -48,7 +51,7 @@ namespace ams::sf::hipc {
         AMS_ABORT_UNLESS(m_saved_message.GetSize() == TlsMessageBufferSize);
 
         /* Get TLS message buffer. */
-        u32 * const message_buffer = svc::GetThreadLocalRegion()->message_buffer;
+        u32 * const message_buffer = static_cast<u32 *>(hipc::GetMessageBufferOnTls());
 
         /* Copy saved TLS in. */
         std::memcpy(message_buffer, m_saved_message.GetPointer(), m_saved_message.GetSize());
@@ -72,6 +75,7 @@ namespace ams::sf::hipc {
 
         return ResultSuccess();
     }
+    #endif
 
     void ServerSessionManager::DestroySession(ServerSession *session) {
         /* Destroy object. */
@@ -104,7 +108,12 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::AcceptSessionImpl(ServerSession *session_memory, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
         /* Create session handle. */
         os::NativeHandle session_handle;
+        #if defined(ATMOSPHERE_OS_HORIZON)
         R_TRY(svc::AcceptSession(std::addressof(session_handle), port_handle));
+        #else
+        AMS_UNUSED(port_handle);
+        AMS_ABORT("TODO");
+        #endif
 
         auto session_guard = SCOPE_GUARD { os::CloseNativeHandle(session_handle); };
 
@@ -115,6 +124,7 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result ServerSessionManager::RegisterMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         AMS_ABORT_UNLESS(ServerManagerBase::CanAnyManageMitmServers());
 
@@ -149,6 +159,7 @@ namespace ams::sf::hipc {
         session_guard.Cancel();
         return ResultSuccess();
     }
+    #endif
 
     Result ServerSessionManager::RegisterSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj) {
         /* We don't actually care about what happens to the session. It'll get linked. */
@@ -162,6 +173,7 @@ namespace ams::sf::hipc {
         return this->AcceptSession(std::addressof(session_ptr), port_handle, std::forward<cmif::ServiceObjectHolder>(obj));
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result ServerSessionManager::RegisterMitmSession(os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
         /* We don't actually care about what happens to the session. It'll get linked. */
         ServerSession *session_ptr = nullptr;
@@ -173,6 +185,7 @@ namespace ams::sf::hipc {
         ServerSession *session_ptr = nullptr;
         return this->AcceptMitmSession(std::addressof(session_ptr), mitm_port_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
     }
+    #endif
 
     Result ServerSessionManager::ReceiveRequestImpl(ServerSession *session, const cmif::PointerAndSize &message) {
         const cmif::PointerAndSize &pointer_buffer = session->m_pointer_buffer;
@@ -207,7 +220,7 @@ namespace ams::sf::hipc {
 
     namespace {
 
-        constexpr ALWAYS_INLINE u32 GetCmifCommandType(const cmif::PointerAndSize &message) {
+        ALWAYS_INLINE u32 GetCmifCommandType(const cmif::PointerAndSize &message) {
             HipcHeader hdr = {};
             __builtin_memcpy(std::addressof(hdr), message.GetPointer(), sizeof(hdr));
             return hdr.type;

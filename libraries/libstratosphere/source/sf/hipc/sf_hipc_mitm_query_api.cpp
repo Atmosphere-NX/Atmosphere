@@ -16,6 +16,8 @@
 #include <stratosphere.hpp>
 #include "sf_hipc_mitm_query_api.hpp"
 
+#if AMS_SF_MITM_SUPPORTED
+
 #define AMS_SF_HIPC_IMPL_I_MITM_QUERY_SERVICE_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 65000, void, ShouldMitm, (sf::Out<bool> out, const sm::MitmProcessInfo &client_info), (out, client_info))
 
@@ -74,3 +76,5 @@ namespace ams::sf::hipc::impl {
     }
 
 }
+
+#endif

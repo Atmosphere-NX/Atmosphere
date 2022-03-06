@@ -42,7 +42,7 @@ namespace ams::lm::srv {
             bool m_push_canceled;
             size_t m_push_ready_wait_count;
         public:
-            constexpr explicit LogBuffer(void *buffer, size_t buffer_size, FlushFunction f)
+            constexpr explicit LogBuffer(u8 *buffer, size_t buffer_size, FlushFunction f)
                 : m_buffers{}, m_push_buffer(m_buffers + 0), m_flush_buffer(m_buffers + 1),
                   m_buffer_size(buffer_size / 2), m_flush_function(f), m_push_buffer_mutex{},
                   m_flush_buffer_mutex{}, m_cv_push_ready{}, m_cv_flush_ready{},
@@ -52,8 +52,8 @@ namespace ams::lm::srv {
                 AMS_ASSERT(buffer_size > 0);
                 AMS_ASSERT(f != nullptr);
 
-                m_buffers[0].m_head = static_cast<u8 *>(buffer);
-                m_buffers[1].m_head = static_cast<u8 *>(buffer) + (buffer_size / 2);
+                m_buffers[0].m_head = buffer;
+                m_buffers[1].m_head = buffer + (buffer_size / 2);
             }
 
             static LogBuffer &GetDefaultInstance();

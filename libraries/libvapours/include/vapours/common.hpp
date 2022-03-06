@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours/includes.hpp>
 #include <vapours/defines.hpp>
+#include <vapours/compiler.hpp>
 
 #if defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS) && defined(AMS_FORCE_ENABLE_DETAILED_ASSERTIONS)
     #error "Invalid detailed assertions state"

@@ -47,8 +47,6 @@ namespace ams::os::impl {
             void SuspendThreadUnsafe(ThreadType *thread);
             void ResumeThreadUnsafe(ThreadType *thread);
 
-            void CancelThreadSynchronizationUnsafe(ThreadType *thread);
-
             /* TODO: void GetThreadContextUnsafe(ThreadContextInfo *out_context, const ThreadType *thread); */
 
             void NotifyThreadNameChangedImpl(const ThreadType *thread) const { AMS_UNUSED(thread); }
@@ -68,9 +66,16 @@ namespace ams::os::impl {
             void GetThreadCoreMask(s32 *out_ideal_core, u64 *out_affinity_mask, const ThreadType *thread) const;
             u64 GetThreadAvailableCoreMask() const;
 
+            bool MapAliasStack(void **out, void *stack, size_t size);
+            bool UnmapAliasStack(void *alias_stack, void *original_stack, size_t size);
+
             NORETURN void ExitProcessImpl() {
                 svc::ExitProcess();
                 AMS_ABORT("Process was exited");
+            }
+
+            NORETURN void QuickExit() {
+                AMS_ABORT("TODO: make QuickExit properly a thing");
             }
     };
 

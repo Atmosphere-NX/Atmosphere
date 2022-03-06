@@ -34,28 +34,28 @@ namespace ams::tipc {
     template<>
     class Out<CopyHandle> {
         private:
-            os::NativeHandle * const m_ptr;
+            tipc::NativeHandle * const m_ptr;
         public:
-            ALWAYS_INLINE Out(os::NativeHandle *p) : m_ptr(p) { /* ... */ }
+            ALWAYS_INLINE Out(tipc::NativeHandle *p) : m_ptr(p) { /* ... */ }
 
-            ALWAYS_INLINE void SetValue(os::NativeHandle v) const {
+            ALWAYS_INLINE void SetValue(tipc::NativeHandle v) const {
                 *m_ptr = v;
             }
 
-            ALWAYS_INLINE const os::NativeHandle &GetValue() const {
+            ALWAYS_INLINE const tipc::NativeHandle &GetValue() const {
                 return *m_ptr;
             }
 
-            ALWAYS_INLINE os::NativeHandle *GetPointer() const {
+            ALWAYS_INLINE tipc::NativeHandle *GetPointer() const {
                 return m_ptr;
             }
 
             /* Convenience operators. */
-            ALWAYS_INLINE os::NativeHandle &operator*() const {
+            ALWAYS_INLINE tipc::NativeHandle &operator*() const {
                 return *m_ptr;
             }
 
-            ALWAYS_INLINE os::NativeHandle *operator->() const {
+            ALWAYS_INLINE tipc::NativeHandle *operator->() const {
                 return m_ptr;
             }
     };
@@ -63,28 +63,28 @@ namespace ams::tipc {
     template<>
     class Out<MoveHandle> {
         private:
-            os::NativeHandle * const m_ptr;
+            tipc::NativeHandle * const m_ptr;
         public:
-            ALWAYS_INLINE Out(os::NativeHandle *p) : m_ptr(p) { /* ... */ }
+            ALWAYS_INLINE Out(tipc::NativeHandle *p) : m_ptr(p) { /* ... */ }
 
-            ALWAYS_INLINE void SetValue(os::NativeHandle v) const {
+            ALWAYS_INLINE void SetValue(tipc::NativeHandle v) const {
                 *m_ptr = v;
             }
 
-            ALWAYS_INLINE const os::NativeHandle &GetValue() const {
+            ALWAYS_INLINE const tipc::NativeHandle &GetValue() const {
                 return *m_ptr;
             }
 
-            ALWAYS_INLINE os::NativeHandle *GetPointer() const {
+            ALWAYS_INLINE tipc::NativeHandle *GetPointer() const {
                 return m_ptr;
             }
 
             /* Convenience operators. */
-            ALWAYS_INLINE os::NativeHandle &operator*() const {
+            ALWAYS_INLINE tipc::NativeHandle &operator*() const {
                 return *m_ptr;
             }
 
-            ALWAYS_INLINE os::NativeHandle *operator->() const {
+            ALWAYS_INLINE tipc::NativeHandle *operator->() const {
                 return m_ptr;
             }
     };

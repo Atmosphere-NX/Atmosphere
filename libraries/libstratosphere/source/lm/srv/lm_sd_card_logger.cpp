@@ -133,7 +133,7 @@ namespace ams::lm::srv {
 
             /* Ensure the directory. */
             /* NOTE: Nintendo does not perform recusrive directory ensure, only a single CreateDirectory level. */
-            return R_SUCCEEDED(fs::EnsureDirectoryRecursively(path));
+            return R_SUCCEEDED(fs::EnsureDirectory(path));
         }
 
         bool MakeLogFilePathWithoutExtension(char *dst, size_t size, const char *dir) {

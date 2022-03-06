@@ -29,26 +29,31 @@ namespace ams::sf {
     template<typename T>
     concept IsServiceObject = std::derived_from<T, IServiceObject>;
 
-    class IMitmServiceObject : public IServiceObject {
-        public:
-            virtual ~IMitmServiceObject() { /* ... */ }
-    };
+    #if AMS_SF_MITM_SUPPORTED
+        class IMitmServiceObject : public IServiceObject {
+            public:
+                virtual ~IMitmServiceObject() { /* ... */ }
+        };
 
-    class MitmServiceImplBase {
-        protected:
-            std::shared_ptr<::Service> m_forward_service;
-            sm::MitmProcessInfo m_client_info;
-        public:
-            MitmServiceImplBase(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : m_forward_service(std::move(s)), m_client_info(c) { /* ... */ }
-    };
+        class MitmServiceImplBase {
+            protected:
+                std::shared_ptr<::Service> m_forward_service;
+                sm::MitmProcessInfo m_client_info;
+            public:
+                MitmServiceImplBase(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : m_forward_service(std::move(s)), m_client_info(c) { /* ... */ }
+        };
 
-    template<typename T>
-    concept IsMitmServiceObject = IsServiceObject<T> && std::derived_from<T, IMitmServiceObject>;
+        template<typename T>
+        concept IsMitmServiceObject = IsServiceObject<T> && std::derived_from<T, IMitmServiceObject>;
 
-    template<typename T>
-    concept IsMitmServiceImpl = requires (std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) {
-        { T(std::forward<std::shared_ptr<::Service>>(s), c) };
-        { T::ShouldMitm(c) } -> std::same_as<bool>;
-    };
+        template<typename T>
+        concept IsMitmServiceImpl = requires (std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) {
+            { T(std::forward<std::shared_ptr<::Service>>(s), c) };
+            { T::ShouldMitm(c) } -> std::same_as<bool>;
+        };
+    #else
+        template<typename T>
+        concept IsMitmServiceObject = false;
+    #endif
 
 }

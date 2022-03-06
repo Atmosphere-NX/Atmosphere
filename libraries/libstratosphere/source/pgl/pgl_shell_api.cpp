@@ -56,6 +56,7 @@ namespace ams::pgl {
         FreeToStaticExpHeap(obj);
     }
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result Initialize() {
         return ::pglInitialize();
     }
@@ -134,5 +135,74 @@ namespace ams::pgl {
 
         return ResultSuccess();
     }
+    #else
+    Result Initialize() {
+        AMS_ABORT("TODO");
+    }
+
+    void Finalize() {
+        AMS_ABORT("TODO");
+    }
+
+    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 process_flags, u8 pgl_flags) {
+        AMS_UNUSED(out, loc, process_flags, pgl_flags);
+        AMS_ABORT("TODO");
+    }
+
+    Result TerminateProcess(os::ProcessId process_id) {
+        AMS_UNUSED(process_id);
+        AMS_ABORT("TODO");
+    }
+
+    Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 process_flags) {
+        AMS_UNUSED(out, content_path, process_flags);
+        AMS_ABORT("TODO");
+    }
+
+    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path) {
+        AMS_UNUSED(out, content_path);
+        AMS_ABORT("TODO");
+    }
+
+    Result GetApplicationProcessId(os::ProcessId *out) {
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+    }
+
+    Result BoostSystemMemoryResourceLimit(u64 size) {
+        AMS_UNUSED(size);
+        AMS_ABORT("TODO");
+    }
+
+    Result IsProcessTracked(bool *out, os::ProcessId process_id) {
+        AMS_UNUSED(out, process_id);
+        AMS_ABORT("TODO");
+    }
+
+    Result EnableApplicationCrashReport(bool enabled) {
+        AMS_UNUSED(enabled);
+        AMS_ABORT("TODO");
+    }
+
+    Result IsApplicationCrashReportEnabled(bool *out) {
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+    }
+
+    Result EnableApplicationAllThreadDumpOnCrash(bool enabled) {
+        AMS_UNUSED(enabled);
+        AMS_ABORT("TODO");
+    }
+
+    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
+        AMS_UNUSED(arg, dump_type);
+        AMS_ABORT("TODO");
+    }
+
+    Result GetEventObserver(pgl::EventObserver *out) {
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+    }
+    #endif
 
 }

@@ -15,17 +15,37 @@
  */
 #include <stratosphere.hpp>
 #include <stratosphere/fs/fs_rights_id.hpp>
+#include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
 
     Result GetRightsId(RightsId *out, const char *path) {
-        static_assert(sizeof(RightsId) == sizeof(::FsRightsId));
-        return fsGetRightsIdByPath(path, reinterpret_cast<::FsRightsId *>(out));
+        AMS_FS_R_UNLESS(out != nullptr,  fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(path != nullptr, fs::ResultNullptrArgument());
+
+        /* Convert the path for fsp. */
+        fssrv::sf::FspPath sf_path;
+        R_TRY(fs::ConvertToFspPath(std::addressof(sf_path), path));
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        AMS_FS_R_TRY(fsp->GetRightsIdByPath(out, sf_path));
+
+        R_SUCCEED();
     }
 
     Result GetRightsId(RightsId *out, u8 *out_key_generation, const char *path) {
-        static_assert(sizeof(RightsId) == sizeof(::FsRightsId));
-        return fsGetRightsIdAndKeyGenerationByPath(path, out_key_generation, reinterpret_cast<::FsRightsId *>(out));
+        AMS_FS_R_UNLESS(out != nullptr,                fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(out_key_generation != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(path != nullptr,               fs::ResultNullptrArgument());
+
+        /* Convert the path for fsp. */
+        fssrv::sf::FspPath sf_path;
+        R_TRY(fs::ConvertToFspPath(std::addressof(sf_path), path));
+
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        AMS_FS_R_TRY(fsp->GetRightsIdAndKeyGenerationByPath(out, out_key_generation, sf_path));
+
+        R_SUCCEED();
     }
 
 }

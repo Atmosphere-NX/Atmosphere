@@ -21,7 +21,7 @@ namespace ams::dmnt::cheat::impl {
 
     void CheatVirtualMachine::DebugLog(u32 log_id, u64 value) {
         /* Just unconditionally try to create the log folder. */
-        fs::EnsureDirectoryRecursively("sdmc:/atmosphere/cheat_vm_logs");
+        fs::EnsureDirectory("sdmc:/atmosphere/cheat_vm_logs");
 
         fs::FileHandle log_file;
         {

@@ -30,12 +30,12 @@ namespace ams::tipc {
                 ObjectType_Deferral = ObjectType_Invalid,
             };
         private:
-            os::NativeHandle m_handle;
+            tipc::NativeHandle m_handle;
             ObjectType m_type;
             bool m_managed;
             tipc::ServiceObjectBase *m_object;
         private:
-            void InitializeImpl(ObjectType type, os::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
+            void InitializeImpl(ObjectType type, tipc::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
                 /* Validate that the object isn't already constructed. */
                 AMS_ASSERT(m_type == ObjectType_Invalid);
 
@@ -46,20 +46,20 @@ namespace ams::tipc {
                 m_object  = object;
             }
         public:
-            constexpr inline ObjectHolder() : m_handle(os::InvalidNativeHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
+            constexpr inline ObjectHolder() : m_handle(tipc::InvalidNativeHandle), m_type(ObjectType_Invalid), m_managed(false), m_object(nullptr) { /* ... */ }
 
-            void InitializeAsPort(os::NativeHandle handle) {
+            void InitializeAsPort(tipc::NativeHandle handle) {
                 /* NOTE: Nintendo sets ports as managed, but this will cause a nullptr-deref if one is ever closed. */
                 /* This is theoretically a non-issue, as ports can't be closed, but we will set ours as unmanaged, */
                 /* just in case. */
                 this->InitializeImpl(ObjectType_Port, handle, false, nullptr);
             }
 
-            void InitializeAsSession(os::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
+            void InitializeAsSession(tipc::NativeHandle handle, bool managed, tipc::ServiceObjectBase *object) {
                 this->InitializeImpl(ObjectType_Session, handle, managed, object);
             }
 
-            void InitializeForDeferralManager(os::NativeHandle handle, tipc::ServiceObjectBase *object) {
+            void InitializeForDeferralManager(tipc::NativeHandle handle, tipc::ServiceObjectBase *object) {
                 this->InitializeImpl(ObjectType_Deferral, handle, false, object);
             }
 
@@ -75,13 +75,13 @@ namespace ams::tipc {
                 }
 
                 /* Reset all fields. */
-                m_handle  = os::InvalidNativeHandle;
+                m_handle  = tipc::InvalidNativeHandle;
                 m_type    = ObjectType_Invalid;
                 m_managed = false;
                 m_object  = nullptr;
             }
 
-            constexpr os::NativeHandle GetHandle() const {
+            constexpr tipc::NativeHandle GetHandle() const {
                 return m_handle;
             }
 

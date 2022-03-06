@@ -15,9 +15,14 @@
  */
 
 /* ams::crypto::impl::BigNum::Add(Word *dst, const Word *lhs, const Word *rhs, size_t num_words) */
+#if !defined(ATMOSPHERE_OS_MACOS)
 .section    .text._ZN3ams6crypto4impl6BigNum3AddEPjPKjS5_m, "ax", %progbits
 .global     _ZN3ams6crypto4impl6BigNum3AddEPjPKjS5_m
 .type       _ZN3ams6crypto4impl6BigNum3AddEPjPKjS5_m, %function
+#else
+.text
+.global _ZN3ams6crypto4impl6BigNum3AddEPjPKjS5_m
+#endif
 .balign 0x10
 _ZN3ams6crypto4impl6BigNum3AddEPjPKjPKjm:
     /* Check if we have anything to do at all. */
@@ -106,9 +111,14 @@ _ZN3ams6crypto4impl6BigNum3AddEPjPKjPKjm:
     ret
 
 /* ams::crypto::impl::BigNum::Sub(Word *dst, const Word *lhs, const Word *rhs, size_t num_words) */
+#if !defined(ATMOSPHERE_OS_MACOS)
 .section    .text._ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m, "ax", %progbits
 .global     _ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m
 .type       _ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m, %function
+#else
+.text
+.global _ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m
+#endif
 .balign 0x10
 _ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m:
     /* Check if we have anything to do at all. */
@@ -198,9 +208,14 @@ _ZN3ams6crypto4impl6BigNum3SubEPjPKjS5_m:
     ret
 
 /* ams::crypto::impl::BigNum::MultAdd(Word *dst, const Word *w, size_t num_words, Word mult) */
+#if !defined(ATMOSPHERE_OS_MACOS)
 .section    .text._ZN3ams6crypto4impl6BigNum7MultAddEPjPKjmj, "ax", %progbits
 .global     _ZN3ams6crypto4impl6BigNum7MultAddEPjPKjmj
 .type       _ZN3ams6crypto4impl6BigNum7MultAddEPjPKjmj, %function
+#else
+.text
+.global     _ZN3ams6crypto4impl6BigNum7MultAddEPjPKjmj
+#endif
 .balign 0x10
 _ZN3ams6crypto4impl6BigNum7MultAddEPjPKjmj:
     /* Check if we have anything to do at all. */

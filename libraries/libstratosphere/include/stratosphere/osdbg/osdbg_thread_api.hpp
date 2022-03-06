@@ -21,7 +21,7 @@ namespace ams::osdbg {
 
     struct ThreadInfo;
 
-    Result InitializeThreadInfo(ThreadInfo *thread_info, os::NativeHandle debug_handle, const svc::DebugInfoCreateProcess *create_process, const svc::DebugInfoCreateThread *create_thread);
+    Result InitializeThreadInfo(ThreadInfo *thread_info, os::NativeHandle debug_handle, const osdbg::DebugInfoCreateProcess *create_process, const osdbg::DebugInfoCreateThread *create_thread);
     Result UpdateThreadInfo(ThreadInfo *thread_info);
 
     Result GetThreadName(char *dst, const ThreadInfo *thread_info);

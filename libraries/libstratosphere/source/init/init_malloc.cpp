@@ -15,18 +15,34 @@
  */
 #include <stratosphere.hpp>
 
+/* NOTE: If AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC is defined, the relevant os primitives should be hooked up. */
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #define AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    //#define AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC
+#elif defined(ATMOSPHERE_OS_LINUX)
+    //#define AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC
+#elif defined(ATMOSPHERE_OS_MACOS)
+    //#define AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC
+#else
+    #error "Unknown OS for enabling StandardAllocator backing impl for malloc"
+#endif
+
 namespace ams::init {
 
     namespace {
 
+        #if defined(AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC)
         constinit void *g_malloc_region_address = nullptr;
         constinit size_t g_malloc_region_size   = 0;
 
-        constinit util::TypedStorage<mem::StandardAllocator> g_malloc_allocator;
+        constinit util::TypedStorage<mem::StandardAllocator> g_malloc_allocator = {};
+        #endif
 
     }
 
     void InitializeAllocator(void *address, size_t size, bool cache_enabled) {
+        #if defined(AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC)
         /* Check pre-conditions. */
         AMS_ABORT_UNLESS(g_malloc_region_size == 0);
         AMS_ABORT_UNLESS(size > 0);
@@ -40,21 +56,34 @@ namespace ams::init {
         /* Set malloc globals. */
         g_malloc_region_address = address;
         g_malloc_region_size    = size;
+        #else
+        AMS_UNUSED(address, size, cache_enabled);
+        #endif
     }
 
     void InitializeAllocator(void *address, size_t size) {
         return InitializeAllocator(address, size, false);
     }
 
+    void InitializeDefaultAllocator() {
+        /* TODO: What should default heap size be? This uses virtual address space memory. */
+        return InitializeAllocator(nullptr, 128_MB, false);
+    }
+
     mem::StandardAllocator *GetAllocator() {
+        #if defined(AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC)
         /* Check pre-conditions. */
         AMS_ASSERT(g_malloc_region_size > 0);
 
         return util::GetPointer(g_malloc_allocator);
+        #else
+        return nullptr;
+        #endif
     }
 
 }
 
+#if defined(AMS_INIT_USE_STANDARD_ALLOCATOR_FOR_MALLOC)
 extern "C" void *malloc(size_t size) {
     /* We require that an allocator region exists. */
     if (::ams::init::g_malloc_region_size == 0) {
@@ -145,3 +174,4 @@ extern "C" size_t malloc_usable_size(void *ptr) {
 
     return ::ams::util::GetReference(::ams::init::g_malloc_allocator).GetSizeOf(ptr);
 }
+#endif

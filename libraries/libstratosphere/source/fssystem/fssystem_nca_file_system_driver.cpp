@@ -292,13 +292,13 @@ namespace ams::fssystem {
         using IntegrityLevelInfo = NcaFsHeader::HashData::IntegrityMetaInfo::LevelHashInfo;
         using IntegrityDataInfo  = IntegrityLevelInfo::HierarchicalIntegrityVerificationLevelInformation;
 
-        inline const Sha256DataRegion &GetSha256DataRegion(const NcaFsHeader::HashData &hash_data) {
-            return hash_data.hierarchical_sha256_data.hash_layer_region[1];
-        }
+        // inline const Sha256DataRegion &GetSha256DataRegion(const NcaFsHeader::HashData &hash_data) {
+        //     return hash_data.hierarchical_sha256_data.hash_layer_region[1];
+        // }
 
-        inline const IntegrityDataInfo &GetIntegrityDataInfo(const NcaFsHeader::HashData &hash_data) {
-            return hash_data.integrity_meta_info.level_hash_info.info[hash_data.integrity_meta_info.level_hash_info.max_layers - 2];
-        }
+        // inline const IntegrityDataInfo &GetIntegrityDataInfo(const NcaFsHeader::HashData &hash_data) {
+        //     return hash_data.integrity_meta_info.level_hash_info.info[hash_data.integrity_meta_info.level_hash_info.max_layers - 2];
+        // }
 
     }
 
@@ -706,7 +706,7 @@ namespace ams::fssystem {
     Result NcaFileSystemDriver::CreateSparseStorage(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info) {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(out_fs_data_offset != nullptr);
 
         /* Check the sparse info generation. */
         R_UNLESS(sparse_info.generation != 0, fs::ResultInvalidNcaHeader());

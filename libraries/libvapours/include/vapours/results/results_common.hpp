@@ -219,6 +219,14 @@ namespace ams {
 
     }
 
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX) && defined(ATMOSPHERE_ARCH_ARM64) && defined(ATMOSPHERE_IS_STRATOSPHERE)
+    namespace diag::impl {
+
+        void FatalErrorByResultForNx(Result result) noexcept NORETURN;
+
+    }
+    #endif
+
 }
 
 /* Macros for defining new results. */
@@ -353,61 +361,66 @@ namespace ams::result::impl {
 
 /// Returns a result.
 #define R_THROW(res_expr)                                                                                                                      \
-    ({                                                                                                                                         \
+    {                                                                                                                                          \
         const ::ams::Result _tmp_r_throw_rc = (res_expr);                                                                                      \
         if constexpr (std::same_as<decltype(__TmpCurrentResultReference), ::ams::Result &>) { __TmpCurrentResultReference = _tmp_r_throw_rc; } \
         return _tmp_r_throw_rc;                                                                                                                \
-    })
+    }
 
 /// Returns ResultSuccess()
 #define R_SUCCEED() R_THROW(::ams::ResultSuccess())
 
 /// Evaluates an expression that returns a result, and returns the result if it would fail.
 #define R_TRY(res_expr)                                                       \
-    ({                                                                        \
+    {                                                                         \
         if (const auto _tmp_r_try_rc = (res_expr); R_FAILED(_tmp_r_try_rc)) { \
             R_THROW(_tmp_r_try_rc);                                           \
         }                                                                     \
-    })
+    }
 
 /// Return a result.
 #define R_RETURN(res_expr) R_THROW(res_expr)
 
-#ifdef AMS_ENABLE_DEBUG_PRINT
-#define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
-#define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX) && defined(ATMOSPHERE_IS_STRATOSPHERE) && !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
+    #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
+    #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
 #else
-#define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion("", 0, "", "", val)
-#define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort("", 0, "", "", val)
+    #if defined(AMS_ENABLE_DETAILED_ASSERTIONS)
+        #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
+        #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
+    #else
+        #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion("", 0, "", "", val)
+        #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort("", 0, "", "", val)
+    #endif
 #endif
 
 /// Evaluates an expression that returns a result, and asserts the result if it would fail.
 #ifdef AMS_ENABLE_ASSERTIONS
 #define R_ASSERT(res_expr)                                                                        \
-    ({                                                                                            \
+    {                                                                                             \
         if (const auto _tmp_r_assert_rc = (res_expr); AMS_UNLIKELY(R_FAILED(_tmp_r_assert_rc))) { \
             AMS_CALL_ON_RESULT_ASSERTION_IMPL(#res_expr, _tmp_r_assert_rc);                       \
         }                                                                                         \
-    })
+    }
 #else
 #define R_ASSERT(res_expr) AMS_UNUSED((res_expr));
 #endif
 
 /// Evaluates an expression that returns a result, and aborts if the result would fail.
 #define R_ABORT_UNLESS(res_expr)                                                                \
-    ({                                                                                          \
+    {                                                                                           \
         if (const auto _tmp_r_abort_rc = (res_expr); AMS_UNLIKELY(R_FAILED(_tmp_r_abort_rc))) { \
             AMS_CALL_ON_RESULT_ABORT_IMPL(#res_expr, _tmp_r_abort_rc);                          \
         }                                                                                       \
-    })
+    }
 
 /// Evaluates a boolean expression, and returns a result unless that expression is true.
 #define R_UNLESS(expr, res) \
-    ({                      \
+    {                       \
         if (!(expr)) {      \
             R_THROW(res);   \
         }                   \
-    })
+    }
 
 /// Evaluates a boolean expression, and succeeds if that expression is true.
 #define R_SUCCEED_IF(expr) R_UNLESS(!(expr), ResultSuccess())
@@ -415,24 +428,24 @@ namespace ams::result::impl {
 /// Helpers for pattern-matching on a result expression, if the result would fail.
 #define R_CURRENT_RESULT _tmp_r_try_catch_current_result
 
-#define R_TRY_CATCH(res_expr) \
-    ({ \
+#define R_TRY_CATCH(res_expr)                     \
+     {                                            \
         const auto R_CURRENT_RESULT = (res_expr); \
-        if (R_FAILED(R_CURRENT_RESULT)) { \
+        if (R_FAILED(R_CURRENT_RESULT)) {         \
             if (false)
 
-#define R_CATCH(...) \
+#define R_CATCH(...)                                                                                    \
             } else if (::ams::result::impl::EvaluateAnyResultIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
                 if (true)
 
-#define R_CATCH_MODULE(__module__) \
+#define R_CATCH_MODULE(__module__)                                                                   \
             } else if ((R_CURRENT_RESULT).GetModule() == ::ams::R_NAMESPACE_MODULE_ID(__module__)) { \
                 if (true)
 
 #define R_CONVERT(catch_type, convert_type) \
         R_CATCH(catch_type) { R_THROW(static_cast<::ams::Result>(convert_type)); }
 
-#define R_CATCH_ALL() \
+#define R_CATCH_ALL()                                \
             } else if (R_FAILED(R_CURRENT_RESULT)) { \
                 if (true)
 
@@ -442,26 +455,26 @@ namespace ams::result::impl {
 #define R_CATCH_RETHROW(catch_type) \
         R_CONVERT(catch_type, R_CURRENT_RESULT)
 
-#define R_END_TRY_CATCH \
+#define R_END_TRY_CATCH                            \
             else if (R_FAILED(R_CURRENT_RESULT)) { \
-                R_THROW(R_CURRENT_RESULT); \
-            } \
-        } \
-    })
+                R_THROW(R_CURRENT_RESULT);         \
+            }                                      \
+        }                                          \
+    }
 
-#define R_END_TRY_CATCH_WITH_ASSERT \
-            else { \
+#define R_END_TRY_CATCH_WITH_ASSERT         \
+            else {                          \
                 R_ASSERT(R_CURRENT_RESULT); \
-            } \
-        } \
-    })
+            }                               \
+        }                                   \
+    }
 
 
-#define R_END_TRY_CATCH_WITH_ABORT_UNLESS \
-            else { \
+#define R_END_TRY_CATCH_WITH_ABORT_UNLESS         \
+            else {                                \
                 R_ABORT_UNLESS(R_CURRENT_RESULT); \
-            } \
-        } \
-    })
+            }                                     \
+        }                                         \
+    }
 
 

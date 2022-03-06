@@ -17,8 +17,7 @@
 
 namespace ams::util {
 
-    #pragma GCC push_options
-    #pragma GCC optimize ("-Os")
+    AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
 
     namespace {
 
@@ -403,7 +402,7 @@ namespace ams::util {
 
     }
 
-    #pragma GCC pop_options
+    AMS_PRAGMA_END_OPTIMIZE()
 
     int TVSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl) {
         return TVSNPrintfImpl(dst, dst_size, fmt, vl);

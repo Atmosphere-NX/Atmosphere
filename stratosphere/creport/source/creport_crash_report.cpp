@@ -51,8 +51,8 @@ namespace ams::creport {
         }
 
         void TryCreateReportDirectories() {
-            fs::EnsureDirectoryRecursively("sdmc:/atmosphere/crash_reports/dumps");
-            fs::EnsureDirectoryRecursively("sdmc:/atmosphere/fatal_reports/dumps");
+            fs::EnsureDirectory("sdmc:/atmosphere/crash_reports/dumps");
+            fs::EnsureDirectory("sdmc:/atmosphere/fatal_reports/dumps");
         }
 
         constexpr const char *GetDebugExceptionString(const svc::DebugException type) {

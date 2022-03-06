@@ -40,7 +40,7 @@ namespace ams::os {
     }
 
     void FinalizeSemaphore(SemaphoreType *sema) {
-        AMS_ASSERT(sema->state = SemaphoreType::State_Initialized);
+        AMS_ASSERT(sema->state == SemaphoreType::State_Initialized);
 
         AMS_ASSERT(GetReference(sema->waitlist).IsEmpty());
 

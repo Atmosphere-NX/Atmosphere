@@ -59,7 +59,7 @@ namespace ams::htc::server::rpc {
         HtcmiscPacketCategory category;
         HtcmiscPacketType type;
         s64 body_size;
-        u32 task_id;
+        u32 task_id{};
         u64 params[5];
         char data[];
     };

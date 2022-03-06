@@ -39,13 +39,6 @@ namespace ams::ncm {
             func(out, id, path);
         }
 
-        ALWAYS_INLINE Result ConvertNotFoundResult(Result r) {
-            R_TRY_CATCH(r) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
-            } R_END_TRY_CATCH;
-            return ResultSuccess();
-        }
-
     }
 
     void PlaceHolderAccessor::MakePath(PathString *out_placeholder_path, PlaceHolderId placeholder_id) const {
@@ -59,7 +52,7 @@ namespace ams::ncm {
     Result PlaceHolderAccessor::EnsurePlaceHolderDirectory(PlaceHolderId placeholder_id) {
         PathString path;
         this->MakePath(std::addressof(path), placeholder_id);
-        return fs::EnsureParentDirectoryRecursively(path);
+        return fs::EnsureParentDirectory(path);
     }
 
     Result PlaceHolderAccessor::GetPlaceHolderIdFromFileName(PlaceHolderId *out, const char *name) {
@@ -71,7 +64,7 @@ namespace ams::ncm {
         PlaceHolderId placeholder_id = {};
         for (size_t i = 0; i < sizeof(placeholder_id); i++) {
             char tmp[3];
-            strlcpy(tmp, name + i * 2, sizeof(tmp));
+            util::Strlcpy(tmp, name + i * 2, sizeof(tmp));
 
             char *err = nullptr;
             reinterpret_cast<u8 *>(std::addressof(placeholder_id))[i] = static_cast<u8>(std::strtoul(tmp, std::addressof(err), 16));

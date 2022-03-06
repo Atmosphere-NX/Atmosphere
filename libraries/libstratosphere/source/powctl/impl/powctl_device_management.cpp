@@ -20,7 +20,7 @@ namespace ams::powctl::impl {
 
     namespace {
 
-        constinit os::ThreadType g_interrupt_thread;
+        constinit os::ThreadType g_interrupt_thread = {};
 
         constexpr inline size_t InterruptThreadStackSize = os::MemoryPageSize;
         alignas(os::MemoryPageSize) u8 g_interrupt_thread_stack[InterruptThreadStackSize];

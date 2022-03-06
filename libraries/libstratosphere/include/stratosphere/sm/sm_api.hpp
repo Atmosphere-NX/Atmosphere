@@ -25,7 +25,7 @@ namespace ams::sm {
     Result Finalize();
 
     /* Ordinary SM API. */
-    Result GetService(Service *out, ServiceName name);
+    Result GetServiceHandle(os::NativeHandle *out, ServiceName name);
     Result RegisterService(os::NativeHandle *out, ServiceName name, size_t max_sessions, bool is_light);
     Result UnregisterService(ServiceName name);
 

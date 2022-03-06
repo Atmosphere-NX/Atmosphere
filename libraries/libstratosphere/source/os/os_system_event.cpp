@@ -43,17 +43,17 @@ namespace ams::os {
     }
 
     void AttachSystemEvent(SystemEventType *event, NativeHandle read_handle, bool read_handle_managed, NativeHandle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
-        AMS_ASSERT(read_handle != svc::InvalidHandle || write_handle != svc::InvalidHandle);
+        AMS_ASSERT(read_handle != os::InvalidNativeHandle || write_handle != os::InvalidNativeHandle);
         impl::AttachInterProcessEvent(std::addressof(event->inter_process_event), read_handle, read_handle_managed, write_handle, write_handle_managed, clear_mode);
         event->state = SystemEventType::State_InitializedAsInterProcessEvent;
     }
 
     void AttachReadableHandleToSystemEvent(SystemEventType *event, NativeHandle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
-        return AttachSystemEvent(event, read_handle, manage_read_handle, svc::InvalidHandle, false, clear_mode);
+        return AttachSystemEvent(event, read_handle, manage_read_handle, os::InvalidNativeHandle, false, clear_mode);
     }
 
     void AttachWritableHandleToSystemEvent(SystemEventType *event, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
-        return AttachSystemEvent(event, svc::InvalidHandle, false, write_handle, manage_write_handle, clear_mode);
+        return AttachSystemEvent(event, os::InvalidNativeHandle, false, write_handle, manage_write_handle, clear_mode);
     }
 
     NativeHandle DetachReadableHandleOfSystemEvent(SystemEventType *event) {

@@ -242,7 +242,7 @@ namespace ams::ro::impl {
         nrr_mcm.Cancel();
 
         /* Save a copy of the hash that we verified. */
-        crypto::GenerateSha256Hash(out_hash, out_hash_size, nrr_header->GetSignedArea(), nrr_header->GetSignedAreaSize());
+        crypto::GenerateSha256(out_hash, out_hash_size, nrr_header->GetSignedArea(), nrr_header->GetSignedAreaSize());
 
         *out_header              = nrr_header;
         *out_mapped_code_address = code_address;

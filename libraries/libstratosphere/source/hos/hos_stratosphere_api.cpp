@@ -18,10 +18,11 @@
 
 namespace ams::os {
 
-    void InitializeForStratosphereInternal();
+    void Initialize();
 
 }
 
+#if defined(ATMOSPHERE_OS_HORIZON)
 extern "C" {
 
     /* Provide libnx address space allocation shim. */
@@ -30,6 +31,7 @@ extern "C" {
     }
 
 }
+#endif
 
 namespace ams::hos {
 
@@ -53,13 +55,15 @@ namespace ams::hos {
 
     void InitializeForStratosphere() {
         /* Initialize the global os resource managers. This *must* be done before anything else in stratosphere. */
-        os::InitializeForStratosphereInternal();
+        os::Initialize();
 
         /* Initialize hos::Version API. */
         hos::InitializeVersionInternal(CanAllowTemporaryApproximateVersion());
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         /* Check that we're running under mesosphere. */
         AMS_ABORT_UNLESS(IsUnitTestProgramForSetVersion() || svc::IsKernelMesosphere());
+        #endif
     }
 
 }

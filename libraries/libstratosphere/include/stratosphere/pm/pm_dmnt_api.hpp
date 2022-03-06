@@ -28,6 +28,9 @@ namespace ams::pm::dmnt {
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
     Result HookToCreateApplicationProcess(os::NativeHandle *out_handle);
     Result AtmosphereGetProcessInfo(os::NativeHandle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, svc::LimitableResource resource);
+    #endif
 
 }

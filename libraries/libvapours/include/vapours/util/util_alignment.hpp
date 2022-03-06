@@ -49,32 +49,32 @@ namespace ams::util {
     }
 
     template<>
-    constexpr ALWAYS_INLINE void *AlignUp<void *>(void *value, size_t alignment) {
+    ALWAYS_INLINE void *AlignUp<void *>(void *value, size_t alignment) {
         return reinterpret_cast<void *>(AlignUp(reinterpret_cast<uintptr_t>(value), alignment));
     }
 
     template<>
-    constexpr ALWAYS_INLINE const void *AlignUp<const void *>(const void *value, size_t alignment) {
+    ALWAYS_INLINE const void *AlignUp<const void *>(const void *value, size_t alignment) {
         return reinterpret_cast<const void *>(AlignUp(reinterpret_cast<uintptr_t>(value), alignment));
     }
 
     template<>
-    constexpr ALWAYS_INLINE void *AlignDown<void *>(void *value, size_t alignment) {
+    ALWAYS_INLINE void *AlignDown<void *>(void *value, size_t alignment) {
         return reinterpret_cast<void *>(AlignDown(reinterpret_cast<uintptr_t>(value), alignment));
     }
 
     template<>
-    constexpr ALWAYS_INLINE const void *AlignDown<const void *>(const void *value, size_t alignment) {
+    ALWAYS_INLINE const void *AlignDown<const void *>(const void *value, size_t alignment) {
         return reinterpret_cast<void *>(AlignDown(reinterpret_cast<uintptr_t>(value), alignment));
     }
 
     template<>
-    constexpr ALWAYS_INLINE bool IsAligned<void *>(void *value, size_t alignment) {
+    ALWAYS_INLINE bool IsAligned<void *>(void *value, size_t alignment) {
         return IsAligned(reinterpret_cast<uintptr_t>(value), alignment);
     }
 
     template<>
-    constexpr ALWAYS_INLINE bool IsAligned<const void *>(const void *value, size_t alignment) {
+    ALWAYS_INLINE bool IsAligned<const void *>(const void *value, size_t alignment) {
         return IsAligned(reinterpret_cast<uintptr_t>(value), alignment);
     }
 

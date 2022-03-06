@@ -40,7 +40,7 @@ namespace ams::ddsf {
                 m_device_list.clear();
             }
         protected:
-            ~IDriver() {
+            virtual ~IDriver() {
                 m_device_list.clear();
             }
         public:

@@ -18,6 +18,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteDsEndpoint {
         private:
             Service m_srv;
@@ -33,5 +34,6 @@ namespace ams::usb {
             Result SetZlt(bool zlt);
     };
     static_assert(ds::IsIDsEndpoint<RemoteDsEndpoint>);
+    #endif
 
 }

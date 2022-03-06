@@ -117,7 +117,7 @@ namespace ams::mem::impl::heap {
         if (real_size == 0) {
             return nullptr;
         }
-        AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+        AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
         return m_tls_heap_central->CacheSmallMemory(cls, align);
     }
 
@@ -128,7 +128,7 @@ namespace ams::mem::impl::heap {
             if (!util::IsAligned(reinterpret_cast<uintptr_t>(ptr), MinimumAlignment)) {
                 return 0;
             }
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
             return TlsHeapStatic::GetChunkSize(cls);
         } else if (ptr != nullptr) {
             return m_tls_heap_central->GetAllocationSize(ptr);
@@ -151,7 +151,7 @@ namespace ams::mem::impl::heap {
 
         const auto cls = m_tls_heap_central->GetClassFromPointer(ptr);
         if (cls >= 0) {
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
             if (cls) {
                 return m_tls_heap_central->UncacheSmallMemory(ptr);
             } else {
@@ -266,26 +266,22 @@ namespace ams::mem::impl::heap {
         return m_tls_heap_central->WalkAllocatedPointers(callback, user_data);
     }
 
-    errno_t CentralHeap::QueryV(int query, std::va_list vl) {
-        return this->QueryVImpl(query, std::addressof(vl));
-    }
-
     errno_t CentralHeap::Query(int query, ...) {
         std::va_list vl;
         va_start(vl, query);
-        auto err = this->QueryVImpl(query, std::addressof(vl));
+        auto err = this->QueryV(query, vl);
         va_end(vl);
         return err;
     }
 
-    errno_t CentralHeap::QueryVImpl(int _query, std::va_list *vl_ptr) {
+    errno_t CentralHeap::QueryV(int _query, std::va_list vl) {
         const AllocQuery query = static_cast<AllocQuery>(_query);
         switch (query) {
             case AllocQuery_Dump:
             case AllocQuery_DumpJson:
             {
-                auto dump_mode = static_cast<DumpMode>(va_arg(*vl_ptr, int));
-                auto fd = va_arg(*vl_ptr, int);
+                auto dump_mode = static_cast<DumpMode>(va_arg(vl, int));
+                auto fd = va_arg(vl, int);
                 if (m_tls_heap_central) {
                     m_tls_heap_central->Dump(dump_mode, fd, query == AllocQuery_DumpJson);
                 }
@@ -293,7 +289,7 @@ namespace ams::mem::impl::heap {
             }
             case AllocQuery_PageSize:
             {
-                size_t *out = va_arg(*vl_ptr, size_t *);
+                size_t *out = va_arg(vl, size_t *);
                 if (out) {
                     *out = PageSize;
                 }
@@ -304,7 +300,7 @@ namespace ams::mem::impl::heap {
             case AllocQuery_SystemSize:
             case AllocQuery_MaxAllocatableSize:
             {
-                size_t *out = va_arg(*vl_ptr, size_t *);
+                size_t *out = va_arg(vl, size_t *);
                 if (!out) {
                     return 0;
                 }
@@ -333,7 +329,7 @@ namespace ams::mem::impl::heap {
             }
             case AllocQuery_IsClean:
             {
-                int *out = va_arg(*vl_ptr, int *);
+                int *out = va_arg(vl, int *);
                 if (out) {
                     *out = !m_tls_heap_central || m_tls_heap_central->IsClean();
                 }
@@ -341,7 +337,7 @@ namespace ams::mem::impl::heap {
             }
             case AllocQuery_HeapHash:
             {
-                HeapHash *out = va_arg(*vl_ptr, HeapHash *);
+                HeapHash *out = va_arg(vl, HeapHash *);
                 if (out) {
                     if (m_tls_heap_central) {
                         m_tls_heap_central->CalculateHeapHash(out);
@@ -358,37 +354,37 @@ namespace ams::mem::impl::heap {
             case AllocQuery_SetColor:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                void *ptr = va_arg(*vl_ptr, void *);
-                int color = va_arg(*vl_ptr, int);
+                void *ptr = va_arg(vl, void *);
+                int color = va_arg(vl, int);
                 return m_tls_heap_central->SetColor(ptr, color);
             }
             case AllocQuery_GetColor:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                void *ptr = va_arg(*vl_ptr, void *);
-                int *out = va_arg(*vl_ptr, int *);
+                void *ptr = va_arg(vl, void *);
+                int *out = va_arg(vl, int *);
                 return m_tls_heap_central->GetColor(ptr, out);
             }
             case AllocQuery_SetName:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                void *ptr = va_arg(*vl_ptr, void *);
-                const char *name = va_arg(*vl_ptr, const char *);
+                void *ptr = va_arg(vl, void *);
+                const char *name = va_arg(vl, const char *);
                 return m_tls_heap_central->SetName(ptr, name);
             }
             case AllocQuery_GetName:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                void *ptr = va_arg(*vl_ptr, void *);
-                char *dst = va_arg(*vl_ptr, char *);
-                size_t dst_size = va_arg(*vl_ptr, size_t);
+                void *ptr = va_arg(vl, void *);
+                char *dst = va_arg(vl, char *);
+                size_t dst_size = va_arg(vl, size_t);
                 return m_tls_heap_central->GetName(ptr, dst, dst_size);
             }
             case AllocQuery_FreeSizeMapped:
             case AllocQuery_MaxAllocatableSizeMapped:
             {
                 /* NOTE: Nintendo does not check that the ptr is not null for this query, even though they do for other queries. */
-                size_t *out = va_arg(*vl_ptr, size_t *);
+                size_t *out = va_arg(vl, size_t *);
                 size_t free_size;
                 size_t max_allocatable_size;
                 auto err = m_tls_heap_central->GetMappedMemStats(std::addressof(free_size), std::addressof(max_allocatable_size));

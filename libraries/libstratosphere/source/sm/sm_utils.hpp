@@ -16,10 +16,14 @@
 
 #pragma once
 #include <stratosphere.hpp>
-#include "sm_ams.h"
+
+#if defined(ATMOSPHERE_OS_HORIZON)
+#include "sm_ams.os.horizon.h"
+#endif
 
 namespace ams::sm::impl {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     /* Utilities. */
     os::SdkRecursiveMutex &GetMitmAcknowledgementSessionMutex();
     os::SdkRecursiveMutex &GetPerThreadSessionMutex();
@@ -52,5 +56,6 @@ namespace ams::sm::impl {
         static_assert(sizeof(SmServiceName) == sizeof(sm::ServiceName));
         return std::bit_cast<SmServiceName>(name);
     }
+    #endif
 
 }

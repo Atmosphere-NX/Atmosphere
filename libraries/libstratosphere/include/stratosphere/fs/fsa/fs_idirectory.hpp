@@ -31,13 +31,13 @@ namespace ams::fs::fsa {
                     return ResultSuccess();
                 }
                 R_UNLESS(out_entries != nullptr, fs::ResultNullptrArgument());
-                R_UNLESS(max_entries > 0, fs::ResultInvalidArgument());
-                return this->DoRead(out_count, out_entries, max_entries);
+                R_UNLESS(max_entries > 0,        fs::ResultInvalidArgument());
+                R_RETURN(this->DoRead(out_count, out_entries, max_entries));
             }
 
             Result GetEntryCount(s64 *out) {
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
-                return this->DoGetEntryCount(out);
+                R_RETURN(this->DoGetEntryCount(out));
             }
         public:
             /* TODO: This is a hack to allow the mitm API to work. Find a better way? */

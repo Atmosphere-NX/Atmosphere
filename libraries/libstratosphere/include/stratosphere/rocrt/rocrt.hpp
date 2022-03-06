@@ -44,24 +44,24 @@ namespace ams::rocrt {
         }
     }
 
-    constexpr inline ModuleHeader *GetModuleHeader(const ModuleHeaderLocation *loc) {
+    inline ModuleHeader *GetModuleHeader(const ModuleHeaderLocation *loc) {
         return reinterpret_cast<ModuleHeader *>(reinterpret_cast<uintptr_t>(loc) + loc->header_offset);
     }
 
-    constexpr inline uintptr_t GetDynamicOffset(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
+    inline uintptr_t GetDynamicOffset(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
         return reinterpret_cast<uintptr_t>(loc) + loc->header_offset + header->dynamic_offset;
     }
 
 
-    constexpr inline uintptr_t GetBssStartAddress(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
+    inline uintptr_t GetBssStartAddress(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
         return reinterpret_cast<uintptr_t>(loc) + loc->header_offset + header->bss_start_offset;
     }
 
-    constexpr inline uintptr_t GetBssEndAddress(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
+    inline uintptr_t GetBssEndAddress(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
         return reinterpret_cast<uintptr_t>(loc) + loc->header_offset + header->bss_end_offset;
     }
 
-    constexpr inline uintptr_t GetModuleOffset(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
+    inline uintptr_t GetModuleOffset(const ModuleHeader *header, const ModuleHeaderLocation *loc) {
         return reinterpret_cast<uintptr_t>(loc) + loc->header_offset + header->module_offset;
     }
 

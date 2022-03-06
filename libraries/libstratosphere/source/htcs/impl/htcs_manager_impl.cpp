@@ -100,7 +100,7 @@ namespace ams::htcs::impl {
 
     Result HtcsManagerImpl::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, const char *buffer, s64 size, s32 desc, s32 flags) {
         /* Start the send. */
-        u32 task_id;
+        u32 task_id{};
         os::NativeHandle handle;
         R_TRY(m_service.SendSmallStart(std::addressof(task_id), std::addressof(handle), desc, size, flags));
 
@@ -158,7 +158,7 @@ namespace ams::htcs::impl {
 
     Result HtcsManagerImpl::StartSelect(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
         /* Start the select. */
-        u32 task_id;
+        u32 task_id{};
         os::NativeHandle handle = os::InvalidNativeHandle;
         const Result result = m_service.SelectStart(std::addressof(task_id), std::addressof(handle), read_handles, write_handles, exception_handles, tv_sec, tv_usec);
 

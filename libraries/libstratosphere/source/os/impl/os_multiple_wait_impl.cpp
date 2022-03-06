@@ -122,12 +122,16 @@ namespace ams::os::impl {
                     break;
                 default: /* 0 - 0x3F, valid. */
                     {
-                        AMS_ASSERT(0 <= index && index < static_cast<s32>(MaximumHandleCount));
+                        if constexpr (MaximumHandleCount > 0) {
+                            AMS_ASSERT(0 <= index && index < static_cast<s32>(MaximumHandleCount));
 
-                        std::scoped_lock lk(m_cs_wait);
-                        m_signaled_holder = objects[index];
-                        *out              = objects[index];
-                        return wait_result;
+                            std::scoped_lock lk(m_cs_wait);
+                            m_signaled_holder = objects[index];
+                            *out              = objects[index];
+                            return wait_result;
+                        } else {
+                            AMS_ABORT_UNLESS(MaximumHandleCount > 0);
+                        }
                     }
                     break;
             }

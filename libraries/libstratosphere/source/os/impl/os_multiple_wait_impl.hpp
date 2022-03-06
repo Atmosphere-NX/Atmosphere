@@ -18,6 +18,12 @@
 
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "os_multiple_wait_target_impl.os.horizon.hpp"
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include "os_multiple_wait_target_impl.os.windows.hpp"
+#elif defined(ATMOSPHERE_OS_LINUX)
+    #include "os_multiple_wait_target_impl.os.linux.hpp"
+#elif defined(ATMOSPHERE_OS_MACOS)
+    #include "os_multiple_wait_target_impl.os.macos.hpp"
 #else
     #error "Unknown OS for ams::os::MultiWaitTargetImpl"
 #endif

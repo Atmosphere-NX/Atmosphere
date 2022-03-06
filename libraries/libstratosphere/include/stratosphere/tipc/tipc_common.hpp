@@ -18,3 +18,4 @@
 #include <stratosphere/ams.hpp>
 #include <stratosphere/os.hpp>
 #include <stratosphere/sm/sm_types.hpp>
+#include <stratosphere/tipc/tipc_message_types.hpp>

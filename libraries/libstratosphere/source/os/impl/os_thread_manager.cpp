@@ -23,7 +23,10 @@
 
 namespace ams::os::impl {
 
-    void SetupThreadObjectUnsafe(ThreadType *thread, ThreadImpl *thread_impl, ThreadFunction function, void *arg, void *stack, size_t stack_size, s32 priority) {
+    void SetupThreadObjectUnsafe(ThreadType *thread, void *platform, ThreadFunction function, void *arg, void *stack, size_t stack_size, s32 priority) {
+        /* Clear the thread object. */
+        std::memset(thread, 0, sizeof(*thread));
+
         /* Setup objects. */
         util::ConstructAt(thread->cs_thread);
         util::ConstructAt(thread->cv_thread);
@@ -32,20 +35,37 @@ namespace ams::os::impl {
         util::ConstructAt(thread->waitlist);
 
         /* Set member variables. */
-        thread->magic          = os::ThreadType::Magic;
-        thread->version        = 0;
-        thread->thread_impl    = (thread_impl != nullptr) ? thread_impl : std::addressof(thread->thread_impl_storage);
-        thread->function       = function;
-        thread->argument       = arg;
-        thread->stack          = stack;
-        thread->stack_size     = stack_size;
-        thread->base_priority  = priority;
-        thread->suspend_count  = 0;
-        thread->name_buffer[0] = '\x00';
-        thread->name_pointer   = thread->name_buffer;
+        thread->magic            = os::ThreadType::Magic;
+        thread->stack_is_aliased = false;
+        thread->auto_registered  = false;
+        thread->version          = 0;
+        thread->function         = function;
+        thread->argument         = arg;
+        thread->original_stack   = stack;
+        thread->stack            = stack;
+        thread->stack_size       = stack_size;
+        thread->base_priority    = priority;
+        thread->suspend_count    = 0;
+        thread->initial_fiber    = nullptr;
+        thread->current_fiber    = nullptr;
+        thread->name_buffer[0]   = '\x00';
+        thread->name_pointer     = thread->name_buffer;
 
-        /* Set internal tls variables. */
-        thread->atomic_sf_inline_context = 0;
+        /* Set platform variables. */
+        #if defined(AMS_OS_IMPL_USE_PTHREADS)
+        util::ConstructAt(thread->cs_pthread_exit);
+        util::ConstructAt(thread->cv_pthread_exit);
+        thread->exited_pthread = false;
+
+        std::memset(thread->tls_value_array, 0, sizeof(thread->tls_value_array));
+        AMS_UNUSED(platform);
+        #elif defined(ATMOSPHERE_OS_HORIZON)
+        std::memset(std::addressof(thread->sdk_internal_tls), 0, sizeof(thread->sdk_internal_tls));
+        thread->thread_impl = (platform != nullptr) ? static_cast<ThreadType::ThreadImpl *>(platform) : std::addressof(thread->thread_impl_storage);
+        #else
+        std::memset(thread->tls_value_array, 0, sizeof(thread->tls_value_array));
+        AMS_UNUSED(platform);
+        #endif
 
         /* Mark initialized. */
         thread->state = ThreadType::State_Initialized;
@@ -74,36 +94,61 @@ namespace ams::os::impl {
     }
 
     ThreadManager::ThreadManager() : m_impl(std::addressof(m_main_thread)), m_total_thread_stack_size(0), m_num_created_threads(0) {
+        m_total_thread_stack_size = 0;
+        m_num_created_threads     = 0;
+
         m_main_thread.state = ThreadType::State_Started;
 
         this->SetCurrentThread(std::addressof(m_main_thread));
-
         this->PlaceThreadObjectUnderThreadManagerSafe(std::addressof(m_main_thread));
     }
 
+    void ThreadManager::CleanupThread(ThreadType *thread) {
+        /* TODO: TLS Manager->InvokeTlsDestructors(); */
+
+        std::scoped_lock lk(GetReference(thread->cs_thread));
+
+        thread->state = ThreadType::State_Terminated;
+
+        GetReference(thread->cv_thread).Broadcast();
+        GetReference(thread->waitlist).SignalAllThreads();
+    }
+
     void ThreadManager::CleanupThread() {
-        ThreadType *thread = this->GetCurrentThread();
+        return this->CleanupThread(this->GetCurrentThread());
+    }
 
-        {
-            std::scoped_lock lk(GetReference(thread->cs_thread));
-
-            thread->state = ThreadType::State_Terminated;
-
-            GetReference(thread->cv_thread).Broadcast();
-            GetReference(thread->waitlist).SignalAllThreads();
+    bool ThreadManager::CreateAliasStackUnsafe(ThreadType *thread) {
+        void *alias_stack;
+        if (m_impl.MapAliasStack(std::addressof(alias_stack), thread->stack, thread->stack_size)) {
+            thread->stack_is_aliased = true;
+            thread->stack            = alias_stack;
+            return true;
+        } else {
+            return false;
         }
+    }
+
+    void ThreadManager::DeleteAliasStackUnsafe(ThreadType *thread) {
+        AMS_ABORT_UNLESS(m_impl.UnmapAliasStack(thread->stack, thread->original_stack, thread->stack_size));
+
+        thread->stack_is_aliased = false;
+        thread->stack            = thread->original_stack;
     }
 
     Result ThreadManager::CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority, s32 ideal_core) {
         SetupThreadObjectUnsafe(thread, nullptr, function, argument, stack, stack_size, priority);
+        AMS_ABORT_UNLESS(this->CreateAliasStackUnsafe(thread));
+        ON_RESULT_FAILURE {
+            this->DeleteAliasStackUnsafe(thread);
+            thread->state = ThreadType::State_NotInitialized;
+        };
 
-        auto guard = SCOPE_GUARD { thread->state = ThreadType::State_NotInitialized; };
         R_TRY(m_impl.CreateThread(thread, ideal_core));
-        guard.Cancel();
 
         this->PlaceThreadObjectUnderThreadManagerSafe(thread);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ThreadManager::CreateThread(ThreadType *thread, ThreadFunction function, void *argument, void *stack, size_t stack_size, s32 priority) {
@@ -123,27 +168,33 @@ namespace ams::os::impl {
 
         m_impl.WaitForThreadExit(thread);
 
-        AMS_ASSERT(thread->state == ThreadType::State_Initialized);
+        this->DestroyThreadObject(thread);
+    }
 
+    void ThreadManager::DestroyThreadObject(ThreadType *thread) {
         {
             std::scoped_lock lk(GetReference(thread->cs_thread));
-
-            /* NOTE: Here Nintendo would cleanup the alias stack. */
-
-            m_impl.DestroyThreadUnsafe(thread);
-
-            thread->state = ThreadType::State_NotInitialized;
-
-            util::DestroyAt(thread->waitlist);
-
-            thread->name_buffer[0] = '\x00';
-            thread->magic = 0xCCCC;
 
             {
                 std::scoped_lock tlk(m_cs);
                 this->EraseFromAllThreadsListUnsafe(thread);
             }
+
+            if (thread->stack_is_aliased) {
+                this->DeleteAliasStackUnsafe(thread);
+            }
+
+            m_impl.DestroyThreadUnsafe(thread);
+
+            thread->state = ThreadType::State_NotInitialized;
+
+            thread->name_buffer[0] = '\x00';
+            thread->magic = 0xCCCC;
+
+            util::DestroyAt(thread->waitlist);
         }
+        util::DestroyAt(thread->cs_thread);
+        util::DestroyAt(thread->cv_thread);
     }
 
     void ThreadManager::StartThread(ThreadType *thread) {
@@ -163,7 +214,9 @@ namespace ams::os::impl {
         {
             std::scoped_lock lk(GetReference(thread->cs_thread));
 
-            /* Note: Here Nintendo would cleanup the alias stack. */
+            if (thread->stack_is_aliased) {
+                this->DeleteAliasStackUnsafe(thread);
+            }
         }
     }
 
@@ -173,7 +226,9 @@ namespace ams::os::impl {
         if (result) {
             std::scoped_lock lk(GetReference(thread->cs_thread));
 
-            /* Note: Here Nintendo would cleanup the alias stack. */
+            if (thread->stack_is_aliased) {
+                this->DeleteAliasStackUnsafe(thread);
+            }
         }
 
         return result;
@@ -182,7 +237,7 @@ namespace ams::os::impl {
     s32 ThreadManager::SuspendThread(ThreadType *thread) {
         std::scoped_lock lk(GetReference(thread->cs_thread));
 
-        auto prev_suspend_count = thread->suspend_count;
+        const auto prev_suspend_count = thread->suspend_count;
         AMS_ASSERT(prev_suspend_count < ThreadSuspendCountMax);
         thread->suspend_count = prev_suspend_count + 1;
 
@@ -195,7 +250,7 @@ namespace ams::os::impl {
     s32 ThreadManager::ResumeThread(ThreadType *thread) {
         std::scoped_lock lk(GetReference(thread->cs_thread));
 
-        auto prev_suspend_count = thread->suspend_count;
+        const auto prev_suspend_count = thread->suspend_count;
         if (prev_suspend_count > 0) {
             thread->suspend_count = prev_suspend_count - 1;
             if (prev_suspend_count == 1) {
@@ -205,11 +260,15 @@ namespace ams::os::impl {
         return prev_suspend_count;
     }
 
-    void ThreadManager::CancelThreadSynchronization(ThreadType *thread) {
-        std::scoped_lock lk(GetReference(thread->cs_thread));
+    #if !defined(ATMOSPHERE_OS_HORIZON)
+    void ThreadManager::SetZeroToAllThreadsTlsSafe(int slot) {
+        std::scoped_lock lk(m_cs);
 
-        m_impl.CancelThreadSynchronizationUnsafe(thread);
+        for (auto it = m_all_threads_list.begin(); it != m_all_threads_list.end(); ++it) {
+            it->tls_value_array[slot] = 0;
+        }
     }
+    #endif
 
     /* TODO void ThreadManager::GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
 

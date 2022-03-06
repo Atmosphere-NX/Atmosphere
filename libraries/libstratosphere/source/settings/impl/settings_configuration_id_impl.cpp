@@ -19,8 +19,13 @@
 namespace ams::settings::impl {
 
     Result GetConfigurationId1(settings::factory::ConfigurationId1 *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetCalConfigurationId1));
         return ::setcalGetConfigurationId1(reinterpret_cast<::SetCalConfigurationId1 *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

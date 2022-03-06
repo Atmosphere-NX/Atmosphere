@@ -22,7 +22,7 @@ namespace ams::os {
 
     struct ReaderWriterLockType;
 
-    void InitalizeReaderWriterLock(ReaderWriterLockType *rw_lock);
+    void InitializeReaderWriterLock(ReaderWriterLockType *rw_lock);
     void FinalizeReaderWriterLock(ReaderWriterLockType *rw_lock);
 
     void AcquireReadLock(ReaderWriterLockType *rw_lock);

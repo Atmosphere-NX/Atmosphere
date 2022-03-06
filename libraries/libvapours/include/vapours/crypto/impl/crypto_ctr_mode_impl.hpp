@@ -174,7 +174,11 @@ namespace ams::crypto::impl {
     }
 
     template<> void CtrModeImpl<AesEncryptor128>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks);
+
+    /* TODO: Optimized x64 CTR-192/256? */
+    #if defined(ATMOSPHERE_ARCH_ARM64)
     template<> void CtrModeImpl<AesEncryptor192>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks);
     template<> void CtrModeImpl<AesEncryptor256>::ProcessBlocks(u8 *dst, const u8 *src, size_t num_blocks);
+    #endif
 
 }

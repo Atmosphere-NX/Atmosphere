@@ -17,6 +17,7 @@
 
 namespace ams::hid {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
         /* Global lock. */
@@ -87,5 +88,6 @@ namespace ams::hid {
 
         return ResultSuccess();
     }
+    #endif
 
 }

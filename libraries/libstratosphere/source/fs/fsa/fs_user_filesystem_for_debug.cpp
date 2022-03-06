@@ -36,9 +36,13 @@ namespace ams::fs {
 
     }
 
-    Result GetFileTimeStampRawForDebug(FileTimeStampRaw *out, const char *path) {
-        AMS_FS_R_TRY(impl::GetFileTimeStampRawForDebug(out, path));
-        return ResultSuccess();
+    Result GetFileTimeStamp(FileTimeStamp *out, const char *path) {
+        fs::FileTimeStampRaw raw;
+        AMS_FS_R_TRY(impl::GetFileTimeStampRawForDebug(std::addressof(raw), path));
+
+        static_assert(sizeof(raw) == sizeof(*out));
+        std::memcpy(out, std::addressof(raw), sizeof(raw));
+        R_SUCCEED();
     }
 
 }

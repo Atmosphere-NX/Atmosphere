@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
 
@@ -56,7 +58,7 @@ namespace ams::fs {
                 g_mounted_stratosphere_romfs = true;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         fsa::IFileSystem &GetStratosphereRomFsFileSystem() {
@@ -70,32 +72,35 @@ namespace ams::fs {
         Result OpenCodeFileSystemImpl(CodeVerificationData *out_verification_data, std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
             /* Print a path suitable for the remote service. */
             fssrv::sf::Path sf_path;
-            R_TRY(FspPathPrintf(std::addressof(sf_path), "%s", path));
+            R_TRY(FormatToFspPath(std::addressof(sf_path), "%s", path));
 
-            /* Open the filesystem using libnx bindings. */
-            static_assert(sizeof(CodeVerificationData) == sizeof(::FsCodeInfo));
-            ::FsFileSystem fs;
-            R_TRY(fsldrOpenCodeFileSystem(reinterpret_cast<::FsCodeInfo *>(out_verification_data), program_id.value, sf_path.str, std::addressof(fs)));
+            /* Open the filesystem. */
+            auto fsp = impl::GetFileSystemProxyForLoaderServiceObject();
+            R_TRY(fsp->SetCurrentProcess({}));
+
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenCodeFileSystem(std::addressof(fs), out_verification_data, sf_path, program_id));
 
             /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
 
             *out = std::move(fsa);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
-        Result OpenPackageFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, const char *common_path) {
-            /* Open a filesystem using libnx bindings. */
-            FsFileSystem fs;
-            R_TRY(fsOpenFileSystemWithId(std::addressof(fs), ncm::InvalidProgramId.value, static_cast<::FsFileSystemType>(impl::FileSystemProxyType_Package), common_path));
+        Result OpenPackageFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, const fssrv::sf::FspPath &path) {
+            /* Open the filesystem. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), path, ncm::InvalidProgramId.value, impl::FileSystemProxyType_Package));
 
             /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
 
             *out = std::move(fsa);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenSdCardCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, ncm::ProgramId program_id) {
@@ -104,9 +109,9 @@ namespace ams::fs {
 
             /* Print a path to the program's package. */
             fssrv::sf::Path sf_path;
-            R_TRY(FspPathPrintf(std::addressof(sf_path), "%s:/atmosphere/contents/%016lx/exefs.nsp", impl::SdCardFileSystemMountName, program_id.value));
+            R_TRY(FormatToFspPath(std::addressof(sf_path), "%s:/atmosphere/contents/%016" PRIx64 "/exefs.nsp", impl::SdCardFileSystemMountName, program_id.value));
 
-            return OpenPackageFileSystemImpl(out, sf_path.str);
+            R_RETURN(OpenPackageFileSystemImpl(out, sf_path));
         }
 
         Result OpenStratosphereCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, ncm::ProgramId program_id) {
@@ -120,11 +125,12 @@ namespace ams::fs {
                 auto &romfs_fs = GetStratosphereRomFsFileSystem();
 
                 /* Print a path to the program's package. */
-                fssrv::sf::Path sf_path;
-                R_TRY(FspPathPrintf(std::addressof(sf_path), "/atmosphere/contents/%016lX/exefs.nsp", program_id.value));
+                fs::Path path;
+                R_TRY(path.InitializeWithFormat("/atmosphere/contents/%016" PRIx64 "/exefs.nsp", program_id.value));
+                R_TRY(path.Normalize(fs::PathFlags{}));
 
                 /* Open the package within stratosphere.romfs. */
-                R_TRY(romfs_fs.OpenFile(std::addressof(package_file), sf_path.str, fs::OpenMode_Read));
+                R_TRY(romfs_fs.OpenFile(std::addressof(package_file), path, fs::OpenMode_Read));
             }
 
             /* Create a file storage for the program's package. */
@@ -139,7 +145,7 @@ namespace ams::fs {
             R_TRY(package_fs->Initialize(package_storage));
 
             *out = std::move(package_fs);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenSdCardCodeOrStratosphereCodeOrCodeFileSystemImpl(CodeVerificationData *out_verification_data, std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
@@ -150,7 +156,7 @@ namespace ams::fs {
             R_SUCCEED_IF(R_SUCCEEDED(OpenStratosphereCodeFileSystemImpl(out, program_id)));
 
             /* Otherwise, fall back to a normal code fs. */
-            return OpenCodeFileSystemImpl(out_verification_data, out, path, program_id);
+            R_RETURN(OpenCodeFileSystemImpl(out_verification_data, out, path, program_id));
         }
 
         Result OpenHblCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out) {
@@ -159,93 +165,94 @@ namespace ams::fs {
 
             /* Print a path to the hbl package. */
             fssrv::sf::Path sf_path;
-            R_TRY(FspPathPrintf(std::addressof(sf_path), "%s:/%s", impl::SdCardFileSystemMountName, hbl_path[0] == '/' ? hbl_path + 1 : hbl_path));
+            R_TRY(FormatToFspPath(std::addressof(sf_path), "%s:/%s", impl::SdCardFileSystemMountName, hbl_path[0] == '/' ? hbl_path + 1 : hbl_path));
 
-            return OpenPackageFileSystemImpl(out, sf_path.str);
+            R_RETURN(OpenPackageFileSystemImpl(out, sf_path));
         }
 
-        Result OpenSdCardFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out) {
-            /* Open the SD card. This uses libnx bindings. */
-            FsFileSystem fs;
-            R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));
+        Result OpenSdCardFileSystemImpl(std::shared_ptr<fsa::IFileSystem> *out) {
+            /* Open the SD card filesystem. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenSdCardFileSystem(std::addressof(fs)));
 
             /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
+            auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
 
             *out = std::move(fsa);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         class OpenFileOnlyFileSystem : public fsa::IFileSystem, public impl::Newable {
             private:
                 virtual Result DoCommit() override final {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
-                virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
+                virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const fs::Path &path, OpenDirectoryMode mode) override final {
                     AMS_UNUSED(out_dir, path, mode);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
+                virtual Result DoGetEntryType(DirectoryEntryType *out, const fs::Path &path) override final {
                     AMS_UNUSED(out, path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
+                virtual Result DoCreateFile(const fs::Path &path, s64 size, int flags) override final {
                     AMS_UNUSED(path, size, flags);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoDeleteFile(const char *path) override final {
+                virtual Result DoDeleteFile(const fs::Path &path) override final {
                     AMS_UNUSED(path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoCreateDirectory(const char *path) override final {
+                virtual Result DoCreateDirectory(const fs::Path &path) override final {
                     AMS_UNUSED(path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoDeleteDirectory(const char *path) override final {
+                virtual Result DoDeleteDirectory(const fs::Path &path) override final {
                     AMS_UNUSED(path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
+                virtual Result DoDeleteDirectoryRecursively(const fs::Path &path) override final {
                     AMS_UNUSED(path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
+                virtual Result DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) override final {
                     AMS_UNUSED(old_path, new_path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
+                virtual Result DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) override final {
                     AMS_UNUSED(old_path, new_path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoCleanDirectoryRecursively(const char *path) override final {
+                virtual Result DoCleanDirectoryRecursively(const fs::Path &path) override final {
                     AMS_UNUSED(path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override final {
+                virtual Result DoGetFreeSpaceSize(s64 *out, const fs::Path &path) override final {
                     AMS_UNUSED(out, path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
-                virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override final {
+                virtual Result DoGetTotalSpaceSize(s64 *out, const fs::Path &path) override final {
                     AMS_UNUSED(out, path);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result DoCommitProvisionally(s64 counter) override final {
                     AMS_UNUSED(counter);
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
         };
 
@@ -261,32 +268,40 @@ namespace ams::fs {
                     }
 
                     /* Open an SD card filesystem. */
-                    std::unique_ptr<fsa::IFileSystem> sd_fs;
+                    std::shared_ptr<fsa::IFileSystem> sd_fs;
                     if (R_FAILED(OpenSdCardFileSystemImpl(std::addressof(sd_fs)))) {
                         return;
                     }
 
                     /* Create a redirection filesystem to the relevant content folder. */
-                    char path[fs::EntryNameLengthMax + 1];
-                    util::SNPrintf(path, sizeof(path), "/atmosphere/contents/%016lx/exefs", program_id.value);
-
-                    auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_fs), path);
+                    auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_fs));
                     if (subdir_fs == nullptr) {
                         return;
                     }
 
+                    fs::Path path;
+                    R_ABORT_UNLESS(path.InitializeWithFormat("/atmosphere/contents/%016" PRIx64 "/exefs", program_id.value));
+                    R_ABORT_UNLESS(path.Normalize(fs::PathFlags{}));
+
+                    R_ABORT_UNLESS(subdir_fs->Initialize(path));
+
                     m_sd_content_fs.emplace(std::move(subdir_fs));
                 }
             private:
-                bool IsFileStubbed(const char *path) {
+                bool IsFileStubbed(const fs::Path &path) {
                     /* If we don't have an sd content fs, nothing is stubbed. */
                     if (!m_sd_content_fs) {
                         return false;
                     }
 
                     /* Create a path representing the stub. */
-                    char stub_path[fs::EntryNameLengthMax + 1];
-                    util::SNPrintf(stub_path, sizeof(stub_path), "%s.stub", path);
+                    fs::Path stub_path;
+                    if (R_FAILED(stub_path.InitializeWithFormat("%s.stub", path.GetString()))) {
+                        return false;
+                    }
+                    if (R_FAILED(stub_path.Normalize(fs::PathFlags{}))) {
+                        return false;
+                    }
 
                     /* Query whether we have the file. */
                     bool has_file;
@@ -297,7 +312,7 @@ namespace ams::fs {
                     return has_file;
                 }
 
-                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const fs::Path &path, OpenMode mode) override final {
                     /* Only allow opening files with mode = read. */
                     R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
@@ -310,7 +325,7 @@ namespace ams::fs {
                     R_UNLESS(!this->IsFileStubbed(path), fs::ResultPathNotFound());
 
                     /* Open a file from the base code fs. */
-                    return m_code_fs.OpenFile(out_file, path, mode);
+                    R_RETURN(m_code_fs.OpenFile(out_file, path, mode));
                 }
         };
 
@@ -341,10 +356,10 @@ namespace ams::fs {
                     m_program_id = program_id;
                     m_initialized = true;
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             private:
-                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const fs::Path &path, OpenMode mode) override final {
                     /* Ensure that we're initialized. */
                     R_UNLESS(m_initialized, fs::ResultNotInitialized());
 
@@ -355,81 +370,111 @@ namespace ams::fs {
                     {
                         fsa::IFileSystem *ecs = fssystem::GetExternalCodeFileSystem(m_program_id);
                         if (ecs != nullptr) {
-                            return ecs->OpenFile(out_file, path, mode);
+                            R_RETURN(ecs->OpenFile(out_file, path, mode));
                         }
                     }
 
                     /* If we're hbl, open from the hbl fs. */
                     if (m_hbl_fs) {
-                        return m_hbl_fs->OpenFile(out_file, path, mode);
+                        R_RETURN(m_hbl_fs->OpenFile(out_file, path, mode));
                     }
 
                     /* If we're not hbl, fall back to our code filesystem. */
-                    return m_code_fs->OpenFile(out_file, path, mode);
+                    R_RETURN(m_code_fs->OpenFile(out_file, path, mode));
                 }
         };
 
     }
 
     Result MountCode(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id) {
-        /* Clear the output. */
-        std::memset(out, 0, sizeof(*out));
+        auto mount_impl = [=]() -> Result {
+            /* Clear the output. */
+            std::memset(out, 0, sizeof(*out));
 
-        /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+            /* Validate the mount name. */
+            R_TRY(impl::CheckMountName(name));
 
-        /* Validate the path isn't null. */
-        R_UNLESS(path != nullptr, fs::ResultInvalidPath());
+            /* Validate the path isn't null. */
+            R_UNLESS(path != nullptr, fs::ResultInvalidPath());
 
-        /* Open the code file system. */
-        std::unique_ptr<fsa::IFileSystem> fsa;
-        R_TRY(OpenCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
+            /* Open the code file system. */
+            std::unique_ptr<fsa::IFileSystem> fsa;
+            R_TRY(OpenCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
 
-        /* Register. */
-        return fsa::Register(name, std::move(fsa));
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(fsa)));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CODE(name, path, program_id)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
     Result MountCodeForAtmosphereWithRedirection(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
-        /* Clear the output. */
-        std::memset(out, 0, sizeof(*out));
+        auto mount_impl = [=]() -> Result {
+            /* Clear the output. */
+            std::memset(out, 0, sizeof(*out));
 
-        /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+            /* Validate the mount name. */
+            R_TRY(impl::CheckMountName(name));
 
-        /* Validate the path isn't null. */
-        R_UNLESS(path != nullptr, fs::ResultInvalidPath());
+            /* Validate the path isn't null. */
+            R_UNLESS(path != nullptr, fs::ResultInvalidPath());
 
-        /* Create an AtmosphereCodeFileSystem. */
-        auto ams_code_fs = std::make_unique<AtmosphereCodeFileSystem>();
-        R_UNLESS(ams_code_fs != nullptr, fs::ResultAllocationFailureInCodeA());
+            /* Create an AtmosphereCodeFileSystem. */
+            auto ams_code_fs = std::make_unique<AtmosphereCodeFileSystem>();
+            R_UNLESS(ams_code_fs != nullptr, fs::ResultAllocationFailureInCodeA());
 
-        /* Initialize the code file system. */
-        R_TRY(ams_code_fs->Initialize(out, path, program_id, is_hbl, is_specific));
+            /* Initialize the code file system. */
+            R_TRY(ams_code_fs->Initialize(out, path, program_id, is_hbl, is_specific));
 
-        /* Register. */
-        return fsa::Register(name, std::move(ams_code_fs));
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(ams_code_fs)));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CODE(name, path, program_id)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
     Result MountCodeForAtmosphere(CodeVerificationData *out, const char *name, const char *path, ncm::ProgramId program_id) {
-        /* Clear the output. */
-        std::memset(out, 0, sizeof(*out));
+        auto mount_impl = [=]() -> Result {
+            /* Clear the output. */
+            std::memset(out, 0, sizeof(*out));
 
-        /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+            /* Validate the mount name. */
+            R_TRY(impl::CheckMountName(name));
 
-        /* Validate the path isn't null. */
-        R_UNLESS(path != nullptr, fs::ResultInvalidPath());
+            /* Validate the path isn't null. */
+            R_UNLESS(path != nullptr, fs::ResultInvalidPath());
 
-        /* Open the code file system. */
-        std::unique_ptr<fsa::IFileSystem> fsa;
-        R_TRY(OpenSdCardCodeOrStratosphereCodeOrCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
+            /* Open the code file system. */
+            std::unique_ptr<fsa::IFileSystem> fsa;
+            R_TRY(OpenSdCardCodeOrStratosphereCodeOrCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
 
-        /* Create a wrapper fs. */
-        auto wrap_fsa = std::make_unique<SdCardRedirectionCodeFileSystem>(std::move(fsa), program_id, false);
-        R_UNLESS(wrap_fsa != nullptr, fs::ResultAllocationFailureInCodeA());
+            /* Create a wrapper fs. */
+            auto wrap_fsa = std::make_unique<SdCardRedirectionCodeFileSystem>(std::move(fsa), program_id, false);
+            R_UNLESS(wrap_fsa != nullptr, fs::ResultAllocationFailureInCodeA());
 
-        /* Register. */
-        return fsa::Register(name, std::move(wrap_fsa));
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(wrap_fsa)));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CODE(name, path, program_id)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
 }

@@ -20,27 +20,9 @@ namespace ams::mem::impl {
 
     namespace {
 
-        constinit os::SdkMutex g_virt_mem_enabled_lock;
-        constinit bool g_virt_mem_enabled_detected = false;
-        constinit bool g_virt_mem_enabled = false;
-
-        void EnsureVirtualAddressMemoryDetected() {
-            if (AMS_LIKELY(g_virt_mem_enabled_detected)) {
-                return;
-            }
-
-            std::scoped_lock lk(g_virt_mem_enabled_lock);
-
-            if (AMS_UNLIKELY(g_virt_mem_enabled_detected)) {
-                return;
-            }
-
-            g_virt_mem_enabled = os::IsVirtualAddressMemoryEnabled();
-        }
-
         ALWAYS_INLINE bool IsVirtualAddressMemoryEnabled() {
-            EnsureVirtualAddressMemoryDetected();
-            return g_virt_mem_enabled;
+            AMS_FUNCTION_LOCAL_STATIC(bool, s_virt_mem_enabled, os::IsVirtualAddressMemoryEnabled());
+            return s_virt_mem_enabled;
         }
 
         ALWAYS_INLINE errno_t ConvertResult(Result result) {

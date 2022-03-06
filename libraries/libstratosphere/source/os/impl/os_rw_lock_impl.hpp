@@ -19,7 +19,7 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "os_rw_lock_target_impl.os.horizon.hpp"
 #else
-    #error "Unknown OS for os::ReaderWriterLockTargetImpl"
+    #include "os_rw_lock_target_impl.os.generic.hpp"
 #endif
 
 namespace ams::os::impl {

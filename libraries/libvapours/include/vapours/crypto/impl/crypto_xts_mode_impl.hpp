@@ -125,6 +125,7 @@ namespace ams::crypto::impl {
             size_t ProcessRemainingData(u8 *dst, const u8 *src, size_t size);
     };
 
+    #if defined(ATMOSPHERE_ARCH_ARM64)
     template<> size_t XtsModeImpl::Update<AesEncryptor128>(void *dst, size_t dst_size, const void *src, size_t src_size);
     template<> size_t XtsModeImpl::Update<AesEncryptor192>(void *dst, size_t dst_size, const void *src, size_t src_size);
     template<> size_t XtsModeImpl::Update<AesEncryptor256>(void *dst, size_t dst_size, const void *src, size_t src_size);
@@ -132,5 +133,6 @@ namespace ams::crypto::impl {
     template<> size_t XtsModeImpl::Update<AesDecryptor128>(void *dst, size_t dst_size, const void *src, size_t src_size);
     template<> size_t XtsModeImpl::Update<AesDecryptor192>(void *dst, size_t dst_size, const void *src, size_t src_size);
     template<> size_t XtsModeImpl::Update<AesDecryptor256>(void *dst, size_t dst_size, const void *src, size_t src_size);
+    #endif
 
 }

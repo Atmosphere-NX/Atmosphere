@@ -138,11 +138,11 @@ namespace ams::ldr {
         };
         u8 reserved_6C[0x34];
         union {
-            u8 segment_hashes[Segment_Count][SHA256_HASH_SIZE];
+            u8 segment_hashes[Segment_Count][crypto::Sha256Generator::HashSize];
             struct {
-                u8 text_hash[SHA256_HASH_SIZE];
-                u8 ro_hash[SHA256_HASH_SIZE];
-                u8 rw_hash[SHA256_HASH_SIZE];
+                u8 text_hash[crypto::Sha256Generator::HashSize];
+                u8 ro_hash[crypto::Sha256Generator::HashSize];
+                u8 rw_hash[crypto::Sha256Generator::HashSize];
             };
         };
     };
@@ -180,11 +180,18 @@ namespace ams::ldr {
         };
 
         enum PoolPartition {
-            PoolPartition_Application     = (svc::CreateProcessFlag_PoolPartitionApplication     >> svc::CreateProcessFlag_PoolPartitionShift),
-            PoolPartition_Applet          = (svc::CreateProcessFlag_PoolPartitionApplet          >> svc::CreateProcessFlag_PoolPartitionShift),
-            PoolPartition_System          = (svc::CreateProcessFlag_PoolPartitionSystem          >> svc::CreateProcessFlag_PoolPartitionShift),
-            PoolPartition_SystemNonSecure = (svc::CreateProcessFlag_PoolPartitionSystemNonSecure >> svc::CreateProcessFlag_PoolPartitionShift),
+            PoolPartition_Application     = 0,
+            PoolPartition_Applet          = 1,
+            PoolPartition_System          = 2,
+            PoolPartition_SystemNonSecure = 3,
         };
+
+        #if defined(ATMOSPHERE_OS_HORIZON)
+            static_assert(PoolPartition_Application     == (svc::CreateProcessFlag_PoolPartitionApplication     >> svc::CreateProcessFlag_PoolPartitionShift));
+            static_assert(PoolPartition_Applet          == (svc::CreateProcessFlag_PoolPartitionApplet          >> svc::CreateProcessFlag_PoolPartitionShift));
+            static_assert(PoolPartition_System          == (svc::CreateProcessFlag_PoolPartitionSystem          >> svc::CreateProcessFlag_PoolPartitionShift));
+            static_assert(PoolPartition_SystemNonSecure == (svc::CreateProcessFlag_PoolPartitionSystemNonSecure >> svc::CreateProcessFlag_PoolPartitionShift));
+        #endif
 
         u8 signature[0x100];
         u8 modulus[0x100];
@@ -219,11 +226,18 @@ namespace ams::ldr {
         };
 
         enum AddressSpaceType {
-            AddressSpaceType_32Bit              = (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift),
-            AddressSpaceType_64BitDeprecated    = (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift),
-            AddressSpaceType_32BitWithoutAlias  = (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift),
-            AddressSpaceType_64Bit              = (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift),
+            AddressSpaceType_32Bit              = 0,
+            AddressSpaceType_64BitDeprecated    = 1,
+            AddressSpaceType_32BitWithoutAlias  = 2,
+            AddressSpaceType_64Bit              = 3,
         };
+
+        #if defined(ATMOSPHERE_OS_HORIZON)
+            static_assert(AddressSpaceType_32Bit              == (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift));
+            static_assert(AddressSpaceType_64BitDeprecated    == (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift));
+            static_assert(AddressSpaceType_32BitWithoutAlias  == (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift));
+            static_assert(AddressSpaceType_64Bit              == (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift));
+        #endif
 
         u32 magic;
         u32 signature_key_generation;
