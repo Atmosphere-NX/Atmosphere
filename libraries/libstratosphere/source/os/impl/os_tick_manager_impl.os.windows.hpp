@@ -50,7 +50,7 @@ namespace ams::os::impl {
 
             ALWAYS_INLINE Tick GetTick() const {
                 LARGE_INTEGER freq;
-                ::QueryPerformanceFrequency(std::addressof(freq));
+                ::QueryPerformanceCounter(std::addressof(freq));
                 return Tick(static_cast<s64>(freq.QuadPart));
             }
 
@@ -58,7 +58,7 @@ namespace ams::os::impl {
                 LARGE_INTEGER freq;
 
                 PerformOrderingForGetSystemTickOrdered();
-                ::QueryPerformanceFrequency(std::addressof(freq));
+                ::QueryPerformanceCounter(std::addressof(freq));
                 PerformOrderingForGetSystemTickOrdered();
 
                 return Tick(static_cast<s64>(freq.QuadPart));

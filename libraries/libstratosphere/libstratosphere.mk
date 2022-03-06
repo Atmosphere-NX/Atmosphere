@@ -146,6 +146,10 @@ hos_stratosphere_api.o: CXXFLAGS += -fno-lto
 init_operator_new.o: CXXFLAGS += -fno-lto
 init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
 
+ifeq ($(ATMOSPHERE_OS_NAME),windows)
+os_%.o: CXXFLAGS += -fno-lto
+endif
+
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin
 #---------------------------------------------------------------------------------

@@ -48,8 +48,11 @@ namespace ams::os::impl {
                 res = ::poll(std::addressof(pfd), 1, timeout);
             } while (res < 0 && errno == EINTR);
 
-            AMS_ASSERT(res == 0);
-            return pfd.revents & POLLIN;
+            AMS_ASSERT(res == 0 || res == 1);
+
+            const bool signaled = pfd.revents & POLLIN;
+            AMS_ASSERT(signaled == (res == 1));
+            return signaled;
         }
 
     }
