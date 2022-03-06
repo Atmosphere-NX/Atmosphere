@@ -1,44 +1,41 @@
 ATMOSPHERE_BUILD_CONFIGS :=
-all: release
+all: nx_release
+
+THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
 
 define ATMOSPHERE_ADD_TARGET
 
 ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-$(strip $1): fusee$(strip $2).bin
+$(strip $1):
+	@echo "Building $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/fusee.mk ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
-fusee$(strip $2).bin: loader_stub/loader_stub$(strip $2).bin
-	@cp loader_stub/loader_stub$(strip $2).bin fusee$(strip $2).bin
-	@echo "Built fusee$(strip $2).bin..."
-
-check_program_$(strip $1):
-	@$$(MAKE) -C program $(strip $1)
-
-loader_stub/loader_stub$(strip $2).bin: check_program_$(strip $1)
-	@$$(MAKE) -C loader_stub $(strip $1)
-
-clean-$(strip $1): clean-program-$(strip $1) clean-loader_stub-$(strip $1)
-	@rm -rf fusee$(strip $2).bin
-
-clean-program-$(strip $1):
-	@$$(MAKE) -C program clean-$(strip $1)
-
-clean-loader_stub-$(strip $1):
-	@$$(MAKE) -C loader_stub clean-$(strip $1)
+clean-$(strip $1):
+	@echo "Cleaning $(strip $1)"
+	@$$(MAKE) -f $(CURRENT_DIRECTORY)/fusee.mk clean ATMOSPHERE_MAKEFILE_TARGET="$(strip $1)" ATMOSPHERE_BUILD_NAME="$(strip $2)" ATMOSPHERE_BOARD="$(strip $3)" ATMOSPHERE_CPU="$(strip $4)" $(strip $5)
 
 endef
 
-$(eval $(call ATMOSPHERE_ADD_TARGET, release, ))
-$(eval $(call ATMOSPHERE_ADD_TARGET, debug, _debug))
-$(eval $(call ATMOSPHERE_ADD_TARGET, audit, _audit))
+define ATMOSPHERE_ADD_TARGETS
 
-clean: clean-program clean-loader_stub
-	@rm -rf fusee*.bin package3*
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_release, release, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4)" \
+))
 
-clean-program:
-	@$(MAKE) -C program clean
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_debug, debug, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_DEBUGGING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 \
+))
 
-clean-loader_stub:
-	@$(MAKE) -C loader_stub clean
+$(eval $(call ATMOSPHERE_ADD_TARGET, $(strip $1)_audit, audit, $(strip $2), $(strip $3), \
+    ATMOSPHERE_BUILD_SETTINGS="$(strip $4) -DAMS_BUILD_FOR_AUDITING" ATMOSPHERE_BUILD_FOR_DEBUGGING=1 ATMOSPHERE_BUILD_FOR_AUDITING=1 \
+))
 
-.PHONY: all clean clean-program clean-loader_stub $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),check_program_$(config) check_warmboot_$(strip $1) clean-$(config) clean-program-$(config) clean-loader_stub-$(config) clean-warmboot-$(config))
+endef
+
+$(eval $(call ATMOSPHERE_ADD_TARGETS, nx, nx-hac-001, arm7tdmi,))
+
+clean: $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config))
+
+.PHONY: all clean $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS), $(config) clean-$(config))

@@ -19,6 +19,11 @@
 namespace ams::diag::impl {
 
     void PrintDebugString(const char *msg, size_t size);
-    void PrintDebugString(const char *msg);
+
+    inline void PrintDebugString(const char *msg) {
+        AMS_AUDIT(msg != nullptr);
+
+        PrintDebugString(msg, std::strlen(msg));
+    }
 
 }

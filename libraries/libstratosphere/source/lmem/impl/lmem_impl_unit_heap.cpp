@@ -30,7 +30,7 @@ namespace ams::lmem::impl {
             return std::addressof(heap_head->impl_head.unit_heap_head);
         }
 
-        constexpr inline const UnitHeapHead *GetUnitHeapHead(const HeapHead *heap_head) {
+        [[maybe_unused]] constexpr inline const UnitHeapHead *GetUnitHeapHead(const HeapHead *heap_head) {
             return std::addressof(heap_head->impl_head.unit_heap_head);
         }
 

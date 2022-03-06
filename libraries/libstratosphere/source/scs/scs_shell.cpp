@@ -39,8 +39,8 @@ namespace ams::scs {
 
         class SocketInfoManager {
             private:
-                SocketInfo m_infos[MaxSocketInfo];
-                int m_count;
+                SocketInfo m_infos[MaxSocketInfo]{};
+                int m_count{};
             public:
                 constexpr SocketInfoManager() = default;
 
@@ -95,9 +95,9 @@ namespace ams::scs {
 
         class ProgramInfoManager {
             private:
-                s32 m_next_info_id;
-                ProgramInfo m_infos[MaxProgramInfo];
-                int m_count;
+                s32 m_next_info_id{};
+                ProgramInfo m_infos[MaxProgramInfo]{};
+                int m_count{};
             public:
                 constexpr ProgramInfoManager() = default;
 
@@ -179,7 +179,7 @@ namespace ams::scs {
         };
 
         alignas(os::ThreadStackAlignment) constinit u8 g_thread_stack[os::MemoryPageSize];
-        constinit os::ThreadType g_thread;
+        constinit os::ThreadType g_thread = {};
 
         constinit ProcessEventHandler g_common_start_handler;
         constinit ProcessEventHandler g_common_exit_handler;

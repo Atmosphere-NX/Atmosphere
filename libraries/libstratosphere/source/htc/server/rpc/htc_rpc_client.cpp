@@ -287,7 +287,7 @@ namespace ams::htc::server::rpc {
         while (true) {
             /* Get a task. */
             Task *task;
-            u32 task_id;
+            u32 task_id{};
             PacketCategory category;
             do {
                 /* Dequeue a task. */

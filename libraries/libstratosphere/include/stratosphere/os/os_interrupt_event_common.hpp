@@ -18,6 +18,14 @@
 
 namespace ams::os {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     using InterruptName = s32;
+    #elif defined(ATMOSPHERE_OS_WINDOWS)
+    using InterruptName = const char *;
+    #elif defined(ATMOSPHERE_OS_LINUX)
+    using InterruptName = const char *;
+    #elif defined(ATMOSPHERE_OS_MACOS)
+    using InterruptName = const char *;
+    #endif
 
 }

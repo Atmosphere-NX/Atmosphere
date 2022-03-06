@@ -138,7 +138,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr,      powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double percent;
+        double percent{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetChargePercentage(std::addressof(percent)));
 
         /* Set output. */
@@ -152,7 +152,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr,      powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double percent;
+        double percent{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetVoltageFuelGaugePercentage(std::addressof(percent)));
 
         /* Set output. */
@@ -166,7 +166,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr,  powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double mah;
+        double mah{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetFullCapacity(std::addressof(mah), SenseResistorValue));
 
         /* Set output. */
@@ -180,7 +180,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr,  powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double mah;
+        double mah{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetRemainingCapacity(std::addressof(mah), SenseResistorValue));
 
         /* Set output. */
@@ -239,7 +239,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double ma;
+        double ma{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetAverageCurrent(std::addressof(ma), SenseResistorValue));
 
         /* Set output. */
@@ -253,7 +253,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double ma;
+        double ma{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetCurrent(std::addressof(ma), SenseResistorValue));
 
         /* Set output. */
@@ -350,7 +350,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the battery cycles. */
-        u16 cycles;
+        u16 cycles{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetCycles(std::addressof(cycles)));
 
         /* Set output. */
@@ -373,7 +373,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr,      powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double percent;
+        double percent{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetAge(std::addressof(percent)));
 
         /* Set output. */
@@ -387,7 +387,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double temp;
+        double temp{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetTemperature(std::addressof(temp)));
 
         /* Set output. */
@@ -401,7 +401,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        u8 max_temp;
+        u8 max_temp{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetMaximumTemperature(std::addressof(max_temp)));
 
         /* Set output. */
@@ -455,7 +455,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         /* Get the value. */
-        double ms;
+        double ms{};
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetAverageVCellTime(std::addressof(ms)));
 
         /* Set output. */

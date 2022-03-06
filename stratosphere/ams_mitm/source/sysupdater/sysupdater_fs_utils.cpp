@@ -25,22 +25,25 @@ namespace ams::mitm::sysupdater {
         constexpr inline const size_t NcaExtensionSize = 4;
         constexpr inline const size_t NspExtensionSize = 4;
 
+        constexpr const ams::fs::PathFlags SdCardContentMetaPathNormalizePathFlags = [] {
+            fs::PathFlags flags{};
+            flags.AllowMountName();
+            return flags;
+        }();
+
         static_assert(NcaExtensionSize == NspExtensionSize);
         constexpr inline const size_t NcaNspExtensionSize = NcaExtensionSize;
 
-        constexpr inline std::underlying_type<fssrv::PathNormalizer::Option>::type SdCardContentMetaPathNormalizeOption = fssrv::PathNormalizer::Option_PreserveTailSeparator |
-                                                                                                                          fssrv::PathNormalizer::Option_HasMountName;
-
         Result CheckNcaOrNsp(const char **path) {
             /* Ensure that the path is currently at the mount name delimeter. */
-            R_UNLESS(std::strncmp(*path, ams::fs::impl::MountNameDelimiter, strnlen(ams::fs::impl::MountNameDelimiter, ams::fs::EntryNameLengthMax)) == 0, fs::ResultPathNotFound());
+            R_UNLESS(util::Strncmp(*path, ams::fs::impl::MountNameDelimiter, util::Strnlen(ams::fs::impl::MountNameDelimiter, ams::fs::EntryNameLengthMax)) == 0, fs::ResultPathNotFound());
 
             /* Advance past the :. */
             static_assert(ams::fs::impl::MountNameDelimiter[0] == ':');
             *path += 1;
 
             /* Ensure path is long enough for the extension. */
-            const auto path_len = strnlen(*path, ams::fs::EntryNameLengthMax);
+            const size_t path_len = util::Strnlen(*path, ams::fs::EntryNameLengthMax);
             R_UNLESS(path_len > NcaNspExtensionSize, fs::ResultPathNotFound());
 
             /* Get the extension. */
@@ -56,7 +59,7 @@ namespace ams::mitm::sysupdater {
 
         Result ParseMountName(const char **path, std::shared_ptr<ams::fs::fsa::IFileSystem> *out) {
             /* The equivalent function here supports all the common mount names; we'll only support the SD card, system content storage. */
-            if (const auto mount_len = strnlen(ams::fs::impl::SdCardFileSystemMountName, ams::fs::MountNameLengthMax); std::strncmp(*path, ams::fs::impl::SdCardFileSystemMountName, mount_len) == 0) {
+            if (const auto mount_len = util::Strnlen(ams::fs::impl::SdCardFileSystemMountName, ams::fs::MountNameLengthMax); util::Strncmp(*path, ams::fs::impl::SdCardFileSystemMountName, mount_len) == 0) {
                 /* Advance the path. */
                 *path += mount_len;
 
@@ -70,7 +73,7 @@ namespace ams::mitm::sysupdater {
 
                 /* Set the output fs. */
                 *out = std::move(fsa);
-            } else if (const auto mount_len = strnlen(ams::fs::impl::ContentStorageSystemMountName, ams::fs::MountNameLengthMax); std::strncmp(*path, ams::fs::impl::ContentStorageSystemMountName, mount_len) == 0) {
+            } else if (const auto mount_len = util::Strnlen(ams::fs::impl::ContentStorageSystemMountName, ams::fs::MountNameLengthMax); util::Strncmp(*path, ams::fs::impl::ContentStorageSystemMountName, mount_len) == 0) {
                 /* Advance the path. */
                 *path += mount_len;
 
@@ -89,7 +92,7 @@ namespace ams::mitm::sysupdater {
             }
 
             /* Ensure that there's something that could be a mount name delimiter. */
-            R_UNLESS(strnlen(*path, fs::EntryNameLengthMax) != 0, fs::ResultPathNotFound());
+            R_UNLESS(util::Strnlen(*path, fs::EntryNameLengthMax) != 0, fs::ResultPathNotFound());
 
             return ResultSuccess();
         }
@@ -115,10 +118,8 @@ namespace ams::mitm::sysupdater {
             work_path += NspExtensionSize;
 
             /* Get the nsp path. */
-            char nsp_path[fs::EntryNameLengthMax + 1];
-            R_UNLESS(static_cast<size_t>(work_path - *path) <= sizeof(nsp_path), fs::ResultTooLongPath());
-            std::memcpy(nsp_path, *path, work_path - *path);
-            nsp_path[work_path - *path] = '\x00';
+            ams::fs::Path nsp_path;
+            R_TRY(nsp_path.InitializeWithNormalization(*path, work_path - *path));
 
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
@@ -138,7 +139,12 @@ namespace ams::mitm::sysupdater {
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
             R_UNLESS(file_storage != nullptr, fs::ResultAllocationFailureInFileSystemProxyCoreImplE());
-            R_TRY(file_storage->Initialize(std::move(base_fs), *path, ams::fs::OpenMode_Read));
+
+            /* Get the nca path. */
+            ams::fs::Path nca_path;
+            R_TRY(nca_path.InitializeWithNormalization(*path));
+
+            R_TRY(file_storage->Initialize(std::move(base_fs), nca_path, ams::fs::OpenMode_Read));
 
             /* Create the nca reader. */
             std::shared_ptr<fssystem::NcaReader> nca_reader;
@@ -196,7 +202,7 @@ namespace ams::mitm::sysupdater {
             /* Open meta storage. */
             std::shared_ptr<ams::fs::IStorage> storage;
             std::shared_ptr<fssystem::IAsynchronousAccessSplitter> splitter;
-            fssystem::NcaFsHeader::FsType fs_type;
+            fssystem::NcaFsHeader::FsType fs_type = static_cast<fssystem::NcaFsHeader::FsType>(~0);
             R_TRY(OpenMetaStorage(std::addressof(storage), std::addressof(splitter), std::move(nca_reader), std::addressof(fs_type)));
 
             /* Open the appropriate interface. */
@@ -230,12 +236,12 @@ namespace ams::mitm::sysupdater {
         R_UNLESS(path != nullptr, fs::ResultInvalidPath());
 
         /* Normalize the path. */
-        fssrv::PathNormalizer normalized_path(path, SdCardContentMetaPathNormalizeOption);
-        R_TRY(normalized_path.GetResult());
+        char normalized_path[fs::EntryNameLengthMax + 1];
+        R_TRY(ams::fs::PathFormatter::Normalize(normalized_path, sizeof(normalized_path), path, std::strlen(path) + 1, SdCardContentMetaPathNormalizePathFlags));
 
         /* Open the filesystem. */
         std::shared_ptr<ams::fs::fsa::IFileSystem> fs;
-        R_TRY(OpenContentMetaFileSystem(std::addressof(fs), normalized_path.GetPath()));
+        R_TRY(OpenContentMetaFileSystem(std::addressof(fs), normalized_path));
 
         /* Create a holder for the fs. */
         std::unique_ptr unique_fs = std::make_unique<ams::fs::SharedFileSystemHolder>(std::move(fs));

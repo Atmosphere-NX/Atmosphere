@@ -21,8 +21,7 @@
 
 namespace ams::util {
 
-    #pragma GCC push_options
-    #pragma GCC optimize ("-O3")
+    AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
 
     /* Forward declare implementation class for Node. */
     namespace impl {
@@ -627,6 +626,6 @@ namespace ams::util {
             }
     };
 
-    #pragma GCC pop_options
+    AMS_PRAGMA_END_OPTIMIZE()
 
 }

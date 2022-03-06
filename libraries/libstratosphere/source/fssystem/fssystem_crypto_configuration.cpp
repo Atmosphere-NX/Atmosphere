@@ -206,7 +206,7 @@ namespace ams::fssystem {
 
         /* Setup the keyslot cache. */
         for (s32 i = 0; i < KeySlotCacheEntryCount; i++) {
-            s32 slot_index;
+            s32 slot_index = -1;
             R_ABORT_UNLESS(spl::AllocateAesKeySlot(std::addressof(slot_index)));
             g_key_slot_cache_entry[i].emplace(slot_index);
             g_key_slot_cache.AddEntry(std::addressof(g_key_slot_cache_entry[i].value()));

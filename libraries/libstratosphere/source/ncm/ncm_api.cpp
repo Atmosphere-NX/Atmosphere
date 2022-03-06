@@ -14,28 +14,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "ncm_content_manager_factory.hpp"
 #include "ncm_remote_content_manager_impl.hpp"
 
 namespace ams::ncm {
 
     namespace {
 
-        sf::SharedPointer<IContentManager> g_content_manager;
+        constinit sf::SharedPointer<IContentManager> g_content_manager;
 
-        sf::UnmanagedServiceObject<IContentManager, RemoteContentManagerImpl> g_remote_manager_impl;
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        constinit util::TypedStorage<sf::UnmanagedServiceObject<IContentManager, RemoteContentManagerImpl>> g_remote_manager_storage = {};
+        #endif
 
     }
 
     void Initialize() {
         AMS_ASSERT(g_content_manager == nullptr);
-        R_ABORT_UNLESS(ncmInitialize());
-        g_content_manager = g_remote_manager_impl.GetShared();
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        util::ConstructAt(g_remote_manager_storage);
+        g_content_manager = util::GetReference(g_remote_manager_storage).GetShared();
+        #else
+        g_content_manager = CreateDefaultContentManager(ContentManagerConfig{});
+        #endif
     }
 
     void Finalize() {
         AMS_ASSERT(g_content_manager != nullptr);
         g_content_manager.Reset();
-        ncmExit();
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        util::DestroyAt(g_remote_manager_storage);
+        #endif
     }
 
     void InitializeWithObject(sf::SharedPointer<IContentManager> manager_object) {

@@ -43,6 +43,9 @@ namespace ams::sdmmc::impl {
             __asm__ __volatile__("dsb sy" ::: "memory");
             #elif defined(ATMOSPHERE_ARCH_ARM)
             __asm__ __volatile__("dsb" ::: "memory");
+            #elif defined(ATMOSPHERE_ARCH_X64) || defined(ATMOSPHERE_ARCH_X86)
+            /* Nothing needed? */
+            __asm__ __volatile__("" ::: "memory");
             #else
                 #error "Unknown architecture for DataSynchronizationBarrier"
             #endif
@@ -51,6 +54,9 @@ namespace ams::sdmmc::impl {
         ALWAYS_INLINE void InstructionSynchronizationBarrier() {
             #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_ARM)
             __asm__ __volatile__("isb" ::: "memory");
+            #elif defined(ATMOSPHERE_ARCH_X64) || defined(ATMOSPHERE_ARCH_X86)
+            /* Nothing needed? */
+            __asm__ __volatile__("" ::: "memory");
             #else
                 #error "Unknown architecture for InstructionSynchronizationBarrier"
             #endif

@@ -110,12 +110,6 @@ namespace ams::os {
         return thread->suspend_count;
     }
 
-    void CancelThreadSynchronization(ThreadType *thread) {
-        AMS_ASSERT(thread->state == ThreadType::State_Started || thread->state == ThreadType::State_Terminated);
-
-        return impl::GetThreadManager().CancelThreadSynchronization(thread);
-    }
-
     /* TODO: void GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
 
     s32 ChangeThreadPriority(ThreadType *thread, s32 priority) {

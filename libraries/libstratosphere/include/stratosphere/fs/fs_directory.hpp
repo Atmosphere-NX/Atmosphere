@@ -20,7 +20,13 @@ namespace ams::fs {
 
     constexpr inline size_t EntryNameLengthMax = 0x300;
 
-    using DirectoryEntry = ::FsDirectoryEntry;
+    struct DirectoryEntry {
+        char name[EntryNameLengthMax + 1];
+        char pad[3];
+        s8 type;
+        u8 pad2[3];
+        s64 file_size;
+    };
 
     struct DirectoryHandle {
         void *handle;

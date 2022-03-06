@@ -14,16 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "pm_ams.h"
+#include "pm_ams.os.horizon.h"
 
 namespace ams::pm::info {
 
     /* Information API. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result WEAK_SYMBOL HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
         bool has_launched = false;
         R_TRY(pminfoAtmosphereHasLaunchedBootProgram(std::addressof(has_launched), static_cast<u64>(program_id)));
         *out = has_launched;
         return ResultSuccess();
     }
+    #endif
 
 }

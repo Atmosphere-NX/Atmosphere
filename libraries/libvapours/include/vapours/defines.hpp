@@ -18,6 +18,34 @@
 
 /* Any broadly useful language defines should go here. */
 
+#if defined(ATMOSPHERE_OS_WINDOWS)
+    #if defined(ATMOSPHERE_ARCH_ARM64) || defined(ATMOSPHERE_ARCH_X64)
+        static_assert(sizeof(size_t) == sizeof(uint64_t));
+
+        #define PRIuZ PRIu64
+        #define PRIxZ PRIx64
+        #define PRIXZ PRIX64
+    #elif defined(ATMOSPHERE_ARCH_ARM) || defined(ATMOSPHERE_ARCH_X86)
+        static_assert(sizeof(size_t) == sizeof(uint32_t));
+
+        #define PRIuZ PRIu32
+        #define PRIxZ PRIx32
+        #define PRIXZ PRIX32
+    #endif
+#else
+    #define PRIuZ "zu"
+    #define PRIxZ "zx"
+    #define PRIXZ "zX"
+#endif
+
+#if defined(__clang__)
+    #define ATMOSPHERE_COMPILER_CLANG
+#elif defined(__GNUG__) || defined(__GNUC__)
+    #define ATMOSPHERE_COMPILER_GCC
+#else
+    #error "Unknown compiler!"
+#endif
+
 #define NON_COPYABLE(cls) \
     cls(const cls&) = delete; \
     cls& operator=(const cls&) = delete
@@ -40,6 +68,10 @@
 
 #define STRINGIZE(x) STRINGIZE_IMPL(x)
 #define STRINGIZE_IMPL(x) #x
+
+#ifndef PACKED
+#define PACKED __attribute__((packed))
+#endif
 
 #ifdef __COUNTER__
 #define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __COUNTER__)

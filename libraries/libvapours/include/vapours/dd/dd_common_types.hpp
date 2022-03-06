@@ -24,6 +24,8 @@ namespace ams::dd {
     using PhysicalAddress      = u64;
     using DeviceVirtualAddress = u64;
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     static_assert(std::same_as<PhysicalAddress, ams::svc::PhysicalAddress>);
+    #endif
 
 }

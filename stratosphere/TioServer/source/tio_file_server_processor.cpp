@@ -592,7 +592,7 @@ namespace ams::tio {
                             }
 
                             /* Get the file timestamp. */
-                            response_header.result = fs::GetFileTimeStampRawForDebug(std::addressof(out.file_timestamp), param->path);
+                            response_header.result = fs::impl::GetFileTimeStampRawForDebug(std::addressof(out.file_timestamp), param->path);
                             if (R_FAILED(response_header.result)) {
                                 break;
                             }

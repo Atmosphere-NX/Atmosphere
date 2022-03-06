@@ -18,7 +18,7 @@
 
 namespace ams::erpt::srv {
 
-    constinit JournalMeta JournalForMeta::s_journal_meta;
+    constinit JournalMeta JournalForMeta::s_journal_meta = {};
 
     void JournalForMeta::InitializeJournal() {
         std::memset(std::addressof(s_journal_meta), 0, sizeof(s_journal_meta));

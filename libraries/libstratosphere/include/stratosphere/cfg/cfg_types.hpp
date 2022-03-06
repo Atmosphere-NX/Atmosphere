@@ -30,10 +30,12 @@ namespace ams::cfg {
             OverrideStatusFlag_AddressSpaceShift = 3,
             OverrideStatusFlag_AddressSpaceMask  = ((1u << 2) - 1) << OverrideStatusFlag_AddressSpaceShift,
 
+            #if defined(ATMOSPHERE_OS_HORIZON)
             OverrideStatusFlag_AddressSpace32Bit             = (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             OverrideStatusFlag_AddressSpace64BitDeprecated   = (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             OverrideStatusFlag_AddressSpace32BitWithoutAlias = (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
             OverrideStatusFlag_AddressSpace64Bit             = (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            #endif
         };
 
     }
@@ -63,7 +65,11 @@ namespace ams::cfg {
     static_assert(util::is_pod<OverrideStatus>::value, "util::is_pod<OverrideStatus>::value");
 
     constexpr inline bool operator==(const OverrideStatus &lhs, const OverrideStatus &rhs) {
-        return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(lhs)) == 0;
+        if (std::is_constant_evaluated()) {
+            return lhs.keys_held == rhs.keys_held && lhs.flags == rhs.flags;
+        } else {
+            return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(lhs)) == 0;
+        }
     }
 
     constexpr inline bool operator!=(const OverrideStatus &lhs, const OverrideStatus &rhs) {

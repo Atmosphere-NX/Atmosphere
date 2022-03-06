@@ -15,7 +15,9 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
-#include "impl/fs_event_notifier_object_adapter.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
+#include "impl/fs_event_notifier_service_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -31,7 +33,7 @@ namespace ams::fs {
 
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
-                    const size_t needed_size = strnlen(impl::SdCardFileSystemMountName, MountNameLengthMax) + 2;
+                    const size_t needed_size = util::Strnlen(impl::SdCardFileSystemMountName, MountNameLengthMax) + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
@@ -47,14 +49,15 @@ namespace ams::fs {
 
     Result MountSdCard(const char *name) {
         /* Validate the mount name. */
-        R_TRY(impl::CheckMountNameAllowingReserved(name));
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_MOUNT_UNLESS_R_SUCCEEDED(impl::CheckMountNameAllowingReserved(name), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, name));
 
-        /* Open the SD card. This uses libnx bindings. */
-        FsFileSystem fs;
-        R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));
+        /* Open the SD card filesystem. */
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+        R_TRY(fsp->OpenSdCardFileSystem(std::addressof(fs)));
 
         /* Allocate a new filesystem wrapper. */
-        auto fsa = std::make_unique<RemoteFileSystem>(fs);
+        auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
 
         /* Allocate a new mountname generator. */
@@ -70,47 +73,53 @@ namespace ams::fs {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
-        /* Open the SD card. This uses libnx bindings. */
-        FsFileSystem fs;
-        R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));
+        /* Open the SD card filesystem. */
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+        R_TRY(fsp->OpenSdCardFileSystem(std::addressof(fs)));
 
         /* Allocate a new filesystem wrapper. */
-        std::unique_ptr<fsa::IFileSystem> fsa = std::make_unique<RemoteFileSystem>(fs);
+        auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
 
         /* Ensure that the error report directory exists. */
-        R_TRY(fssystem::EnsureDirectoryRecursively(fsa.get(), AtmosphereErrorReportDirectory));
+        constexpr fs::Path fs_path = fs::MakeConstantPath(AtmosphereErrorReportDirectory);
+        R_TRY(fssystem::EnsureDirectory(fsa.get(), fs_path));
 
         /* Create a subdirectory filesystem. */
-        auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(fsa), AtmosphereErrorReportDirectory);
+        auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(fsa));
         R_UNLESS(subdir_fs != nullptr, fs::ResultAllocationFailureInSdCardA());
+        R_TRY(subdir_fs->Initialize(fs_path));
 
         /* Register. */
         return fsa::Register(name, std::move(subdir_fs));
     }
 
     Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out) {
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
         /* Try to open an event notifier. */
-        FsEventNotifier notifier;
-        AMS_FS_R_TRY(fsOpenSdCardDetectionEventNotifier(std::addressof(notifier)));
+        sf::SharedPointer<fssrv::sf::IEventNotifier> notifier;
+        AMS_FS_R_TRY(fsp->OpenSdCardDetectionEventNotifier(std::addressof(notifier)));
 
         /* Create an event notifier adapter. */
-        auto adapter = std::make_unique<impl::RemoteEventNotifierObjectAdapter>(notifier);
-        R_UNLESS(adapter != nullptr, fs::ResultAllocationFailureInSdCardB());
+        auto adapter = std::make_unique<impl::EventNotifierObjectAdapter>(std::move(notifier));
+        AMS_FS_R_UNLESS(adapter != nullptr, fs::ResultAllocationFailureInSdCardB());
 
         *out = std::move(adapter);
         return ResultSuccess();
     }
 
     bool IsSdCardInserted() {
-        /* Open device operator. */
-        FsDeviceOperator device_operator;
-        AMS_FS_R_ABORT_UNLESS(::fsOpenDeviceOperator(std::addressof(device_operator)));
-        ON_SCOPE_EXIT { ::fsDeviceOperatorClose(std::addressof(device_operator)); };
+        auto fsp = impl::GetFileSystemProxyServiceObject();
 
-        /* Get SD card inserted. */
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_ABORT_UNLESS(fsp->OpenDeviceOperator(std::addressof(device_operator)));
+
+        /* Get insertion status. */
         bool inserted;
-        AMS_FS_R_ABORT_UNLESS(::fsDeviceOperatorIsSdCardInserted(std::addressof(device_operator), std::addressof(inserted)));
+        AMS_FS_R_ABORT_UNLESS(device_operator->IsSdCardInserted(std::addressof(inserted)));
 
         return inserted;
     }

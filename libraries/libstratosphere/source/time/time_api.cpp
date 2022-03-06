@@ -15,11 +15,13 @@
  */
 #include <stratosphere.hpp>
 
+#if defined(ATMOSPHERE_OS_HORIZON)
 extern "C" {
 
     extern TimeServiceType __nx_time_service_type;
 
 }
+#endif
 
 namespace ams::time {
 
@@ -48,6 +50,7 @@ namespace ams::time {
                 return ResultSuccess();
             }
 
+            #if defined(ATMOSPHERE_OS_HORIZON)
             switch (mode) {
                 case InitializeMode_Normal:     __nx_time_service_type = ::TimeServiceType_User;       break;
                 case InitializeMode_Menu:       __nx_time_service_type = ::TimeServiceType_Menu;       break;
@@ -58,6 +61,9 @@ namespace ams::time {
             }
 
             R_TRY(::timeInitialize());
+            #else
+            AMS_ABORT("TODO");
+            #endif
 
             g_initialize_count++;
             g_initialize_mode = mode;
@@ -87,7 +93,11 @@ namespace ams::time {
 
         if (g_initialize_count > 0) {
             if ((--g_initialize_count) == 0) {
+                #if defined(ATMOSPHERE_OS_HORIZON)
                 ::timeExit();
+                #else
+                AMS_ABORT("TODO");
+                #endif
                 g_initialize_mode = InitializeMode_None;
             }
         }

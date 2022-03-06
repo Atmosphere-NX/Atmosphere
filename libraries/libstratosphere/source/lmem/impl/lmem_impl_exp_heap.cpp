@@ -42,19 +42,19 @@ namespace ams::lmem::impl {
             return handle->magic == ExpHeapMagic;
         }
 
-        inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
+        [[maybe_unused]] inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
             return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
+        [[maybe_unused]] inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
             return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
+        [[maybe_unused]] inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 
-        inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
+        [[maybe_unused]] inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 

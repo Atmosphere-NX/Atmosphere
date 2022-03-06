@@ -27,6 +27,18 @@
 
 #else
 
-    #error "Unknown board for ams::powctl::impl"
+    // TODO #error "Unknown board for ams::powctl::impl"
+
+    namespace ams::powctl::impl::board {
+
+        inline void Initialize(bool) {
+            AMS_ABORT("TODO");
+        }
+
+        inline void Finalize() {
+            AMS_ABORT("TODO");
+        }
+
+    }
 
 #endif

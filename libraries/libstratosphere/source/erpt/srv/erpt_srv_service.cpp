@@ -138,7 +138,7 @@ namespace ams::erpt::srv {
             }
         }
 
-        constinit util::TypedStorage<ErrorReportServiceManager> g_erpt_server_manager;
+        constinit util::TypedStorage<ErrorReportServiceManager> g_erpt_server_manager = {};
 
     }
 

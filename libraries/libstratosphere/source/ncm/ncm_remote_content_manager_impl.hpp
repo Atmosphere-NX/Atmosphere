@@ -20,14 +20,15 @@
 
 namespace ams::ncm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteContentManagerImpl {
         private:
             /* TODO: sf::ProxyObjectAllocator */
             using ObjectFactory = sf::ObjectFactory<sf::StdAllocationPolicy<std::allocator>>;
         public:
-            RemoteContentManagerImpl() { /* ... */ }
+            RemoteContentManagerImpl() { R_ABORT_UNLESS(::ncmInitialize()); }
 
-            ~RemoteContentManagerImpl() { /* ... */ }
+            ~RemoteContentManagerImpl() { ::ncmExit(); }
         public:
             Result CreateContentStorage(StorageId storage_id) {
                 return ::ncmCreateContentStorage(static_cast<NcmStorageId>(storage_id));
@@ -100,5 +101,6 @@ namespace ams::ncm {
             }
     };
     static_assert(ncm::IsIContentManager<RemoteContentManagerImpl>);
+    #endif
 
 }

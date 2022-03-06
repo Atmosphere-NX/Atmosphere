@@ -14,13 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/os_tls_manager.hpp"
 
 namespace ams::os {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     /* TODO: Nintendo reserves half the TLS slots for SDK usage. */
     /* We don't have that ability...how should this work? */
     Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
         return os::AllocateTlsSlot(out, destructor);
     }
+    #else
+    Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
+        R_UNLESS(impl::GetTlsManager().AllocateTlsSlot(out, destructor, true), os::ResultOutOfResource());
+        R_SUCCEED();
+    }
+    #endif
 
 }

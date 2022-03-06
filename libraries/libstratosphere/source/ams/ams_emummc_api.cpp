@@ -58,7 +58,7 @@ namespace ams::emummc {
 
         /* Globals. */
         constinit os::SdkMutex g_lock;
-        constinit ExosphereConfig g_exo_config;
+        constinit ExosphereConfig g_exo_config = {};
         constinit bool g_is_emummc;
         constinit bool g_has_cached;
 
@@ -87,15 +87,23 @@ namespace ams::emummc {
                 g_is_emummc = g_exo_config.base_cfg.magic == StorageMagic && storage != Storage_Emmc;
 
                 /* Format paths. */
-                if (storage == Storage_SdFile) {
-                    util::SNPrintf(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), "/%s", paths->file_path);
-                }
+                {
+                    char tmp_path[MaxDirLen + 1];
 
-                util::SNPrintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/%s", paths->nintendo_path);
+                    /* Format paths. */
+                    if (storage == Storage_SdFile) {
+                        util::TSNPrintf(tmp_path, sizeof(tmp_path), "/%s", paths->file_path);
+                        R_ABORT_UNLESS(fs::PathFormatter::Normalize(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), tmp_path, std::strlen(tmp_path) + 1, fs::PathFlags{}));
+                    }
 
-                /* If we're emummc, implement default nintendo redirection path. */
-                if (g_is_emummc && std::strcmp(g_exo_config.emu_dir_path, "/") == 0) {
-                    util::SNPrintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
+                    util::TSNPrintf(tmp_path, sizeof(tmp_path), "/%s", paths->nintendo_path);
+                    R_ABORT_UNLESS(fs::PathFormatter::Normalize(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), tmp_path, std::strlen(tmp_path) + 1, fs::PathFlags{}));
+
+                    /* If we're emummc, implement default nintendo redirection path. */
+                    if (g_is_emummc && std::strcmp(g_exo_config.emu_dir_path, "/") == 0) {
+                        util::TSNPrintf(tmp_path, sizeof(tmp_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
+                        R_ABORT_UNLESS(fs::PathFormatter::Normalize(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), tmp_path, std::strlen(tmp_path) + 1, fs::PathFlags{}));
+                    }
                 }
             }
 

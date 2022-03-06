@@ -122,7 +122,7 @@ namespace ams::mem::impl::heap {
         }
 
         if (const size_t cls = TlsHeapStatic::GetClassFromSize(size); cls != 0) {
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
             return tls_heap_cache->m_central->CacheSmallMemory(cls);
         } else {
             /* If allocating a huge size, release our cache. */
@@ -141,7 +141,7 @@ namespace ams::mem::impl::heap {
         }
 
         if (size_t cls = TlsHeapStatic::GetClassFromSize(size); cls != 0) {
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
             /* Allocate a chunk. */
             void *ptr = tls_heap_cache->m_small_mem_lists[cls];
             if (ptr == nullptr) {
@@ -208,7 +208,7 @@ namespace ams::mem::impl::heap {
                 return nullptr;
             }
 
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
             return tls_heap_cache->m_central->CacheSmallMemory(cls, align);
         } else {
             /* If allocating a huge size, release our cache. */
@@ -243,7 +243,7 @@ namespace ams::mem::impl::heap {
                 return nullptr;
             }
 
-            AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+            AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
 
             /* Allocate a chunk. */
             void *ptr = tls_heap_cache->m_small_mem_lists[cls];
@@ -294,7 +294,7 @@ namespace ams::mem::impl::heap {
             return tls_heap_cache->m_central->UncacheLargeMemory(ptr);
         }
 
-        AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+        AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
 
         if (cls >= 0) {
             return tls_heap_cache->m_central->UncacheSmallMemory(ptr);
@@ -312,7 +312,7 @@ namespace ams::mem::impl::heap {
             return tls_heap_cache->m_central->UncacheLargeMemory(ptr);
         }
 
-        AMS_ASSERT(cls < TlsHeapStatic::NumClassInfo);
+        AMS_ASSERT(static_cast<u32>(cls) < TlsHeapStatic::NumClassInfo);
 
         if (cls >= 0) {
             *reinterpret_cast<void **>(ptr) = tls_heap_cache->m_small_mem_lists[cls];

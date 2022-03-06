@@ -36,7 +36,7 @@ namespace ams::ncm {
         Result EnsureContentDirectory(ContentId id, MakeContentPathFunction func, const char *root_path) {
             PathString path;
             MakeContentPath(std::addressof(path), id, func, root_path);
-            return fs::EnsureParentDirectoryRecursively(path);
+            return fs::EnsureParentDirectory(path);
         }
 
         Result DeleteContentFile(ContentId id, MakeContentPathFunction func, const char *root_path) {
@@ -303,11 +303,11 @@ namespace ams::ncm {
 
         /* Create the content directory. */
         MakeBaseContentDirectoryPath(std::addressof(path), root_path);
-        R_TRY(fs::EnsureDirectoryRecursively(path));
+        R_TRY(fs::EnsureDirectory(path));
 
         /* Create the placeholder directory. */
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
-        return fs::EnsureDirectoryRecursively(path);
+        return fs::EnsureDirectory(path);
     }
 
     Result ContentStorageImpl::CleanupBase(const char *root_path) {

@@ -17,11 +17,13 @@
 
 namespace ams::nim {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
-        bool g_initialized;
+        constinit bool g_initialized;
 
     }
+
     /* Management. */
     void InitializeForNetworkInstallManager() {
         AMS_ASSERT(!g_initialized);
@@ -49,5 +51,24 @@ namespace ams::nim {
 
         return count;
     }
+    #else
+    /* Management. */
+    void InitializeForNetworkInstallManager() {
+        AMS_ABORT("TODO: nim logic on non-libnx platform");
+    }
+
+    void FinalizeForNetworkInstallManager() {
+        AMS_ABORT("TODO: nim logic on non-libnx platform");
+    }
+
+    /* Service API. */
+    Result DestroySystemUpdateTask(const SystemUpdateTaskId &) {
+        AMS_ABORT("TODO: nim logic on non-libnx platform");
+    }
+
+    s32 ListSystemUpdateTask(SystemUpdateTaskId *, size_t) {
+        AMS_ABORT("TODO: nim logic on non-libnx platform");
+    }
+    #endif
 
 }

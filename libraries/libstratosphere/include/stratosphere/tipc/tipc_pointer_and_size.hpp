@@ -25,9 +25,9 @@ namespace ams::tipc {
         public:
             constexpr PointerAndSize() : m_pointer(0), m_size(0) { /* ... */ }
             constexpr PointerAndSize(uintptr_t ptr, size_t sz) : m_pointer(ptr), m_size(sz) { /* ... */ }
-            constexpr PointerAndSize(void *ptr, size_t sz) : PointerAndSize(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
+            PointerAndSize(void *ptr, size_t sz) : PointerAndSize(reinterpret_cast<uintptr_t>(ptr), sz) { /* ... */ }
 
-            constexpr ALWAYS_INLINE void *GetPointer() const {
+            ALWAYS_INLINE void *GetPointer() const {
                 return reinterpret_cast<void *>(m_pointer);
             }
 

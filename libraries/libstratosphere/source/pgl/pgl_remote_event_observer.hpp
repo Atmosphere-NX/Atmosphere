@@ -18,6 +18,7 @@
 
 namespace ams::pgl {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteEventObserver {
         NON_COPYABLE(RemoteEventObserver);
         NON_MOVEABLE(RemoteEventObserver);
@@ -55,5 +56,6 @@ namespace ams::pgl {
     };
     static_assert(pgl::sf::IsIEventObserver<RemoteEventObserver>);
     static_assert(pgl::tipc::IsIEventObserver<RemoteEventObserver>);
+    #endif
 
 }

@@ -32,6 +32,7 @@ namespace ams::os::impl {
             constexpr void Initialize() {
                 m_value = 0;
             }
+            constexpr void Finalize() { /* ... */ }
 
             void Signal();
             void Broadcast();
@@ -39,5 +40,9 @@ namespace ams::os::impl {
             void Wait(InternalCriticalSection *cs);
             ConditionVariableStatus TimedWait(InternalCriticalSection *cs, const TimeoutHelper &timeout_helper);
     };
+
+    using InternalConditionVariableStorageTypeForConstantInitialize = u32;
+
+    #define AMS_OS_INTERNAL_CONDITION_VARIABLE_IMPL_CONSTANT_INITIALIZER {0}
 
 }

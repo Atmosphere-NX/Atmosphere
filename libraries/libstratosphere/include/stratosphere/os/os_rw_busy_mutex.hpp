@@ -26,7 +26,7 @@ namespace ams::os {
         private:
             ReaderWriterBusyMutexType m_rw_mutex;
         public:
-            constexpr explicit ReaderWriterBusyMutex() : m_rw_mutex{{0}} { /* ... */ }
+            constexpr explicit ReaderWriterBusyMutex() : m_rw_mutex{ { AMS_OS_INTERNAL_READER_WRITER_BUSY_MUTEX_IMPL_CONSTANT_INITIALIZER } } { /* ... */ }
 
             void AcquireReadLock() {
                 return os::AcquireReadLockBusyMutex(std::addressof(m_rw_mutex));

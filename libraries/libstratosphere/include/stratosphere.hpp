@@ -16,8 +16,17 @@
 
 #pragma once
 
+/* Ensure that on windows we use lean-windows headers. */
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 /* libvapours (pulls in util, svc, results). */
 #include <vapours.hpp>
+
+#if defined(ATMOSPHERE_OS_WINDOWS)
+#include <stratosphere/windows.hpp>
+#endif
 
 /* Libstratosphere diagnostics. */
 #include <stratosphere/diag.hpp>

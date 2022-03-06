@@ -112,7 +112,7 @@ namespace ams::htc::server::rpc {
                 std::scoped_lock lk(m_mutex);
 
                 /* Allocate a free task id. */
-                u32 task_id;
+                u32 task_id{};
                 R_TRY(m_task_id_free_list.Allocate(std::addressof(task_id)));
 
                 /* Create the new task. */

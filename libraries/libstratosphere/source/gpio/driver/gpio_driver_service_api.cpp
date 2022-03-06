@@ -44,11 +44,15 @@ namespace ams::gpio::driver {
     }
 
     void SetInitialGpioConfig() {
+        #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
         return board::SetInitialGpioConfig();
+        #endif
     }
 
     void SetInitialWakePinConfig() {
+        #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
         return board::SetInitialWakePinConfig();
+        #endif
     }
 
 }

@@ -16,8 +16,14 @@
 #pragma once
 #include <stratosphere.hpp>
 
-#ifdef ATMOSPHERE_OS_HORIZON
+#if defined(ATMOSPHERE_OS_HORIZON)
     #include "os_cache_impl.os.horizon.hpp"
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include "os_cache_impl.os.windows.hpp"
+#elif defined(ATMOSPHERE_OS_LINUX)
+    #include "os_cache_impl.os.linux.hpp"
+#elif defined(ATMOSPHERE_OS_MACOS)
+    #include "os_cache_impl.os.linux.hpp"
 #else
-    #error "Unknown OS for ThreadManagerImpl"
+    #error "Unknown OS for CacheImpl"
 #endif

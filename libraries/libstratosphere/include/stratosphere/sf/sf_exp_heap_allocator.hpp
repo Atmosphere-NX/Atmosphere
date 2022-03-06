@@ -60,7 +60,7 @@ namespace ams::sf {
             typename std::aligned_storage<Size == 0 ? 1 : Size>::type buffer;
         };
 
-        static constinit inline Globals _globals;
+        static constinit inline Globals _globals = {};
 
 
         static void Initialize(int option) {

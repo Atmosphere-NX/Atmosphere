@@ -43,12 +43,12 @@ namespace ams::lr {
         public:
             /* Actual commands. */
             Result ResolveAddOnContentPath(Path *out, ncm::DataId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->ResolveAddOnContentPath(out, id);
             }
 
             Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return m_interface->RegisterAddOnContentStorage(id, application_id, storage_id);
                 } else {
@@ -57,17 +57,17 @@ namespace ams::lr {
             }
 
             Result UnregisterAllAddOnContentPath() {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->UnregisterAllAddOnContentPath();
             }
 
             Result RefreshApplicationAddOnContent(const ncm::ApplicationId *ids, size_t num_ids) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids));
             }
 
             Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) {
-                AMS_ASSERT(m_interface);
+                AMS_ASSERT(m_interface != nullptr);
                 return m_interface->UnregisterApplicationAddOnContent(id);
             }
     };

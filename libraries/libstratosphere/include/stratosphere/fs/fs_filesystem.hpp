@@ -25,8 +25,8 @@ namespace ams::fs {
     }
 
     enum OpenMode {
-        OpenMode_Read   = (1 << 0),
-        OpenMode_Write  = (1 << 1),
+        OpenMode_Read        = (1 << 0),
+        OpenMode_Write       = (1 << 1),
         OpenMode_AllowAppend = (1 << 2),
 
         OpenMode_ReadWrite = (OpenMode_Read | OpenMode_Write),
@@ -34,23 +34,23 @@ namespace ams::fs {
     };
 
     enum OpenDirectoryMode {
-        OpenDirectoryMode_Directory = ::FsDirOpenMode_ReadDirs,
-        OpenDirectoryMode_File      = ::FsDirOpenMode_ReadFiles,
+        OpenDirectoryMode_Directory = (1 << 0),
+        OpenDirectoryMode_File      = (1 << 1),
 
         OpenDirectoryMode_All = (OpenDirectoryMode_Directory | OpenDirectoryMode_File),
 
         /* TODO: Separate enum, like N? */
-        OpenDirectoryMode_NotRequireFileSize = ::FsDirOpenMode_NoFileSize,
+        OpenDirectoryMode_NotRequireFileSize = (1 << 31),
     };
 
     enum DirectoryEntryType {
-        DirectoryEntryType_Directory = ::FsDirEntryType_Dir,
-        DirectoryEntryType_File      = ::FsDirEntryType_File,
+        DirectoryEntryType_Directory = 0,
+        DirectoryEntryType_File      = 1,
     };
 
     enum CreateOption {
-        CreateOption_None    = 0,
-        CreateOption_BigFile = ::FsCreateOption_BigFile,
+        CreateOption_None    = (0 << 0),
+        CreateOption_BigFile = (1 << 0),
     };
 
     struct FileHandle;

@@ -83,7 +83,7 @@ namespace ams::util {
 
             template<std::memory_order Order = std::memory_order_seq_cst>
             ALWAYS_INLINE void Store(T arg) {
-                return m_v.store(Order);
+                return m_v.store(arg, Order);
             }
 
             template<std::memory_order Order = std::memory_order_seq_cst>
@@ -135,6 +135,8 @@ namespace ams::util {
             ALWAYS_INLINE T operator--(int) { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1); }
     };
 
+    /* TODO: Clang does not yet define std::atomic_ref, so if we want this we will have to implement it ourselves. */
+    #if !defined(ATMOSPHERE_COMPILER_CLANG)
     template<impl::UsableAtomicType T>
     class AtomicRef {
         NON_MOVEABLE(AtomicRef);
@@ -218,6 +220,7 @@ namespace ams::util {
             template<bool Enable = HasArithmeticFunctions, typename = typename std::enable_if<Enable, void>::type>
             ALWAYS_INLINE T operator--(int) const { static_assert(Enable == HasArithmeticFunctions); return this->FetchSub(1); }
     };
+    #endif
 
 
 }

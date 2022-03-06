@@ -303,11 +303,11 @@ namespace ams::htclow::driver {
                 R_ABORT_UNLESS(g_ds_client.GetState(std::addressof(usb_state)));
 
                 switch (usb_state) {
-                    case UsbState_Detached:
-                    case UsbState_Suspended:
+                    case usb::UsbState_Detached:
+                    case usb::UsbState_Suspended:
                         InvokeAvailabilityChangeCallback(UsbAvailability_Unavailable);
                         break;
-                    case UsbState_Configured:
+                    case usb::UsbState_Configured:
                         InvokeAvailabilityChangeCallback(UsbAvailability_Available);
                         break;
                     default:

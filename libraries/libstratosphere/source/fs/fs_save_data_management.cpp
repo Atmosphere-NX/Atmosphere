@@ -15,45 +15,56 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
 
     namespace impl {
 
         Result ReadSaveDataFileSystemExtraData(SaveDataExtraData *out, SaveDataId id) {
-            return fsReadSaveDataFileSystemExtraData(out, sizeof(*out), id);
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            AMS_FS_R_TRY(fsp->ReadSaveDataFileSystemExtraData(sf::OutBuffer(out, sizeof(*out)), id));
+            R_SUCCEED();
         }
 
         Result ReadSaveDataFileSystemExtraData(SaveDataExtraData *out, SaveDataSpaceId space_id, SaveDataId id) {
-            return fsReadSaveDataFileSystemExtraDataBySaveDataSpaceId(out, sizeof(*out), static_cast<::FsSaveDataSpaceId>(space_id), id);
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            AMS_FS_R_TRY(fsp->ReadSaveDataFileSystemExtraDataBySaveDataSpaceId(sf::OutBuffer(out, sizeof(*out)), static_cast<u8>(space_id), id));
+            R_SUCCEED();
         }
 
         Result WriteSaveDataFileSystemExtraData(SaveDataSpaceId space_id, SaveDataId id, const SaveDataExtraData &extra_data) {
-            return fsWriteSaveDataFileSystemExtraData(std::addressof(extra_data), sizeof(extra_data), static_cast<::FsSaveDataSpaceId>(space_id), id);
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            AMS_FS_R_TRY(fsp->WriteSaveDataFileSystemExtraData(id, static_cast<u8>(space_id), sf::InBuffer(std::addressof(extra_data), sizeof(extra_data))));
+            R_SUCCEED();
         }
 
     }
 
     void DisableAutoSaveDataCreation() {
-        /* Use libnx binding. */
-        R_ABORT_UNLESS(fsDisableAutoSaveDataCreation());
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        AMS_FS_R_ABORT_UNLESS(fsp->DisableAutoSaveDataCreation());
     }
 
     Result CreateSystemSaveData(SaveDataSpaceId space_id, SystemSaveDataId save_id, UserId user_id, u64 owner_id, s64 size, s64 journal_size, u32 flags) {
-        const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, save_id);
-        const SaveDataCreationInfo info = {
-            .size         = size,
-            .journal_size = journal_size,
-            .block_size   = DefaultSaveDataBlockSize,
-            .owner_id     = owner_id,
-            .flags        = flags,
-            .space_id     = space_id,
-            .pseudo       = false,
+        auto create_impl = [=]() -> Result {
+            const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, save_id);
+            const SaveDataCreationInfo info = {
+                .size         = size,
+                .journal_size = journal_size,
+                .block_size   = DefaultSaveDataBlockSize,
+                .owner_id     = owner_id,
+                .flags        = flags,
+                .space_id     = space_id,
+                .pseudo       = false,
+            };
+
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_RETURN(fsp->CreateSaveDataFileSystemBySystemSaveDataId(attribute, info));
         };
 
-        static_assert(sizeof(SaveDataAttribute) == sizeof(::FsSaveDataAttribute));
-        static_assert(sizeof(SaveDataCreationInfo) == sizeof(::FsSaveDataCreationInfo));
-        return fsCreateSaveDataFileSystemBySystemSaveDataId(reinterpret_cast<const ::FsSaveDataAttribute *>(std::addressof(attribute)), reinterpret_cast<const ::FsSaveDataCreationInfo *>(std::addressof(info)));
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(create_impl(), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_CREATE_SYSTEM_SAVE_DATA(space_id, save_id, user_id, owner_id, size, journal_size, flags)));
+        R_SUCCEED();
     }
 
     Result CreateSystemSaveData(SystemSaveDataId save_id, s64 size, s64 journal_size, u32 flags) {
@@ -77,20 +88,35 @@ namespace ams::fs {
     }
 
     Result DeleteSaveData(SaveDataId id) {
-        /* TODO: Libnx binding for DeleteSaveDataFileSystem */
-        AMS_UNUSED(id);
-        AMS_ABORT();
+        auto delete_impl = [=]() -> Result {
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_RETURN(fsp->DeleteSaveDataFileSystem(id));
+        };
+
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(delete_impl(), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_SAVE_DATA_ID, id));
+        R_SUCCEED();
     }
 
     Result DeleteSaveData(SaveDataSpaceId space_id, SaveDataId id) {
-        return fsDeleteSaveDataFileSystemBySaveDataSpaceId(static_cast<::FsSaveDataSpaceId>(space_id), id);
+        auto delete_impl = [=]() -> Result {
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_RETURN(fsp->DeleteSaveDataFileSystemBySaveDataSpaceId(static_cast<u8>(space_id), id));
+        };
+
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(delete_impl(), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_DELETE_SAVE_DATA(space_id, id)));
+        R_SUCCEED();
     }
 
     Result DeleteSystemSaveData(SaveDataSpaceId space_id, SystemSaveDataId id, UserId user_id) {
-        const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, id);
+        auto delete_impl = [=]() -> Result {
+            const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, id);
 
-        static_assert(sizeof(attribute) == sizeof(::FsSaveDataAttribute));
-        return fsDeleteSaveDataFileSystemBySaveDataAttribute(static_cast<::FsSaveDataSpaceId>(space_id), reinterpret_cast<const ::FsSaveDataAttribute *>(std::addressof(attribute)));
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_RETURN(fsp->DeleteSaveDataFileSystemBySaveDataAttribute(static_cast<u8>(space_id), attribute));
+        };
+
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(delete_impl(), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_DELETE_SYSTEM_SAVE_DATA(space_id, id, user_id)));
+        R_SUCCEED();
     }
 
     Result GetSaveDataFlags(u32 *out, SaveDataId id) {
@@ -133,7 +159,13 @@ namespace ams::fs {
     }
 
     Result ExtendSaveData(SaveDataSpaceId space_id, SaveDataId id, s64 available_size, s64 journal_size) {
-        return ::fsExtendSaveDataFileSystem(static_cast<::FsSaveDataSpaceId>(space_id), static_cast<u64>(id), available_size, journal_size);
+        auto extend_impl = [=]() -> Result {
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_RETURN(fsp->ExtendSaveDataFileSystem(static_cast<u8>(space_id), id, available_size, journal_size));
+        };
+
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(extend_impl(), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_EXTEND_SAVE_DATA(space_id, id, available_size, journal_size)));
+        R_SUCCEED();
     }
 
 }

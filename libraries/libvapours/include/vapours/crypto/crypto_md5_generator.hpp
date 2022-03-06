@@ -58,6 +58,10 @@ namespace ams::crypto {
             }
     };
 
-    void GenerateMd5Hash(void *dst, size_t dst_size, const void *src, size_t src_size);
+    void GenerateMd5(void *dst, size_t dst_size, const void *src, size_t src_size);
+
+    ALWAYS_INLINE void GenerateMd5Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        return GenerateMd5(dst, dst_size, src, src_size);
+    }
 
 }

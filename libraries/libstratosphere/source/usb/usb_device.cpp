@@ -36,9 +36,12 @@ namespace ams::usb {
         /* Connect to usb:ds. */
         /* NOTE: Here, Nintendo does m_domain.InitializeByDomain<...>(...); m_domain.SetSessionCount(1); */
         {
-            Service srv;
-            R_TRY(sm::GetService(std::addressof(srv), sm::ServiceName::Encode("usb:ds")));
+            #if defined(ATMOSPHERE_OS_HORIZON)
+            os::NativeHandle h;
+            R_TRY(sm::GetServiceHandle(std::addressof(h), sm::ServiceName::Encode("usb:ds")));
 
+            ::Service srv;
+            ::serviceCreate(&srv, h);
             R_ABORT_UNLESS(serviceConvertToDomain(std::addressof(srv)));
 
             using Allocator     = decltype(m_allocator);
@@ -51,6 +54,9 @@ namespace ams::usb {
             } else {
                 m_ds_service   = ObjectFactory::CreateSharedEmplaced<ds::IDsService, RemoteDsService>(std::addressof(m_allocator), srv, std::addressof(m_allocator));
             }
+            #else
+            AMS_ABORT("TODO");
+            #endif
         }
 
         /* Bind the client process. */

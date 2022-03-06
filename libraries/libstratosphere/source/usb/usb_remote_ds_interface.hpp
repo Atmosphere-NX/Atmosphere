@@ -18,6 +18,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteDsInterface {
         private:
             using Allocator     = sf::ExpHeapAllocator;
@@ -44,5 +45,6 @@ namespace ams::usb {
             Result Disable();
     };
     static_assert(ds::IsIDsInterface<RemoteDsInterface>);
+    #endif
 
 }

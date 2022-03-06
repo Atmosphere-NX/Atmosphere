@@ -506,7 +506,7 @@ namespace ams::mitm::sysupdater {
         R_TRY(FormatUserPackagePath(std::addressof(package_root), path));
 
         /* Ensure that we can create an update context. */
-        R_TRY(fs::EnsureDirectoryRecursively("@Sdcard:/atmosphere/update/"));
+        R_TRY(fs::EnsureDirectory("@Sdcard:/atmosphere/update/"));
         const char *context_path = "@Sdcard:/atmosphere/update/cup.ctx";
 
         /* Create and initialize the update task. */

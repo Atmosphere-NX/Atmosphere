@@ -20,6 +20,12 @@ namespace ams::fs {
 
     class IEventNotifier;
 
+    struct EncryptionSeed {
+        char value[0x10];
+    };
+    static_assert(util::is_pod<EncryptionSeed>::value);
+    static_assert(sizeof(EncryptionSeed) == 0x10);
+
     Result MountSdCard(const char *name);
 
     Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name);

@@ -164,62 +164,27 @@ namespace ams::fs {
     }
 
     Result GetFreeSpaceSize(s64 *out, const char *path) {
+        /* Find the filesystem without access logging. */
         impl::FileSystemAccessor *accessor;
-        const char *sub_path = nullptr;
+        const char *sub_path;
+        AMS_FS_R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        /* Get the accessor. */
-        auto find_impl = [&]() -> Result {
-            R_UNLESS(out != nullptr,  fs::ResultNullptrArgument());
-            R_UNLESS(path != nullptr, fs::ResultNullptrArgument());
-            if (impl::IsValidMountName(path)) {
-                R_TRY(impl::Find(std::addressof(accessor), path));
-            } else {
-                R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
-            }
-            return ResultSuccess();
-        };
+        /* Get the total space size. */
+        AMS_FS_R_TRY(accessor->GetFreeSpaceSize(out, sub_path));
 
-        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(find_impl(), AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_SPACE_SIZE(out, path)));
-
-        /* Get the space size. */
-        auto get_size_impl = [&]() -> Result {
-            R_UNLESS(sub_path == nullptr || std::strcmp(sub_path, "/") == 0, fs::ResultInvalidMountName());
-            R_TRY(accessor->GetFreeSpaceSize(out, "/"));
-            return ResultSuccess();
-        };
-
-        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(get_size_impl(), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_SPACE_SIZE(out, path)));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetTotalSpaceSize(s64 *out, const char *path) {
-        /* NOTE: Nintendo does not do access logging here, and does not support mount-name instead of path. */
+        /* Find the filesystem without access logging. */
         impl::FileSystemAccessor *accessor;
-        const char *sub_path = nullptr;
+        const char *sub_path;
+        AMS_FS_R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        /* Get the accessor. */
-        auto find_impl = [&]() -> Result {
-            R_UNLESS(out != nullptr,  fs::ResultNullptrArgument());
-            R_UNLESS(path != nullptr, fs::ResultNullptrArgument());
-            if (impl::IsValidMountName(path)) {
-                R_TRY(impl::Find(std::addressof(accessor), path));
-            } else {
-                R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
-            }
-            return ResultSuccess();
-        };
+        /* Get the total space size. */
+        AMS_FS_R_TRY(accessor->GetTotalSpaceSize(out, sub_path));
 
-        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(find_impl(), AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_SPACE_SIZE(out, path)));
-
-        /* Get the space size. */
-        auto get_size_impl = [&]() -> Result {
-            R_UNLESS(sub_path == nullptr || std::strcmp(sub_path, "/") == 0, fs::ResultInvalidMountName());
-            R_TRY(accessor->GetTotalSpaceSize(out, "/"));
-            return ResultSuccess();
-        };
-
-        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(get_size_impl(), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_SPACE_SIZE(out, path)));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetConcatenationFileAttribute(const char *path) {
@@ -229,7 +194,7 @@ namespace ams::fs {
 
         AMS_FS_R_TRY(accessor->QueryEntry(nullptr, 0, nullptr, 0, fsa::QueryId::SetConcatenationFileAttribute, sub_path));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OpenFile(FileHandle *out, std::unique_ptr<fsa::IFile> &&file, int mode) {
@@ -239,7 +204,7 @@ namespace ams::fs {
         AMS_FS_R_UNLESS(file_accessor != nullptr, fs::ResultAllocationFailureInNew());
         out->handle = file_accessor.release();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     namespace {
@@ -249,7 +214,7 @@ namespace ams::fs {
             AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::Find(std::addressof(accessor), mount_name), AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, mount_name));
 
             AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM_WITH_NAME(accessor->Commit(), nullptr, accessor, func_name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, mount_name));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

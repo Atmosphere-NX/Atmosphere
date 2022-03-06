@@ -21,6 +21,7 @@ namespace ams::exosphere {
 
     ApiInfo GetApiInfo();
 
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     void ForceRebootToRcm();
     void ForceRebootToIramPayload();
     void ForceRebootToFatalError();
@@ -35,6 +36,7 @@ namespace ams::exosphere {
 
     void CopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size);
     void CopyFromIram(void *dram_dst, uintptr_t iram_src, size_t size);
+    #endif
 
 }
 

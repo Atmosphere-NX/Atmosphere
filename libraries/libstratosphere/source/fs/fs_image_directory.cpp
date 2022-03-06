@@ -15,23 +15,36 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
 namespace ams::fs {
 
     Result MountImageDirectory(const char *name, ImageDirectoryId id) {
-        /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+        auto mount_impl = [=]() -> Result {
+            /* Validate the mount name. */
+            R_TRY(impl::CheckMountName(name));
 
-        /* Open the image directory. This uses libnx bindings. */
-        FsFileSystem fs;
-        R_TRY(fsOpenImageDirectoryFileSystem(std::addressof(fs), static_cast<::FsImageDirectoryId>(id)));
+            /* Open the image directory. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenImageDirectoryFileSystem(std::addressof(fs), static_cast<u32>(id)));
 
-        /* Allocate a new filesystem wrapper. */
-        auto fsa = std::make_unique<RemoteFileSystem>(fs);
-        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInImageDirectoryA());
+            /* Allocate a new filesystem wrapper. */
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInImageDirectoryA());
 
-        /* Register. */
-        return fsa::Register(name, std::move(fsa));
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(fsa)));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_IMAGE_DIRECTORY(name, id)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
 }

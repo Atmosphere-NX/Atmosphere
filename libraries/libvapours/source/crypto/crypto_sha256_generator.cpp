@@ -17,7 +17,7 @@
 
 namespace ams::crypto {
 
-    void GenerateSha256Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    void GenerateSha256(void *dst, size_t dst_size, const void *src, size_t src_size) {
         Sha256Generator gen;
 
         gen.Initialize();

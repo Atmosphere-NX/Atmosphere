@@ -17,6 +17,7 @@
 
 namespace ams::settings::fwdbg {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     bool IsDebugModeEnabled() {
         bool value = false;
         R_ABORT_UNLESS(::setsysGetDebugModeFlag(std::addressof(value)));
@@ -34,5 +35,20 @@ namespace ams::settings::fwdbg {
         R_ABORT_UNLESS(setsysGetSettingsItemValue(name, key, dst, dst_size, &size));
         return size;
     }
+    #else
+    bool IsDebugModeEnabled() {
+        AMS_ABORT("TODO");
+    }
+
+    size_t WEAK_SYMBOL GetSettingsItemValueSize(const char *name, const char *key) {
+        AMS_UNUSED(name, key);
+        AMS_ABORT("TODO");
+    }
+
+    size_t WEAK_SYMBOL GetSettingsItemValue(void *dst, size_t dst_size, const char *name, const char *key) {
+        AMS_UNUSED(dst, dst_size, name, key);
+        AMS_ABORT("TODO");
+    }
+    #endif
 
 }

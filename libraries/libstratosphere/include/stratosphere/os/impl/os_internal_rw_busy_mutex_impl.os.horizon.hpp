@@ -16,6 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/impl/os_internal_rw_busy_mutex_value.hpp>
 
 namespace ams::os::impl {
 
@@ -33,5 +34,7 @@ namespace ams::os::impl {
             void AcquireWriteLock();
             void ReleaseWriteLock();
     };
+
+    #define AMS_OS_INTERNAL_READER_WRITER_BUSY_MUTEX_IMPL_CONSTANT_INITIALIZER {0}
 
 }

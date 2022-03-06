@@ -42,6 +42,7 @@ namespace ams::fs::impl {
             bool m_path_cache_attachable;
             bool m_path_cache_attached;
             bool m_multi_commit_supported;
+            PathFlags m_path_flags;
         public:
             FileSystemAccessor(const char *name, std::unique_ptr<fsa::IFileSystem> &&fs, std::unique_ptr<fsa::ICommonMountNameGenerator> &&generator = nullptr);
             virtual ~FileSystemAccessor();
@@ -93,6 +94,8 @@ namespace ams::fs::impl {
         private:
             void NotifyCloseFile(FileAccessor *f);
             void NotifyCloseDirectory(DirectoryAccessor *d);
+        public:
+            Result SetUpPath(fs::Path *out, const char *p);
     };
 
 }

@@ -49,7 +49,7 @@ namespace ams::htclow {
         const auto channel = impl::ConvertChannelType(m_channel);
 
         /* Begin the flush. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->ConnectBegin(std::addressof(task_id), channel));
 
         /* Wait for the task to finish. */
@@ -61,7 +61,7 @@ namespace ams::htclow {
 
     Result Channel::Flush() {
         /* Begin the flush. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->FlushBegin(std::addressof(task_id), impl::ConvertChannelType(m_channel)));
 
         /* Wait for the task to finish. */
@@ -128,7 +128,7 @@ namespace ams::htclow {
             AMS_ASSERT(util::IsIntValueRepresentable<size_t>(size - total_sent));
 
             /* Begin the send. */
-            u32 task_id;
+            u32 task_id{};
             const auto begin_result = m_manager->SendBegin(std::addressof(task_id), std::addressof(cur_sent), static_cast<const u8 *>(src) + total_sent, size - total_sent, channel);
             if (R_FAILED(begin_result)) {
                 if (total_sent != 0) {
@@ -192,7 +192,7 @@ namespace ams::htclow {
         const bool blocking = option != ReceiveOption_NonBlocking;
 
         /* Begin the receive. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->ReceiveBegin(std::addressof(task_id), channel, blocking ? 1 : 0));
 
         /* Wait for the task to finish. */
@@ -214,7 +214,7 @@ namespace ams::htclow {
         const auto channel = impl::ConvertChannelType(m_channel);
 
         /* Begin the wait. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_manager->WaitReceiveBegin(std::addressof(task_id), channel, size));
 
 

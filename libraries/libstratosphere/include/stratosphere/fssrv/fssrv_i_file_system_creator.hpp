@@ -22,6 +22,8 @@ namespace ams::fs {
     class IStorage;
     enum class BisPartitionId;
 
+    class Path;
+
     namespace fsa {
 
         class IFileSystem;
@@ -67,7 +69,24 @@ namespace ams::fssrv::fscreator {
             virtual Result CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) = 0;
     };
 
+    class ILocalFileSystemCreator {
+        public:
+            virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, const fs::Path &path, bool case_sensitive, bool ensure_root, Result on_path_not_found) = 0;
+        public:
+            Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, const fs::Path &path, bool case_sensitive) {
+                R_RETURN(this->Create(out, path, case_sensitive, false, ResultSuccess()));
+            }
+    };
+
+    class ISubDirectoryFileSystemCreator {
+        public:
+            virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::fsa::IFileSystem> base_fs, const fs::Path &path) = 0;
+    };
+
     struct FileSystemCreatorInterfaces {
+        ILocalFileSystemCreator *local_fs_creator;
+        ISubDirectoryFileSystemCreator *subdir_fs_creator;
+        /* TODO: These don't exist any more, and should be refactored out. */
         IRomFileSystemCreator *rom_fs_creator;
         IPartitionFileSystemCreator *partition_fs_creator;
         IStorageOnNcaCreator *storage_on_nca_creator;

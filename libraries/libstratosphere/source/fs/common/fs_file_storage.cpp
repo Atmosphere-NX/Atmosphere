@@ -90,7 +90,7 @@ namespace ams::fs {
         }
     }
 
-    Result FileStorageBasedFileSystem::Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const char *path, fs::OpenMode mode) {
+    Result FileStorageBasedFileSystem::Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const fs::Path &path, fs::OpenMode mode) {
         /* Open the file. */
         std::unique_ptr<fs::fsa::IFile> base_file;
         R_TRY(base_file_system->OpenFile(std::addressof(base_file), path, mode));

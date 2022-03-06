@@ -95,8 +95,8 @@ namespace ams::i2c::driver::board::nintendo::nx {
             }
         }
 
-        constinit util::TypedStorage<impl::I2cBusAccessorManager> g_bus_accessor_manager;
-        constinit util::TypedStorage<impl::I2cDevicePropertyManager> g_device_manager;
+        constinit util::TypedStorage<impl::I2cBusAccessorManager> g_bus_accessor_manager = {};
+        constinit util::TypedStorage<impl::I2cDevicePropertyManager> g_device_manager = {};
 
     }
 

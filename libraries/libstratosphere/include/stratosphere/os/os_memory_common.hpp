@@ -30,7 +30,15 @@ namespace ams::os {
         MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
     };
 
-    using MemoryMapping = svc::MemoryMapping;
-    using enum svc::MemoryMapping;
+    #if defined(ATMOSPHERE_OS_HORIZON)
+        using MemoryMapping = svc::MemoryMapping;
+        using enum svc::MemoryMapping;
+    #else
+        enum MemoryMapping : u32 {
+            MemoryMapping_IoRegister = 0,
+            MemoryMapping_Uncached   = 1,
+            MemoryMapping_Memory     = 2,
+        };
+    #endif
 
 }

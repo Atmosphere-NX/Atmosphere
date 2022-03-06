@@ -20,6 +20,7 @@
 
 namespace ams::powctl::driver::impl {
 
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     class ChargeArbiter {
         private:
             const ChargeParametersRule *m_rules;
@@ -118,6 +119,7 @@ namespace ams::powctl::driver::impl {
             void UpdateSelectedRule() {
                 /* Try to find an entry that fits our current requirements. */
                 const ChargeParametersRule *best_rule = nullptr;
+
                 for (size_t i = 0; i < m_num_rules; ++i) {
                     /* Get the current rule. */
                     const ChargeParametersRule &cur_rule = m_rules[i];
@@ -184,5 +186,6 @@ namespace ams::powctl::driver::impl {
                 m_selected_rule = best_rule;
             }
     };
+    #endif
 
 }

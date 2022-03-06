@@ -34,7 +34,7 @@ namespace ams::os {
 
         u8 state;
         bool is_waiting;
-        util::TypedStorage<impl::MultiWaitImpl, sizeof(util::IntrusiveListNode) + sizeof(impl::InternalCriticalSection) + 2 * sizeof(void *) + sizeof(Handle), alignof(void *)> impl_storage;
+        util::TypedStorage<impl::MultiWaitImpl, util::AlignUp(sizeof(util::IntrusiveListNode) + sizeof(impl::InternalCriticalSection) + 2 * sizeof(void *) + sizeof(NativeHandle), alignof(void *)), alignof(void *)> impl_storage;
     };
     static_assert(std::is_trivial<MultiWaitType>::value);
 

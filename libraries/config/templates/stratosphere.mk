@@ -3,6 +3,8 @@
 #---------------------------------------------------------------------------------
 include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../common.mk
 
+ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
+
 #---------------------------------------------------------------------------------
 # pull in switch rules
 #---------------------------------------------------------------------------------
@@ -12,15 +14,24 @@ endif
 
 include $(DEVKITPRO)/libnx/switch_rules
 
+endif
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
+ifeq ($(ATMOSPHERE_BUILD_FOR_DEBUGGING),1)
+ATMOSPHERE_OPTIMIZATION_FLAG := -Os
+else
+ATMOSPHERE_OPTIMIZATION_FLAG := -O2
+endif
+
 export DEFINES     = $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
-export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2 -Wextra -Werror -Wno-missing-field-initializers
+export SETTINGS    = $(ATMOSPHERE_SETTINGS) $(ATMOSPHERE_OPTIMIZATION_FLAG) -Wextra -Werror -Wno-missing-field-initializers
 export CFLAGS      = $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 export CXXFLAGS    = $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
 export ASFLAGS     = $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
 
+ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export CXXREQUIRED := -Wl,--require-defined,__libnx_initheap \
                       -Wl,--require-defined,__libnx_exception_handler \
                       -Wl,--require-defined,__libnx_alloc \
@@ -45,16 +56,50 @@ export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,_ZSt20__throw_length_errorPKc \
 			-Wl,--wrap,_ZNSt11logic_errorC2EPKc \
 			-Wl,--wrap,exit
+else ifeq ($(ATMOSPHERE_BOARD),generic_windows)
+export CXXREQUIRED :=
+export CXXWRAPS    := -Wl,--wrap,__p__acmdln
+else
+export CXXREQUIRED :=
+export CXXWRAPS    :=
+endif
 
+
+ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export LDFLAGS     = -specs=$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/stratosphere.specs -specs=$(DEVKITPRO)/libnx/switch.specs $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-Map,$(notdir $*.map)
+else ifeq ($(ATMOSPHERE_BOARD),generic_macos)
+export LDFLAGS     = $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-map,$(notdir $@.map)
+else
+export LDFLAGS     = $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-Map,$(notdir $*.map)
+endif
 
-export LIBS	= -lstratosphere -lnx
+ifeq ($(ATMOSPHERE_COMPILER_NAME),clang)
+export LDFLAGS += -fuse-ld=lld
+endif
+
+ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
+export LIBS	:= -lstratosphere -lnx
+else ifeq ($(ATMOSPHERE_BOARD),generic_windows)
+export LIBS	:= -lstratosphere -lwinmm -lws2_32
+else ifeq ($(ATMOSPHERE_BOARD),generic_linux)
+export LIBS := -lstratosphere -pthread
+else ifeq ($(ATMOSPHERE_BOARD),generic_macos)
+export LIBS := -lstratosphere -pthread
+else
+export LIBS := -lstratosphere
+endif
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-export LIBDIRS	= $(PORTLIBS) $(LIBNX) $(ATMOSPHERE_LIBRARIES_DIR)/libvapours $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere
+ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
+export LIBDIRS	= $(PORTLIBS) $(LIBNX)
+else
+export LIBDIRS	=
+endif
+
+export AMS_LIBDIRS = $(ATMOSPHERE_LIBRARIES_DIR)/libvapours $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere
 
 #---------------------------------------------------------------------------------
 # stratosphere sysmodules may (but usually do not) have an exefs source dir

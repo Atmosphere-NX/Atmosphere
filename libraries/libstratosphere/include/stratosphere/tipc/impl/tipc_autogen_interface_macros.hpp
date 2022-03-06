@@ -15,13 +15,14 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/tipc/tipc_message_types.hpp>
 #include <stratosphere/tipc/tipc_service_object_base.hpp>
 #include <stratosphere/tipc/impl/tipc_impl_command_serialization.hpp>
 
 namespace ams::tipc::impl {
 
     template<typename T>
-    concept HasDefaultServiceCommandProcessor = requires (T &t, const svc::ipc::MessageBuffer &message_buffer) {
+    concept HasDefaultServiceCommandProcessor = requires (T &t, const MessageBuffer &message_buffer) {
         { t.ProcessDefaultServiceCommand(message_buffer) } -> std::same_as<Result>;
     };
 
@@ -129,7 +130,7 @@ namespace ams::tipc::impl {
                     constexpr explicit ImplTemplateBaseT(Args &&...args) : ImplHolder(std::forward<Args>(args)...) { /* ... */ }                       \
                 private:                                                                                                                               \
                     template<typename ImplType>                                                                                                        \
-                    ALWAYS_INLINE Result ProcessDefaultMethod(ImplType *impl, const svc::ipc::MessageBuffer &message_buffer) const {                   \
+                    ALWAYS_INLINE Result ProcessDefaultMethod(ImplType *impl, const MessageBuffer &message_buffer) const {                             \
                         /* Handle a default command. */                                                                                                \
                         if constexpr (HasDefaultServiceCommandProcessor<ImplType>) {                                                                   \
                             return impl->ProcessDefaultServiceCommand(message_buffer);                                                                 \
@@ -139,7 +140,7 @@ namespace ams::tipc::impl {
                     }                                                                                                                                  \
                                                                                                                                                        \
                     template<u16 CommandId, typename ImplType>                                                                                         \
-                    ALWAYS_INLINE Result ProcessMethodById(ImplType *impl, const svc::ipc::MessageBuffer &message_buffer, hos::Version fw_ver) const { \
+                    ALWAYS_INLINE Result ProcessMethodById(ImplType *impl, const MessageBuffer &message_buffer, hos::Version fw_ver) const {           \
                         CMD_MACRO(ImplType, AMS_TIPC_IMPL_PROCESS_METHOD_REQUEST_BY_ID)                                                                \
                                                                                                                                                        \
                         return this->ProcessDefaultMethod<ImplType>(impl, message_buffer);                                                             \
@@ -159,10 +160,10 @@ namespace ams::tipc::impl {
                         static_assert(::NAMESPACE::Is##INTERFACE<ImplType>);                                                                           \
                                                                                                                                                        \
                         /* Get accessor to the message buffer. */                                                                                      \
-                        const svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());                                                    \
+                        const MessageBuffer message_buffer(tipc::GetMessageBuffer());                                                                  \
                                                                                                                                                        \
                         /* Get decision variables. */                                                                                                  \
-                        const auto tag    = svc::ipc::MessageBuffer::MessageHeader(message_buffer).GetTag();                                           \
+                        const auto tag    = MessageBuffer::MessageHeader(message_buffer).GetTag();                                                     \
                         const auto fw_ver = IsFirmwareVersionAlwaysValid() ? hos::Version_Current : hos::GetVersion();                                 \
                                                                                                                                                        \
                         /* Process against the command ids. */                                                                                         \

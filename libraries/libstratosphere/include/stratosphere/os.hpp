@@ -22,7 +22,7 @@
 #include <stratosphere/os/os_memory_fence.hpp>
 #include <stratosphere/os/os_memory_permission.hpp>
 #include <stratosphere/os/os_memory_heap_api.hpp>
-#include <stratosphere/os/os_memory_virtual_address_api.hpp>
+#include <stratosphere/os/os_virtual_address_memory.hpp>
 #include <stratosphere/os/os_native_handle.hpp>
 #include <stratosphere/os/os_process_handle_api.hpp>
 #include <stratosphere/os/os_random.hpp>
@@ -45,6 +45,7 @@
 #include <stratosphere/os/os_sdk_thread_local_storage.hpp>
 #include <stratosphere/os/os_sdk_reply_and_receive.hpp>
 #include <stratosphere/os/os_thread.hpp>
+#include <stratosphere/os/os_sdk_thread_api.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
 #include <stratosphere/os/os_light_event.hpp>
 #include <stratosphere/os/os_light_message_queue.hpp>

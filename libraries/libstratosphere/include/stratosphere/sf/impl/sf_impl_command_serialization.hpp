@@ -145,6 +145,7 @@ namespace ams::sf {
 }
 
 
+#if defined(ATMOSPHERE_OS_HORIZON)
 namespace ams::sf::impl {
 
     /* Machinery for filtering type lists. */
@@ -1116,7 +1117,7 @@ namespace ams::sf::impl {
             }
     };
 
-    constexpr Result GetCmifOutHeaderPointer(CmifOutHeader **out_header_ptr, cmif::PointerAndSize &out_raw_data) {
+    inline Result GetCmifOutHeaderPointer(CmifOutHeader **out_header_ptr, cmif::PointerAndSize &out_raw_data) {
         CmifOutHeader *header = static_cast<CmifOutHeader *>(out_raw_data.GetPointer());
         R_UNLESS(out_raw_data.GetSize() >= sizeof(*header), sf::cmif::ResultInvalidHeaderSize());
         out_raw_data = cmif::PointerAndSize(out_raw_data.GetAddress() + sizeof(*header), out_raw_data.GetSize() - sizeof(*header));
@@ -1265,6 +1266,45 @@ namespace ams::sf::impl {
     }
 
 }
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+namespace ams::sf::impl {
+
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
+    inline Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+        /* TODO: Is some kind of emulated serialization interesting/desirable? */
+        AMS_UNUSED(out_header_ptr, ctx, in_raw_data);
+        AMS_ABORT("HIPC serialization not currently supported on Windows.");
+    }
+
+
+}
+#elif defined(ATMOSPHERE_OS_LINUX)
+namespace ams::sf::impl {
+
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
+    inline Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+        /* TODO: Is some kind of emulated serialization interesting/desirable? */
+        AMS_UNUSED(out_header_ptr, ctx, in_raw_data);
+        AMS_ABORT("HIPC serialization not currently supported on Linux.");
+    }
+
+
+}
+#elif defined(ATMOSPHERE_OS_MACOS)
+namespace ams::sf::impl {
+
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
+    inline Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+        /* TODO: Is some kind of emulated serialization interesting/desirable? */
+        AMS_UNUSED(out_header_ptr, ctx, in_raw_data);
+        AMS_ABORT("HIPC serialization not currently supported on macOS.");
+    }
+
+
+}
+#else
+    #error "Unknown OS for sf Command serialization."
+#endif
 
 namespace ams::sf::impl {
 

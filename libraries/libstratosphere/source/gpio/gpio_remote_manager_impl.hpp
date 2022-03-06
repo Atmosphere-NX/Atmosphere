@@ -19,6 +19,7 @@
 
 namespace ams::gpio {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteManagerImpl {
         public:
             RemoteManagerImpl() { /* ... */ }
@@ -82,5 +83,6 @@ namespace ams::gpio {
 
     };
     static_assert(gpio::sf::IsIManager<RemoteManagerImpl>);
+    #endif
 
 }

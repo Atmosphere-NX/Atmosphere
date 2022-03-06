@@ -31,10 +31,18 @@ namespace ams::fssystem {
     template<typename T, size_t Size>
     class Pimpl {
         private:
-            alignas(0x10) u8 m_storage[Size];
+            #if defined(ATMOSPHERE_OS_HORIZON) || defined(ATMOSPHERE_OS_WINDOWS) || defined(ATMOSPHERE_OS_LINUX)
+                static constexpr size_t ExtraSizeToEnsureCompatibility = 0;
+            #elif defined(ATMOSPHERE_OS_MACOS)
+                static constexpr size_t ExtraSizeToEnsureCompatibility = 0x20;
+            #endif
+
+            static constexpr size_t StorageSize = Size + ExtraSizeToEnsureCompatibility;
+        private:
+            alignas(0x10) u8 m_storage[StorageSize];
         public:
-            ALWAYS_INLINE Pimpl()  { impl::PimplHelper<T, Size>::Construct(m_storage); }
-            ALWAYS_INLINE ~Pimpl() { impl::PimplHelper<T, Size>::Destroy(m_storage); }
+            ALWAYS_INLINE Pimpl()  { impl::PimplHelper<T, StorageSize>::Construct(m_storage); }
+            ALWAYS_INLINE ~Pimpl() { impl::PimplHelper<T, StorageSize>::Destroy(m_storage); }
 
             ALWAYS_INLINE T *Get() { return reinterpret_cast<T *>(m_storage + 0); }
             ALWAYS_INLINE T *operator->() { return reinterpret_cast<T *>(m_storage + 0); }

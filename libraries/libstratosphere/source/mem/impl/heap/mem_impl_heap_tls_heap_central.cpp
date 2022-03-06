@@ -394,7 +394,7 @@ namespace ams::mem::impl::heap {
         this->AddToFreeBlockList(span);
 
         m_num_threads = 1;
-        m_static_thread_quota = std::min((m_span_table.total_pages * TlsHeapStatic::PageSize) / sizeof(void *), 2_MB);
+        m_static_thread_quota = std::min<size_t>((m_span_table.total_pages * TlsHeapStatic::PageSize) / sizeof(void *), 2_MB);
         m_dynamic_thread_quota = m_static_thread_quota;
         m_use_virtual_memory = use_virtual_memory;
 
@@ -940,10 +940,10 @@ namespace ams::mem::impl::heap {
                 m_physical_page_flags[i] = 2;
             }
         } else {
-            const void *set_flag = ::memchr(std::addressof(m_physical_page_flags[i]), 1, idx_end - i);
+            const void *set_flag = util::Memchr(std::addressof(m_physical_page_flags[i]), 1, idx_end - i);
             if (set_flag) {
                 const uintptr_t set_idx = reinterpret_cast<const u8 *>(set_flag) - m_physical_page_flags;
-                const void *lst_flag = ::memrchr(std::addressof(m_physical_page_flags[set_idx]), 1, idx_end - set_idx);
+                const void *lst_flag = util::Memrchr(std::addressof(m_physical_page_flags[set_idx]), 1, idx_end - set_idx);
                 const uintptr_t lst_idx = (lst_flag) ? (reinterpret_cast<const u8 *>(lst_flag) - m_physical_page_flags + 1) : idx_end;
                 std::memset(std::addressof(m_physical_page_flags[set_idx]), 2, lst_idx - set_idx);
             }

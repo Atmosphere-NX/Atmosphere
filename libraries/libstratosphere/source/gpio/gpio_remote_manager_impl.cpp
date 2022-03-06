@@ -18,6 +18,7 @@
 
 namespace ams::gpio {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
         struct GpioRemoteManagerTag;
@@ -48,5 +49,6 @@ namespace ams::gpio {
         out.SetValue(RemoteObjectFactory::CreateSharedEmplaced<gpio::sf::IPadSession, RemotePadSessionImpl>(p));
         return ResultSuccess();
     }
+    #endif
 
 }

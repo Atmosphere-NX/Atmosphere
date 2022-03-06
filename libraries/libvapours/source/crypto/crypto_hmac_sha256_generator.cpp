@@ -17,7 +17,7 @@
 
 namespace ams::crypto {
 
-    void GenerateHmacSha256Mac(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size) {
+    void GenerateHmacSha256(void *dst, size_t dst_size, const void *data, size_t data_size, const void *key, size_t key_size) {
         HmacSha256Generator hmac;
 
         hmac.Initialize(key, key_size);

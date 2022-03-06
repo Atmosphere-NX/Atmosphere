@@ -30,7 +30,7 @@ namespace ams::fs {
             private:
                 std::unique_ptr<fsa::IFile> m_base_file;
             public:
-                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : m_base_file(std::move(f)) { /* ... */ }
+                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : m_base_file(std::move(f)) { AMS_ASSERT(m_base_file != nullptr); }
                 virtual ~ReadOnlyFile() { /* ... */ }
             private:
                 virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
@@ -46,12 +46,17 @@ namespace ams::fs {
                 }
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
-                    AMS_UNUSED(offset, buffer, size, option);
+                    bool need_append;
+                    R_TRY(this->DryWrite(std::addressof(need_append), offset, size, option, fs::OpenMode_Read));
+
+                    AMS_ASSERT(!need_append);
+
+                    AMS_UNUSED(buffer);
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 
                 virtual Result DoSetSize(s64 size) override final {
-                    AMS_UNUSED(size);
+                    R_TRY(this->DrySetSize(size, fs::OpenMode_Read));
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 
@@ -82,7 +87,7 @@ namespace ams::fs {
             explicit ReadOnlyFileSystemTemplate(T &&fs) : m_base_fs(std::move(fs)) { /* ... */ }
             virtual ~ReadOnlyFileSystemTemplate() { /* ... */ }
         private:
-            virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+            virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const fs::Path &path, OpenMode mode) override final {
                 /* Only allow opening files with mode = read. */
                 R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
@@ -96,11 +101,11 @@ namespace ams::fs {
                 return ResultSuccess();
             }
 
-            virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
+            virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const fs::Path &path, OpenDirectoryMode mode) override final {
                 return m_base_fs->OpenDirectory(out_dir, path, mode);
             }
 
-            virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
+            virtual Result DoGetEntryType(DirectoryEntryType *out, const fs::Path &path) override final {
                 return m_base_fs->GetEntryType(out, path);
             }
 
@@ -108,52 +113,52 @@ namespace ams::fs {
                 return ResultSuccess();
             }
 
-            virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
+            virtual Result DoCreateFile(const fs::Path &path, s64 size, int flags) override final {
                 AMS_UNUSED(path, size, flags);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoDeleteFile(const char *path) override final {
+            virtual Result DoDeleteFile(const fs::Path &path) override final {
                 AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoCreateDirectory(const char *path) override final {
+            virtual Result DoCreateDirectory(const fs::Path &path) override final {
                 AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoDeleteDirectory(const char *path) override final {
+            virtual Result DoDeleteDirectory(const fs::Path &path) override final {
                 AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
+            virtual Result DoDeleteDirectoryRecursively(const fs::Path &path) override final {
                 AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
+            virtual Result DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) override final {
                 AMS_UNUSED(old_path, new_path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
+            virtual Result DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) override final {
                 AMS_UNUSED(old_path, new_path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoCleanDirectoryRecursively(const char *path) override final {
+            virtual Result DoCleanDirectoryRecursively(const fs::Path &path) override final {
                 AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override final {
+            virtual Result DoGetFreeSpaceSize(s64 *out, const fs::Path &path) override final {
                 AMS_UNUSED(out, path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateB();
             }
 
-            virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override final {
+            virtual Result DoGetTotalSpaceSize(s64 *out, const fs::Path &path) override final {
                 AMS_UNUSED(out, path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateB();
             }

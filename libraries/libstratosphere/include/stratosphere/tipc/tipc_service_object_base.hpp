@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/tipc/tipc_message_types.hpp>
 
 namespace ams::tipc {
 

@@ -19,6 +19,7 @@
 
 namespace ams::lm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
         struct LmRemoteLogServiceTag;
@@ -57,10 +58,15 @@ namespace ams::lm {
     }
 
     sf::SharedPointer<ILogService> CreateLogService() {
-        ::Service srv;
-        R_ABORT_UNLESS(sm::GetService(std::addressof(srv), LogServiceName));
+        os::NativeHandle h;
+        R_ABORT_UNLESS(sm::GetServiceHandle(std::addressof(h), LogServiceName));
 
-        return RemoteObjectFactory::CreateSharedEmplaced<::ams::lm::ILogService, RemoteLogService>(srv);
+        return RemoteObjectFactory::CreateSharedEmplaced<::ams::lm::ILogService, RemoteLogService>(h);
     }
+    #else
+    sf::SharedPointer<ILogService> CreateLogService() {
+        AMS_ABORT("TODO");
+    }
+    #endif
 
 }

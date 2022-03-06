@@ -105,7 +105,7 @@ namespace ams::fssystem::save {
         NON_COPYABLE(HierarchicalIntegrityVerificationStorage);
         NON_MOVEABLE(HierarchicalIntegrityVerificationStorage);
         private:
-            friend class HierarchicalIntegrityVerificationMetaInformation;
+            friend struct HierarchicalIntegrityVerificationMetaInformation;
         protected:
             static constexpr s64 HashSize     = crypto::Sha256Generator::HashSize;
             static constexpr size_t MaxLayers = IntegrityMaxLayerCount;

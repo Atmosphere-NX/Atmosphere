@@ -114,11 +114,11 @@ namespace ams::crypto::impl {
             while (num_blocks >= 3) {
                 /* Read blocks in. Keep them in registers for XOR later. */
                 const uint8x16_t block0 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor128::BlockSize;
                 const uint8x16_t block1 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor128::BlockSize;
                 const uint8x16_t block2 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor128::BlockSize;
 
                 /* We'll be encrypting the three CTRs. */
                 uint8x16_t tmp0 = ctr0, tmp1 = ctr1, tmp2 = ctr2;
@@ -178,11 +178,11 @@ namespace ams::crypto::impl {
 
                 /* Store to output. */
                 vst1q_u8(dst, tmp0);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor128::BlockSize;
                 vst1q_u8(dst, tmp1);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor128::BlockSize;
                 vst1q_u8(dst, tmp2);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor128::BlockSize;
 
                 num_blocks -= 3;
             }
@@ -191,7 +191,7 @@ namespace ams::crypto::impl {
         while (num_blocks >= 1) {
             /* Read block in, keep in register for XOR. */
             const uint8x16_t block0 = vld1q_u8(src);
-            src += AES_BLOCK_SIZE;
+            src += AesEncryptor128::BlockSize;
 
             /* We'll be encrypting the CTR. */
             uint8x16_t tmp0 = ctr0;
@@ -232,7 +232,7 @@ namespace ams::crypto::impl {
 
             /* Store to output. */
             vst1q_u8(dst, tmp0);
-            dst += AES_BLOCK_SIZE;
+            dst += AesEncryptor128::BlockSize;
 
             num_blocks--;
         }
@@ -270,11 +270,11 @@ namespace ams::crypto::impl {
             while (num_blocks >= 3) {
                 /* Read blocks in. Keep them in registers for XOR later. */
                 const uint8x16_t block0 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor192::BlockSize;
                 const uint8x16_t block1 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor192::BlockSize;
                 const uint8x16_t block2 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor192::BlockSize;
 
                 /* We'll be encrypting the three CTRs. */
                 uint8x16_t tmp0 = ctr0, tmp1 = ctr1, tmp2 = ctr2;
@@ -338,11 +338,11 @@ namespace ams::crypto::impl {
 
                 /* Store to output. */
                 vst1q_u8(dst, tmp0);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor192::BlockSize;
                 vst1q_u8(dst, tmp1);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor192::BlockSize;
                 vst1q_u8(dst, tmp2);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor192::BlockSize;
 
                 num_blocks -= 3;
             }
@@ -351,7 +351,7 @@ namespace ams::crypto::impl {
         while (num_blocks >= 1) {
             /* Read block in, keep in register for XOR. */
             const uint8x16_t block0 = vld1q_u8(src);
-            src += AES_BLOCK_SIZE;
+            src += AesEncryptor192::BlockSize;
 
             /* We'll be encrypting the CTR. */
             uint8x16_t tmp0 = ctr0;
@@ -396,7 +396,7 @@ namespace ams::crypto::impl {
 
             /* Store to output. */
             vst1q_u8(dst, tmp0);
-            dst += AES_BLOCK_SIZE;
+            dst += AesEncryptor192::BlockSize;
 
             num_blocks--;
         }
@@ -436,11 +436,11 @@ namespace ams::crypto::impl {
             while (num_blocks >= 3) {
                 /* Read blocks in. Keep them in registers for XOR later. */
                 const uint8x16_t block0 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor256::BlockSize;
                 const uint8x16_t block1 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor256::BlockSize;
                 const uint8x16_t block2 = vld1q_u8(src);
-                src += AES_BLOCK_SIZE;
+                src += AesEncryptor256::BlockSize;
 
                 /* We'll be encrypting the three CTRs. */
                 uint8x16_t tmp0 = ctr0, tmp1 = ctr1, tmp2 = ctr2;
@@ -509,11 +509,11 @@ namespace ams::crypto::impl {
 
                 /* Store to output. */
                 vst1q_u8(dst, tmp0);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor256::BlockSize;
                 vst1q_u8(dst, tmp1);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor256::BlockSize;
                 vst1q_u8(dst, tmp2);
-                dst += AES_BLOCK_SIZE;
+                dst += AesEncryptor256::BlockSize;
 
                 num_blocks -= 3;
             }
@@ -522,7 +522,7 @@ namespace ams::crypto::impl {
         while (num_blocks >= 1) {
             /* Read block in, keep in register for XOR. */
             const uint8x16_t block0 = vld1q_u8(src);
-            src += AES_BLOCK_SIZE;
+            src += AesEncryptor256::BlockSize;
 
             /* We'll be encrypting the CTR. */
             uint8x16_t tmp0 = ctr0;
@@ -571,7 +571,7 @@ namespace ams::crypto::impl {
 
             /* Store to output. */
             vst1q_u8(dst, tmp0);
-            dst += AES_BLOCK_SIZE;
+            dst += AesEncryptor256::BlockSize;
 
             num_blocks--;
         }

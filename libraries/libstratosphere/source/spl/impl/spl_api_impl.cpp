@@ -64,7 +64,7 @@ namespace ams::spl::impl {
 
         /* KeySlot management. */
         constinit AesKeySlotCache g_aes_keyslot_cache;
-        constinit util::optional<AesKeySlotCacheEntry> g_aes_keyslot_cache_entry[PhysicalAesKeySlotCount];
+        constinit util::optional<AesKeySlotCacheEntry> g_aes_keyslot_cache_entry[PhysicalAesKeySlotCount] = {};
 
         constinit bool g_is_physical_keyslot_allowed  = false;
         constinit bool g_is_modern_device_unique_data = true;
@@ -84,7 +84,7 @@ namespace ams::spl::impl {
 
         constexpr inline s32 MakeVirtualAesKeySlot(s32 index) {
             const s32 virt_slot = index + AesKeySlotMin;
-            AMS_ASSERT(IsVirtualKeySlot(virt_slot));
+            AMS_ASSERT(IsVirtualAesKeySlot(virt_slot));
             return virt_slot;
         }
 
@@ -108,8 +108,8 @@ namespace ams::spl::impl {
         };
 
         constinit bool g_is_aes_keyslot_allocated[AesKeySlotCount];
-        constinit AesKeySlotContents g_aes_keyslot_contents[AesKeySlotCount];
-        constinit AesKeySlotContents g_aes_physical_keyslot_contents_for_backwards_compatibility[PhysicalAesKeySlotCount];
+        constinit AesKeySlotContents g_aes_keyslot_contents[AesKeySlotCount] = {};
+        constinit AesKeySlotContents g_aes_physical_keyslot_contents_for_backwards_compatibility[PhysicalAesKeySlotCount] = {};
 
         void ClearPhysicalAesKeySlot(s32 keyslot) {
             AMS_ASSERT(IsPhysicalAesKeySlot(keyslot));
@@ -204,27 +204,38 @@ namespace ams::spl::impl {
 
         /* Global variables. */
         alignas(os::MemoryPageSize) constinit u8      g_work_buffer[WorkBufferSizeMax];
-        constinit util::TypedStorage<Drbg>            g_drbg;
+        constinit util::TypedStorage<Drbg>            g_drbg = {};
         constinit os::InterruptName                   g_interrupt_name;
-        constinit os::InterruptEventType              g_interrupt;
-        constinit util::TypedStorage<os::SystemEvent> g_aes_keyslot_available_event;
+        constinit os::InterruptEventType              g_interrupt = {};
+        constinit util::TypedStorage<os::SystemEvent> g_aes_keyslot_available_event = {};
         constinit os::SdkMutex                        g_operation_lock;
-        constinit dd::DeviceAddressSpaceType          g_device_address_space;
+        constinit dd::DeviceAddressSpaceType          g_device_address_space = {};
+
+        #if defined(ATMOSPHERE_OS_HORIZON)
         constinit u32                                 g_work_buffer_mapped_address;
+        #else
+        constinit uintptr_t                           g_work_buffer_mapped_address;
+        #endif
 
         constinit BootReasonValue                     g_boot_reason;
         constinit bool                                g_is_boot_reason_initialized;
 
         /* Initialization functionality. */
         void InitializeAsyncOperation() {
+            #if defined(ATMOSPHERE_OS_HORIZON)
             u64 interrupt_number;
             impl::GetConfig(std::addressof(interrupt_number), ConfigItem::SecurityEngineInterruptNumber);
             g_interrupt_name = static_cast<os::InterruptName>(interrupt_number);
 
             os::InitializeInterruptEvent(std::addressof(g_interrupt), g_interrupt_name, os::EventClearMode_AutoClear);
+            #else
+            AMS_UNUSED(g_interrupt_name);
+            AMS_ABORT("TODO: How should this work?");
+            #endif
         }
 
         void InitializeDeviceAddressSpace() {
+            #if defined(ATMOSPHERE_OS_HORIZON)
             /* Create device address space. */
             R_ABORT_UNLESS(dd::CreateDeviceAddressSpace(std::addressof(g_device_address_space), 0, (1ul << 32)));
 
@@ -236,6 +247,11 @@ namespace ams::spl::impl {
             g_work_buffer_mapped_address = WorkBufferBase + (work_buffer_address % DeviceAddressSpaceAlign);
 
             R_ABORT_UNLESS(dd::MapDeviceAddressSpaceAligned(std::addressof(g_device_address_space), dd::GetCurrentProcessHandle(), work_buffer_address, dd::DeviceAddressSpaceMemoryRegionAlignment, g_work_buffer_mapped_address, dd::MemoryPermission_ReadWrite));
+            #else
+            /* Just set the work buffer address directly. */
+            AMS_UNUSED(WorkBufferBase, g_device_address_space);
+            g_work_buffer_mapped_address = reinterpret_cast<uintptr_t>(g_work_buffer);
+            #endif
         }
 
         void InitializeCtrDrbg() {

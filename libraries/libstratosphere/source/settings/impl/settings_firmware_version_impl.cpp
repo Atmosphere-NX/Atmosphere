@@ -19,8 +19,13 @@
 namespace ams::settings::impl {
 
     Result GetFirmwareVersion(settings::system::FirmwareVersion *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetSysFirmwareVersion));
         return ::setsysGetFirmwareVersion(reinterpret_cast<::SetSysFirmwareVersion *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

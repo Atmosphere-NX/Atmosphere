@@ -18,12 +18,12 @@
 
 namespace ams::diag {
 
-    NORETURN NOINLINE void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
-    NORETURN NOINLINE void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value);
+    NORETURN void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
+    NORETURN void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value);
 
-    NORETURN NOINLINE void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
-    NORETURN NOINLINE void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value);
-    NORETURN NOINLINE void AbortImpl();
+    NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
+    NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value);
+    NORETURN void AbortImpl();
 
 }
 
@@ -36,12 +36,16 @@ namespace ams::diag {
 #endif
 
 #ifdef AMS_ENABLE_ASSERTIONS
-#define AMS_ASSERT_IMPL(expr, ...)                                                                            \
-    ({                                                                                                        \
-        if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
-            AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                                 \
-        }                                                                                                     \
-    })
+#define AMS_ASSERT_IMPL(expr, ...)                                                                    \
+    {                                                                                                 \
+        if (std::is_constant_evaluated()) {                                                           \
+            AMS_ASSUME(static_cast<bool>(expr));                                                      \
+        } else {                                                                                      \
+            if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); (!__tmp_ams_assert_val)) { \
+                AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                     \
+            }                                                                                         \
+        }                                                                                             \
+    }
 #elif defined(AMS_PRESERVE_ASSERTION_EXPRESSIONS)
 #define AMS_ASSERT_IMPL(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
 #else
@@ -62,9 +66,13 @@ namespace ams::diag {
 
 #define AMS_ABORT(...) AMS_CALL_ABORT_IMPL("", ## __VA_ARGS__)
 
-#define AMS_ABORT_UNLESS(expr, ...)                                                                           \
-    ({                                                                                                        \
-        if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
-            AMS_CALL_ABORT_IMPL(#expr, ##__VA_ARGS__);                                                        \
-        }                                                                                                     \
-    })
+#define AMS_ABORT_UNLESS(expr, ...)                                                                               \
+    {                                                                                                             \
+        if (std::is_constant_evaluated()) {                                                                       \
+            AMS_ASSUME(static_cast<bool>(expr));                                                                  \
+        } else {                                                                                                  \
+            if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
+                AMS_CALL_ABORT_IMPL(#expr, ##__VA_ARGS__);                                                        \
+            }                                                                                                     \
+        }                                                                                                         \
+    }

@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <stratosphere/sf/sf_mitm_config.hpp>
 #include <stratosphere/sf/sf_service_object.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_server_message_processor.hpp>
@@ -137,7 +138,7 @@ namespace ams::sf::cmif {
         const impl::ServiceDispatchTableBase *DispatchTable;
         Result (impl::ServiceDispatchTableBase::*ProcessHandler)(ServiceDispatchContext &, const cmif::PointerAndSize &) const;
 
-        constexpr uintptr_t GetServiceId() const {
+        uintptr_t GetServiceId() const {
             return reinterpret_cast<uintptr_t>(this->DispatchTable);
         }
     };
@@ -160,10 +161,12 @@ namespace ams::sf::cmif {
         static constexpr inline auto DispatchTable = ServiceDispatchTable<0>(std::array<ServiceCommandMeta, 0>{});
     };
 
+    #if AMS_SF_MITM_SUPPORTED
     template<>
     struct ServiceDispatchTraits<sf::IMitmServiceObject> {
         static constexpr inline auto DispatchTable = ServiceDispatchTable<0>(std::array<ServiceCommandMeta, 0>{});
     };
+    #endif
 
     template<typename T>
     constexpr ALWAYS_INLINE const ServiceDispatchMeta *GetServiceDispatchMeta() {

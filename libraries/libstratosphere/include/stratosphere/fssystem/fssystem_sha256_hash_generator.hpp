@@ -51,7 +51,7 @@ namespace ams::fssystem {
             }
 
             virtual void DoGenerateHash(void *dst, size_t dst_size, const void *src, size_t src_size) override {
-                crypto::GenerateSha256Hash(dst, dst_size, src, src_size);
+                crypto::GenerateSha256(dst, dst_size, src, src_size);
             }
     };
 

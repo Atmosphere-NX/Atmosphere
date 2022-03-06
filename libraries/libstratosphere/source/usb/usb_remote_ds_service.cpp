@@ -19,6 +19,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result RemoteDsService::Bind(usb::ComplexId complex_id, sf::CopyHandle &&process_h) {
         if (hos::GetVersion() >= hos::Version_11_0_0) {
             serviceAssumeDomain(std::addressof(m_srv));
@@ -115,5 +116,6 @@ namespace ams::usb {
         serviceAssumeDomain(std::addressof(m_srv));
         return serviceDispatch(std::addressof(m_srv), hos::GetVersion() >= hos::Version_11_0_0 ? 10 : 11);
     }
+    #endif
 
 }

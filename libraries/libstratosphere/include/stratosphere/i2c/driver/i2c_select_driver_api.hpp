@@ -31,7 +31,7 @@
 
 #else
 
-    #error "Unknown board for ams::i2c::driver::"
+    // TODO: #error "Unknown board for ams::i2c::driver::"
 
 #endif
 

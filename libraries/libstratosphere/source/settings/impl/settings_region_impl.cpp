@@ -19,8 +19,13 @@
 namespace ams::settings::impl {
 
     Result GetRegionCode(s32 *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::SetRegion));
         return ::setGetRegionCode(reinterpret_cast<::SetRegion *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
 }

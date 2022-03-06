@@ -34,7 +34,7 @@ namespace ams::psc {
 
     }
 
-    PmModule::PmModule() : m_intf(nullptr), m_initialized(false), m_reserved(0) { /* ... */ }
+    PmModule::PmModule() : m_intf(nullptr), m_initialized(false), m_module_id(PmModuleId_Reserved0), m_reserved(0) { /* ... */ }
 
     PmModule::~PmModule() {
         if (m_initialized) {

@@ -15,6 +15,9 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
+#include "impl/fs_storage_service_object_adapter.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
 
@@ -46,43 +49,45 @@ namespace ams::fs {
     namespace impl {
 
         Result MountBisImpl(const char *name, BisPartitionId id, const char *root_path) {
-            /* Validate the mount name. */
-            R_TRY(impl::CheckMountNameAllowingReserved(name));
+            auto mount_impl = [=]() -> Result {
+                /* Validate the mount name. */
+                R_TRY(impl::CheckMountNameAllowingReserved(name));
 
-            /* Open the partition. This uses libnx bindings. */
-            /* NOTE: Nintendo ignores the root_path here. */
-            AMS_UNUSED(root_path);
-            FsFileSystem fs;
-            R_TRY(fsOpenBisFileSystem(std::addressof(fs), static_cast<::FsBisPartitionId>(id), ""));
+                /* Convert the path for ipc. */
+                /* NOTE: Nintendo ignores the root_path here. */
+                fssrv::sf::FspPath sf_path;
+                sf_path.str[0] = '\x00';
+                AMS_UNUSED(root_path);
 
-            /* Allocate a new mountname generator. */
-            auto generator = std::make_unique<BisCommonMountNameGenerator>(id);
-            R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInBisA());
+                /* Open the filesystem. */
+                auto fsp = impl::GetFileSystemProxyServiceObject();
+                sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+                R_TRY(fsp->OpenBisFileSystem(std::addressof(fs), sf_path, static_cast<u32>(id)));
 
-            /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInBisB());
+                /* Allocate a new mountname generator. */
+                auto generator = std::make_unique<BisCommonMountNameGenerator>(id);
+                R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInBisA());
 
-            /* Register. */
-            return fsa::Register(name, std::move(fsa), std::move(generator));
+                /* Allocate a new filesystem wrapper. */
+                auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+                R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInBisB());
+
+                /* Register. */
+                R_RETURN(fsa::Register(name, std::move(fsa), std::move(generator)));
+            };
+
+            /* Perform the mount. */
+            AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_BIS(name, id, root_path)));
+
+            /* Enable access logging. */
+            AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+            R_SUCCEED();
         }
 
         Result SetBisRootForHostImpl(BisPartitionId id, const char *root_path) {
-            /* Ensure the path isn't too long. */
-            size_t len = strnlen(root_path, fs::EntryNameLengthMax + 1);
-            R_UNLESS(len <= fs::EntryNameLengthMax, fs::ResultTooLongPath());
-
-            fssrv::sf::Path sf_path;
-            if (len > 0) {
-                const bool ending_sep = PathNormalizer::IsSeparator(root_path[len - 1]);
-                FspPathPrintf(std::addressof(sf_path), "%s%s", root_path, ending_sep ? "" : "/");
-            } else {
-                sf_path.str[0] = '\x00';
-            }
-
-            /* TODO: Libnx binding for fsSetBisRootForHost */
-            AMS_UNUSED(id);
-            AMS_ABORT();
+            AMS_UNUSED(id, root_path);
+            AMS_ABORT("TODO");
         }
 
     }
@@ -110,21 +115,23 @@ namespace ams::fs {
    }
 
    Result OpenBisPartition(std::unique_ptr<fs::IStorage> *out, BisPartitionId id) {
-        /* Open the partition. This uses libnx bindings. */
-        FsStorage s;
-        R_TRY(fsOpenBisStorage(std::addressof(s), static_cast<::FsBisPartitionId>(id)));
+        /* Open the partition. */
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+        sf::SharedPointer<fssrv::sf::IStorage> s;
+        AMS_FS_R_TRY(fsp->OpenBisStorage(std::addressof(s), static_cast<u32>(id)));
 
         /* Allocate a new storage wrapper. */
-        auto storage = std::make_unique<RemoteStorage>(s);
-        R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInBisC());
+        auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
+        AMS_FS_R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInBisC());
 
         *out = std::move(storage);
-        return ResultSuccess();
+        R_SUCCEED();
    }
 
    Result InvalidateBisCache() {
-       /* TODO: Libnx binding for this command. */
-       AMS_ABORT();
+       auto fsp = impl::GetFileSystemProxyServiceObject();
+       AMS_FS_R_ABORT_UNLESS(fsp->InvalidateBisCache());
+       R_SUCCEED();
    }
 
 }

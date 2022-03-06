@@ -19,7 +19,7 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include "impl/os_internal_light_event_impl.os.horizon.hpp"
 #else
-    #error "Unknown OS for ams::os::impl::InternalLightEventImpl"
+    #include "impl/os_internal_light_event_impl.os.generic.hpp"
 #endif
 
 namespace ams::os {

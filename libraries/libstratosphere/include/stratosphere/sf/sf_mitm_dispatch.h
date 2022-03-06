@@ -14,6 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere/sf/sf_mitm_config.hpp>
+
+#if AMS_SF_MITM_SUPPORTED
 #include <switch.h>
 
 #ifdef __cplusplus
@@ -97,4 +100,6 @@ NX_INLINE Result serviceMitmDispatchImpl(
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

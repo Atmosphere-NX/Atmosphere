@@ -30,7 +30,7 @@ namespace ams::htcs {
         constinit void *g_buffer = nullptr;
         constinit size_t g_buffer_size = 0;
 
-        constinit os::TlsSlot g_tls_slot;
+        constinit os::TlsSlot g_tls_slot = {};
 
         constinit tma::IHtcsManager *g_manager = nullptr;
         constinit tma::IHtcsManager *g_monitor = nullptr;

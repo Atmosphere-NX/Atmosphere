@@ -17,8 +17,12 @@
 #pragma once
 #include <vapours.hpp>
 
-#if defined(ATMOSPHERE_OS_HORIZON)
+#if defined(AMS_OS_IMPL_USE_PTHREADS)
+    #include <stratosphere/os/impl/os_internal_critical_section_impl.pthread.hpp>
+#elif defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/os/impl/os_internal_critical_section_impl.os.horizon.hpp>
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include <stratosphere/os/impl/os_internal_critical_section_impl.os.windows.hpp>
 #else
     #error "Unknown OS for ams::os::impl::InternalCriticalSectionImpl"
 #endif
@@ -31,14 +35,16 @@ namespace ams::os::impl {
         public:
             constexpr InternalCriticalSection() : m_impl() { /* ... */ }
 
-            constexpr void Initialize() { m_impl.Initialize(); }
-            constexpr void Finalize()   { m_impl.Finalize(); }
+            void Initialize() { m_impl.Initialize(); }
+            void Finalize()   { m_impl.Finalize(); }
 
             void Enter()    { return m_impl.Enter(); }
             bool TryEnter() { return m_impl.TryEnter(); }
             void Leave()    { return m_impl.Leave(); }
 
+            #if defined(AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD)
             bool IsLockedByCurrentThread() const { return m_impl.IsLockedByCurrentThread(); }
+            #endif
 
             ALWAYS_INLINE void Lock()    { return this->Enter(); }
             ALWAYS_INLINE bool TryLock() { return this->TryEnter(); }

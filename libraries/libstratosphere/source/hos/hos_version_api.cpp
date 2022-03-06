@@ -33,6 +33,7 @@ namespace ams::hos {
             return ResultSuccess();
         }
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         Result GetApproximateExosphereApiInfo(exosphere::ApiInfo *out) {
             u64 exosphere_cfg;
 
@@ -43,20 +44,28 @@ namespace ams::hos {
             *out = { exosphere_cfg };
             return ResultSuccess();
         }
+        #endif
 
         exosphere::ApiInfo GetExosphereApiInfo(bool allow_approximate) {
             exosphere::ApiInfo info;
+            #if defined(ATMOSPHERE_OS_HORIZON)
             while (true) {
                 if (R_SUCCEEDED(GetExosphereApiInfo(std::addressof(info)))) {
-                    return info;
+                    break;
                 }
 
                 if (allow_approximate && R_SUCCEEDED(GetApproximateExosphereApiInfo(std::addressof(info)))) {
-                    return info;
+                    break;
                 }
 
                 svc::SleepThread(TimeSpan::FromMilliSeconds(25).GetNanoSeconds());
             }
+            #else
+            AMS_UNUSED(allow_approximate);
+            R_ABORT_UNLESS(GetExosphereApiInfo(std::addressof(info)));
+            #endif
+
+            return info;
         }
 
     }
@@ -118,6 +127,8 @@ namespace ams::hos {
             }
         }
 
+
+        #if defined(ATMOSPHERE_OS_HORIZON)
         /* Set the version for libnx. */
         {
             const u32 major = (static_cast<u32>(current) >> 24) & 0xFF;
@@ -125,6 +136,7 @@ namespace ams::hos {
             const u32 micro = (static_cast<u32>(current) >>  8) & 0xFF;
             hosversionSet((BIT(31)) | (MAKEHOSVERSION(major, minor, micro)));
         }
+        #endif
     }
 
     ::ams::hos::Version GetVersion() {

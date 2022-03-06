@@ -23,9 +23,9 @@ namespace ams::htcs::impl::rpc {
         R_UNLESS(this->IsValid(), htcs::ResultInvalidTask());
 
         /* Sanity check the spans. */
-        AMS_ASSERT(0 <= read_handles.size() && read_handles.size() < static_cast<size_t>(SocketCountMax));
-        AMS_ASSERT(0 <= write_handles.size() && write_handles.size() < static_cast<size_t>(SocketCountMax));
-        AMS_ASSERT(0 <= exception_handles.size() && exception_handles.size() < static_cast<size_t>(SocketCountMax));
+        AMS_ASSERT(read_handles.size() < static_cast<size_t>(SocketCountMax));
+        AMS_ASSERT(write_handles.size() < static_cast<size_t>(SocketCountMax));
+        AMS_ASSERT(exception_handles.size() < static_cast<size_t>(SocketCountMax));
 
         /* Set our arguments. */
         m_read_handle_count      = static_cast<s32>(read_handles.size());

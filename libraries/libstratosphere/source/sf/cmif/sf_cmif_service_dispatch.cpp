@@ -19,6 +19,13 @@ namespace ams::sf::cmif {
 
     namespace {
 
+        constexpr inline u32 InHeaderMagic  = util::FourCC<'S','F','C','I'>::Code;
+        constexpr inline u32 OutHeaderMagic = util::FourCC<'S','F','C','O'>::Code;
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        static_assert(InHeaderMagic  == CMIF_IN_HEADER_MAGIC);
+        static_assert(OutHeaderMagic == CMIF_OUT_HEADER_MAGIC);
+        #endif
+
         ALWAYS_INLINE decltype(ServiceCommandMeta::handler) FindCommandHandlerByBinarySearch(const ServiceCommandMeta *entries, const size_t entry_count, const u32 cmd_id, const hos::Version hos_version) {
             /* Binary search for the handler. */
             ssize_t lo = 0;
@@ -84,7 +91,7 @@ namespace ams::sf::cmif {
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
         R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
-        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
+        R_UNLESS(in_header->magic == InHeaderMagic && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
         const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
@@ -108,11 +115,12 @@ namespace ams::sf::cmif {
         }
 
         /* Write output header to raw data. */
-        *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
+        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), 0};
 
         return ResultSuccess();
     }
 
+    #if AMS_SF_MITM_SUPPORTED
     Result impl::ServiceDispatchTableBase::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
@@ -121,7 +129,7 @@ namespace ams::sf::cmif {
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
         R_UNLESS(in_raw_data.GetSize() >= sizeof(*in_header), sf::cmif::ResultInvalidHeaderSize());
-        R_UNLESS(in_header->magic == CMIF_IN_HEADER_MAGIC && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
+        R_UNLESS(in_header->magic == InHeaderMagic && in_header->version <= max_cmif_version, sf::cmif::ResultInvalidInHeader());
         const cmif::PointerAndSize in_message_raw_data = cmif::PointerAndSize(in_raw_data.GetAddress() + sizeof(*in_header), in_raw_data.GetSize() - sizeof(*in_header));
         const u32 cmd_id = in_header->command_id;
 
@@ -154,9 +162,10 @@ namespace ams::sf::cmif {
         }
 
         /* Write output header to raw data. */
-        *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
+        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), 0};
 
         return ResultSuccess();
     }
+    #endif
 
 }

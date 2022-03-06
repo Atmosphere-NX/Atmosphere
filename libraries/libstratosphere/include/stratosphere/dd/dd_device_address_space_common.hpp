@@ -19,8 +19,12 @@
 
 namespace ams::dd {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     using DeviceName = ::ams::svc::DeviceName;
     using enum ::ams::svc::DeviceName;
+    #else
+    enum DeviceName { };
+    #endif
 
     constexpr inline u64 DeviceAddressSpaceMemoryRegionAlignment = 4_KB;
 

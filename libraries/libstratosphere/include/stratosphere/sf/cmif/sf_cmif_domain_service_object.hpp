@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <stratosphere/sf/sf_mitm_config.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_domain_api.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_server_message_processor.hpp>
@@ -110,7 +111,9 @@ namespace ams::sf::cmif {
     template<>
     struct ServiceDispatchTraits<DomainServiceObject> {
         static_assert(std::is_base_of<sf::IServiceObject, DomainServiceObject>::value, "DomainServiceObject must derive from sf::IServiceObject");
+        #if AMS_SF_MITM_SUPPORTED
         static_assert(!std::is_base_of<sf::IMitmServiceObject, DomainServiceObject>::value, "DomainServiceObject must not derive from sf::IMitmServiceObject");
+        #endif
         using ProcessHandlerType = decltype(ServiceDispatchMeta::ProcessHandler);
 
         using DispatchTableType = DomainServiceObjectDispatchTable;

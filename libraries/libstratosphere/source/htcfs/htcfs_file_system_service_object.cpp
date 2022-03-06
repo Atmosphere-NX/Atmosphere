@@ -73,7 +73,7 @@ namespace ams::htcfs {
         R_TRY(ConvertOpenMode(std::addressof(fs_open_mode), open_mode));
 
         /* Open the file. */
-        s32 handle;
+        s32 handle = -1;
         R_TRY(htcfs::GetClient().OpenFile(std::addressof(handle), path.str, fs_open_mode, case_sensitive));
 
         /* Set the output file. */
@@ -120,7 +120,7 @@ namespace ams::htcfs {
         R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
 
         /* Open the directory. */
-        s32 handle;
+        s32 handle = -1;
         R_TRY(htcfs::GetClient().OpenDirectory(std::addressof(handle), path.str, static_cast<fs::OpenDirectoryMode>(open_mode), case_sensitive));
 
         /* Set the output directory. */

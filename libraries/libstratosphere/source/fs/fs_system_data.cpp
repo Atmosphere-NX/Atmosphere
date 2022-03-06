@@ -19,15 +19,20 @@
 namespace ams::fs {
 
     Result QueryMountSystemDataCacheSize(size_t *out, ncm::SystemDataId data_id) {
-        return impl::QueryMountDataCacheSize(out, data_id, ncm::StorageId::BuiltInSystem);
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM(impl::QueryMountDataCacheSize(out, data_id, ncm::StorageId::BuiltInSystem), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_QUERY_MOUNT_SYSTEM_DATA_CACHE_SIZE(data_id, out)));
+        R_SUCCEED();
     }
 
     Result MountSystemData(const char *name, ncm::SystemDataId data_id) {
-        return impl::MountData(name, data_id, ncm::StorageId::BuiltInSystem);
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(impl::MountData(name, data_id, ncm::StorageId::BuiltInSystem), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_SYSTEM_DATA(name, data_id)));
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+        R_SUCCEED();
     }
 
     Result MountSystemData(const char *name, ncm::SystemDataId data_id, void *cache_buffer, size_t cache_size) {
-        return impl::MountData(name, data_id, ncm::StorageId::BuiltInSystem, cache_buffer, cache_size);
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(impl::MountData(name, data_id, ncm::StorageId::BuiltInSystem, cache_buffer, cache_size), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_SYSTEM_DATA(name, data_id)));
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+        R_SUCCEED();
     }
 
 }

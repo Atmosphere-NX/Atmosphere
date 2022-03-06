@@ -16,6 +16,7 @@
 
 #pragma once
 #include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_mitm_config.hpp>
 #include <stratosphere/sf/sf_service_object.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 #include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
@@ -48,7 +49,9 @@ namespace ams::sf::hipc {
             cmif::ServiceObjectHolder m_srv_obj_holder;
             cmif::PointerAndSize m_pointer_buffer;
             cmif::PointerAndSize m_saved_message;
+            #if AMS_SF_MITM_SUPPORTED
             util::TypedStorage<std::shared_ptr<::Service>> m_forward_service;
+            #endif
             os::NativeHandle m_session_handle;
             bool m_is_closed;
             bool m_has_received;
@@ -58,21 +61,26 @@ namespace ams::sf::hipc {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 m_is_closed = false;
                 m_has_received = false;
+                #if AMS_SF_MITM_SUPPORTED
                 AMS_ABORT_UNLESS(!this->IsMitmSession());
+                #endif
             }
 
+            ~ServerSession() {
+                #if AMS_SF_MITM_SUPPORTED
+                if (m_has_forward_service) {
+                    util::DestroyAt(m_forward_service);
+                }
+                #endif
+            }
+
+            #if AMS_SF_MITM_SUPPORTED
             ServerSession(os::NativeHandle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : m_srv_obj_holder(std::move(obj)), m_session_handle(h), m_has_forward_service(true) {
                 hipc::AttachMultiWaitHolderForReply(this, h);
                 m_is_closed = false;
                 m_has_received = false;
                 util::ConstructAt(m_forward_service, std::move(fsrv));
                 AMS_ABORT_UNLESS(util::GetReference(m_forward_service) != nullptr);
-            }
-
-            ~ServerSession() {
-                if (m_has_forward_service) {
-                    util::DestroyAt(m_forward_service);
-                }
             }
 
             ALWAYS_INLINE bool IsMitmSession() const {
@@ -89,6 +97,7 @@ namespace ams::sf::hipc {
             static inline std::shared_ptr<::Service> CreateForwardService() {
                 return std::shared_ptr<::Service>(new ::Service(), ForwardServiceDeleter);
             }
+            #endif
     };
 
     class ServerSessionManager {
@@ -124,8 +133,11 @@ namespace ams::sf::hipc {
             void   CloseSessionImpl(ServerSession *session);
             Result RegisterSessionImpl(ServerSession *session_memory, os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj);
             Result AcceptSessionImpl(ServerSession *session_memory, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj);
+
+            #if AMS_SF_MITM_SUPPORTED
             Result RegisterMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
             Result AcceptMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            #endif
 
             Result ReceiveRequest(ServerSession *session, const cmif::PointerAndSize &message) {
                 return this->ReceiveRequestImpl(session, message);
@@ -145,6 +157,7 @@ namespace ams::sf::hipc {
                 return this->CreateSessionImpl(out, ctor);
             }
 
+            #if AMS_SF_MITM_SUPPORTED
             Result RegisterMitmSession(ServerSession **out, os::NativeHandle mitm_session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
                 auto ctor = [&](ServerSession *session_memory) -> Result {
                     return this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv));
@@ -158,21 +171,27 @@ namespace ams::sf::hipc {
                 };
                 return this->CreateSessionImpl(out, ctor);
             }
+            #endif
         public:
             Result RegisterSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj);
             Result AcceptSession(os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj);
+
+            #if AMS_SF_MITM_SUPPORTED
             Result RegisterMitmSession(os::NativeHandle session_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
             Result AcceptMitmSession(os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv);
+            #endif
 
             template<typename Interface>
             Result AcceptSession(os::NativeHandle port_handle, SharedPointer<Interface> obj) {
                 return this->AcceptSession(port_handle, cmif::ServiceObjectHolder(std::move(obj)));
             }
 
+            #if AMS_SF_MITM_SUPPORTED
             template<typename Interface>
             Result AcceptMitmSession(os::NativeHandle mitm_port_handle, SharedPointer<Interface> obj, std::shared_ptr<::Service> &&fsrv) {
                 return this->AcceptMitmSession(mitm_port_handle, cmif::ServiceObjectHolder(std::move(obj)), std::forward<std::shared_ptr<::Service>>(fsrv));
             }
+            #endif
 
             Result ProcessRequest(ServerSession *session, const cmif::PointerAndSize &message);
 

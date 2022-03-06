@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -38,7 +40,7 @@ namespace ams::fs {
 
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
-                    const size_t needed_size = strnlen(impl::GameCardFileSystemMountName, MountNameLengthMax) + strnlen(GetGameCardMountNameSuffix(m_partition), MountNameLengthMax) + sizeof(GameCardHandle) * 2 + 2;
+                    const size_t needed_size = util::Strnlen(impl::GameCardFileSystemMountName, MountNameLengthMax) + util::Strnlen(GetGameCardMountNameSuffix(m_partition), MountNameLengthMax) + sizeof(GameCardHandle) * 2 + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
@@ -53,36 +55,49 @@ namespace ams::fs {
     }
 
     Result GetGameCardHandle(GameCardHandle *out) {
-        /* TODO: fs::DeviceOperator */
-        /* Open a DeviceOperator. */
-        ::FsDeviceOperator d;
-        R_TRY(fsOpenDeviceOperator(std::addressof(d)));
-        ON_SCOPE_EXIT { fsDeviceOperatorClose(std::addressof(d)); };
+        auto fsp = impl::GetFileSystemProxyServiceObject();
+
+        /* Open a device operator. */
+        sf::SharedPointer<fssrv::sf::IDeviceOperator> device_operator;
+        AMS_FS_R_TRY(fsp->OpenDeviceOperator(std::addressof(device_operator)));
 
         /* Get the handle. */
-        static_assert(sizeof(GameCardHandle) == sizeof(::FsGameCardHandle));
-        return fsDeviceOperatorGetGameCardHandle(std::addressof(d), reinterpret_cast<::FsGameCardHandle *>(out));
+        u32 handle;
+        AMS_FS_R_TRY(device_operator->GetGameCardHandle(std::addressof(handle)));
+
+        *out = handle;
+        R_SUCCEED();
     }
 
     Result MountGameCardPartition(const char *name, GameCardHandle handle, GameCardPartition partition) {
-        /* Validate the mount name. */
-        R_TRY(impl::CheckMountNameAllowingReserved(name));
+        auto mount_impl = [=]() -> Result {
+            /* Validate the mount name. */
+            R_TRY(impl::CheckMountNameAllowingReserved(name));
 
-        /* Open gamecard filesystem. This uses libnx bindings. */
-        ::FsFileSystem fs;
-        const ::FsGameCardHandle _hnd = {handle};
-        R_TRY(fsOpenGameCardFileSystem(std::addressof(fs), std::addressof(_hnd), static_cast<::FsGameCardPartition>(partition)));
+            /* Open the gamecard filesystem. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenGameCardFileSystem(std::addressof(fs), static_cast<u32>(handle), static_cast<u32>(partition)));
 
-        /* Allocate a new filesystem wrapper. */
-        auto fsa = std::make_unique<RemoteFileSystem>(fs);
-        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInGameCardC());
+            /* Allocate a new filesystem wrapper. */
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInGameCardC());
 
-        /* Allocate a new mountname generator. */
-        auto generator = std::make_unique<GameCardCommonMountNameGenerator>(handle, partition);
-        R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInGameCardD());
+            /* Allocate a new mountname generator. */
+            auto generator = std::make_unique<GameCardCommonMountNameGenerator>(handle, partition);
+            R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInGameCardD());
 
-        /* Register. */
-        return fsa::Register(name, std::move(fsa), std::move(generator));
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(fsa), std::move(generator)));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_GAME_CARD_PARTITION(name, handle, partition)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
 }

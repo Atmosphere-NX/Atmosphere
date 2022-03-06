@@ -39,12 +39,12 @@ namespace ams::lm::srv {
 
         using ServerManager = sf::hipc::ServerManager<PortCountMax, ServerManagerOptions, SessionCountMax>;
 
-        constinit util::TypedStorage<ServerManager> g_server_manager_storage;
+        constinit util::TypedStorage<ServerManager> g_server_manager_storage = {};
         constinit ServerManager *g_server_manager = nullptr;
 
-        constinit util::TypedStorage<psc::PmModule> g_pm_module_storage;
-        constinit psc::PmModule *g_pm_module;
-        constinit os::MultiWaitHolderType g_pm_module_holder;
+        constinit util::TypedStorage<psc::PmModule> g_pm_module_storage = {};
+        constinit psc::PmModule *g_pm_module = nullptr;
+        constinit os::MultiWaitHolderType g_pm_module_holder = {};
 
         constexpr const psc::PmModuleId PmModuleDependencies[] = { psc::PmModuleId_TmaHostIo, psc::PmModuleId_Fs };
 

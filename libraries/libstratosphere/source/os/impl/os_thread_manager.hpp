@@ -30,11 +30,16 @@ namespace ams::os::impl {
         return GetThreadManager().GetCurrentThread();
     }
 
+    #if !defined(AMS_OS_IMPL_USE_PTHREADS)
     ALWAYS_INLINE NativeHandle GetCurrentThreadHandle() {
-        /* return GetCurrentThread()->thread_impl->handle; */
+        #if defined(ATMOSPHERE_OS_HORIZON)
         return ::threadGetCurHandle();
+        #else
+        return GetCurrentThread()->native_handle;
+        #endif
     }
+    #endif
 
-    void SetupThreadObjectUnsafe(ThreadType *thread, ThreadImpl *thread_impl, ThreadFunction function, void *arg, void *stack, size_t stack_size, s32 priority);
+    void SetupThreadObjectUnsafe(ThreadType *thread, void *platform, ThreadFunction function, void *arg, void *stack, size_t stack_size, s32 priority);
 
 }

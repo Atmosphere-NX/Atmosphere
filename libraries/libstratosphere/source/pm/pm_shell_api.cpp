@@ -18,6 +18,7 @@
 namespace ams::pm::shell {
 
     /* Shell API. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result WEAK_SYMBOL LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags) {
         static_assert(sizeof(ncm::ProgramLocation) == sizeof(NcmProgramLocation));
         static_assert(alignof(ncm::ProgramLocation) == alignof(NcmProgramLocation));
@@ -52,5 +53,6 @@ namespace ams::pm::shell {
     Result EnableApplicationExtraThread() {
         return ::pmshellEnableApplicationExtraThread();
     }
+    #endif
 
 }

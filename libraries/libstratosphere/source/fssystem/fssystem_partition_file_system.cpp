@@ -19,6 +19,8 @@ namespace ams::fssystem {
 
     namespace {
 
+        constexpr const char RootPath[] = "/";
+
         class PartitionFileSystemDefaultAllocator : public MemoryResource {
             private:
                 virtual void *AllocateImpl(size_t size, size_t alignment) override {
@@ -53,7 +55,7 @@ namespace ams::fssystem {
 
             virtual Result DoGetSize(s64 *out) override final {
                 *out = m_partition_entry->size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result DoFlush() override final {
@@ -61,7 +63,7 @@ namespace ams::fssystem {
                 R_SUCCEED_IF((m_mode & fs::OpenMode_Write) == 0);
 
                 /* Flush base storage. */
-                return m_parent->m_base_storage->Flush();
+                R_RETURN(m_parent->m_base_storage->Flush());
             }
 
             virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
@@ -78,12 +80,12 @@ namespace ams::fssystem {
                 R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
 
                 /* Write to the base storage. */
-                return m_parent->m_base_storage->Write(m_parent->m_meta_data_size + m_partition_entry->offset + offset, buffer, size);
+                R_RETURN(m_parent->m_base_storage->Write(m_parent->m_meta_data_size + m_partition_entry->offset + offset, buffer, size));
             }
 
             virtual Result DoSetSize(s64 size) override final {
                 R_TRY(this->DrySetSize(size, m_mode));
-                return fs::ResultUnsupportedOperationInPartitionFileA();
+                R_RETURN(fs::ResultUnsupportedOperationInPartitionFileA());
             }
 
             virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
@@ -96,7 +98,7 @@ namespace ams::fssystem {
                     case fs::OperationId::QueryRange:
                         break;
                     default:
-                        return fs::ResultUnsupportedOperationInPartitionFileB();
+                        R_THROW(fs::ResultUnsupportedOperationInPartitionFileB());
                 }
 
                 /* Validate offset and size. */
@@ -105,7 +107,7 @@ namespace ams::fssystem {
                 R_UNLESS(static_cast<s64>(offset + size) <= static_cast<s64>(m_partition_entry->size), fs::ResultInvalidSize());
                 R_UNLESS(static_cast<s64>(offset + size) >= offset,                                    fs::ResultInvalidSize());
 
-                return m_parent->m_base_storage->OperateRange(dst, dst_size, op_id, m_parent->m_meta_data_size + m_partition_entry->offset + offset, size, src, src_size);
+                R_RETURN(m_parent->m_base_storage->OperateRange(dst, dst_size, op_id, m_parent->m_meta_data_size + m_partition_entry->offset + offset, size, src, src_size));
             }
         public:
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
@@ -125,7 +127,7 @@ namespace ams::fssystem {
 
         /* Set output size. */
         *out = read_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<>
@@ -213,7 +215,7 @@ namespace ams::fssystem {
 
         /* Set output size. */
         *out = read_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
@@ -229,7 +231,7 @@ namespace ams::fssystem {
                 /* There are no subdirectories. */
                 if ((m_mode & fs::OpenDirectoryMode_File) == 0) {
                     *out_count = 0;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Calculate number of entries. */
@@ -247,7 +249,7 @@ namespace ams::fssystem {
                 }
 
                 *out_count = entry_count;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result DoGetEntryCount(s64 *out) override final {
@@ -258,7 +260,7 @@ namespace ams::fssystem {
                     *out = 0;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
@@ -294,13 +296,13 @@ namespace ams::fssystem {
         m_base_storage   = base_storage;
         m_meta_data_size = m_meta_data->GetMetaDataSize();
         m_initialized    = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::unique_ptr<MetaType> &&meta_data, std::shared_ptr<fs::IStorage> base_storage) {
         m_unique_meta_data = std::move(meta_data);
-        return this->Initialize(m_unique_meta_data.get(), base_storage);
+        R_RETURN(this->Initialize(m_unique_meta_data.get(), base_storage));
     }
 
     template <typename MetaType>
@@ -314,24 +316,24 @@ namespace ams::fssystem {
         m_meta_data      = meta_data;
         m_meta_data_size = m_meta_data->GetMetaDataSize();
         m_initialized    = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(fs::IStorage *base_storage) {
-        return this->Initialize(base_storage, std::addressof(g_partition_filesystem_default_allocator));
+        R_RETURN(this->Initialize(base_storage, std::addressof(g_partition_filesystem_default_allocator)));
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::shared_ptr<fs::IStorage> base_storage) {
         m_shared_storage = std::move(base_storage);
-        return this->Initialize(m_shared_storage.get());
+        R_RETURN(this->Initialize(m_shared_storage.get()));
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::Initialize(std::shared_ptr<fs::IStorage> base_storage, MemoryResource *allocator) {
         m_shared_storage = std::move(base_storage);
-        return this->Initialize(m_shared_storage.get(), allocator);
+        R_RETURN(this->Initialize(m_shared_storage.get(), allocator));
     }
 
     template <typename MetaType>
@@ -345,114 +347,116 @@ namespace ams::fssystem {
 
         /* Output offset. */
         *out_offset = m_meta_data_size + m_meta_data->GetEntry(entry_index)->offset;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoGetEntryType(fs::DirectoryEntryType *out, const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoGetEntryType(fs::DirectoryEntryType *out, const fs::Path &path) {
         /* Validate preconditions. */
         R_UNLESS(m_initialized,                            fs::ResultPreconditionViolation());
-        R_UNLESS(fs::PathNormalizer::IsSeparator(path[0]), fs::ResultInvalidPathFormat());
+
+        const char * const p = path.GetString();
+        R_UNLESS(p[0] == RootPath[0], fs::ResultInvalidPathFormat());
 
         /* Check if the path is for a directory. */
-        if (std::strncmp(path, fs::PathNormalizer::RootPath, sizeof(fs::PathNormalizer::RootPath)) == 0) {
+        if (util::Strncmp(p, RootPath, sizeof(RootPath))) {
             *out = fs::DirectoryEntryType_Directory;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Ensure that path is for a file. */
-        R_UNLESS(m_meta_data->GetEntryIndex(path + 1) >= 0, fs::ResultPathNotFound());
+        R_UNLESS(m_meta_data->GetEntryIndex(p + 1) >= 0, fs::ResultPathNotFound());
 
         *out = fs::DirectoryEntryType_File;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
+    Result PartitionFileSystemCore<MetaType>::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const fs::Path &path, fs::OpenMode mode) {
         /* Validate preconditions. */
         R_UNLESS(m_initialized, fs::ResultPreconditionViolation());
 
         /* Obtain and validate the entry index. */
-        const s32 entry_index = m_meta_data->GetEntryIndex(path + 1);
+        const s32 entry_index = m_meta_data->GetEntryIndex(path.GetString() + 1);
         R_UNLESS(entry_index >= 0, fs::ResultPathNotFound());
 
         /* Create and output the file directory. */
         std::unique_ptr file = std::make_unique<PartitionFile>(this, m_meta_data->GetEntry(entry_index), mode);
         R_UNLESS(file != nullptr, fs::ResultAllocationFailureInPartitionFileSystemB());
         *out_file = std::move(file);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) {
+    Result PartitionFileSystemCore<MetaType>::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const fs::Path &path, fs::OpenDirectoryMode mode) {
         /* Validate preconditions. */
-        R_UNLESS(m_initialized,                                                                               fs::ResultPreconditionViolation());
-        R_UNLESS(std::strncmp(path, fs::PathNormalizer::RootPath, sizeof(fs::PathNormalizer::RootPath)) == 0, fs::ResultPathNotFound());
+        R_UNLESS(m_initialized,    fs::ResultPreconditionViolation());
+        R_UNLESS(path == RootPath, fs::ResultPathNotFound());
 
         /* Create and output the partition directory. */
         std::unique_ptr directory = std::make_unique<PartitionDirectory>(this, mode);
         R_UNLESS(directory != nullptr, fs::ResultAllocationFailureInPartitionFileSystemC());
         *out_dir = std::move(directory);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCommit() {
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoCleanDirectoryRecursively(const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoCleanDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoCreateDirectory(const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoCreateDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoCreateFile(const char *path, s64 size, int option) {
+    Result PartitionFileSystemCore<MetaType>::DoCreateFile(const fs::Path &path, s64 size, int option) {
         AMS_UNUSED(path, size, option);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoDeleteDirectory(const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoDeleteDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoDeleteDirectoryRecursively(const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoDeleteDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoDeleteFile(const char *path) {
+    Result PartitionFileSystemCore<MetaType>::DoDeleteFile(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoRenameDirectory(const char *old_path, const char *new_path) {
+    Result PartitionFileSystemCore<MetaType>::DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
-    Result PartitionFileSystemCore<MetaType>::DoRenameFile(const char *old_path, const char *new_path) {
+    Result PartitionFileSystemCore<MetaType>::DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemA();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCommitProvisionally(s64 counter) {
         AMS_UNUSED(counter);
-        return fs::ResultUnsupportedOperationInPartitionFileSystemB();
+        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemB());
     }
 
     template class PartitionFileSystemCore<PartitionFileSystemMeta>;

@@ -659,8 +659,8 @@ namespace ams::pm::impl {
 
     /* Boot API. */
     Result NotifyBootFinished() {
-        static bool g_has_boot_finished = false;
-        if (!g_has_boot_finished) {
+        AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(bool, s_has_boot_finished, false);
+        if (!s_has_boot_finished) {
             /* Set program verification disabled, if we should. */
             /* NOTE: Nintendo does not check the result of this. */
             if (spl::IsDisabledProgramVerification()) {
@@ -672,7 +672,8 @@ namespace ams::pm::impl {
             }
 
             boot2::LaunchPreSdCardBootProgramsAndBoot2();
-            g_has_boot_finished = true;
+
+            s_has_boot_finished = true;
             os::SignalSystemEvent(std::addressof(g_boot_finished_event));
         }
         return ResultSuccess();

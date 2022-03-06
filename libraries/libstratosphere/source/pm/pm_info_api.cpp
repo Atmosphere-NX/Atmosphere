@@ -14,11 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "pm_ams.h"
+#include "pm_ams.os.horizon.h"
 
 namespace ams::pm::info {
 
     /* Information API. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id) {
         return pminfoGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id));
     }
@@ -56,5 +57,6 @@ namespace ams::pm::info {
 
         return IsHblProcessId(out, process_id);
     }
+    #endif
 
 }

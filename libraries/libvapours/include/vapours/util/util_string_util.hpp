@@ -89,6 +89,18 @@ namespace ams::util {
     }
 
     template<typename T>
+    constexpr int Strlen(const T *str) {
+        AMS_ASSERT(str != nullptr);
+
+        int length = 0;
+        while (*str++) {
+            ++length;
+        }
+
+        return length;
+    }
+
+    template<typename T>
     constexpr int Strnlen(const T *str, int count) {
         AMS_ASSERT(str != nullptr);
         AMS_ASSERT(count >= 0);
@@ -100,5 +112,51 @@ namespace ams::util {
 
         return length;
     }
+
+    #if defined(ATMOSPHERE_IS_STRATOSPHERE)
+    ALWAYS_INLINE void *Memchr(void *s, int c, size_t n) {
+        return const_cast<void*>(::memchr(s, c, n));
+    }
+
+    ALWAYS_INLINE const void *Memchr(const void *s, int c, size_t n) {
+        return ::memchr(s, c, n);
+    }
+
+    inline void *Memrchr(void *s, int c, size_t n) {
+        #if !(defined(__MINGW32__) || defined(__MINGW64__) || defined(ATMOSPHERE_OS_MACOS))
+        return const_cast<void *>(::memrchr(s, c, n));
+        #else
+        /* TODO: Optimized implementation? */
+        if (AMS_LIKELY(n > 0)) {
+            const u8 *p = static_cast<const u8 *>(s);
+            const u8 v = static_cast<u8>(c);
+            while ((n--) != 0) {
+                if (p[n] == v) {
+                    return const_cast<void *>(static_cast<const void *>(p + n));
+                }
+            }
+        }
+        return nullptr;
+        #endif
+    }
+
+    inline const void *Memrchr(const void *s, int c, size_t n) {
+        #if !(defined(__MINGW32__) || defined(__MINGW64__) || defined(ATMOSPHERE_OS_MACOS))
+        return ::memrchr(s, c, n);
+        #else
+        /* TODO: Optimized implementation? */
+        if (AMS_LIKELY(n > 0)) {
+            const u8 *p = static_cast<const u8 *>(s);
+            const u8 v = static_cast<u8>(c);
+            while ((n--) != 0) {
+                if (p[n] == v) {
+                    return static_cast<const void *>(p + n);
+                }
+            }
+        }
+        return nullptr;
+        #endif
+    }
+    #endif
 
 }

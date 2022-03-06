@@ -18,6 +18,7 @@
 
 namespace ams::ncm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteContentMetaDatabaseImpl {
         private:
             ::NcmContentMetaDatabase m_srv;
@@ -169,5 +170,6 @@ namespace ams::ncm {
             }
     };
     static_assert(ncm::IsIContentMetaDatabase<RemoteContentMetaDatabaseImpl>);
+    #endif
 
 }

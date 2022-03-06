@@ -256,7 +256,7 @@ namespace ams::lm::srv {
                 }
 
                 if (is_text_log) {
-                    const size_t sendable_size = std::min(size, remaining);
+                    const size_t sendable_size = std::min<size_t>(size, remaining);
                     callback(reinterpret_cast<const char *>(cur), sendable_size, arg);
                 }
 

@@ -20,5 +20,5 @@
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/psc/psc_pm_module.os.horizon.hpp>
 #else
-    #error "Unknown OS for psc::PmModule"
+    #include <stratosphere/psc/psc_pm_module.os.generic.hpp>
 #endif

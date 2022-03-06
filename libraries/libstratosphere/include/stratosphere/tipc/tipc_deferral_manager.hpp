@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/tipc/tipc_message_types.hpp>
 #include <stratosphere/tipc/tipc_object_holder.hpp>
 #include <stratosphere/tipc/tipc_service_object_base.hpp>
 
@@ -56,7 +57,7 @@ namespace ams::tipc {
 
             ~DeferrableBaseImpl();
 
-            ALWAYS_INLINE void SetDeferralManager(DeferralManagerBase *manager, os::NativeHandle reply_target, ServiceObjectBase *object) {
+            ALWAYS_INLINE void SetDeferralManager(DeferralManagerBase *manager, tipc::NativeHandle reply_target, ServiceObjectBase *object) {
                 m_deferral_manager = manager;
                 m_object_holder.InitializeForDeferralManager(reply_target, object);
             }
@@ -68,7 +69,7 @@ namespace ams::tipc {
             template<IsResumeKey ResumeKey>
             ALWAYS_INLINE void RegisterRetry(ResumeKey key) {
                 m_resume_key = ConvertToInternalResumeKey(key);
-                std::memcpy(m_message_buffer_base, svc::ipc::GetMessageBuffer(), m_message_buffer_size);
+                std::memcpy(m_message_buffer_base, tipc::GetMessageBuffer(), m_message_buffer_size);
             }
 
             template<IsResumeKey ResumeKey, typename F>
@@ -86,7 +87,7 @@ namespace ams::tipc {
                 m_resume_key = 0;
 
                 /* Restore message buffer. */
-                std::memcpy(svc::ipc::GetMessageBuffer(), m_message_buffer_base, m_message_buffer_size);
+                std::memcpy(tipc::GetMessageBuffer(), m_message_buffer_base, m_message_buffer_size);
 
                 /* Process the request. */
                 return port_manager->ProcessDeferredRequest(m_object_holder);
@@ -145,12 +146,11 @@ namespace ams::tipc {
         public:
             ALWAYS_INLINE DeferralManagerBase() : m_object_count(0) { /* ... */  }
 
-            void AddObject(DeferrableBaseImpl &object, os::NativeHandle reply_target, ServiceObjectBase *service_object) {
+            void AddObject(DeferrableBaseImpl &object, tipc::NativeHandle reply_target, ServiceObjectBase *service_object) {
                 /* Set ourselves as the manager for the object. */
                 object.SetDeferralManager(this, reply_target, service_object);
 
                 /* Add the object to our entries. */
-                AMS_ASSERT(m_object_count < N);
                 m_objects_base[m_object_count++] = std::addressof(object);
             }
 

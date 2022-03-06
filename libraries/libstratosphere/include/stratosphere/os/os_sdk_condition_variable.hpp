@@ -26,6 +26,7 @@ namespace ams::os {
         union {
             s32 _arr[sizeof(impl::InternalConditionVariableStorage) / sizeof(s32)];
             impl::InternalConditionVariableStorage _storage;
+            impl::InternalConditionVariableStorageTypeForConstantInitialize _storage_for_constant_initialize;
         };
 
         ALWAYS_INLINE void Initialize() {
@@ -52,7 +53,7 @@ namespace ams::os {
         private:
             SdkConditionVariableType m_cv;
         public:
-            constexpr SdkConditionVariable() : m_cv{{0}} { /* ... */ }
+            constexpr SdkConditionVariable() : m_cv{{AMS_OS_INTERNAL_CONDITION_VARIABLE_IMPL_CONSTANT_INITIALIZER}} { /* ... */ }
 
             ALWAYS_INLINE void Wait(SdkMutex &m) {
                 return m_cv.Wait(m.m_mutex);

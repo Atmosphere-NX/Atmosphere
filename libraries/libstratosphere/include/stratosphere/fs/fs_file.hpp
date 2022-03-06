@@ -24,7 +24,11 @@ namespace ams::fs {
         static const ReadOption None;
     };
 
-    inline constexpr const ReadOption ReadOption::None = {FsReadOption_None};
+    enum ReadOptionFlag : u32 {
+        ReadOptionFlag_None = (0 << 0),
+    };
+
+    inline constexpr const ReadOption ReadOption::None = {ReadOptionFlag_None};
 
     inline constexpr bool operator==(const ReadOption &lhs, const ReadOption &rhs) {
         return lhs._value == rhs._value;
@@ -36,19 +40,24 @@ namespace ams::fs {
 
     static_assert(util::is_pod<ReadOption>::value && sizeof(ReadOption) == sizeof(u32));
 
+    enum WriteOptionFlag : u32 {
+        WriteOptionFlag_None  = (0 << 0),
+        WriteOptionFlag_Flush = (1 << 0),
+    };
+
     struct WriteOption {
         u32 _value;
 
         constexpr inline bool HasFlushFlag() const {
-            return _value & FsWriteOption_Flush;
+            return _value & WriteOptionFlag_Flush;
         }
 
         static const WriteOption None;
         static const WriteOption Flush;
     };
 
-    inline constexpr const WriteOption WriteOption::None = {FsWriteOption_None};
-    inline constexpr const WriteOption WriteOption::Flush = {FsWriteOption_Flush};
+    inline constexpr const WriteOption WriteOption::None = {WriteOptionFlag_None};
+    inline constexpr const WriteOption WriteOption::Flush = {WriteOptionFlag_Flush};
 
     inline constexpr bool operator==(const WriteOption &lhs, const WriteOption &rhs) {
         return lhs._value == rhs._value;

@@ -80,8 +80,8 @@ namespace ams::fssystem {
                 return this->GetRetriedCountImpl();
             }
 
-            void ClearPeak() const {
-                return this->ClearPeak();
+            void ClearPeak() {
+                return this->ClearPeakImpl();
             }
         protected:
             virtual const std::pair<uintptr_t, size_t> AllocateBufferImpl(size_t size, const BufferAttribute &attr) = 0;

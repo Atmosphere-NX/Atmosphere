@@ -25,7 +25,9 @@ namespace ams::os {
 
         ALWAYS_INLINE u64 GetBarrierBaseCounterImpl(const BarrierType *barrier) {
             /* Check pre-conditions. */
+            #if defined(AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD)
             AMS_ASSERT(util::GetReference(barrier->cs_barrier).IsLockedByCurrentThread());
+            #endif
 
             /* Convert two u32s to u64. */
             return (static_cast<u64>(barrier->base_counter_lower) << 0) | (static_cast<u64>(barrier->base_counter_upper) << BITSIZEOF(barrier->base_counter_lower));
@@ -33,7 +35,9 @@ namespace ams::os {
 
         ALWAYS_INLINE void SetBarrierBaseCounterImpl(BarrierType *barrier, u64 value) {
             /* Check pre-conditions. */
+            #if defined(AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CAN_CHECK_LOCKED_BY_CURRENT_THREAD)
             AMS_ASSERT(util::GetReference(barrier->cs_barrier).IsLockedByCurrentThread());
+            #endif
 
             /* Store as two u32s. */
             barrier->base_counter_lower = static_cast<u32>(value >> 0);

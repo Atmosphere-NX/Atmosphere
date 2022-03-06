@@ -18,6 +18,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result RemoteDsEndpoint::PostBufferAsync(sf::Out<u32> out_urb_id, u64 address, u32 size) {
         const struct {
             u32 size;
@@ -62,5 +63,6 @@ namespace ams::usb {
         serviceAssumeDomain(std::addressof(m_srv));
         return serviceDispatchIn(std::addressof(m_srv), 5, in);
     }
+    #endif
 
 }

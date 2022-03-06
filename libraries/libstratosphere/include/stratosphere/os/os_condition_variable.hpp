@@ -29,7 +29,7 @@ namespace ams::os {
         private:
             ConditionVariableType m_cv;
         public:
-            constexpr ConditionVariable() : m_cv{::ams::os::ConditionVariableType::State_Initialized, {{0}}} { /* ... */ }
+            constexpr ConditionVariable() : m_cv{::ams::os::ConditionVariableType::State_Initialized, {AMS_OS_INTERNAL_CONDITION_VARIABLE_IMPL_CONSTANT_INITIALIZER}} { /* ... */ }
 
             ~ConditionVariable() { FinalizeConditionVariable(std::addressof(m_cv)); }
 

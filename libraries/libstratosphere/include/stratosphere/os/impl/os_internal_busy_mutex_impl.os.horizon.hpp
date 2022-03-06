@@ -35,4 +35,6 @@ namespace ams::os::impl {
             void Unlock();
     };
 
+    #define AMS_OS_INTERNAL_BUSY_MUTEX_IMPL_CONSTANT_INITIALIZE_ARRAY_VALUES 0
+
 }

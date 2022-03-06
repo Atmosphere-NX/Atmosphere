@@ -94,7 +94,7 @@ namespace ams::ncm {
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
 
         /* Define a helper to output the base meta infos. */
-        const auto ReadMetaInfoListFromBase = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+        const auto ReadMetaInfoListFromBase = [&] () ALWAYS_INLINE_LAMBDA -> Result {
             /* Output the base content meta info count. */
             *out_count = reader.GetContentMetaCount();
 

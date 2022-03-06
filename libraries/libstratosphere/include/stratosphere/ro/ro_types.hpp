@@ -67,7 +67,7 @@ namespace ams::ro {
             }
 
             bool IsProgramIdValid() const {
-                return (static_cast<u64>(m_program_id) & m_certification.program_id_mask) == m_certification.program_id_pattern;
+                return (m_program_id.value & m_certification.program_id_mask) == m_certification.program_id_pattern;
             }
 
             NrrKind GetNrrKind() const {

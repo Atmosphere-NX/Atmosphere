@@ -123,7 +123,7 @@ namespace ams::settings {
     };
 
     constexpr inline bool operator==(const LanguageCode &lhs, const LanguageCode &rhs) {
-        return std::strncmp(lhs.name, rhs.name, sizeof(lhs)) == 0;
+        return util::Strncmp<char>(lhs.name, rhs.name, sizeof(lhs)) == 0;
     }
 
     constexpr inline bool operator!=(const LanguageCode &lhs, const LanguageCode &rhs) {
@@ -205,7 +205,11 @@ namespace ams::settings {
     };
 
     static_assert(util::is_pod<FirmwareVersion>::value);
+    static_assert(sizeof(FirmwareVersion) == 0x100);
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
     static_assert(sizeof(FirmwareVersion) == sizeof(::SetSysFirmwareVersion));
+    #endif
 
     constexpr inline bool operator==(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {
         return lhs.GetVersion() == rhs.GetVersion();

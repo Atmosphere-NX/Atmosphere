@@ -118,7 +118,7 @@ namespace ams::fs {
 
     Priority GetPriority(os::ThreadType *thread) {
         fs::Priority priority;
-        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(GetPriorityImpl(std::addressof(priority), thread), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, thread != nullptr ? os::GetThreadId(thread) : static_cast<os::ThreadId>(0)));
+        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(GetPriorityImpl(std::addressof(priority), thread), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, reinterpret_cast<u64>(thread != nullptr ? os::GetThreadId(thread) : os::ThreadId{})));
         return priority;
     }
 
@@ -137,7 +137,7 @@ namespace ams::fs {
 
     PriorityRaw GetPriorityRaw(os::ThreadType *thread) {
         fs::PriorityRaw priority_raw;
-        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(GetPriorityRawImpl(std::addressof(priority_raw), thread), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, thread != nullptr ? os::GetThreadId(thread) : static_cast<os::ThreadId>(0)));
+        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(GetPriorityRawImpl(std::addressof(priority_raw), thread), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, reinterpret_cast<u64>(thread != nullptr ? os::GetThreadId(thread) : os::ThreadId{})));
         return priority_raw;
     }
 
@@ -146,7 +146,7 @@ namespace ams::fs {
     }
 
     void SetPriority(os::ThreadType *thread, Priority priority) {
-        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(SetPriorityImpl(os::GetCurrentThread(), priority), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, thread != nullptr ? os::GetThreadId(thread) : static_cast<os::ThreadId>(0)));
+        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(SetPriorityImpl(os::GetCurrentThread(), priority), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, reinterpret_cast<u64>(thread != nullptr ? os::GetThreadId(thread) : os::ThreadId{})));
     }
 
     void SetPriorityRawOnCurrentThread(PriorityRaw priority_raw) {
@@ -154,7 +154,7 @@ namespace ams::fs {
     }
 
     void SetPriorityRaw(os::ThreadType *thread, PriorityRaw priority_raw) {
-        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(SetPriorityRawImpl(os::GetCurrentThread(), priority_raw), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, thread != nullptr ? os::GetThreadId(thread) : static_cast<os::ThreadId>(0)));
+        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG(SetPriorityRawImpl(os::GetCurrentThread(), priority_raw), nullptr, AMS_FS_IMPL_ACCESS_LOG_FORMAT_THREAD_ID, reinterpret_cast<u64>(thread != nullptr ? os::GetThreadId(thread) : os::ThreadId{})));
     }
 
 }

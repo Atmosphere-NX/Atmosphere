@@ -19,6 +19,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     Result RemoteDsInterface::RegisterEndpoint(u8 endpoint_address, sf::Out<sf::SharedPointer<usb::ds::IDsEndpoint>> out) {
         Service srv;
 
@@ -149,6 +150,7 @@ namespace ams::usb {
         serviceAssumeDomain(std::addressof(m_srv));
         return serviceDispatch(std::addressof(m_srv), 3);
     }
+    #endif
 
 
 }

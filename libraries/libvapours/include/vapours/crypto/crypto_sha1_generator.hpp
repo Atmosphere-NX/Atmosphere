@@ -58,6 +58,10 @@ namespace ams::crypto {
             }
     };
 
-    void GenerateSha1Hash(void *dst, size_t dst_size, const void *src, size_t src_size);
+    void GenerateSha1(void *dst, size_t dst_size, const void *src, size_t src_size);
+
+    ALWAYS_INLINE void GenerateSha1Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        return GenerateSha1(dst, dst_size, src, src_size);
+    }
 
 }

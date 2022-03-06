@@ -40,8 +40,6 @@ namespace ams::os {
     s32 ResumeThread(ThreadType *thread);
     s32 GetThreadSuspendCount(const ThreadType *thread);
 
-    void CancelThreadSynchronization(ThreadType *Thread);
-
     /* TODO: void GetThreadContext(ThreadContextInfo *out_context, const ThreadType *thread); */
 
     s32 ChangeThreadPriority(ThreadType *thread, s32 priority);

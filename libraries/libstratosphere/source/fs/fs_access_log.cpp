@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/fs_file_system_proxy_service_object.hpp"
 #include "fsa/fs_user_mount_table.hpp"
 #include "fsa/fs_directory_accessor.hpp"
 #include "fsa/fs_file_accessor.hpp"
@@ -21,7 +22,7 @@
 
 #define AMS_FS_IMPL_ACCESS_LOG_AMS_API_VERSION "ams_version: " STRINGIZE(ATMOSPHERE_RELEASE_VERSION_MAJOR) "." STRINGIZE(ATMOSPHERE_RELEASE_VERSION_MINOR) "." STRINGIZE(ATMOSPHERE_RELEASE_VERSION_MICRO)
 
-/* TODO: Other boards? */
+/* TODO: Other specs? */
 #define AMS_FS_IMPL_ACCESS_LOG_SPEC "spec: NX"
 
 namespace ams::fs {
@@ -48,13 +49,15 @@ namespace ams::fs {
     }
 
     Result GetGlobalAccessLogMode(u32 *out) {
-        /* Use libnx bindings. */
-        return ::fsGetGlobalAccessLogMode(out);
+        const auto fsp = impl::GetFileSystemProxyServiceObject();
+        AMS_FS_R_TRY(fsp->GetGlobalAccessLogMode(out));
+        R_SUCCEED();
     }
 
     Result SetGlobalAccessLogMode(u32 mode) {
-        /* Use libnx bindings. */
-        return ::fsSetGlobalAccessLogMode(mode);
+        const auto fsp = impl::GetFileSystemProxyServiceObject();
+        AMS_FS_R_TRY(fsp->SetGlobalAccessLogMode(mode));
+        R_SUCCEED();
     }
 
     void SetLocalAccessLog(bool enabled) {
@@ -167,6 +170,15 @@ namespace ams::fs::impl {
         }
     }
 
+    template<> const char *IdString::ToString<fs::GameCardPartition>(fs::GameCardPartition id) {
+        switch (id) {
+            case fs::GameCardPartition::Update: return "Update";
+            case fs::GameCardPartition::Normal: return "Normal";
+            case fs::GameCardPartition::Secure: return "Secure";
+            default:                           return ToValueString(static_cast<int>(id));
+        }
+    }
+
     namespace {
 
         class AccessLogPrinterCallbackManager {
@@ -199,8 +211,9 @@ namespace ams::fs::impl {
         }
 
         Result OutputAccessLogToSdCardImpl(const char *log, size_t size) {
-            /* Use libnx bindings. */
-            return ::fsOutputAccessLogToSdCard(log, size);
+            const auto fsp = impl::GetFileSystemProxyServiceObject();
+            AMS_FS_R_TRY(fsp->OutputAccessLogToSdCard(sf::InBuffer(log, size)));
+            R_SUCCEED();
         }
 
         void OutputAccessLogToSdCard(const char *format, std::va_list vl) {
@@ -291,10 +304,11 @@ namespace ams::fs::impl {
             OutputAccessLogImpl(log_buffer.get(), log_buffer_size);
         }
 
-        void GetProgramIndexFortAccessLog(u32 *out_index, u32 *out_count) {
+        void GetProgramIndexForAccessLog(u32 *out_index, u32 *out_count) {
             if (hos::GetVersion() >= hos::Version_7_0_0) {
                 /* Use libnx bindings if available. */
-                R_ABORT_UNLESS(::fsGetProgramIndexForAccessLog(out_index, out_count));
+                const auto fsp = impl::GetFileSystemProxyServiceObject();
+                R_ABORT_UNLESS(fsp->GetProgramIndexForAccessLog(out_index, out_count));
             } else {
                 /* Use hardcoded defaults. */
                 *out_index = 0;
@@ -305,7 +319,7 @@ namespace ams::fs::impl {
         void OutputAccessLogStart() {
             /* Get the program index. */
             u32 program_index = 0, program_count = 0;
-            GetProgramIndexFortAccessLog(std::addressof(program_index), std::addressof(program_count));
+            GetProgramIndexForAccessLog(std::addressof(program_index), std::addressof(program_count));
 
             /* Print the log buffer. */
             if (program_count < 2) {

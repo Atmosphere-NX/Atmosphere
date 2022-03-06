@@ -1,0 +1,28 @@
+include $(ATMOSPHERE_ARCH_MAKE_DIR)/base_tools
+
+#---------------------------------------------------------------------------------
+%.a:
+#---------------------------------------------------------------------------------
+	$(SILENTMSG) $(notdir $@)
+	@rm -f $@
+	$(SILENTCMD)$(AR) -rc $@ $^
+
+#---------------------------------------------------------------------------------
+%.o: %.cpp
+	$(SILENTMSG) $(notdir $<)
+	$(SILENTCMD)$(CXX) -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.c
+	$(SILENTMSG) $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.s
+	@echo $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.S
+	$(SILENTMSG) $(notdir $<)
+	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)

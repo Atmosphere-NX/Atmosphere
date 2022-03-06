@@ -82,7 +82,7 @@ namespace ams::htc::server {
 
     Result HtcmiscImpl::GetEnvironmentVariable(size_t *out_size, char *dst, size_t dst_size, const char *name, size_t name_size) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client.Begin<rpc::GetEnvironmentVariableTask>(std::addressof(task_id), name, name_size));
 
         /* Wait for the task to complete. */
@@ -96,7 +96,7 @@ namespace ams::htc::server {
 
     Result HtcmiscImpl::GetEnvironmentVariableLength(size_t *out_size, const char *name, size_t name_size) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client.Begin<rpc::GetEnvironmentVariableLengthTask>(std::addressof(task_id), name, name_size));
 
         /* Wait for the task to complete. */
@@ -110,7 +110,7 @@ namespace ams::htc::server {
 
     Result HtcmiscImpl::RunOnHostBegin(u32 *out_task_id, os::NativeHandle *out_event, const char *args, size_t args_size) {
         /* Begin the task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_rpc_client.Begin<rpc::RunOnHostTask>(std::addressof(task_id), args, args_size));
 
         /* Detach the task. */

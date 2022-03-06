@@ -15,19 +15,27 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_storage_service_object_adapter.hpp"
 
 namespace ams::fs::impl {
 
     namespace {
 
-        Result OpenDataStorageByDataId(std::unique_ptr<ams::fs::IStorage> *out, ncm::DataId data_id, ncm::StorageId storage_id) {
-            /* Open storage using libnx bindings. */
-            ::FsStorage s;
-            R_TRY_CATCH(fsOpenDataStorageByDataId(std::addressof(s), data_id.value, static_cast<::NcmStorageId>(storage_id))) {
+        Result OpenDataStorageByDataIdImpl(sf::SharedPointer<fssrv::sf::IStorage> *out, ncm::DataId data_id, ncm::StorageId storage_id) {
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            R_TRY_CATCH(fsp->OpenDataStorageByDataId(out, data_id, static_cast<u8>(storage_id))) {
                 R_CONVERT(ncm::ResultContentMetaNotFound, fs::ResultTargetNotFound());
             } R_END_TRY_CATCH;
+            R_SUCCEED();
+        }
 
-            auto storage = std::make_unique<RemoteStorage>(s);
+        Result OpenDataStorageByDataId(std::unique_ptr<ams::fs::IStorage> *out, ncm::DataId data_id, ncm::StorageId storage_id) {
+            /* Open storage. */
+            sf::SharedPointer<fssrv::sf::IStorage> s;
+            AMS_FS_R_TRY(OpenDataStorageByDataIdImpl(std::addressof(s), data_id, storage_id));
+
+            auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
             R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInDataA());
 
             *out = std::move(storage);
@@ -48,13 +56,13 @@ namespace ams::fs::impl {
     }
 
     Result QueryMountDataCacheSize(size_t *out, ncm::DataId data_id, ncm::StorageId storage_id) {
-        R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
 
         std::unique_ptr<fs::IStorage> storage;
-        R_TRY(OpenDataStorageByDataId(std::addressof(storage), data_id, storage_id));
+        AMS_FS_R_TRY(OpenDataStorageByDataId(std::addressof(storage), data_id, storage_id));
 
         size_t size = 0;
-        R_TRY(RomFsFileSystem::GetRequiredWorkingMemorySize(std::addressof(size), storage.get()));
+        AMS_FS_R_TRY(RomFsFileSystem::GetRequiredWorkingMemorySize(std::addressof(size), storage.get()));
 
         constexpr size_t MinimumCacheSize = 32;
         *out = std::max(size, MinimumCacheSize);
@@ -63,25 +71,25 @@ namespace ams::fs::impl {
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id) {
         /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+        AMS_FS_R_TRY(impl::CheckMountName(name));
 
         return MountDataImpl(name, data_id, storage_id, nullptr, 0, false, false, false);
     }
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size) {
         /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+        AMS_FS_R_TRY(impl::CheckMountName(name));
 
-        R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
 
         return MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, false, false);
     }
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache) {
         /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+        AMS_FS_R_TRY(impl::CheckMountName(name));
 
-        R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(cache_buffer != nullptr, fs::ResultNullptrArgument());
 
         return MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, use_data_cache, use_path_cache);
     }

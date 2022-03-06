@@ -66,7 +66,7 @@ namespace ams::htcs::impl::rpc {
         HtcsPacketCategory category;
         HtcsPacketType type;
         s64 body_size;
-        u32 task_id;
+        u32 task_id{};
         s64 params[5];
         char data[];
     };

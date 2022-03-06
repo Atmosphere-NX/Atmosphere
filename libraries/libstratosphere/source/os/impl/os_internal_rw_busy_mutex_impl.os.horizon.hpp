@@ -20,28 +20,6 @@ namespace ams::os::impl {
 
     namespace {
 
-        constexpr inline u8 WriterCountMax   = std::numeric_limits<u8>::max();
-
-        ALWAYS_INLINE u16 GetReaderCount(u32 v) {
-            return static_cast<u16>(v >> 0);
-        }
-
-        ALWAYS_INLINE u8 GetWriterCurrent(u32 v) {
-            return static_cast<u8>(v >> 16);
-        }
-
-        ALWAYS_INLINE u8 GetWriterNext(u32 v) {
-            return static_cast<u8>(v >> 24);
-        }
-
-        ALWAYS_INLINE u32 IncrementWriterNext(u32 v) {
-            return v + (1u << 24);
-        }
-
-        ALWAYS_INLINE bool IsWriteLocked(u32 v) {
-            return GetWriterCurrent(v) != GetWriterNext(v);
-        }
-
         ALWAYS_INLINE void PrefetchForBusyMutex(u32 *p) {
             /* Nintendo does PRFM pstl1keep. */
             __builtin_prefetch(p, 1);
@@ -79,16 +57,8 @@ namespace ams::os::impl {
             return result == 0;
         }
 
-        ALWAYS_INLINE u8 *GetWriterCurrentPointerForBusyMutex(u32 *p) {
-            if constexpr (util::IsLittleEndian()) {
-                return reinterpret_cast<u8 *>(reinterpret_cast<uintptr_t>(p)) + 2;
-            } else {
-                return reinterpret_cast<u8 *>(reinterpret_cast<uintptr_t>(p)) + 1;
-            }
-        }
-
         ALWAYS_INLINE void StoreReleaseWriteLockValueForBusyMutex(u32 *p) {
-            u8 * const p8 = GetWriterCurrentPointerForBusyMutex(p);
+            u8 * const p8 = InternalReaderWriterBusyMutexValue::GetWriterCurrentPointer(p);
 
             u8 v;
             __asm__ __volatile__("ldrb  %w[v], %[p8]\n"
@@ -125,11 +95,11 @@ namespace ams::os::impl {
             const u32 v = LoadAcquireExclusiveForBusyMutex(p);
 
             /* We can only acquire read lock if not write-locked. */
-            const bool write_locked = IsWriteLocked(v);
+            const bool write_locked = InternalReaderWriterBusyMutexValue::IsWriteLocked(v);
             if (AMS_LIKELY(!write_locked)) {
                 /* Check that we don't overflow the reader count. */
                 const u32 new_v = v + 1;
-                AMS_ABORT_UNLESS(GetReaderCount(new_v) != 0);
+                AMS_ABORT_UNLESS(InternalReaderWriterBusyMutexValue::GetReaderCount(new_v) != 0);
 
                 /* Try to store our updated lock value. */
                 if (AMS_LIKELY(StoreExclusiveForBusyMutex(p, new_v))) {
@@ -162,7 +132,7 @@ namespace ams::os::impl {
             do {
                 /* Get and validate the current value. */
                 v = LoadExclusiveForBusyMutex(p);
-                AMS_ABORT_UNLESS(GetReaderCount(v) != 0);
+                AMS_ABORT_UNLESS(InternalReaderWriterBusyMutexValue::GetReaderCount(v) != 0);
             } while (!StoreReleaseExclusiveForBusyMutex(p, v - 1));
         }
 
@@ -207,10 +177,10 @@ namespace ams::os::impl {
             const u32 v = LoadAcquireExclusiveForBusyMutex(p);
 
             /* Check that we can write lock. */
-            AMS_ABORT_UNLESS(static_cast<u8>(GetWriterNext(v) - GetWriterCurrent(v)) < WriterCountMax);
+            AMS_ABORT_UNLESS(static_cast<u8>(InternalReaderWriterBusyMutexValue::GetWriterNext(v) - InternalReaderWriterBusyMutexValue::GetWriterCurrent(v)) < InternalReaderWriterBusyMutexValue::WriterCountMax);
 
             /* Determine our write-lock number. */
-            const u32 new_v = IncrementWriterNext(v);
+            const u32 new_v = InternalReaderWriterBusyMutexValue::IncrementWriterNext(v);
 
             /* Try to store our updated lock value. */
             if (AMS_UNLIKELY(!StoreExclusiveForBusyMutex(p, new_v))) {
@@ -226,7 +196,7 @@ namespace ams::os::impl {
             }
 
             /* Wait until the lock is truly acquired. */
-            if (GetReaderCount(new_v) != 0 || GetWriterNext(v) != GetWriterCurrent(new_v)) {
+            if (InternalReaderWriterBusyMutexValue::GetReaderCount(new_v) != 0 || InternalReaderWriterBusyMutexValue::GetWriterNext(v) != InternalReaderWriterBusyMutexValue::GetWriterCurrent(new_v)) {
                 /* Send an event, so that we can immediately wait without fail. */
                 SendEventLocalForBusyMutex();
 
@@ -236,7 +206,7 @@ namespace ams::os::impl {
 
                     /* Get the updated value. */
                     const u32 cur_v = LoadAcquireExclusiveForBusyMutex(p);
-                    if (GetReaderCount(cur_v) == 0 && GetWriterNext(v) == GetWriterCurrent(cur_v)) {
+                    if (InternalReaderWriterBusyMutexValue::GetReaderCount(cur_v) == 0 && InternalReaderWriterBusyMutexValue::GetWriterNext(v) == InternalReaderWriterBusyMutexValue::GetWriterCurrent(cur_v)) {
                         break;
                     }
                 }
@@ -249,7 +219,7 @@ namespace ams::os::impl {
 
     void InternalReaderWriterBusyMutexImpl::ReleaseWriteLock() {
         /* Check pre-conditions. */
-        AMS_ABORT_UNLESS(IsWriteLocked(m_value));
+        AMS_ABORT_UNLESS(InternalReaderWriterBusyMutexValue::IsWriteLocked(m_value));
 
         /* Get pointer to our value. */
         u32 * const p = std::addressof(m_value);

@@ -19,6 +19,7 @@
 
 namespace ams::lm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     /* TODO: Real libnx primitives? */
 
     #define NX_SERVICE_ASSUME_NON_DOMAIN
@@ -48,7 +49,9 @@ namespace ams::lm {
         private:
             ::Service m_srv;
         public:
-            RemoteLogService(::Service &s) : m_srv(s) { /* ... */ }
+            RemoteLogService(os::NativeHandle h) {
+                ::serviceCreate(std::addressof(m_srv), h);
+            }
             ~RemoteLogService() { ::serviceClose(std::addressof(m_srv)); }
         public:
             /* Actual commands. */
@@ -57,6 +60,7 @@ namespace ams::lm {
     static_assert(lm::IsILogService<RemoteLogService>);
 
     #undef NX_SERVICE_ASSUME_NON_DOMAIN
+    #endif
 
     sf::SharedPointer<ILogService> CreateLogService();
 

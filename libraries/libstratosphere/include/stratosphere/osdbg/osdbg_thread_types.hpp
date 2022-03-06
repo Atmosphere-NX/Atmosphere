@@ -24,11 +24,21 @@ namespace ams::osdbg {
 
     }
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    using DebugInfoCreateProcess = svc::DebugInfoCreateProcess;
+    using DebugInfoCreateThread  = svc::DebugInfoCreateThread;
+    #else
+    struct DebugInfoCreateProcess{};
+    struct DebugInfoCreateThread{};
+    #endif
+
     enum ThreadTypeType : u8 {
         ThreadTypeType_Unknown = 0,
         ThreadTypeType_Nintendo,
         ThreadTypeType_Stratosphere,
+        #if defined(ATMOSPHERE_OS_HORIZON)
         ThreadTypeType_Libnx,
+        #endif
     };
 
     struct ThreadInfo {
@@ -42,8 +52,10 @@ namespace ams::osdbg {
         impl::ThreadTypeCommon *_thread_type;
         os::NativeHandle _debug_handle;
         ThreadTypeType _thread_type_type;
-        svc::DebugInfoCreateProcess _debug_info_create_process;
-        svc::DebugInfoCreateThread _debug_info_create_thread;
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        osdbg::DebugInfoCreateProcess _debug_info_create_process;
+        osdbg::DebugInfoCreateThread _debug_info_create_thread;
+        #endif
     };
 
 }

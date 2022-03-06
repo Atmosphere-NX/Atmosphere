@@ -57,8 +57,6 @@ namespace ams::mem::impl::heap {
             errno_t WalkAllocatedPointers(HeapWalkCallback callback, void *user_data);
             errno_t QueryV(int query, std::va_list vl);
             errno_t Query(int query, ...);
-        private:
-            errno_t QueryVImpl(int query, std::va_list *vl_ptr);
     };
 
     static_assert(sizeof(CentralHeap) <= sizeof(::ams::mem::impl::InternalCentralHeapStorage));

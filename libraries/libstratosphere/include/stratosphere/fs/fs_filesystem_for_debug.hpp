@@ -16,10 +16,37 @@
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
 #include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/time/time_posix_time.hpp>
 
 namespace ams::fs {
 
-    using FileTimeStampRaw = ::FsTimeStampRaw;
+    struct FileTimeStamp {
+        time::PosixTime create;
+        time::PosixTime modify;
+        time::PosixTime access;
+        bool is_local_time;
+        char pad[7];
+    };
+    static_assert(util::is_pod<FileTimeStamp>::value && sizeof(FileTimeStamp) == 0x20);
+
+    struct FileTimeStampRaw {
+        s64 create;
+        s64 modify;
+        s64 access;
+        bool is_local_time;
+        char pad[7];
+    };
+    static_assert(util::is_pod<FileTimeStampRaw>::value && sizeof(FileTimeStampRaw) == 0x20);
+
+    static_assert(__builtin_offsetof(FileTimeStampRaw, create) == __builtin_offsetof(FileTimeStampRaw, create));
+    static_assert(__builtin_offsetof(FileTimeStampRaw, modify) == __builtin_offsetof(FileTimeStampRaw, modify));
+    static_assert(__builtin_offsetof(FileTimeStampRaw, access) == __builtin_offsetof(FileTimeStampRaw, access));
+    static_assert(__builtin_offsetof(FileTimeStampRaw, is_local_time) == __builtin_offsetof(FileTimeStampRaw, is_local_time));
+    static_assert(__builtin_offsetof(FileTimeStampRaw, pad) == __builtin_offsetof(FileTimeStampRaw, pad));
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    static_assert(sizeof(FileTimeStampRaw) == sizeof(::FsTimeStampRaw));
+    #endif
 
     namespace impl {
 
@@ -27,6 +54,6 @@ namespace ams::fs {
 
     }
 
-    Result GetFileTimeStampRawForDebug(FileTimeStampRaw *out, const char *path);
+    Result GetFileTimeStamp(FileTimeStamp *out, const char *path);
 
 }

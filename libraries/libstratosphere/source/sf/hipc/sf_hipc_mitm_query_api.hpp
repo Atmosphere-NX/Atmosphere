@@ -18,6 +18,8 @@
 
 namespace ams::sf::hipc::impl {
 
+    #if AMS_SF_MITM_SUPPORTED
     void RegisterMitmQueryHandle(os::NativeHandle query_handle, ServerManagerBase::MitmQueryFunction query_func);
+    #endif
 
 }

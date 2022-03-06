@@ -27,7 +27,7 @@ namespace ams::os {
         private:
             MutexType m_mutex;
         public:
-            constexpr explicit Mutex(bool recursive) : m_mutex{::ams::os::MutexType::State_Initialized, recursive, 0, 0, nullptr, {{0}}} { /* ... */ }
+            constexpr explicit Mutex(bool recursive) : m_mutex{::ams::os::MutexType::State_Initialized, recursive, 0, 0, nullptr, { AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CONSTANT_INITIALIZER } } { /* ... */ }
 
             ~Mutex() { FinalizeMutex(std::addressof(m_mutex)); }
 

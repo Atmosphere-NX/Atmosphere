@@ -19,39 +19,43 @@ namespace ams::fssystem {
 
     namespace {
 
-        inline Result EnsureDirectory(fs::fsa::IFileSystem *fs, const char *path) {
-            R_TRY_CATCH(fs->CreateDirectory(path)) {
-                R_CATCH(fs::ResultPathAlreadyExists) { /* If path already exists, there's no problem. */ }
-            } R_END_TRY_CATCH;
+        Result EnsureDirectoryImpl(fs::fsa::IFileSystem *fs, const fs::Path &path) {
+            /* Create work path. */
+            fs::Path work_path;
+            R_TRY(work_path.Initialize(path));
 
-            return ResultSuccess();
+            /* Create a directory path parser. */
+            fs::DirectoryPathParser parser;
+            R_TRY(parser.Initialize(std::addressof(work_path)));
+
+            bool is_finished;
+            do {
+                /* Get the current path. */
+                const fs::Path &cur_path = parser.GetCurrentPath();
+
+                /* Get the entry type for the current path. */
+                fs::DirectoryEntryType type;
+                R_TRY_CATCH(fs->GetEntryType(std::addressof(type), cur_path)) {
+                    R_CATCH(fs::ResultPathNotFound) {
+                        /* The path doesn't exist. We should create it. */
+                        R_TRY(fs->CreateDirectory(cur_path));
+
+                        /* Get the updated entry type. */
+                        R_TRY(fs->GetEntryType(std::addressof(type), cur_path));
+                    }
+                } R_END_TRY_CATCH;
+
+                /* Verify that the current entry isn't a file. */
+                R_UNLESS(type != fs::DirectoryEntryType_File, fs::ResultPathAlreadyExists());
+
+                /* Advance to the next part of the path. */
+                R_TRY(parser.ReadNext(std::addressof(is_finished)));
+            } while (!is_finished);
+
+            R_SUCCEED();
         }
 
-        Result EnsureDirectoryRecursivelyImpl(fs::fsa::IFileSystem *fs, const char *path, bool create_last) {
-            /* Normalize the path. */
-            char normalized_path[fs::EntryNameLengthMax + 1];
-            size_t normalized_path_len;
-            R_TRY(fs::PathNormalizer::Normalize(normalized_path, std::addressof(normalized_path_len), path, sizeof(normalized_path)));
-
-            /* Repeatedly call CreateDirectory on each directory leading to the target. */
-            for (size_t i = 1; i < normalized_path_len; i++) {
-                /* If we detect a separator, create the directory. */
-                if (fs::PathNormalizer::IsSeparator(normalized_path[i])) {
-                    normalized_path[i] = fs::StringTraits::NullTerminator;
-                    R_TRY(EnsureDirectory(fs, normalized_path));
-                    normalized_path[i] = fs::StringTraits::DirectorySeparator;
-                }
-            }
-
-            /* Create the last directory if requested. */
-            if (create_last) {
-                R_TRY(EnsureDirectory(fs, normalized_path));
-            }
-
-            return ResultSuccess();
-        }
-
-        Result HasEntry(bool *out, fs::fsa::IFileSystem *fsa, const char *path, fs::DirectoryEntryType type) {
+        Result HasEntry(bool *out, fs::fsa::IFileSystem *fsa, const fs::Path &path, fs::DirectoryEntryType type) {
             /* Set out to false initially. */
             *out = false;
 
@@ -64,30 +68,27 @@ namespace ams::fssystem {
 
             /* We succeeded. */
             *out = entry_type == type;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
 
-    Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
+    Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const fs::Path &dst_path, const fs::Path &src_path, void *work_buf, size_t work_buf_size) {
         /* Open source file. */
         std::unique_ptr<fs::fsa::IFile> src_file;
         R_TRY(src_fs->OpenFile(std::addressof(src_file), src_path, fs::OpenMode_Read));
 
+        /* Get the file size. */
+        s64 file_size;
+        R_TRY(src_file->GetSize(std::addressof(file_size)));
+
         /* Open dst file. */
         std::unique_ptr<fs::fsa::IFile> dst_file;
-        {
-            char dst_path[fs::EntryNameLengthMax + 1];
-            const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
-            /* TODO: Error code? N aborts here. */
-            AMS_ABORT_UNLESS(original_size < sizeof(dst_path));
-
-            R_TRY(dst_fs->CreateFile(dst_path, entry->file_size));
-            R_TRY(dst_fs->OpenFile(std::addressof(dst_file), dst_path, fs::OpenMode_Write));
-        }
+        R_TRY(dst_fs->CreateFile(dst_path, file_size));
+        R_TRY(dst_fs->OpenFile(std::addressof(dst_file), dst_path, fs::OpenMode_Write));
 
         /* Read/Write file in work buffer sized chunks. */
-        s64 remaining = entry->file_size;
+        s64 remaining = file_size;
         s64 offset = 0;
         while (remaining > 0) {
             size_t read_size;
@@ -98,59 +99,63 @@ namespace ams::fssystem {
             offset    += read_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
-        char dst_path_buf[fs::EntryNameLengthMax + 1];
-        const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
-        AMS_ABORT_UNLESS(original_size < sizeof(dst_path_buf));
+    Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const fs::Path &dst_path, const fs::Path &src_path, fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
+        /* Set up the destination work path to point at the target directory. */
+        fs::Path dst_work_path;
+        R_TRY(dst_work_path.Initialize(dst_path));
 
-        return IterateDirectoryRecursively(src_fs, src_path,
-            [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Enter Directory */
-                AMS_UNUSED(path);
-
-                /* Update path, create new dir. */
-                std::strncat(dst_path_buf, entry.name, sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
-                std::strncat(dst_path_buf, "/",        sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
-                return dst_fs->CreateDirectory(dst_path_buf);
-            },
-            [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Exit Directory */
+        /* Iterate, copying files. */
+        R_RETURN(IterateDirectoryRecursively(src_fs, src_path, entry,
+            [&](const fs::Path &path, const fs::DirectoryEntry &entry) -> Result { /* On Enter Directory */
                 AMS_UNUSED(path, entry);
 
-                /* Check we have a parent directory. */
-                const size_t len = strnlen(dst_path_buf, sizeof(dst_path_buf));
-                R_UNLESS(len >= 2, fs::ResultInvalidPathFormat());
+                /* Append the current entry to the dst work path. */
+                R_TRY(dst_work_path.AppendChild(entry.name));
 
-                /* Find previous separator, add null terminator */
-                char *cur = dst_path_buf + len - 2;
-                while (!fs::PathNormalizer::IsSeparator(*cur) && cur > dst_path_buf) {
-                    cur--;
-                }
-                cur[1] = fs::StringTraits::NullTerminator;
-
-                return ResultSuccess();
+                /* Create the directory. */
+                R_RETURN(dst_fs->CreateDirectory(dst_work_path));
             },
-            [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On File */
-                return CopyFile(dst_fs, src_fs, dst_path_buf, path, std::addressof(entry), work_buf, work_buf_size);
+            [&](const fs::Path &path, const fs::DirectoryEntry &entry) -> Result { /* On Exit Directory */
+                AMS_UNUSED(path, entry);
+
+                /* Remove the directory we're leaving from the dst work path. */
+                R_RETURN(dst_work_path.RemoveChild());
+            },
+            [&](const fs::Path &path, const fs::DirectoryEntry &entry) -> Result { /* On File */
+                /* Append the current entry to the dst work path. */
+                R_TRY(dst_work_path.AppendChild(entry.name));
+
+                /* Copy the file. */
+                R_TRY(fssystem::CopyFile(dst_fs, src_fs, dst_work_path, path, work_buf, work_buf_size));
+
+                /* Remove the current entry from the dst work path. */
+                R_RETURN(dst_work_path.RemoveChild());
             }
-        );
+        ));
     }
 
-    Result HasFile(bool *out, fs::fsa::IFileSystem *fs, const char *path) {
-        return HasEntry(out, fs, path, fs::DirectoryEntryType_File);
+    Result HasFile(bool *out, fs::fsa::IFileSystem *fs, const fs::Path &path) {
+        R_RETURN(HasEntry(out, fs, path, fs::DirectoryEntryType_File));
     }
 
-    Result HasDirectory(bool *out, fs::fsa::IFileSystem *fs, const char *path) {
-        return HasEntry(out, fs, path, fs::DirectoryEntryType_Directory);
+    Result HasDirectory(bool *out, fs::fsa::IFileSystem *fs, const fs::Path &path) {
+        R_RETURN(HasEntry(out, fs, path, fs::DirectoryEntryType_Directory));
     }
 
-    Result EnsureDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path) {
-        return EnsureDirectoryRecursivelyImpl(fs, path, true);
-    }
+    Result EnsureDirectory(fs::fsa::IFileSystem *fs, const fs::Path &path) {
+        /* First, check if the directory already exists. If it does, we're good to go. */
+        fs::DirectoryEntryType type;
+        R_TRY_CATCH(fs->GetEntryType(std::addressof(type), path)) {
+            /* If the directory doesn't already exist, we should create it. */
+            R_CATCH(fs::ResultPathNotFound) {
+                R_TRY(EnsureDirectoryImpl(fs, path));
+            }
+        } R_END_TRY_CATCH;
 
-    Result EnsureParentDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path) {
-        return EnsureDirectoryRecursivelyImpl(fs, path, false);
+        R_SUCCEED();
     }
 
     void AddCounter(void *_counter, size_t counter_size, u64 value) {

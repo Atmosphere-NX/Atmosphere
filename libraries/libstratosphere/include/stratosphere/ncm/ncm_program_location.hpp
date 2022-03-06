@@ -28,7 +28,9 @@ namespace ams::ncm {
         }
     };
     static_assert(sizeof(ProgramLocation) == 0x10 && util::is_pod<ProgramLocation>::value);
-    static_assert(sizeof(ProgramLocation) == sizeof(::NcmProgramLocation) && alignof(ProgramLocation) == alignof(::NcmProgramLocation), "ProgramLocation Libnx Compatibility");
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    static_assert(sizeof(ProgramLocation) == sizeof(::NcmProgramLocation) && alignof(ProgramLocation) == alignof(::NcmProgramLocation), "ProgramLocation Libnx Compatibility");
+    #endif
 
 }

@@ -81,7 +81,7 @@ namespace ams::ddsf {
                 m_session_list.clear();
             }
         protected:
-            ~IDevice() {
+            virtual ~IDevice() {
                 m_session_list.clear();
             }
         public:

@@ -30,8 +30,7 @@
 #include <vapours/assert.hpp>
 #include <vapours/util/util_type_traits.hpp>
 
-#pragma GCC push_options
-#pragma GCC optimize ("-O3")
+AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
 
 /*
  * This file defines data structures for red-black trees.
@@ -626,4 +625,4 @@ namespace ams::freebsd {
 
 }
 
-#pragma GCC pop_options
+AMS_PRAGMA_END_OPTIMIZE()

@@ -30,6 +30,7 @@ namespace ams::os {
         union {
             s32 _arr[sizeof(impl::InternalConditionVariableStorage) / sizeof(s32)];
             impl::InternalConditionVariableStorage _storage;
+            impl::InternalConditionVariableStorageTypeForConstantInitialize _storage_for_constant_initialize;
         };
     };
     static_assert(std::is_trivial<ConditionVariableType>::value);

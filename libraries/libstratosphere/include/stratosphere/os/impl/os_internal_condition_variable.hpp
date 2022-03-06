@@ -18,8 +18,12 @@
 #include <vapours.hpp>
 #include <stratosphere/os/os_condition_variable_common.hpp>
 
-#if defined(ATMOSPHERE_OS_HORIZON)
+#if defined(AMS_OS_IMPL_USE_PTHREADS)
+    #include <stratosphere/os/impl/os_internal_condition_variable_impl.pthread.hpp>
+#elif defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/os/impl/os_internal_condition_variable_impl.os.horizon.hpp>
+#elif defined(ATMOSPHERE_OS_WINDOWS)
+    #include <stratosphere/os/impl/os_internal_condition_variable_impl.os.windows.hpp>
 #else
     #error "Unknown OS for ams::os::impl::InternalConditionVariableImpl"
 #endif
@@ -32,8 +36,12 @@ namespace ams::os::impl {
         public:
             constexpr InternalConditionVariable() : m_impl() { /* ... */ }
 
-            constexpr void Initialize() {
+            void Initialize() {
                 m_impl.Initialize();
+            }
+
+            void Finalize() {
+                m_impl.Finalize();
             }
 
             void Signal() {

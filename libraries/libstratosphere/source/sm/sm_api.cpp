@@ -18,6 +18,7 @@
 
 namespace ams::sm {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     namespace {
 
         constinit int g_ref_count = 0;
@@ -45,8 +46,8 @@ namespace ams::sm {
     }
 
     /* Ordinary SM API. */
-    Result GetService(Service *out, ServiceName name) {
-        return smGetServiceWrapper(out, impl::ConvertName(name));
+    Result GetServiceHandle(os::NativeHandle *out, ServiceName name) {
+        return smGetServiceOriginal(out, impl::ConvertName(name));
     }
 
     Result RegisterService(os::NativeHandle *out, ServiceName name, size_t max_sessions, bool is_light) {
@@ -65,5 +66,41 @@ namespace ams::sm {
     Result WaitService(ServiceName name) {
         return smAtmosphereWaitService(impl::ConvertName(name));
     }
+    #else
+    Result Initialize() {
+        R_SUCCEED();
+    }
+
+    Result Finalize() {
+        R_SUCCEED();
+    }
+
+    /* Ordinary SM API. */
+    Result GetServiceHandle(os::NativeHandle *out, ServiceName name) {
+        AMS_UNUSED(out, name);
+        AMS_ABORT("TODO?");
+    }
+
+    Result RegisterService(os::NativeHandle *out, ServiceName name, size_t max_sessions, bool is_light) {
+        AMS_UNUSED(out, name, max_sessions, is_light);
+        AMS_ABORT("TODO?");
+    }
+
+    Result UnregisterService(ServiceName name) {
+        AMS_UNUSED(name);
+        AMS_ABORT("TODO?");
+    }
+
+    /* Atmosphere extensions. */
+    Result HasService(bool *out, ServiceName name) {
+        AMS_UNUSED(out, name);
+        AMS_ABORT("TODO?");
+    }
+
+    Result WaitService(ServiceName name) {
+        AMS_UNUSED(name);
+        AMS_ABORT("TODO?");
+    }
+    #endif
 
 }

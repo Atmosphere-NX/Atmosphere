@@ -33,6 +33,7 @@ namespace ams::os {
             union {
                 s32 _arr[sizeof(impl::InternalCriticalSectionStorage) / sizeof(s32)];
                 impl::InternalCriticalSectionStorage cs_storage;
+                impl::InternalCriticalSectionStorageTypeForConstantInitialize _storage_for_constant_initialize;
             };
             util::BitPack32 counter;
         };
@@ -59,12 +60,29 @@ namespace ams::os {
         union {
             s32 _arr[sizeof(impl::InternalConditionVariableStorage) / sizeof(s32)];
             impl::InternalConditionVariableStorage _storage;
+            impl::InternalConditionVariableStorageTypeForConstantInitialize _storage_for_constant_initialize;
         } cv_read_lock;
         union {
             s32 _arr[sizeof(impl::InternalConditionVariableStorage) / sizeof(s32)];
             impl::InternalConditionVariableStorage _storage;
+            impl::InternalConditionVariableStorageTypeForConstantInitialize _storage_for_constant_initialize;
         } cv_write_lock;
     };
     static_assert(std::is_trivial<ReaderWriterLockType>::value);
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
+    consteval ReaderWriterLockType::LockCount MakeConstantInitializedLockCount() { return {}; }
+    #elif defined(ATMOSPHERE_OS_WINDOWS) || defined(ATMOSPHERE_OS_LINUX) || defined(ATMOSPHERE_OS_MACOS)
+    /* If windows/linux, require that the lock counter have guaranteed alignment, so that we may constant-initialize. */
+    static_assert(alignof(ReaderWriterLockType) == sizeof(u64));
+    consteval ReaderWriterLockType::LockCount MakeConstantInitializedLockCount() {
+        return ReaderWriterLockType::LockCount {
+            { AMS_OS_INTERNAL_CRITICAL_SECTION_IMPL_CONSTANT_INITIALIZER },
+            {},
+        };
+    }
+    #else
+        #error "Unknown OS for constant initialized RW-lock LockCount"
+    #endif
 
 }

@@ -1,0 +1,5 @@
+export ATMOSPHERE_DEFINES  += -DATMOSPHERE_CPU_GENERIC_X64
+export ATMOSPHERE_SETTINGS += -march=native -mtune=generic
+export ATMOSPHERE_CFLAGS   +=
+export ATMOSPHERE_CXXFLAGS +=
+export ATMOSPHERE_ASFLAGS  +=

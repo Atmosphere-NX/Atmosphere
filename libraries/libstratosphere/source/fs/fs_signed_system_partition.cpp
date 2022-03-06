@@ -16,21 +16,30 @@
 #include <stratosphere.hpp>
 #include "fsa/fs_filesystem_accessor.hpp"
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
 
 namespace ams::fs {
+
+    namespace {
+
+        Result GetSignedSystemPartitionOnSdCardValid(char *out, impl::FileSystemAccessor *accessor) {
+            R_TRY_CATCH(accessor->QueryEntry(out, sizeof(*out), nullptr, 0, fsa::QueryId::IsSignedSystemPartitionOnSdCardValid, "/")) {
+                /* If querying isn't supported, then the partition isn't valid. */
+                R_CATCH(fs::ResultUnsupportedOperation) { *out = false; }
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+            R_SUCCEED();
+        }
+
+    }
 
     bool IsSignedSystemPartitionOnSdCardValid(const char *system_root_path) {
         /* Get the accessor for the system filesystem. */
         impl::FileSystemAccessor *accessor;
         const char *sub_path;
-        R_ABORT_UNLESS(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), system_root_path));
+        AMS_FS_R_ABORT_UNLESS(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), system_root_path));
 
         char is_valid;
-        R_TRY_CATCH(accessor->QueryEntry(std::addressof(is_valid), 1, nullptr, 0, fsa::QueryId::IsSignedSystemPartitionOnSdCardValid, "/")) {
-            /* If querying isn't supported, then the partition isn't valid. */
-            R_CATCH(fs::ResultUnsupportedOperation) { is_valid = false; }
-        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
+        AMS_FS_R_ABORT_UNLESS(GetSignedSystemPartitionOnSdCardValid(std::addressof(is_valid), accessor));
         return is_valid;
     }
 
@@ -40,8 +49,9 @@ namespace ams::fs {
         AMS_ABORT_UNLESS(hos::Version_4_0_0 <= version && version < hos::Version_8_0_0);
 
         /* Check that the partition is valid. */
+        auto fsp = impl::GetFileSystemProxyServiceObject();
         bool is_valid;
-        R_ABORT_UNLESS(fsIsSignedSystemPartitionOnSdCardValid(std::addressof(is_valid)));
+        AMS_FS_R_ABORT_UNLESS(fsp->IsSignedSystemPartitionOnSdCardValid(std::addressof(is_valid)));
         return is_valid;
     }
 

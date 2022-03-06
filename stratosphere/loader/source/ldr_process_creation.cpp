@@ -560,7 +560,7 @@ namespace ams::ldr {
             /* Check hash if necessary. */
             if (check_hash) {
                 u8 hash[crypto::Sha256Generator::HashSize];
-                crypto::GenerateSha256Hash(hash, sizeof(hash), reinterpret_cast<void *>(map_base), segment->size);
+                crypto::GenerateSha256(hash, sizeof(hash), reinterpret_cast<void *>(map_base), segment->size);
 
                 R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ldr::ResultInvalidNso());
             }

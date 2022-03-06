@@ -17,6 +17,7 @@
 
 namespace ams::fssystem {
 
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     namespace {
 
         constexpr inline size_t MaxExternalCodeFileSystem = 0x10;
@@ -72,5 +73,21 @@ namespace ams::fssystem {
             g_hnd_map.Remove(program_id);
         }
     }
+    #else
+    fs::fsa::IFileSystem *GetExternalCodeFileSystem(ncm::ProgramId program_id) {
+        AMS_UNUSED(program_id);
+        return nullptr;
+    }
+
+    Result CreateExternalCode(os::NativeHandle *out, ncm::ProgramId program_id) {
+        AMS_UNUSED(out, program_id);
+        R_THROW(fs::ResultNotImplemented());
+    }
+
+    void DestroyExternalCode(ncm::ProgramId program_id) {
+        AMS_UNUSED(program_id);
+    }
+    #endif
+
 
 }

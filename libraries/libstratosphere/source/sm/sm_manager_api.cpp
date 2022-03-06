@@ -15,10 +15,14 @@
  */
 #include <stratosphere.hpp>
 #include "sm_utils.hpp"
-#include "smm_ams.h"
+
+#if defined(ATMOSPHERE_OS_HORIZON)
+#include "smm_ams.os.horizon.h"
+#endif
 
 namespace ams::sm::manager {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     /* Manager API. */
     Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus status, const void *acid, size_t acid_size, const void *aci, size_t aci_size) {
         static_assert(sizeof(status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition");
@@ -37,5 +41,6 @@ namespace ams::sm::manager {
     Result HasMitm(bool *out, ServiceName name) {
         return smManagerAtmosphereHasMitm(out, impl::ConvertName(name));
     }
+    #endif
 
 }

@@ -205,7 +205,7 @@ namespace ams::ro::impl {
                 Result ValidateHasNroHash(const NroHeader *nro_header) const {
                     /* Calculate hash. */
                     Sha256Hash hash;
-                    crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), nro_header, nro_header->GetSize());
+                    crypto::GenerateSha256(std::addressof(hash), sizeof(hash), nro_header, nro_header->GetSize());
 
                     for (size_t i = 0; i < MaxNrrInfos; i++) {
                         /* Ensure we only check NRRs that are used. */

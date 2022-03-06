@@ -34,6 +34,7 @@ namespace ams::fssrv {
             size_t m_peak_allocated_size;
         public:
             explicit MemoryResourceFromStandardAllocator(mem::StandardAllocator *allocator);
+            constexpr virtual ~MemoryResourceFromStandardAllocator() = default;
         public:
             size_t GetPeakFreeSize() const { return m_peak_free_size; }
             size_t GetCurrentFreeSize() const { return m_current_free_size; }

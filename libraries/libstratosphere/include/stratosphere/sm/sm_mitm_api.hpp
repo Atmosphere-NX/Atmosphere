@@ -15,9 +15,10 @@
  */
 
 #pragma once
-
 #include <stratosphere/sm/sm_types.hpp>
+#include <stratosphere/sf/sf_mitm_config.hpp>
 
+#if AMS_SF_MITM_SUPPORTED
 namespace ams::sm::mitm {
 
     /* Mitm API. */
@@ -30,3 +31,4 @@ namespace ams::sm::mitm {
     Result WaitMitm(ServiceName name);
 
 }
+#endif

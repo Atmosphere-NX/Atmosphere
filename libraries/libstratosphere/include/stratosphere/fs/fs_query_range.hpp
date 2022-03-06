@@ -38,7 +38,10 @@ namespace ams::fs {
 
     static_assert(util::is_pod<QueryRangeInfo>::value);
     static_assert(sizeof(QueryRangeInfo) == 0x40);
+
+    #if defined(ATMOSPHERE_OS_HORIZON)
     static_assert(sizeof(QueryRangeInfo) == sizeof(::FsRangeInfo));
+    #endif
 
     using FileQueryRangeInfo    = QueryRangeInfo;
     using StorageQueryRangeInfo = QueryRangeInfo;

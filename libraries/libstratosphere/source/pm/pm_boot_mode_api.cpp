@@ -19,6 +19,7 @@ namespace ams::pm::bm {
 
     /* Boot Mode API. */
     /* Both functions should be weakly linked, so that they can be overridden by ams::boot2 as needed. */
+    #if defined(ATMOSPHERE_OS_HORIZON)
     BootMode WEAK_SYMBOL GetBootMode() {
         PmBootMode boot_mode = PmBootMode_Normal;
         R_ABORT_UNLESS(pmbmGetBootMode(std::addressof(boot_mode)));
@@ -28,5 +29,14 @@ namespace ams::pm::bm {
     void WEAK_SYMBOL SetMaintenanceBoot() {
         R_ABORT_UNLESS(pmbmSetMaintenanceBoot());
     }
+    #else
+    BootMode WEAK_SYMBOL GetBootMode() {
+        AMS_ABORT("TODO");
+    }
+
+    void WEAK_SYMBOL SetMaintenanceBoot() {
+        AMS_ABORT("TODO");
+    }
+    #endif
 
 }

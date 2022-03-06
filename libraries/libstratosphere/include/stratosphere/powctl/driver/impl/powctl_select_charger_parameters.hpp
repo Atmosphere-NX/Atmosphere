@@ -18,9 +18,7 @@
 #include <stratosphere/powctl/powctl_types.hpp>
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
-
     #include <stratosphere/powctl/driver/impl/powctl_charger_parameters.board.nintendo_nx.hpp>
-
 #else
-    #error "unknown board for powctl::driver::impl::ChargerParameters"
+    #include <stratosphere/powctl/driver/impl/powctl_charger_parameters.generic.hpp>
 #endif

@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/tipc/tipc_common.hpp>
+#include <stratosphere/tipc/impl/tipc_impl_message_api.hpp>
 #include <stratosphere/tipc/tipc_service_object.hpp>
 #include <stratosphere/tipc/tipc_object_holder.hpp>
 
@@ -37,7 +38,7 @@ namespace ams::tipc {
             Entry *m_entries_end{};
             os::MultiWaitType *m_multi_wait{};
         private:
-            Entry *FindEntry(os::NativeHandle handle) {
+            Entry *FindEntry(tipc::NativeHandle handle) {
                 for (Entry *cur = m_entries_start; cur != m_entries_end; ++cur) {
                     if (GetReference(cur->object).GetHandle() == handle) {
                         return cur;
@@ -76,7 +77,7 @@ namespace ams::tipc {
                 std::scoped_lock lk(m_mutex);
 
                 /* Find an empty entry. */
-                auto *entry = this->FindEntry(os::InvalidNativeHandle);
+                auto *entry = this->FindEntry(tipc::InvalidNativeHandle);
                 AMS_ABORT_UNLESS(entry != nullptr);
 
                 /* Set the entry's object. */
@@ -87,7 +88,7 @@ namespace ams::tipc {
                 os::LinkMultiWaitHolder(m_multi_wait, std::addressof(entry->multi_wait_holder));
             }
 
-            void CloseObject(os::NativeHandle handle) {
+            void CloseObject(tipc::NativeHandle handle) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -103,14 +104,14 @@ namespace ams::tipc {
                 GetReference(entry->object).Destroy();
             }
 
-            Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, os::NativeHandle reply_target, os::MultiWaitType *multi_wait) {
+            Result ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, tipc::NativeHandle reply_target, os::MultiWaitType *multi_wait) {
                 /* Declare signaled holder for processing ahead of time. */
                 os::MultiWaitHolderType *signaled_holder;
 
                 /* Reply and receive until we get a newly signaled target. */
                 Result result = os::SdkReplyAndReceive(out_holder, reply_target, multi_wait);
                 for (signaled_holder = *out_holder; signaled_holder == nullptr; signaled_holder = *out_holder) {
-                    result = os::SdkReplyAndReceive(out_holder, os::InvalidNativeHandle, multi_wait);
+                    result = os::SdkReplyAndReceive(out_holder, tipc::InvalidNativeHandle, multi_wait);
                 }
 
                 /* Find the entry matching the signaled holder. */
@@ -125,32 +126,23 @@ namespace ams::tipc {
                 }
             }
 
-            void Reply(os::NativeHandle reply_target) {
-                /* Perform the reply. */
-                s32 dummy;
-                R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(dummy), nullptr, 0, reply_target, 0)) {
-                    R_CATCH(svc::ResultTimedOut) {
-                        /* Timing out is acceptable. */
-                    }
-                    R_CATCH(svc::ResultSessionClosed) {
-                        /* It's okay if we couldn't reply to a closed session. */
-                    }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+            void Reply(tipc::NativeHandle reply_target) {
+                return tipc::impl::Reply(reply_target);
             }
 
             Result ProcessRequest(ObjectHolder &object) {
                 /* Get the message buffer. */
-                const svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());
+                const MessageBuffer message_buffer(tipc::GetMessageBuffer());
 
                 /* Get the method id. */
-                const auto method_id = svc::ipc::MessageBuffer::MessageHeader(message_buffer).GetTag();
+                const auto method_id = MessageBuffer::MessageHeader(message_buffer).GetTag();
 
                 /* Process for the method id. */
                 {
                     /* Ensure that if we fail, we clean up any handles that get sent our way. */
                     ON_RESULT_FAILURE {
-                        const svc::ipc::MessageBuffer::MessageHeader message_header(message_buffer);
-                        const svc::ipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
+                        const MessageBuffer::MessageHeader message_header(message_buffer);
+                        const MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
 
                         /* Determine the offset to the start of handles. */
                         auto offset = message_buffer.GetSpecialDataIndex(message_header, special_header);
@@ -160,8 +152,8 @@ namespace ams::tipc {
 
                         /* Close all copy handles. */
                         for (auto i = 0; i < special_header.GetCopyHandleCount(); ++i) {
-                            svc::CloseHandle(message_buffer.GetHandle(offset));
-                            offset += sizeof(ams::svc::Handle) / sizeof(u32);
+                            tipc::impl::CloseHandle(message_buffer.GetHandle(offset));
+                            offset += sizeof(typename std::remove_reference<decltype(message_buffer.GetHandle(offset))>::type) / sizeof(u32);
                         }
                     };
 
@@ -191,7 +183,7 @@ namespace ams::tipc {
 
                     /* Close the object's handle. */
                     /* NOTE: Nintendo does not check that this succeeds. */
-                    R_ABORT_UNLESS(svc::CloseHandle(handle));
+                    R_ABORT_UNLESS(tipc::impl::CloseHandle(handle));
 
                     /* Return an error to signify we closed the object. */
                     R_THROW(tipc::ResultSessionClosed());

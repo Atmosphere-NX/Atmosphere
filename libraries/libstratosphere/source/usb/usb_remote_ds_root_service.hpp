@@ -18,6 +18,7 @@
 
 namespace ams::usb {
 
+    #if defined(ATMOSPHERE_OS_HORIZON)
     class RemoteDsRootService {
         private:
             using Allocator     = sf::ExpHeapAllocator;
@@ -32,5 +33,6 @@ namespace ams::usb {
             Result GetService(sf::Out<sf::SharedPointer<usb::ds::IDsService>> out);
     };
     static_assert(ds::IsIDsRootService<RemoteDsRootService>);
+    #endif
 
 }

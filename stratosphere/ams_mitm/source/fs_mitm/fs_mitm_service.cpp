@@ -30,7 +30,7 @@ namespace ams::mitm::fs {
 
     namespace {
 
-        constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
+        constexpr const ams::fs::Path AtmosphereHblWebContentDirPath = fs::MakeConstantPath("/atmosphere/hbl_html/");
         constexpr const char ProgramWebContentDir[] = "/manual_html/";
 
         constinit os::SdkMutex g_boot0_detect_lock;
@@ -77,7 +77,7 @@ namespace ams::mitm::fs {
             /* Hbl html directory must exist. */
             {
                 FsDir d;
-                R_UNLESS(R_SUCCEEDED(mitm::fs::OpenSdDirectory(std::addressof(d), AtmosphereHblWebContentDir, fs::OpenDirectoryMode_Directory)), sm::mitm::ResultShouldForwardToSession());
+                R_UNLESS(R_SUCCEEDED(mitm::fs::OpenSdDirectory(std::addressof(d), AtmosphereHblWebContentDirPath.GetString(), fs::OpenDirectoryMode_Directory)), sm::mitm::ResultShouldForwardToSession());
                 fsDirClose(std::addressof(d));
             }
 
@@ -87,7 +87,10 @@ namespace ams::mitm::fs {
             const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(sd_fs.s))};
             std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
 
-            out.SetValue(MakeSharedFileSystem(std::make_shared<fs::ReadOnlyFileSystem>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
+            auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs));
+            R_TRY(subdir_fs->Initialize(AtmosphereHblWebContentDirPath));
+
+            out.SetValue(MakeSharedFileSystem(std::make_shared<fs::ReadOnlyFileSystem>(std::move(subdir_fs)), false), target_object_id);
             return ResultSuccess();
         }
 
@@ -106,12 +109,17 @@ namespace ams::mitm::fs {
             std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
 
             /* Format the subdirectory path. */
-            char program_web_content_path[fs::EntryNameLengthMax + 1];
-            FormatAtmosphereSdPath(program_web_content_path, sizeof(program_web_content_path), program_id, ProgramWebContentDir);
+            char program_web_content_raw_path[0x100];
+            FormatAtmosphereSdPath(program_web_content_raw_path, sizeof(program_web_content_raw_path), program_id, ProgramWebContentDir);
+
+            ams::fs::Path program_web_content_path;
+            R_TRY(program_web_content_path.SetShallowBuffer(program_web_content_raw_path));
 
             /* Make a new filesystem. */
             {
-                std::unique_ptr<fs::fsa::IFileSystem> subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), program_web_content_path);
+                auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs));
+                R_TRY(subdir_fs->Initialize(program_web_content_path));
+
                 std::shared_ptr<fs::fsa::IFileSystem> new_fs = nullptr;
 
                 /* Try to open the existing fs. */
@@ -165,7 +173,7 @@ namespace ams::mitm::fs {
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out) {
         /* We only care about redirecting this for NS/emummc. */
         R_UNLESS(m_client_info.program_id == ncm::SystemProgramId::Ns, sm::mitm::ResultShouldForwardToSession());
-        R_UNLESS(emummc::IsActive(),                                       sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(emummc::IsActive(),                                   sm::mitm::ResultShouldForwardToSession());
 
         /* Create a new SD card filesystem. */
         FsFileSystem sd_fs;
@@ -173,7 +181,9 @@ namespace ams::mitm::fs {
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(sd_fs.s))};
 
         /* Return output filesystem. */
-        std::shared_ptr<fs::fsa::IFileSystem> redir_fs = std::make_shared<fssystem::DirectoryRedirectionFileSystem>(std::make_shared<RemoteFileSystem>(sd_fs), "/Nintendo", emummc::GetNintendoDirPath());
+        auto redir_fs = std::make_shared<fssystem::DirectoryRedirectionFileSystem>(std::make_unique<RemoteFileSystem>(sd_fs));
+        R_TRY(redir_fs->InitializeWithFixedPath("/Nintendo", emummc::GetNintendoDirPath()));
+
         out.SetValue(MakeSharedFileSystem(std::move(redir_fs), false), target_object_id);
         return ResultSuccess();
     }
@@ -209,8 +219,12 @@ namespace ams::mitm::fs {
 
         /* Verify that we can open the save directory, and that it exists. */
         const ncm::ProgramId application_id = attribute.program_id == ncm::InvalidProgramId ? m_client_info.program_id : attribute.program_id;
-        char save_dir_path[fs::EntryNameLengthMax + 1];
-        R_TRY(mitm::fs::SaveUtil::GetDirectorySaveDataPath(save_dir_path, sizeof(save_dir_path), application_id, space_id, attribute));
+
+        char save_dir_raw_path[0x100];
+        R_TRY(mitm::fs::SaveUtil::GetDirectorySaveDataPath(save_dir_raw_path, sizeof(save_dir_raw_path), application_id, space_id, attribute));
+
+        ams::fs::Path save_dir_path;
+        R_TRY(save_dir_path.SetShallowBuffer(save_dir_raw_path));
 
         /* Check if this is the first time we're making the save. */
         bool is_new_save = false;
@@ -223,19 +237,25 @@ namespace ams::mitm::fs {
         }
 
         /* Ensure the directory exists. */
-        R_TRY(fssystem::EnsureDirectoryRecursively(sd_ifs.get(), save_dir_path));
+        R_TRY(fssystem::EnsureDirectory(sd_ifs.get(), save_dir_path));
 
         /* Create directory savedata filesystem. */
-        std::unique_ptr<fs::fsa::IFileSystem> subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(sd_ifs, save_dir_path);
+        auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(sd_ifs);
+        R_TRY(subdir_fs->Initialize(save_dir_path));
+
         std::shared_ptr<fssystem::DirectorySaveDataFileSystem> dirsave_ifs = std::make_shared<fssystem::DirectorySaveDataFileSystem>(std::move(subdir_fs));
 
         /* Ensure correct directory savedata filesystem state. */
-        R_TRY(dirsave_ifs->Initialize());
+        R_TRY(dirsave_ifs->Initialize(true, true, true));
 
         /* If it's the first time we're making the save, copy existing savedata over. */
         if (is_new_save) {
             /* TODO: Check error? */
-            dirsave_ifs->CopySaveFromFileSystem(save_ifs.get());
+            fs::DirectoryEntry work_entry;
+            constexpr const fs::Path root_path = fs::MakeConstantPath("/");
+
+            u8 savedata_copy_buffer[2_KB];
+            fssystem::CopyDirectoryRecursively(dirsave_ifs.get(), save_ifs.get(), root_path, root_path, std::addressof(work_entry), savedata_copy_buffer, sizeof(savedata_copy_buffer));
         }
 
         /* Set output. */
@@ -265,19 +285,20 @@ namespace ams::mitm::fs {
         /* Set output storage. */
         if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
             if (IsBoot0CustomPublicKey(bis_storage)) {
-                out.SetValue(MakeSharedStorage(new CustomPublicKeyBoot0Storage(bis_storage, m_client_info, spl::GetSocType())), target_object_id);
+                out.SetValue(MakeSharedStorage(std::make_shared<CustomPublicKeyBoot0Storage>(bis_storage, m_client_info, spl::GetSocType())), target_object_id);
             } else {
-                out.SetValue(MakeSharedStorage(new Boot0Storage(bis_storage, m_client_info)), target_object_id);
+                out.SetValue(MakeSharedStorage(std::make_shared<Boot0Storage>(bis_storage, m_client_info)), target_object_id);
             }
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
-            out.SetValue(MakeSharedStorage(new CalibrationBinaryStorage(bis_storage, m_client_info)), target_object_id);
+            out.SetValue(MakeSharedStorage(std::make_shared<CalibrationBinaryStorage>(bis_storage, m_client_info)), target_object_id);
         } else {
             if (can_write_bis || can_write_bis_for_choi_support) {
                 /* We can write, so create a writable storage. */
-                out.SetValue(MakeSharedStorage(new RemoteStorage(bis_storage)), target_object_id);
+                out.SetValue(MakeSharedStorage(std::make_shared<RemoteStorage>(bis_storage)), target_object_id);
             } else {
                 /* We can only read, so create a readable storage. */
-                out.SetValue(MakeSharedStorage(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
+                std::unique_ptr<ams::fs::IStorage> unique_bis = std::make_unique<RemoteStorage>(bis_storage);
+                out.SetValue(MakeSharedStorage(std::make_shared<ReadOnlyStorageAdapter>(std::move(unique_bis))), target_object_id);
             }
         }
 

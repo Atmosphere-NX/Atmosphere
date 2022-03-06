@@ -26,58 +26,69 @@ namespace ams::fs::fsa {
             virtual ~IFile() { /* ... */ }
 
             Result Read(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
+                /* Check that we have an output pointer. */
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
+
+                /* If we have nothing to read, just succeed. */
                 if (size == 0) {
                     *out = 0;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
-                R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
-                R_UNLESS(offset >= 0, fs::ResultOutOfRange());
+
+                /* Check that the read is valid. */
+                R_UNLESS(buffer != nullptr,                        fs::ResultNullptrArgument());
+                R_UNLESS(offset >= 0,                              fs::ResultOutOfRange());
+                R_UNLESS(util::IsIntValueRepresentable<s64>(size), fs::ResultOutOfRange());
+
                 const s64 signed_size = static_cast<s64>(size);
-                R_UNLESS(signed_size >= 0, fs::ResultOutOfRange());
                 R_UNLESS((std::numeric_limits<s64>::max() - offset) >= signed_size, fs::ResultOutOfRange());
-                return this->DoRead(out, offset, buffer, size, option);
+
+                /* Do the read. */
+                R_RETURN(this->DoRead(out, offset, buffer, size, option));
             }
 
-            Result Read(size_t *out, s64 offset, void *buffer, size_t size) {
-                return this->Read(out, offset, buffer, size, ReadOption::None);
-            }
+            ALWAYS_INLINE Result Read(size_t *out, s64 offset, void *buffer, size_t size) { R_RETURN(this->Read(out, offset, buffer, size, ReadOption::None)); }
 
             Result GetSize(s64 *out) {
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
-                return this->DoGetSize(out);
+                R_RETURN(this->DoGetSize(out));
             }
 
             Result Flush() {
-                return this->DoFlush();
+                R_RETURN(this->DoFlush());
             }
 
             Result Write(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) {
+                /* Handle the zero-size case. */
                 if (size == 0) {
                     if (option.HasFlushFlag()) {
                         R_TRY(this->Flush());
                     }
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
-                R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
-                R_UNLESS(offset >= 0, fs::ResultOutOfRange());
+
+                /* Check the write is valid. */
+                R_UNLESS(buffer != nullptr,                        fs::ResultNullptrArgument());
+                R_UNLESS(offset >= 0,                              fs::ResultOutOfRange());
+                R_UNLESS(util::IsIntValueRepresentable<s64>(size), fs::ResultOutOfRange());
+
                 const s64 signed_size = static_cast<s64>(size);
-                R_UNLESS(signed_size >= 0, fs::ResultOutOfRange());
                 R_UNLESS((std::numeric_limits<s64>::max() - offset) >= signed_size, fs::ResultOutOfRange());
-                return this->DoWrite(offset, buffer, size, option);
+
+                R_RETURN(this->DoWrite(offset, buffer, size, option));
             }
 
             Result SetSize(s64 size) {
                 R_UNLESS(size >= 0, fs::ResultOutOfRange());
-                return this->DoSetSize(size);
+                R_RETURN(this->DoSetSize(size));
             }
 
             Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
-                return this->DoOperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                R_RETURN(this->DoOperateRange(dst, dst_size, op_id, offset, size, src, src_size));
             }
 
             Result OperateRange(fs::OperationId op_id, s64 offset, s64 size) {
-                return this->DoOperateRange(nullptr, 0, op_id, offset, size, nullptr, 0);
+                R_RETURN(this->DoOperateRange(nullptr, 0, op_id, offset, size, nullptr, 0));
             }
         public:
             /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
@@ -91,21 +102,19 @@ namespace ams::fs::fsa {
 
                 /* Get the file size, and validate our offset. */
                 s64 file_size = 0;
-                R_TRY(this->GetSize(&file_size));
+                R_TRY(this->DoGetSize(std::addressof(file_size)));
                 R_UNLESS(offset <= file_size, fs::ResultOutOfRange());
 
                 *out = static_cast<size_t>(std::min(file_size - offset, static_cast<s64>(size)));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result DrySetSize(s64 size, fs::OpenMode open_mode) {
-                /* Check that we can write. */
-                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultWriteNotPermitted());
-
-                AMS_ASSERT(size >= 0);
                 AMS_UNUSED(size);
 
-                return ResultSuccess();
+                /* Check that we can write. */
+                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultWriteNotPermitted());
+                R_SUCCEED();
             }
 
             Result DryWrite(bool *out_append, s64 offset, size_t size, const fs::WriteOption &option, fs::OpenMode open_mode) {
@@ -116,17 +125,16 @@ namespace ams::fs::fsa {
 
                 /* Get the file size. */
                 s64 file_size = 0;
-                R_TRY(this->GetSize(&file_size));
+                R_TRY(this->DoGetSize(&file_size));
 
                 /* Determine if we need to append. */
-                if (file_size < offset +  static_cast<s64>(size)) {
+                *out_append = false;
+                if (file_size < offset + static_cast<s64>(size)) {
                     R_UNLESS((open_mode & OpenMode_AllowAppend) != 0, fs::ResultFileExtensionWithoutOpenModeAllowAppend());
                     *out_append = true;
-                } else {
-                    *out_append = false;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         private:
             virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) = 0;

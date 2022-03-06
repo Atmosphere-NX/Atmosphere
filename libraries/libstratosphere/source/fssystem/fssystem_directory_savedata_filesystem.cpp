@@ -19,13 +19,15 @@ namespace ams::fssystem {
 
     namespace {
 
-        constexpr size_t IdealWorkBufferSize = 0x100000; /* 1 MiB */
+        constexpr size_t IdealWorkBufferSize   = 1_MB;
+        constexpr size_t MinimumWorkBufferSize = 1_KB;
 
-        constexpr const char CommittedDirectoryPath[]     = "/0/";
-        constexpr const char WorkingDirectoryPath[]       = "/1/";
-        constexpr const char SynchronizingDirectoryPath[] = "/_/";
+        constexpr const fs::Path CommittedDirectoryPath     = fs::MakeConstantPath("/0");
+        constexpr const fs::Path WorkingDirectoryPath       = fs::MakeConstantPath("/1");
+        constexpr const fs::Path SynchronizingDirectoryPath = fs::MakeConstantPath("/_");
+        constexpr const fs::Path LockFilePath               = fs::MakeConstantPath("/.lock");
 
-        class DirectorySaveDataFile : public fs::fsa::IFile {
+        class DirectorySaveDataFile : public fs::fsa::IFile, public fs::impl::Newable {
             private:
                 std::unique_ptr<fs::fsa::IFile> m_base_file;
                 DirectorySaveDataFileSystem *m_parent_fs;
@@ -38,7 +40,7 @@ namespace ams::fssystem {
                 virtual ~DirectorySaveDataFile() {
                     /* Observe closing of writable file. */
                     if (m_open_mode & fs::OpenMode_Write) {
-                        m_parent_fs->OnWritableFileClose();
+                        m_parent_fs->DecrementWriteOpenFileCount();
                     }
                 }
             public:
@@ -73,25 +75,14 @@ namespace ams::fssystem {
 
     }
 
-    DirectorySaveDataFileSystem::DirectorySaveDataFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs)
-        : PathResolutionFileSystem(fs), m_accessor_mutex(), m_open_writable_files(0)
-    {
-        /* ... */
-    }
+    Result DirectorySaveDataFileSystem::Initialize(bool journaling_supported, bool multi_commit_supported, bool journaling_enabled) {
+        /* Configure ourselves. */
+        m_is_journaling_supported   = journaling_supported;
+        m_is_multi_commit_supported = multi_commit_supported;
+        m_is_journaling_enabled     = journaling_enabled;
 
-    DirectorySaveDataFileSystem::DirectorySaveDataFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs)
-        : PathResolutionFileSystem(std::move(fs)), m_accessor_mutex(), m_open_writable_files(0)
-    {
-        /* ... */
-    }
-
-    DirectorySaveDataFileSystem::~DirectorySaveDataFileSystem() {
-        /* ... */
-    }
-
-    Result DirectorySaveDataFileSystem::Initialize() {
-        /* Nintendo does not acquire the lock here, but I think we probably should. */
-        std::scoped_lock lk(m_accessor_mutex);
+        /* Ensure that we can initialize further by acquiring a lock on the filesystem. */
+        R_TRY(this->AcquireLockFile());
 
         fs::DirectoryEntryType type;
 
@@ -100,44 +91,35 @@ namespace ams::fssystem {
             /* If path isn't found, create working directory and committed directory. */
             R_CATCH(fs::ResultPathNotFound) {
                 R_TRY(m_base_fs->CreateDirectory(WorkingDirectoryPath));
-                R_TRY(m_base_fs->CreateDirectory(CommittedDirectoryPath));
+
+                if (m_is_journaling_supported) {
+                    R_TRY(m_base_fs->CreateDirectory(CommittedDirectoryPath));
+                }
             }
         } R_END_TRY_CATCH;
 
-        /* Now check for the committed directory. */
-        R_TRY_CATCH(m_base_fs->GetEntryType(std::addressof(type), CommittedDirectoryPath)) {
-            /* Committed doesn't exist, so synchronize and rename. */
-            R_CATCH(fs::ResultPathNotFound) {
-                R_TRY(this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath));
-                R_TRY(m_base_fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath));
-                return ResultSuccess();
-            }
-        } R_END_TRY_CATCH;
+        /* If we support journaling, we need to set up the committed directory. */
+        if (m_is_journaling_supported) {
+            /* Now check for the committed directory. */
+            R_TRY_CATCH(m_base_fs->GetEntryType(std::addressof(type), CommittedDirectoryPath)) {
+                /* Committed doesn't exist, so synchronize and rename. */
+                R_CATCH(fs::ResultPathNotFound) {
+                    R_TRY(this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath));
+                    R_TRY(m_base_fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath));
+                    R_SUCCEED();
+                }
+            } R_END_TRY_CATCH;
 
-        /* The committed directory exists, so synchronize it to the working directory. */
-        return this->SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath);
-    }
-
-    Result DirectorySaveDataFileSystem::AllocateWorkBuffer(std::unique_ptr<u8[]> *out, size_t *out_size, size_t size) {
-        /* Repeatedly try to allocate until success. */
-        while (size > 0x200) {
-            /* Allocate the buffer. */
-            if (auto mem = new (std::nothrow) u8[size]; mem != nullptr) {
-                out->reset(mem);
-                *out_size = size;
-                return ResultSuccess();
-            } else {
-                /* Divide size by two. */
-                size >>= 1;
+            /* The committed directory exists, so if we should, synchronize it to the working directory. */
+            if (m_is_journaling_enabled) {
+                R_TRY(this->SynchronizeDirectory(WorkingDirectoryPath, CommittedDirectoryPath));
             }
         }
 
-        /* TODO: Return a result here? Nintendo does not, but they have other allocation failed results. */
-        /* Consider returning fs::ResultFsAllocationFailureInDirectorySaveDataFileSystem? */
-        AMS_ABORT_UNLESS(false);
+        R_SUCCEED();
     }
 
-    Result DirectorySaveDataFileSystem::SynchronizeDirectory(const char *dst, const char *src) {
+    Result DirectorySaveDataFileSystem::SynchronizeDirectory(const fs::Path &dst, const fs::Path &src) {
         /* Delete destination dir and recreate it. */
         R_TRY_CATCH(m_base_fs->DeleteDirectoryRecursively(dst)) {
             R_CATCH(fs::ResultPathNotFound) { /* Nintendo returns error unconditionally, but I think that's a bug in their code. */}
@@ -146,132 +128,239 @@ namespace ams::fssystem {
         R_TRY(m_base_fs->CreateDirectory(dst));
 
         /* Get a work buffer to work with. */
-        std::unique_ptr<u8[]> work_buf;
-        size_t work_buf_size;
-        R_TRY(this->AllocateWorkBuffer(std::addressof(work_buf), std::addressof(work_buf_size), IdealWorkBufferSize));
+        fssystem::PooledBuffer buffer;
+        buffer.AllocateParticularlyLarge(IdealWorkBufferSize, MinimumWorkBufferSize);
 
         /* Copy the directory recursively. */
-        return fssystem::CopyDirectoryRecursively(m_base_fs, dst, src, work_buf.get(), work_buf_size);
+        fs::DirectoryEntry dir_entry_buffer = {};
+        R_RETURN(fssystem::CopyDirectoryRecursively(m_base_fs, dst, src, std::addressof(dir_entry_buffer), buffer.GetBuffer(), buffer.GetSize()));
     }
 
-    Result DirectorySaveDataFileSystem::ResolveFullPath(char *out, size_t out_size, const char *relative_path) {
-        R_UNLESS(strnlen(relative_path, fs::EntryNameLengthMax + 1) < fs::EntryNameLengthMax + 1, fs::ResultTooLongPath());
-        R_UNLESS(fs::PathNormalizer::IsSeparator(relative_path[0]), fs::ResultInvalidPath());
-
-        /* Copy working directory path. */
-        std::strncpy(out, WorkingDirectoryPath, out_size);
-        out[out_size - 1] = fs::StringTraits::NullTerminator;
-
-        /* Normalize it. */
-        constexpr size_t WorkingDirectoryPathLength = sizeof(WorkingDirectoryPath) - 1;
-        size_t normalized_length;
-        return fs::PathNormalizer::Normalize(out + WorkingDirectoryPathLength - 1, std::addressof(normalized_length), relative_path, out_size - (WorkingDirectoryPathLength - 1));
+    Result DirectorySaveDataFileSystem::ResolvePath(fs::Path *out, const fs::Path &path) {
+        const fs::Path &directory = (m_is_journaling_supported && !m_is_journaling_enabled) ? CommittedDirectoryPath : WorkingDirectoryPath;
+        R_RETURN(out->Combine(directory, path));
     }
 
-    void DirectorySaveDataFileSystem::OnWritableFileClose() {
+    Result DirectorySaveDataFileSystem::AcquireLockFile() {
+        /* If we already have a lock file, we don't need to lock again. */
+        R_SUCCEED_IF(m_lock_file != nullptr);
+
+        /* Open the lock file. */
+        std::unique_ptr<fs::fsa::IFile> file;
+        R_TRY_CATCH(m_base_fs->OpenFile(std::addressof(file), LockFilePath, fs::OpenMode_ReadWrite)) {
+            /* If the lock file doesn't yet exist, we may need to create it. */
+            R_CATCH(fs::ResultPathNotFound) {
+                R_TRY(m_base_fs->CreateFile(LockFilePath, 0));
+                R_TRY(m_base_fs->OpenFile(std::addressof(file), LockFilePath, fs::OpenMode_ReadWrite));
+            }
+        } R_END_TRY_CATCH;
+
+        /* Set our lock file. */
+        m_lock_file = std::move(file);
+        R_SUCCEED();
+    }
+
+    void DirectorySaveDataFileSystem::DecrementWriteOpenFileCount() {
         std::scoped_lock lk(m_accessor_mutex);
-        m_open_writable_files--;
 
-        /* Nintendo does not check this, but I think it's sensible to do so. */
-        AMS_ABORT_UNLESS(m_open_writable_files >= 0);
+        --m_open_writable_files;
     }
 
-    Result DirectorySaveDataFileSystem::CopySaveFromFileSystem(fs::fsa::IFileSystem *save_fs) {
-        /* If the input save is null, there's nothing to copy. */
-        R_SUCCEED_IF(save_fs == nullptr);
+    Result DirectorySaveDataFileSystem::DoCreateFile(const fs::Path &path, s64 size, int option) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
 
-        /* Get a work buffer to work with. */
-        std::unique_ptr<u8[]> work_buf;
-        size_t work_buf_size;
-        R_TRY(this->AllocateWorkBuffer(std::addressof(work_buf), std::addressof(work_buf_size), IdealWorkBufferSize));
-
-        /* Copy the directory recursively. */
-        R_TRY(fssystem::CopyDirectoryRecursively(m_base_fs, save_fs, fs::PathNormalizer::RootPath, fs::PathNormalizer::RootPath, work_buf.get(), work_buf_size));
-
-        return this->Commit();
-    }
-
-    /* Overridden from IPathResolutionFileSystem */
-    Result DirectorySaveDataFileSystem::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
-        char full_path[fs::EntryNameLengthMax + 1];
-        R_TRY(this->ResolveFullPath(full_path, sizeof(full_path), path));
-
+        /* Lock ourselves. */
         std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->CreateFile(resolved, size, option));
+    }
+    Result DirectorySaveDataFileSystem::DoDeleteFile(const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->DeleteFile(resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoCreateDirectory(const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->CreateDirectory(resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoDeleteDirectory(const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->DeleteDirectory(resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoDeleteDirectoryRecursively(const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->DeleteDirectoryRecursively(resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) {
+        /* Resolve the final paths. */
+        fs::Path old_resolved;
+        fs::Path new_resolved;
+        R_TRY(this->ResolvePath(std::addressof(old_resolved), old_path));
+        R_TRY(this->ResolvePath(std::addressof(new_resolved), new_path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->RenameFile(old_resolved, new_resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) {
+        /* Resolve the final paths. */
+        fs::Path old_resolved;
+        fs::Path new_resolved;
+        R_TRY(this->ResolvePath(std::addressof(old_resolved), old_path));
+        R_TRY(this->ResolvePath(std::addressof(new_resolved), new_path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->RenameDirectory(old_resolved, new_resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoGetEntryType(fs::DirectoryEntryType *out, const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->GetEntryType(out, resolved));
+    }
+
+    Result DirectorySaveDataFileSystem::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const fs::Path &path, fs::OpenMode mode) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        /* Open base file. */
         std::unique_ptr<fs::fsa::IFile> base_file;
-        R_TRY(m_base_fs->OpenFile(std::addressof(base_file), full_path, mode));
+        R_TRY(m_base_fs->OpenFile(std::addressof(base_file), resolved, mode));
 
-        std::unique_ptr<DirectorySaveDataFile> file(new (std::nothrow) DirectorySaveDataFile(std::move(base_file), this, mode));
+        /* Make DirectorySaveDataFile. */
+        std::unique_ptr<fs::fsa::IFile> file = std::make_unique<DirectorySaveDataFile>(std::move(base_file), this, mode);
         R_UNLESS(file != nullptr, fs::ResultAllocationFailureInDirectorySaveDataFileSystem());
 
+        /* Increment our open writable files, if the file is writable. */
         if (mode & fs::OpenMode_Write) {
-            m_open_writable_files++;
+            ++m_open_writable_files;
         }
 
+        /* Set the output. */
         *out_file = std::move(file);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result DirectorySaveDataFileSystem::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const fs::Path &path, fs::OpenDirectoryMode mode) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->OpenDirectory(out_dir, resolved, mode));
     }
 
     Result DirectorySaveDataFileSystem::DoCommit() {
-        /* Here, Nintendo does the following (with retries): */
-        /* - Rename Committed -> Synchronizing. */
-        /* - Synchronize Working -> Synchronizing (deleting Synchronizing). */
-        /* - Rename Synchronizing -> Committed. */
+        /* Lock ourselves. */
         std::scoped_lock lk(m_accessor_mutex);
 
-        R_UNLESS(m_open_writable_files == 0, fs::ResultPreconditionViolation());
+        /* If we aren't journaling, we don't need to do anything. */
+        R_SUCCEED_IF(!m_is_journaling_enabled);
+        R_SUCCEED_IF(!m_is_journaling_supported);
 
-        const auto RenameCommitedDir      = [&]() { return m_base_fs->RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath); };
-        const auto SynchronizeWorkingDir  = [&]() { return this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath); };
-        const auto RenameSynchronizingDir = [&]() { return m_base_fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath); };
+        /* Check that there are no open files blocking the commit. */
+        R_UNLESS(m_open_writable_files == 0, fs::ResultWriteModeFileNotClosed());
 
-        /* Rename Committed -> Synchronizing. */
-        R_TRY(fssystem::RetryFinitelyForTargetLocked(std::move(RenameCommitedDir)));
+        /* Remove the previous commit by renaming the folder. */
+        R_TRY(fssystem::RetryFinitelyForTargetLocked([&] () ALWAYS_INLINE_LAMBDA { R_RETURN(m_base_fs->RenameDirectory(CommittedDirectoryPath, SynchronizingDirectoryPath)); }));
 
-        /* - Synchronize Working -> Synchronizing (deleting Synchronizing). */
-        R_TRY(fssystem::RetryFinitelyForTargetLocked(std::move(SynchronizeWorkingDir)));
+        /* Synchronize the working directory to the synchronizing directory. */
+        R_TRY(fssystem::RetryFinitelyForTargetLocked([&] () ALWAYS_INLINE_LAMBDA { R_RETURN(this->SynchronizeDirectory(SynchronizingDirectoryPath, WorkingDirectoryPath)); }));
 
-        /* - Rename Synchronizing -> Committed. */
-        R_TRY(fssystem::RetryFinitelyForTargetLocked(std::move(RenameSynchronizingDir)));
+        /* Rename the synchronized directory to commit it. */
+        R_TRY(fssystem::RetryFinitelyForTargetLocked([&] () ALWAYS_INLINE_LAMBDA { R_RETURN(m_base_fs->RenameDirectory(SynchronizingDirectoryPath, CommittedDirectoryPath)); }));
 
-        /* TODO: Should I call m_base_fs->Commit()? Nintendo does not. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    /* Overridden from IPathResolutionFileSystem but not commands. */
+    Result DirectorySaveDataFileSystem::DoGetFreeSpaceSize(s64 *out, const fs::Path &path) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        /* Get the free space size in our working directory. */
+        AMS_UNUSED(path);
+        R_RETURN(m_base_fs->GetFreeSpaceSize(out, WorkingDirectoryPath));
+    }
+
+    Result DirectorySaveDataFileSystem::DoGetTotalSpaceSize(s64 *out, const fs::Path &path) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        /* Get the free space size in our working directory. */
+        AMS_UNUSED(path);
+        R_RETURN(m_base_fs->GetTotalSpaceSize(out, WorkingDirectoryPath));
+    }
+
+    Result DirectorySaveDataFileSystem::DoCleanDirectoryRecursively(const fs::Path &path) {
+        /* Resolve the final path. */
+        fs::Path resolved;
+        R_TRY(this->ResolvePath(std::addressof(resolved), path));
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_accessor_mutex);
+
+        R_RETURN(m_base_fs->CleanDirectoryRecursively(resolved));
+    }
+
     Result DirectorySaveDataFileSystem::DoCommitProvisionally(s64 counter) {
-        /* Nintendo does nothing here. */
+        /* Check that we support multi-commit. */
+        R_UNLESS(m_is_multi_commit_supported, fs::ResultUnsupportedOperationInDirectorySaveDataFileSystemA());
+
+        /* Do nothing. */
         AMS_UNUSED(counter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DirectorySaveDataFileSystem::DoRollback() {
-        /* Initialize overwrites the working directory with the committed directory. */
-        return this->Initialize();
-    }
+        /* On non-journaled savedata, there's nothing to roll back to. */
+        R_SUCCEED_IF(!m_is_journaling_supported);
 
-    /* Explicitly overridden to be not implemented. */
-    Result DirectorySaveDataFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
-        AMS_UNUSED(out, path);
-        return fs::ResultNotImplemented();
-    }
-
-    Result DirectorySaveDataFileSystem::DoGetTotalSpaceSize(s64 *out, const char *path) {
-        AMS_UNUSED(out, path);
-        return fs::ResultNotImplemented();
-    }
-
-    Result DirectorySaveDataFileSystem::DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) {
-        AMS_UNUSED(out, path);
-        return fs::ResultNotImplemented();
-    }
-
-    Result DirectorySaveDataFileSystem::DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
-        AMS_UNUSED(dst, dst_size, src, src_size, query, path);
-        return fs::ResultNotImplemented();
-    }
-
-    Result DirectorySaveDataFileSystem::DoFlush() {
-        return fs::ResultNotImplemented();
+        /* Perform a re-initialize. */
+        R_RETURN(this->Initialize(m_is_journaling_supported, m_is_multi_commit_supported, m_is_journaling_enabled));
     }
 
 }

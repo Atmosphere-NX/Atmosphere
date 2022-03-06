@@ -19,6 +19,8 @@
 
 #if defined(ATMOSPHERE_OS_HORIZON)
     #include <stratosphere/os/impl/os_internal_busy_mutex_impl.os.horizon.hpp>
+#elif defined(ATMOSPHERE_OS_WINDOWS) || defined(ATMOSPHERE_OS_LINUX) || defined(ATMOSPHERE_OS_MACOS)
+    #include <stratosphere/os/impl/os_internal_busy_mutex_impl.os.generic.hpp>
 #else
     #error "Unknown OS for ams::os::impl::InternalBusyMutexImpl"
 #endif
@@ -31,10 +33,10 @@ namespace ams::os::impl {
         public:
             constexpr InternalBusyMutex() : m_impl() { /* ... */ }
 
-            constexpr void Initialize() { m_impl.Initialize(); }
-            constexpr void Finalize()   { m_impl.Finalize(); }
+            ALWAYS_INLINE void Initialize() { m_impl.Initialize(); }
+            ALWAYS_INLINE void Finalize()   { m_impl.Finalize(); }
 
-            bool IsLocked() const { return m_impl.IsLocked(); }
+            ALWAYS_INLINE bool IsLocked() const { return m_impl.IsLocked(); }
 
             ALWAYS_INLINE void Lock()    { return m_impl.Lock(); }
             ALWAYS_INLINE bool TryLock() { return m_impl.TryLock(); }

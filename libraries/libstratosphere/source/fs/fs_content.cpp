@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_file_system_proxy_service_object.hpp"
+#include "impl/fs_file_system_service_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -30,45 +32,75 @@ namespace ams::fs {
             }
         }
 
-        Result MountContentImpl(const char *name, const char *path, u64 id, impl::FileSystemProxyType type) {
-            /* Open a filesystem using libnx bindings. */
-            FsFileSystem fs;
-            R_TRY(fsOpenFileSystemWithId(std::addressof(fs), id, static_cast<::FsFileSystemType>(type), path));
-
-            /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_unique<RemoteFileSystem>(fs);
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentA());
-
-            /* Register. */
-            return fsa::Register(name, std::move(fsa));
-        }
-
-        Result MountContent(const char *name, const char *path, u64 id, ContentType content_type) {
+        Result MountContentImpl(const char *name, const char *path, u64 id, ContentType type) {
             /* Validate the mount name. */
             R_TRY(impl::CheckMountNameAllowingReserved(name));
 
             /* Validate the path. */
             R_UNLESS(path != nullptr, fs::ResultInvalidPath());
 
-            /* Mount the content. */
-            return MountContentImpl(name, path, id, ConvertToFileSystemProxyType(content_type));
+            /* Convert the path for fsp. */
+            fssrv::sf::FspPath sf_path;
+            R_TRY(fs::ConvertToFspPath(std::addressof(sf_path), path));
+
+            /* Open the filesystem. */
+            auto fsp = impl::GetFileSystemProxyServiceObject();
+            sf::SharedPointer<fssrv::sf::IFileSystem> fs;
+            R_TRY(fsp->OpenFileSystemWithId(std::addressof(fs), sf_path, id, ConvertToFileSystemProxyType(type)));
+
+            /* Allocate a new filesystem wrapper. */
+            auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentA());
+
+            /* Register. */
+            R_RETURN(fsa::Register(name, std::move(fsa)));
         }
 
     }
 
     Result MountContent(const char *name, const char *path, ContentType content_type) {
-        /* This API only supports mounting Meta content. */
-        AMS_ABORT_UNLESS(content_type == ContentType_Meta);
+        auto mount_impl = [=]() -> Result {
+            /* This API only supports mounting Meta content. */
+            R_UNLESS(content_type == ContentType_Meta, fs::ResultInvalidArgument());
 
-        return MountContent(name, path, ncm::InvalidProgramId, content_type);
+            R_RETURN(MountContentImpl(name, path, ncm::InvalidProgramId.value, content_type));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CONTENT_PATH(name, path, content_type)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
     Result MountContent(const char *name, const char *path, ncm::ProgramId id, ContentType content_type) {
-        return MountContent(name, path, id.value, content_type);
+        auto mount_impl = [=]() -> Result {
+            R_RETURN(MountContentImpl(name, path, id.value, content_type));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CONTENT_PATH_AND_PROGRAM_ID(name, path, id, content_type)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
     Result MountContent(const char *name, const char *path, ncm::DataId id, ContentType content_type) {
-        return MountContent(name, path, id.value, content_type);
+        auto mount_impl = [=]() -> Result {
+            R_RETURN(MountContentImpl(name, path, id.value, content_type));
+        };
+
+        /* Perform the mount. */
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_SYSTEM_MOUNT(mount_impl(), name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT_CONTENT_PATH_AND_DATA_ID(name, path, id, content_type)));
+
+        /* Enable access logging. */
+        AMS_FS_IMPL_ACCESS_LOG_SYSTEM_FS_ACCESSOR_ENABLE(name);
+
+        R_SUCCEED();
     }
 
 }

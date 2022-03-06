@@ -34,20 +34,21 @@ namespace ams::crypto::impl {
             static constexpr size_t HashSize  = 0x20;
             static constexpr size_t BlockSize = 0x40;
         private:
-            struct State {
-                u32 intermediate_hash[HashSize / sizeof(u32)];
-                u8  buffer[BlockSize];
-                u64 bits_consumed;
-                size_t num_buffered;
-                bool finalized;
+            enum State {
+                State_None,
+                State_Initialized,
+                State_Done,
             };
         private:
+            u32 m_intermediate_hash[HashSize / sizeof(u32)];
+            u8 m_buffer[BlockSize];
+            size_t m_buffered_bytes;
+            u64 m_bits_consumed;
             State m_state;
         public:
-            Sha256Impl() { m_state.finalized = false; }
+            Sha256Impl() : m_state(State_None) { /* ... */ }
             ~Sha256Impl() {
-                static_assert(std::is_trivially_destructible<State>::value);
-                ClearMemory(std::addressof(m_state), sizeof(m_state));
+                ClearMemory(this, sizeof(*this));
             }
 
             void Initialize();
@@ -57,14 +58,18 @@ namespace ams::crypto::impl {
             void InitializeWithContext(const Sha256Context *context);
             size_t GetContext(Sha256Context *context) const;
 
-            size_t GetBufferedDataSize() const { return m_state.num_buffered; }
+            size_t GetBufferedDataSize() const { return m_buffered_bytes; }
 
             void GetBufferedData(void *dst, size_t dst_size) const {
                 AMS_ASSERT(dst_size >= this->GetBufferedDataSize());
                 AMS_UNUSED(dst_size);
 
-                std::memcpy(dst, m_state.buffer, this->GetBufferedDataSize());
+                std::memcpy(dst, m_buffer, m_buffered_bytes);
             }
+        private:
+            void ProcessBlock(const void *data);
+            void ProcessBlocks(const u8 *data, size_t block_count);
+            void ProcessLastBlock();
     };
 
     static_assert(HashFunction<Sha256Impl>);

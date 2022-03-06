@@ -89,7 +89,7 @@ namespace ams::sf {
                     return DefaultDeallocate(buffer, size, alignment);
                 }
 
-                virtual bool IsEqualImpl(const MemoryResource &resource) const {
+                virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                     return this == std::addressof(resource);
                 }
         };

@@ -31,7 +31,7 @@ namespace ams::err {
                 };
             }
 
-            ALWAYS_INLINE Result ConvertErrorCodeToResult(const ErrorCode &error_code) {
+            [[maybe_unused]] ALWAYS_INLINE Result ConvertErrorCodeToResult(const ErrorCode &error_code) {
                 const auto result_value = ::ams::result::impl::ResultTraits::MakeValue(error_code.category - ErrorCodeCategoryPlatformPrefixForResultModule, error_code.number);
                 return ::ams::result::impl::MakeResult(result_value);
             }

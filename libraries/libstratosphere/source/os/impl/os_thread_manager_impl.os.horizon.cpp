@@ -50,14 +50,15 @@ namespace ams::os::impl {
 
     ThreadManagerHorizonImpl::ThreadManagerHorizonImpl(ThreadType *main_thread) {
         /* Get the thread impl object from libnx. */
-        ThreadImpl *thread_impl = ::threadGetSelf();
+        ThreadType::ThreadImpl *thread_impl = ::threadGetSelf();
+        auto * const original_thread_impl   = thread_impl;
 
         /* Hack around libnx's main thread, to ensure stratosphere thread type consistency. */
         {
             auto *tlr = reinterpret_cast<uintptr_t *>(svc::GetThreadLocalRegion());
             for (size_t i = sizeof(svc::ThreadLocalRegion) / sizeof(uintptr_t); i > 0; --i) {
-                if (auto *candidate = reinterpret_cast<ThreadImpl *>(tlr[i - 1]); candidate == thread_impl) {
-                    ThreadImpl *embedded_thread = std::addressof(main_thread->thread_impl_storage);
+                if (auto *candidate = reinterpret_cast<ThreadType::ThreadImpl *>(tlr[i - 1]); candidate == thread_impl) {
+                    ThreadType::ThreadImpl *embedded_thread = std::addressof(main_thread->thread_impl_storage);
 
                     *embedded_thread = *thread_impl;
 
@@ -77,6 +78,9 @@ namespace ams::os::impl {
         R_ABORT_UNLESS(svc::GetThreadPriority(std::addressof(horizon_priority), thread_impl->handle));
 
         SetupThreadObjectUnsafe(main_thread, thread_impl, nullptr, nullptr, thread_impl->stack_mirror, thread_impl->stack_sz, ConvertToUserPriority(horizon_priority));
+
+        /* Fix up the thread impl. */
+        *thread_impl = *original_thread_impl;
 
         /* Set the thread id. */
         u64 thread_id;
@@ -184,10 +188,6 @@ namespace ams::os::impl {
         R_ABORT_UNLESS(svc::SetThreadActivity(thread->thread_impl->handle, svc::ThreadActivity_Runnable));
     }
 
-    void ThreadManagerHorizonImpl::CancelThreadSynchronizationUnsafe(ThreadType *thread) {
-        R_ABORT_UNLESS(svc::CancelSynchronization(thread->thread_impl->handle));
-    }
-
     /* TODO: void GetThreadContextUnsafe(ThreadContextInfo *out_context, const ThreadType *thread); */
 
     s32 ThreadManagerHorizonImpl::GetCurrentCoreNumber() const {
@@ -216,6 +216,19 @@ namespace ams::os::impl {
         u64 core_mask;
         R_ABORT_UNLESS(svc::GetInfo(std::addressof(core_mask), svc::InfoType_CoreMask, svc::PseudoHandle::CurrentProcess, 0));
         return core_mask;
+    }
+
+    bool ThreadManagerHorizonImpl::MapAliasStack(void **out, void *stack, size_t size) {
+        /* TODO: This will need to be real, if we ever stop using libnx threads. */
+        AMS_UNUSED(stack, size);
+        *out = stack;
+        return true;
+    }
+
+    bool ThreadManagerHorizonImpl::UnmapAliasStack(void *alias_stack, void *original_stack, size_t size) {
+        /* TODO: This will need to be real, if we ever stop using libnx threads. */
+        AMS_UNUSED(alias_stack, original_stack, size);
+        return true;
     }
 
 

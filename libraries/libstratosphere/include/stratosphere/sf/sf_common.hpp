@@ -19,3 +19,5 @@
 #include <stratosphere/ams.hpp>
 #include <stratosphere/os.hpp>
 #include <stratosphere/sm/sm_types.hpp>
+#include <stratosphere/sf/sf_types.hpp>
+#include <stratosphere/sf/sf_mitm_config.hpp>

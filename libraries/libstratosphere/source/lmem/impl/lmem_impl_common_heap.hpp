@@ -41,19 +41,19 @@ namespace ams::lmem::impl {
             }
     };
 
-    constexpr inline MemoryRange MakeMemoryRange(void *address, size_t size) {
+    ALWAYS_INLINE MemoryRange MakeMemoryRange(void *address, size_t size) {
         return MemoryRange{ .address = reinterpret_cast<uintptr_t>(address), .size = size };
     }
 
-    constexpr inline void *GetHeapStartAddress(HeapHandle handle) {
+    ALWAYS_INLINE void *GetHeapStartAddress(HeapHandle handle) {
         return handle->heap_start;
     }
 
-    constexpr inline size_t GetPointerDifference(const void *start, const void *end) {
+    ALWAYS_INLINE size_t GetPointerDifference(const void *start, const void *end) {
         return reinterpret_cast<uintptr_t>(end) - reinterpret_cast<uintptr_t>(start);
     }
 
-    constexpr inline size_t GetPointerDifference(uintptr_t start, uintptr_t end) {
+    constexpr ALWAYS_INLINE size_t GetPointerDifference(uintptr_t start, uintptr_t end) {
         return end - start;
     }
 

@@ -55,7 +55,7 @@ namespace ams::fs::impl {
     ({                                                      \
         const ::ams::Result __tmp_fs_result = (__RESULT__); \
         AMS_FS_R_CHECK_ABORT_IMPL(__tmp_fs_result, false);  \
-        return __tmp_fs_result;                             \
+        R_THROW(__tmp_fs_result);                           \
     })
 
 #define AMS_FS_R_UNLESS(__EXPR__, __RESULT__)               \

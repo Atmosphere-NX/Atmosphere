@@ -20,5 +20,5 @@
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     #include <stratosphere/i2c/i2c_device_name.board.nintendo_nx.hpp>
 #else
-    /* Error? */
+    #include <stratosphere/i2c/i2c_device_name.generic.hpp>
 #endif

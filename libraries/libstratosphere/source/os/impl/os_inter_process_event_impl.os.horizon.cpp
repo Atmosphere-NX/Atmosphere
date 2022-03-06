@@ -20,7 +20,7 @@
 
 namespace ams::os::impl {
 
-    Result InterProcessEventImpl::Create(NativeHandle *out_write, NativeHandle *out_read) {
+    Result InterProcessEventHorizonImpl::Create(NativeHandle *out_write, NativeHandle *out_read) {
         /* Create the event handles. */
         svc::Handle wh, rh;
         R_TRY_CATCH(svc::CreateEvent(std::addressof(wh), std::addressof(rh))) {
@@ -32,21 +32,21 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    void InterProcessEventImpl::Close(NativeHandle handle) {
+    void InterProcessEventHorizonImpl::Close(NativeHandle handle) {
         if (handle != os::InvalidNativeHandle) {
             R_ABORT_UNLESS(svc::CloseHandle(handle));
         }
     }
 
-    void InterProcessEventImpl::Signal(NativeHandle handle) {
+    void InterProcessEventHorizonImpl::Signal(NativeHandle handle) {
         R_ABORT_UNLESS(svc::SignalEvent(handle));
     }
 
-    void InterProcessEventImpl::Clear(NativeHandle handle) {
+    void InterProcessEventHorizonImpl::Clear(NativeHandle handle) {
         R_ABORT_UNLESS(svc::ClearEvent(handle));
     }
 
-    void InterProcessEventImpl::Wait(NativeHandle handle, bool auto_clear) {
+    void InterProcessEventHorizonImpl::Wait(NativeHandle handle, bool auto_clear) {
         while (true) {
             /* Continuously wait, until success. */
             s32 index;
@@ -67,7 +67,7 @@ namespace ams::os::impl {
         }
     }
 
-    bool InterProcessEventImpl::TryWait(NativeHandle handle, bool auto_clear) {
+    bool InterProcessEventHorizonImpl::TryWait(NativeHandle handle, bool auto_clear) {
         /* If we're auto clear, just try to reset. */
         if (auto_clear) {
             return R_SUCCEEDED(svc::ResetSignal(handle));
@@ -93,7 +93,7 @@ namespace ams::os::impl {
         }
     }
 
-    bool InterProcessEventImpl::TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout) {
+    bool InterProcessEventHorizonImpl::TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout) {
         TimeoutHelper timeout_helper(timeout);
 
         while (true) {

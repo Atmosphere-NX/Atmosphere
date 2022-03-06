@@ -50,16 +50,16 @@ namespace ams::tipc {
                 static_assert(NumPorts > 0);
 
                 /* Verify that it's possible to service this many sessions, with our port manager count. */
-                static_assert(MaxSessions <= NumPorts * svc::ArgumentHandleCountMax);
+                static_assert(MaxSessions <= NumPorts * MaximumSessionsPerPort);
 
                 static_assert(util::IsAligned(ThreadStackSize, os::ThreadStackAlignment));
                 alignas(os::ThreadStackAlignment) static constinit inline u8 s_port_stacks[ThreadStackSize * (NumPorts - 1)];
 
-                template<size_t Ix> requires (Ix < NumPorts)
+                template<size_t Ix> AMS_CONCEPTS_REQUIRES_IF_SUPPORTED(Ix < NumPorts)
                 static constexpr inline size_t SessionsPerPortManager = (Ix == NumPorts - 1) ? ((MaxSessions / NumPorts) + MaxSessions % NumPorts)
                                                                                              : ((MaxSessions / NumPorts));
 
-                template<size_t Ix> requires (Ix < NumPorts)
+                template<size_t Ix> AMS_CONCEPTS_REQUIRES_IF_SUPPORTED(Ix < NumPorts)
                 using PortInfo = typename std::tuple_element<Ix, std::tuple<PortInfos...>>::type;
 
                 static_assert(IsDeferralSupported == (PortInfos::CanDeferInvokeRequest || ...));
@@ -69,7 +69,7 @@ namespace ams::tipc {
 
                 using DeferralManagerBaseType = typename std::conditional<IsDeferralSupported, DeferralManagerBase, DummyDeferralManagerBase>::type;
 
-                template<size_t Ix> requires (Ix < NumPorts)
+                template<size_t Ix> AMS_CONCEPTS_REQUIRES_IF_SUPPORTED(Ix < NumPorts)
                 static constexpr inline bool IsPortDeferrable = PortInfo<Ix>::CanDeferInvokeRequest;
             public:
                 class PortManagerBase {
@@ -125,7 +125,7 @@ namespace ams::tipc {
                             m_deferral_manager = dm;
                         }
 
-                        void RegisterPort(s32 index, os::NativeHandle port_handle) {
+                        void RegisterPort(s32 index, tipc::NativeHandle port_handle) {
                             /* Set our port number. */
                             m_port_number = index;
 
@@ -139,7 +139,7 @@ namespace ams::tipc {
                             m_object_manager->AddObject(object);
                         }
 
-                        os::NativeHandle ProcessRequest(ObjectHolder &object) {
+                        tipc::NativeHandle ProcessRequest(ObjectHolder &object) {
                             /* Acquire exclusive server manager access. */
                             std::scoped_lock lk(m_server_manager->GetMutex());
 
@@ -147,13 +147,13 @@ namespace ams::tipc {
                             const Result result = m_object_manager->ProcessRequest(object);
                             if (R_SUCCEEDED(result)) {
                                 /* We should reply only if the request isn't deferred. */
-                                return !IsRequestDeferred() ? object.GetHandle() : os::InvalidNativeHandle;
+                                return !IsRequestDeferred() ? object.GetHandle() : tipc::InvalidNativeHandle;
                             } else {
                                 /* Processing failed, so note the session as closed (or close it). */
                                 this->CloseSessionIfNecessary(object, !tipc::ResultSessionClosed::Includes(result));
 
                                 /* We shouldn't reply on failure. */
-                                return os::InvalidNativeHandle;
+                                return tipc::InvalidNativeHandle;
                             }
                         }
 
@@ -161,15 +161,15 @@ namespace ams::tipc {
                         void ProcessDeferredRequest(ObjectHolder &object) {
                             static_assert(Enable == IsDeferralSupported);
 
-                            if (const auto reply_target = this->ProcessRequest(object); reply_target != os::InvalidNativeHandle) {
+                            if (const auto reply_target = this->ProcessRequest(object); reply_target != tipc::InvalidNativeHandle) {
                                 m_object_manager->Reply(reply_target);
                             }
                         }
 
-                        bool ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, os::NativeHandle reply_target) {
+                        bool ReplyAndReceive(os::MultiWaitHolderType **out_holder, ObjectHolder *out_object, tipc::NativeHandle reply_target) {
                             /* If we don't have a reply target, clear our message buffer. */
-                            if (reply_target == os::InvalidNativeHandle) {
-                                svc::ipc::MessageBuffer(svc::ipc::GetMessageBuffer()).SetNull();
+                            if (reply_target == tipc::InvalidNativeHandle) {
+                                tipc::MessageBuffer(tipc::GetMessageBuffer()).SetNull();
                             }
 
                             /* Try to reply/receive. */
@@ -192,7 +192,7 @@ namespace ams::tipc {
                             return true;
                         }
 
-                        void AddSession(os::NativeHandle session_handle, tipc::ServiceObjectBase *service_object) {
+                        void AddSession(tipc::NativeHandle session_handle, tipc::ServiceObjectBase *service_object) {
                             /* Create an object holder for the session. */
                             tipc::ObjectHolder object;
 
@@ -215,7 +215,7 @@ namespace ams::tipc {
                                     case MessageType_AddSession:
                                         {
                                             /* Get the handle from where it's packed into the message type. */
-                                            const os::NativeHandle session_handle = static_cast<os::NativeHandle>(message_type >> BITSIZEOF(u32));
+                                            const tipc::NativeHandle session_handle = tipc::DecodeNativeHandleForMessageQueue(message_type >> BITSIZEOF(u32));
 
                                             /* Allocate a service object for the port. */
                                             auto *service_object = m_server_manager->AllocateObject(static_cast<size_t>(message_data), session_handle, *m_deferral_manager);
@@ -243,7 +243,7 @@ namespace ams::tipc {
                             m_object_manager->CloseObject(handle);
 
                             /* Close the handle itself. */
-                            R_ABORT_UNLESS(svc::CloseHandle(handle));
+                            R_ABORT_UNLESS(tipc::impl::CloseHandle(handle));
 
                             /* Decrement our session count. */
                             --m_num_sessions;
@@ -258,7 +258,7 @@ namespace ams::tipc {
                                 m_object_manager->CloseObject(handle);
 
                                 /* Close the handle itself. */
-                                R_ABORT_UNLESS(svc::CloseHandle(handle));
+                                R_ABORT_UNLESS(tipc::impl::CloseHandle(handle));
                             }
 
                             /* Decrement our session count. */
@@ -286,12 +286,12 @@ namespace ams::tipc {
                             os::SendMessageQueue(std::addressof(m_message_queue), key);
                         }
 
-                        void TriggerAddSession(os::NativeHandle session_handle, size_t port_index) {
+                        void TriggerAddSession(tipc::NativeHandle session_handle, size_t port_index) {
                             /* Increment our session count. */
                             ++m_num_sessions;
 
                             /* Send information about the session as a message. */
-                            os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(MessageType_AddSession) | (static_cast<u64>(session_handle) << BITSIZEOF(u32)));
+                            os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(MessageType_AddSession) | (static_cast<u64>(tipc::EncodeNativeHandleForMessageQueue(session_handle)) << BITSIZEOF(u32)));
                             os::SendMessageQueue(std::addressof(m_message_queue), static_cast<uintptr_t>(port_index));
                         }
                     private:
@@ -306,11 +306,11 @@ namespace ams::tipc {
                         static bool IsRequestDeferred() {
                             if constexpr (IsDeferralSupported) {
                                 /* Get the message buffer. */
-                                const svc::ipc::MessageBuffer message_buffer(svc::ipc::GetMessageBuffer());
+                                const tipc::MessageBuffer message_buffer(tipc::GetMessageBuffer());
 
                                 /* Parse the hipc headers. */
-                                const svc::ipc::MessageBuffer::MessageHeader message_header(message_buffer);
-                                const svc::ipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
+                                const tipc::MessageBuffer::MessageHeader message_header(message_buffer);
+                                const tipc::MessageBuffer::SpecialHeader special_header(message_buffer, message_header);
 
                                 /* Determine raw data index. */
                                 const auto raw_data_offset = message_buffer.GetRawDataIndex(message_header, special_header);
@@ -406,14 +406,14 @@ namespace ams::tipc {
                 }
 
                 template<size_t Ix>
-                void RegisterPort(os::NativeHandle port_handle) {
+                void RegisterPort(tipc::NativeHandle port_handle) {
                     this->GetPortManager<Ix>().RegisterPort(static_cast<s32>(Ix), port_handle);
                 }
 
                 template<size_t Ix>
                 void RegisterPort(sm::ServiceName service_name, size_t max_sessions) {
                     /* Register service. */
-                    os::NativeHandle port_handle;
+                    tipc::NativeHandle port_handle;
                     R_ABORT_UNLESS(sm::RegisterService(std::addressof(port_handle), service_name, max_sessions, false));
 
                     /* Register the port handle. */
@@ -454,7 +454,7 @@ namespace ams::tipc {
                     this->LoopAutoForPort<NumPorts - 1>();
                 }
 
-                tipc::ServiceObjectBase *AllocateObject(size_t port_index, os::NativeHandle handle, DeferralManagerBaseType &deferral_manager) {
+                tipc::ServiceObjectBase *AllocateObject(size_t port_index, tipc::NativeHandle handle, DeferralManagerBaseType &deferral_manager) {
                     /* Check that the port index is valid. */
                     AMS_ABORT_UNLESS(port_index < NumPorts);
 
@@ -483,13 +483,13 @@ namespace ams::tipc {
                     }(std::make_index_sequence<NumPorts>());
                 }
 
-                Result AddSession(os::NativeHandle *out, tipc::ServiceObjectBase *object) {
+                Result AddSession(tipc::NativeHandle *out, tipc::ServiceObjectBase *object) {
                     /* Acquire exclusive access to ourselves. */
                     std::scoped_lock lk(m_mutex);
 
                     /* Create a handle for the session. */
-                    svc::Handle session_handle;
-                    R_TRY(svc::CreateSession(std::addressof(session_handle), static_cast<svc::Handle *>(out), false, 0));
+                    tipc::NativeHandle session_handle;
+                    R_TRY(tipc::impl::CreateSession(std::addressof(session_handle), static_cast<tipc::NativeHandle *>(out), false, 0));
 
                     /* Select the best port manager. */
                     PortManagerBase *best_manager = nullptr;
@@ -505,7 +505,7 @@ namespace ams::tipc {
                 }
             private:
                 template<size_t Ix> requires (Ix < NumPorts)
-                void TryAllocateObject(size_t port_index, os::NativeHandle handle, DeferralManagerBaseType &deferral_manager, tipc::ServiceObjectBase *&allocated) {
+                void TryAllocateObject(size_t port_index, tipc::NativeHandle handle, DeferralManagerBaseType &deferral_manager, tipc::ServiceObjectBase *&allocated) {
                     /* Check that the port index matches. */
                     if (port_index == Ix) {
                         /* Check that we haven't already allocated. */
@@ -535,13 +535,13 @@ namespace ams::tipc {
 
                 Result LoopProcess(PortManagerBase &port_manager) {
                     /* Process requests forever. */
-                    os::NativeHandle reply_target = os::InvalidNativeHandle;
+                    tipc::NativeHandle reply_target = tipc::InvalidNativeHandle;
                     while (true) {
                         /* Reply to our pending request, and wait to receive a new one. */
                         os::MultiWaitHolderType *signaled_holder = nullptr;
                         tipc::ObjectHolder signaled_object{};
                         while (!port_manager.ReplyAndReceive(std::addressof(signaled_holder), std::addressof(signaled_object), reply_target)) {
-                            reply_target    = os::InvalidNativeHandle;
+                            reply_target    = tipc::InvalidNativeHandle;
                             signaled_object = {};
                         }
 
@@ -551,13 +551,13 @@ namespace ams::tipc {
                                 case ObjectHolder::ObjectType_Port:
                                     {
                                         /* Try to accept a new session */
-                                        svc::Handle session_handle;
-                                        if (R_SUCCEEDED(svc::AcceptSession(std::addressof(session_handle), signaled_object.GetHandle()))) {
+                                        tipc::NativeHandle session_handle;
+                                        if (R_SUCCEEDED(tipc::impl::AcceptSession(std::addressof(session_handle), signaled_object.GetHandle()))) {
                                             this->TriggerAddSession(session_handle, static_cast<size_t>(port_manager.GetPortIndex()));
                                         }
 
                                         /* We have nothing to reply to. */
-                                        reply_target = os::InvalidNativeHandle;
+                                        reply_target = tipc::InvalidNativeHandle;
                                     }
                                     break;
                                 case ObjectHolder::ObjectType_Session:
@@ -573,12 +573,12 @@ namespace ams::tipc {
                             port_manager.ProcessMessages();
 
                             /* We have nothing to reply to. */
-                            reply_target = os::InvalidNativeHandle;
+                            reply_target = tipc::InvalidNativeHandle;
                         }
                     }
                 }
 
-                void TriggerAddSession(os::NativeHandle session_handle, size_t port_index) {
+                void TriggerAddSession(tipc::NativeHandle session_handle, size_t port_index) {
                     /* Acquire exclusive access to ourselves. */
                     std::scoped_lock lk(m_mutex);
 
@@ -634,7 +634,7 @@ namespace ams::tipc {
                 static constexpr inline size_t MaxSessions = PortInfo::MaxSessions;
 
                 /* Verify that it's possible to service this many sessions, with our port manager count. */
-                static_assert(MaxSessions <= svc::ArgumentHandleCountMax);
+                static_assert(MaxSessions <= MaximumSessionsPerPort);
             public:
                 class PortManagerBase {
                     protected:
@@ -651,7 +651,7 @@ namespace ams::tipc {
                             m_object_manager = om;
                         }
 
-                        void RegisterPort(os::NativeHandle port_handle) {
+                        void RegisterPort(tipc::NativeHandle port_handle) {
                             /* Create an object holder for the port. */
                             tipc::ObjectHolder object;
 
@@ -662,7 +662,7 @@ namespace ams::tipc {
                             m_object_manager->AddObject(object);
                         }
 
-                        os::NativeHandle ProcessRequest(ObjectHolder &object) {
+                        tipc::NativeHandle ProcessRequest(ObjectHolder &object) {
                             /* Process the request. */
                             const Result result = m_object_manager->ProcessRequest(object);
                             if (R_SUCCEEDED(result)) {
@@ -675,14 +675,14 @@ namespace ams::tipc {
                                 }
 
                                 /* We shouldn't reply on failure. */
-                                return os::InvalidNativeHandle;
+                                return tipc::InvalidNativeHandle;
                             }
                         }
 
-                        bool ReplyAndReceive(ObjectHolder *out_object, os::NativeHandle reply_target) {
+                        bool ReplyAndReceive(ObjectHolder *out_object, tipc::NativeHandle reply_target) {
                             /* If we don't have a reply target, clear our message buffer. */
-                            if (reply_target == os::InvalidNativeHandle) {
-                                svc::ipc::MessageBuffer(svc::ipc::GetMessageBuffer()).SetNull();
+                            if (reply_target == tipc::InvalidNativeHandle) {
+                                tipc::MessageBuffer(tipc::GetMessageBuffer()).SetNull();
                             }
 
                             /* Try to reply/receive. */
@@ -704,7 +704,7 @@ namespace ams::tipc {
                             return true;
                         }
 
-                        void AddSession(os::NativeHandle session_handle, tipc::ServiceObjectBase *service_object) {
+                        void AddSession(tipc::NativeHandle session_handle, tipc::ServiceObjectBase *service_object) {
                             /* Create an object holder for the session. */
                             tipc::ObjectHolder object;
 
@@ -723,7 +723,7 @@ namespace ams::tipc {
                             m_object_manager->CloseObject(handle);
 
                             /* Close the handle itself. */
-                            R_ABORT_UNLESS(svc::CloseHandle(handle));
+                            R_ABORT_UNLESS(tipc::impl::CloseHandle(handle));
                         }
                 };
 
@@ -756,13 +756,13 @@ namespace ams::tipc {
                     m_port_manager.Initialize();
                 }
 
-                void RegisterPort(os::NativeHandle port_handle) {
+                void RegisterPort(tipc::NativeHandle port_handle) {
                     m_port_manager.RegisterPort(port_handle);
                 }
 
                 void RegisterPort(sm::ServiceName service_name, size_t max_sessions) {
                     /* Register service. */
-                    os::NativeHandle port_handle;
+                    tipc::NativeHandle port_handle;
                     R_ABORT_UNLESS(sm::RegisterService(std::addressof(port_handle), service_name, max_sessions, false));
 
                     /* Register the port handle. */
@@ -787,10 +787,10 @@ namespace ams::tipc {
                     return new_object;
                 }
 
-                Result AddSession(os::NativeHandle *out, tipc::ServiceObjectBase *object) {
+                Result AddSession(tipc::NativeHandle *out, tipc::ServiceObjectBase *object) {
                     /* Create a handle for the session. */
-                    svc::Handle session_handle;
-                    R_TRY(svc::CreateSession(std::addressof(session_handle), static_cast<svc::Handle *>(out), false, 0));
+                    tipc::NativeHandle session_handle;
+                    R_TRY(tipc::impl::CreateSession(std::addressof(session_handle), static_cast<tipc::NativeHandle *>(out), false, 0));
 
                     /* Add the session to our manager. */
                     m_port_manager.AddSession(session_handle, object);
@@ -800,12 +800,12 @@ namespace ams::tipc {
             private:
                 void LoopProcess(PortManagerBase &port_manager) {
                     /* Process requests forever. */
-                    os::NativeHandle reply_target = os::InvalidNativeHandle;
+                    tipc::NativeHandle reply_target = tipc::InvalidNativeHandle;
                     while (true) {
                         /* Reply to our pending request, and wait to receive a new one. */
                         tipc::ObjectHolder signaled_object{};
                         while (!port_manager.ReplyAndReceive(std::addressof(signaled_object), reply_target)) {
-                            reply_target = os::InvalidNativeHandle;
+                            reply_target = tipc::InvalidNativeHandle;
                         }
 
                         /* A session was signaled, accessible via signaled_object. */
@@ -813,13 +813,13 @@ namespace ams::tipc {
                             case ObjectHolder::ObjectType_Port:
                                 {
                                     /* Try to accept a new session */
-                                    svc::Handle session_handle;
-                                    if (R_SUCCEEDED(svc::AcceptSession(std::addressof(session_handle), signaled_object.GetHandle()))) {
+                                    tipc::NativeHandle session_handle;
+                                    if (R_SUCCEEDED(tipc::impl::AcceptSession(std::addressof(session_handle), signaled_object.GetHandle()))) {
                                         port_manager.AddSession(session_handle, this->AllocateObject());
                                     }
 
                                     /* We have nothing to reply to. */
-                                    reply_target = os::InvalidNativeHandle;
+                                    reply_target = tipc::InvalidNativeHandle;
                                 }
                                 break;
                             case ObjectHolder::ObjectType_Session:

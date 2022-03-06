@@ -18,14 +18,26 @@
 namespace ams::time {
 
     Result GetStandardSteadyClockCurrentTimePoint(SteadyClockTimePoint *out) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         static_assert(sizeof(*out) == sizeof(::TimeSteadyClockTimePoint));
         return ::timeGetStandardSteadyClockTimePoint(reinterpret_cast<::TimeSteadyClockTimePoint *>(out));
+        #else
+        AMS_UNUSED(out);
+        AMS_ABORT("TODO");
+        #endif
     }
 
     TimeSpan GetStandardSteadyClockInternalOffset() {
-        static_assert(sizeof(TimeSpanType) == sizeof(s64));
         TimeSpanType offset;
+
+        #if defined(ATMOSPHERE_OS_HORIZON)
+        static_assert(sizeof(TimeSpanType) == sizeof(s64));
         R_ABORT_UNLESS(::timeGetStandardSteadyClockInternalOffset(reinterpret_cast<s64 *>(std::addressof(offset))));
+        #else
+        AMS_UNUSED(offset);
+        AMS_ABORT("TODO");
+        #endif
+
         return offset;
     }
 

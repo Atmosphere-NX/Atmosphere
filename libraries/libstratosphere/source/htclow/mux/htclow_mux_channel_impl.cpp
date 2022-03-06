@@ -237,7 +237,7 @@ namespace ams::htclow::mux {
         m_state_machine->SetConnecting(m_channel);
 
         /* Allocate a task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
 
         /* Configure the task. */
@@ -295,7 +295,7 @@ namespace ams::htclow::mux {
         R_TRY(this->CheckState({ChannelState_Connected}));
 
         /* Allocate a task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
 
         /* Configure the task. */
@@ -316,7 +316,7 @@ namespace ams::htclow::mux {
         R_TRY(this->CheckState({ChannelState_Connected, ChannelState_Disconnected}));
 
         /* Allocate a task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
 
         /* Configure the task. */
@@ -389,7 +389,7 @@ namespace ams::htclow::mux {
         R_TRY(this->CheckState({ChannelState_Connected}));
 
         /* Allocate a task. */
-        u32 task_id;
+        u32 task_id{};
         R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
 
         /* Send the data. */
