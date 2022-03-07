@@ -192,7 +192,11 @@ namespace ams::fssystem {
     class NcaFileSystemDriver : public ::ams::fs::impl::Newable {
         NON_COPYABLE(NcaFileSystemDriver);
         NON_MOVEABLE(NcaFileSystemDriver);
+        #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
         private:
+        #else
+        public:
+        #endif
             struct StorageContext {
                 bool open_raw_storage;
                 std::shared_ptr<fs::IStorage> body_substorage;
@@ -209,8 +213,11 @@ namespace ams::fssystem {
                 std::shared_ptr<fs::IStorage> fs_data_storage;
                 std::shared_ptr<fs::IStorage> compressed_storage_meta_storage;
                 std::shared_ptr<fssystem::CompressedStorage> compressed_storage;
-            };
 
+                /* For tools. */
+                std::shared_ptr<fs::IStorage> external_original_storage;
+            };
+        private:
             enum AlignmentStorageRequirement {
                 /* TODO */
                 AlignmentStorageRequirement_CacheBlockSize = 0,
@@ -235,7 +242,15 @@ namespace ams::fssystem {
                 AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
             }
 
-            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index);
+            Result OpenStorageWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx);
+
+            Result OpenStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index) {
+                /* Create a storage context. */
+                StorageContext ctx{};
+
+                /* Open the storage. */
+                R_RETURN(OpenStorageWithContext(out, out_splitter, out_header_reader, fs_index, std::addressof(ctx)));
+            }
         private:
             Result OpenStorageImpl(std::shared_ptr<fs::IStorage> *out, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx);
 

@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 #include <vapours/util.hpp>
+#include <vapours/crypto/impl/crypto_block_cipher.hpp>
 
 
 namespace ams::crypto::impl {
@@ -50,6 +50,8 @@ namespace ams::crypto::impl {
         #endif
     };
 
-    /* static_assert(HashFunction<Sha1Impl>); */
+    static_assert(BlockCipher<AesImpl<16>>);
+    static_assert(BlockCipher<AesImpl<24>>);
+    static_assert(BlockCipher<AesImpl<32>>);
 
 }

@@ -55,6 +55,6 @@ namespace ams::crypto::impl {
             void ProcessLastBlock();
     };
 
-    /* static_assert(HashFunction<Sha1Impl>); */
+    static_assert(HashFunction<Sha1Impl>);
 
 }

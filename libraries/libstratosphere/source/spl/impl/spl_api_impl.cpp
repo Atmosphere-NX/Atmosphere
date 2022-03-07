@@ -229,8 +229,7 @@ namespace ams::spl::impl {
 
             os::InitializeInterruptEvent(std::addressof(g_interrupt), g_interrupt_name, os::EventClearMode_AutoClear);
             #else
-            AMS_UNUSED(g_interrupt_name);
-            AMS_ABORT("TODO: How should this work?");
+            AMS_UNUSED(g_interrupt_name, g_interrupt);
             #endif
         }
 
@@ -277,7 +276,9 @@ namespace ams::spl::impl {
         }
 
         void WaitOperation() {
+            #if defined(ATMOSPHERE_OS_HORIZON)
             os::WaitInterruptEvent(std::addressof(g_interrupt));
+            #endif
         }
 
         smc::Result WaitAndGetResult(smc::AsyncOperationKey op_key) {
@@ -310,6 +311,7 @@ namespace ams::spl::impl {
                 u8 out_buffer[crypto::AesEncryptor128::BlockSize];
             };
 
+            #if defined(ATMOSPHERE_OS_HORIZON)
             auto &layout = *reinterpret_cast<DecryptAesLayout *>(g_work_buffer);
 
             layout.crypt_ctx.in.num_entries  = 0;
@@ -342,8 +344,33 @@ namespace ams::spl::impl {
                 }
             }
             os::FlushDataCache(std::addressof(layout.out_buffer), sizeof(layout.out_buffer));
-
             std::memcpy(dst, layout.out_buffer, sizeof(layout.out_buffer));
+            #else
+            {
+                /* Set up buffers. */
+                u8 in_buffer[crypto::AesEncryptor128::BlockSize];
+                u8 out_buffer[crypto::AesEncryptor128::BlockSize];
+                std::memcpy(in_buffer, src, sizeof(in_buffer));
+
+                std::scoped_lock lk(g_operation_lock);
+
+                /* On generic os, we don't worry about the security engine. */
+                smc::AsyncOperationKey op_key;
+                const IvCtr iv_ctr    = {};
+                const u32 mode        = smc::GetComputeAesMode(smc::CipherMode::CbcDecrypt, GetPhysicalAesKeySlot(keyslot, true));
+                smc::Result res = smc::ComputeAes(std::addressof(op_key), reinterpret_cast<uintptr_t>(out_buffer), mode, iv_ctr, reinterpret_cast<uintptr_t>(in_buffer), sizeof(in_buffer));
+                if (res != smc::Result::Success) {
+                    return res;
+                }
+
+                res = WaitAndGetResult(op_key);
+                if (res != smc::Result::Success) {
+                    return res;
+                }
+
+                std::memcpy(dst, out_buffer, sizeof(out_buffer));
+            }
+            #endif
 
             return smc::Result::Success;
         }
@@ -642,6 +669,7 @@ namespace ams::spl::impl {
         R_UNLESS(src_size <= dst_size,                    spl::ResultInvalidBufferSize());
         R_UNLESS(util::IsAligned(src_size, AesBlockSize), spl::ResultInvalidBufferSize());
 
+        #if defined(ATMOSPHERE_OS_HORIZON)
         /* We can only map 4_MB aligned buffers for the SE, so determine where to map our buffers. */
         const uintptr_t src_addr = reinterpret_cast<uintptr_t>(src);
         const uintptr_t dst_addr = reinterpret_cast<uintptr_t>(dst);
@@ -697,6 +725,25 @@ namespace ams::spl::impl {
             }
         }
         os::FlushDataCache(dst, dst_size);
+        #else
+        {
+            std::scoped_lock lk(g_operation_lock);
+
+            const u32 mode = smc::GetComputeAesMode(smc::CipherMode::Ctr, GetPhysicalAesKeySlot(keyslot, true));
+
+            /* On generic os, we don't worry about the security engine. */
+            smc::AsyncOperationKey op_key;
+            smc::Result res = smc::ComputeAes(std::addressof(op_key), reinterpret_cast<uintptr_t>(dst), mode, iv_ctr, reinterpret_cast<uintptr_t>(src), src_size);
+            if (res != smc::Result::Success) {
+                return smc::ConvertResult(res);
+            }
+
+            res = WaitAndGetResult(op_key);
+            if (res != smc::Result::Success) {
+                return smc::ConvertResult(res);
+            }
+        }
+        #endif
 
         return ResultSuccess();
     }

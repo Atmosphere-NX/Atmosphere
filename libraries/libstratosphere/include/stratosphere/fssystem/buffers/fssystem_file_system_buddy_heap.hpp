@@ -125,7 +125,7 @@ namespace ams::fssystem {
             size_t GetBytesFromOrder(s32 order) const {
                 AMS_ASSERT(m_free_lists != nullptr);
                 AMS_ASSERT(0 <= order);
-                AMS_ASSERT(order < this->GetOrderMax());
+                AMS_ASSERT(order <= this->GetOrderMax());
                 return (this->GetBlockSize() << order);
             }
 

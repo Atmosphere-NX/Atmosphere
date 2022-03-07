@@ -31,7 +31,7 @@ namespace ams::fssystem {
 
     template<typename BasePointer>
     AesXtsStorage<BasePointer>::AesXtsStorage(BasePointer base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size) : m_base_storage(std::move(base)), m_block_size(block_size), m_mutex() {
-        AMS_ASSERT(base != nullptr);
+        AMS_ASSERT(m_base_storage != nullptr);
         AMS_ASSERT(key1 != nullptr);
         AMS_ASSERT(key2 != nullptr);
         AMS_ASSERT(iv   != nullptr);

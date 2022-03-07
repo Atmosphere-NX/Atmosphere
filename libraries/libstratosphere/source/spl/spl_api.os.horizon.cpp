@@ -17,9 +17,6 @@
 
 namespace ams::spl {
 
-    /* BIG TODO: How to deal with this? */
-    #if defined(ATMOSPHERE_OS_HORIZON)
-
     namespace {
 
         enum class InitializeMode {
@@ -297,7 +294,5 @@ namespace ams::spl {
             AMS_ABORT_UNLESS(false);
         }
     }
-
-    #endif
 
 }
