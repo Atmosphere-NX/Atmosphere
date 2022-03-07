@@ -746,6 +746,8 @@ namespace ams::fssystem {
                                     std::memset(out_entry->name, 0, sizeof(out_entry->name));
 
                                     const auto name_len = std::strlen(ent->d_name);
+                                    AMS_ABORT_UNLESS(name_len <= fs::EntryNameLengthMax);
+
                                     std::memcpy(out_entry->name, ent->d_name, name_len + 1);
 
                                     out_entry->type = (ent->d_type == DT_DIR) ? fs::DirectoryEntryType_Directory : fs::DirectoryEntryType_File;
@@ -753,6 +755,7 @@ namespace ams::fssystem {
                                     /* If we have to, get the filesize. This is (unfortunately) expensive on linux. */
                                     if (out_entry->type == fs::DirectoryEntryType_File && !m_not_require_file_size) {
                                         /* Set up the temporary file path. */
+                                        AMS_ABORT_UNLESS(base_path_len + name_len + 1 <= PATH_MAX);
                                         std::memcpy(path_buf + base_path_len, ent->d_name, name_len + 1);
 
                                         /* Get the file stats. */
