@@ -126,15 +126,15 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.r[0]);
     }
 
-    Result ComputeAes(AsyncOperationKey *out_op, u32 dst_addr, u32 mode, const IvCtr &iv_ctr, u32 src_addr, size_t size) {
+    Result ComputeAes(AsyncOperationKey *out_op, u64 dst_addr, u32 mode, const IvCtr &iv_ctr, u64 src_addr, size_t size) {
         svc::SecureMonitorArguments args;
 
         args.r[0] = static_cast<u64>(FunctionId::ComputeAes);
         args.r[1] = mode;
         args.r[2] = iv_ctr.data64[0];
         args.r[3] = iv_ctr.data64[1];
-        args.r[4] = src_addr;
-        args.r[5] = dst_addr;
+        args.r[4] = static_cast<u32>(src_addr);
+        args.r[5] = static_cast<u32>(dst_addr);
         args.r[6] = size;
         svc::CallSecureMonitor(std::addressof(args));
 

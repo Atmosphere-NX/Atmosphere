@@ -302,16 +302,13 @@ namespace ams::fssystem {
 
     }
 
-    Result NcaFileSystemDriver::OpenStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index) {
-        /* Create a storage context. */
-        StorageContext ctx{};
-
+    Result NcaFileSystemDriver::OpenStorageWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx) {
         /* Open storage. */
-        R_TRY(this->OpenStorageImpl(out, out_header_reader, fs_index, std::addressof(ctx)));
+        R_TRY(this->OpenStorageImpl(out, out_header_reader, fs_index, ctx));
 
         /* If we have a compressed storage, use it as splitter. */
-        if (ctx.compressed_storage != nullptr) {
-            *out_splitter = std::move(ctx.compressed_storage);
+        if (ctx->compressed_storage != nullptr) {
+            *out_splitter = std::move(ctx->compressed_storage);
         } else {
             /* Otherwise, allocate a default splitter. */
             *out_splitter = fssystem::AllocateShared<DefaultAsynchronousAccessSplitter>();
@@ -427,6 +424,9 @@ namespace ams::fssystem {
 
                 /* Open original indirectable storage. */
                 R_TRY(original_driver.OpenIndirectableStorageAsOriginal(std::addressof(original_indirectable_storage), std::addressof(original_header_reader), ctx));
+            } else if (ctx != nullptr && ctx->external_original_storage != nullptr) {
+                /* Use the external original storage. */
+                original_indirectable_storage = ctx->external_original_storage;
             } else {
                 /* Allocate a dummy memory storage as original storage. */
                 original_indirectable_storage = fssystem::AllocateShared<fs::MemoryStorage>(nullptr, 0);

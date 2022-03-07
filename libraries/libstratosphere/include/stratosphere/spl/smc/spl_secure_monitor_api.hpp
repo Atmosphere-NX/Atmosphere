@@ -37,7 +37,7 @@ namespace ams::spl::smc {
     Result GenerateRandomBytes(void *out, size_t size);
     Result GenerateAesKek(AccessKey *out, const KeySource &source, u32 generation, u32 option);
     Result LoadAesKey(u32 keyslot, const AccessKey &access_key, const KeySource &source);
-    Result ComputeAes(AsyncOperationKey *out_op, u32 dst_addr, u32 mode, const IvCtr &iv_ctr, u32 src_addr, size_t size);
+    Result ComputeAes(AsyncOperationKey *out_op, u64 dst_addr, u32 mode, const IvCtr &iv_ctr, u64 src_addr, size_t size);
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &source, u32 generation, u32 which);
     Result ComputeCmac(Cmac *out_mac, u32 keyslot, const void *data, size_t size);
     Result ReencryptDeviceUniqueData(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
@@ -67,5 +67,9 @@ namespace ams::spl::smc {
     ALWAYS_INLINE Result SetConfig(spl::ConfigItem key, const u64 value) {
         return SetConfig(key, std::addressof(value), 1);
     }
+
+    #if !defined(ATMOSPHERE_OS_HORIZON)
+    void PresetInternalKey(const AesKey *key, u32 generation, bool device);
+    #endif
 
 }

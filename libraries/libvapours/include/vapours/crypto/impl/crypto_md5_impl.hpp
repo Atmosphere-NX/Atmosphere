@@ -56,6 +56,6 @@ namespace ams::crypto::impl {
             void ProcessLastBlock();
     };
 
-    /* static_assert(HashFunction<Md5Impl>); */
+    static_assert(HashFunction<Md5Impl>);
 
 }

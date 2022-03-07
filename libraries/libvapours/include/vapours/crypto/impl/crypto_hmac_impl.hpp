@@ -23,7 +23,7 @@
 
 namespace ams::crypto::impl {
 
-    template<typename Hash> /* requires HashFunction<Hash> */
+    template<HashFunction Hash>
     class HmacImpl {
         NON_COPYABLE(HmacImpl);
         NON_MOVEABLE(HmacImpl);
@@ -61,7 +61,7 @@ namespace ams::crypto::impl {
             void GetMac(void *dst, size_t dst_size);
     };
 
-    template<typename Hash>
+    template<HashFunction Hash>
     inline void HmacImpl<Hash>::Initialize(const void *key, size_t key_size) {
         /* Clear the key storage. */
         std::memset(m_key, 0, sizeof(m_key));
@@ -88,14 +88,14 @@ namespace ams::crypto::impl {
         m_state = State_Initialized;
     }
 
-    template<typename Hash>
+    template<HashFunction Hash>
     inline void HmacImpl<Hash>::Update(const void *data, size_t data_size) {
         AMS_ASSERT(m_state == State_Initialized);
 
         m_hash_function.Update(data, data_size);
     }
 
-    template<typename Hash>
+    template<HashFunction Hash>
     inline void HmacImpl<Hash>::GetMac(void *dst, size_t dst_size) {
         AMS_ASSERT(m_state == State_Initialized || m_state == State_Done);
         AMS_ASSERT(dst_size >= MacSize);
