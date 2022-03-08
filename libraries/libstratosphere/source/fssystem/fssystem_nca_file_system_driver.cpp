@@ -777,7 +777,7 @@ namespace ams::fssystem {
 
         /* Get and validate the meta extents. */
         const s64 meta_offset = patch_info.aes_ctr_ex_offset;
-        const s64 meta_size   = util::AlignUp(patch_info.aes_ctr_ex_size, NcaHeader::XtsBlockSize);
+        const s64 meta_size   = util::AlignUp(static_cast<s64>(patch_info.aes_ctr_ex_size), NcaHeader::XtsBlockSize);
         R_UNLESS(meta_offset + meta_size <= base_size, fs::ResultNcaBaseStorageOutOfRangeB());
 
         /* Create the encrypted storage. */

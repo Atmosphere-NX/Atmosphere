@@ -39,7 +39,7 @@ namespace ams::fssystem::save {
         m_buffer_manager = bm;
 
         /* Set upper layer block sizes. */
-        upper_layer_verif_block_size               = std::max(upper_layer_verif_block_size, HashSize);
+        upper_layer_verif_block_size           = std::max(upper_layer_verif_block_size, HashSize);
         m_upper_layer_verification_block_size  = upper_layer_verif_block_size;
         m_upper_layer_verification_block_order = ILog2(static_cast<u32>(upper_layer_verif_block_size));
         AMS_ASSERT(m_upper_layer_verification_block_size == (1l << m_upper_layer_verification_block_order));
@@ -334,18 +334,10 @@ namespace ams::fssystem::save {
                     /* Only allow cache invalidation for RomFs. */
                     R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInIntegrityVerificationStorageB());
 
-                    /* Validate the range. */
-                    s64 data_size = 0;
-                    R_TRY(m_data_storage.GetSize(std::addressof(data_size)));
-                    R_UNLESS(0 <= offset && offset <= data_size, fs::ResultInvalidOffset());
-
-                    /* Determine the extents to invalidate. */
-                    const auto sign_offset = (offset >> m_verification_block_order) * HashSize;
-                    const auto sign_size   = (std::min(size, data_size - offset) >> m_verification_block_order) * HashSize;
 
                     /* Operate on our storages. */
-                    R_TRY(m_hash_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
-                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, sign_offset, sign_size, src, src_size));
+                    R_TRY(m_hash_storage.OperateRange(dst, dst_size, op_id, 0, std::numeric_limits<s64>::max(), src, src_size));
+                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
 
                     return ResultSuccess();
                 }

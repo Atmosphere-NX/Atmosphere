@@ -83,9 +83,8 @@ namespace ams::spl::smc {
         constinit u8 g_async_result_buffer[1_KB];
 
         u64 GenerateRandomU64() {
-            /* TODO: Can/should we make this cryptographically secure? */
             u64 v = -1;
-            os::GenerateRandomBytes(std::addressof(v), sizeof(v));
+            crypto::GenerateCryptographicallyRandomBytes(std::addressof(v), sizeof(v));
             return v;
         }
 
@@ -223,8 +222,7 @@ namespace ams::spl::smc {
     //}
 
     Result GenerateRandomBytes(void *out, size_t size) {
-        /* TODO: Cryptographically secure? */
-        os::GenerateRandomBytes(out, size);
+        crypto::GenerateCryptographicallyRandomBytes(out, size);
         return smc::Result::Success;
     }
 

@@ -57,7 +57,7 @@ namespace ams::fssystem::save {
 
         /* Calculate block shift. */
         m_verification_block_shift = ILog2(static_cast<u32>(verif_block_size));
-        AMS_ASSERT(static_cast<size_t>(1ull << m_verification_block_size) == m_verification_block_size);
+        AMS_ASSERT(static_cast<size_t>(1ull << m_verification_block_shift) == m_verification_block_size);
 
         /* Clear the entry. */
         std::memset(m_entries.get(), 0, sizeof(CacheEntry) * m_max_cache_entry_count);
@@ -341,10 +341,14 @@ namespace ams::fssystem::save {
                 CacheIndex index;
                 R_TRY(this->UpdateLastResult(this->StoreAssociateBuffer(std::addressof(index), range, entry)));
 
+                /* Set the after aligned offset. */
+                aligned_offset = entry.offset + entry.size;
+
                 /* If we need to, flush the cache entry. */
                 if (index >= 0 && IsEnabledKeepBurstMode() && offset == aligned_offset && (block_alignment * 2 <= size)) {
                     R_TRY(this->UpdateLastResult(this->FlushCacheEntry(index, false)));
                 }
+
             }
         }
 

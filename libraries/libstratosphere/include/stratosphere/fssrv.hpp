@@ -19,7 +19,7 @@
 #include <stratosphere/fssrv/sf/fssrv_sf_ifile.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_i_event_notifier.hpp>
 #include <stratosphere/fssrv/impl/fssrv_impl_program_index_map_info_manager.hpp>
-#include <stratosphere/fssrv/fssrv_access_control.hpp>
+#include <stratosphere/fssrv/impl/fssrv_access_control.hpp>
 #include <stratosphere/fssrv/fssrv_nca_crypto_configuration.hpp>
 #include <stratosphere/fssrv/fssrv_memory_resource_from_standard_allocator.hpp>
 #include <stratosphere/fssrv/fssrv_memory_resource_from_exp_heap.hpp>

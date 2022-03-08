@@ -32,12 +32,14 @@ namespace ams::spl::impl {
         using Drbg = CtrDrbg<crypto::AesEncryptor128, AesKeySize, false>;
 
         /* Convenient defines. */
+        #if defined(ATMOSPHERE_OS_HORIZON)
         constexpr size_t DeviceAddressSpaceAlign = 4_MB;
 
         constexpr u32 WorkBufferBase       = 0x80000000u;
         constexpr u32 ComputeAesInMapBase  = 0x90000000u;
         constexpr u32 ComputeAesOutMapBase = 0xC0000000u;
         constexpr size_t ComputeAesSizeMax = static_cast<size_t>(ComputeAesOutMapBase - ComputeAesInMapBase);
+        #endif
 
         constexpr size_t DeviceUniqueDataIvSize       = 0x10;
         constexpr size_t DeviceUniqueDataPaddingSize  = 0x08;
@@ -248,7 +250,7 @@ namespace ams::spl::impl {
             R_ABORT_UNLESS(dd::MapDeviceAddressSpaceAligned(std::addressof(g_device_address_space), dd::GetCurrentProcessHandle(), work_buffer_address, dd::DeviceAddressSpaceMemoryRegionAlignment, g_work_buffer_mapped_address, dd::MemoryPermission_ReadWrite));
             #else
             /* Just set the work buffer address directly. */
-            AMS_UNUSED(WorkBufferBase, g_device_address_space);
+            AMS_UNUSED(g_device_address_space);
             g_work_buffer_mapped_address = reinterpret_cast<uintptr_t>(g_work_buffer);
             #endif
         }

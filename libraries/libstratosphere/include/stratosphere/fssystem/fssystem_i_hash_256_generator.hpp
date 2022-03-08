@@ -40,7 +40,7 @@ namespace ams::fssystem {
                 /* Check pre-conditions. */
                 AMS_ASSERT(dst_size == HashSize);
 
-                return this->GetHash(dst, dst_size);
+                return this->DoGetHash(dst, dst_size);
             }
         protected:
             virtual void DoInitialize() = 0;

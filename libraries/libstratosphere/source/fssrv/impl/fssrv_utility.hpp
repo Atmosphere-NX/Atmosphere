@@ -19,5 +19,6 @@
 namespace ams::fssrv::impl {
 
     const char *GetExecutionDirectoryPath();
+    const char *GetWorkingDirectoryPath();
 
 }

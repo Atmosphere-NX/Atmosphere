@@ -19,7 +19,9 @@
 #if defined(ATMOSPHERE_OS_LINUX)
 #include <unistd.h>
 #elif defined(ATMOSPHERE_OS_MACOS)
-#include  <mach-o/dyld.h>
+#include <unistd.h>
+#include <mach-o/dyld.h>
+#include <sys/param.h>
 #endif
 
 namespace ams::fssystem {
@@ -47,10 +49,10 @@ namespace ams::fssystem {
                     ::swprintf_s(path, util::size(path), L"%s%s", drive_name, dir_name);
 
                     /* Convert to utf-8. */
-                   const auto res = ::WideCharToMultiByte(CP_UTF8, 0, path, -1, m_path, util::size(m_path), nullptr, nullptr);
-                   if (res == 0) {
-                       AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
-                   }
+                    const auto res = ::WideCharToMultiByte(CP_UTF8, 0, path, -1, m_path, util::size(m_path), nullptr, nullptr);
+                    if (res == 0) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
                 }
                 #elif defined(ATMOSPHERE_OS_LINUX)
                 {
@@ -60,6 +62,10 @@ namespace ams::fssystem {
                     }
 
                     const int len = std::strlen(full_path);
+                    if (len >= static_cast<int>(sizeof(m_path))) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
                     std::memcpy(m_path, full_path, len + 1);
 
                     for (int i = len - 1; i >= 0; --i) {
@@ -71,11 +77,17 @@ namespace ams::fssystem {
                 }
                 #elif defined(ATMOSPHERE_OS_MACOS)
                 {
-                    char full_path[PATH_MAX + 1] = {};
+                    char full_path[MAXPATHLEN] = {};
                     uint32_t size = sizeof(full_path);
-                    AMS_ABORT_UNLESS(_NSGetExecutablePath(full_path, std::addressof(size)) == 0);
+                    if (_NSGetExecutablePath(full_path, std::addressof(size)) != 0) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryA());
+                    }
 
                     const int len = std::strlen(full_path);
+                    if (len >= static_cast<int>(sizeof(m_path))) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
                     std::memcpy(m_path, full_path, len + 1);
 
                     for (int i = len - 1; i >= 0; --i) {
@@ -88,6 +100,81 @@ namespace ams::fssystem {
                 #else
                 AMS_ABORT("TODO: Unknown OS for PathOnExecutionDirectory");
                 #endif
+
+                const auto len = std::strlen(m_path);
+                if (m_path[len - 1] != '/' && m_path[len - 1] != '\\') {
+                    if (len + 1 >= sizeof(m_path)) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+                    m_path[len] = '/';
+                    m_path[len + 1] = 0;
+                }
+            }
+
+            const char *Get() const {
+                return m_path;
+            }
+    };
+
+    class PathOnWorkingDirectory {
+        private:
+            char m_path[fs::EntryNameLengthMax + 1];
+        public:
+            PathOnWorkingDirectory() {
+                #if defined(ATMOSPHERE_OS_WINDOWS)
+                {
+                    /* Get the current directory. */
+                    wchar_t current_directory[fs::EntryNameLengthMax + 1];
+                    if (::GetCurrentDirectoryW(util::size(current_directory), current_directory) == 0) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
+                    /* Convert to utf-8. */
+                    const auto res = ::WideCharToMultiByte(CP_UTF8, 0, current_directory, -1, m_path, util::size(m_path), nullptr, nullptr);
+                    if (res == 0) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+                }
+                #elif defined(ATMOSPHERE_OS_LINUX)
+                {
+                    char full_path[PATH_MAX] = {};
+                    if (::getcwd(full_path, sizeof(full_path)) == nullptr) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
+                    const int len = std::strlen(full_path);
+                    if (len >= static_cast<int>(sizeof(m_path))) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
+                    std::memcpy(m_path, full_path, len + 1);
+                }
+                #elif defined(ATMOSPHERE_OS_MACOS)
+                {
+                    char full_path[MAXPATHLEN] = {};
+                    if (::getcwd(full_path, sizeof(full_path)) == nullptr) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
+                    const int len = std::strlen(full_path);
+                    if (len >= static_cast<int>(sizeof(m_path))) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+
+                    std::memcpy(m_path, full_path, len + 1);
+                }
+                #else
+                AMS_ABORT("TODO: Unknown OS for PathOnWorkingDirectory");
+                #endif
+
+                const auto len = std::strlen(m_path);
+                if (m_path[len - 1] != '/' && m_path[len - 1] != '\\') {
+                    if (len + 1 >= sizeof(m_path)) {
+                        AMS_FS_R_ABORT_UNLESS(fs::ResultUnexpectedInPathOnExecutionDirectoryB());
+                    }
+                    m_path[len] = '/';
+                    m_path[len + 1] = 0;
+                }
             }
 
             const char *Get() const {
@@ -102,6 +189,11 @@ namespace ams::fssrv::impl {
     const char *GetExecutionDirectoryPath() {
         AMS_FUNCTION_LOCAL_STATIC(fssystem::PathOnExecutionDirectory, s_path_on_execution_directory);
         return s_path_on_execution_directory.Get();
+    }
+
+    const char *GetWorkingDirectoryPath() {
+        AMS_FUNCTION_LOCAL_STATIC(fssystem::PathOnWorkingDirectory, s_path_on_working_directory);
+        return s_path_on_working_directory.Get();
     }
 
 }

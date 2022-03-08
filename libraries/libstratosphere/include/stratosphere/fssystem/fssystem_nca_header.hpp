@@ -128,8 +128,8 @@ namespace ams::fssystem {
 
     struct NcaBucketInfo {
         static constexpr size_t HeaderSize = 0x10;
-        s64 offset;
-        s64 size;
+        fs::Int64 offset;
+        fs::Int64 size;
         u8 header[HeaderSize];
     };
     static_assert(util::is_pod<NcaBucketInfo>::value);
@@ -138,11 +138,11 @@ namespace ams::fssystem {
         static constexpr size_t Size   = 0x40;
         static constexpr size_t Offset = 0x100;
 
-        s64 indirect_offset;
-        s64 indirect_size;
+        fs::Int64 indirect_offset;
+        fs::Int64 indirect_size;
         u8  indirect_header[NcaBucketInfo::HeaderSize];
-        s64 aes_ctr_ex_offset;
-        s64 aes_ctr_ex_size;
+        fs::Int64 aes_ctr_ex_offset;
+        fs::Int64 aes_ctr_ex_size;
         u8  aes_ctr_ex_header[NcaBucketInfo::HeaderSize];
 
         bool HasIndirectTable() const;
@@ -161,7 +161,7 @@ namespace ams::fssystem {
 
     struct NcaSparseInfo {
         NcaBucketInfo bucket;
-        s64 physical_offset;
+        fs::Int64 physical_offset;
         u16 generation;
         u8  reserved[6];
 
@@ -191,8 +191,8 @@ namespace ams::fssystem {
         static constexpr size_t HashDataOffset = 0x8;
 
         struct Region {
-            s64 offset;
-            s64 size;
+            fs::Int64 offset;
+            fs::Int64 size;
         };
         static_assert(util::is_pod<Region>::value);
 
@@ -240,8 +240,8 @@ namespace ams::fssystem {
 
                     struct HierarchicalIntegrityVerificationLevelInformation {
                         static constexpr size_t IntegrityMaxLayerCount = 7;
-                        s64 offset;
-                        s64 size;
+                        fs::Int64 offset;
+                        fs::Int64 size;
                         s32 block_order;
                         u8  reserved[4];
                     } info[HierarchicalIntegrityVerificationLevelInformation::IntegrityMaxLayerCount - 1];

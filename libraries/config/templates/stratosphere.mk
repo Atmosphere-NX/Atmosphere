@@ -80,7 +80,7 @@ endif
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export LIBS	:= -lstratosphere -lnx
 else ifeq ($(ATMOSPHERE_BOARD),generic_windows)
-export LIBS	:= -lstratosphere -lwinmm -lws2_32
+export LIBS	:= -lstratosphere -lwinmm -lws2_32 -lbcrypt
 else ifeq ($(ATMOSPHERE_BOARD),generic_linux)
 export LIBS := -lstratosphere -pthread
 else ifeq ($(ATMOSPHERE_BOARD),generic_macos)

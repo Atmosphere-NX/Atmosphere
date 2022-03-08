@@ -23,7 +23,7 @@
 namespace ams::ldr {
 
     /* General types. */
-    struct ProgramInfo : sf::LargeData {
+    struct ProgramInfo : public sf::LargeData {
         u8 main_thread_priority;
         u8 default_cpu_id;
         u16 flags;

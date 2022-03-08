@@ -63,7 +63,7 @@ namespace ams::fs {
                 return fsFileOperateRange(std::addressof(m_base_file), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(dst));
             }
         public:
-            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override final {
                 return sf::cmif::DomainObjectId{serviceGetObjectId(const_cast<::Service *>(std::addressof(m_base_file.s)))};
             }
     };
@@ -87,7 +87,7 @@ namespace ams::fs {
                 return fsDirGetEntryCount(std::addressof(m_base_dir), out);
             }
         public:
-            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
+            virtual sf::cmif::DomainObjectId GetDomainObjectId() const override final {
                 return sf::cmif::DomainObjectId{serviceGetObjectId(const_cast<::Service *>(std::addressof(m_base_dir.s)))};
             }
     };
@@ -202,32 +202,32 @@ namespace ams::fs {
                 return fsFsCommit(std::addressof(m_base_fs));
             }
 
-            virtual Result DoGetFreeSpaceSize(s64 *out, const fs::Path &path) {
+            virtual Result DoGetFreeSpaceSize(s64 *out, const fs::Path &path) override final {
                 fssrv::sf::Path sf_path;
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 return fsFsGetFreeSpace(std::addressof(m_base_fs), sf_path.str, out);
             }
 
-            virtual Result DoGetTotalSpaceSize(s64 *out, const fs::Path &path) {
+            virtual Result DoGetTotalSpaceSize(s64 *out, const fs::Path &path) override final {
                 fssrv::sf::Path sf_path;
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 return fsFsGetTotalSpace(std::addressof(m_base_fs), sf_path.str, out);
             }
 
-            virtual Result DoCleanDirectoryRecursively(const fs::Path &path) {
+            virtual Result DoCleanDirectoryRecursively(const fs::Path &path) override final {
                 fssrv::sf::Path sf_path;
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 return fsFsCleanDirectoryRecursively(std::addressof(m_base_fs), sf_path.str);
             }
 
-            virtual Result DoGetFileTimeStampRaw(FileTimeStampRaw *out, const fs::Path &path) {
+            virtual Result DoGetFileTimeStampRaw(FileTimeStampRaw *out, const fs::Path &path) override final {
                 fssrv::sf::Path sf_path;
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 static_assert(sizeof(FileTimeStampRaw) == sizeof(::FsTimeStampRaw));
                 return fsFsGetFileTimeStampRaw(std::addressof(m_base_fs), sf_path.str, reinterpret_cast<::FsTimeStampRaw *>(out));
             }
 
-            virtual Result DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryId query, const fs::Path &path) {
+            virtual Result DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryId query, const fs::Path &path) override final {
                 fssrv::sf::Path sf_path;
                 R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 return fsFsQueryEntry(std::addressof(m_base_fs), dst, dst_size, src, src_size, sf_path.str, static_cast<FsFileSystemQueryId>(query));

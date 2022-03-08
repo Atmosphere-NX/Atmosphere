@@ -115,6 +115,7 @@ namespace ams::fssystem {
             u32 GetMagic() const;
             NcaHeader::DistributionType GetDistributionType() const;
             NcaHeader::ContentType GetContentType() const;
+            u8  GetHeaderSign1KeyGeneration() const;
             u8  GetKeyGeneration() const;
             u8  GetKeyIndex() const;
             u64 GetContentSize() const;

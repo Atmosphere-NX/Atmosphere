@@ -39,12 +39,16 @@ namespace ams::fs::impl {
 
         [[maybe_unused]] constexpr size_t BufferPoolSize        = 6_MB;
         [[maybe_unused]] constexpr size_t DeviceBufferSize      = 8_MB;
+        [[maybe_unused]] constexpr size_t DeviceWorkBufferSize  = os::MemoryPageSize;
         [[maybe_unused]] constexpr size_t BufferManagerHeapSize = 14_MB;
+
+        constexpr size_t DeviceWorkBufferRequiredSize = 0x140;
 
         static_assert(util::IsAligned(BufferManagerHeapSize, os::MemoryBlockUnitSize));
 
         //alignas(os::MemoryPageSize) u8 g_buffer_pool[BufferPoolSize];
-        //alignas(os::MemoryPageSize) u8 g_device_buffer[DeviceBufferSize];
+        alignas(os::MemoryPageSize) u8 g_device_buffer[DeviceBufferSize];
+        alignas(os::MemoryPageSize) u8 g_device_work_buffer[DeviceWorkBufferSize];
         //alignas(os::MemoryPageSize) u8 g_buffer_manager_heap[BufferManagerHeapSize];
         //
         //alignas(os::MemoryPageSize) u8 g_buffer_manager_work_buffer[64_KB];
@@ -68,6 +72,8 @@ namespace ams::fs::impl {
 
             /* TODO: Many things. */
             g_system_heap_memory_resource.emplace(std::addressof(GetSystemHeapAllocator()));
+
+            fssystem::InitializeBufferPool(reinterpret_cast<char *>(g_device_buffer), DeviceBufferSize, reinterpret_cast<char *>(g_device_work_buffer), DeviceWorkBufferRequiredSize);
 
             /* Setup fscreators/interfaces. */
             g_local_fs_creator.emplace(true);

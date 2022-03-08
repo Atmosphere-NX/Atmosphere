@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
+#include <ntstatus.h>
+#include <bcrypt.h>
 
-namespace ams::fssrv {
+namespace ams::crypto {
 
-    void SetDebugFlagEnabled(bool en);
+    void GenerateCryptographicallyRandomBytes(void *dst, size_t dst_size) {
+        const auto status = ::BCryptGenRandom(nullptr, static_cast<PUCHAR>(dst), dst_size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        AMS_ABORT_UNLESS(status == STATUS_SUCCESS);
+    }
 
 }
