@@ -60,4 +60,36 @@ namespace ams::fssrv::fscreator {
         return ResultSuccess();
     }
 
+    #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+    Result StorageOnNcaCreator::CreateWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, void *ctx, std::shared_ptr<fssystem::NcaReader> nca_reader, s32 index) {
+        /* Create a fs driver. */
+        fssystem::NcaFileSystemDriver nca_fs_driver(nca_reader, m_allocator, m_buffer_manager, m_hash_generator_factory_selector);
+
+        /* Open the storage. */
+        std::shared_ptr<fs::IStorage> storage;
+        std::shared_ptr<fssystem::IAsynchronousAccessSplitter> splitter;
+        R_TRY(nca_fs_driver.OpenStorageWithContext(std::addressof(storage), std::addressof(splitter), out_header_reader, index, static_cast<fssystem::NcaFileSystemDriver::StorageContext *>(ctx)));
+
+        /* Set the out storage. */
+        *out = std::move(storage);
+        *out_splitter = std::move(splitter);
+        return ResultSuccess();
+    }
+
+    Result StorageOnNcaCreator::CreateWithPatchWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, void *ctx, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index) {
+        /* Create a fs driver. */
+        fssystem::NcaFileSystemDriver nca_fs_driver(original_nca_reader, current_nca_reader, m_allocator, m_buffer_manager, m_hash_generator_factory_selector);
+
+        /* Open the storage. */
+        std::shared_ptr<fs::IStorage> storage;
+        std::shared_ptr<fssystem::IAsynchronousAccessSplitter> splitter;
+        R_TRY(nca_fs_driver.OpenStorageWithContext(std::addressof(storage), std::addressof(splitter), out_header_reader, index, static_cast<fssystem::NcaFileSystemDriver::StorageContext *>(ctx)));
+
+        /* Set the out storage. */
+        *out = std::move(storage);
+        *out_splitter = std::move(splitter);
+        return ResultSuccess();
+    }
+    #endif
+
 }

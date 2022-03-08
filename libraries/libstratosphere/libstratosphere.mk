@@ -147,6 +147,7 @@ init_operator_new.o: CXXFLAGS += -fno-lto
 init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
 
 spl_secure_monitor_api.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
+fs_id_string_impl.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 
 ifeq ($(ATMOSPHERE_OS_NAME),windows)
 os_%.o: CXXFLAGS += -fno-lto

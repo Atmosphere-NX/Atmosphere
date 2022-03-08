@@ -17,6 +17,9 @@
 #include <vapours/includes.hpp>
 #include <vapours/defines.hpp>
 
+#define AMS_PRAGMA(X) \
+    _Pragma(#X)
+
 #define AMS_PRAGMA_BEGIN_OPTIMIZE_O3() \
     _Pragma("GCC push_options")        \
     _Pragma("GCC optimize (\"-O3\")")
@@ -27,5 +30,11 @@
 
 #define AMS_PRAGMA_END_OPTIMIZE() \
     _Pragma("GCC pop_options")
+
+#define AMS_PRAGMA_BEGIN_PACK(n) \
+    AMS_PRAGMA(pack(push, n))
+
+#define AMS_PRAGMA_END_PACK() \
+    AMS_PRAGMA(pack(pop))
 
 #define AMS_CONCEPTS_REQUIRES_IF_SUPPORTED(__EXPR__) requires (__EXPR__)

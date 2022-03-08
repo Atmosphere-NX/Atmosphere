@@ -359,7 +359,7 @@ namespace ams::fssystem {
         R_UNLESS(p[0] == RootPath[0], fs::ResultInvalidPathFormat());
 
         /* Check if the path is for a directory. */
-        if (util::Strncmp(p, RootPath, sizeof(RootPath))) {
+        if (util::Strncmp(p, RootPath, sizeof(RootPath)) == 0) {
             *out = fs::DirectoryEntryType_Directory;
             R_SUCCEED();
         }

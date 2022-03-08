@@ -17,8 +17,17 @@
 #include <vapours/includes.hpp>
 #include <vapours/defines.hpp>
 
+#define AMS_PRAGMA(X) \
+    _Pragma(#X)
+
 #define AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
 #define AMS_PRAGMA_BEGIN_OPTIMIZE_OS()
 #define AMS_PRAGMA_END_OPTIMIZE()
+
+#define AMS_PRAGMA_BEGIN_PACK(n) \
+    AMS_PRAGMA(pack(push, n))
+
+#define AMS_PRAGMA_END_PACK() \
+    AMS_PRAGMA(pack(pop))
 
 #define AMS_CONCEPTS_REQUIRES_IF_SUPPORTED(__EXPR__)

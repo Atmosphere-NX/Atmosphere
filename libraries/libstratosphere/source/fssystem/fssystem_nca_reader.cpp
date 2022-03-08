@@ -45,6 +45,14 @@ namespace ams::fssystem {
         /* ... */
     }
 
+    void Dump(const void *s, size_t size) {
+        const u8 *s8 = static_cast<const u8 *>(s);
+        for (size_t i = 0; i < size; ++i) {
+            printf("%02X", s8[i]);
+        }
+        printf("\n");
+    }
+
     Result NcaReader::Initialize(std::shared_ptr<fs::IStorage> base_storage, const NcaCryptoConfiguration &crypto_cfg, const NcaCompressionConfiguration &compression_cfg, IHash256GeneratorFactorySelector *hgf_selector) {
         /* Validate preconditions. */
         AMS_ASSERT(base_storage != nullptr);
@@ -60,6 +68,7 @@ namespace ams::fssystem {
         u8 header_decryption_keys[NcaCryptoConfiguration::HeaderEncryptionKeyCount][NcaCryptoConfiguration::Aes128KeySize];
         for (size_t i = 0; i < NcaCryptoConfiguration::HeaderEncryptionKeyCount; i++) {
             crypto_cfg.generate_key(header_decryption_keys[i], AesXtsStorageForNcaHeader::KeySize, crypto_cfg.header_encrypted_encryption_keys[i], AesXtsStorageForNcaHeader::KeySize, static_cast<s32>(KeyType::NcaHeaderKey), crypto_cfg);
+            Dump(header_decryption_keys[i], sizeof(header_decryption_keys[i]));
         }
 
         /* Create the header storage. */
@@ -119,6 +128,13 @@ namespace ams::fssystem {
             /* If we do, then we don't have an external key, so we need to generate decryption keys. */
             crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtr], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtr * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
 
+            /* If we're building for non-nx board (i.e., a host tool), generate all keys for debug. */
+            #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts1], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts1 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
+            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts2], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts2 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
+            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtrEx], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtrEx * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
+            #endif
+
             /* Copy the hardware speed emulation key. */
             std::memcpy(m_decryption_keys[NcaHeader::DecryptionKey_AesCtrHw], m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtrHw * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize);
         }
@@ -162,6 +178,11 @@ namespace ams::fssystem {
     NcaHeader::ContentType NcaReader::GetContentType() const {
         AMS_ASSERT(m_body_storage != nullptr);
         return m_header.content_type;
+    }
+
+    u8 NcaReader::GetHeaderSign1KeyGeneration() const {
+        AMS_ASSERT(m_body_storage != nullptr);
+        return m_header.header1_signature_key_generation;
     }
 
     u8 NcaReader::GetKeyGeneration() const {

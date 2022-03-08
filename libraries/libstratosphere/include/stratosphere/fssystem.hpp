@@ -19,6 +19,7 @@
 #include <stratosphere/fssystem/fssystem_utility.hpp>
 #include <stratosphere/fssystem/fssystem_speed_emulation_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_external_code.hpp>
+#include <stratosphere/fssystem/fssystem_forwarding_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system_meta.hpp>
 #include <stratosphere/fssystem/fssystem_thread_priority_changer.hpp>

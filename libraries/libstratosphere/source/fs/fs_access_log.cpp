@@ -84,6 +84,8 @@ namespace ams::fs {
 
 namespace ams::fs::impl {
 
+    #define ADD_ENUM_CASE(v) case v: return #v
+
     const char *IdString::ToValueString(int id) {
         const int len = util::SNPrintf(m_buffer, sizeof(m_buffer), "%d", id);
         AMS_ASSERT(static_cast<size_t>(len) < sizeof(m_buffer));
@@ -112,20 +114,22 @@ namespace ams::fs::impl {
 
     template<> const char *IdString::ToString<fs::ContentStorageId>(fs::ContentStorageId id) {
         switch (id) {
-            case fs::ContentStorageId::User:   return "User";
-            case fs::ContentStorageId::System: return "System";
-            case fs::ContentStorageId::SdCard: return "SdCard";
-            default:                           return ToValueString(static_cast<int>(id));
+            using enum fs::ContentStorageId;
+            ADD_ENUM_CASE(User);
+            ADD_ENUM_CASE(System);
+            ADD_ENUM_CASE(SdCard);
+            default: return ToValueString(static_cast<int>(id));
         }
     }
 
     template<> const char *IdString::ToString<fs::SaveDataSpaceId>(fs::SaveDataSpaceId id) {
         switch (id) {
-            case fs::SaveDataSpaceId::System:       return "System";
-            case fs::SaveDataSpaceId::User:         return "User";
-            case fs::SaveDataSpaceId::SdSystem:     return "SdSystem";
-            case fs::SaveDataSpaceId::ProperSystem: return "ProperSystem";
-            default:                                return ToValueString(static_cast<int>(id));
+            using enum fs::SaveDataSpaceId;
+            ADD_ENUM_CASE(System);
+            ADD_ENUM_CASE(User);
+            ADD_ENUM_CASE(SdSystem);
+            ADD_ENUM_CASE(ProperSystem);
+            default: return ToValueString(static_cast<int>(id));
         }
     }
 
@@ -142,23 +146,24 @@ namespace ams::fs::impl {
 
     template<> const char *IdString::ToString<fs::BisPartitionId>(fs::BisPartitionId id) {
         switch (id) {
-            case fs::BisPartitionId::BootPartition1Root:         return "BootPartition1Root";
-            case fs::BisPartitionId::BootPartition2Root:         return "BootPartition2Root";
-            case fs::BisPartitionId::UserDataRoot:               return "UserDataRoot";
-            case fs::BisPartitionId::BootConfigAndPackage2Part1: return "BootConfigAndPackage2Part1";
-            case fs::BisPartitionId::BootConfigAndPackage2Part2: return "BootConfigAndPackage2Part2";
-            case fs::BisPartitionId::BootConfigAndPackage2Part3: return "BootConfigAndPackage2Part3";
-            case fs::BisPartitionId::BootConfigAndPackage2Part4: return "BootConfigAndPackage2Part4";
-            case fs::BisPartitionId::BootConfigAndPackage2Part5: return "BootConfigAndPackage2Part5";
-            case fs::BisPartitionId::BootConfigAndPackage2Part6: return "BootConfigAndPackage2Part6";
-            case fs::BisPartitionId::CalibrationBinary:          return "CalibrationBinary";
-            case fs::BisPartitionId::CalibrationFile:            return "CalibrationFile";
-            case fs::BisPartitionId::SafeMode:                   return "SafeMode";
-            case fs::BisPartitionId::User:                       return "User";
-            case fs::BisPartitionId::System:                     return "System";
-            case fs::BisPartitionId::SystemProperEncryption:     return "SystemProperEncryption";
-            case fs::BisPartitionId::SystemProperPartition:      return "SystemProperPartition";
-            default:                                             return ToValueString(static_cast<int>(id));
+            using enum fs::BisPartitionId;
+            ADD_ENUM_CASE(BootPartition1Root);
+            ADD_ENUM_CASE(BootPartition2Root);
+            ADD_ENUM_CASE(UserDataRoot);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part1);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part2);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part3);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part4);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part5);
+            ADD_ENUM_CASE(BootConfigAndPackage2Part6);
+            ADD_ENUM_CASE(CalibrationBinary);
+            ADD_ENUM_CASE(CalibrationFile);
+            ADD_ENUM_CASE(SafeMode);
+            ADD_ENUM_CASE(User);
+            ADD_ENUM_CASE(System);
+            ADD_ENUM_CASE(SystemProperEncryption);
+            ADD_ENUM_CASE(SystemProperPartition);
+            default: return ToValueString(static_cast<int>(id));
         }
     }
 
@@ -172,10 +177,267 @@ namespace ams::fs::impl {
 
     template<> const char *IdString::ToString<fs::GameCardPartition>(fs::GameCardPartition id) {
         switch (id) {
-            case fs::GameCardPartition::Update: return "Update";
-            case fs::GameCardPartition::Normal: return "Normal";
-            case fs::GameCardPartition::Secure: return "Secure";
-            default:                           return ToValueString(static_cast<int>(id));
+            using enum fs::GameCardPartition;
+            ADD_ENUM_CASE(Update);
+            ADD_ENUM_CASE(Normal);
+            ADD_ENUM_CASE(Secure);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaHeader::ContentType>(fssystem::NcaHeader::ContentType id) {
+        switch (id) {
+            using enum fssystem::NcaHeader::ContentType;
+            ADD_ENUM_CASE(Program);
+            ADD_ENUM_CASE(Meta);
+            ADD_ENUM_CASE(Control);
+            ADD_ENUM_CASE(Manual);
+            ADD_ENUM_CASE(Data);
+            ADD_ENUM_CASE(PublicData);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaHeader::DistributionType>(fssystem::NcaHeader::DistributionType id) {
+        switch (id) {
+            using enum fssystem::NcaHeader::DistributionType;
+            ADD_ENUM_CASE(Download);
+            ADD_ENUM_CASE(GameCard);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaHeader::EncryptionType>(fssystem::NcaHeader::EncryptionType id) {
+        switch (id) {
+            using enum fssystem::NcaHeader::EncryptionType;
+            ADD_ENUM_CASE(Auto);
+            ADD_ENUM_CASE(None);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaHeader::DecryptionKey>(fssystem::NcaHeader::DecryptionKey id) {
+        switch (id) {
+            using enum fssystem::NcaHeader::DecryptionKey;
+            case DecryptionKey_AesXts1:  return "AesXts1";
+            case DecryptionKey_AesXts2:  return "AesXts2";
+            case DecryptionKey_AesCtr:   return "AesCtr";
+            case DecryptionKey_AesCtrEx: return "AesCtrEx";
+            case DecryptionKey_AesCtrHw: return "AesCtrHw";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaFsHeader::FsType>(fssystem::NcaFsHeader::FsType id) {
+        switch (id) {
+            using enum fssystem::NcaFsHeader::FsType;
+            ADD_ENUM_CASE(RomFs);
+            ADD_ENUM_CASE(PartitionFs);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaFsHeader::EncryptionType>(fssystem::NcaFsHeader::EncryptionType id) {
+        switch (id) {
+            using enum fssystem::NcaFsHeader::EncryptionType;
+            ADD_ENUM_CASE(Auto);
+            ADD_ENUM_CASE(None);
+            ADD_ENUM_CASE(AesXts);
+            ADD_ENUM_CASE(AesCtr);
+            ADD_ENUM_CASE(AesCtrEx);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssystem::NcaFsHeader::HashType>(fssystem::NcaFsHeader::HashType id) {
+        switch (id) {
+            using enum fssystem::NcaFsHeader::HashType;
+            ADD_ENUM_CASE(Auto);
+            ADD_ENUM_CASE(None);
+            ADD_ENUM_CASE(HierarchicalSha256Hash);
+            ADD_ENUM_CASE(HierarchicalIntegrityHash);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssrv::impl::AccessControlBits::Bits>(fssrv::impl::AccessControlBits::Bits id) {
+        switch (id) {
+            using enum fssrv::impl::AccessControlBits::Bits;
+            ADD_ENUM_CASE(ApplicationInfo);
+            ADD_ENUM_CASE(BootModeControl);
+            ADD_ENUM_CASE(Calibration);
+            ADD_ENUM_CASE(SystemSaveData);
+            ADD_ENUM_CASE(GameCard);
+            ADD_ENUM_CASE(SaveDataBackUp);
+            ADD_ENUM_CASE(SaveDataManagement);
+            ADD_ENUM_CASE(BisAllRaw);
+            ADD_ENUM_CASE(GameCardRaw);
+            ADD_ENUM_CASE(GameCardPrivate);
+            ADD_ENUM_CASE(SetTime);
+            ADD_ENUM_CASE(ContentManager);
+            ADD_ENUM_CASE(ImageManager);
+            ADD_ENUM_CASE(CreateSaveData);
+            ADD_ENUM_CASE(SystemSaveDataManagement);
+            ADD_ENUM_CASE(BisFileSystem);
+            ADD_ENUM_CASE(SystemUpdate);
+            ADD_ENUM_CASE(SaveDataMeta);
+            ADD_ENUM_CASE(DeviceSaveData);
+            ADD_ENUM_CASE(SettingsControl);
+            ADD_ENUM_CASE(SystemData);
+            ADD_ENUM_CASE(SdCard);
+            ADD_ENUM_CASE(Host);
+            ADD_ENUM_CASE(FillBis);
+            ADD_ENUM_CASE(CorruptSaveData);
+            ADD_ENUM_CASE(SaveDataForDebug);
+            ADD_ENUM_CASE(FormatSdCard);
+            ADD_ENUM_CASE(GetRightsId);
+            ADD_ENUM_CASE(RegisterExternalKey);
+            ADD_ENUM_CASE(RegisterUpdatePartition);
+            ADD_ENUM_CASE(SaveDataTransfer);
+            ADD_ENUM_CASE(DeviceDetection);
+            ADD_ENUM_CASE(AccessFailureResolution);
+            ADD_ENUM_CASE(SaveDataTransferVersion2);
+            ADD_ENUM_CASE(RegisterProgramIndexMapInfo);
+            ADD_ENUM_CASE(CreateOwnSaveData);
+            ADD_ENUM_CASE(MoveCacheStorage);
+
+            ADD_ENUM_CASE(Debug);
+            ADD_ENUM_CASE(FullPermission);
+            default: return ToValueString(util::CountTrailingZeros(util::ToUnderlying(id)));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssrv::impl::AccessControl::AccessibilityType>(fssrv::impl::AccessControl::AccessibilityType id) {
+        switch (id) {
+            using enum fssrv::impl::AccessControl::AccessibilityType;
+            ADD_ENUM_CASE(MountLogo);
+            ADD_ENUM_CASE(MountContentMeta);
+            ADD_ENUM_CASE(MountContentControl);
+            ADD_ENUM_CASE(MountContentManual);
+            ADD_ENUM_CASE(MountContentData);
+            ADD_ENUM_CASE(MountApplicationPackage);
+            ADD_ENUM_CASE(MountSaveDataStorage);
+            ADD_ENUM_CASE(MountContentStorage);
+            ADD_ENUM_CASE(MountImageAndVideoStorage);
+            ADD_ENUM_CASE(MountCloudBackupWorkStorage);
+            ADD_ENUM_CASE(MountCustomStorage);
+            ADD_ENUM_CASE(MountBisCalibrationFile);
+            ADD_ENUM_CASE(MountBisSafeMode);
+            ADD_ENUM_CASE(MountBisUser);
+            ADD_ENUM_CASE(MountBisSystem);
+            ADD_ENUM_CASE(MountBisSystemProperEncryption);
+            ADD_ENUM_CASE(MountBisSystemProperPartition);
+            ADD_ENUM_CASE(MountSdCard);
+            ADD_ENUM_CASE(MountGameCard);
+            ADD_ENUM_CASE(MountDeviceSaveData);
+            ADD_ENUM_CASE(MountSystemSaveData);
+            ADD_ENUM_CASE(MountOthersSaveData);
+            ADD_ENUM_CASE(MountOthersSystemSaveData);
+            ADD_ENUM_CASE(OpenBisPartitionBootPartition1Root);
+            ADD_ENUM_CASE(OpenBisPartitionBootPartition2Root);
+            ADD_ENUM_CASE(OpenBisPartitionUserDataRoot);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part1);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part2);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part3);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part4);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part5);
+            ADD_ENUM_CASE(OpenBisPartitionBootConfigAndPackage2Part6);
+            ADD_ENUM_CASE(OpenBisPartitionCalibrationBinary);
+            ADD_ENUM_CASE(OpenBisPartitionCalibrationFile);
+            ADD_ENUM_CASE(OpenBisPartitionSafeMode);
+            ADD_ENUM_CASE(OpenBisPartitionUser);
+            ADD_ENUM_CASE(OpenBisPartitionSystem);
+            ADD_ENUM_CASE(OpenBisPartitionSystemProperEncryption);
+            ADD_ENUM_CASE(OpenBisPartitionSystemProperPartition);
+            ADD_ENUM_CASE(OpenSdCardStorage);
+            ADD_ENUM_CASE(OpenGameCardStorage);
+            ADD_ENUM_CASE(MountSystemDataPrivate);
+            ADD_ENUM_CASE(MountHost);
+            ADD_ENUM_CASE(MountRegisteredUpdatePartition);
+            ADD_ENUM_CASE(MountSaveDataInternalStorage);
+            ADD_ENUM_CASE(MountTemporaryDirectory);
+            ADD_ENUM_CASE(MountAllBaseFileSystem);
+            ADD_ENUM_CASE(NotMount);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fssrv::impl::AccessControl::OperationType>(fssrv::impl::AccessControl::OperationType id) {
+        switch (id) {
+            using enum fssrv::impl::AccessControl::OperationType;
+            ADD_ENUM_CASE(InvalidateBisCache);
+            ADD_ENUM_CASE(EraseMmc);
+            ADD_ENUM_CASE(GetGameCardDeviceCertificate);
+            ADD_ENUM_CASE(GetGameCardIdSet);
+            ADD_ENUM_CASE(FinalizeGameCardDriver);
+            ADD_ENUM_CASE(GetGameCardAsicInfo);
+            ADD_ENUM_CASE(CreateSaveData);
+            ADD_ENUM_CASE(DeleteSaveData);
+            ADD_ENUM_CASE(CreateSystemSaveData);
+            ADD_ENUM_CASE(CreateOthersSystemSaveData);
+            ADD_ENUM_CASE(DeleteSystemSaveData);
+            ADD_ENUM_CASE(OpenSaveDataInfoReader);
+            ADD_ENUM_CASE(OpenSaveDataInfoReaderForSystem);
+            ADD_ENUM_CASE(OpenSaveDataInfoReaderForInternal);
+            ADD_ENUM_CASE(OpenSaveDataMetaFile);
+            ADD_ENUM_CASE(SetCurrentPosixTime);
+            ADD_ENUM_CASE(ReadSaveDataFileSystemExtraData);
+            ADD_ENUM_CASE(SetGlobalAccessLogMode);
+            ADD_ENUM_CASE(SetSpeedEmulationMode);
+            ADD_ENUM_CASE(Debug);
+            ADD_ENUM_CASE(FillBis);
+            ADD_ENUM_CASE(CorruptSaveData);
+            ADD_ENUM_CASE(CorruptSystemSaveData);
+            ADD_ENUM_CASE(VerifySaveData);
+            ADD_ENUM_CASE(DebugSaveData);
+            ADD_ENUM_CASE(FormatSdCard);
+            ADD_ENUM_CASE(GetRightsId);
+            ADD_ENUM_CASE(RegisterExternalKey);
+            ADD_ENUM_CASE(SetEncryptionSeed);
+            ADD_ENUM_CASE(WriteSaveDataFileSystemExtraDataTimeStamp);
+            ADD_ENUM_CASE(WriteSaveDataFileSystemExtraDataFlags);
+            ADD_ENUM_CASE(WriteSaveDataFileSystemExtraDataCommitId);
+            ADD_ENUM_CASE(WriteSaveDataFileSystemExtraDataAll);
+            ADD_ENUM_CASE(ExtendSaveData);
+            ADD_ENUM_CASE(ExtendSystemSaveData);
+            ADD_ENUM_CASE(ExtendOthersSystemSaveData);
+            ADD_ENUM_CASE(RegisterUpdatePartition);
+            ADD_ENUM_CASE(OpenSaveDataTransferManager);
+            ADD_ENUM_CASE(OpenSaveDataTransferManagerVersion2);
+            ADD_ENUM_CASE(OpenSaveDataTransferManagerForSaveDataRepair);
+            ADD_ENUM_CASE(OpenSaveDataTransferManagerForSaveDataRepairTool);
+            ADD_ENUM_CASE(OpenSaveDataTransferProhibiter);
+            ADD_ENUM_CASE(OpenSaveDataMover);
+            ADD_ENUM_CASE(OpenBisWiper);
+            ADD_ENUM_CASE(ListAccessibleSaveDataOwnerId);
+            ADD_ENUM_CASE(ControlMmcPatrol);
+            ADD_ENUM_CASE(OverrideSaveDataTransferTokenSignVerificationKey);
+            ADD_ENUM_CASE(OpenSdCardDetectionEventNotifier);
+            ADD_ENUM_CASE(OpenGameCardDetectionEventNotifier);
+            ADD_ENUM_CASE(OpenSystemDataUpdateEventNotifier);
+            ADD_ENUM_CASE(NotifySystemDataUpdateEvent);
+            ADD_ENUM_CASE(OpenAccessFailureDetectionEventNotifier);
+            ADD_ENUM_CASE(GetAccessFailureDetectionEvent);
+            ADD_ENUM_CASE(IsAccessFailureDetected);
+            ADD_ENUM_CASE(ResolveAccessFailure);
+            ADD_ENUM_CASE(AbandonAccessFailure);
+            ADD_ENUM_CASE(QuerySaveDataInternalStorageTotalSize);
+            ADD_ENUM_CASE(GetSaveDataCommitId);
+            ADD_ENUM_CASE(SetSdCardAccessibility);
+            ADD_ENUM_CASE(SimulateDevice);
+            ADD_ENUM_CASE(CreateSaveDataWithHashSalt);
+            ADD_ENUM_CASE(RegisterProgramIndexMapInfo);
+            ADD_ENUM_CASE(ChallengeCardExistence);
+            ADD_ENUM_CASE(CreateOwnSaveData);
+            ADD_ENUM_CASE(DeleteOwnSaveData);
+            ADD_ENUM_CASE(ReadOwnSaveDataFileSystemExtraData);
+            ADD_ENUM_CASE(ExtendOwnSaveData);
+            ADD_ENUM_CASE(OpenOwnSaveDataTransferProhibiter);
+            ADD_ENUM_CASE(FindOwnSaveDataWithFilter);
+            ADD_ENUM_CASE(OpenSaveDataTransferManagerForRepair);
+            ADD_ENUM_CASE(SetDebugConfiguration);
+            ADD_ENUM_CASE(OpenDataStorageByPath);
+            default: return ToValueString(static_cast<int>(id));
         }
     }
 
