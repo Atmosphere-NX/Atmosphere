@@ -20,16 +20,12 @@
 #define AMS_PRAGMA(X) \
     _Pragma(#X)
 
-#define AMS_PRAGMA_BEGIN_OPTIMIZE_O3() \
-    _Pragma("GCC push_options")        \
-    _Pragma("GCC optimize (\"-O3\")")
-
-#define AMS_PRAGMA_BEGIN_OPTIMIZE_OS() \
-    _Pragma("GCC push_options")        \
-    _Pragma("GCC optimize (\"-Os\")")
+#define AMS_PRAGMA_BEGIN_OPTIMIZE(X) \
+    AMS_PRAGMA(GCC push_options)     \
+    AMS_PRAGMA(GCC optimize(X))
 
 #define AMS_PRAGMA_END_OPTIMIZE() \
-    _Pragma("GCC pop_options")
+    AMS_PRAGMA(GCC pop_options)
 
 #define AMS_PRAGMA_BEGIN_PACK(n) \
     AMS_PRAGMA(pack(push, n))

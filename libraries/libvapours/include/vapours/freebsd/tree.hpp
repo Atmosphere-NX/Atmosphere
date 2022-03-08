@@ -30,7 +30,7 @@
 #include <vapours/assert.hpp>
 #include <vapours/util/util_type_traits.hpp>
 
-AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
+AMS_PRAGMA_BEGIN_OPTIMIZE("-O3")
 
 /*
  * This file defines data structures for red-black trees.

@@ -17,7 +17,7 @@
 
 namespace ams::util {
 
-    AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
+    AMS_PRAGMA_BEGIN_OPTIMIZE("-Os")
 
     namespace {
 

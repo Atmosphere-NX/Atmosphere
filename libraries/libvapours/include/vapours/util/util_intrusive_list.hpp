@@ -21,7 +21,7 @@
 
 namespace ams::util {
 
-    AMS_PRAGMA_BEGIN_OPTIMIZE_O3()
+    AMS_PRAGMA_BEGIN_OPTIMIZE("-O3")
 
     /* Forward declare implementation class for Node. */
     namespace impl {
