@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "impl/diag_get_all_backtrace.hpp"
 #include "impl/diag_invoke_abort.hpp"
 
 namespace ams::diag {
@@ -178,6 +179,9 @@ namespace ams::diag {
         }
 
         std::scoped_lock lk(g_abort_mutex);
+
+        /* Set the abort impl return address. */
+        impl::SetAbortImplReturnAddress(reinterpret_cast<uintptr_t>(__builtin_return_address(0)));
 
         /* Create abort info. */
         std::va_list cvl;

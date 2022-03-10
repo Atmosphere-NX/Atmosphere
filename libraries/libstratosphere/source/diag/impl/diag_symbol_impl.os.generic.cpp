@@ -35,8 +35,7 @@
 extern "C" char __init_array_start;
 #endif
 
-#define HAVE_DECL_BASENAME 1
-#include <libiberty/demangle.h>
+#include <cxxabi.h>
 
 namespace ams::diag::impl {
 
@@ -219,7 +218,10 @@ namespace ams::diag::impl {
 
                     /* Print the symbol. */
                     const char *name = bfd_asymbol_name(*symbol);
-                    if (auto *demangled = bfd_demangle(m_handle, name, DMGL_ANSI | DMGL_PARAMS); demangled != nullptr) {
+
+                    int cpp_name_status = 0;
+                    if (char *demangled = abi::__cxa_demangle(name, nullptr, 0, std::addressof(cpp_name_status)); cpp_name_status == 0) {
+                        AMS_ASSERT(demangled != nullptr);
                         util::TSNPrintf(dst, dst_size, "%s", demangled);
                         std::free(demangled);
                     } else {
