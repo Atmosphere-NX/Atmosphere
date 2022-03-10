@@ -21,7 +21,19 @@
 .balign 0x10
 _ZN3ams4diag4impl23FatalErrorByResultForNxENS_6ResultE:
     /* Save x27/x28. */
-    stp     x27, x28, [sp, #0x10]
+    stp     x27, x28, [sp, #-0x10]!
+    stp     x0,  xzr, [sp, #-0x10]!
+
+    /* Inline ams::diag::impl::PrepareAbort() */
+    mrs     x27, tpidrro_el0
+    strh    wzr, [x27, #0x100]
+    ldrh    w27, [x27, #0x102]
+    cbz     w27, 0f
+    svc     #0x36
+
+0:  /* Restore the value from stack. */
+    ldr     x0, [sp]
+    add     sp, sp, #0x10
 
     /* Put magic std::abort values into x27/x28. */
     mov     x28, #0xcafe
@@ -31,7 +43,7 @@ _ZN3ams4diag4impl23FatalErrorByResultForNxENS_6ResultE:
     mov     x27, #8
 
     /* Abort */
-0:
+1:
     str     x28, [x27]
     nop
-    b       0b
+    b       1b

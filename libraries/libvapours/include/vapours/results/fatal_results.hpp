@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::fatal {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::fatal, 163);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(163);
+namespace ams::fatal {
 
     R_DEFINE_ERROR_RESULT(AllocationFailed,                    1);
     R_DEFINE_ERROR_RESULT(NullGraphicsBuffer,                  2);

@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::pm {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::pm, 15);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(15);
+namespace ams::pm {
 
     R_DEFINE_ERROR_RESULT(ProcessNotFound,    1);
     R_DEFINE_ERROR_RESULT(AlreadyStarted,     2);

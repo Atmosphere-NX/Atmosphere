@@ -111,7 +111,7 @@ namespace ams::sc7fw {
 
 namespace ams::diag {
 
-    void AbortImpl() {
+    NORETURN void AbortImpl() {
         sc7fw::ExceptionHandler();
     }
 

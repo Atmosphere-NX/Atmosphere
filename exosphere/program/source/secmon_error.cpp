@@ -50,7 +50,7 @@ namespace ams::diag {
 
     }
 
-    void AbortImpl() {
+    NORETURN void AbortImpl() {
         /* Perform any necessary (typically none) debugging. */
         if constexpr (SaveSystemStateForDebug) {
             SaveSystemStateForDebugAbort();

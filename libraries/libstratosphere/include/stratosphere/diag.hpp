@@ -20,6 +20,10 @@
 #include <stratosphere/diag/impl/diag_impl_log.hpp>
 #include <stratosphere/diag/diag_log.hpp>
 #include <stratosphere/diag/diag_sdk_log.hpp>
+#include <stratosphere/diag/diag_abort_observer.hpp>
+#include <stratosphere/diag/diag_assertion_failure_handler.hpp>
 
 #include <stratosphere/diag/impl/diag_utf8_util.hpp>
 
+#include <stratosphere/diag/diag_backtrace.hpp>
+#include <stratosphere/diag/diag_symbol.hpp>

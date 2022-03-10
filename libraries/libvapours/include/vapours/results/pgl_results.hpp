@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::pgl {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::pgl, 228);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(228);
+namespace ams::pgl {
 
     R_DEFINE_ERROR_RESULT(NotImplemented,             1);
     R_DEFINE_ERROR_RESULT(NotAvailable,               2);

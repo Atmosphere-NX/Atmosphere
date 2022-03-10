@@ -16,9 +16,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::htc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::htc, 18);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(18);
+namespace ams::htc {
 
     R_DEFINE_ERROR_RESULT(ConnectionFailure,  1);
     R_DEFINE_ERROR_RESULT(NotFound,           2);

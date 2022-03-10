@@ -16,9 +16,10 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::capsrv {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(206);
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::capsrv, 206);
+
+namespace ams::capsrv {
 
     R_DEFINE_ERROR_RANGE(AlbumError, 2, 99);
         R_DEFINE_ERROR_RESULT(AlbumWorkMemoryError,                     3);

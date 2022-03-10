@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::dd {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::dd, 6);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(6);
+namespace ams::dd {
 
     R_DEFINE_ERROR_RESULT(EndOfQuery,              1);
     R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,    2);

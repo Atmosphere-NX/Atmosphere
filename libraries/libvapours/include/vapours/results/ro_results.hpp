@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::ro {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ro, 22);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(22);
+namespace ams::ro {
 
     R_DEFINE_ERROR_RANGE(RoError, 1, 1023);
         R_DEFINE_ERROR_RESULT(OutOfAddressSpace,        2);

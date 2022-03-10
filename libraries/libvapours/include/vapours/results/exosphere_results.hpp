@@ -17,11 +17,10 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
+/* Please note: These results are all custom, and not official. */
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::exosphere, 444);
+
 namespace ams::exosphere {
-
-    /* Please note: These results are all custom, and not official. */
-    R_DEFINE_NAMESPACE_RESULT_MODULE(444);
-
 
     /* Result 1-1000 reserved for Atmosphere. */
     R_DEFINE_ERROR_RESULT(NotPresent,       1);

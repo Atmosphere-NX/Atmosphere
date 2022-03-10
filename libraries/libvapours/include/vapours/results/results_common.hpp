@@ -20,7 +20,24 @@
 
 namespace ams {
 
+    const char *GetResultName(int module, int description);
+
     namespace result::impl {
+
+        #if defined(AMS_AUTO_GENERATE_RESULT_NAMES)
+        struct DummyNameHolder {
+            static constexpr bool Exists = false;
+            static constexpr const char *Name = "unknown";
+        };
+
+        template<int Module>
+        struct ResultNameSpaceExistsImpl {
+            static constexpr bool Exists = false;
+
+            template<int Description>
+            using NameHolder = DummyNameHolder;
+        };
+        #endif
 
         class ResultTraits {
             public:
@@ -112,6 +129,10 @@ namespace ams {
     };
     static_assert(sizeof(Result) == sizeof(Result::Base::BaseType), "sizeof(Result) == sizeof(Result::Base::BaseType)");
     static_assert(std::is_trivially_destructible<Result>::value, "std::is_trivially_destructible<Result>::value");
+
+    ALWAYS_INLINE const char *GetResultName(const Result &result) {
+        return GetResultName(result.GetModule(), result.GetDescription());
+    }
 
     namespace result::impl {
 
@@ -230,24 +251,74 @@ namespace ams {
 }
 
 /* Macros for defining new results. */
-#define R_DEFINE_NAMESPACE_RESULT_MODULE(value) namespace impl::result { static constexpr inline ::ams::result::impl::ResultTraits::BaseType ResultModuleId = value; }
-#define R_CURRENT_NAMESPACE_RESULT_MODULE impl::result::ResultModuleId
+#if defined(AMS_AUTO_GENERATE_RESULT_NAMES)
+#define R_DEFINE_NAMESPACE_RESULT_MODULE(nmspc, value)                                                  \
+    namespace nmspc {                                                                                   \
+                                                                                                        \
+        namespace result_impl {                                                                         \
+            static constexpr inline ::ams::result::impl::ResultTraits::BaseType ResultModuleId = value; \
+                                                                                                        \
+            template<int Description>                                                                   \
+            struct ResultNameHolderImpl { static constexpr bool Exists = false; };                      \
+        }                                                                                               \
+                                                                                                        \
+    }                                                                                                   \
+                                                                                                        \
+    namespace ams::result::impl {                                                                       \
+                                                                                                        \
+        template<> struct ResultNameSpaceExistsImpl<value> {                                            \
+            static constexpr bool Exists = true;                                                        \
+                                                                                                        \
+            template<int Description>                                                                   \
+            using NameHolder = nmspc::result_impl::ResultNameHolderImpl<Description>;                   \
+        };                                                                                              \
+                                                                                                        \
+    }
+#else
+#define R_DEFINE_NAMESPACE_RESULT_MODULE(nmspc, value)                                                  \
+    namespace nmspc {                                                                                   \
+                                                                                                        \
+        namespace result_impl {                                                                         \
+            static constexpr inline ::ams::result::impl::ResultTraits::BaseType ResultModuleId = value; \
+        }                                                                                               \
+                                                                                                        \
+    }
+#endif
+
+#define R_CURRENT_NAMESPACE_RESULT_MODULE result_impl::ResultModuleId
 #define R_NAMESPACE_MODULE_ID(nmspc) nmspc::R_CURRENT_NAMESPACE_RESULT_MODULE
 
 #define R_MAKE_NAMESPACE_RESULT(nmspc, desc) static_cast<::ams::Result>(::ams::result::impl::ResultTraits::MakeValue(R_NAMESPACE_MODULE_ID(nmspc), desc))
 
-#define R_DEFINE_ERROR_RESULT_IMPL(name, desc_start, desc_end) \
+#if defined(AMS_AUTO_GENERATE_RESULT_NAMES)
+#define R_DEFINE_ERROR_RESULT_NAME_HOLDER_IMPL(name, desc_start, desc_end) \
+    template<> struct result_impl::ResultNameHolderImpl<desc_start> { static constexpr bool Exists = true; static constexpr const char *Name = #name; };
+#else
+#define R_DEFINE_ERROR_RESULT_NAME_HOLDER_IMPL(name, desc_start, desc_end)
+#endif
+
+#define R_DEFINE_ERROR_RESULT_CLASS_IMPL(name, desc_start, desc_end) \
     class Result##name final : public ::ams::result::impl::ResultErrorBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start>, public ::ams::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
+
+#define R_DEFINE_ERROR_RESULT_IMPL(name, desc_start, desc_end)         \
+    R_DEFINE_ERROR_RESULT_NAME_HOLDER_IMPL(name, desc_start, desc_end) \
+    R_DEFINE_ERROR_RESULT_CLASS_IMPL(name, desc_start, desc_end)
 
 #define R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, desc_start, desc_end) \
     class Result##name final : public ::ams::result::impl::ResultErrorRangeBase<R_CURRENT_NAMESPACE_RESULT_MODULE, desc_start, desc_end> {}
-
 
 #define R_DEFINE_ERROR_RESULT(name, desc) R_DEFINE_ERROR_RESULT_IMPL(name, desc, desc)
 #define R_DEFINE_ERROR_RANGE(name, start, end) R_DEFINE_ERROR_RESULT_IMPL(name, start, end)
 
 #define R_DEFINE_ABSTRACT_ERROR_RESULT(name, desc) R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, desc, desc)
 #define R_DEFINE_ABSTRACT_ERROR_RANGE(name, start, end) R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, start, end)
+
+
+#define R_DEFINE_ERROR_RESULT_NS(ns, name, desc) namespace ns { R_DEFINE_ERROR_RESULT_CLASS_IMPL(name, desc, desc); } R_DEFINE_ERROR_RESULT_NAME_HOLDER_IMPL(name, desc, desc)
+#define R_DEFINE_ERROR_RANGE_NS(ns, name, start, end) namespace ns { R_DEFINE_ERROR_RESULT_CLASS_IMPL(name, start, end); } R_DEFINE_ERROR_RESULT_NAME_HOLDER_IMPL(name, start, end)
+
+#define R_DEFINE_ABSTRACT_ERROR_RESULT_NS(ns, name, desc) namespace ns {  R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, desc, desc); }
+#define R_DEFINE_ABSTRACT_ERROR_RANGE_NS(ns, name, start, end) namespace ns { R_DEFINE_ABSTRACT_ERROR_RESULT_IMPL(name, start, end); }
 
 /* Remove libnx macros, replace with our own. */
 #ifndef R_SUCCEEDED
@@ -384,14 +455,12 @@ namespace ams::result::impl {
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX) && defined(ATMOSPHERE_IS_STRATOSPHERE) && !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
     #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
     #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val) do { ::ams::diag::impl::FatalErrorByResultForNx(val); AMS_INFINITE_LOOP(); AMS_ASSUME(false); } while (false)
+#elif defined(ATMOSPHERE_OS_HORIZON)
+    #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) AMS_CALL_ASSERT_FAIL_IMPL(::ams::diag::AssertionType_Assert, "ams::Result::IsSuccess()", "Failed: %s\n  Module:      %d\n  Description: %d\n  InnerValue:  0x%08" PRIX32, cond, val.GetModule(), val.GetDescription(), static_cast<::ams::Result>(val).GetInnerValue())
+    #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  AMS_CALL_ABORT_IMPL("ams::Result::IsSuccess()", "Failed: %s\n  Module:      %d\n  Description: %d\n  InnerValue:  0x%08" PRIX32, cond, val.GetModule(), val.GetDescription(), static_cast<::ams::Result>(val).GetInnerValue())
 #else
-    #if defined(AMS_ENABLE_DETAILED_ASSERTIONS)
-        #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
-        #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
-    #else
-        #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion("", 0, "", "", val)
-        #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort("", 0, "", "", val)
-    #endif
+    #define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) AMS_CALL_ASSERT_FAIL_IMPL(::ams::diag::AssertionType_Assert, "ams::Result::IsSuccess()", "Failed: %s\n  Module:      %d\n  Description: %d\n  InnerValue:  0x%08" PRIX32 "\n  Name:        %s", cond, val.GetModule(), val.GetDescription(), static_cast<::ams::Result>(val).GetInnerValue(), ::ams::GetResultName(val))
+    #define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  AMS_CALL_ABORT_IMPL("ams::Result::IsSuccess()", "Failed: %s\n  Module:      %d\n  Description: %d\n  InnerValue:  0x%08" PRIX32  "\n  Name:        %s", cond, val.GetModule(), val.GetDescription(), static_cast<::ams::Result>(val).GetInnerValue(), ::ams::GetResultName(val))
 #endif
 
 /// Evaluates an expression that returns a result, and asserts the result if it would fail.

@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::ddsf {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ddsf, 30);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(30);
+namespace ams::ddsf {
 
     R_DEFINE_ERROR_RESULT(OutOfResource,      1);
     R_DEFINE_ERROR_RESULT(NotSupported,       2);

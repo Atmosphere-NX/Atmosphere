@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::osdbg {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::osdbg, 7);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(7);
+namespace ams::osdbg {
 
     R_DEFINE_ERROR_RESULT(CannotGetThreadInfo,      1);
     R_DEFINE_ERROR_RESULT(UnsupportedThreadVersion, 2);

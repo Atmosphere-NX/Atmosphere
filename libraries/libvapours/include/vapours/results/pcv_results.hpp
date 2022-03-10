@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::pcv {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::pcv, 133);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(133);
+namespace ams::pcv {
 
     R_DEFINE_ERROR_RESULT(IllegalRequest, 16);
 

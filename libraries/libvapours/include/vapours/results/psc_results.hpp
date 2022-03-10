@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::psc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::psc, 138);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(138);
+namespace ams::psc {
 
     R_DEFINE_ERROR_RESULT(AlreadyInitialized, 2);
     R_DEFINE_ERROR_RESULT(NotInitialized,     3);

@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::dbg {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::dbg, 183);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(183);
+namespace ams::dbg {
 
     R_DEFINE_ERROR_RESULT(CannotDebug,     1);
     R_DEFINE_ERROR_RESULT(AlreadyAttached, 2);

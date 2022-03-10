@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::settings {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::settings, 105);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(105);
+namespace ams::settings {
 
     R_DEFINE_ERROR_RESULT(SettingsItemNotFound,                 11);
     R_DEFINE_ERROR_RESULT(StopIteration,                        21);

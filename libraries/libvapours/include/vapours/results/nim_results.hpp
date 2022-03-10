@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::nim {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::nim, 137);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(137);
+namespace ams::nim {
 
     R_DEFINE_ERROR_RESULT(HttpConnectionCanceled, 70);
 

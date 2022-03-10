@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::socket {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::socket, 27);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(27);
+namespace ams::socket {
 
     R_DEFINE_ERROR_RESULT(InsufficientProvidedMemory, 1);
 

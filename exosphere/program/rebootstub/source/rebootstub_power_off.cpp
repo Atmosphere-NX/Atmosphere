@@ -50,7 +50,7 @@ namespace ams::rebootstub {
 
 namespace ams::diag {
 
-    void AbortImpl() {
+    NORETURN void AbortImpl() {
         /* Halt the bpmp. */
         rebootstub::Halt();
 

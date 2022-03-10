@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::time {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::time, 116);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(116);
+namespace ams::time {
 
     R_DEFINE_ERROR_RESULT(NotInitialized, 0);
 

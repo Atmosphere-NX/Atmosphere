@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::cs {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::cs, 204);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(204);
+namespace ams::cs {
 
     R_DEFINE_ERROR_RESULT(UnknownCommand, 2);
     R_DEFINE_ERROR_RESULT(OutOfResource,  4);

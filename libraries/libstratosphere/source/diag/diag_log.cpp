@@ -45,11 +45,26 @@ namespace ams::diag::impl {
     }
 
     void VLogImpl(const LogMetaData &meta, const char *fmt, std::va_list vl) {
+        #if defined(ATMOSPHERE_OS_HORIZON)
         /* Print to stack buffer. */
         char msg_buffer[DebugPrintBufferLength];
 
         /* TODO: VFormatString using utf-8 printer. */
         const size_t len = util::VSNPrintf(msg_buffer, sizeof(msg_buffer), fmt, vl);
+        #else
+        /* Print to allocated buffer. */
+        std::va_list cvl;
+        va_copy(cvl, vl);
+        const auto out_len = util::TVSNPrintf(nullptr, 0, fmt, cvl) + 1;
+        va_end(cvl);
+
+        char *msg_buffer   = static_cast<char *>(std::malloc(out_len));
+        AMS_ABORT_UNLESS(msg_buffer != nullptr);
+        ON_SCOPE_EXIT { std::free(msg_buffer); };
+
+        /* TODO: VFormatString using utf-8 printer. */
+        const size_t len = util::TVSNPrintf(msg_buffer, out_len, fmt, vl);
+        #endif
 
         /* Call log observer. */
         CallPrintDebugString()(meta, msg_buffer, len, true, true);

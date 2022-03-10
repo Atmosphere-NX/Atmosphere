@@ -46,6 +46,7 @@
 #include <stratosphere/os/os_sdk_reply_and_receive.hpp>
 #include <stratosphere/os/os_thread.hpp>
 #include <stratosphere/os/os_sdk_thread_api.hpp>
+#include <stratosphere/os/os_sdk_thread_info.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
 #include <stratosphere/os/os_light_event.hpp>
 #include <stratosphere/os/os_light_message_queue.hpp>
@@ -55,3 +56,4 @@
 #include <stratosphere/os/os_multiple_wait.hpp>
 #include <stratosphere/os/os_argument.hpp>
 #include <stratosphere/os/os_cache.hpp>
+#include <stratosphere/os/os_debug.hpp>

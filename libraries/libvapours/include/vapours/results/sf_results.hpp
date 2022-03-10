@@ -17,36 +17,36 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::sf {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::sf, 10);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(10);
+namespace ams::sf {
 
     R_DEFINE_ERROR_RESULT(NotSupported,             1);
     R_DEFINE_ERROR_RESULT(PreconditionViolation,    3);
 
-    namespace cmif {
+    //namespace cmif {
 
-        R_DEFINE_ERROR_RESULT(InvalidHeaderSize,    202);
-        R_DEFINE_ERROR_RESULT(InvalidInHeader,      211);
-        R_DEFINE_ERROR_RESULT(UnknownCommandId,     221);
-        R_DEFINE_ERROR_RESULT(InvalidOutRawSize,    232);
-        R_DEFINE_ERROR_RESULT(InvalidNumInObjects,  235);
-        R_DEFINE_ERROR_RESULT(InvalidNumOutObjects, 236);
-        R_DEFINE_ERROR_RESULT(InvalidInObject,      239);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidHeaderSize,    202);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidInHeader,      211);
+        R_DEFINE_ERROR_RESULT_NS(cmif, UnknownCommandId,     221);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidOutRawSize,    232);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidNumInObjects,  235);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidNumOutObjects, 236);
+        R_DEFINE_ERROR_RESULT_NS(cmif, InvalidInObject,      239);
 
-        R_DEFINE_ERROR_RESULT(TargetNotFound,       261);
+        R_DEFINE_ERROR_RESULT_NS(cmif, TargetNotFound,       261);
 
-        R_DEFINE_ERROR_RESULT(OutOfDomainEntries,   301);
+        R_DEFINE_ERROR_RESULT_NS(cmif, OutOfDomainEntries,   301);
 
-    }
+    //}
 
-    namespace impl {
+    //namespace impl {
 
-        R_DEFINE_ABSTRACT_ERROR_RANGE(RequestContextChanged, 800, 899);
-            R_DEFINE_ABSTRACT_ERROR_RANGE(RequestInvalidated, 801, 809);
-                R_DEFINE_ERROR_RESULT(RequestInvalidatedByUser, 802);
+        R_DEFINE_ABSTRACT_ERROR_RANGE_NS(impl, RequestContextChanged, 800, 899);
+            R_DEFINE_ABSTRACT_ERROR_RANGE_NS(impl, RequestInvalidated, 801, 809);
+                R_DEFINE_ERROR_RESULT_NS(impl, RequestInvalidatedByUser, 802);
 
-    }
+    //}
 
     R_DEFINE_ABSTRACT_ERROR_RANGE(RequestDeferred, 811, 819);
         R_DEFINE_ERROR_RESULT(RequestDeferredByUser, 812);
