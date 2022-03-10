@@ -23,6 +23,10 @@ namespace ams::diag::impl {
 
     }
 
+    void SetAbortImplReturnAddress(uintptr_t address) {
+        g_abort_impl_return_address = address;
+    }
+
     size_t GetAllBacktrace(uintptr_t *out, size_t out_size, ::ams::diag::Backtrace &bt) {
         size_t count = 0;
         do {

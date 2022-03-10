@@ -18,7 +18,7 @@
 
 namespace ams::diag::impl {
 
-    void SetAbortImplAddress(uintptr_t address);
+    void SetAbortImplReturnAddress(uintptr_t address);
 
     size_t GetAllBacktrace(uintptr_t *out, size_t out_size, ::ams::diag::Backtrace &bt);
 
