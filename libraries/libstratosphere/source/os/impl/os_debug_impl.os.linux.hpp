@@ -36,7 +36,7 @@ namespace ams::os::impl {
                 /* Get the thread satck. */
                 void *base = nullptr;
                 size_t size  = 0;
-                const auto getstack_res = pthread_getattr_np(pthread_self(), std::addressof(attr));
+                const auto getstack_res = pthread_attr_getstack(std::addressof(attr), std::addressof(base), std::addressof(size));
                 AMS_ABORT_UNLESS(getstack_res == 0);
 
                 *out_stack = reinterpret_cast<uintptr_t>(base);
