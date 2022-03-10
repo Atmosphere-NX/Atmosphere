@@ -16,9 +16,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::htcs {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::htcs, 4);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(4);
+namespace ams::htcs {
 
     R_DEFINE_ERROR_RESULT(InvalidHandle, 9);
 

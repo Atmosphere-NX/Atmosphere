@@ -98,7 +98,7 @@ namespace ams::warmboot {
 
 namespace ams::diag {
 
-    void AbortImpl() {
+    NORETURN void AbortImpl() {
         warmboot::ExceptionHandler();
     }
 

@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::sdmmc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::sdmmc, 24);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(24);
+namespace ams::sdmmc {
 
     R_DEFINE_ERROR_RESULT(NoDevice,      1);
     R_DEFINE_ERROR_RESULT(NotActivated,  2);

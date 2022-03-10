@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::pwm {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::pwm, 189);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(189);
+namespace ams::pwm {
 
     R_DEFINE_ERROR_RESULT(InvalidArgument, 2);
 

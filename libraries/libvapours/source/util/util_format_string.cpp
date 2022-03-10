@@ -394,7 +394,9 @@ namespace ams::util {
 
             /* Ensure null termination. */
             WriteCharacter('\0');
-            dst[dst_size - 1] = '\0';
+            if (dst_size > 0) {
+                dst[dst_size - 1] = '\0';
+            }
 
             /* Return number of characters that would have been printed sans the null terminator. */
             return static_cast<int>(dst_index) - 1;

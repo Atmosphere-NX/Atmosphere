@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::sprofile {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::sprofile, 246);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(246);
+namespace ams::sprofile {
 
     R_DEFINE_ERROR_RESULT(InvalidArgument,  100);
     R_DEFINE_ERROR_RESULT(InvalidState,     101);

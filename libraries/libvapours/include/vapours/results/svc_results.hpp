@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::svc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::svc, 1);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(1);
+namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(OutOfSessions,                7);
 

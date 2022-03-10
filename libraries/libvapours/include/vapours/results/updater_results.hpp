@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::updater {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::updater, 158);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(158);
+namespace ams::updater {
 
     R_DEFINE_ERROR_RESULT(BootImagePackageNotFound, 2);
     R_DEFINE_ERROR_RESULT(InvalidBootImagePackage,  3);

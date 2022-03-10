@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::spl {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::spl, 26);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(26);
+namespace ams::spl {
 
     R_DEFINE_ERROR_RANGE(SecureMonitorError, 0, 99);
         R_DEFINE_ERROR_RESULT(SecureMonitorNotSupported,          1);

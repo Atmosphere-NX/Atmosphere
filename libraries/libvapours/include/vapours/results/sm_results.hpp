@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::sm {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::sm, 21);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(21);
+namespace ams::sm {
 
     R_DEFINE_ERROR_RESULT(OutOfProcesses,        1);
     R_DEFINE_ERROR_RESULT(InvalidClient,         2);
@@ -32,11 +32,11 @@ namespace ams::sm {
     R_DEFINE_ERROR_RESULT(TooLargeAccessControl, 9);
 
     /* Results 1000-2000 used as extension for Atmosphere Mitm. */
-    namespace mitm {
+    //namespace mitm {
 
-        R_DEFINE_ERROR_RESULT(ShouldForwardToSession, 1000);
-        R_DEFINE_ERROR_RESULT(ProcessNotAssociated,   1100);
+        R_DEFINE_ERROR_RESULT_NS(mitm, ShouldForwardToSession, 1000);
+        R_DEFINE_ERROR_RESULT_NS(mitm, ProcessNotAssociated,   1100);
 
-    }
+    //}
 
 }

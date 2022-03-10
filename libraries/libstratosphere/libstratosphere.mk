@@ -132,9 +132,9 @@ DEPENDS	:=	$(OFILES:.o=.d) $(foreach hdr,$(GCH_FILES),$(notdir $(patsubst %.hpp.
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT)	:	$(OFILES)
+$(OUTPUT)	:	result_get_name.o $(filter-out result_get_name.o, $(OFILES))
 
-$(OFILES)	:	$(GCH_FILES)
+$(filter-out result_get_name.o, $(OFILES))	:	$(GCH_FILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 
@@ -146,12 +146,16 @@ hos_stratosphere_api.o: CXXFLAGS += -fno-lto
 init_operator_new.o: CXXFLAGS += -fno-lto
 init_libnx_shim.os.horizon.o: CXXFLAGS += -fno-lto
 
+result_get_name.o: CXXFLAGS += -fno-lto
+
 spl_secure_monitor_api.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 fs_id_string_impl.os.generic.o: CXXFLAGS += -I$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/include
 
 ifeq ($(ATMOSPHERE_OS_NAME),windows)
 os_%.o: CXXFLAGS += -fno-lto
 fssystem_%.o: CXXFLAGS += -fno-lto
+fssrv_%.o: CXXFLAGS += -fno-lto
+fs_%.o: CXXFLAGS += -fno-lto
 endif
 
 #---------------------------------------------------------------------------------

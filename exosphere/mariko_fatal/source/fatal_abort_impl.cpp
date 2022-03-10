@@ -17,7 +17,7 @@
 
 namespace ams::diag {
 
-    void AbortImpl() {
+    NORETURN void AbortImpl() {
         AMS_SECMON_LOG("AbortImpl was called\n");
         AMS_LOG_FLUSH();
         reg::Write(0x4, 0xAAAAAAAA);

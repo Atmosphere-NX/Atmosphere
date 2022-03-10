@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::os {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::os, 3);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(3);
+namespace ams::os {
 
     R_DEFINE_ERROR_RESULT(Busy,                         4);
 

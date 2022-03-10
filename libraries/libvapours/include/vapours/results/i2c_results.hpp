@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::i2c {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::i2c, 101);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(101);
+namespace ams::i2c {
 
     R_DEFINE_ERROR_RESULT(NoAck,           1);
     R_DEFINE_ERROR_RESULT(BusBusy,         2);

@@ -144,6 +144,14 @@ namespace ams::fs::impl {
         }
     }
 
+    template<> const char *IdString::ToString<fs::MountHostOption>(fs::MountHostOption id) {
+        if (id == MountHostOption::PseudoCaseSensitive) {
+            return "MountHostOptionFlag_PseudoCaseSensitive";
+        } else {
+            return ToValueString(static_cast<int>(id._value));
+        }
+    }
+
     template<> const char *IdString::ToString<fs::BisPartitionId>(fs::BisPartitionId id) {
         switch (id) {
             using enum fs::BisPartitionId;

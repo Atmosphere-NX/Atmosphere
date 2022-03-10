@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::ncm {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ncm, 5);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(5);
+namespace ams::ncm {
 
     R_DEFINE_ERROR_RESULT(InvalidContentStorageBase,                1);
     R_DEFINE_ERROR_RESULT(PlaceHolderAlreadyExists,                 2);

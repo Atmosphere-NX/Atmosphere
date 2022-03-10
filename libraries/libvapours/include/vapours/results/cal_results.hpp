@@ -16,11 +16,10 @@
 
 #pragma once
 #include <vapours/results/results_common.hpp>
+#include <vapours/results/powctl_results.hpp>
 
 namespace ams::cal {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(198);
-
-    R_DEFINE_ERROR_RESULT(CalibrationDataCrcError, 101);
+    using powctl::ResultCalibrationDataCrcError;
 
 }

@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::fs {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::fs, 2);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(2);
+namespace ams::fs {
 
     R_DEFINE_ERROR_RANGE(HandledByAllProcess, 0, 999);
         R_DEFINE_ERROR_RESULT(PathNotFound,      1);
@@ -217,7 +217,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeC, 4510);
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeD, 4511);
 
-                R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4512, 4529);
+                R_DEFINE_ERROR_RESULT_CLASS_IMPL(NcaFileSystemCorrupted, 4512, 4529);
                     R_DEFINE_ERROR_RESULT(InvalidNcaFileSystemType,              4512);
                     R_DEFINE_ERROR_RESULT(InvalidAcidFileSize,                   4513);
                     R_DEFINE_ERROR_RESULT(InvalidAcidSize,                       4514);

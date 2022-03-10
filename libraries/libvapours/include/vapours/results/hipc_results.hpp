@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::sf::hipc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::sf::hipc, 11);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(11);
+namespace ams::sf::hipc {
 
     R_DEFINE_ABSTRACT_ERROR_RANGE(OutOfResource, 100, 299);
         R_DEFINE_ERROR_RESULT(OutOfSessionMemory,    102);

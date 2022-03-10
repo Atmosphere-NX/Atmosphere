@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::lr {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::lr, 8);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(8);
+namespace ams::lr {
 
     R_DEFINE_ERROR_RESULT(ProgramNotFound,          2);
     R_DEFINE_ERROR_RESULT(DataNotFound,             3);

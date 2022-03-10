@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::tipc {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::tipc, 35);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(35);
+namespace ams::tipc {
 
     R_DEFINE_ERROR_RESULT(InvalidMethod,        10);
     R_DEFINE_ERROR_RESULT(InvalidMessageFormat, 15);

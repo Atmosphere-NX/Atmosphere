@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::ns {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ns, 16);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
+namespace ams::ns {
 
     R_DEFINE_ERROR_RESULT(Canceled,                           90);
     R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask,               110);

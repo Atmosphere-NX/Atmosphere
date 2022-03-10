@@ -16,9 +16,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::htclow {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::htclow, 29);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(29);
+namespace ams::htclow {
 
     R_DEFINE_ERROR_RESULT(ConnectionFailure,          1);
     R_DEFINE_ERROR_RESULT(UnknownDriverType,          3);
@@ -28,7 +28,7 @@ namespace ams::htclow {
     R_DEFINE_ERROR_RESULT(ChannelNotExist,           10);
 
     R_DEFINE_ERROR_RESULT(OutOfChannel, 151);
-    R_DEFINE_ERROR_RESULT(OutOfTask,    151);
+    R_DEFINE_ERROR_RESULT(OutOfTask,    152);
 
     R_DEFINE_ERROR_RESULT(InvalidChannelState,             200);
     R_DEFINE_ERROR_RESULT(InvalidChannelStateDisconnected, 201);

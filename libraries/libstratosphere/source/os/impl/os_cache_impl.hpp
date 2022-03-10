@@ -23,7 +23,7 @@
 #elif defined(ATMOSPHERE_OS_LINUX)
     #include "os_cache_impl.os.linux.hpp"
 #elif defined(ATMOSPHERE_OS_MACOS)
-    #include "os_cache_impl.os.linux.hpp"
+    #include "os_cache_impl.os.macos.hpp"
 #else
     #error "Unknown OS for CacheImpl"
 #endif

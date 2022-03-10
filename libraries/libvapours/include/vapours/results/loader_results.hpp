@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::ldr {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::ldr, 9);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(9);
+namespace ams::ldr {
 
     R_DEFINE_ERROR_RESULT(ArgumentOverflow,       1);
     R_DEFINE_ERROR_RESULT(ArgumentCountOverflow,  2);

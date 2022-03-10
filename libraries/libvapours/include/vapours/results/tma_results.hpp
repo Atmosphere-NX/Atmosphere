@@ -16,9 +16,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::tma {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::tma, 12);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(12);
+namespace ams::tma {
 
     R_DEFINE_ERROR_RESULT(Unknown, 1);
 

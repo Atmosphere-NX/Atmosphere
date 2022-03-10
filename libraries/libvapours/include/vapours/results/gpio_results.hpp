@@ -17,9 +17,9 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::gpio {
+R_DEFINE_NAMESPACE_RESULT_MODULE(ams::gpio, 102);
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(102);
+namespace ams::gpio {
 
     R_DEFINE_ERROR_RESULT(AlreadyBound,    1);
     R_DEFINE_ERROR_RESULT(AlreadyOpen,     2);
