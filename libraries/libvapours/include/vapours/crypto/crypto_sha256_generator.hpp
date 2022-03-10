@@ -19,6 +19,7 @@
 #include <vapours/assert.hpp>
 #include <vapours/util.hpp>
 #include <vapours/crypto/impl/crypto_sha256_impl.hpp>
+#include <vapours/crypto/impl/crypto_sha256_impl_constexpr.hpp>
 
 namespace ams::crypto {
 
@@ -83,6 +84,18 @@ namespace ams::crypto {
 
     ALWAYS_INLINE void GenerateSha256Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
         return GenerateSha256(dst, dst_size, src, src_size);
+    }
+
+    template<typename T, typename = typename std::enable_if<std::same_as<T, u8> || std::same_as<T, s8> || std::same_as<T, char> || std::same_as<T, unsigned char>>::type>
+    constexpr ALWAYS_INLINE void GenerateSha256(u8 *dst, size_t dst_size, const T *src, size_t src_size) {
+        if (std::is_constant_evaluated()) {
+            impl::Sha256CompileTimeImpl sha;
+            sha.Initialize();
+            sha.Update(src, src_size);
+            sha.GetHash(dst, dst_size);
+        } else {
+            return GenerateSha256(static_cast<void *>(dst), dst_size, static_cast<const void *>(src), src_size);
+        }
     }
 
 }
