@@ -32,7 +32,7 @@ namespace ams::diag {
     }
 
     #if defined(ATMOSPHERE_OS_HORIZON)
-    size_t GetBacktace(uintptr_t *out, size_t out_size, uintptr_t fp, uintptr_t sp, uintptr_t pc) {
+    size_t GetBacktrace(uintptr_t *out, size_t out_size, uintptr_t fp, uintptr_t sp, uintptr_t pc) {
         /* Validate pre-conditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(out_size > 0);
