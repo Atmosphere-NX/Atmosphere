@@ -263,13 +263,6 @@ namespace ams::diag::impl {
                             return;
                         }
                     }
-                    #elif defined(ATMOSPHERE_OS_MACOS)
-                    {
-                        if (_NSGetExecutablePath(dst, dst_size) != 0) {
-                            dst[0] = 0;
-                            return;
-                        }
-                    }
                     #else
                     #error "Unknown OS for BfdHelper GetExecutablePath"
                     #endif
