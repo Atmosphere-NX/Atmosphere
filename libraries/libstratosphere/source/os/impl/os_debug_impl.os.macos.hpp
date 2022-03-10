@@ -25,22 +25,17 @@ namespace ams::os::impl {
                 AMS_ASSERT(out_stack != nullptr);
                 AMS_ASSERT(out_size != nullptr);
 
-                /* Get the current stack by pthread */
-                pthread_attr_t attr;
-                pthread_attr_init(std::addressof(attr));
-                ON_SCOPE_EXIT { pthread_attr_destroy(std::addressof(attr)); };
+                /* Get the current pthread. */
+                const auto self = pthread_self();
 
-                const auto getattr_res = pthread_getattr_np(pthread_self(), std::addressof(attr));
-                AMS_ABORT_UNLESS(getattr_res == 0);
+                /* Get the thread stack. */
+                uintptr_t stack_bottom = reinterpret_cast<uintptr_t>(pthread_get_stackaddr_np(self));
+                size_t stack_size      = pthread_get_stacksize_np(self);
 
-                /* Get the thread satck. */
-                void *base = nullptr;
-                size_t size  = 0;
-                const auto getstack_res = pthread_getattr_np(pthread_self(), std::addressof(attr));
-                AMS_ABORT_UNLESS(getstack_res == 0);
+                uintptr_t stack_top    = stack_bottom - stack_size;
 
-                *out_stack = reinterpret_cast<uintptr_t>(base);
-                *out_size  = size;
+                *out_stack = stack_top;
+                *out_size  = stack_size;
             }
 
             static void QueryMemoryInfo(os::MemoryInfo *out) {
