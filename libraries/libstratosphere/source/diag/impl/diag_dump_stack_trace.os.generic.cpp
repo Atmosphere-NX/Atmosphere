@@ -30,7 +30,7 @@ namespace ams::diag::impl {
             for (size_t i = 0; i < num_items; ++i) {
                 char symbol_name[0x200];
                 if (const uintptr_t symbol_base = ::ams::diag::GetSymbolName(symbol_name, sizeof(symbol_name), backtrace[i] - 1); symbol_base != 0) {
-                    AMS_SDK_LOG("0x%016" PRIX64 " [ %s+0x%" PRIX64 " ]\n", static_cast<u64>(backtrace[i]), symbol_name, static_cast<u64>(backtrace[i] - (symbol_base + 1)));
+                    AMS_SDK_LOG("0x%016" PRIX64 " [ %s+0x%" PRIX64 " ]\n", static_cast<u64>(backtrace[i]), symbol_name, static_cast<u64>(backtrace[i] - symbol_base));
                 } else {
                     AMS_SDK_LOG("0x%016" PRIX64 " [ unknown ]\n", static_cast<u64>(backtrace[i]));
                 }
