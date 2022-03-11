@@ -105,4 +105,6 @@ namespace ams::spl {
 
     Result LoadPreparedAesKey(s32 slot, const AccessKey &access_key);
 
+    Result PrepareCommonEsTitleKey(AccessKey *out, const void *key_source, const size_t key_source_size, int generation);
+
 }

@@ -399,6 +399,8 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(PermissionDeniedForCreateHostFileSystem, 6403);
 
                 R_DEFINE_ERROR_RESULT(PortAcceptableCountLimited, 6450);
+                R_DEFINE_ERROR_RESULT(NcaExternalKeyUnregistered, 6451);
+                R_DEFINE_ERROR_RESULT(NcaExternalKeyInconsistent, 6452);
                 R_DEFINE_ERROR_RESULT(NeedFlush, 6454);
                 R_DEFINE_ERROR_RESULT(FileNotClosed, 6455);
                 R_DEFINE_ERROR_RESULT(DirectoryNotClosed, 6456);

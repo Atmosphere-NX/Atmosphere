@@ -47,6 +47,13 @@ namespace ams::spl::smc {
             KeyType_Count,
         };
 
+        enum EsCommonKeyType {
+            EsCommonKeyType_TitleKey   = 0,
+            EsCommonKeyType_ArchiveKey = 1,
+
+            EsCommonKeyType_Count,
+        };
+
         struct GenerateAesKekOption {
             using IsDeviceUnique = util::BitPack32::Field<0,  1, bool>;
             using KeyTypeIndex   = util::BitPack32::Field<1,  4, KeyType>;
@@ -74,6 +81,11 @@ namespace ams::spl::smc {
             [SealKey_ReencryptDeviceUniqueData]   = { 0x59, 0xD9, 0x31, 0xF4, 0xA7, 0x97, 0xB8, 0x14, 0x40, 0xD6, 0xA2, 0x60, 0x2B, 0xED, 0x15, 0x31 },
             [SealKey_ImportSslKey]                = { 0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75 },
             [SealKey_ImportEsClientCertKey]       = { 0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61 },
+        };
+
+        constexpr const u8 EsCommonKeySources[EsCommonKeyType_Count][AesKeySize] = {
+            [EsCommonKeyType_TitleKey]   = { 0x1E, 0xDC, 0x7B, 0x3B, 0x60, 0xE6, 0xB4, 0xD8, 0x78, 0xB8, 0x17, 0x15, 0x98, 0x5E, 0x62, 0x9B },
+            [EsCommonKeyType_ArchiveKey] = { 0x3B, 0x78, 0xF2, 0x61, 0x0F, 0x9D, 0x5A, 0xE2, 0x7B, 0x4E, 0x45, 0xAF, 0xCB, 0x0B, 0x67, 0x4D },
         };
 
         constexpr u64 InvalidAsyncKey = 0;
@@ -145,6 +157,22 @@ namespace ams::spl::smc {
         }
 
         constinit KeySlotManager g_key_slot_manager;
+
+        void DecryptWithEsCommonKey(void *dst, size_t dst_size, const void *src, size_t src_size, EsCommonKeyType type, int generation) {
+            /* Validate pre-conditions. */
+            AMS_ASSERT(dst_size == crypto::AesEncryptor128::KeySize);
+            AMS_ASSERT(src_size == crypto::AesEncryptor128::KeySize);
+            AMS_ASSERT(0 <= type && type < EsCommonKeyType_Count);
+
+            /* Prepare the master key for the generation. */
+            const int slot = g_key_slot_manager.PrepareMasterKey(generation);
+
+            /* Derive the es common key. */
+            g_key_slot_manager.SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, slot, EsCommonKeySources[type], crypto::AesEncryptor128::KeySize);
+
+            /* Decrypt the input using the common key. */
+            g_key_slot_manager.DecryptAes128(dst, dst_size, pkg1::AesKeySlot_Smc, src, src_size);
+        }
 
     }
 
@@ -243,7 +271,7 @@ namespace ams::spl::smc {
         if (is_device_unique) {
             SMC_R_UNLESS(pkg1::IsValidDeviceUniqueKeyGeneration(pkg1_generation), InvalidArgument);
         } else {
-            SMC_R_UNLESS(pkg1_generation <= pkg1::KeyGeneration_Max, InvalidArgument);
+            SMC_R_UNLESS(pkg1_generation < pkg1::KeyGeneration_Max, InvalidArgument);
         }
 
         SMC_R_UNLESS(0 <= key_type && key_type < KeyType_Count, InvalidArgument);
@@ -411,19 +439,22 @@ namespace ams::spl::smc {
         return smc::Result::Success;
     }
 
-    //Result PrepareCommonEsTitleKey(AccessKey *out, const KeySource &source, u32 generation) {
-    //    svc::SecureMonitorArguments args;
-    //
-    //    args.r[0] = static_cast<u64>(FunctionId::PrepareCommonEsTitleKey);
-    //    args.r[1] = source.data64[0];
-    //    args.r[2] = source.data64[1];
-    //    args.r[3] = generation;
-    //    svc::CallSecureMonitor(std::addressof(args));
-    //
-    //    out->data64[0] = args.r[1];
-    //    out->data64[1] = args.r[2];
-    //    return static_cast<Result>(args.r[0]);
-    //}
+    Result PrepareCommonEsTitleKey(AccessKey *out, const KeySource &source, u32 generation) {
+        /* Decode arguments. */
+        const int pkg1_gen = std::max<int>(pkg1::KeyGeneration_1_0_0, static_cast<int>(generation) - 1);
+
+        /* Validate arguments. */
+        SMC_R_UNLESS(pkg1_gen < pkg1::KeyGeneration_Max, InvalidArgument);
+
+        /* Derive the key. */
+        u8 key[crypto::AesEncryptor128::KeySize];
+        DecryptWithEsCommonKey(key, sizeof(key), std::addressof(source), sizeof(source), EsCommonKeyType_TitleKey, pkg1_gen);
+
+        /* Copy the access key to the output. */
+        std::memcpy(out, key, sizeof(key));
+
+        return smc::Result::Success;
+    }
 
     //
     ///* Deprecated functions. */

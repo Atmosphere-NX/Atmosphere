@@ -36,3 +36,4 @@
 #include <stratosphere/fssrv/fssrv_program_registry_impl.hpp>
 #include <stratosphere/fssrv/fssrv_program_registry_service.hpp>
 #include <stratosphere/fssrv/fssrv_nca_file_system_service_impl.hpp>
+#include <stratosphere/fssrv/impl/fssrv_external_key_manager.hpp>
