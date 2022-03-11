@@ -111,7 +111,7 @@ namespace ams::fssystem {
                 u8 m_encrypted_key[KeySize];
             public:
                 AesCtrStorageExternal(std::shared_ptr<fs::IStorage> bs, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, DecryptAesCtrFunction df, s32 kidx) : m_base_storage(std::move(bs)), m_decrypt_function(df), m_key_index(kidx) {
-                    AMS_ASSERT(bs != nullptr);
+                    AMS_ASSERT(m_base_storage != nullptr);
                     AMS_ASSERT(enc_key_size == KeySize);
                     AMS_ASSERT(iv != nullptr);
                     AMS_ASSERT(iv_size == IvSize);

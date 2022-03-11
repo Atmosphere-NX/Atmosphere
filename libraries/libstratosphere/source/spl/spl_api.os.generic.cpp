@@ -103,4 +103,10 @@ namespace ams::spl {
         R_RETURN(impl::LoadPreparedAesKey(slot, access_key));
     }
 
+    Result PrepareCommonEsTitleKey(AccessKey *out, const void *key_source, const size_t key_source_size, int generation) {
+        AMS_ASSERT(key_source_size == sizeof(KeySource));
+
+        R_RETURN(impl::PrepareCommonEsTitleKey(out, *static_cast<const KeySource *>(key_source), generation));
+    }
+
 }
