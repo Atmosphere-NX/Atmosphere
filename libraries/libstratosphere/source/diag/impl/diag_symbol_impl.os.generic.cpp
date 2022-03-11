@@ -19,15 +19,8 @@
 #define PACKAGE "stratosphere"
 #define PACKAGE_VERSION STRINGIFY(ATMOSPHERE_RELEASE_VERSION_MAJOR.ATMOSPHERE_RELEASE_VERSION_MINOR.ATMOSPHERE_RELEASE_VERSION_MICRO)
 
-/* msys2 mingw64 puts headers inside binutils/ */
-#if defined(ATMOSPHERE_OS_WINDOWS)
-#include <binutils/bfd.h>
-#include <psapi.h>
-#else
-#include <bfd.h>
-#endif
-
 #if defined(ATMOSPHERE_OS_LINUX)
+#include <bfd.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <link.h>
@@ -119,15 +112,7 @@ namespace ams::diag::impl {
                     }
 
                     /* Get our module base/size. */
-                    #if defined(ATMOSPHERE_OS_WINDOWS)
-                    {
-                        MODULEINFO module_info;
-                        if (::GetModuleInformation(::GetCurrentProcess(), ::GetModuleHandleA(nullptr), std::addressof(module_info), sizeof(module_info))) {
-                            m_module_address = reinterpret_cast<uintptr_t>(module_info.lpBaseOfDll);
-                            m_module_size    = static_cast<size_t>(module_info.SizeOfImage);
-                        }
-                    }
-                    #elif defined(ATMOSPHERE_OS_LINUX)
+                    #if defined(ATMOSPHERE_OS_LINUX)
                     {
                         m_module_address = _r_debug.r_map->l_addr;
 
@@ -166,18 +151,6 @@ namespace ams::diag::impl {
 
                     if (m_module_address <= address && address < m_module_address + m_module_size) {
                         displacement = m_module_address;
-
-                        #if defined(ATMOSPHERE_OS_WINDOWS)
-                        {
-                            #if defined(__MINGW64__)
-                                displacement -= UINT64_C(0x140000000);
-                            #elif defined(__MINGW32__)
-                                displacement -= UINT64_C(0x400000);
-                            #else
-                                #error "Unknown build context for windows module base!"
-                            #endif
-                        }
-                        #endif
                     }
 
                     return displacement;
@@ -242,23 +215,7 @@ namespace ams::diag::impl {
                 }
             private:
                 static void GetExecutablePath(char *dst, size_t dst_size) {
-                    #if defined(ATMOSPHERE_OS_WINDOWS)
-                    {
-                        /* Get the module file name. */
-                        wchar_t module_file_name[0x1000];
-                        if (::GetModuleFileNameW(0, module_file_name, util::size(module_file_name)) == 0) {
-                            dst[0] = 0;
-                            return;
-                        }
-
-                        /* Convert to utf-8. */
-                        const auto res = ::WideCharToMultiByte(CP_UTF8, 0, module_file_name, -1, dst, dst_size, nullptr, nullptr);
-                        if (res == 0) {
-                            dst[0] = 0;
-                            return;
-                        }
-                    }
-                    #elif defined(ATMOSPHERE_OS_LINUX)
+                    #if defined(ATMOSPHERE_OS_LINUX)
                     {
                         if (::readlink("/proc/self/exe", dst, dst_size) == -1) {
                             dst[0] = 0;
