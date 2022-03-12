@@ -33,12 +33,6 @@ namespace ams::os::impl {
 
     namespace {
 
-        enum AddressAllocationResult {
-            AddressAllocationResult_Success,
-            AddressAllocationResult_OutOfMemory,
-            AddressAllocationResult_OutOfSpace,
-        };
-
         class AddressRegion : public util::IntrusiveRedBlackTreeBaseNode<AddressRegion> {
             private:
                 uintptr_t m_address;

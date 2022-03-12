@@ -19,6 +19,12 @@
 
 namespace ams::os::impl {
 
+    enum AddressAllocationResult {
+        AddressAllocationResult_Success,
+        AddressAllocationResult_OutOfMemory,
+        AddressAllocationResult_OutOfSpace,
+    };
+
     template<std::unsigned_integral AddressType, std::unsigned_integral SizeType>
     class AddressSpaceAllocatorBase {
         NON_COPYABLE(AddressSpaceAllocatorBase);
