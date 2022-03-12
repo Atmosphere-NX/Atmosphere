@@ -893,6 +893,10 @@ namespace ams::fssystem {
                     }
 
                     void Invalidate() {
+                        /* Acquire exclusive access to our manager. */
+                        std::scoped_lock lk(m_mutex);
+
+                        /* Invalidate all entries. */
                         return m_block_cache_manager.Invalidate();
                     }
 
@@ -1095,11 +1099,17 @@ namespace ams::fssystem {
                         AMS_ASSERT(out != nullptr);
                         AMS_ASSERT(out_entry != nullptr);
 
+                        /* Acquire exclusive access to our entries. */
+                        std::scoped_lock lk(m_mutex);
+
                         /* Find the buffer. */
                         R_RETURN(this->FindBufferImpl(out, out_entry, offset));
                     }
 
                     Result FindBufferImpl(fs::IBufferManager::MemoryRange *out, CacheEntry *out_entry, s64 offset) {
+                        /* Check pre-conditions. */
+                        AMS_ASSERT(m_mutex.IsLockedByCurrentThread());
+
                         /* Get our block cache count */
                         const auto count = m_block_cache_manager.GetCount();
 
