@@ -35,7 +35,7 @@ namespace ams::fssystem::save {
         private:
             BufferedStorage *m_buffered_storage;
             std::pair<uintptr_t, size_t> m_memory_range;
-            IBufferManager::CacheHandle m_cache_handle;
+            fs::IBufferManager::CacheHandle m_cache_handle;
             s64 m_offset;
             std::atomic<bool> m_is_valid;
             std::atomic<bool> m_is_dirty;
@@ -139,7 +139,7 @@ namespace ams::fssystem::save {
                     /* Ensure our buffer state is coherent. */
                     if (m_memory_range.first != InvalidAddress && !m_is_dirty) {
                         if (this->IsValid()) {
-                            m_cache_handle = m_buffered_storage->m_buffer_manager->RegisterCache(m_memory_range.first, m_memory_range.second, IBufferManager::BufferAttribute());
+                            m_cache_handle = m_buffered_storage->m_buffer_manager->RegisterCache(m_memory_range.first, m_memory_range.second, fs::IBufferManager::BufferAttribute());
                         } else {
                             m_buffered_storage->m_buffer_manager->DeallocateBuffer(m_memory_range.first, m_memory_range.second);
                         }
@@ -360,11 +360,11 @@ namespace ams::fssystem::save {
             }
         private:
             Result AllocateFetchBuffer() {
-                IBufferManager *buffer_manager = m_buffered_storage->m_buffer_manager;
+                fs::IBufferManager *buffer_manager = m_buffered_storage->m_buffer_manager;
                 AMS_ASSERT(buffer_manager->AcquireCache(m_cache_handle).first == InvalidAddress);
 
                 auto range_guard = SCOPE_GUARD { m_memory_range.first = InvalidAddress; };
-                R_TRY(buffers::AllocateBufferUsingBufferManagerContext(std::addressof(m_memory_range), buffer_manager, m_buffered_storage->m_block_size, IBufferManager::BufferAttribute(), [](const std::pair<uintptr_t, size_t> &buffer) {
+                R_TRY(buffers::AllocateBufferUsingBufferManagerContext(std::addressof(m_memory_range), buffer_manager, m_buffered_storage->m_block_size, fs::IBufferManager::BufferAttribute(), [](const std::pair<uintptr_t, size_t> &buffer) {
                     return buffer.first != 0;
                 }, AMS_CURRENT_FUNCTION_NAME));
 
@@ -591,7 +591,7 @@ namespace ams::fssystem::save {
        this->Finalize();
     }
 
-    Result BufferedStorage::Initialize(fs::SubStorage base_storage, IBufferManager *buffer_manager, size_t block_size, s32 buffer_count) {
+    Result BufferedStorage::Initialize(fs::SubStorage base_storage, fs::IBufferManager *buffer_manager, size_t block_size, s32 buffer_count) {
         AMS_ASSERT(buffer_manager != nullptr);
         AMS_ASSERT(block_size > 0);
         AMS_ASSERT(util::IsPowerOfTwo(block_size));

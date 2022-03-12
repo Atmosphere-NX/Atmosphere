@@ -307,6 +307,7 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageA,        5324);
             R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageB,        5325);
             R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageC,        5326);
+            R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageD,        5327);
             R_DEFINE_ERROR_RESULT(UnexpectedInPathA,                     5328);
 
         R_DEFINE_ERROR_RANGE(PreconditionViolation, 6000, 6499);
@@ -394,6 +395,7 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInLocalFileA,                                 6378);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInDirectorySaveDataFileSystemA,               6384);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInCompressedStorageA,                         6387);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperationInCompressedStorageB,                         6388);
 
                 R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
                     R_DEFINE_ERROR_RESULT(PermissionDeniedForCreateHostFileSystem, 6403);

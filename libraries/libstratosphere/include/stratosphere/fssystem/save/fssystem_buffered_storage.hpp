@@ -18,7 +18,7 @@
 #include <stratosphere/os.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
 #include <stratosphere/fs/fs_substorage.hpp>
-#include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 
 namespace ams::fssystem::save {
 
@@ -31,7 +31,7 @@ namespace ams::fssystem::save {
             class SharedCache;
         private:
             fs::SubStorage m_base_storage;
-            IBufferManager *m_buffer_manager;
+            fs::IBufferManager *m_buffer_manager;
             size_t m_block_size;
             s64 m_base_storage_size;
             std::unique_ptr<Cache[]> m_caches;
@@ -44,7 +44,7 @@ namespace ams::fssystem::save {
             BufferedStorage();
             virtual ~BufferedStorage();
 
-            Result Initialize(fs::SubStorage base_storage, IBufferManager *buffer_manager, size_t block_size, s32 buffer_count);
+            Result Initialize(fs::SubStorage base_storage, fs::IBufferManager *buffer_manager, size_t block_size, s32 buffer_count);
             void Finalize();
 
             bool IsInitialized() const { return m_caches != nullptr; }
@@ -61,7 +61,7 @@ namespace ams::fssystem::save {
 
             void InvalidateCaches();
 
-            IBufferManager *GetBufferManager() const { return m_buffer_manager; }
+            fs::IBufferManager *GetBufferManager() const { return m_buffer_manager; }
 
             void EnableBulkRead() { m_bulk_read_enabled = true; }
         private:

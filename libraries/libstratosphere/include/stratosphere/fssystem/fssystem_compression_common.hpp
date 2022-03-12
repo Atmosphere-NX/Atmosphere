@@ -18,9 +18,9 @@
 
 namespace ams::fssystem {
 
-    enum CompressionType {
+    enum CompressionType : u8 {
         CompressionType_None    = 0,
-        CompressionType_1       = 1,
+        CompressionType_Zeros   = 1,
         CompressionType_2       = 2,
         CompressionType_Lz4     = 3,
         CompressionType_Unknown = 4,
@@ -29,14 +29,16 @@ namespace ams::fssystem {
     using DecompressorFunction    = Result (*)(void *, size_t, const void *, size_t);
     using GetDecompressorFunction = DecompressorFunction (*)(CompressionType);
 
+    constexpr s64 CompressionBlockAlignment = 0x10;
+
     namespace CompressionTypeUtility {
 
         constexpr bool IsBlockAlignmentRequired(CompressionType type) {
-            return type != CompressionType_None && type != CompressionType_1;
+            return type != CompressionType_None && type != CompressionType_Zeros;
         }
 
         constexpr bool IsDataStorageAccessRequired(CompressionType type) {
-            return type != CompressionType_1;
+            return type != CompressionType_Zeros;
         }
 
         constexpr bool IsRandomAccessible(CompressionType type) {

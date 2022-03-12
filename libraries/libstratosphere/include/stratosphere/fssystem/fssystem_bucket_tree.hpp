@@ -53,6 +53,29 @@ namespace ams::fssystem {
             static_assert(util::is_pod<NodeHeader>::value);
             static_assert(sizeof(NodeHeader) == 0x10);
 
+            struct Offsets {
+                s64 start_offset;
+                s64 end_offset;
+
+                constexpr bool IsInclude(s64 offset) const {
+                    return this->start_offset <= offset & offset < this->end_offset;
+                }
+
+                constexpr bool IsInclude(s64 offset, s64 size) const {
+                    return size > 0 && this->start_offset <= offset && size <= (this->end_offset - offset);
+                }
+            };
+            static_assert(util::is_pod<Offsets>::value);
+            static_assert(sizeof(Offsets) == 0x10);
+
+            struct OffsetCache {
+                Offsets offsets;
+                os::SdkMutex mutex;
+                bool is_initialized;
+
+                constexpr OffsetCache() : offsets{ -1, -1 }, mutex(), is_initialized(false) { /* ... */ }
+            };
+
             class ContinuousReadingInfo {
                 private:
                     size_t m_read_size;
@@ -213,10 +236,9 @@ namespace ams::fssystem {
             s32 m_entry_count;
             s32 m_offset_count;
             s32 m_entry_set_count;
-            s64 m_start_offset;
-            s64 m_end_offset;
+            OffsetCache m_offset_cache;
         public:
-            BucketTree() : m_node_storage(), m_entry_storage(), m_node_l1(), m_node_size(), m_entry_size(), m_entry_count(), m_offset_count(), m_entry_set_count(), m_start_offset(), m_end_offset() { /* ... */ }
+            BucketTree() : m_node_storage(), m_entry_storage(), m_node_l1(), m_node_size(), m_entry_size(), m_entry_count(), m_offset_count(), m_entry_set_count(), m_offset_cache() { /* ... */ }
             ~BucketTree() { this->Finalize(); }
 
             Result Initialize(IAllocator *allocator, fs::SubStorage node_storage, fs::SubStorage entry_storage, size_t node_size, size_t entry_size, s32 entry_count);
@@ -226,22 +248,19 @@ namespace ams::fssystem {
             bool IsInitialized() const { return m_node_size > 0; }
             bool IsEmpty() const { return m_entry_size == 0; }
 
-            Result Find(Visitor *visitor, s64 virtual_address) const;
+            Result Find(Visitor *visitor, s64 virtual_address);
             Result InvalidateCache();
 
             s32 GetEntryCount() const { return m_entry_count; }
             IAllocator *GetAllocator() const { return m_node_l1.GetAllocator(); }
 
-            s64 GetStart() const { return m_start_offset; }
-            s64 GetEnd() const { return m_end_offset; }
-            s64 GetSize() const { return m_end_offset - m_start_offset; }
+            Result GetOffsets(Offsets *out) {
+                /* Ensure we have an offset cache. */
+                R_TRY(this->EnsureOffsetCache());
 
-            bool Includes(s64 offset) const {
-                return m_start_offset <= offset && offset < m_end_offset;
-            }
-
-            bool Includes(s64 offset, s64 size) const {
-                return size > 0 && m_start_offset <= offset && size <= m_end_offset - offset;
+                /* Set the output. */
+                *out = m_offset_cache.offsets;
+                R_SUCCEED();
             }
         private:
             template<typename EntryType>
@@ -250,6 +269,7 @@ namespace ams::fssystem {
                 size_t size;
                 NodeHeader entry_set;
                 s32 entry_index;
+                Offsets offsets;
                 EntryType entry;
             };
         private:
@@ -262,6 +282,8 @@ namespace ams::fssystem {
             s64 GetEntrySetIndex(s32 node_index, s32 offset_index) const {
                 return (m_offset_count - m_node_l1->count) + (m_offset_count * node_index) + offset_index;
             }
+
+            Result EnsureOffsetCache();
     };
 
     class BucketTree::Visitor {
@@ -283,6 +305,7 @@ namespace ams::fssystem {
             static_assert(util::is_pod<EntrySetHeader>::value);
         private:
             const BucketTree *m_tree;
+            BucketTree::Offsets m_offsets;
             void *m_entry;
             s32 m_entry_index;
             s32 m_entry_set_count;
@@ -314,7 +337,7 @@ namespace ams::fssystem {
 
             const BucketTree *GetTree() const { return m_tree; }
         private:
-            Result Initialize(const BucketTree *tree);
+            Result Initialize(const BucketTree *tree, const BucketTree::Offsets &offsets);
 
             Result Find(s64 virtual_address);
 

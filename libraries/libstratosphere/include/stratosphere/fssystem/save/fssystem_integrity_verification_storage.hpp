@@ -43,7 +43,7 @@ namespace ams::fssystem::save {
             s64 m_verification_block_order;
             s64 m_upper_layer_verification_block_size;
             s64 m_upper_layer_verification_block_order;
-            IBufferManager *m_buffer_manager;
+            fs::IBufferManager *m_buffer_manager;
             fs::HashSalt m_salt;
             bool m_is_real_data;
             fs::StorageType m_storage_type;
@@ -52,7 +52,7 @@ namespace ams::fssystem::save {
             IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
+            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;

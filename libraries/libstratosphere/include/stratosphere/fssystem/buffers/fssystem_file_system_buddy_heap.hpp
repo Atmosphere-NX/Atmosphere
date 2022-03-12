@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/fs/impl/fs_newable.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 
 namespace ams::fssystem {
 

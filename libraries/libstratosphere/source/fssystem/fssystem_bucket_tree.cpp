@@ -154,7 +154,7 @@ namespace ams::fssystem {
 
         /* Allocate node. */
         R_UNLESS(m_node_l1.Allocate(allocator, node_size), fs::ResultBufferAllocationFailed());
-        auto node_guard = SCOPE_GUARD { m_node_l1.Free(node_size); };
+        ON_RESULT_FAILURE { m_node_l1.Free(node_size); };
 
         /* Read node. */
         R_TRY(node_storage.Read(0, m_node_l1.Get(), node_size));
@@ -186,12 +186,13 @@ namespace ams::fssystem {
         m_entry_count     = entry_count;
         m_offset_count    = offset_count;
         m_entry_set_count = entry_set_count;
-        m_start_offset    = start_offset;
-        m_end_offset      = end_offset;
+
+        m_offset_cache.offsets.start_offset = start_offset;
+        m_offset_cache.offsets.end_offset   = end_offset;
+        m_offset_cache.is_initialized       = true;
 
         /* Cancel guard. */
-        node_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void BucketTree::Initialize(size_t node_size, s64 end_offset) {
@@ -201,7 +202,10 @@ namespace ams::fssystem {
         AMS_ASSERT(!this->IsInitialized());
 
         m_node_size  = node_size;
-        m_end_offset = end_offset;
+
+        m_offset_cache.offsets.start_offset = 0;
+        m_offset_cache.offsets.end_offset   = end_offset;
+        m_offset_cache.is_initialized       = true;
     }
 
     void BucketTree::Finalize() {
@@ -214,69 +218,77 @@ namespace ams::fssystem {
             m_entry_count     = 0;
             m_offset_count    = 0;
             m_entry_set_count = 0;
-            m_start_offset    = 0;
-            m_end_offset      = 0;
+
+            m_offset_cache.offsets.start_offset = 0;
+            m_offset_cache.offsets.end_offset   = 0;
+            m_offset_cache.is_initialized       = false;
         }
     }
 
-    Result BucketTree::Find(Visitor *visitor, s64 virtual_address) const {
+    Result BucketTree::Find(Visitor *visitor, s64 virtual_address) {
         AMS_ASSERT(visitor != nullptr);
         AMS_ASSERT(this->IsInitialized());
 
         R_UNLESS(virtual_address >= 0, fs::ResultInvalidOffset());
         R_UNLESS(!this->IsEmpty(),     fs::ResultOutOfRange());
 
-        R_TRY(visitor->Initialize(this));
+        BucketTree::Offsets offsets;
+        R_TRY(this->GetOffsets(std::addressof(offsets)));
+
+        R_TRY(visitor->Initialize(this, offsets));
 
         return visitor->Find(virtual_address);
     }
 
     Result BucketTree::InvalidateCache() {
         /* Invalidate the node storage cache. */
-        {
-            s64 storage_size;
-            R_TRY(m_node_storage.GetSize(std::addressof(storage_size)));
-            R_TRY(m_node_storage.OperateRange(fs::OperationId::Invalidate, 0, storage_size));
-        }
-
-        /* Refresh start/end offsets. */
-        {
-            /* Read node. */
-            R_TRY(m_node_storage.Read(0, m_node_l1.Get(), m_node_size));
-
-            /* Verify node. */
-            R_TRY(m_node_l1->Verify(0, m_node_size, sizeof(s64)));
-
-            /* Validate offsets. */
-            const auto * const node = m_node_l1.Get<Node>();
-
-            s64 start_offset;
-            if (m_offset_count < m_entry_set_count && node->GetCount() < m_offset_count) {
-                start_offset = *node->GetEnd();
-            } else {
-                start_offset = *node->GetBegin();
-            }
-            const auto end_offset = node->GetEndOffset();
-
-            R_UNLESS(0 <= start_offset && start_offset <= node->GetBeginOffset(), fs::ResultInvalidBucketTreeEntryOffset());
-            R_UNLESS(start_offset < end_offset,                                   fs::ResultInvalidBucketTreeEntryOffset());
-
-            /* Set refreshed offsets. */
-            m_start_offset = start_offset;
-            m_end_offset   = end_offset;
-        }
+        R_TRY(m_node_storage.OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max()));
 
         /* Invalidate the entry storage cache. */
-        {
-            s64 storage_size;
-            R_TRY(m_entry_storage.GetSize(std::addressof(storage_size)));
-            R_TRY(m_entry_storage.OperateRange(fs::OperationId::Invalidate, 0, storage_size));
-        }
+        R_TRY(m_entry_storage.OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max()));
 
-        return ResultSuccess();
+        /* Reset our offsets. */
+        m_offset_cache.is_initialized = false;
+
+        R_SUCCEED();
     }
 
-    Result BucketTree::Visitor::Initialize(const BucketTree *tree) {
+    Result BucketTree::EnsureOffsetCache() {
+        /* If we already have an offset cache, we're good. */
+        R_SUCCEED_IF(m_offset_cache.is_initialized);
+
+        /* Acquire exclusive right to edit the offset cache. */
+        std::scoped_lock lk(m_offset_cache.mutex);
+
+        /* Check again, to be sure. */
+        R_SUCCEED_IF(m_offset_cache.is_initialized);
+
+        /* Read/verify L1. */
+        R_TRY(m_node_storage.Read(0, m_node_l1.Get(), m_node_size));
+        R_TRY(m_node_l1->Verify(0, m_node_size, sizeof(s64)));
+
+        /* Get the node. */
+        auto * const node = m_node_l1.Get<Node>();
+
+        s64 start_offset;
+        if (m_offset_count < m_entry_set_count && node->GetCount() < m_offset_count) {
+            start_offset = *node->GetEnd();
+        } else {
+            start_offset = *node->GetBegin();
+        }
+        const auto end_offset = node->GetEndOffset();
+
+        R_UNLESS(0 <= start_offset && start_offset <= node->GetBeginOffset(), fs::ResultInvalidBucketTreeEntryOffset());
+        R_UNLESS(start_offset < end_offset,                                   fs::ResultInvalidBucketTreeEntryOffset());
+
+        m_offset_cache.offsets.start_offset = start_offset;
+        m_offset_cache.offsets.end_offset   = end_offset;
+        m_offset_cache.is_initialized       = true;
+
+        R_SUCCEED();
+    }
+
+    Result BucketTree::Visitor::Initialize(const BucketTree *tree, const BucketTree::Offsets &offsets) {
         AMS_ASSERT(tree != nullptr);
         AMS_ASSERT(m_tree == nullptr || m_tree == tree);
 
@@ -284,7 +296,8 @@ namespace ams::fssystem {
             m_entry = tree->GetAllocator()->Allocate(tree->m_entry_size);
             R_UNLESS(m_entry != nullptr, fs::ResultBufferAllocationFailed());
 
-            m_tree = tree;
+            m_tree    = tree;
+            m_offsets = offsets;
         }
 
         return ResultSuccess();
@@ -319,7 +332,7 @@ namespace ams::fssystem {
         /* Read the new entry. */
         const auto entry_size   = m_tree->m_entry_size;
         const auto entry_offset = impl::GetBucketTreeEntryOffset(m_entry_set.info.index, m_tree->m_node_size, entry_size, entry_index);
-        R_TRY(m_tree->m_entry_storage.Read(entry_offset, std::addressof(m_entry), entry_size));
+        R_TRY(m_tree->m_entry_storage.Read(entry_offset, m_entry, entry_size));
 
         /* Note that we changed index. */
         m_entry_index = entry_index;
@@ -357,7 +370,7 @@ namespace ams::fssystem {
         /* Read the new entry. */
         const auto entry_size   = m_tree->m_entry_size;
         const auto entry_offset = impl::GetBucketTreeEntryOffset(m_entry_set.info.index, m_tree->m_node_size, entry_size, entry_index);
-        R_TRY(m_tree->m_entry_storage.Read(entry_offset, std::addressof(m_entry), entry_size));
+        R_TRY(m_tree->m_entry_storage.Read(entry_offset, m_entry, entry_size));
 
         /* Note that we changed index. */
         m_entry_index = entry_index;

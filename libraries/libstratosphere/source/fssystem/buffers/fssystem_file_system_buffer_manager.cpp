@@ -239,10 +239,10 @@ namespace ams::fssystem {
         return it != m_attr_list.end() ? std::addressof(*it) : nullptr;
     }
 
-    const std::pair<uintptr_t, size_t> FileSystemBufferManager::AllocateBufferImpl(size_t size, const BufferAttribute &attr) {
+    const fs::IBufferManager::MemoryRange FileSystemBufferManager::DoAllocateBuffer(size_t size, const BufferAttribute &attr) {
         std::scoped_lock lk(m_mutex);
 
-        std::pair<uintptr_t, size_t> range = {};
+        fs::IBufferManager::MemoryRange range = {};
         const auto order = m_buddy_heap.GetOrderFromBytes(size);
         AMS_ASSERT(order >= 0);
 
@@ -277,7 +277,7 @@ namespace ams::fssystem {
         return range;
     }
 
-    void FileSystemBufferManager::DeallocateBufferImpl(uintptr_t address, size_t size) {
+    void FileSystemBufferManager::DoDeallocateBuffer(uintptr_t address, size_t size) {
         AMS_ASSERT(util::IsPowerOfTwo(size));
 
         std::scoped_lock lk(m_mutex);
@@ -285,7 +285,7 @@ namespace ams::fssystem {
         m_buddy_heap.Free(reinterpret_cast<void *>(address), m_buddy_heap.GetOrderFromBytes(size));
     }
 
-    FileSystemBufferManager::CacheHandle FileSystemBufferManager::RegisterCacheImpl(uintptr_t address, size_t size, const BufferAttribute &attr) {
+    FileSystemBufferManager::CacheHandle FileSystemBufferManager::DoRegisterCache(uintptr_t address, size_t size, const BufferAttribute &attr) {
         std::scoped_lock lk(m_mutex);
 
         CacheHandle handle = 0;
@@ -312,10 +312,10 @@ namespace ams::fssystem {
         return handle;
     }
 
-    const std::pair<uintptr_t, size_t> FileSystemBufferManager::AcquireCacheImpl(CacheHandle handle) {
+    const fs::IBufferManager::MemoryRange FileSystemBufferManager::DoAcquireCache(CacheHandle handle) {
         std::scoped_lock lk(m_mutex);
 
-        std::pair<uintptr_t, size_t> range = {};
+        fs::IBufferManager::MemoryRange range = {};
         if (m_cache_handle_table.Unregister(std::addressof(range.first), std::addressof(range.second), handle)) {
             const size_t total_allocatable_size = m_buddy_heap.GetTotalFreeSize() + m_cache_handle_table.GetTotalCacheSize();
             m_peak_total_allocatable_size = std::min(m_peak_total_allocatable_size, total_allocatable_size);
@@ -327,33 +327,33 @@ namespace ams::fssystem {
         return range;
     }
 
-    size_t FileSystemBufferManager::GetTotalSizeImpl() const {
+    size_t FileSystemBufferManager::DoGetTotalSize() const {
         return m_total_size;
     }
 
-    size_t FileSystemBufferManager::GetFreeSizeImpl() const {
+    size_t FileSystemBufferManager::DoGetFreeSize() const {
         std::scoped_lock lk(m_mutex);
 
         return m_buddy_heap.GetTotalFreeSize();
     }
 
-    size_t FileSystemBufferManager::GetTotalAllocatableSizeImpl() const {
+    size_t FileSystemBufferManager::DoGetTotalAllocatableSize() const {
         return this->GetFreeSize() + m_cache_handle_table.GetTotalCacheSize();
     }
 
-    size_t FileSystemBufferManager::GetPeakFreeSizeImpl() const {
+    size_t FileSystemBufferManager::DoGetFreeSizePeak() const {
         return m_peak_free_size;
     }
 
-    size_t FileSystemBufferManager::GetPeakTotalAllocatableSizeImpl() const {
+    size_t FileSystemBufferManager::DoGetTotalAllocatableSizePeak() const {
         return m_peak_total_allocatable_size;
     }
 
-    size_t FileSystemBufferManager::GetRetriedCountImpl() const {
+    size_t FileSystemBufferManager::DoGetRetriedCount() const {
         return m_retried_count;
     }
 
-    void FileSystemBufferManager::ClearPeakImpl() {
+    void FileSystemBufferManager::DoClearPeak() {
         m_peak_free_size = this->GetFreeSize();
         m_retried_count  = 0;
     }

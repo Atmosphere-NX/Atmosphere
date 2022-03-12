@@ -94,22 +94,27 @@ namespace ams::fssystem {
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ASSERT(out != nullptr);
-                *out = m_table.GetSize();
-                return ResultSuccess();
+
+                BucketTree::Offsets offsets;
+                R_TRY(m_table.GetOffsets(std::addressof(offsets)));
+
+                *out = offsets.end_offset;
+
+                R_SUCCEED();
             }
 
             virtual Result Flush() override {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageA();
+                R_THROW(fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageA());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageB();
+                R_THROW(fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageB());
             }
         private:
             Result Initialize(IAllocator *allocator, const void *key, size_t key_size, u32 secure_value, fs::SubStorage data_storage, fs::SubStorage table_storage);

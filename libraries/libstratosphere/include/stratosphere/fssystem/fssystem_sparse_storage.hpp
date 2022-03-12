@@ -36,32 +36,32 @@ namespace ams::fssystem {
                     if (size > 0) {
                         std::memset(buffer, 0, size);
                     }
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     AMS_UNUSED(dst, dst_size, op_id, offset, size, src, src_size);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result GetSize(s64 *out) override {
                     AMS_ASSERT(out != nullptr);
                     *out = std::numeric_limits<s64>::max();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result Flush() override {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                     AMS_UNUSED(offset, buffer, size);
-                    return fs::ResultUnsupportedOperationInZeroStorageA();
+                    R_THROW(fs::ResultUnsupportedOperationInZeroStorageA());
                 }
 
                 virtual Result SetSize(s64 size) override {
                     AMS_UNUSED(size);
-                    return fs::ResultUnsupportedOperationInZeroStorageB();
+                    R_THROW(fs::ResultUnsupportedOperationInZeroStorageB());
                 }
             };
         private:

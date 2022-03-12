@@ -133,22 +133,26 @@ namespace ams::fssystem {
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ASSERT(out != nullptr);
-                *out = m_table.GetEnd();
-                return ResultSuccess();
+
+                BucketTree::Offsets offsets;
+                R_TRY(m_table.GetOffsets(std::addressof(offsets)));
+
+                *out = offsets.end_offset;
+                R_SUCCEED();
             }
 
             virtual Result Flush() override {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                return fs::ResultUnsupportedOperationInIndirectStorageA();
+                R_THROW(fs::ResultUnsupportedOperationInIndirectStorageA());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                return fs::ResultUnsupportedOperationInIndirectStorageB();
+                R_THROW(fs::ResultUnsupportedOperationInIndirectStorageB());
             }
         protected:
             BucketTree &GetEntryTable() { return m_table; }
@@ -158,7 +162,7 @@ namespace ams::fssystem {
                 return m_data_storage[index];
             }
 
-            template<bool ContinuousCheck, typename F>
+            template<bool ContinuousCheck, bool RangeCheck, typename F>
             Result OperatePerEntry(s64 offset, s64 size, F func);
     };
 

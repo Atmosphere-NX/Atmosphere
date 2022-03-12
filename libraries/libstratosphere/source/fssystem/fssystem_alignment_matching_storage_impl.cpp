@@ -249,9 +249,10 @@ namespace ams::fssystem {
 
         /* Handle any data after the aligned portion. */
         if (core_offset_end < offset_end) {
-            const auto tail_size = static_cast<size_t>(offset_end - core_offset_end);
+            const auto tail_buffer = static_cast<char *>(buffer) + (core_offset_end - offset);
+            const auto tail_size   = static_cast<size_t>(offset_end - core_offset_end);
             R_TRY(m_base_storage->Read(core_offset_end, pooled_buffer.GetBuffer(), m_data_align));
-            std::memcpy(buffer, pooled_buffer.GetBuffer(), tail_size);
+            std::memcpy(tail_buffer, pooled_buffer.GetBuffer(), tail_size);
         }
 
         return ResultSuccess();
