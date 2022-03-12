@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     namespace {
 

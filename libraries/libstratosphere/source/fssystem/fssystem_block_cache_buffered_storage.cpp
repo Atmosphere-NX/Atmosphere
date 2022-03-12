@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     BlockCacheBufferedStorage::BlockCacheBufferedStorage() : m_mutex(), m_data_storage(), m_last_result(ResultSuccess()), m_data_size(), m_verification_block_size(), m_verification_block_shift(), m_flags(), m_buffer_level(-1), m_block_cache_manager()
     {

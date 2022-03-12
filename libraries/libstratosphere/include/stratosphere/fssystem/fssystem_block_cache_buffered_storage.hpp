@@ -19,11 +19,10 @@
 #include <stratosphere/fs/fs_storage_type.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
 #include <stratosphere/fs/fs_memory_management.hpp>
-#include <stratosphere/fssystem/save/fssystem_i_save_file_system_driver.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
 #include <stratosphere/fssystem/impl/fssystem_block_cache_manager.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     constexpr inline size_t IntegrityMinLayerCount          = 2;
     constexpr inline size_t IntegrityMaxLayerCount          = 7;

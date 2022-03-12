@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type) {
         /* Validate preconditions. */
