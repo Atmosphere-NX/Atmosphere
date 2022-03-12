@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    Result IntegrityRomFsStorage::Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, fs::IBufferManager *bm, IHash256GeneratorFactory *hgf) {
+    Result IntegrityRomFsStorage::Initialize(HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, fs::IBufferManager *bm, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(bm != nullptr);
 

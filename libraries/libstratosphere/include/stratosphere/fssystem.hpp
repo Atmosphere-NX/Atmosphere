@@ -13,10 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <stratosphere/fssystem/fssystem_allocator_utility.hpp>
 #include <stratosphere/fssystem/fssystem_utility.hpp>
+#include <stratosphere/fssystem/fssystem_bitmap_utils.hpp>
 #include <stratosphere/fssystem/fssystem_speed_emulation_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_external_code.hpp>
 #include <stratosphere/fssystem/fssystem_forwarding_file_system.hpp>
@@ -46,8 +46,8 @@
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage_impl.hpp>
 #include <stratosphere/fssystem/fssystem_alignment_matching_storage.hpp>
 #include <stratosphere/fssystem/fssystem_compressed_storage.hpp>
-#include <stratosphere/fssystem/save/fssystem_buffered_storage.hpp>
-#include <stratosphere/fssystem/save/fssystem_hierarchical_integrity_verification_storage.hpp>
+#include <stratosphere/fssystem/fssystem_buffered_storage.hpp>
+#include <stratosphere/fssystem/fssystem_hierarchical_integrity_verification_storage.hpp>
 #include <stratosphere/fssystem/fssystem_integrity_romfs_storage.hpp>
 #include <stratosphere/fssystem/fssystem_sha256_hash_generator.hpp>
 #include <stratosphere/fssystem/fssystem_local_file_system.hpp>

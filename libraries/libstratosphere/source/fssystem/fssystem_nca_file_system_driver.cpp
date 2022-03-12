@@ -549,7 +549,7 @@ namespace ams::fssystem {
                     R_TRY(base_storage->GetSize(std::addressof(base_size)));
 
                     /* Create buffered storage. */
-                    auto buffered_storage = fssystem::AllocateShared<save::BufferedStorage>();
+                    auto buffered_storage = fssystem::AllocateShared<BufferedStorage>();
                     R_UNLESS(buffered_storage != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
                     /* Initialize the buffered storage. */
@@ -655,7 +655,7 @@ namespace ams::fssystem {
         R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + meta_offset, sparse_info.MakeAesCtrUpperIv(upper_iv), AlignmentStorageRequirement_None));
 
         /* Create meta storage. */
-        auto meta_storage = fssystem::AllocateShared<save::BufferedStorage>();
+        auto meta_storage = fssystem::AllocateShared<BufferedStorage>();
         R_UNLESS(meta_storage != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         /* Initialize the meta storage. */
@@ -789,7 +789,7 @@ namespace ams::fssystem {
         R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + meta_offset, upper_iv, AlignmentStorageRequirement_None));
 
         /* Create meta storage. */
-        auto meta_storage = fssystem::AllocateShared<save::BufferedStorage>();
+        auto meta_storage = fssystem::AllocateShared<BufferedStorage>();
         R_UNLESS(meta_storage != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         /* Initialize the meta storage. */
@@ -921,7 +921,7 @@ namespace ams::fssystem {
         R_UNLESS(patch_info.indirect_offset + patch_info.indirect_size <= base_size, fs::ResultNcaBaseStorageOutOfRangeE());
 
         /* Allocate the meta storage. */
-        auto meta_storage = fssystem::AllocateShared<save::BufferedStorage>();
+        auto meta_storage = fssystem::AllocateShared<BufferedStorage>();
         R_UNLESS(meta_storage != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         /* Initialize the meta storage. */
@@ -954,7 +954,7 @@ namespace ams::fssystem {
         AMS_ASSERT(util::IsAligned(indirect_data_size, NcaHeader::XtsBlockSize));
 
         /* Create the indirect data storage. */
-        auto indirect_data_storage = fssystem::AllocateShared<save::BufferedStorage>();
+        auto indirect_data_storage = fssystem::AllocateShared<BufferedStorage>();
         R_UNLESS(indirect_data_storage != nullptr, fs::ResultAllocationFailureInAllocateShared());
 
         /* Initialize the indirect data storage. */
@@ -1061,15 +1061,15 @@ namespace ams::fssystem {
         AMS_ASSERT(base_storage != nullptr);
 
         /* Define storage types. */
-        using VerificationStorage = save::HierarchicalIntegrityVerificationStorage;
+        using VerificationStorage = HierarchicalIntegrityVerificationStorage;
         using StorageInfo         = VerificationStorage::HierarchicalStorageInformation;
 
         /* Validate the meta info. */
-        save::HierarchicalIntegrityVerificationInformation level_hash_info;
+        HierarchicalIntegrityVerificationInformation level_hash_info;
         std::memcpy(std::addressof(level_hash_info), std::addressof(meta_info.level_hash_info), sizeof(level_hash_info));
 
-        R_UNLESS(save::IntegrityMinLayerCount <= level_hash_info.max_layers,   fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
-        R_UNLESS(level_hash_info.max_layers   <= save::IntegrityMaxLayerCount, fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
+        R_UNLESS(IntegrityMinLayerCount <= level_hash_info.max_layers,   fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
+        R_UNLESS(level_hash_info.max_layers   <= IntegrityMaxLayerCount, fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
 
         /* Get the base storage size. */
         s64 base_storage_size;

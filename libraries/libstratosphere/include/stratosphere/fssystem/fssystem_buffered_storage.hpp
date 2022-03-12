@@ -20,7 +20,7 @@
 #include <stratosphere/fs/fs_substorage.hpp>
 #include <stratosphere/fs/fs_i_buffer_manager.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     class BufferedStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(BufferedStorage);

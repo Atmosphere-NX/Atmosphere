@@ -19,12 +19,9 @@
 #include <stratosphere/fs/fs_istorage.hpp>
 #include <stratosphere/fs/fs_substorage.hpp>
 #include <stratosphere/fs/fs_storage_type.hpp>
-#include <stratosphere/fs/fs_save_data_types.hpp>
-#include <stratosphere/fssystem/save/fssystem_save_types.hpp>
-#include <stratosphere/fssystem/save/fssystem_i_save_file_system_driver.hpp>
-#include <stratosphere/fssystem/save/fssystem_block_cache_buffered_storage.hpp>
+#include <stratosphere/fssystem/fssystem_block_cache_buffered_storage.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
 
     class IntegrityVerificationStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(IntegrityVerificationStorage);

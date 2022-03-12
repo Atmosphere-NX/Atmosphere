@@ -15,12 +15,26 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/lmem.hpp>
-#include <stratosphere/fs/fs_directory.hpp>
-#include <stratosphere/fs/fs_filesystem.hpp>
-#include <stratosphere/fssystem/dbm/fssystem_dbm_utils.hpp>
 
-namespace ams::fssystem::save {
+namespace ams::fssystem {
+
+    constexpr inline s32 CountLeadingZeros(u32 val) {
+        return util::CountLeadingZeros(val);
+    }
+
+    constexpr inline s32 CountLeadingOnes(u32 val) {
+        return CountLeadingZeros(~val);
+    }
+
+    inline u32 ReadU32(const u8 *buf, size_t index) {
+        u32 val;
+        std::memcpy(std::addressof(val), buf + index, sizeof(u32));
+        return val;
+    }
+
+    inline void WriteU32(u8 *buf, size_t index, u32 val) {
+        std::memcpy(buf + index, std::addressof(val), sizeof(u32));
+    }
 
    constexpr inline bool IsPowerOfTwo(s32 val) {
        return util::IsPowerOfTwo(val);
@@ -28,14 +42,15 @@ namespace ams::fssystem::save {
 
    constexpr inline u32 ILog2(u32 val) {
        AMS_ASSERT(val > 0);
-       return (BITSIZEOF(u32) - 1 - dbm::CountLeadingZeros(val));
+       return (BITSIZEOF(u32) - 1 - util::CountLeadingZeros<u32>(val));
    }
 
-   constexpr inline u32 CeilPowerOfTwo(u32 val) {
+   constexpr inline u32 CeilingPowerOfTwo(u32 val) {
        if (val == 0) {
            return 1;
        }
-       return ((1u << (BITSIZEOF(u32) - 1)) >> (dbm::CountLeadingZeros(val - 1) - 1));
+
+       return util::CeilingPowerOfTwo<u32>(val);
    }
 
 }

@@ -19,7 +19,7 @@
 #include <stratosphere/fs/fs_memory_storage.hpp>
 #include <stratosphere/fs/impl/fs_newable.hpp>
 #include <stratosphere/fssystem/fssystem_nca_header.hpp>
-#include <stratosphere/fssystem/save/fssystem_hierarchical_integrity_verification_storage.hpp>
+#include <stratosphere/fssystem/fssystem_hierarchical_integrity_verification_storage.hpp>
 
 namespace ams::fssystem {
 
@@ -28,8 +28,8 @@ namespace ams::fssystem {
 
     class IntegrityRomFsStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
-            save::HierarchicalIntegrityVerificationStorage m_integrity_storage;
-            save::FileSystemBufferManagerSet m_buffers;
+            HierarchicalIntegrityVerificationStorage m_integrity_storage;
+            FileSystemBufferManagerSet m_buffers;
             os::SdkRecursiveMutex m_mutex;
             Hash m_master_hash;
             std::unique_ptr<fs::MemoryStorage> m_master_hash_storage;
@@ -37,7 +37,7 @@ namespace ams::fssystem {
             IntegrityRomFsStorage() : m_mutex() { /* ... */ }
             virtual ~IntegrityRomFsStorage() override { this->Finalize(); }
 
-            Result Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, fs::IBufferManager *bm, IHash256GeneratorFactory *hgf);
+            Result Initialize(HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, fs::IBufferManager *bm, IHash256GeneratorFactory *hgf);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
@@ -66,7 +66,7 @@ namespace ams::fssystem {
                 return m_integrity_storage.Commit();
             }
 
-            save::FileSystemBufferManagerSet *GetBuffers() {
+            FileSystemBufferManagerSet *GetBuffers() {
                 return m_integrity_storage.GetBuffers();
             }
     };
