@@ -100,7 +100,7 @@ namespace ams::util {
             }
     };
 
-    template<typename F, typename = std::enable_if<!std::is_member_pointer<F>::value>::type>
+    template<typename F, typename = typename std::enable_if<!std::is_member_pointer<F>::value>::type>
     constexpr ALWAYS_INLINE auto MakeIFunction(F f) {
         static_assert(!std::is_member_pointer<F>::value);
 

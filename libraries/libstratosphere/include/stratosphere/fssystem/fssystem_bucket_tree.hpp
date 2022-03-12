@@ -58,7 +58,7 @@ namespace ams::fssystem {
                 s64 end_offset;
 
                 constexpr bool IsInclude(s64 offset) const {
-                    return this->start_offset <= offset & offset < this->end_offset;
+                    return this->start_offset <= offset && offset < this->end_offset;
                 }
 
                 constexpr bool IsInclude(s64 offset, s64 size) const {

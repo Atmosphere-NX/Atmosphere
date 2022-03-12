@@ -370,6 +370,8 @@ namespace ams::fssystem {
 
                         s64 appropriate_virtual_offset      = offset;
                         R_TRY(this->OperatePerEntry(offset, table_offsets.end_offset - offset, [&] (bool *out_continuous, const Entry &entry, s64 virtual_data_size, s64 data_offset, s64 read_size) -> Result {
+                            AMS_UNUSED(virtual_data_size);
+
                             /* Determine the physical extents. */
                             s64 physical_offset, physical_size;
                             if (CompressionTypeUtility::IsRandomAccessible(entry.compression_type)) {
@@ -528,7 +530,7 @@ namespace ams::fssystem {
                                 for (s32 entry_idx = 0; entry_idx < entry_count; ++entry_idx) {
                                     /* Determine the current read size. */
                                     bool will_use_pooled_buffer = false;
-                                    const size_t cur_read_size = [&] ALWAYS_INLINE_LAMBDA () -> size_t {
+                                    const size_t cur_read_size = [&] () ALWAYS_INLINE_LAMBDA -> size_t {
                                         if (const size_t target_entry_size = static_cast<size_t>(entries[entry_idx].physical_size) + static_cast<size_t>(entries[entry_idx].gap_from_prev); target_entry_size <= pooled_buffer.GetSize()) {
                                             /* We'll be using the pooled buffer. */
                                             will_use_pooled_buffer = true;
@@ -687,11 +689,11 @@ namespace ams::fssystem {
                             const s64 required_access_physical_end = required_access_physical_offset + required_access_physical_size;
                             if (required_access_physical_size > 0) {
                                 const bool required_by_gap             = !(required_access_physical_end <= physical_offset && physical_offset <= util::AlignUp(required_access_physical_end, CompressionBlockAlignment));
-                                const bool required_by_continuous_size = ((physical_size + physical_offset) - required_access_physical_end) + required_access_physical_size > m_continuous_reading_size_max;
+                                const bool required_by_continuous_size = ((physical_size + physical_offset) - required_access_physical_end) + required_access_physical_size > static_cast<s64>(m_continuous_reading_size_max);
                                 const bool required_by_entry_count     = entry_count == EntriesCountMax;
                                 if (required_by_gap || required_by_continuous_size || required_by_entry_count) {
                                     /* Check that our planned access is sane. */
-                                    AMS_ASSERT(!will_allocate_pooled_buffer || required_access_physical_size <= m_continuous_reading_size_max);
+                                    AMS_ASSERT(!will_allocate_pooled_buffer || required_access_physical_size <= static_cast<s64>(m_continuous_reading_size_max));
 
                                     /* Perform the required read. */
                                     R_TRY(PerformRequiredRead());
@@ -716,9 +718,9 @@ namespace ams::fssystem {
                             if (CompressionTypeUtility::IsDataStorageAccessRequired(entry.compression_type)) {
                                 /* If the data is compressed, ensure the access is sane. */
                                 if (entry.compression_type != CompressionType_None) {
-                                    R_UNLESS(data_offset == 0,                            fs::ResultInvalidOffset());
-                                    R_UNLESS(virtual_data_size == read_size,              fs::ResultInvalidSize());
-                                    R_UNLESS(entry.GetPhysicalSize() <= m_block_size_max, fs::ResultUnexpectedInCompressedStorageD());
+                                    R_UNLESS(data_offset == 0,                                              fs::ResultInvalidOffset());
+                                    R_UNLESS(virtual_data_size == read_size,                                fs::ResultInvalidSize());
+                                    R_UNLESS(entry.GetPhysicalSize() <= static_cast<s64>(m_block_size_max), fs::ResultUnexpectedInCompressedStorageD());
                                 }
 
                                 /* Update the required access parameters. */
@@ -926,16 +928,16 @@ namespace ams::fssystem {
                             head_range = {
                                 .virtual_offset              = entry.virt_offset,
                                 .virtual_size                = virtual_data_size,
-                                .physical_size               = entry.phys_size,
+                                .physical_size               = static_cast<u32>(entry.phys_size),
                                 .is_block_alignment_required = CompressionTypeUtility::IsBlockAlignmentRequired(entry.compression_type),
                             };
 
                             /* If required, set the tail range. */
-                            if ((offset + read_size) <= entry.virt_offset + virtual_data_size) {
+                            if (static_cast<s64>(offset + read_size) <= entry.virt_offset + virtual_data_size) {
                                 tail_range = {
                                     .virtual_offset              = entry.virt_offset,
                                     .virtual_size                = virtual_data_size,
-                                    .physical_size               = entry.phys_size,
+                                    .physical_size               = static_cast<u32>(entry.phys_size),
                                     .is_block_alignment_required = CompressionTypeUtility::IsBlockAlignmentRequired(entry.compression_type),
                                 };
                                 is_tail_set = true;
@@ -955,7 +957,7 @@ namespace ams::fssystem {
                                 tail_range = {
                                     .virtual_offset              = entry.virt_offset,
                                     .virtual_size                = virtual_data_size,
-                                    .physical_size               = entry.phys_size,
+                                    .physical_size               = static_cast<u32>(entry.phys_size),
                                     .is_block_alignment_required = CompressionTypeUtility::IsBlockAlignmentRequired(entry.compression_type),
                                 };
 
@@ -986,15 +988,15 @@ namespace ams::fssystem {
                         }
 
                         /* Determine our alignment. */
-                        const bool head_unaligned = head_range.is_block_alignment_required && (cur_offset != head_range.virtual_offset || cur_size < head_range.virtual_size);
-                        const bool tail_unaligned = [&] ALWAYS_INLINE_LAMBDA () -> bool {
+                        const bool head_unaligned = head_range.is_block_alignment_required && (cur_offset != head_range.virtual_offset || static_cast<s64>(cur_size) < head_range.virtual_size);
+                        const bool tail_unaligned = [&] () ALWAYS_INLINE_LAMBDA -> bool {
                             if (tail_range.is_block_alignment_required) {
-                                if (cur_size + cur_offset == tail_range.GetEndVirtualOffset()) {
+                                if (static_cast<s64>(cur_size + cur_offset) == tail_range.GetEndVirtualOffset()) {
                                     return false;
                                 } else if (!head_unaligned) {
                                     return true;
                                 } else {
-                                    return cur_size + cur_offset < head_range.GetEndVirtualOffset();
+                                    return static_cast<s64>(cur_size + cur_offset) < head_range.GetEndVirtualOffset();
                                 }
                             } else {
                                 return false;
@@ -1188,7 +1190,7 @@ namespace ams::fssystem {
 
                             /* Determine the current access extents. */
                             s64 cur_offset = head_range.virtual_offset + util::AlignDown<s64>(access_offset - head_range.virtual_offset, m_cache_size_unk_0);
-                            while (cur_offset < head_range.GetEndVirtualOffset() && cur_offset < offset + size) {
+                            while (cur_offset < head_range.GetEndVirtualOffset() && cur_offset < static_cast<s64>(offset + size)) {
                                 /* Find the relevant entry. */
                                 fs::IBufferManager::MemoryRange memory_range = {};
                                 CacheEntry entry = {};
@@ -1240,7 +1242,7 @@ namespace ams::fssystem {
                                         new_head_range = {
                                             .virtual_offset              = entry.virt_offset,
                                             .virtual_size                = virtual_data_size,
-                                            .physical_size               = entry.phys_size,
+                                            .physical_size               = static_cast<u32>(entry.phys_size),
                                             .is_block_alignment_required = CompressionTypeUtility::IsBlockAlignmentRequired(entry.compression_type),
                                         };
                                     }
@@ -1306,7 +1308,7 @@ namespace ams::fssystem {
                                         tail_range = {
                                             .virtual_offset              = entry.virt_offset,
                                             .virtual_size                = virtual_data_size,
-                                            .physical_size               = entry.phys_size,
+                                            .physical_size               = static_cast<u32>(entry.phys_size),
                                             .is_block_alignment_required = CompressionTypeUtility::IsBlockAlignmentRequired(entry.compression_type),
                                         };
 
@@ -1406,6 +1408,8 @@ namespace ams::fssystem {
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                AMS_UNUSED(src, src_size);
+
                 /* Check pre-conditions. */
                 AMS_ASSERT(offset >= 0);
                 AMS_ASSERT(size >= 0);

@@ -17,6 +17,7 @@
 #include <stratosphere.hpp>
 #include "os_rng_manager_impl.hpp"
 #include "os_thread_manager_types.hpp"
+#include "os_stack_guard_manager_types.hpp"
 #include "os_tick_manager_impl.hpp"
 #include "os_aslr_space_manager_types.hpp"
 #include "os_tls_manager_types.hpp"
@@ -29,7 +30,7 @@ namespace ams::os::impl {
         private:
             RngManager  m_rng_manager{};
             AslrSpaceManager m_aslr_space_manager{};
-            /* TODO */
+            StackGuardManager m_stack_guard_manager;
             ThreadManager m_thread_manager{};
             //TlsManager m_tls_manager{};
             TickManager m_tick_manager{};
@@ -42,6 +43,7 @@ namespace ams::os::impl {
             constexpr ALWAYS_INLINE RngManager &GetRngManager() { return m_rng_manager; }
             constexpr ALWAYS_INLINE AslrSpaceManager &GetAslrSpaceManager() { return m_aslr_space_manager; }
             constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return m_thread_manager; }
+            constexpr ALWAYS_INLINE StackGuardManager &GetStackGuardManager() { return m_stack_guard_manager; }
             //constexpr ALWAYS_INLINE TlsManager &GetTlsManager() { return m_tls_manager; }
             constexpr ALWAYS_INLINE TickManager &GetTickManager() { return m_tick_manager; }
             constexpr ALWAYS_INLINE VammManager &GetVammManager() { return m_vamm_manager; }

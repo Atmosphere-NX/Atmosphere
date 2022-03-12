@@ -24,10 +24,10 @@ namespace ams::fssystem::impl {
         NON_COPYABLE(BlockCacheManager);
         NON_MOVEABLE(BlockCacheManager);
         public:
-            using MemoryRange = AllocatorType::MemoryRange;
+            using MemoryRange = typename AllocatorType::MemoryRange;
             using CacheIndex  = s32;
 
-            using BufferAttribute = AllocatorType::BufferAttribute;
+            using BufferAttribute = typename AllocatorType::BufferAttribute;
 
             static constexpr CacheIndex InvalidCacheIndex = -1;
 
