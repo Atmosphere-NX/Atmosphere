@@ -1105,7 +1105,7 @@ namespace ams::fssystem {
         return this->CreateCompressedStorage(out, out_cmp, out_meta, std::move(base_storage), compression_info, m_reader->GetDecompressor(), m_allocator, m_buffer_manager);
     }
 
-    Result NcaFileSystemDriver::CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, IBufferManager *buffer_manager) {
+    Result NcaFileSystemDriver::CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, fs::IBufferManager *buffer_manager) {
         /* Check pre-conditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(base_storage != nullptr);

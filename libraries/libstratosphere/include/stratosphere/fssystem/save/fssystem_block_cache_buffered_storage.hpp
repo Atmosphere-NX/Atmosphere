@@ -21,6 +21,7 @@
 #include <stratosphere/fs/fs_memory_management.hpp>
 #include <stratosphere/fssystem/save/fssystem_i_save_file_system_driver.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
+#include <stratosphere/fssystem/impl/fssystem_block_cache_manager.hpp>
 
 namespace ams::fssystem::save {
 
@@ -30,7 +31,7 @@ namespace ams::fssystem::save {
     constexpr inline size_t IntegrityLayerCountSaveDataMeta = 4;
 
     struct FileSystemBufferManagerSet {
-        IBufferManager *buffers[IntegrityMaxLayerCount];
+        fs::IBufferManager *buffers[IntegrityMaxLayerCount];
     };
     static_assert(util::is_pod<FileSystemBufferManagerSet>::value);
 
@@ -40,51 +41,77 @@ namespace ams::fssystem::save {
         public:
             static constexpr size_t DefaultMaxCacheEntryCount = 24;
         private:
-            using MemoryRange = std::pair<uintptr_t, size_t>;
-            using CacheIndex = s32;
+            using MemoryRange = fs::IBufferManager::MemoryRange;
+
+            struct AccessRange {
+                s64 offset;
+                size_t size;
+
+                s64 GetEndOffset() const {
+                    return this->offset + this->size;
+                }
+
+                bool IsIncluded(s64 ofs) const {
+                    return this->offset <= ofs && ofs < this->GetEndOffset();
+                }
+            };
+            static_assert(util::is_pod<AccessRange>::value);
 
             struct CacheEntry {
-                size_t size;
+                AccessRange range;
                 bool is_valid;
                 bool is_write_back;
                 bool is_cached;
                 bool is_flushing;
-                s64 offset;
-                IBufferManager::CacheHandle handle;
+                u16 lru_counter;
+                fs::IBufferManager::CacheHandle handle;
                 uintptr_t memory_address;
                 size_t memory_size;
+
+                void Invalidate() {
+                    this->is_write_back = false;
+                    this->is_flushing   = false;
+                }
+
+                bool IsAllocated() const {
+                    return this->is_valid && (this->is_write_back ? this->memory_address != 0 : this->handle != 0);
+                }
+
+                bool IsWriteBack() const {
+                    return this->is_write_back;
+                }
             };
             static_assert(util::is_pod<CacheEntry>::value);
+
+            using BlockCacheManager = ::ams::fssystem::impl::BlockCacheManager<CacheEntry, fs::IBufferManager>;
+            using CacheIndex        = BlockCacheManager::CacheIndex;
 
             enum Flag : s32 {
                 Flag_KeepBurstMode = (1 << 8),
                 Flag_RealData      = (1 << 10),
             };
         private:
-            IBufferManager *m_buffer_manager;
             os::SdkRecursiveMutex *m_mutex;
-            std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> m_entries;
             IStorage *m_data_storage;
             Result m_last_result;
             s64 m_data_size;
             size_t m_verification_block_size;
             size_t m_verification_block_shift;
-            CacheIndex m_invalidate_index;
-            s32 m_max_cache_entry_count;
             s32 m_flags;
             s32 m_buffer_level;
             fs::StorageType m_storage_type;
+            BlockCacheManager m_block_cache_manager;
         public:
             BlockCacheBufferedStorage();
             virtual ~BlockCacheBufferedStorage() override;
 
-            Result Initialize(IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
+            Result Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInBlockCacheBufferedStorageA(); }
+            virtual Result SetSize(s64) override { R_THROW(fs::ResultUnsupportedOperationInBlockCacheBufferedStorageA()); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;
@@ -119,40 +146,24 @@ namespace ams::fssystem::save {
                 }
             }
         private:
-            s32 GetMaxCacheEntryCount() const {
-                return m_max_cache_entry_count;
-            }
-
-            Result ClearImpl(s64 offset, s64 size);
-            Result ClearSignatureImpl(s64 offset, s64 size);
-            Result InvalidateCacheImpl(s64 offset, s64 size);
+            Result FillZeroImpl(s64 offset, s64 size);
+            Result DestroySignatureImpl(s64 offset, s64 size);
+            Result InvalidateImpl();
             Result QueryRangeImpl(void *dst, size_t dst_size, s64 offset, s64 size);
-
-            bool ExistsRedundantCacheEntry(const CacheEntry &entry) const;
 
             Result GetAssociateBuffer(MemoryRange *out_range, CacheEntry *out_entry, s64 offset, size_t ideal_size, bool is_allocate_for_write);
 
-            void DestroyBuffer(CacheEntry *entry, const MemoryRange &range);
-
-            Result StoreAssociateBuffer(CacheIndex *out, const MemoryRange &range, const CacheEntry &entry);
-            Result StoreAssociateBuffer(const MemoryRange &range, const CacheEntry &entry) {
-                CacheIndex dummy;
-                return this->StoreAssociateBuffer(std::addressof(dummy), range, entry);
-            }
+            Result StoreOrDestroyBuffer(CacheIndex *out, const MemoryRange &range, CacheEntry *entry);
 
             Result StoreOrDestroyBuffer(const MemoryRange &range, CacheEntry *entry) {
                 AMS_ASSERT(entry != nullptr);
 
-                ON_RESULT_FAILURE { this->DestroyBuffer(entry, range); };
-
-                R_TRY(this->StoreAssociateBuffer(range, *entry));
-
-                R_SUCCEED();
+                CacheIndex dummy;
+                R_RETURN(this->StoreOrDestroyBuffer(std::addressof(dummy), range, entry));
             }
 
             Result FlushCacheEntry(CacheIndex index, bool invalidate);
             Result FlushRangeCacheEntries(s64 offset, s64 size, bool invalidate);
-            void InvalidateRangeCacheEntries(s64 offset, s64 size);
 
             Result FlushAllCacheEntries();
             Result InvalidateAllCacheEntries();

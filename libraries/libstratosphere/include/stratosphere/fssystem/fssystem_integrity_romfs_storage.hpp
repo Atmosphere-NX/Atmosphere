@@ -37,7 +37,7 @@ namespace ams::fssystem {
             IntegrityRomFsStorage() : m_mutex() { /* ... */ }
             virtual ~IntegrityRomFsStorage() override { this->Finalize(); }
 
-            Result Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm, IHash256GeneratorFactory *hgf);
+            Result Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, fs::IBufferManager *bm, IHash256GeneratorFactory *hgf);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override {

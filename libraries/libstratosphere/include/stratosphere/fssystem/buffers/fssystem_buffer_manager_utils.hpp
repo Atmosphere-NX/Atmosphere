@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 
 namespace ams::fssystem::buffers {
 
@@ -88,13 +89,13 @@ namespace ams::fssystem::buffers {
     };
 
     template<typename IsValidBufferFunction>
-    Result AllocateBufferUsingBufferManagerContext(std::pair<uintptr_t, size_t> *out, fssystem::IBufferManager *buffer_manager, size_t size, const IBufferManager::BufferAttribute attribute, IsValidBufferFunction is_valid_buffer, const char *func_name) {
+    Result AllocateBufferUsingBufferManagerContext(fs::IBufferManager::MemoryRange *out, fs::IBufferManager *buffer_manager, size_t size, const fs::IBufferManager::BufferAttribute attribute, IsValidBufferFunction is_valid_buffer, const char *func_name) {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(buffer_manager != nullptr);
         AMS_ASSERT(func_name != nullptr);
 
         /* Clear the output. */
-        *out = std::pair<uintptr_t, size_t>(0, 0);
+        *out = fs::IBufferManager::MakeMemoryRange(0, 0);
 
         /* Get the context. */
         auto context = GetBufferManagerContext();

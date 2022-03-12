@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/fssrv/fssrv_i_file_system_creator.hpp>
-#include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 #include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
 
 namespace ams::fssystem {
@@ -35,10 +35,10 @@ namespace ams::fssrv::fscreator {
             MemoryResource *m_allocator;
             const fssystem::NcaCryptoConfiguration &m_nca_crypto_cfg;
             const fssystem::NcaCompressionConfiguration &m_nca_compression_cfg;
-            fssystem::IBufferManager * const m_buffer_manager;
+            fs::IBufferManager * const m_buffer_manager;
             fssystem::IHash256GeneratorFactorySelector * const m_hash_generator_factory_selector;
         public:
-            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, const fssystem::NcaCompressionConfiguration &c_cfg, fssystem::IBufferManager *bm, fssystem::IHash256GeneratorFactorySelector *hgfs)
+            explicit StorageOnNcaCreator(MemoryResource *mr, const fssystem::NcaCryptoConfiguration &cfg, const fssystem::NcaCompressionConfiguration &c_cfg, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactorySelector *hgfs)
                 : m_allocator(mr), m_nca_crypto_cfg(cfg), m_nca_compression_cfg(c_cfg), m_buffer_manager(bm), m_hash_generator_factory_selector(hgfs)
             {
                 /* ... */

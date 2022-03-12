@@ -21,7 +21,7 @@
 #include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
 #include <stratosphere/fssystem/fssystem_asynchronous_access.hpp>
 #include <stratosphere/fssystem/fssystem_nca_header.hpp>
-#include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 
 namespace ams::fssystem {
 
@@ -228,17 +228,17 @@ namespace ams::fssystem {
             std::shared_ptr<NcaReader> m_original_reader;
             std::shared_ptr<NcaReader> m_reader;
             MemoryResource * const m_allocator;
-            fssystem::IBufferManager * const m_buffer_manager;
+            fs::IBufferManager * const m_buffer_manager;
             fssystem::IHash256GeneratorFactorySelector * const m_hash_generator_factory_selector;
         public:
             static Result SetupFsHeaderReader(NcaFsHeaderReader *out, const NcaReader &reader, s32 fs_index);
         public:
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> reader, MemoryResource *allocator, fs::IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
                 AMS_ASSERT(m_reader != nullptr);
                 AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
             }
 
-            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(original_reader), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
+            NcaFileSystemDriver(std::shared_ptr<NcaReader> original_reader, std::shared_ptr<NcaReader> reader, MemoryResource *allocator, fs::IBufferManager *buffer_manager, IHash256GeneratorFactorySelector *hgf_selector) : m_original_reader(original_reader), m_reader(reader), m_allocator(allocator), m_buffer_manager(buffer_manager), m_hash_generator_factory_selector(hgf_selector) {
                 AMS_ASSERT(m_reader != nullptr);
                 AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
             }
@@ -278,7 +278,7 @@ namespace ams::fssystem {
 
             Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info);
         public:
-            Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, IBufferManager *buffer_manager);
+            Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, fs::IBufferManager *buffer_manager);
     };
 
 }

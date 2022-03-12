@@ -117,7 +117,11 @@ namespace ams::fssystem {
         R_UNLESS(buffer != nullptr,                  fs::ResultNullptrArgument());
         R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
         R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-        R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
+
+        BucketTree::Offsets table_offsets;
+        R_TRY(m_table.GetOffsets(std::addressof(table_offsets)));
+
+        R_UNLESS(table_offsets.IsInclude(offset, size),    fs::ResultOutOfRange());
 
         /* Read the data. */
         R_TRY(m_data_storage.Read(offset, buffer, size));
@@ -130,8 +134,8 @@ namespace ams::fssystem {
         R_TRY(m_table.Find(std::addressof(visitor), offset));
         {
             const auto entry_offset = visitor.Get<Entry>()->GetOffset();
-            R_UNLESS(util::IsAligned(entry_offset, BlockSize),            fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
-            R_UNLESS(0 <= entry_offset && m_table.Includes(entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+            R_UNLESS(util::IsAligned(entry_offset, BlockSize),                   fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+            R_UNLESS(0 <= entry_offset && table_offsets.IsInclude(entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
         }
 
         /* Prepare to read in chunks. */
@@ -152,9 +156,9 @@ namespace ams::fssystem {
             if (visitor.CanMoveNext()) {
                 R_TRY(visitor.MoveNext());
                 next_entry_offset = visitor.Get<Entry>()->GetOffset();
-                R_UNLESS(m_table.Includes(next_entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
+                R_UNLESS(table_offsets.IsInclude(next_entry_offset), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
             } else {
-                next_entry_offset = m_table.GetEnd();
+                next_entry_offset = table_offsets.end_offset;
             }
             R_UNLESS(util::IsAligned(next_entry_offset, BlockSize), fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
             R_UNLESS(cur_offset < next_entry_offset,                fs::ResultInvalidAesCtrCounterExtendedEntryOffset());
@@ -192,22 +196,13 @@ namespace ams::fssystem {
             case fs::OperationId::Invalidate:
                 {
                     /* Validate preconditions. */
-                    AMS_ASSERT(offset >= 0);
                     AMS_ASSERT(this->IsInitialized());
-
-                    /* Succeed if there's nothing to operate on. */
-                    R_SUCCEED_IF(size == 0);
-
-                    /* Validate arguments. */
-                    R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
-                    R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-                    R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
 
                     /* Invalidate our table's cache. */
                     R_TRY(m_table.InvalidateCache());
 
                     /* Operate on our data storage. */
-                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_data_storage.OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max()));
 
                     return ResultSuccess();
                 }
@@ -230,7 +225,11 @@ namespace ams::fssystem {
                     /* Validate arguments. */
                     R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidOffset());
                     R_UNLESS(util::IsAligned(size, BlockSize),   fs::ResultInvalidSize());
-                    R_UNLESS(m_table.Includes(offset, size),     fs::ResultOutOfRange());
+
+                    BucketTree::Offsets table_offsets;
+                    R_TRY(m_table.GetOffsets(std::addressof(table_offsets)));
+
+                    R_UNLESS(table_offsets.IsInclude(offset, size), fs::ResultOutOfRange());
 
                     /* Operate on our data storage. */
                     R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));

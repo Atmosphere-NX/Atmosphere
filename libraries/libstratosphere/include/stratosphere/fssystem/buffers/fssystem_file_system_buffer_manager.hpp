@@ -17,12 +17,12 @@
 #include <vapours.hpp>
 #include <stratosphere/lmem.hpp>
 #include <stratosphere/fs/fs_memory_management.hpp>
-#include <stratosphere/fssystem/buffers/fssystem_i_buffer_manager.hpp>
+#include <stratosphere/fs/fs_i_buffer_manager.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buddy_heap.hpp>
 
 namespace ams::fssystem {
 
-    class FileSystemBufferManager : public IBufferManager {
+    class FileSystemBufferManager : public fs::IBufferManager {
         NON_COPYABLE(FileSystemBufferManager);
         NON_MOVEABLE(FileSystemBufferManager);
         public:
@@ -194,7 +194,7 @@ namespace ams::fssystem {
             size_t m_peak_free_size;
             size_t m_peak_total_allocatable_size;
             size_t m_retried_count;
-            mutable os::SdkRecursiveMutex m_mutex;
+            mutable os::SdkMutex m_mutex;
         public:
             static constexpr size_t QueryWorkBufferSize(s32 max_cache_count, s32 max_order) {
                 const auto buddy_size = FileSystemBuddyHeap::QueryWorkBufferSize(max_order);
@@ -269,27 +269,27 @@ namespace ams::fssystem {
                 m_cache_handle_table.Finalize();
             }
         private:
-            virtual const std::pair<uintptr_t, size_t> AllocateBufferImpl(size_t size, const BufferAttribute &attr) override;
+            virtual const std::pair<uintptr_t, size_t> DoAllocateBuffer(size_t size, const BufferAttribute &attr) override;
 
-            virtual void DeallocateBufferImpl(uintptr_t address, size_t size) override;
+            virtual void DoDeallocateBuffer(uintptr_t address, size_t size) override;
 
-            virtual CacheHandle RegisterCacheImpl(uintptr_t address, size_t size, const BufferAttribute &attr) override;
+            virtual CacheHandle DoRegisterCache(uintptr_t address, size_t size, const BufferAttribute &attr) override;
 
-            virtual const std::pair<uintptr_t, size_t> AcquireCacheImpl(CacheHandle handle) override;
+            virtual const std::pair<uintptr_t, size_t> DoAcquireCache(CacheHandle handle) override;
 
-            virtual size_t GetTotalSizeImpl() const override;
+            virtual size_t DoGetTotalSize() const override;
 
-            virtual size_t GetFreeSizeImpl() const override;
+            virtual size_t DoGetFreeSize() const override;
 
-            virtual size_t GetTotalAllocatableSizeImpl() const override;
+            virtual size_t DoGetTotalAllocatableSize() const override;
 
-            virtual size_t GetPeakFreeSizeImpl() const override;
+            virtual size_t DoGetFreeSizePeak() const override;
 
-            virtual size_t GetPeakTotalAllocatableSizeImpl() const override;
+            virtual size_t DoGetTotalAllocatableSizePeak() const override;
 
-            virtual size_t GetRetriedCountImpl() const override;
+            virtual size_t DoGetRetriedCount() const override;
 
-            virtual void ClearPeakImpl() override;
+            virtual void DoClearPeak() override;
     };
 
 }

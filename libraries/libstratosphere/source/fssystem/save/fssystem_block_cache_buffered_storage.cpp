@@ -17,8 +17,7 @@
 
 namespace ams::fssystem::save {
 
-    BlockCacheBufferedStorage::BlockCacheBufferedStorage()
-        : m_buffer_manager(), m_mutex(), m_entries(), m_data_storage(), m_last_result(ResultSuccess()), m_data_size(), m_verification_block_size(), m_verification_block_shift(), m_invalidate_index(), m_max_cache_entry_count(), m_flags(), m_buffer_level(-1)
+    BlockCacheBufferedStorage::BlockCacheBufferedStorage() : m_mutex(), m_data_storage(), m_last_result(ResultSuccess()), m_data_size(), m_verification_block_size(), m_verification_block_shift(), m_flags(), m_buffer_level(-1), m_block_cache_manager()
     {
         /* ... */
     }
@@ -27,40 +26,31 @@ namespace ams::fssystem::save {
         this->Finalize();
     }
 
-    Result BlockCacheBufferedStorage::Initialize(IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type) {
+    Result BlockCacheBufferedStorage::Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type) {
         /* Validate preconditions. */
         AMS_ASSERT(data != nullptr);
         AMS_ASSERT(bm   != nullptr);
         AMS_ASSERT(mtx  != nullptr);
-        AMS_ASSERT(m_buffer_manager == nullptr);
         AMS_ASSERT(m_mutex          == nullptr);
         AMS_ASSERT(m_data_storage   == nullptr);
-        AMS_ASSERT(m_entries        == nullptr);
         AMS_ASSERT(max_cache_entries > 0);
 
-        /* Create the entry. */
-        m_entries = fs::impl::MakeUnique<CacheEntry[]>(static_cast<size_t>(max_cache_entries));
-        R_UNLESS(m_entries != nullptr, fs::ResultAllocationFailureInBlockCacheBufferedStorageA());
+        /* Initialize our manager. */
+        R_TRY(m_block_cache_manager.Initialize(bm, max_cache_entries));
 
         /* Set members. */
-        m_buffer_manager           = bm;
         m_mutex                    = mtx;
         m_data_storage             = data;
         m_data_size                = data_size;
         m_verification_block_size  = verif_block_size;
         m_last_result              = ResultSuccess();
-        m_invalidate_index         = 0;
-        m_max_cache_entry_count    = max_cache_entries;
         m_flags                    = 0;
         m_buffer_level             = buffer_level;
         m_storage_type             = storage_type;
 
         /* Calculate block shift. */
         m_verification_block_shift = ILog2(static_cast<u32>(verif_block_size));
-        AMS_ASSERT(static_cast<size_t>(1ull << m_verification_block_shift) == m_verification_block_size);
-
-        /* Clear the entry. */
-        std::memset(m_entries.get(), 0, sizeof(CacheEntry) * m_max_cache_entry_count);
+        AMS_ASSERT(static_cast<size_t>(UINT64_C(1) << m_verification_block_shift) == m_verification_block_size);
 
         /* Set burst mode. */
         this->SetKeepBurstMode(is_keep_burst_mode);
@@ -68,32 +58,30 @@ namespace ams::fssystem::save {
         /* Set real data cache. */
         this->SetRealDataCache(is_real_data);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void BlockCacheBufferedStorage::Finalize() {
-        if (m_entries != nullptr) {
+        if (m_block_cache_manager.IsInitialized()) {
             /* Invalidate all cache entries. */
             this->InvalidateAllCacheEntries();
 
+            /* Finalize our block cache manager. */
+            m_block_cache_manager.Finalize();
+
             /* Clear members. */
-            m_buffer_manager           = nullptr;
             m_mutex                    = nullptr;
             m_data_storage             = nullptr;
             m_data_size                = 0;
             m_verification_block_size  = 0;
             m_verification_block_shift = 0;
-            m_invalidate_index         = 0;
-            m_max_cache_entry_count    = 0;
-
-            m_entries.reset();
         }
     }
 
     Result BlockCacheBufferedStorage::Read(s64 offset, void *buffer, size_t size) {
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
@@ -138,7 +126,7 @@ namespace ams::fssystem::save {
             R_SUCCEED_IF(aligned_offset >= aligned_offset_end);
 
             /* Ensure we destroy the head buffer. */
-            auto head_guard = SCOPE_GUARD { this->DestroyBuffer(std::addressof(head_entry), head_range); };
+            auto head_guard = SCOPE_GUARD { m_block_cache_manager.ReleaseCacheEntry(std::addressof(head_entry), head_range); };
 
             /* Read the tail cache. */
             CacheEntry  tail_entry = {};
@@ -150,7 +138,7 @@ namespace ams::fssystem::save {
             R_SUCCEED_IF(aligned_offset >= aligned_offset_end);
 
             /* Ensure that we destroy the tail buffer. */
-            auto tail_guard = SCOPE_GUARD { this->DestroyBuffer(std::addressof(tail_entry), tail_range); };
+            auto tail_guard = SCOPE_GUARD { m_block_cache_manager.ReleaseCacheEntry(std::addressof(tail_entry), tail_range); };
 
             /* Try to do a bulk read. */
             if (bulk_read_enabled) {
@@ -165,7 +153,7 @@ namespace ams::fssystem::save {
                     } R_END_TRY_CATCH;
 
                     /* Se successfully did a bulk read, so we're done. */
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } while (0);
             }
         }
@@ -198,27 +186,27 @@ namespace ams::fssystem::save {
 
                 /* Determine where to read data into, and ensure that our entry is aligned. */
                 char *src = reinterpret_cast<char *>(range.first);
-                AMS_ASSERT(util::IsAligned(entry.size, block_alignment));
+                AMS_ASSERT(util::IsAligned(entry.range.size, block_alignment));
 
                 /* If the entry isn't cached, read the data. */
                 if (!entry.is_cached) {
-                    if (Result result = m_data_storage->Read(entry.offset, src, entry.size); R_FAILED(result)) {
-                        this->DestroyBuffer(std::addressof(entry), range);
+                    if (const Result result = m_data_storage->Read(entry.range.offset, src, entry.range.size); R_FAILED(result)) {
+                        m_block_cache_manager.ReleaseCacheEntry(std::addressof(entry), range);
                         return this->UpdateLastResult(result);
                     }
                     entry.is_cached = true;
                 }
 
                 /* Validate the entry extents. */
-                AMS_ASSERT(static_cast<s64>(entry.offset) <= aligned_offset);
-                AMS_ASSERT(aligned_offset < static_cast<s64>(entry.offset + entry.size));
+                AMS_ASSERT(static_cast<s64>(entry.range.offset) <= aligned_offset);
+                AMS_ASSERT(aligned_offset < entry.range.GetEndOffset());
                 AMS_ASSERT(aligned_offset <= read_offset);
 
                 /* Copy the data. */
                 {
                     /* Determine where and how much to copy. */
-                    const s64 buffer_offset = read_offset - entry.offset;
-                    const size_t copy_size  = std::min(read_size, static_cast<size_t>(entry.offset + entry.size - read_offset));
+                    const s64 buffer_offset = read_offset - entry.range.offset;
+                    const size_t copy_size  = std::min(read_size, static_cast<size_t>(entry.range.GetEndOffset() - read_offset));
 
                     /* Actually copy the data. */
                     std::memcpy(dst, src + buffer_offset, copy_size);
@@ -231,20 +219,20 @@ namespace ams::fssystem::save {
 
                 /* Release the cache entry. */
                 R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(range, std::addressof(entry))));
-                aligned_offset = entry.offset + entry.size;
+                aligned_offset = entry.range.GetEndOffset();
             }
         }
 
         /* Ensure that we read all the data. */
         AMS_ASSERT(read_size == 0);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::Write(s64 offset, const void *buffer, size_t size) {
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
@@ -303,24 +291,24 @@ namespace ams::fssystem::save {
                 char *dst = reinterpret_cast<char *>(range.first);
 
                 /* If the entry isn't cached and we're writing a partial entry, read in the entry. */
-                if (!entry.is_cached && ((offset != entry.offset) || (offset + size < entry.offset + entry.size))) {
-                    if (Result result = m_data_storage->Read(entry.offset, dst, entry.size); R_FAILED(result)) {
-                        this->DestroyBuffer(std::addressof(entry), range);
+                if (!entry.is_cached && ((offset != entry.range.offset) || (offset + size < static_cast<size_t>(entry.range.GetEndOffset())))) {
+                    if (Result result = m_data_storage->Read(entry.range.offset, dst, entry.range.size); R_FAILED(result)) {
+                        m_block_cache_manager.ReleaseCacheEntry(std::addressof(entry), range);
                         return this->UpdateLastResult(result);
                     }
                 }
                 entry.is_cached = true;
 
                 /* Validate the entry extents. */
-                AMS_ASSERT(static_cast<s64>(entry.offset) <= aligned_offset);
-                AMS_ASSERT(aligned_offset < static_cast<s64>(entry.offset + entry.size));
+                AMS_ASSERT(static_cast<s64>(entry.range.offset) <= aligned_offset);
+                AMS_ASSERT(aligned_offset < entry.range.GetEndOffset());
                 AMS_ASSERT(aligned_offset <= offset);
 
                 /* Copy the data. */
                 {
                     /* Determine where and how much to copy. */
-                    const s64 buffer_offset = offset - entry.offset;
-                    const size_t copy_size  = std::min(size, static_cast<size_t>(entry.offset + entry.size - offset));
+                    const s64 buffer_offset = offset - entry.range.offset;
+                    const size_t copy_size  = std::min(size, static_cast<size_t>(entry.range.GetEndOffset() - offset));
 
                     /* Actually copy the data. */
                     std::memcpy(dst + buffer_offset, src, copy_size);
@@ -339,10 +327,10 @@ namespace ams::fssystem::save {
 
                 /* Store the associated buffer. */
                 CacheIndex index;
-                R_TRY(this->UpdateLastResult(this->StoreAssociateBuffer(std::addressof(index), range, entry)));
+                R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(std::addressof(index), range, std::addressof(entry))));
 
                 /* Set the after aligned offset. */
-                aligned_offset = entry.offset + entry.size;
+                aligned_offset = entry.range.GetEndOffset();
 
                 /* If we need to, flush the cache entry. */
                 if (index >= 0 && IsEnabledKeepBurstMode() && offset == aligned_offset && (block_alignment * 2 <= size)) {
@@ -355,7 +343,7 @@ namespace ams::fssystem::save {
         /* Ensure that didn't end up in a failure state. */
         R_TRY(m_last_result);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::GetSize(s64 *out) {
@@ -365,13 +353,13 @@ namespace ams::fssystem::save {
 
         /* Set the size. */
         *out = m_data_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::Flush() {
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
@@ -385,7 +373,7 @@ namespace ams::fssystem::save {
         /* Set blocking buffer manager allocations. */
         buffers::EnableBlockingBufferManagerAllocation();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -397,34 +385,34 @@ namespace ams::fssystem::save {
         switch (op_id) {
             case fs::OperationId::FillZero:
                 {
-                    R_TRY(this->ClearImpl(offset, size));
-                    return ResultSuccess();
+                    R_TRY(this->FillZeroImpl(offset, size));
+                    R_SUCCEED();
                 }
             case fs::OperationId::DestroySignature:
                 {
-                    R_TRY(this->ClearSignatureImpl(offset, size));
-                    return ResultSuccess();
+                    R_TRY(this->DestroySignatureImpl(offset, size));
+                    R_SUCCEED();
                 }
             case fs::OperationId::Invalidate:
                 {
                     R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInBlockCacheBufferedStorageB());
-                    R_TRY(this->InvalidateCacheImpl(offset, size));
-                    return ResultSuccess();
+                    R_TRY(this->InvalidateImpl());
+                    R_SUCCEED();
                 }
             case fs::OperationId::QueryRange:
                 {
                     R_TRY(this->QueryRangeImpl(dst, dst_size, offset, size));
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             default:
-                return fs::ResultUnsupportedOperationInBlockCacheBufferedStorageC();
+                R_THROW(fs::ResultUnsupportedOperationInBlockCacheBufferedStorageC());
         }
     }
 
     Result BlockCacheBufferedStorage::Commit() {
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
@@ -432,47 +420,34 @@ namespace ams::fssystem::save {
         /* Flush all cache entries. */
         R_TRY(this->UpdateLastResult(this->FlushAllCacheEntries()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::OnRollback() {
         /* Validate pre-conditions. */
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
 
         /* Release all valid entries back to the buffer manager. */
-        const auto max_cache_entry_count = this->GetMaxCacheEntryCount();
-        for (s32 i = 0; i < max_cache_entry_count; i++) {
-            const auto &entry = m_entries[i];
-            if (entry.is_valid) {
-                if (entry.is_write_back) {
-                    AMS_ASSERT(entry.memory_address != 0 && entry.handle == 0);
-                    m_buffer_manager->DeallocateBuffer(entry.memory_address, entry.memory_size);
-                } else {
-                    AMS_ASSERT(entry.memory_address == 0 && entry.handle != 0);
-                    const auto memory_range = m_buffer_manager->AcquireCache(entry.handle);
-                    if (memory_range.first != 0) {
-                        m_buffer_manager->DeallocateBuffer(memory_range.first, memory_range.second);
-                    }
-                }
+        const auto max_cache_entry_count = m_block_cache_manager.GetCount();
+        for (auto index = 0; index < max_cache_entry_count; index++) {
+            if (const auto &entry = m_block_cache_manager[index]; entry.is_valid) {
+                m_block_cache_manager.InvalidateCacheEntry(index);
             }
         }
 
-        /* Clear all entries. */
-        std::memset(m_entries.get(), 0, sizeof(CacheEntry) * max_cache_entry_count);
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result BlockCacheBufferedStorage::ClearImpl(s64 offset, s64 size) {
+    Result BlockCacheBufferedStorage::FillZeroImpl(s64 offset, s64 size) {
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
 
         /* Get our storage size. */
         s64 storage_size = 0;
-        R_TRY(this->GetSize(std::addressof(storage_size)));
+        R_TRY(this->UpdateLastResult(m_data_storage->GetSize(std::addressof(storage_size))));
 
         /* Check the access range. */
         R_UNLESS(0 <= offset && offset < storage_size, fs::ResultInvalidOffset());
@@ -542,16 +517,16 @@ namespace ams::fssystem::save {
         /* Set blocking buffer manager allocations. */
         buffers::EnableBlockingBufferManagerAllocation();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result BlockCacheBufferedStorage::ClearSignatureImpl(s64 offset, s64 size) {
+    Result BlockCacheBufferedStorage::DestroySignatureImpl(s64 offset, s64 size) {
         /* Ensure we aren't already in a failed state. */
         R_TRY(m_last_result);
 
         /* Get our storage size. */
         s64 storage_size = 0;
-        R_TRY(this->GetSize(std::addressof(storage_size)));
+        R_TRY(this->UpdateLastResult(m_data_storage->GetSize(std::addressof(storage_size))));
 
         /* Check the access range. */
         R_UNLESS(0 <= offset && offset < storage_size, fs::ResultInvalidOffset());
@@ -569,27 +544,20 @@ namespace ams::fssystem::save {
         /* Set blocking buffer manager allocations. */
         buffers::EnableBlockingBufferManagerAllocation();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result BlockCacheBufferedStorage::InvalidateCacheImpl(s64 offset, s64 size) {
-        /* Invalidate the entries corresponding to the range. */
-        /* NOTE: Nintendo does not check the result of this invalidation. */
-        this->InvalidateRangeCacheEntries(offset, size);
+    Result BlockCacheBufferedStorage::InvalidateImpl() {
+        /* Invalidate cache entries. */
+        {
+            std::scoped_lock lk(*m_mutex);
 
-        /* Get our storage size. */
-        s64 storage_size = 0;
-        R_TRY(this->GetSize(std::addressof(storage_size)));
-
-        /* Determine the extents we can actually query. */
-        const auto actual_size        = std::min(size, storage_size - offset);
-        const auto aligned_offset     = util::AlignDown(offset, m_verification_block_size);
-        const auto aligned_offset_end = util::AlignUp(offset + actual_size, m_verification_block_size);
-        const auto aligned_size       = aligned_offset_end - aligned_offset;
+            m_block_cache_manager.Invalidate();
+        }
 
         /* Invalidate the aligned range. */
         {
-            Result result = m_data_storage->OperateRange(fs::OperationId::Invalidate, aligned_offset, aligned_size);
+            Result result = m_data_storage->OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max());
             AMS_ASSERT(!fs::ResultBufferAllocationFailed::Includes(result));
             R_TRY(result);
         }
@@ -599,7 +567,7 @@ namespace ams::fssystem::save {
             m_last_result = ResultSuccess();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::QueryRangeImpl(void *dst, size_t dst_size, s64 offset, s64 size) {
@@ -616,29 +584,7 @@ namespace ams::fssystem::save {
         /* Query the aligned range. */
         R_TRY(this->UpdateLastResult(m_data_storage->OperateRange(dst, dst_size, fs::OperationId::QueryRange, aligned_offset, aligned_size, nullptr, 0)));
 
-        return ResultSuccess();
-    }
-
-    bool BlockCacheBufferedStorage::ExistsRedundantCacheEntry(const CacheEntry &entry) const {
-        /* Get the entry's extents. */
-        const s64 offset  = entry.offset;
-        const size_t size = entry.size;
-
-        /* Lock our mutex. */
-        std::scoped_lock lk(*m_mutex);
-
-        /* Iterate over all entries, checking if any overlap our extents. */
-        const auto max_cache_entry_count = this->GetMaxCacheEntryCount();
-        for (auto i = 0; i < max_cache_entry_count; ++i) {
-            const auto &entry = m_entries[i];
-            if (entry.is_valid && (entry.is_write_back ? entry.memory_address != 0 : entry.handle != 0)) {
-                if (entry.offset < static_cast<s64>(offset + size) && offset < static_cast<s64>(entry.offset + entry.size)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::GetAssociateBuffer(MemoryRange *out_range, CacheEntry *out_entry, s64 offset, size_t ideal_size, bool is_allocate_for_write) {
@@ -646,7 +592,7 @@ namespace ams::fssystem::save {
 
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
         AMS_ASSERT(out_range != nullptr);
         AMS_ASSERT(out_entry != nullptr);
 
@@ -654,21 +600,19 @@ namespace ams::fssystem::save {
         std::scoped_lock lk(*m_mutex);
 
         /* Get the maximum cache entry count. */
-        const CacheIndex max_cache_entry_count = static_cast<CacheIndex>(this->GetMaxCacheEntryCount());
+        const CacheIndex max_cache_entry_count = m_block_cache_manager.GetCount();
 
         /* Locate the index of the cache entry, if present. */
         CacheIndex index;
         size_t actual_size = ideal_size;
         for (index = 0; index < max_cache_entry_count; ++index) {
-            const auto &entry = m_entries[index];
-            if (entry.is_valid && (entry.is_write_back ? entry.memory_address != 0 : entry.handle != 0)) {
-                const s64 entry_offset = entry.offset;
-                if (entry_offset <= offset && offset < static_cast<s64>(entry_offset + entry.size)) {
+            if (const auto &entry = m_block_cache_manager[index]; entry.IsAllocated()) {
+                if (entry.range.IsIncluded(offset)) {
                     break;
                 }
 
-                if (offset <= entry_offset && entry_offset < static_cast<s64>(offset + actual_size)) {
-                    actual_size = static_cast<s64>(entry_offset - offset);
+                if (offset <= entry.range.offset && entry.range.offset < static_cast<s64>(offset + actual_size)) {
+                    actual_size = static_cast<s64>(entry.range.offset - offset);
                 }
             }
         }
@@ -679,38 +623,16 @@ namespace ams::fssystem::save {
 
         /* If we located an entry, use it. */
         if (index != max_cache_entry_count) {
-            auto &entry = m_entries[index];
+            m_block_cache_manager.AcquireCacheEntry(out_entry, out_range, index);
 
-            /* Get the range of the found entry. */
-            if (entry.is_write_back) {
-                *out_range = std::make_pair(entry.memory_address, entry.memory_size);
-            } else {
-                *out_range = m_buffer_manager->AcquireCache(entry.handle);
-            }
-
-            /* Get the found entry. */
-            *out_entry = entry;
-            AMS_ASSERT(out_entry->is_valid);
-            AMS_ASSERT(out_entry->is_cached);
-
-            /* Clear the entry in the cache. */
-            entry.is_valid       = false;
-            entry.handle         = 0;
-            entry.memory_address = 0;
-            entry.memory_size    = 0;
-
-            /* Set the output entry. */
-            out_entry->is_valid       = true;
-            out_entry->handle         = 0;
-            out_entry->memory_address = 0;
-            out_entry->memory_size    = 0;
+            actual_size = out_entry->range.size - (offset - out_entry->range.offset);
         }
 
         /* If we don't have an out entry, allocate one. */
         if (out_range->first == 0) {
             /* Ensure that the allocatable size is above a threshold. */
-            const auto size_threshold = m_buffer_manager->GetTotalSize() / 8;
-            if (m_buffer_manager->GetTotalAllocatableSize() < size_threshold) {
+            const auto size_threshold = m_block_cache_manager.GetAllocator()->GetTotalSize() / 8;
+            if (m_block_cache_manager.GetAllocator()->GetTotalAllocatableSize() < size_threshold) {
                 R_TRY(this->FlushAllCacheEntries());
             }
 
@@ -725,7 +647,7 @@ namespace ams::fssystem::save {
             AMS_ASSERT(actual_size >= block_alignment);
 
             /* Allocate a buffer. */
-            R_TRY(buffers::AllocateBufferUsingBufferManagerContext(out_range, m_buffer_manager, actual_size, IBufferManager::BufferAttribute(m_buffer_level), [=](const MemoryRange &buffer) {
+            R_TRY(buffers::AllocateBufferUsingBufferManagerContext(out_range, m_block_cache_manager.GetAllocator(), actual_size, fs::IBufferManager::BufferAttribute(m_buffer_level), [=](const MemoryRange &buffer) {
                 return buffer.first != 0 && block_alignment <= buffer.second;
             }, AMS_CURRENT_FUNCTION_NAME));
 
@@ -737,163 +659,106 @@ namespace ams::fssystem::save {
             out_entry->is_write_back  = false;
             out_entry->is_cached      = false;
             out_entry->is_flushing    = false;
-            out_entry->handle         = false;
+            out_entry->handle         = 0;
             out_entry->memory_address = 0;
             out_entry->memory_size    = 0;
-            out_entry->offset         = offset;
-            out_entry->size           = actual_size;
+            out_entry->range.offset   = offset;
+            out_entry->range.size     = actual_size;
+            out_entry->lru_counter    = 0;
         }
 
-        /* Ensure that we ended up with a coherent out range. */
-        AMS_ASSERT(out_range->second >= out_entry->size);
+        /* Check that we ended up with a coherent out range. */
+        AMS_ASSERT(out_range->second >= out_entry->range.size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    void BlockCacheBufferedStorage::DestroyBuffer(CacheEntry *entry, const MemoryRange &range) {
-        /* Validate pre-conditions. */
-        AMS_ASSERT(m_buffer_manager != nullptr);
-        AMS_ASSERT(entry != nullptr);
-
-        /* Set the entry as invalid and not cached. */
-        entry->is_cached = false;
-        entry->is_valid  = false;
-
-        /* Release the entry. */
-        m_buffer_manager->DeallocateBuffer(range.first, range.second);
-    }
-
-    Result BlockCacheBufferedStorage::StoreAssociateBuffer(CacheIndex *out, const MemoryRange &range, const CacheEntry &entry) {
+    Result BlockCacheBufferedStorage::StoreOrDestroyBuffer(CacheIndex *out, const MemoryRange &range, CacheEntry *entry) {
         /* Validate pre-conditions. */
         AMS_ASSERT(out != nullptr);
 
         /* Lock our mutex. */
         std::scoped_lock lk(*m_mutex);
 
+        /* In the event that we fail, release our buffer. */
+        ON_RESULT_FAILURE { m_block_cache_manager.ReleaseCacheEntry(entry, range); };
+
         /* If the entry is write-back, ensure we don't exceed certain dirtiness thresholds. */
-        if (entry.is_write_back) {
+        if (entry->is_write_back) {
             R_TRY(this->ControlDirtiness());
         }
 
-        /* Get the maximum cache entry count. */
-        const CacheIndex max_cache_entry_count = static_cast<CacheIndex>(this->GetMaxCacheEntryCount());
-        AMS_ASSERT(max_cache_entry_count > 0);
-
-        /* Locate the index of an unused cache entry. */
-        CacheIndex index;
-        for (index = 0; index < max_cache_entry_count; ++index) {
-            if (!m_entries[index].is_valid) {
-                break;
-            }
-        }
+        /* Get unused cache entry index. */
+        CacheIndex empty_index, lru_index;
+        m_block_cache_manager.GetEmptyCacheEntryIndex(std::addressof(empty_index), std::addressof(lru_index));
 
         /* If all entries are valid, we need to invalidate one. */
-        if (index == max_cache_entry_count) {
-            /* Increment the index to invalidate. */
-            m_invalidate_index = (m_invalidate_index + 1) % max_cache_entry_count;
+        if (empty_index == BlockCacheManager::InvalidCacheIndex) {
+            /* Invalidate the lease recently used entry. */
+            empty_index = lru_index;
 
-            /* Get the entry to invalidate. */
-            const CacheEntry *entry_to_invalidate = std::addressof(m_entries[m_invalidate_index]);
+            /* Get the entry to invalidate, sanity check that we can invalidate it. */
+            const CacheEntry &entry_to_invalidate = m_block_cache_manager[empty_index];
+            AMS_ASSERT(entry_to_invalidate.is_valid);
+            AMS_ASSERT(!entry_to_invalidate.is_flushing);
             AMS_UNUSED(entry_to_invalidate);
 
-            /* Ensure that the entry can be invalidated. */
-            AMS_ASSERT(entry_to_invalidate->is_valid);
-            AMS_ASSERT(!entry_to_invalidate->is_flushing);
-
             /* Invalidate the entry. */
-            R_TRY(this->FlushCacheEntry(m_invalidate_index, true));
+            R_TRY(this->FlushCacheEntry(empty_index, true));
 
             /* Check that the entry was invalidated successfully. */
-            AMS_ASSERT(!entry_to_invalidate->is_valid);
-            AMS_ASSERT(!entry_to_invalidate->is_flushing);
-
-            index = m_invalidate_index;
+            AMS_ASSERT(!entry_to_invalidate.is_valid);
+            AMS_ASSERT(!entry_to_invalidate.is_flushing);
         }
 
         /* Store the entry. */
-        CacheEntry *entry_ptr = std::addressof(m_entries[index]);
-        *entry_ptr            = entry;
-
-        /* Assert that the entry is valid to store. */
-        AMS_ASSERT(entry_ptr->is_valid);
-        AMS_ASSERT(entry_ptr->is_cached);
-        AMS_ASSERT(entry_ptr->handle == 0);
-        AMS_ASSERT(entry_ptr->memory_address == 0);
-
-        /* Ensure that the new entry isn't redundant. */
-        if (!ExistsRedundantCacheEntry(*entry_ptr)) {
-            /* Store the cache's buffer. */
-            if (entry_ptr->is_write_back) {
-                entry_ptr->handle = 0;
-                entry_ptr->memory_address = range.first;
-                entry_ptr->memory_size    = range.second;
-            } else {
-                entry_ptr->handle = m_buffer_manager->RegisterCache(range.first, range.second, IBufferManager::BufferAttribute(m_buffer_level));
-                entry_ptr->memory_address = 0;
-                entry_ptr->memory_size    = 0;
-            }
-
-            /* Set the out index. */
-            AMS_ASSERT(entry_ptr->is_valid);
-            *out                   = index;
-            m_invalidate_index = index;
+        if (m_block_cache_manager.SetCacheEntry(empty_index, *entry, range, fs::IBufferManager::BufferAttribute(m_buffer_level))) {
+            *out = empty_index;
         } else {
-            /* If a redundant entry exists, we don't need the newly stored entry. */
-            m_buffer_manager->DeallocateBuffer(range.first, range.second);
-            entry_ptr->is_valid = false;
-            *out = -1;
+            *out = BlockCacheManager::InvalidCacheIndex;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::FlushCacheEntry(CacheIndex index, bool invalidate) {
         /* Lock our mutex. */
         std::scoped_lock lk(*m_mutex);
 
-        /* Get the entry. */
-        CacheEntry *entry = std::addressof(m_entries[index]);
-        MemoryRange memory_range;
-
-        /* Check that the entry's state allows for flush. */
-        AMS_ASSERT(entry->is_valid);
-        AMS_ASSERT(!entry->is_flushing);
+        /* Get the entry, sanity check that the entry's state allows for flush. */
+        auto &entry = m_block_cache_manager[index];
+        AMS_ASSERT(entry.is_valid);
+        AMS_ASSERT(!entry.is_flushing);
 
         /* If we're not write back (i.e. an invalidate is happening), just release the buffer. */
-        if (!entry->is_write_back) {
+        if (!entry.is_write_back) {
             AMS_ASSERT(invalidate);
 
-            /* Get and release the buffer. */
-            memory_range = m_buffer_manager->AcquireCache(entry->handle);
-            if (memory_range.first != 0) {
-                m_buffer_manager->DeallocateBuffer(memory_range.first, memory_range.second);
-            }
+            m_block_cache_manager.InvalidateCacheEntry(index);
 
-            /* The entry is no longer valid. */
-            entry->is_valid = false;
-
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
-        /* Note that we've started flushing. */
-        entry->is_flushing = true;
+        /* Note that we've started flushing, while we process. */
+        m_block_cache_manager.SetFlushing(index, true);
+        ON_SCOPE_EXIT { m_block_cache_manager.SetFlushing(index, false); };
 
         /* Create and check our memory range. */
-        memory_range = std::make_pair(entry->memory_address, entry->memory_size);
+        MemoryRange memory_range = fs::IBufferManager::MakeMemoryRange(entry.memory_address, entry.memory_size);
         AMS_ASSERT(memory_range.first != 0);
-        AMS_ASSERT(memory_range.second >= entry->size);
+        AMS_ASSERT(memory_range.second >= entry.range.size);
 
         /* Validate the entry's offset. */
-        AMS_ASSERT(entry->offset >= 0);
-        AMS_ASSERT(entry->offset < m_data_size);
-        AMS_ASSERT(util::IsAligned(entry->offset, m_verification_block_size));
+        AMS_ASSERT(entry.range.offset >= 0);
+        AMS_ASSERT(entry.range.offset < m_data_size);
+        AMS_ASSERT(util::IsAligned(entry.range.offset, m_verification_block_size));
 
         /* Write back the data. */
         Result result = ResultSuccess();
-        size_t write_size = entry->size;
+        size_t write_size = entry.range.size;
         if (R_SUCCEEDED(m_last_result)) {
             /* Set blocking buffer manager allocations. */
-            result = m_data_storage->Write(entry->offset, reinterpret_cast<const void *>(memory_range.first), write_size);
+            result = m_data_storage->Write(entry.range.offset, reinterpret_cast<const void *>(memory_range.first), write_size);
 
             /* Check the result. */
             AMS_ASSERT(!fs::ResultBufferAllocationFailed::Includes(result));
@@ -902,41 +767,34 @@ namespace ams::fssystem::save {
         }
 
         /* Set that we're not write-back. */
-        entry->is_write_back = false;
+        m_block_cache_manager.SetWriteBack(index, false);
 
         /* If we're invalidating, release the buffer. Otherwise, register the flushed data. */
         if (invalidate) {
-            m_buffer_manager->DeallocateBuffer(memory_range.first, memory_range.second);
-            entry->is_valid    = false;
-            entry->is_flushing = false;
+            m_block_cache_manager.ReleaseCacheEntry(index, memory_range);
         } else {
-            AMS_ASSERT(entry->is_valid);
-
-            entry->handle = m_buffer_manager->RegisterCache(memory_range.first, memory_range.second, IBufferManager::BufferAttribute(m_buffer_level));
-
-            entry->memory_address = 0;
-            entry->memory_size    = 0;
-            entry->is_flushing    = false;
+            AMS_ASSERT(entry.is_valid);
+            m_block_cache_manager.RegisterCacheEntry(index, memory_range, fs::IBufferManager::BufferAttribute(m_buffer_level));
         }
 
         /* Try to succeed. */
         R_TRY(result);
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::FlushRangeCacheEntries(s64 offset, s64 size, bool invalidate) {
         /* Validate pre-conditions. */
         AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
+        AMS_ASSERT(m_block_cache_manager.IsInitialized());
 
         /* Iterate over all entries that fall within the range. */
         Result result = ResultSuccess();
-        const auto max_cache_entry_count = this->GetMaxCacheEntryCount();
+        const auto max_cache_entry_count = m_block_cache_manager.GetCount();
         for (auto i = 0; i < max_cache_entry_count; ++i) {
-            auto &entry = m_entries[i];
-            if (entry.is_valid && (entry.is_write_back || invalidate) && (entry.offset < (offset + size)) && (offset < static_cast<s64>(entry.offset + entry.size))) {
+            auto &entry = m_block_cache_manager[i];
+            if (entry.is_valid && (entry.is_write_back || invalidate) && (entry.range.offset < (offset + size)) && (offset < entry.range.GetEndOffset())) {
                 const auto cur_result = this->FlushCacheEntry(i, invalidate);
                 if (R_FAILED(cur_result) && R_SUCCEEDED(result)) {
                     result = cur_result;
@@ -948,81 +806,52 @@ namespace ams::fssystem::save {
         R_TRY(result);
 
         /* We succeeded. */
-        return ResultSuccess();
-    }
-
-    void BlockCacheBufferedStorage::InvalidateRangeCacheEntries(s64 offset, s64 size) {
-        /* Validate pre-conditions. */
-        AMS_ASSERT(m_data_storage != nullptr);
-        AMS_ASSERT(m_buffer_manager != nullptr);
-
-        /* Iterate over all entries that fall within the range. */
-        const auto max_cache_entry_count = this->GetMaxCacheEntryCount();
-        for (auto i = 0; i < max_cache_entry_count; ++i) {
-            auto &entry = m_entries[i];
-            if (entry.is_valid && (entry.offset < (offset + size)) && (offset < static_cast<s64>(entry.offset + entry.size))) {
-                if (entry.is_write_back) {
-                    AMS_ASSERT(entry.memory_address != 0 && entry.handle == 0);
-                    m_buffer_manager->DeallocateBuffer(entry.memory_address, entry.memory_size);
-                } else {
-                    AMS_ASSERT(entry.memory_address == 0 && entry.handle != 0);
-                    const auto memory_range = m_buffer_manager->AcquireCache(entry.handle);
-                    if (memory_range.first != 0) {
-                        m_buffer_manager->DeallocateBuffer(memory_range.first, memory_range.second);
-                    }
-                }
-
-                /* Mark the entry as invalidated. */
-                entry.is_valid      = false;
-                entry.is_write_back = false;
-                entry.is_flushing   = true;
-            }
-        }
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::FlushAllCacheEntries() {
         R_TRY(this->FlushRangeCacheEntries(0, std::numeric_limits<s64>::max(), false));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::InvalidateAllCacheEntries() {
         R_TRY(this->FlushRangeCacheEntries(0, std::numeric_limits<s64>::max(), true));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::ControlDirtiness() {
         /* Get and validate the max cache entry count. */
-        const auto max_cache_entry_count = this->GetMaxCacheEntryCount();
+        const auto max_cache_entry_count = m_block_cache_manager.GetCount();
         AMS_ASSERT(max_cache_entry_count > 0);
 
         /* Get size metrics from the buffer manager. */
-        const auto total_size       = m_buffer_manager->GetTotalSize();
-        const auto allocatable_size = m_buffer_manager->GetTotalAllocatableSize();
+        const auto total_size       = m_block_cache_manager.GetAllocator()->GetTotalSize();
+        const auto allocatable_size = m_block_cache_manager.GetAllocator()->GetTotalAllocatableSize();
 
         /* If we have enough allocatable space, we don't need to do anything. */
         R_SUCCEED_IF(allocatable_size >= total_size / 4);
 
-        /* Setup for flushing dirty entries. */
-        auto threshold     = 2;
-        auto dirty_count   = 0;
-        auto flushed_index = m_invalidate_index;
-
-        /* Iterate over all entries (starting with the invalidate index), and flush dirty entries once threshold is met. */
-        for (auto i = 0; i < max_cache_entry_count; ++i) {
-            auto index = (m_invalidate_index + 1 + i) % max_cache_entry_count;
-            if (m_entries[index].is_valid && m_entries[index].is_write_back) {
-                ++dirty_count;
-                if (threshold <= dirty_count) {
-                    R_TRY(this->FlushCacheEntry(index, false));
-                    flushed_index = index;
+        /* Iterate over all entries (up to the threshold) and flush the least recently used dirty entry. */
+        constexpr auto Threshold = 2;
+        for (int n = 0; n < Threshold; ++n) {
+            auto flushed_index = BlockCacheManager::InvalidCacheIndex;
+            for (auto index = 0; index < max_cache_entry_count; ++index) {
+                if (auto &entry = m_block_cache_manager[index]; entry.is_valid && entry.is_write_back) {
+                    if (flushed_index == BlockCacheManager::InvalidCacheIndex || m_block_cache_manager[flushed_index].lru_counter < entry.lru_counter) {
+                        flushed_index = index;
+                    }
                 }
             }
+
+            /* If we can't flush anything, break. */
+            if (flushed_index == BlockCacheManager::InvalidCacheIndex) {
+                break;
+            }
+
+            R_TRY(this->FlushCacheEntry(flushed_index, false));
         }
 
-        /* Update the invalidate index. */
-        m_invalidate_index = flushed_index;
-
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::UpdateLastResult(Result result) {
@@ -1035,7 +864,7 @@ namespace ams::fssystem::save {
         R_TRY(result);
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::ReadHeadCache(MemoryRange *out_range, CacheEntry *out_entry, bool *out_cache_needed, s64 *offset, s64 *aligned_offset, s64 aligned_offset_end, char **buffer, size_t *size) {
@@ -1069,8 +898,8 @@ namespace ams::fssystem::save {
             *out_cache_needed = false;
 
             /* Determine the size to copy. */
-            const s64 buffer_offset = *offset - entry.offset;
-            const size_t copy_size = std::min(*size, static_cast<size_t>(entry.offset + entry.size - *offset));
+            const s64 buffer_offset = *offset - entry.range.offset;
+            const size_t copy_size = std::min(*size, static_cast<size_t>(entry.range.GetEndOffset() - *offset));
 
             /* Copy data from the entry. */
             std::memcpy(*buffer, reinterpret_cast<const void *>(memory_range.first + buffer_offset), copy_size);
@@ -1079,7 +908,7 @@ namespace ams::fssystem::save {
             *buffer         += copy_size;
             *offset         += copy_size;
             *size           -= copy_size;
-            *aligned_offset  = entry.offset + entry.size;
+            *aligned_offset  = entry.range.GetEndOffset();
 
             /* Handle the buffer. */
             R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(memory_range, std::addressof(entry))));
@@ -1089,7 +918,7 @@ namespace ams::fssystem::save {
         *out_entry = entry;
         *out_range = memory_range;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::ReadTailCache(MemoryRange *out_range, CacheEntry *out_entry, bool *out_cache_needed, s64 offset, s64 aligned_offset, s64 *aligned_offset_end, char *buffer, size_t *size) {
@@ -1121,15 +950,15 @@ namespace ams::fssystem::save {
             *out_cache_needed = false;
 
             /* Determine the size to copy. */
-            const s64 buffer_offset = std::max(static_cast<s64>(0), offset - entry.offset);
-            const size_t copy_size  = std::min(*size, static_cast<size_t>(offset + *size - entry.offset));
+            const s64 buffer_offset = std::max(static_cast<s64>(0), offset - entry.range.offset);
+            const size_t copy_size  = std::min(*size, static_cast<size_t>(offset + *size - entry.range.offset));
 
             /* Copy data from the entry. */
             std::memcpy(buffer + *size - copy_size, reinterpret_cast<const void *>(memory_range.first + buffer_offset), copy_size);
 
             /* Advance. */
             *size               -= copy_size;
-            *aligned_offset_end  = entry.offset;
+            *aligned_offset_end  = entry.range.offset;
 
             /* Handle the buffer. */
             R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(memory_range, std::addressof(entry))));
@@ -1139,7 +968,7 @@ namespace ams::fssystem::save {
         *out_entry = entry;
         *out_range = memory_range;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BlockCacheBufferedStorage::BulkRead(s64 offset, void *buffer, size_t size, MemoryRange *range_head, MemoryRange *range_tail, CacheEntry *entry_head, CacheEntry *entry_tail, bool head_cache_needed, bool tail_cache_needed) {
@@ -1158,8 +987,8 @@ namespace ams::fssystem::save {
         char *dst                    = static_cast<char *>(buffer);
 
         /* Prepare to do our reads. */
-        auto head_guard = SCOPE_GUARD { this->DestroyBuffer(entry_head, *range_head); };
-        auto tail_guard = SCOPE_GUARD { this->DestroyBuffer(entry_tail, *range_tail); };
+        auto head_guard = SCOPE_GUARD { m_block_cache_manager.ReleaseCacheEntry(entry_head, *range_head); };
+        auto tail_guard = SCOPE_GUARD { m_block_cache_manager.ReleaseCacheEntry(entry_tail, *range_tail); };
 
         /* Flush the entries. */
         R_TRY(this->UpdateLastResult(this->FlushRangeCacheEntries(aligned_offset, aligned_offset_end - aligned_offset, false)));
@@ -1170,9 +999,9 @@ namespace ams::fssystem::save {
         char *read_buffer        = nullptr;
         if (read_offset == aligned_offset && read_size == buffer_size) {
             read_buffer = dst;
-        } else if (tail_cache_needed && entry_tail->offset == aligned_offset && entry_tail->size == buffer_size) {
+        } else if (tail_cache_needed && entry_tail->range.offset == aligned_offset && entry_tail->range.size == buffer_size) {
             read_buffer = reinterpret_cast<char *>(range_tail->first);
-        } else if (head_cache_needed && entry_head->offset == aligned_offset && entry_head->size == buffer_size) {
+        } else if (head_cache_needed && entry_head->range.offset == aligned_offset && entry_head->range.size == buffer_size) {
             read_buffer = reinterpret_cast<char *>(range_head->first);
         } else {
             pooled_buffer.AllocateParticularlyLarge(buffer_size, 1);
@@ -1193,10 +1022,10 @@ namespace ams::fssystem::save {
             AMS_ASSERT(entry != nullptr);
             AMS_ASSERT(range != nullptr);
 
-            if (aligned_offset <= entry->offset && entry->offset + entry->size <= aligned_offset + buffer_size) {
+            if (aligned_offset <= entry->range.offset && entry->range.GetEndOffset() <= static_cast<s64>(aligned_offset + buffer_size)) {
                 AMS_ASSERT(!entry->is_cached);
                 if (reinterpret_cast<void *>(range->first) != read_buffer) {
-                    std::memcpy(reinterpret_cast<void *>(range->first), read_buffer + entry->offset - aligned_offset, entry->size);
+                    std::memcpy(reinterpret_cast<void *>(range->first), read_buffer + entry->range.offset - aligned_offset, entry->range.size);
                 }
                 entry->is_cached = true;
             }
@@ -1214,9 +1043,9 @@ namespace ams::fssystem::save {
 
         /* If both entries are cached, one may contain the other; in that case, we need only the larger entry. */
         if (entry_head->is_cached && entry_tail->is_cached) {
-            if (entry_tail->offset <= entry_head->offset && entry_head->offset + entry_head->size <= entry_tail->offset + entry_tail->size) {
+            if (entry_tail->range.offset <= entry_head->range.offset && entry_head->range.GetEndOffset() <= entry_tail->range.GetEndOffset()) {
                 entry_head->is_cached = false;
-            } else if (entry_head->offset <= entry_tail->offset && entry_tail->offset + entry_tail->size <= entry_head->offset + entry_head->size) {
+            } else if (entry_head->range.offset <= entry_tail->range.offset && entry_tail->range.GetEndOffset() <= entry_head->range.GetEndOffset()) {
                 entry_tail->is_cached = false;
             }
         }
@@ -1226,7 +1055,7 @@ namespace ams::fssystem::save {
         if (entry_tail->is_cached) {
             R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(*range_tail, entry_tail)));
         } else {
-            this->DestroyBuffer(entry_tail, *range_tail);
+            m_block_cache_manager.ReleaseCacheEntry(entry_tail, *range_tail);
         }
 
         /* Destroy the head cache. */
@@ -1234,10 +1063,10 @@ namespace ams::fssystem::save {
         if (entry_head->is_cached) {
             R_TRY(this->UpdateLastResult(this->StoreOrDestroyBuffer(*range_head, entry_head)));
         } else {
-            this->DestroyBuffer(entry_head, *range_head);
+            m_block_cache_manager.ReleaseCacheEntry(entry_head, *range_head);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }
