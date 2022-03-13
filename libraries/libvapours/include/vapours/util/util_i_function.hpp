@@ -58,6 +58,7 @@ namespace ams::util {
                 F m_f;
             public:
                 constexpr explicit Function(F f) : m_f(std::move(f)) { /* ... */}
+                constexpr virtual ~Function() override { /* ... */ }
 
                 constexpr virtual R operator()(Args... args) const override final {
                     return m_f(std::forward<Args>(args)...);
@@ -68,6 +69,7 @@ namespace ams::util {
         class Function<R(Args...), F, typename std::enable_if<std::is_class<F>::value && !std::is_final<F>::value>::type> final : public IFunction<R(Args...)>, private F {
             public:
                 constexpr explicit Function(F f) : F(std::move(f)) { /* ... */}
+                constexpr virtual ~Function() override { /* ... */ }
 
                 constexpr virtual R operator()(Args... args) const override final {
                     return static_cast<const F &>(*this).operator()(std::forward<Args>(args)...);
@@ -90,7 +92,7 @@ namespace ams::util {
     template<typename R, typename... Args>
     class IFunction<R(Args...)> {
         protected:
-            constexpr virtual ~IFunction() = default;
+            constexpr virtual ~IFunction() { /* ... */ };
         public:
             constexpr virtual R operator()(Args... args) const = 0;
 
