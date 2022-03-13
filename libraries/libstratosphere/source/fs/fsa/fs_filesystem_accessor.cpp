@@ -223,7 +223,7 @@ namespace ams::fs::impl {
         R_TRY(m_impl->OpenFile(std::addressof(file), normalized_path, mode));
 
         auto accessor = new FileAccessor(std::move(file), this, mode);
-        R_UNLESS(accessor != nullptr, fs::ResultAllocationFailureInFileSystemAccessorA());
+        R_UNLESS(accessor != nullptr, fs::ResultAllocationMemoryFailedInFileSystemAccessorA());
 
         {
             std::scoped_lock lk(m_open_list_lock);
@@ -251,7 +251,7 @@ namespace ams::fs::impl {
         R_TRY(m_impl->OpenDirectory(std::addressof(dir), normalized_path, mode));
 
         auto accessor = new DirectoryAccessor(std::move(dir), *this);
-        R_UNLESS(accessor != nullptr, fs::ResultAllocationFailureInFileSystemAccessorB());
+        R_UNLESS(accessor != nullptr, fs::ResultAllocationMemoryFailedInFileSystemAccessorB());
 
         {
             std::scoped_lock lk(m_open_list_lock);

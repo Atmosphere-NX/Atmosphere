@@ -57,7 +57,7 @@ namespace ams::fssrv::fscreator {
     Result RomFileSystemCreator::Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) {
         /* Allocate a filesystem. */
         std::shared_ptr fs = fssystem::AllocateShared<RomFileSystemWithBuffer>(m_allocator);
-        R_UNLESS(fs != nullptr, fs::ResultAllocationFailureInRomFileSystemCreatorA());
+        R_UNLESS(fs != nullptr, fs::ResultAllocationMemoryFailedInRomFileSystemCreatorA());
 
         /* Initialize the filesystem. */
         R_TRY(fs->Initialize(std::move(storage)));

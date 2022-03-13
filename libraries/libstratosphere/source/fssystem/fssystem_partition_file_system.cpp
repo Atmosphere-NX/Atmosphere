@@ -286,7 +286,7 @@ namespace ams::fssystem {
 
         /* Allocate meta data. */
         m_unique_meta_data = std::make_unique<MetaType>();
-        R_UNLESS(m_unique_meta_data != nullptr, fs::ResultAllocationFailureInPartitionFileSystemA());
+        R_UNLESS(m_unique_meta_data != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemA());
 
         /* Initialize meta data. */
         R_TRY(m_unique_meta_data->Initialize(base_storage, allocator));
@@ -382,7 +382,7 @@ namespace ams::fssystem {
 
         /* Create and output the file directory. */
         std::unique_ptr file = std::make_unique<PartitionFile>(this, m_meta_data->GetEntry(entry_index), mode);
-        R_UNLESS(file != nullptr, fs::ResultAllocationFailureInPartitionFileSystemB());
+        R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemB());
         *out_file = std::move(file);
         R_SUCCEED();
     }
@@ -395,7 +395,7 @@ namespace ams::fssystem {
 
         /* Create and output the partition directory. */
         std::unique_ptr directory = std::make_unique<PartitionDirectory>(this, mode);
-        R_UNLESS(directory != nullptr, fs::ResultAllocationFailureInPartitionFileSystemC());
+        R_UNLESS(directory != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemC());
         *out_dir = std::move(directory);
         R_SUCCEED();
     }

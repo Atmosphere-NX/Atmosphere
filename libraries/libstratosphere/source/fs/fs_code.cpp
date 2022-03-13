@@ -83,7 +83,7 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             *out = std::move(fsa);
             R_SUCCEED();
@@ -97,7 +97,7 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             *out = std::move(fsa);
             R_SUCCEED();
@@ -135,11 +135,11 @@ namespace ams::fs {
 
             /* Create a file storage for the program's package. */
             auto package_storage = std::make_shared<FileStorage>(std::move(package_file));
-            R_UNLESS(package_storage != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(package_storage != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             /* Create a partition filesystem. */
             auto package_fs = std::make_unique<fssystem::PartitionFileSystem>();
-            R_UNLESS(package_fs != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(package_fs != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             /* Initialize the partition filesystem. */
             R_TRY(package_fs->Initialize(package_storage));
@@ -178,7 +178,7 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             *out = std::move(fsa);
             R_SUCCEED();
@@ -427,7 +427,7 @@ namespace ams::fs {
 
             /* Create an AtmosphereCodeFileSystem. */
             auto ams_code_fs = std::make_unique<AtmosphereCodeFileSystem>();
-            R_UNLESS(ams_code_fs != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(ams_code_fs != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             /* Initialize the code file system. */
             R_TRY(ams_code_fs->Initialize(out, path, program_id, is_hbl, is_specific));
@@ -462,7 +462,7 @@ namespace ams::fs {
 
             /* Create a wrapper fs. */
             auto wrap_fsa = std::make_unique<SdCardRedirectionCodeFileSystem>(std::move(fsa), program_id, false);
-            R_UNLESS(wrap_fsa != nullptr, fs::ResultAllocationFailureInCodeA());
+            R_UNLESS(wrap_fsa != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             /* Register. */
             R_RETURN(fsa::Register(name, std::move(wrap_fsa)));

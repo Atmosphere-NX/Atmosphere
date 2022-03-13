@@ -29,7 +29,7 @@ namespace ams::fssystem {
         }
 
         /* We need to have at least one entry buffer. */
-        R_UNLESS(m_internal_entry_buffer != nullptr || m_external_entry_buffer != nullptr, fs::ResultAllocationFailureInFileSystemBufferManagerA());
+        R_UNLESS(m_internal_entry_buffer != nullptr || m_external_entry_buffer != nullptr, fs::ResultAllocationMemoryFailedInFileSystemBufferManagerA());
 
         /* Set entries. */
         m_entries         = reinterpret_cast<Entry *>(m_external_entry_buffer != nullptr ? m_external_entry_buffer : m_internal_entry_buffer.get());

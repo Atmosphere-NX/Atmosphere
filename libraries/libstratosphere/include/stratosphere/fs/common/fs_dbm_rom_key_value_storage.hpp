@@ -203,7 +203,7 @@ namespace ams::fs {
                 R_UNLESS(cur != InvalidPosition, fs::ResultDbmKeyNotFound());
 
                 u8 *buf = static_cast<u8 *>(::ams::fs::impl::Allocate(MaxAuxiliarySize));
-                R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInDbmRomKeyValueStorage());
+                R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedInDbmRomKeyValueStorage());
                 ON_SCOPE_EXIT { ::ams::fs::impl::Deallocate(buf, MaxAuxiliarySize); };
 
                 while (true) {

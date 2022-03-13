@@ -201,7 +201,7 @@ namespace ams::fs {
         AMS_FS_R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
 
         auto file_accessor = std::make_unique<impl::FileAccessor>(std::move(file), nullptr, static_cast<OpenMode>(mode));
-        AMS_FS_R_UNLESS(file_accessor != nullptr, fs::ResultAllocationFailureInNew());
+        AMS_FS_R_UNLESS(file_accessor != nullptr, fs::ResultAllocationMemoryFailedNew());
         out->handle = file_accessor.release();
 
         R_SUCCEED();

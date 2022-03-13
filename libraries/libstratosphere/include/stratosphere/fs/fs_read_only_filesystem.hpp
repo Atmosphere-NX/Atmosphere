@@ -95,7 +95,7 @@ namespace ams::fs {
                 R_TRY(m_base_fs->OpenFile(std::addressof(base_file), path, mode));
 
                 auto read_only_file = std::make_unique<ReadOnlyFile>(std::move(base_file));
-                R_UNLESS(read_only_file != nullptr, fs::ResultAllocationFailureInReadOnlyFileSystemA());
+                R_UNLESS(read_only_file != nullptr, fs::ResultAllocationMemoryFailedInReadOnlyFileSystemA());
 
                 *out_file = std::move(read_only_file);
                 return ResultSuccess();

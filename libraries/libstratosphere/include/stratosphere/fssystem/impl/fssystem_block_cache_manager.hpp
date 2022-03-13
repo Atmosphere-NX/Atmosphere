@@ -50,7 +50,7 @@ namespace ams::fssystem::impl {
                 if (max_entries > 0) {
                     /* Create the entries. */
                     m_entries = fs::impl::MakeUnique<CacheEntry[]>(static_cast<size_t>(max_entries));
-                    R_UNLESS(m_entries != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                    R_UNLESS(m_entries != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                     /* Clear the entries. */
                     std::memset(m_entries.get(), 0, sizeof(CacheEntry) * max_entries);

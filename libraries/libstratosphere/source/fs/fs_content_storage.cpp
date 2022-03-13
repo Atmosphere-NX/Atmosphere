@@ -90,11 +90,11 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentStorageA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInContentStorageA());
 
             /* Allocate a new mountname generator. */
             auto generator = std::make_unique<ContentStorageCommonMountNameGenerator>(id);
-            R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInContentStorageB());
+            R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInContentStorageB());
 
             /* Register. */
             R_RETURN(fsa::Register(name, std::move(fsa), std::move(generator)));

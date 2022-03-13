@@ -39,7 +39,7 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInApplicationA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInApplicationA());
 
             /* Register. */
             R_RETURN(fsa::Register(name, std::move(fsa)));

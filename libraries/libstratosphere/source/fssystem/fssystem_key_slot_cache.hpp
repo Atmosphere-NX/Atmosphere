@@ -88,7 +88,7 @@ namespace ams::fssystem {
                     for (auto it = list->begin(); it != list->end(); ++it) {
                         if (it->Contains(key, key_size, key2)) {
                             std::unique_ptr accessor = std::make_unique<KeySlotCacheAccessor>(it->GetKeySlotIndex(), std::move(lk));
-                            R_UNLESS(accessor != nullptr, fs::ResultAllocationFailure());
+                            R_UNLESS(accessor != nullptr, fs::ResultAllocationMemoryFailed());
 
                             *out = std::move(accessor);
 

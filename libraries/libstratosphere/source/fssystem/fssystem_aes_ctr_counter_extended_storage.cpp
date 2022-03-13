@@ -46,14 +46,14 @@ namespace ams::fssystem {
 
     Result AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index) {
         std::unique_ptr<IDecryptor> decryptor = std::make_unique<ExternalDecryptor>(func, key_index);
-        R_UNLESS(decryptor != nullptr, fs::ResultAllocationFailureInAesCtrCounterExtendedStorageA());
+        R_UNLESS(decryptor != nullptr, fs::ResultAllocationMemoryFailedInAesCtrCounterExtendedStorageA());
         *out = std::move(decryptor);
         return ResultSuccess();
     }
 
     Result AesCtrCounterExtendedStorage::CreateSoftwareDecryptor(std::unique_ptr<IDecryptor> *out) {
         std::unique_ptr<IDecryptor> decryptor = std::make_unique<SoftwareDecryptor>();
-        R_UNLESS(decryptor != nullptr, fs::ResultAllocationFailureInAesCtrCounterExtendedStorageA());
+        R_UNLESS(decryptor != nullptr, fs::ResultAllocationMemoryFailedInAesCtrCounterExtendedStorageA());
         *out = std::move(decryptor);
         return ResultSuccess();
     }

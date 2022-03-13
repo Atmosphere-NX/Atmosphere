@@ -44,7 +44,7 @@ namespace ams::fssystem {
         this->DeallocateBuffer();
         m_allocator = allocator;
         m_buffer = static_cast<char *>(m_allocator->Allocate(m_meta_data_size));
-        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaA());
+        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemMetaA());
 
         /* Perform regular initialization. */
         return this->Initialize(storage, m_buffer, m_meta_data_size);
@@ -175,7 +175,7 @@ namespace ams::fssystem {
         /* Set allocator and allocate buffer. */
         m_allocator = allocator;
         m_buffer = static_cast<char *>(m_allocator->Allocate(m_meta_data_size));
-        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaB());
+        R_UNLESS(m_buffer != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemMetaB());
 
         /* Read metadata. */
         R_TRY(base_storage->Read(0, m_buffer, m_meta_data_size));

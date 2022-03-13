@@ -76,7 +76,7 @@ namespace ams::fs {
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-            R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInHostA());
+            R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInHostA());
 
             /* Set the output. */
             *out = std::move(fsa);
@@ -95,7 +95,7 @@ namespace ams::fs {
 
             /* Create a new HostCommonMountNameGenerator. */
             *out = std::make_unique<HostCommonMountNameGenerator>(path);
-            R_UNLESS(out->get() != nullptr, fs::ResultAllocationFailureInHostB());
+            R_UNLESS(out->get() != nullptr, fs::ResultAllocationMemoryFailedInHostB());
 
             R_SUCCEED();
         }
@@ -191,7 +191,7 @@ namespace ams::fs {
         auto register_impl = [&]() -> Result {
             /* Allocate a new mountname generator. */
             auto generator = std::make_unique<HostRootCommonMountNameGenerator>();
-            R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInHostC());
+            R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInHostC());
 
             /* Register. */
             R_RETURN(fsa::Register(impl::HostRootFileSystemMountName, std::move(fsa), std::move(generator)));
@@ -219,7 +219,7 @@ namespace ams::fs {
         auto register_impl = [&]() -> Result {
             /* Allocate a new mountname generator. */
             auto generator = std::make_unique<HostRootCommonMountNameGenerator>();
-            R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInHostC());
+            R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInHostC());
 
             /* Register. */
             R_RETURN(fsa::Register(impl::HostRootFileSystemMountName, std::move(fsa), std::move(generator)));

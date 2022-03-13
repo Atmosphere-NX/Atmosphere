@@ -26,7 +26,7 @@ namespace ams::fssrv::fscreator {
 
         /* Allocate a SubDirectoryFileSystem. */
         auto sub_dir_fs = fs::AllocateShared<fssystem::SubDirectoryFileSystem>(std::move(base_fs));
-        R_UNLESS(sub_dir_fs != nullptr, fs::ResultAllocationFailureInSubDirectoryFileSystemCreatorA());
+        R_UNLESS(sub_dir_fs != nullptr, fs::ResultAllocationMemoryFailedInSubDirectoryFileSystemCreatorA());
 
         /* Initialize the new filesystem. */
         R_TRY(sub_dir_fs->Initialize(path));

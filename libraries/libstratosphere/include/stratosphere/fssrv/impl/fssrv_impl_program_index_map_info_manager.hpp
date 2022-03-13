@@ -104,7 +104,7 @@ namespace ams::fssrv::impl {
                 for (int i = 0; i < count; ++i) {
                     /* Allocate new entry. */
                     auto *entry = new ProgramIndexMapInfoEntry;
-                    R_UNLESS(entry != nullptr, fs::ResultAllocationFailureInNew());
+                    R_UNLESS(entry != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                     /* Copy over the info. */
                     entry->program_id      = infos[i].program_id;

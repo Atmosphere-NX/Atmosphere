@@ -20,7 +20,7 @@ namespace ams::fssrv::fscreator {
     Result PartitionFileSystemCreator::Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) {
         /* Allocate a filesystem. */
         std::shared_ptr fs = fssystem::AllocateShared<fssystem::PartitionFileSystem>();
-        R_UNLESS(fs != nullptr, fs::ResultAllocationFailureInPartitionFileSystemCreatorA());
+        R_UNLESS(fs != nullptr, fs::ResultAllocationMemoryFailedInPartitionFileSystemCreatorA());
 
         /* Initialize the filesystem. */
         R_TRY(fs->Initialize(std::move(storage)));

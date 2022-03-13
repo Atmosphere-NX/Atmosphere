@@ -880,7 +880,7 @@ namespace ams::fssystem {
 
                 /* Allocate our native path buffer. */
                 native_path = fs::impl::MakeUnique<NativeCharacterType[]>(native_len + 1);
-                R_UNLESS(native_path != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                R_UNLESS(native_path != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                 /* Convert path. */
                 const auto res = ::MultiByteToWideChar(CP_UTF8, 0, m_root_path.GetString(), -1, native_path.get(), native_len);
@@ -901,7 +901,7 @@ namespace ams::fssystem {
 
                 /* Tentatively assume other operating systems do the sane thing and use utf-8 strings. */
                 native_path = fs::impl::MakeUnique<NativeCharacterType[]>(native_len + 1);
-                R_UNLESS(native_path != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                R_UNLESS(native_path != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                 /* Copy in path. */
                 std::memcpy(native_path.get(), m_root_path.GetString(), native_len + 1);
@@ -972,7 +972,7 @@ namespace ams::fssystem {
 
             /* Allocate our native path buffer. */
             native_path = fs::impl::MakeUnique<NativeCharacterType[]>(native_len + min_len + 1);
-            R_UNLESS(native_path != nullptr, fs::ResultAllocationFailureInMakeUnique());
+            R_UNLESS(native_path != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
             /* Convert path. */
             const auto res = ::MultiByteToWideChar(CP_UTF8, 0, full_path.GetString(), -1, native_path.get(), native_len);
@@ -999,7 +999,7 @@ namespace ams::fssystem {
                 /* Allocate case sensitive buffer. */
                 auto case_sensitive_buffer_size = sizeof(NativeCharacterType) * (m_native_path_length + native_len + 1 + fs::EntryNameLengthMax);
                 NativePathBuffer case_sensitive_path_buffer = fs::impl::MakeUnique<NativeCharacterType[]>(case_sensitive_buffer_size / sizeof(NativeCharacterType));
-                R_UNLESS(case_sensitive_path_buffer != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                R_UNLESS(case_sensitive_path_buffer != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                 /* Get root path. */
                 const NativeCharacterType *root_path = m_native_path_buffer.get() != nullptr ? m_native_path_buffer.get() : L"";
@@ -1022,7 +1022,7 @@ namespace ams::fssystem {
 
             /* Tentatively assume other operating systems do the sane thing and use utf-8 strings. */
             native_path = fs::impl::MakeUnique<NativeCharacterType[]>(native_len + min_len + 1);
-            R_UNLESS(native_path != nullptr, fs::ResultAllocationFailureInMakeUnique());
+            R_UNLESS(native_path != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
             /* Copy in path. */
             std::memcpy(native_path.get(), full_path.GetString(), native_len + 1);
@@ -1075,7 +1075,7 @@ namespace ams::fssystem {
 
             /* Allocate a new path buffer. */
             NativePathBuffer cur_path_buf = fs::impl::MakeUnique<NativeCharacterType[]>(path_len + MAX_PATH);
-            R_UNLESS(cur_path_buf.get() != nullptr, fs::ResultAllocationFailureInMakeUnique());
+            R_UNLESS(cur_path_buf.get() != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
             /* Copy the path into the temporary buffer. */
             ::wcscpy(cur_path_buf.get(), path);
@@ -1143,7 +1143,7 @@ namespace ams::fssystem {
 
             /* Allocate a temporary buffer. */
             NativePathBuffer cur_path_buf = fs::impl::MakeUnique<NativeCharacterType[]>(path_len + PATH_MAX);
-            R_UNLESS(cur_path_buf.get() != nullptr, fs::ResultAllocationFailureInMakeUnique());
+            R_UNLESS(cur_path_buf.get() != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
             /* Copy the path into the temporary buffer. */
             std::memcpy(cur_path_buf.get(), path, path_len);
@@ -1561,7 +1561,7 @@ namespace ams::fssystem {
 
             /* Create a new local file. */
             auto file = std::make_unique<LocalFile>(file_handle, mode);
-            R_UNLESS(file != nullptr, fs::ResultAllocationFailureInLocalFileSystemA());
+            R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedInLocalFileSystemA());
 
             /* Set the output file. */
             *out_file = std::move(file);
@@ -1629,7 +1629,7 @@ namespace ams::fssystem {
 
             /* Create a new local directory. */
             auto dir = std::make_unique<LocalDirectory>(dir_handle, search_handle, mode, std::move(native_path));
-            R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInLocalFileSystemB());
+            R_UNLESS(dir != nullptr, fs::ResultAllocationMemoryFailedInLocalFileSystemB());
 
             /* Set the output directory. */
             *out_dir = std::move(dir);

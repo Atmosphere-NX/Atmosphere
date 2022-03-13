@@ -178,7 +178,7 @@ namespace ams::fs {
                 R_TRY(fsFsOpenFile(std::addressof(m_base_fs), sf_path.str, mode, std::addressof(f)));
 
                 auto file = std::make_unique<RemoteFile>(f);
-                R_UNLESS(file != nullptr, fs::ResultAllocationFailureInNew());
+                R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 *out_file = std::move(file);
                 return ResultSuccess();
@@ -192,7 +192,7 @@ namespace ams::fs {
                 R_TRY(fsFsOpenDirectory(std::addressof(m_base_fs), sf_path.str, mode, std::addressof(d)));
 
                 auto dir = std::make_unique<RemoteDirectory>(d);
-                R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInNew());
+                R_UNLESS(dir != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 *out_dir = std::move(dir);
                 return ResultSuccess();

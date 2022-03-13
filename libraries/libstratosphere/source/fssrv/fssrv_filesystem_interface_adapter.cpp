@@ -251,12 +251,12 @@ namespace ams::fssrv::impl {
             const auto target_object_id = file->GetDomainObjectId();
 
             ams::sf::SharedPointer<fssrv::sf::IFile> file_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IFile, FileInterfaceAdapter>(std::move(file), this, m_allow_all_operations);
-            R_UNLESS(file_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+            R_UNLESS(file_intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
             out.SetValue(std::move(file_intf), target_object_id);
         } else {
             ams::sf::SharedPointer<fssrv::sf::IFile> file_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IFile, FileInterfaceAdapter>(std::move(file), this, m_allow_all_operations);
-            R_UNLESS(file_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+            R_UNLESS(file_intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
             out.SetValue(std::move(file_intf));
         }
@@ -281,12 +281,12 @@ namespace ams::fssrv::impl {
             const auto target_object_id = dir->GetDomainObjectId();
 
             ams::sf::SharedPointer<fssrv::sf::IDirectory> dir_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IDirectory, DirectoryInterfaceAdapter>(std::move(dir), this, m_allow_all_operations);
-            R_UNLESS(dir_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+            R_UNLESS(dir_intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
             out.SetValue(std::move(dir_intf), target_object_id);
         } else {
             ams::sf::SharedPointer<fssrv::sf::IDirectory> dir_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IDirectory, DirectoryInterfaceAdapter>(std::move(dir), this, m_allow_all_operations);
-            R_UNLESS(dir_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+            R_UNLESS(dir_intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
             out.SetValue(std::move(dir_intf));
         }
@@ -358,7 +358,7 @@ namespace ams::fssrv::impl {
         R_TRY(fsFsOpenFile(std::addressof(m_base_fs), path.str, mode, std::addressof(f)));
 
         auto intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IFile, RemoteFile>(f);
-        R_UNLESS(intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+        R_UNLESS(intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
         out.SetValue(std::move(intf));
         R_SUCCEED();
@@ -369,7 +369,7 @@ namespace ams::fssrv::impl {
         R_TRY(fsFsOpenDirectory(std::addressof(m_base_fs), path.str, mode, std::addressof(d)));
 
         auto intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IDirectory, RemoteDirectory>(d);
-        R_UNLESS(intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
+        R_UNLESS(intf != nullptr, fs::ResultAllocationMemoryFailedInFileSystemInterfaceAdapterA());
 
         out.SetValue(std::move(intf));
         R_SUCCEED();

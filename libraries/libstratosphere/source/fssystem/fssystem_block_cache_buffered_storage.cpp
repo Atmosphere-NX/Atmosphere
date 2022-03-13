@@ -149,7 +149,7 @@ namespace ams::fssystem {
                 do {
                     /* Do the bulk read. If we fail due to pooled buffer allocation failing, fall back to the normal read codepath. */
                     R_TRY_CATCH(this->BulkRead(read_offset, dst, read_size, std::addressof(head_range), std::addressof(tail_range), std::addressof(head_entry), std::addressof(tail_entry), head_cache_needed, tail_cache_needed)) {
-                        R_CATCH(fs::ResultAllocationFailurePooledBufferNotEnoughSize) { break; }
+                        R_CATCH(fs::ResultAllocationPooledBufferNotEnoughSize) { break; }
                     } R_END_TRY_CATCH;
 
                     /* Se successfully did a bulk read, so we're done. */
@@ -463,7 +463,7 @@ namespace ams::fssystem {
         if (start_offset < offset || offset + size < end_offset) {
             /* Allocate a work buffer. */
             std::unique_ptr<char[], fs::impl::Deleter> work = fs::impl::MakeUnique<char[]>(m_verification_block_size);
-            R_UNLESS(work != nullptr, fs::ResultAllocationFailureInBlockCacheBufferedStorageB());
+            R_UNLESS(work != nullptr, fs::ResultAllocationMemoryFailedInBlockCacheBufferedStorageB());
 
             /* Handle data before the aligned range. */
             if (start_offset < offset) {
@@ -1005,7 +1005,7 @@ namespace ams::fssystem {
             read_buffer = reinterpret_cast<char *>(range_head->first);
         } else {
             pooled_buffer.AllocateParticularlyLarge(buffer_size, 1);
-            R_UNLESS(pooled_buffer.GetSize() >= buffer_size, fs::ResultAllocationFailurePooledBufferNotEnoughSize());
+            R_UNLESS(pooled_buffer.GetSize() >= buffer_size, fs::ResultAllocationPooledBufferNotEnoughSize());
             read_buffer = pooled_buffer.GetBuffer();
         }
 
