@@ -118,7 +118,7 @@ namespace ams::fs {
             }
 
             virtual Result SetSize(s64 size) override {
-                return fs::ResultUnsupportedOperationInSubStorageA();
+                return fs::ResultUnsupportedSetSizeForNotResizableSubStorage();
             }
     };
 

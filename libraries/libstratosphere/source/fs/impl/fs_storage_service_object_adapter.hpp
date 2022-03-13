@@ -64,7 +64,7 @@ namespace ams::fs::impl {
                         }
                     default:
                         {
-                            R_THROW(fs::ResultUnsupportedOperationInStorageServiceObjectAdapterA());
+                            R_THROW(fs::ResultUnsupportedOperateRangeForStorageServiceObjectAdapter());
                         }
                 }
             }

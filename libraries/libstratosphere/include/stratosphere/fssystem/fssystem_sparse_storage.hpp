@@ -56,12 +56,12 @@ namespace ams::fssystem {
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                     AMS_UNUSED(offset, buffer, size);
-                    R_THROW(fs::ResultUnsupportedOperationInZeroStorageA());
+                    R_THROW(fs::ResultUnsupportedWriteForZeroStorage());
                 }
 
                 virtual Result SetSize(s64 size) override {
                     AMS_UNUSED(size);
-                    R_THROW(fs::ResultUnsupportedOperationInZeroStorageB());
+                    R_THROW(fs::ResultUnsupportedSetSizeForZeroStorage());
                 }
             };
         private:

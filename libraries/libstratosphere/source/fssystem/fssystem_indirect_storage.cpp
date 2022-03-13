@@ -171,7 +171,7 @@ namespace ams::fssystem {
                     R_SUCCEED();
                 }
             default:
-                return fs::ResultUnsupportedOperationInIndirectStorageC();
+                return fs::ResultUnsupportedOperateRangeForIndirectStorage();
         }
 
         R_SUCCEED();

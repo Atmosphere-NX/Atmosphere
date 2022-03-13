@@ -66,12 +66,12 @@ namespace ams::fssystem {
                     R_TRY(this->DryWrite(std::addressof(needs_append), offset, size, option, fs::OpenMode_Read));
                     AMS_ASSERT(needs_append == false);
 
-                    R_THROW(fs::ResultUnsupportedOperationInRomFsFileA());
+                    R_THROW(fs::ResultUnsupportedWriteForRomFsFile());
                 }
 
                 virtual Result DoSetSize(s64 size) override {
                     R_TRY(this->DrySetSize(size, fs::OpenMode_Read));
-                    R_THROW(fs::ResultUnsupportedOperationInRomFsFileA());
+                    R_THROW(fs::ResultUnsupportedWriteForRomFsFile());
                 }
 
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -94,7 +94,7 @@ namespace ams::fssystem {
                                 R_SUCCEED();
                             }
                         default:
-                            R_THROW(fs::ResultUnsupportedOperationInRomFsFileB());
+                            R_THROW(fs::ResultUnsupportedOperateRangeForRomFsFile());
                     }
                 }
             public:
@@ -303,37 +303,37 @@ namespace ams::fssystem {
 
     Result RomFsFileSystem::DoCreateFile(const fs::Path &path, s64 size, int flags) {
         AMS_UNUSED(path, size, flags);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoDeleteFile(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoCreateDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoDeleteDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoDeleteDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoGetEntryType(fs::DirectoryEntryType *out, const fs::Path &path) {
@@ -407,12 +407,12 @@ namespace ams::fssystem {
 
     Result RomFsFileSystem::DoCleanDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForRomFsFileSystem());
     }
 
     Result RomFsFileSystem::DoCommitProvisionally(s64 counter) {
         AMS_UNUSED(counter);
-        R_THROW(fs::ResultUnsupportedOperationInRomFsFileSystemB());
+        R_THROW(fs::ResultUnsupportedCommitProvisionallyForRomFsFileSystem());
     }
 
 }

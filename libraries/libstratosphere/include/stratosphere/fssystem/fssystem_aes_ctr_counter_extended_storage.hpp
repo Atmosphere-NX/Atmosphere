@@ -109,12 +109,12 @@ namespace ams::fssystem {
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                R_THROW(fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageA());
+                R_THROW(fs::ResultUnsupportedWriteForAesCtrCounterExtendedStorage());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                R_THROW(fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageB());
+                R_THROW(fs::ResultUnsupportedSetSizeForAesCtrCounterExtendedStorage());
             }
         private:
             Result Initialize(IAllocator *allocator, const void *key, size_t key_size, u32 secure_value, fs::SubStorage data_storage, fs::SubStorage table_storage);

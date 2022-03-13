@@ -303,7 +303,7 @@ namespace ams::fssystem {
                             static_cast<fs::QueryRangeInfo *>(dst)->Clear();
                             R_SUCCEED();
                         default:
-                            R_THROW(fs::ResultUnsupportedOperationInLocalFileA());
+                            R_THROW(fs::ResultUnsupportedOperateRangeForTmFileSystemFile());
                     }
                 }
             public:
@@ -619,7 +619,7 @@ namespace ams::fssystem {
                             static_cast<fs::QueryRangeInfo *>(dst)->Clear();
                             R_SUCCEED();
                         default:
-                            R_THROW(fs::ResultUnsupportedOperationInLocalFileA());
+                            R_THROW(fs::ResultUnsupportedOperateRangeForTmFileSystemFile());
                     }
                 }
             public:

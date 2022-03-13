@@ -86,7 +86,7 @@ namespace ams::fs {
                 R_UNLESS(IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
                 return m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
             default:
-                return fs::ResultUnsupportedOperationInFileStorageA();
+                return fs::ResultUnsupportedOperateRangeForFileStorage();
         }
     }
 
@@ -171,7 +171,7 @@ namespace ams::fs {
 
                 return QueryRange(static_cast<QueryRangeInfo *>(dst), m_handle, offset, size);
             default:
-                return fs::ResultUnsupportedOperationInFileStorageB();
+                return fs::ResultUnsupportedOperateRangeForFileHandleStorage();
         }
     }
 

@@ -212,12 +212,12 @@ namespace ams::fssystem {
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                     AMS_UNUSED(offset, buffer, size);
-                    return fs::ResultUnsupportedOperationInAesCtrStorageExternalA();
+                    return fs::ResultUnsupportedWriteForAesCtrStorageExternal();
                 }
 
                 virtual Result SetSize(s64 size) override {
                     AMS_UNUSED(size);
-                    return fs::ResultUnsupportedOperationInAesCtrStorageExternalB();
+                    return fs::ResultUnsupportedSetSizeForAesCtrStorageExternal();
                 }
         };
 
@@ -254,7 +254,7 @@ namespace ams::fssystem {
                                 return ResultSuccess();
                             }
                         default:
-                            return fs::ResultUnsupportedOperationInSwitchStorageA();
+                            return fs::ResultUnsupportedOperateRangeForSwitchStorage();
                     }
                 }
 
