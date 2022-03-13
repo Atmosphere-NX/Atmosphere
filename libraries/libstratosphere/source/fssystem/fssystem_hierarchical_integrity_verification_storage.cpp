@@ -330,7 +330,7 @@ namespace ams::fssystem {
                     return ResultSuccess();
                 }
             default:
-                return fs::ResultUnsupportedOperationInHierarchicalIntegrityVerificationStorageB();
+                return fs::ResultUnsupportedOperateRangeForHierarchicalIntegrityVerificationStorage();
         }
     }
 

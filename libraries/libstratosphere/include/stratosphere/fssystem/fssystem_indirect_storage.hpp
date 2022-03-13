@@ -147,12 +147,12 @@ namespace ams::fssystem {
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                R_THROW(fs::ResultUnsupportedOperationInIndirectStorageA());
+                R_THROW(fs::ResultUnsupportedWriteForIndirectStorage());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                R_THROW(fs::ResultUnsupportedOperationInIndirectStorageB());
+                R_THROW(fs::ResultUnsupportedSetSizeForIndirectStorage());
             }
         protected:
             BucketTree &GetEntryTable() { return m_table; }

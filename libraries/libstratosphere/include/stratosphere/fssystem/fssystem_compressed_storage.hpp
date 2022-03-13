@@ -1424,7 +1424,7 @@ namespace ams::fssystem {
                         R_TRY(m_core.QueryRange(dst, dst_size, offset, size));
                         break;
                     default:
-                        R_THROW(fs::ResultUnsupportedOperationInCompressedStorageB());
+                        R_THROW(fs::ResultUnsupportedOperateRangeForCompressedStorage());
                 }
 
                 R_SUCCEED();
@@ -1440,13 +1440,13 @@ namespace ams::fssystem {
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                R_THROW(fs::ResultUnsupportedOperationInCompressedStorageA());
+                R_THROW(fs::ResultUnsupportedWriteForCompressedStorage());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
                 /* NOTE: Is Nintendo returning the wrong result here? */
-                R_THROW(fs::ResultUnsupportedOperationInIndirectStorageB());
+                R_THROW(fs::ResultUnsupportedSetSizeForIndirectStorage());
             }
     };
 

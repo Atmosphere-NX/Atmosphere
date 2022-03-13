@@ -348,7 +348,7 @@ namespace ams::fssystem {
 
     Result DirectorySaveDataFileSystem::DoCommitProvisionally(s64 counter) {
         /* Check that we support multi-commit. */
-        R_UNLESS(m_is_multi_commit_supported, fs::ResultUnsupportedOperationInDirectorySaveDataFileSystemA());
+        R_UNLESS(m_is_multi_commit_supported, fs::ResultUnsupportedCommitProvisionallyForDirectorySaveDataFileSystem());
 
         /* Do nothing. */
         AMS_UNUSED(counter);

@@ -332,7 +332,7 @@ namespace ams::fssystem {
             case fs::OperationId::Invalidate:
                 {
                     /* Only allow cache invalidation for RomFs. */
-                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInIntegrityVerificationStorageB());
+                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperateRangeForNonSaveDataIntegrityVerificationStorage());
 
 
                     /* Operate on our storages. */
@@ -357,7 +357,7 @@ namespace ams::fssystem {
                     return ResultSuccess();
                 }
             default:
-                return fs::ResultUnsupportedOperationInIntegrityVerificationStorageC();
+                return fs::ResultUnsupportedOperateRangeForIntegrityVerificationStorage();
         }
     }
 

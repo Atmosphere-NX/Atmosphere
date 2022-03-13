@@ -245,7 +245,7 @@ namespace ams::fssystem {
                     return ResultSuccess();
                 }
             default:
-                return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageC();
+                return fs::ResultUnsupportedOperateRangeForAesCtrCounterExtendedStorage();
         }
     }
 

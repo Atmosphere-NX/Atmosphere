@@ -221,12 +221,12 @@ namespace ams::fs {
 
                 virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
                     AMS_UNUSED(offset, buffer, size, option);
-                    return fs::ResultUnsupportedOperationInRomFsFileA();
+                    return fs::ResultUnsupportedWriteForRomFsFile();
                 }
 
                 virtual Result DoSetSize(s64 size) override {
                     AMS_UNUSED(size);
-                    return fs::ResultUnsupportedOperationInRomFsFileA();
+                    return fs::ResultUnsupportedWriteForRomFsFile();
                 }
 
                 virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -245,7 +245,7 @@ namespace ams::fs {
                                 return this->GetStorage()->OperateRange(dst, dst_size, op_id, m_start + offset, operate_size, src, src_size);
                             }
                         default:
-                            return fs::ResultUnsupportedOperationInRomFsFileB();
+                            return fs::ResultUnsupportedOperateRangeForRomFsFile();
                     }
                 }
             public:
@@ -447,37 +447,37 @@ namespace ams::fs {
 
     Result RomFsFileSystem::DoCreateFile(const fs::Path &path, s64 size, int flags) {
         AMS_UNUSED(path, size, flags);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoDeleteFile(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoCreateDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoDeleteDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoDeleteDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoGetEntryType(fs::DirectoryEntryType *out, const fs::Path &path) {
@@ -540,17 +540,17 @@ namespace ams::fs {
 
     Result RomFsFileSystem::DoGetTotalSpaceSize(s64 *out, const fs::Path &path) {
         AMS_UNUSED(out, path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemC();
+        return fs::ResultUnsupportedGetTotalSpaceSizeForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoCleanDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
+        return fs::ResultUnsupportedWriteForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoCommitProvisionally(s64 counter) {
         AMS_UNUSED(counter);
-        return fs::ResultUnsupportedOperationInRomFsFileSystemB();
+        return fs::ResultUnsupportedCommitProvisionallyForRomFsFileSystem();
     }
 
     Result RomFsFileSystem::DoRollback() {

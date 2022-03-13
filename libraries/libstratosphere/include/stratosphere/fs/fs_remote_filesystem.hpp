@@ -57,7 +57,7 @@ namespace ams::fs {
             virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                 AMS_UNUSED(src, src_size);
 
-                R_UNLESS(op_id == OperationId::QueryRange,       fs::ResultUnsupportedOperationInFileServiceObjectAdapterA());
+                R_UNLESS(op_id == OperationId::QueryRange,       fs::ResultUnsupportedOperateRangeForFileServiceObjectAdapter());
                 R_UNLESS(dst_size == sizeof(FileQueryRangeInfo), fs::ResultInvalidSize());
 
                 return fsFileOperateRange(std::addressof(m_base_file), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(dst));

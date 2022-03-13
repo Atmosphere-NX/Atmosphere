@@ -395,7 +395,7 @@ namespace ams::fssystem {
                 }
             case fs::OperationId::Invalidate:
                 {
-                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperationInBlockCacheBufferedStorageB());
+                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperateRangeForNonSaveDataBlockCacheBufferedStorage());
                     R_TRY(this->InvalidateImpl());
                     R_SUCCEED();
                 }
@@ -405,7 +405,7 @@ namespace ams::fssystem {
                     R_SUCCEED();
                 }
             default:
-                R_THROW(fs::ResultUnsupportedOperationInBlockCacheBufferedStorageC());
+                R_THROW(fs::ResultUnsupportedOperateRangeForBlockCacheBufferedStorage());
         }
     }
 

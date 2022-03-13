@@ -107,13 +107,13 @@ namespace ams::fs {
             virtual Result SetSize(s64 size) override {
                 /* Ensure we're initialized and validate arguments. */
                 R_UNLESS(this->IsValid(),                              fs::ResultNotInitialized());
-                R_UNLESS(m_resizable,                                  fs::ResultUnsupportedOperationInSubStorageA());
+                R_UNLESS(m_resizable,                                  fs::ResultUnsupportedSetSizeForNotResizableSubStorage());
                 R_UNLESS(IStorage::CheckOffsetAndSize(m_offset, size), fs::ResultInvalidSize());
 
                 /* Ensure that we're allowed to set size. */
                 s64 cur_size;
                 R_TRY(m_base_storage->GetSize(std::addressof(cur_size)));
-                R_UNLESS(cur_size == m_offset + m_size, fs::ResultUnsupportedOperationInSubStorageB());
+                R_UNLESS(cur_size == m_offset + m_size, fs::ResultUnsupportedSetSizeForResizableSubStorage());
 
                 /* Set the size. */
                 R_TRY(m_base_storage->SetSize(m_offset + size));
@@ -132,7 +132,7 @@ namespace ams::fs {
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                 /* Ensure we're initialized. */
-                R_UNLESS(this->IsValid(),                              fs::ResultNotInitialized());
+                R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
 
                 /* Succeed immediately on zero-sized operation. */
                 R_SUCCEED_IF(size == 0);

@@ -135,7 +135,7 @@ namespace ams::fssystem {
     template<typename BasePointer>
     Result AesCtrStorage<BasePointer>::SetSize(s64 size) {
         AMS_UNUSED(size);
-        return fs::ResultUnsupportedOperationInAesCtrStorageA();
+        return fs::ResultUnsupportedSetSizeForAesCtrStorage();
     }
 
     template<typename BasePointer>

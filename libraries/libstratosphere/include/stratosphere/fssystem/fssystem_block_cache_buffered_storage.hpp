@@ -110,7 +110,7 @@ namespace ams::fssystem {
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64) override { R_THROW(fs::ResultUnsupportedOperationInBlockCacheBufferedStorageA()); }
+            virtual Result SetSize(s64) override { R_THROW(fs::ResultUnsupportedSetSizeForBlockCacheBufferedStorage()); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;

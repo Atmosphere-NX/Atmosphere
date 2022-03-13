@@ -70,7 +70,7 @@ namespace ams::fssystem {
                 /* Ensure appending is not required. */
                 bool needs_append;
                 R_TRY(this->DryWrite(std::addressof(needs_append), offset, size, option, m_mode));
-                R_UNLESS(!needs_append, fs::ResultUnsupportedOperationInPartitionFileA());
+                R_UNLESS(!needs_append, fs::ResultUnsupportedWriteForPartitionFile());
 
                 /* Appending is prohibited. */
                 AMS_ASSERT((m_mode & fs::OpenMode_AllowAppend) == 0);
@@ -85,7 +85,7 @@ namespace ams::fssystem {
 
             virtual Result DoSetSize(s64 size) override final {
                 R_TRY(this->DrySetSize(size, m_mode));
-                R_RETURN(fs::ResultUnsupportedOperationInPartitionFileA());
+                R_RETURN(fs::ResultUnsupportedWriteForPartitionFile());
             }
 
             virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
@@ -93,12 +93,12 @@ namespace ams::fssystem {
                 switch (op_id) {
                     case fs::OperationId::Invalidate:
                         R_UNLESS((m_mode & fs::OpenMode_Read)  != 0, fs::ResultReadNotPermitted());
-                        R_UNLESS((m_mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperationInPartitionFileB());
+                        R_UNLESS((m_mode & fs::OpenMode_Write) == 0, fs::ResultUnsupportedOperateRangeForPartitionFile());
                         break;
                     case fs::OperationId::QueryRange:
                         break;
                     default:
-                        R_THROW(fs::ResultUnsupportedOperationInPartitionFileB());
+                        R_THROW(fs::ResultUnsupportedOperateRangeForPartitionFile());
                 }
 
                 /* Validate offset and size. */
@@ -408,55 +408,55 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCleanDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCreateDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCreateFile(const fs::Path &path, s64 size, int option) {
         AMS_UNUSED(path, size, option);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteDirectory(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteDirectoryRecursively(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoDeleteFile(const fs::Path &path) {
         AMS_UNUSED(path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoRenameDirectory(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoRenameFile(const fs::Path &old_path, const fs::Path &new_path) {
         AMS_UNUSED(old_path, new_path);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemA());
+        R_THROW(fs::ResultUnsupportedWriteForPartitionFileSystem());
     }
 
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoCommitProvisionally(s64 counter) {
         AMS_UNUSED(counter);
-        R_THROW(fs::ResultUnsupportedOperationInPartitionFileSystemB());
+        R_THROW(fs::ResultUnsupportedCommitProvisionallyForPartitionFileSystem());
     }
 
     template class PartitionFileSystemCore<PartitionFileSystemMeta>;
