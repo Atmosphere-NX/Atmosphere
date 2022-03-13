@@ -434,7 +434,7 @@ namespace ams::fs {
                     /* Allocate a new buffer. */
                     const size_t size = util::AlignUp(len, WriteBufferAlignmentLength);
                     auto buf = fs::impl::MakeUnique<char[]>(size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                     /* Normalize into it. */
                     R_TRY(PathFormatter::Normalize(buf.get(), size, util::GetReference(m_write_buffer).get(), m_write_buffer_length, flags));
@@ -480,7 +480,7 @@ namespace ams::fs {
                     /* Allocate buffer. */
                     const size_t size = util::AlignUp(length, WriteBufferAlignmentLength);
                     auto buf = fs::impl::MakeUnique<char[]>(size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInMakeUnique());
+                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                     /* Set write buffer. */
                     this->SetModifiableBuffer(std::move(buf), size);

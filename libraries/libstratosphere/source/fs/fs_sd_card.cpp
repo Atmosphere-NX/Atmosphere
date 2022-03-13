@@ -58,12 +58,12 @@ namespace ams::fs {
 
         /* Allocate a new filesystem wrapper. */
         auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+        R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
         /* Allocate a new mountname generator. */
         /* NOTE: Nintendo does not attach a generator. */
         auto generator = std::make_unique<SdCardCommonMountNameGenerator>();
-        R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInSdCardA());
+        R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
         /* Register. */
         return fsa::Register(name, std::move(fsa), std::move(generator));
@@ -80,7 +80,7 @@ namespace ams::fs {
 
         /* Allocate a new filesystem wrapper. */
         auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+        R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
         /* Ensure that the error report directory exists. */
         constexpr fs::Path fs_path = fs::MakeConstantPath(AtmosphereErrorReportDirectory);
@@ -88,7 +88,7 @@ namespace ams::fs {
 
         /* Create a subdirectory filesystem. */
         auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(fsa));
-        R_UNLESS(subdir_fs != nullptr, fs::ResultAllocationFailureInSdCardA());
+        R_UNLESS(subdir_fs != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
         R_TRY(subdir_fs->Initialize(fs_path));
 
         /* Register. */
@@ -104,7 +104,7 @@ namespace ams::fs {
 
         /* Create an event notifier adapter. */
         auto adapter = std::make_unique<impl::EventNotifierObjectAdapter>(std::move(notifier));
-        AMS_FS_R_UNLESS(adapter != nullptr, fs::ResultAllocationFailureInSdCardB());
+        AMS_FS_R_UNLESS(adapter != nullptr, fs::ResultAllocationMemoryFailedInSdCardB());
 
         *out = std::move(adapter);
         return ResultSuccess();

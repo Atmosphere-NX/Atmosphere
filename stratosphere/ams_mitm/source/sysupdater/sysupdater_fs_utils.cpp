@@ -69,7 +69,7 @@ namespace ams::mitm::sysupdater {
 
                 /* Allocate a new filesystem wrapper. */
                 auto fsa = std::make_shared<ams::fs::RemoteFileSystem>(fs);
-                R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+                R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
                 /* Set the output fs. */
                 *out = std::move(fsa);
@@ -83,7 +83,7 @@ namespace ams::mitm::sysupdater {
 
                 /* Allocate a new filesystem wrapper. */
                 auto fsa = std::make_shared<ams::fs::RemoteFileSystem>(fs);
-                R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentStorageA());
+                R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInContentStorageA());
 
                 /* Set the output fs. */
                 *out = std::move(fsa);
@@ -123,7 +123,7 @@ namespace ams::mitm::sysupdater {
 
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
-            R_UNLESS(file_storage != nullptr, fs::ResultAllocationFailureInFileSystemProxyCoreImplD());
+            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInFileSystemProxyCoreImplD());
             R_TRY(file_storage->Initialize(std::move(base_fs), nsp_path, ams::fs::OpenMode_Read));
 
             /* Create a partition fs. */
@@ -138,7 +138,7 @@ namespace ams::mitm::sysupdater {
         Result ParseNca(const char **path, std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<ams::fs::fsa::IFileSystem> base_fs) {
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
-            R_UNLESS(file_storage != nullptr, fs::ResultAllocationFailureInFileSystemProxyCoreImplE());
+            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInFileSystemProxyCoreImplE());
 
             /* Get the nca path. */
             ams::fs::Path nca_path;
@@ -245,7 +245,7 @@ namespace ams::mitm::sysupdater {
 
         /* Create a holder for the fs. */
         std::unique_ptr unique_fs = std::make_unique<ams::fs::SharedFileSystemHolder>(std::move(fs));
-        R_UNLESS(unique_fs != nullptr, fs::ResultAllocationFailureInNew());
+        R_UNLESS(unique_fs != nullptr, fs::ResultAllocationMemoryFailedNew());
 
         /* Register the fs. */
         return ams::fs::fsa::Register(mount_name, std::move(unique_fs));

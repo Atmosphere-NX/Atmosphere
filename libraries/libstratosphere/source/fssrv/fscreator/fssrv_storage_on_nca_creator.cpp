@@ -50,7 +50,7 @@ namespace ams::fssrv::fscreator {
     Result StorageOnNcaCreator::CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) {
         /* Create a reader. */
         std::shared_ptr reader = fssystem::AllocateShared<fssystem::NcaReader>();
-        R_UNLESS(reader != nullptr, fs::ResultAllocationFailureInStorageOnNcaCreatorB());
+        R_UNLESS(reader != nullptr, fs::ResultAllocationMemoryFailedInStorageOnNcaCreatorB());
 
         /* Initialize the reader. */
         R_TRY(reader->Initialize(std::move(storage), m_nca_crypto_cfg, m_nca_compression_cfg, m_hash_generator_factory_selector));

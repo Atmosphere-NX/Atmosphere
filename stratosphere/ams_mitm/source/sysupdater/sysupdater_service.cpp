@@ -147,7 +147,7 @@ namespace ams::mitm::sysupdater {
 
                 data_buffer_size /= 2;
             } while (data_buffer_size >= 16_KB);
-            R_UNLESS(data_buffer != nullptr, fs::ResultAllocationFailureInNew());
+            R_UNLESS(data_buffer != nullptr, fs::ResultAllocationMemoryFailedNew());
 
             ON_SCOPE_EXIT { std::free(data_buffer); };
 

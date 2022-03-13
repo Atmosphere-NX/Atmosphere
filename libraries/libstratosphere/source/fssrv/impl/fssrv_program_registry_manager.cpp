@@ -21,13 +21,13 @@ namespace ams::fssrv::impl {
     Result ProgramRegistryManager::RegisterProgram(u64 process_id, u64 program_id, u8 storage_id, const void *data, s64 data_size, const void *desc, s64 desc_size) {
         /* Allocate a new node. */
         std::unique_ptr<ProgramInfoNode> new_node(new ProgramInfoNode());
-        R_UNLESS(new_node != nullptr, fs::ResultAllocationFailureInProgramRegistryManagerA());
+        R_UNLESS(new_node != nullptr, fs::ResultAllocationMemoryFailedInProgramRegistryManagerA());
 
         /* Create a new program info. */
         {
             /* Allocate the new info. */
             auto new_info = fssystem::AllocateShared<ProgramInfo>(process_id, program_id, storage_id, data, data_size, desc, desc_size);
-            R_UNLESS(new_info != nullptr, fs::ResultAllocationFailureInProgramRegistryManagerA());
+            R_UNLESS(new_info != nullptr, fs::ResultAllocationMemoryFailedInProgramRegistryManagerA());
 
             /* Set the info in the node. */
             new_node->program_info = std::move(new_info);

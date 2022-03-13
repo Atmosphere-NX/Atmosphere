@@ -65,7 +65,7 @@ namespace ams::fssystem {
         /* Create the header storage. */
         const u8 header_iv[AesXtsStorageForNcaHeader::IvSize] = {};
         std::unique_ptr<fs::IStorage> work_header_storage = std::make_unique<AesXtsStorageForNcaHeader>(base_storage, header_decryption_keys[0], header_decryption_keys[1], AesXtsStorageForNcaHeader::KeySize, header_iv, AesXtsStorageForNcaHeader::IvSize, NcaHeader::XtsBlockSize);
-        R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationFailureInNcaReaderA());
+        R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationMemoryFailedInNcaReaderA());
 
         /* Read the header. */
         R_TRY(work_header_storage->Read(0, std::addressof(m_header), sizeof(m_header)));
@@ -83,7 +83,7 @@ namespace ams::fssystem {
             s64 base_storage_size;
             R_TRY(base_storage->GetSize(std::addressof(base_storage_size)));
             work_header_storage.reset(new fs::SubStorage(base_storage, 0, base_storage_size));
-            R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationFailureInNcaReaderA());
+            R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationMemoryFailedInNcaReaderA());
 
             /* Set encryption type as plaintext. */
             m_header_encryption_type = NcaHeader::EncryptionType::None;

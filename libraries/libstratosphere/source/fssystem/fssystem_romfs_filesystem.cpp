@@ -233,7 +233,7 @@ namespace ams::fssystem {
         /* Set up our storages. */
         if (use_cache) {
             const size_t needed_size = CalculateRequiredWorkingMemorySize(header);
-            R_UNLESS(work_size >= needed_size, fs::ResultAllocationFailureInRomFsFileSystemA());
+            R_UNLESS(work_size >= needed_size, fs::ResultAllocationMemoryFailedInRomFsFileSystemA());
 
             u8 *buf = static_cast<u8 *>(work);
             auto dir_bucket_buf  = buf; buf += header.directory_bucket_size;
@@ -258,10 +258,10 @@ namespace ams::fssystem {
         }
 
         /* Ensure we allocated storages successfully. */
-        R_UNLESS(m_dir_bucket_storage  != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
-        R_UNLESS(m_dir_entry_storage   != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
-        R_UNLESS(m_file_bucket_storage != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
-        R_UNLESS(m_file_entry_storage  != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
+        R_UNLESS(m_dir_bucket_storage  != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemB());
+        R_UNLESS(m_dir_entry_storage   != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemB());
+        R_UNLESS(m_file_bucket_storage != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemB());
+        R_UNLESS(m_file_entry_storage  != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemB());
 
         /* Initialize the rom table. */
         R_TRY(m_rom_file_table.Initialize(fs::SubStorage(m_dir_bucket_storage.get(),  0, static_cast<u32>(header.directory_bucket_size)),
@@ -369,7 +369,7 @@ namespace ams::fssystem {
         R_TRY(this->GetFileInfo(std::addressof(file_info), path));
 
         auto file = std::make_unique<RomFsFile>(this, m_entry_size + file_info.offset.Get(), m_entry_size + file_info.offset.Get() + file_info.size.Get());
-        R_UNLESS(file != nullptr, fs::ResultAllocationFailureInRomFsFileSystemC());
+        R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemC());
 
         *out_file = std::move(file);
         R_SUCCEED();
@@ -388,7 +388,7 @@ namespace ams::fssystem {
         }, AMS_CURRENT_FUNCTION_NAME));
 
         auto dir = std::make_unique<RomFsDirectory>(this, find, mode);
-        R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInRomFsFileSystemD());
+        R_UNLESS(dir != nullptr, fs::ResultAllocationMemoryFailedInRomFsFileSystemD());
 
         *out_dir = std::move(dir);
         R_SUCCEED();

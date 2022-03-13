@@ -186,7 +186,7 @@ namespace ams::fssrv {
 
         /* Create an interface adapter. */
         auto sf_fs = impl::FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IFileSystem, impl::FileSystemInterfaceAdapter>(std::move(fs), host_path_flags, false);
-        R_UNLESS(sf_fs != nullptr, fs::ResultAllocationFailureInFileSystemProxyImplA());
+        R_UNLESS(sf_fs != nullptr, fs::ResultAllocationMemoryFailedInFileSystemProxyImplA());
 
         /* Set the output. */
         *out = std::move(sf_fs);

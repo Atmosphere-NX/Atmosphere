@@ -139,7 +139,7 @@ namespace ams::fssystem {
         } else {
             m_internal_free_lists.reset(new PageList[m_order_max + 1]);
             m_free_lists = m_internal_free_lists.get();
-            R_UNLESS(m_free_lists != nullptr, fs::ResultAllocationFailureInFileSystemBuddyHeapA());
+            R_UNLESS(m_free_lists != nullptr, fs::ResultAllocationMemoryFailedInFileSystemBuddyHeapA());
         }
 
         /* All but the last page region should go to the max order. */

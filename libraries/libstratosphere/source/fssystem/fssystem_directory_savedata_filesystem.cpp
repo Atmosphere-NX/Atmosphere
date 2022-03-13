@@ -271,7 +271,7 @@ namespace ams::fssystem {
 
         /* Make DirectorySaveDataFile. */
         std::unique_ptr<fs::fsa::IFile> file = std::make_unique<DirectorySaveDataFile>(std::move(base_file), this, mode);
-        R_UNLESS(file != nullptr, fs::ResultAllocationFailureInDirectorySaveDataFileSystem());
+        R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedInDirectorySaveDataFileSystemA());
 
         /* Increment our open writable files, if the file is writable. */
         if (mode & fs::OpenMode_Write) {

@@ -127,7 +127,7 @@ namespace ams::fs::impl {
 
                 /* Create the output fsa file. */
                 out_file->reset(new FileServiceObjectAdapter(std::move(file)));
-                R_UNLESS(out_file != nullptr, fs::ResultAllocationFailureInNew());
+                R_UNLESS(out_file != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 R_SUCCEED();
             }
@@ -143,7 +143,7 @@ namespace ams::fs::impl {
 
                 /* Create the output fsa directory. */
                 out_dir->reset(new DirectoryServiceObjectAdapter(std::move(dir)));
-                R_UNLESS(out_dir != nullptr, fs::ResultAllocationFailureInNew());
+                R_UNLESS(out_dir != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 R_SUCCEED();
             }

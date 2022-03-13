@@ -283,7 +283,7 @@ namespace ams::fssystem {
                     /* Allocate a work buffer. */
                     const auto buf_size = static_cast<size_t>(std::min(sign_size, static_cast<s64>(1) << (m_upper_layer_verification_block_order + 2)));
                     std::unique_ptr<char[], fs::impl::Deleter> buf = fs::impl::MakeUnique<char[]>(buf_size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInIntegrityVerificationStorageA());
+                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedInIntegrityVerificationStorageA());
 
                     /* Clear the work buffer. */
                     std::memset(buf.get(), 0, buf_size);
@@ -315,7 +315,7 @@ namespace ams::fssystem {
 
                     /* Allocate a work buffer. */
                     std::unique_ptr<char[], fs::impl::Deleter> buf = fs::impl::MakeUnique<char[]>(sign_size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationFailureInIntegrityVerificationStorageB());
+                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedInIntegrityVerificationStorageB());
 
                     /* Read the existing signature. */
                     R_TRY(m_hash_storage.Read(sign_offset, buf.get(), sign_size));

@@ -608,7 +608,7 @@ namespace ams::fssystem {
 
         /* Allocate the caches. */
         m_caches.reset(new Cache[buffer_count]);
-        R_UNLESS(m_caches != nullptr, fs::ResultAllocationFailureInBufferedStorageA());
+        R_UNLESS(m_caches != nullptr, fs::ResultAllocationMemoryFailedInBufferedStorageA());
 
         /* Initialize the caches. */
         for (auto i = 0; i < buffer_count; i++) {
@@ -793,7 +793,7 @@ namespace ams::fssystem {
                 do {
                     /* Try to do a bulk read. */
                     R_TRY_CATCH(this->BulkRead(cur_offset, static_cast<u8 *>(buffer) + buf_offset, remaining_size, head_cache_needed, tail_cache_needed)) {
-                        R_CATCH(fs::ResultAllocationFailurePooledBufferNotEnoughSize) {
+                        R_CATCH(fs::ResultAllocationPooledBufferNotEnoughSize) {
                             /* If the read fails due to insufficient pooled buffer size, */
                             /* then we want to fall back to the normal read path. */
                             break;
@@ -940,7 +940,7 @@ namespace ams::fssystem {
             work_buffer = static_cast<char *>(buffer);
         } else {
             pooled_buffer.AllocateParticularlyLarge(static_cast<size_t>(aligned_size), 1);
-            R_UNLESS(static_cast<s64>(pooled_buffer.GetSize()) >= aligned_size, fs::ResultAllocationFailurePooledBufferNotEnoughSize());
+            R_UNLESS(static_cast<s64>(pooled_buffer.GetSize()) >= aligned_size, fs::ResultAllocationPooledBufferNotEnoughSize());
             work_buffer = pooled_buffer.GetBuffer();
         }
 

@@ -66,11 +66,11 @@ namespace ams::fs {
 
                 /* Allocate a new mountname generator. */
                 auto generator = std::make_unique<BisCommonMountNameGenerator>(id);
-                R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInBisA());
+                R_UNLESS(generator != nullptr, fs::ResultAllocationMemoryFailedInBisA());
 
                 /* Allocate a new filesystem wrapper. */
                 auto fsa = std::make_unique<impl::FileSystemServiceObjectAdapter>(std::move(fs));
-                R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInBisB());
+                R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInBisB());
 
                 /* Register. */
                 R_RETURN(fsa::Register(name, std::move(fsa), std::move(generator)));
@@ -122,7 +122,7 @@ namespace ams::fs {
 
         /* Allocate a new storage wrapper. */
         auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
-        AMS_FS_R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInBisC());
+        AMS_FS_R_UNLESS(storage != nullptr, fs::ResultAllocationMemoryFailedInBisC());
 
         *out = std::move(storage);
         R_SUCCEED();

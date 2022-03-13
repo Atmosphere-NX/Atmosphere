@@ -69,7 +69,7 @@ namespace ams::fssrv::impl {
                 } else {
                     /* Make a new entry. */
                     auto *entry = new ExternalKeyEntry(rights_id, access_key);
-                    R_UNLESS(entry != nullptr, fs::ResultAllocationFailure());
+                    R_UNLESS(entry != nullptr, fs::ResultAllocationMemoryFailed());
 
                     /* Add the entry to our list. */
                     m_key_list.push_back(*entry);

@@ -36,7 +36,7 @@ namespace ams::fs::impl {
             AMS_FS_R_TRY(OpenDataStorageByDataIdImpl(std::addressof(s), data_id, storage_id));
 
             auto storage = std::make_unique<impl::StorageServiceObjectAdapter>(std::move(s));
-            R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInDataA());
+            R_UNLESS(storage != nullptr, fs::ResultAllocationMemoryFailedInDataA());
 
             *out = std::move(storage);
             return ResultSuccess();
@@ -47,7 +47,7 @@ namespace ams::fs::impl {
             R_TRY(OpenDataStorageByDataId(std::addressof(storage), data_id, storage_id));
 
             auto fs = std::make_unique<RomFsFileSystem>();
-            R_UNLESS(fs != nullptr, fs::ResultAllocationFailureInDataB());
+            R_UNLESS(fs != nullptr, fs::ResultAllocationMemoryFailedInDataB());
             R_TRY(fs->Initialize(std::move(storage), cache_buffer, cache_size, use_cache));
 
             return fsa::Register(name, std::move(fs), nullptr, use_data_cache, use_path_cache, false);

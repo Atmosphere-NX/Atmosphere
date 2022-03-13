@@ -23,7 +23,7 @@ namespace ams::fssrv::fscreator {
 
         /* Allocate a local filesystem. */
         auto local_fs = fs::AllocateShared<fssystem::LocalFileSystem>();
-        R_UNLESS(local_fs != nullptr, fs::ResultAllocationFailureInLocalFileSystemCreatorA());
+        R_UNLESS(local_fs != nullptr, fs::ResultAllocationMemoryFailedInLocalFileSystemCreatorA());
 
         /* If we're supposed to make sure the root path exists, do so. */
         if (ensure_root) {
