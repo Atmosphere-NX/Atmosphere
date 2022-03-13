@@ -157,11 +157,7 @@ namespace ams::time::impl::util {
         R_UNLESS(out != nullptr,                 time::ResultInvalidPointer());
         R_UNLESS(from.source_id == to.source_id, time::ResultNotComparable());
 
-        const bool no_overflow = (from.value >= 0 ? (to.value >= std::numeric_limits<s64>::min() + from.value)
-                                                  : (to.value <= std::numeric_limits<s64>::max() + from.value));
-        R_UNLESS(no_overflow, time::ResultOverflowed());
-
-        *out = to.value - from.value;
+        R_UNLESS(ams::util::TrySubtractWithoutOverflow(out, to.value, from.value), time::ResultOverflowed());
         return ResultSuccess();
     }
 

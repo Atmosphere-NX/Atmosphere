@@ -123,7 +123,7 @@ namespace ams::mitm::sysupdater {
 
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
-            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInFileSystemProxyCoreImplD());
+            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInNcaFileSystemServiceImplA());
             R_TRY(file_storage->Initialize(std::move(base_fs), nsp_path, ams::fs::OpenMode_Read));
 
             /* Create a partition fs. */
@@ -138,7 +138,7 @@ namespace ams::mitm::sysupdater {
         Result ParseNca(const char **path, std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<ams::fs::fsa::IFileSystem> base_fs) {
             /* Open the file storage. */
             std::shared_ptr<ams::fs::FileStorageBasedFileSystem> file_storage = fssystem::AllocateShared<ams::fs::FileStorageBasedFileSystem>();
-            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInFileSystemProxyCoreImplE());
+            R_UNLESS(file_storage != nullptr, fs::ResultAllocationMemoryFailedInNcaFileSystemServiceImplB());
 
             /* Get the nca path. */
             ams::fs::Path nca_path;
