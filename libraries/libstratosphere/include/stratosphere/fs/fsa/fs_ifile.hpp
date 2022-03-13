@@ -36,12 +36,10 @@ namespace ams::fs::fsa {
                 }
 
                 /* Check that the read is valid. */
-                R_UNLESS(buffer != nullptr,                        fs::ResultNullptrArgument());
-                R_UNLESS(offset >= 0,                              fs::ResultOutOfRange());
-                R_UNLESS(util::IsIntValueRepresentable<s64>(size), fs::ResultOutOfRange());
-
-                const s64 signed_size = static_cast<s64>(size);
-                R_UNLESS((std::numeric_limits<s64>::max() - offset) >= signed_size, fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                              fs::ResultNullptrArgument());
+                R_UNLESS(offset >= 0,                                    fs::ResultOutOfRange());
+                R_UNLESS(util::IsIntValueRepresentable<s64>(size),       fs::ResultOutOfRange());
+                R_UNLESS(util::CanAddWithoutOverflow<s64>(offset, size), fs::ResultOutOfRange());
 
                 /* Do the read. */
                 R_RETURN(this->DoRead(out, offset, buffer, size, option));
@@ -68,12 +66,10 @@ namespace ams::fs::fsa {
                 }
 
                 /* Check the write is valid. */
-                R_UNLESS(buffer != nullptr,                        fs::ResultNullptrArgument());
-                R_UNLESS(offset >= 0,                              fs::ResultOutOfRange());
-                R_UNLESS(util::IsIntValueRepresentable<s64>(size), fs::ResultOutOfRange());
-
-                const s64 signed_size = static_cast<s64>(size);
-                R_UNLESS((std::numeric_limits<s64>::max() - offset) >= signed_size, fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                              fs::ResultNullptrArgument());
+                R_UNLESS(offset >= 0,                                    fs::ResultOutOfRange());
+                R_UNLESS(util::IsIntValueRepresentable<s64>(size),       fs::ResultOutOfRange());
+                R_UNLESS(util::CanAddWithoutOverflow<s64>(offset, size), fs::ResultOutOfRange());
 
                 R_RETURN(this->DoWrite(offset, buffer, size, option));
             }
