@@ -996,7 +996,7 @@ namespace ams::fssystem {
                                 } else if (!head_unaligned) {
                                     return true;
                                 } else {
-                                    return static_cast<s64>(cur_size + cur_offset) < head_range.GetEndVirtualOffset();
+                                    return head_range.GetEndVirtualOffset() < static_cast<s64>(cur_size + cur_offset);
                                 }
                             } else {
                                 return false;
