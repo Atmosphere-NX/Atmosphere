@@ -269,13 +269,13 @@ namespace ams::fssystem {
                 m_cache_handle_table.Finalize();
             }
         private:
-            virtual const std::pair<uintptr_t, size_t> DoAllocateBuffer(size_t size, const BufferAttribute &attr) override;
+            virtual const fs::IBufferManager::MemoryRange DoAllocateBuffer(size_t size, const BufferAttribute &attr) override;
 
             virtual void DoDeallocateBuffer(uintptr_t address, size_t size) override;
 
             virtual CacheHandle DoRegisterCache(uintptr_t address, size_t size, const BufferAttribute &attr) override;
 
-            virtual const std::pair<uintptr_t, size_t> DoAcquireCache(CacheHandle handle) override;
+            virtual const fs::IBufferManager::MemoryRange DoAcquireCache(CacheHandle handle) override;
 
             virtual size_t DoGetTotalSize() const override;
 
@@ -290,6 +290,17 @@ namespace ams::fssystem {
             virtual size_t DoGetRetriedCount() const override;
 
             virtual void DoClearPeak() override;
+        private:
+            const fs::IBufferManager::MemoryRange AllocateBufferImpl(size_t size, const BufferAttribute &attr);
+            void DeallocateBufferImpl(uintptr_t address, size_t size);
+            CacheHandle RegisterCacheImpl(uintptr_t address, size_t size, const BufferAttribute &attr);
+            const fs::IBufferManager::MemoryRange AcquireCacheImpl(CacheHandle handle);
+            size_t GetFreeSizeImpl() const;
+            size_t GetTotalAllocatableSizeImpl() const;
+            size_t GetFreeSizePeakImpl() const;
+            size_t GetTotalAllocatableSizePeakImpl() const;
+            size_t GetRetriedCountImpl() const;
+            void ClearPeakImpl();
     };
 
 }
