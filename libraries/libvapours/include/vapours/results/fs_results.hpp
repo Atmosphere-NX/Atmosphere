@@ -48,6 +48,15 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(SdCardNotPresent, 2001);
 
         R_DEFINE_ERROR_RANGE(GameCardAccessFailed, 2500, 2999);
+            R_DEFINE_ERROR_RESULT(GameCardPreconditionViolation, 2503);
+
+            R_DEFINE_ERROR_RANGE(GameCardCardAccessFailure, 2530, 2559);
+                R_DEFINE_ERROR_RESULT(GameCardInvalidCardHeader,        2554);
+                R_DEFINE_ERROR_RESULT(GameCardInvalidT1CardCertificate, 2555);
+                R_DEFINE_ERROR_RESULT(GameCardInvalidCa10Certificate,   2557);
+
+            R_DEFINE_ERROR_RANGE(GameCardSplFailure, 2665, 2669);
+                R_DEFINE_ERROR_RESULT(GameCardSplDecryptAesKeyFailure, 2666);
 
         R_DEFINE_ERROR_RESULT(NotImplemented,     3001);
         R_DEFINE_ERROR_RESULT(UnsupportedVersion, 3002);
