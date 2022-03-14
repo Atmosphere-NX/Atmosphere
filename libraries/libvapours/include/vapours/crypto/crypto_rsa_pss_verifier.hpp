@@ -59,6 +59,7 @@ namespace ams::crypto {
             }
 
             void Update(const void *data, size_t size) {
+                AMS_ASSERT(m_state == State::Initialized);
                 return m_hash.Update(data, size);
             }
 

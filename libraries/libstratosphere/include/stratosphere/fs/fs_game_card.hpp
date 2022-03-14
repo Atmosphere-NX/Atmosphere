@@ -31,12 +31,19 @@ namespace ams::fs {
         RootWriteable,
     };
 
-    enum class GameCardAttribute : u8 {
-        AutoBootFlag                         = (1 << 0),
-        HistoryEraseFlag                     = (1 << 1),
-        RepairToolFlag                       = (1 << 2),
-        DifferentRegionCupToTerraDeviceFlag  = (1 << 3),
-        DifferentRegionCupToGlobalDeviceFlag = (1 << 4),
+    enum GameCardAttribute : u8 {
+        GameCardAttribute_AutoBootFlag                         = (1 << 0),
+        GameCardAttribute_HistoryEraseFlag                     = (1 << 1),
+        GameCardAttribute_RepairToolFlag                       = (1 << 2),
+        GameCardAttribute_DifferentRegionCupToTerraDeviceFlag  = (1 << 3),
+        GameCardAttribute_DifferentRegionCupToGlobalDeviceFlag = (1 << 4),
+
+        GameCardAttribute_HasHeaderSign2Flag                   = (1 << 7),
+    };
+
+    enum class GameCardCompatibilityType : u8 {
+        Normal = 0,
+        Terra  = 1,
     };
 
     using GameCardHandle = u32;

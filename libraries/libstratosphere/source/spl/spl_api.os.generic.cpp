@@ -75,6 +75,8 @@ namespace ams::spl {
     }
 
     Result LoadAesKey(s32 slot, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
+        EnsureInitialized();
+
         AMS_ASSERT(key_source_size == sizeof(KeySource));
         AMS_UNUSED(key_source_size);
 
@@ -82,6 +84,8 @@ namespace ams::spl {
     }
 
     Result GenerateAesKey(void *dst, size_t dst_size, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
+        EnsureInitialized();
+
         AMS_ASSERT(dst_size >= sizeof(AesKey));
         AMS_ASSERT(key_source_size == sizeof(KeySource));
         AMS_UNUSED(dst_size, key_source_size);
@@ -92,6 +96,8 @@ namespace ams::spl {
     }
 
     Result ComputeCtr(void *dst, size_t dst_size, s32 slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+        EnsureInitialized();
+
         AMS_ASSERT(iv_size >= sizeof(IvCtr));
         AMS_UNUSED(iv_size);
         AMS_ASSERT(dst_size >= src_size);
@@ -99,11 +105,27 @@ namespace ams::spl {
         R_RETURN(impl::ComputeCtr(dst, dst_size, slot, src, src_size, *static_cast<const IvCtr *>(iv)));
     }
 
+    Result DecryptAesKey(void *dst, size_t dst_size, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
+        EnsureInitialized();
+
+        AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
+        AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
+        R_RETURN(WaitAvailableKeySlotAndExecute([&]() -> Result {
+            R_RETURN(impl::DecryptAesKey(static_cast<AesKey *>(dst), *static_cast<const KeySource *>(key_source), static_cast<u32>(generation), option));
+        }));
+    }
+
     Result LoadPreparedAesKey(s32 slot, const AccessKey &access_key) {
+        EnsureInitialized();
+
         R_RETURN(impl::LoadPreparedAesKey(slot, access_key));
     }
 
     Result PrepareCommonEsTitleKey(AccessKey *out, const void *key_source, const size_t key_source_size, int generation) {
+        EnsureInitialized();
+
         AMS_ASSERT(key_source_size == sizeof(KeySource));
 
         R_RETURN(impl::PrepareCommonEsTitleKey(out, *static_cast<const KeySource *>(key_source), generation));
