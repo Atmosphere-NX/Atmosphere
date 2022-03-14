@@ -58,6 +58,10 @@ namespace ams::fssystem {
         DecryptAesCtrFunction decrypt_aes_ctr;
         DecryptAesCtrFunction decrypt_aes_ctr_external;
         bool is_plaintext_header_available;
+
+        #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+        bool is_unsigned_header_available_for_host_tool;
+        #endif
     };
     static_assert(util::is_pod<NcaCryptoConfiguration>::value);
 
@@ -103,6 +107,7 @@ namespace ams::fssystem {
             DecryptAesCtrFunction m_decrypt_aes_ctr_external;
             bool m_is_software_aes_prioritized;
             NcaHeader::EncryptionType m_header_encryption_type;
+            bool m_is_header_sign1_signature_valid;
             GetDecompressorFunction m_get_decompressor;
             IHash256GeneratorFactory *m_hash_generator_factory;
         public:
@@ -149,8 +154,10 @@ namespace ams::fssystem {
             GetDecompressorFunction GetDecompressor() const;
             IHash256GeneratorFactory *GetHashGeneratorFactory() const;
 
-            void GetHeaderSign2(void *dst, size_t size);
-            void GetHeaderSign2TargetHash(void *dst, size_t size);
+            bool GetHeaderSign1Valid() const;
+
+            void GetHeaderSign2(void *dst, size_t size) const;
+            void GetHeaderSign2TargetHash(void *dst, size_t size) const;
     };
 
     class NcaFsHeaderReader : public ::ams::fs::impl::Newable {
@@ -252,6 +259,13 @@ namespace ams::fssystem {
                 /* Open the storage. */
                 R_RETURN(OpenStorageWithContext(out, out_splitter, out_header_reader, fs_index, std::addressof(ctx)));
             }
+
+        #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+        private:
+        #else
+        public:
+        #endif
+            Result CreateStorageByRawStorage(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> raw_storage, StorageContext *ctx);
         private:
             Result OpenStorageImpl(std::shared_ptr<fs::IStorage> *out, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx);
 
