@@ -103,8 +103,13 @@ namespace ams::fssystem {
             const u8 *msg         = static_cast<const u8 *>(static_cast<const void *>(std::addressof(m_header.magic)));
             const size_t msg_size = NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount;
 
-            const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
-            R_UNLESS(is_signature_valid, fs::ResultNcaHeaderSignature1VerificationFailed());
+            m_is_header_sign1_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
+
+            #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+            R_UNLESS(m_is_header_sign1_signature_valid, fs::ResultNcaHeaderSignature1VerificationFailed());
+            #else
+            R_UNLESS(m_is_header_sign1_signature_valid || crypto_cfg.is_unsigned_header_available_for_host_tool, fs::ResultNcaHeaderSignature1VerificationFailed());
+            #endif
         }
 
         /* Validate the sdk version. */
@@ -363,14 +368,22 @@ namespace ams::fssystem {
         return m_header_storage->Read(offset, dst, sizeof(NcaFsHeader));
     }
 
-    void NcaReader::GetHeaderSign2(void *dst, size_t size) {
+    bool NcaReader::GetHeaderSign1Valid() const {
+        #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+        AMS_ABORT_UNLESS(m_is_header_sign1_signature_valid);
+        #endif
+
+        return m_is_header_sign1_signature_valid;
+    }
+
+    void NcaReader::GetHeaderSign2(void *dst, size_t size) const {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(size == NcaHeader::HeaderSignSize);
 
         std::memcpy(dst, m_header.header_sign_2, size);
     }
 
-    void NcaReader::GetHeaderSign2TargetHash(void *dst, size_t size) {
+    void NcaReader::GetHeaderSign2TargetHash(void *dst, size_t size) const {
         AMS_ASSERT(m_hash_generator_factory != nullptr);
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(size == IHash256Generator::HashSize);

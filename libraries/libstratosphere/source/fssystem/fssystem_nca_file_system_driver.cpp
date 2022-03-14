@@ -292,14 +292,6 @@ namespace ams::fssystem {
         using IntegrityLevelInfo = NcaFsHeader::HashData::IntegrityMetaInfo::LevelHashInfo;
         using IntegrityDataInfo  = IntegrityLevelInfo::HierarchicalIntegrityVerificationLevelInformation;
 
-        // inline const Sha256DataRegion &GetSha256DataRegion(const NcaFsHeader::HashData &hash_data) {
-        //     return hash_data.hierarchical_sha256_data.hash_layer_region[1];
-        // }
-
-        // inline const IntegrityDataInfo &GetIntegrityDataInfo(const NcaFsHeader::HashData &hash_data) {
-        //     return hash_data.integrity_meta_info.level_hash_info.info[hash_data.integrity_meta_info.level_hash_info.max_layers - 2];
-        // }
-
     }
 
     Result NcaFileSystemDriver::OpenStorageWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<IAsynchronousAccessSplitter> *out_splitter, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx) {
@@ -308,7 +300,7 @@ namespace ams::fssystem {
 
         /* If we have a compressed storage, use it as splitter. */
         if (ctx->compressed_storage != nullptr) {
-            *out_splitter = std::move(ctx->compressed_storage);
+            *out_splitter = ctx->compressed_storage;
         } else {
             /* Otherwise, allocate a default splitter. */
             *out_splitter = fssystem::AllocateShared<DefaultAsynchronousAccessSplitter>();
@@ -447,21 +439,29 @@ namespace ams::fssystem {
             return ResultSuccess();
         }
 
+        /* Create the non-raw storage. */
+        R_RETURN(this->CreateStorageByRawStorage(out, out_header_reader, std::move(storage), ctx));
+    }
+
+    Result NcaFileSystemDriver::CreateStorageByRawStorage(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> raw_storage, StorageContext *ctx) {
+        /* Initialize storage as raw storage. */
+        std::shared_ptr<fs::IStorage> storage = std::move(raw_storage);
+
         /* Process hash/integrity layer. */
-        switch (out_header_reader->GetHashType()) {
+        switch (header_reader->GetHashType()) {
             case NcaFsHeader::HashType::HierarchicalSha256Hash:
-                R_TRY(this->CreateSha256Storage(std::addressof(storage), std::move(storage), out_header_reader->GetHashData().hierarchical_sha256_data));
+                R_TRY(this->CreateSha256Storage(std::addressof(storage), std::move(storage), header_reader->GetHashData().hierarchical_sha256_data));
                 break;
             case NcaFsHeader::HashType::HierarchicalIntegrityHash:
-                R_TRY(this->CreateIntegrityVerificationStorage(std::addressof(storage), std::move(storage), out_header_reader->GetHashData().integrity_meta_info));
+                R_TRY(this->CreateIntegrityVerificationStorage(std::addressof(storage), std::move(storage), header_reader->GetHashData().integrity_meta_info));
                 break;
             default:
                 return fs::ResultInvalidNcaFsHeaderHashType();
         }
 
         /* Process compression layer. */
-        if (out_header_reader->ExistsCompressionLayer()) {
-            R_TRY(this->CreateCompressedStorage(std::addressof(storage), ctx != nullptr ? std::addressof(ctx->compressed_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->compressed_storage_meta_storage) : nullptr, std::move(storage), out_header_reader->GetCompressionInfo()));
+        if (header_reader->ExistsCompressionLayer()) {
+            R_TRY(this->CreateCompressedStorage(std::addressof(storage), ctx != nullptr ? std::addressof(ctx->compressed_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->compressed_storage_meta_storage) : nullptr, std::move(storage), header_reader->GetCompressionInfo()));
         }
 
         /* Set output storage. */

@@ -90,6 +90,22 @@ namespace ams::fssrv::fscreator {
         *out_splitter = std::move(splitter);
         return ResultSuccess();
     }
+
+    Result StorageOnNcaCreator::CreateByRawStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, const fssystem::NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> raw_storage, void *ctx, std::shared_ptr<fssystem::NcaReader> nca_reader) {
+        /* Create a fs driver. */
+        fssystem::NcaFileSystemDriver nca_fs_driver(nca_reader, m_allocator, m_buffer_manager, m_hash_generator_factory_selector);
+
+        /* Open the storage. */
+        auto *storage_ctx = static_cast<fssystem::NcaFileSystemDriver::StorageContext *>(ctx);
+        R_TRY(nca_fs_driver.CreateStorageByRawStorage(out, header_reader, std::move(raw_storage), storage_ctx));
+
+        /* Update the splitter. */
+        if (storage_ctx->compressed_storage != nullptr) {
+            *out_splitter = storage_ctx->compressed_storage;
+        }
+
+        R_SUCCEED();
+    }
     #endif
 
 }
