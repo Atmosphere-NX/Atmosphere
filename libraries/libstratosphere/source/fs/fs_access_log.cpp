@@ -268,6 +268,68 @@ namespace ams::fs::impl {
         }
     }
 
+    template<> const char *IdString::ToString<gc::impl::MemoryCapacity>(gc::impl::MemoryCapacity id) {
+        switch (id) {
+            using enum gc::impl::MemoryCapacity;
+            case MemoryCapacity_1GB:  return "1GB";
+            case MemoryCapacity_2GB:  return "2GB";
+            case MemoryCapacity_4GB:  return "4GB";
+            case MemoryCapacity_8GB:  return "8GB";
+            case MemoryCapacity_16GB: return "16GB";
+            case MemoryCapacity_32GB: return "32GB";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<gc::impl::SelSec>(gc::impl::SelSec id) {
+        switch (id) {
+            using enum gc::impl::SelSec;
+            case SelSec_T1: return "T1";
+            case SelSec_T2: return "T2";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<gc::impl::KekIndex>(gc::impl::KekIndex id) {
+        switch (id) {
+            using enum gc::impl::KekIndex;
+            case KekIndex_Version0:      return "Version0";
+            case KekIndex_VersionForDev: return "VersionForDev";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<gc::impl::AccessControl1ClockRate>(gc::impl::AccessControl1ClockRate id) {
+        switch (id) {
+            using enum gc::impl::AccessControl1ClockRate;
+            case AccessControl1ClockRate_25MHz:  return "25 MHz";
+            case AccessControl1ClockRate_50MHz:  return "50 MHz";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<gc::impl::FwVersion>(gc::impl::FwVersion id) {
+        switch (id) {
+            using enum gc::impl::FwVersion;
+            case FwVersion_ForDev: return "ForDev";
+            case FwVersion_1_0_0:  return "1.0.0";
+            case FwVersion_4_0_0:  return "4.0.0";
+            case FwVersion_9_0_0:  return "9.0.0";
+            case FwVersion_11_0_0: return "11.0.0";
+            case FwVersion_12_0_0: return "12.0.0";
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
+    template<> const char *IdString::ToString<fs::GameCardCompatibilityType>(fs::GameCardCompatibilityType id) {
+        switch (id) {
+            using enum fs::GameCardCompatibilityType;
+            ADD_ENUM_CASE(Normal);
+            ADD_ENUM_CASE(Terra);
+            default: return ToValueString(static_cast<int>(id));
+        }
+    }
+
     template<> const char *IdString::ToString<fssrv::impl::AccessControlBits::Bits>(fssrv::impl::AccessControlBits::Bits id) {
         switch (id) {
             using enum fssrv::impl::AccessControlBits::Bits;

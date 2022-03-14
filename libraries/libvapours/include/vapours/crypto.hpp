@@ -26,6 +26,7 @@
 #include <vapours/crypto/crypto_aes_encryptor.hpp>
 #include <vapours/crypto/crypto_aes_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_cbc_encryptor_decryptor.hpp>
+#include <vapours/crypto/crypto_aes_ccm_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_ctr_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_xts_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_aes_gcm_encryptor.hpp>

@@ -38,7 +38,7 @@ namespace ams::fs {
         GameCardAttribute_DifferentRegionCupToTerraDeviceFlag  = (1 << 3),
         GameCardAttribute_DifferentRegionCupToGlobalDeviceFlag = (1 << 4),
 
-        GameCardAttribute_HasHeaderSign2Flag                   = (1 << 7),
+        GameCardAttribute_HasCa10CertificateFlag               = (1 << 7),
     };
 
     enum class GameCardCompatibilityType : u8 {

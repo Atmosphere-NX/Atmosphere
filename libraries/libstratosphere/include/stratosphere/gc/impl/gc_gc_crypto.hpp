@@ -29,6 +29,7 @@ namespace ams::gc::impl {
             static constexpr size_t GcAesCbcIvLength          = crypto::Aes128CbcEncryptor::IvSize;
             static constexpr size_t GcHmacKeyLength           = 0x20;
             static constexpr size_t GcCvConstLength           = 0x10;
+            static constexpr size_t GcTitleKeyKekIndexMax     = 0x10;
             static constexpr size_t GcSha256HashLength        = crypto::Sha256Generator::HashSize;
         public:
             static bool CheckDevelopmentSpl();
@@ -42,6 +43,8 @@ namespace ams::gc::impl {
             static Result VerifyT1CardCertificate(const void *cert_buffer, size_t cert_size);
 
             static Result VerifyCa10Certificate(const void *cert_buffer, size_t cert_size);
+
+            static Result DecryptCardInitialData(void *dst, size_t dst_size, const void *initial_data, size_t data_size, size_t kek_index);
     };
 
 }
