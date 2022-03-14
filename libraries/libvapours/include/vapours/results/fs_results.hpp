@@ -51,6 +51,11 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(GameCardPreconditionViolation, 2503);
 
             R_DEFINE_ERROR_RANGE(GameCardCardAccessFailure, 2530, 2559);
+                R_DEFINE_ERROR_RANGE(CameCardWrongCard, 2543, 2546);
+                    R_DEFINE_ERROR_RESULT(GameCardInitialDataMismatch,      2544);
+                    R_DEFINE_ERROR_RESULT(GameCardInitialNotFilledWithZero, 2545);
+                    R_DEFINE_ERROR_RESULT(GameCardKekIndexMismatch,         2546);
+
                 R_DEFINE_ERROR_RESULT(GameCardInvalidCardHeader,        2554);
                 R_DEFINE_ERROR_RESULT(GameCardInvalidT1CardCertificate, 2555);
                 R_DEFINE_ERROR_RESULT(GameCardInvalidCa10Certificate,   2557);

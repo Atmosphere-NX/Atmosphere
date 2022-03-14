@@ -132,4 +132,45 @@ namespace ams::gc::impl {
         R_SUCCEED();
     }
 
+    Result GcCrypto::DecryptCardInitialData(void *dst, size_t dst_size, const void *initial_data, size_t data_size, size_t kek_index) {
+        /* Check pre-conditions. */
+        R_UNLESS(data_size == sizeof(CardInitialData), fs::ResultGameCardPreconditionViolation());
+        R_UNLESS(kek_index < GcTitleKeyKekIndexMax,    fs::ResultGameCardPreconditionViolation());
+
+        /* Verify the kek is preset. */
+        const void * const kek = EmbeddedDataHolder::s_titlekey_keks[kek_index];
+        {
+            u8 zeros[GcAesKeyLength] = {};
+            R_UNLESS(!crypto::IsSameBytes(kek, zeros, sizeof(zeros)), fs::ResultGameCardPreconditionViolation());
+        }
+
+        /*Generate the key. */
+        u8 key[GcAesKeyLength];
+        {
+            crypto::AesDecryptor128 aes;
+            aes.Initialize(kek, GcAesKeyLength);
+            aes.DecryptBlock(key, sizeof(key), initial_data, 0x10);
+        }
+
+        /* Get data buffer as type. */
+        const auto * const data = static_cast<const CardInitialData *>(initial_data);
+        R_UNLESS(dst_size == sizeof(data->payload.auth_data), fs::ResultGameCardPreconditionViolation());
+
+        /* Verify padding is all-zero. */
+        bool any_nonzero = false;
+        for (size_t i = 0; i < util::size(data->padding); ++i) {
+            any_nonzero |= data->padding[i] != 0;
+        }
+        R_UNLESS(!any_nonzero, fs::ResultGameCardInitialNotFilledWithZero());
+
+        /* Decrypt the auth data. */
+        u8 mac[sizeof(data->payload.auth_mac)];
+        crypto::DecryptAes128Ccm(dst, dst_size, mac, sizeof(mac), key, GcAesKeyLength, data->payload.auth_nonce, sizeof(data->payload.auth_nonce), data->payload.auth_data, sizeof(data->payload.auth_data), nullptr, 0, sizeof(mac));
+
+        /* Check the mac. */
+        R_UNLESS(crypto::IsSameBytes(mac, data->payload.auth_mac, sizeof(mac)), fs::ResultGameCardKekIndexMismatch());
+
+        R_SUCCEED();
+    }
+
 }

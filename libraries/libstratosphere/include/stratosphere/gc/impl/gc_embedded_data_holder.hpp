@@ -40,8 +40,17 @@ namespace ams::gc::impl {
             static const void *s_ca10_modulus;
             static const void *s_ca10_certificate_modulus;
             static const void *s_card_header_key;
+        private:
+            static constinit inline u8 s_titlekey_keks[GcCrypto::GcTitleKeyKekIndexMax][GcCrypto::GcAesKeyLength] = {};
         public:
             static Result SetLibraryEmbeddedKeys(bool is_dev = GcCrypto::CheckDevelopmentSpl());
+
+            static void SetLibraryTitleKeyKek(size_t kek_index, const void *kek, size_t kek_size) {
+                AMS_ASSERT(kek_index < GcCrypto::GcTitleKeyKekIndexMax);
+                AMS_ASSERT(kek_size == GcCrypto::GcAesKeyLength);
+
+                std::memcpy(s_titlekey_keks[kek_index], kek, sizeof(s_titlekey_keks[kek_index]));
+            }
         private:
             static Result DecryptoEmbeddedKeys(ConcatenatedGcLibraryEmbeddedKeys *out, size_t out_size, bool is_dev = GcCrypto::CheckDevelopmentSpl());
     };

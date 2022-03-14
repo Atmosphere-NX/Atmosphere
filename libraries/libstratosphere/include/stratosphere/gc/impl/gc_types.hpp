@@ -35,8 +35,22 @@ namespace ams::gc::impl {
     static_assert(util::is_pod<CardInitialData>::value);
     static_assert(sizeof(CardInitialData) == 0x200);
 
+    enum FwVersion : u8 {
+        FwVersion_ForDev = 0,
+        FwVersion_1_0_0  = 1,
+        FwVersion_4_0_0  = 2,
+        FwVersion_9_0_0  = 3,
+        FwVersion_11_0_0 = 4,
+        FwVersion_12_0_0 = 5,
+    };
+
+    enum KekIndex : u8 {
+        KekIndex_Version0      = 0,
+        KekIndex_VersionForDev = 1,
+    };
+
     struct CardHeaderKeyIndex {
-        using KekIndex         = util::BitPack8::Field<0, 4, u8>;
+        using KekIndex         = util::BitPack8::Field<0, 4, gc::impl::KekIndex>;
         using TitleKeyDecIndex = util::BitPack8::Field<KekIndex::Next, 4, u8>;
 
         static_assert(TitleKeyDecIndex::Next == BITSIZEOF(u8));
@@ -74,6 +88,11 @@ namespace ams::gc::impl {
     enum AccessControl1ClockRate : u32 {
         AccessControl1ClockRate_25MHz = 0x00A10011,
         AccessControl1ClockRate_50MHz = 0x00A10010,
+    };
+
+    enum SelSec : u8 {
+        SelSec_T1 = 1,
+        SelSec_T2 = 2,
     };
 
     struct CardHeader {
@@ -135,8 +154,9 @@ namespace ams::gc::impl {
 
     struct Ca10Certificate {
         u8 signature[crypto::Rsa2048Pkcs1Sha256Verifier::SignatureSize];
-        u8 unk_100[0x200];
+        u8 unk_100[0x30];
         u8 modulus[crypto::Rsa2048Pkcs1Sha256Verifier::ModulusSize];
+        u8 unk_230[0x1D0];
     };
     static_assert(util::is_pod<Ca10Certificate>::value);
     static_assert(sizeof(Ca10Certificate) == 0x400);
