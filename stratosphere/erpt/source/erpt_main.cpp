@@ -84,6 +84,16 @@ namespace ams {
         /* Atmosphere always wants to redirect new reports to the SD card, to prevent them from being logged. */
         erpt::srv::SetRedirectNewReportsToSdCard(true);
 
+        /* Decide whether or not to clean up reports periodically. */
+        {
+            u8 disable_report_cleanup = 0;
+            if (settings::fwdbg::GetSettingsItemValue(std::addressof(disable_report_cleanup), sizeof(disable_report_cleanup), "erpt", "disable_automatic_report_cleanup") == sizeof(disable_report_cleanup)) {
+                erpt::srv::SetEnabledAutomaticReportCleanup(disable_report_cleanup == 0);
+            } else {
+                erpt::srv::SetEnabledAutomaticReportCleanup(true);
+            }
+        }
+
         /* Configure the OS version. */
         {
             settings::system::FirmwareVersion firmware_version = {};

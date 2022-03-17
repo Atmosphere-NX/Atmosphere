@@ -27,6 +27,7 @@ namespace ams::erpt::srv {
 
     /* Atmosphere extension. */
     Result SetRedirectNewReportsToSdCard(bool redirect);
+    Result SetEnabledAutomaticReportCleanup(bool redirect);
 
     void Wait();
 

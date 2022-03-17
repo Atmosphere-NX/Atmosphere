@@ -325,6 +325,10 @@ namespace ams::settings::fwdbg {
             /* Note that this setting does nothing when log manager is not enabled/sd card logging is not enabled. */
             R_ABORT_UNLESS(ParseSettingsItemValue("lm", "sd_card_log_output_directory", "str!atmosphere/binlogs"));
 
+            /* Control whether erpt reports should always be preserved, instead of automatically cleaning periodically. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("erpt", "disable_automatic_report_cleanup", "u8!0x0"));
+
             /* Atmosphere custom settings. */
 
             /* Reboot from fatal automatically after some number of milliseconds. */
