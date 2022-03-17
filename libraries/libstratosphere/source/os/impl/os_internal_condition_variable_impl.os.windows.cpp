@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/windows.hpp>
 #include "os_internal_critical_section_impl.os.windows.hpp"
 #include "os_timeout_helper.hpp"
 #include "os_thread_manager.hpp"

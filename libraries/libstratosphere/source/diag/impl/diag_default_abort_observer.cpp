@@ -16,6 +16,10 @@
 #include <stratosphere.hpp>
 #include "diag_dump_stack_trace.hpp"
 
+#if defined(ATMOSPHERE_OS_WINDOWS)
+#include <stratosphere/windows.hpp>
+#endif
+
 namespace ams::diag::impl {
 
     #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_DEBUGGING)

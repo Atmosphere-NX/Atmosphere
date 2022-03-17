@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/windows.hpp>
 #include "os_giant_lock.os.windows.hpp"
 
 namespace ams::os::impl {

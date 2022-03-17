@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/windows.hpp>
 #include <ntstatus.h>
 #include <bcrypt.h>
 
