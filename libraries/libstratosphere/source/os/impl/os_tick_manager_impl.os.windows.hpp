@@ -15,6 +15,11 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+
+#if defined(ATMOSPHERE_OS_WINDOWS)
+#include <stratosphere/windows.hpp>
+#endif
+
 #include <mmsystem.h>
 
 namespace ams::os::impl {

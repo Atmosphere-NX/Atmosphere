@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/windows.hpp>
 #include <VersionHelpers.h>
 #include "mem_impl_platform.hpp"
 

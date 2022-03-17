@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include <stratosphere/windows.hpp>
 
 namespace ams::os::impl {
 

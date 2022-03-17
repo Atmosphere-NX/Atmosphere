@@ -24,10 +24,6 @@
 /* libvapours (pulls in util, svc, results). */
 #include <vapours.hpp>
 
-#if defined(ATMOSPHERE_OS_WINDOWS)
-#include <stratosphere/windows.hpp>
-#endif
-
 /* Libstratosphere diagnostics. */
 #include <stratosphere/diag.hpp>
 

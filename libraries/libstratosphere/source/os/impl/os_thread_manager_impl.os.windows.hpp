@@ -22,7 +22,7 @@ namespace ams::os::impl {
         NON_COPYABLE(ThreadManagerWindowsImpl);
         NON_MOVEABLE(ThreadManagerWindowsImpl);
         private:
-            DWORD m_tls_index;
+            u32 m_tls_index;
         public:
             explicit ThreadManagerWindowsImpl(ThreadType *main_thread);
 

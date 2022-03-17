@@ -16,7 +16,10 @@
 #include <stratosphere.hpp>
 #include "fssrv_utility.hpp"
 
-#if defined(ATMOSPHERE_OS_LINUX)
+
+#if defined(ATMOSPHERE_OS_WINDOWS)
+#include <stratosphere/windows.hpp>
+#elif defined(ATMOSPHERE_OS_LINUX)
 #include <unistd.h>
 #elif defined(ATMOSPHERE_OS_MACOS)
 #include <unistd.h>

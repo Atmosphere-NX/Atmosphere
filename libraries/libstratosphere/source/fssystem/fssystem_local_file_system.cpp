@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #if defined(ATMOSPHERE_OS_WINDOWS)
+#include <stratosphere/windows.hpp>
 #include <winerror.h>
 #include <winioctl.h>
 #elif defined(ATMOSPHERE_OS_LINUX) || defined(ATMOSPHERE_OS_MACOS)
