@@ -77,7 +77,7 @@ namespace ams::kvdb {
 
                     /* Setup member variables. */
                     m_keys = static_cast<Key *>(buf);
-                    m_file_path.Set(path);
+                    m_file_path.Assign(path);
                     std::memset(m_keys, 0, BufferSize);
 
                     /* Open file. */

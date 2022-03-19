@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "ncm_extended_data_mapper.hpp"
 
 namespace ams::ncm {
 
@@ -989,10 +990,7 @@ namespace ams::ncm {
 
     Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version) {
         AutoBuffer meta;
-        {
-            fs::ScopedAutoAbortDisabler aad;
-            R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
-        }
+        R_TRY(ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(std::addressof(meta), path.str));
 
         /* Create a reader. */
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
@@ -1000,10 +998,20 @@ namespace ams::ncm {
 
         AutoBuffer install_meta_data;
         if (source_version) {
-            /* Convert to fragment only install content meta. */
-            R_TRY(reader.CalculateConvertFragmentOnlyInstallContentMetaSize(std::addressof(meta_size), *source_version));
-            R_TRY(install_meta_data.Initialize(meta_size));
-            reader.ConvertToFragmentOnlyInstallContentMeta(install_meta_data.Get(), install_meta_data.GetSize(), content_info, *source_version);
+            /* Declare buffers. */
+            constexpr size_t BufferCount = 2;
+            constexpr size_t BufferSize  = 3_KB;
+            u8 buffers[BufferCount][BufferSize];
+
+            /* Create a mapper. */
+            auto mapper = MultiCacheReadonlyMapper<4>(Span<u8>(buffers[0], sizeof(buffers[0])), Span<u8>(buffers[1], sizeof(buffers[1])));
+            R_TRY(mapper.Initialize(path.str, true));
+
+            /* Create an accessor. */
+            auto accessor = PatchMetaExtendedDataAccessor{std::addressof(mapper)};
+
+            /* Convert to fragment only install meta. */
+            R_TRY(MetaConverter::GetFragmentOnlyInstallContentMeta(std::addressof(install_meta_data), content_info, reader, std::addressof(accessor), source_version.value()));
         } else {
             /* Convert to install content meta. */
             meta_size = reader.CalculateConvertInstallContentMetaSize();

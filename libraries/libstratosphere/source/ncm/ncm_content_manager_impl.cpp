@@ -255,11 +255,11 @@ namespace ams::ncm {
 
         /* Print the savedata path. */
         PathString savedata_db_path;
-        savedata_db_path.SetFormat("%s/%s", root->path, "imkvdb.arc");
+        savedata_db_path.AssignFormat("%s/%s", root->path, "imkvdb.arc");
 
         /* Print a path for the mounted partition. */
         PathString bis_db_path;
-        bis_db_path.SetFormat("%s:/%s", import_mount_name, path);
+        bis_db_path.AssignFormat("%s:/%s", import_mount_name, path);
 
         /* Mount the savedata. */
         R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));

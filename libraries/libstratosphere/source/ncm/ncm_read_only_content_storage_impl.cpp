@@ -31,7 +31,7 @@ namespace ams::ncm {
             func(std::addressof(path), id, root_path);
 
             /* Substitute the .nca extension with .cmnt.nca. */
-            *out = path.GetSubstring(0, path.GetLength() - 4);
+            *out = path.MakeSubString(0, path.GetLength() - 4);
             out->Append(".cnmt.nca");
         }
 
@@ -55,7 +55,7 @@ namespace ams::ncm {
 
     Result ReadOnlyContentStorageImpl::Initialize(const char *path, MakeContentPathFunction content_path_func) {
         R_TRY(this->EnsureEnabled());
-        m_root_path.Set(path);
+        m_root_path.Assign(path);
         m_make_content_path_func = content_path_func;
         return ResultSuccess();
     }

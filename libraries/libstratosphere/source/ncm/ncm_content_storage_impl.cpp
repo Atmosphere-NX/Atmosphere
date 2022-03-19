@@ -24,7 +24,7 @@ namespace ams::ncm {
         constexpr inline const char * const BaseContentDirectory = "/registered";
 
         void MakeBaseContentDirectoryPath(PathString *out, const char *root_path) {
-            out->SetFormat("%s%s", root_path, BaseContentDirectory);
+            out->AssignFormat("%s%s", root_path, BaseContentDirectory);
         }
 
         void MakeContentPath(PathString *out, ContentId id, MakeContentPathFunction func, const char *root_path) {
@@ -83,7 +83,7 @@ namespace ams::ncm {
 
                     /* Path of the current entry. */
                     PathString current_path;
-                    current_path.SetFormat("%s/%s", root_path, entry.name);
+                    current_path.AssignFormat("%s/%s", root_path, entry.name);
 
                     /* Call the process function. */
                     bool should_continue = true;
@@ -202,7 +202,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::ContentIterator::OpenDirectory(const char *dir) {
         /* Set our current path. */
-        m_path.Set(dir);
+        m_path.Assign(dir);
 
         /* Open the directory. */
         return this->OpenCurrentDirectory();
@@ -230,7 +230,7 @@ namespace ams::ncm {
                     if (m_depth < m_max_depth) {
                         /* Construct the full path for the subdirectory. */
                         PathString entry_path;
-                        entry_path.SetFormat("%s/%s", m_path.Get(), entry.name);
+                        entry_path.AssignFormat("%s/%s", m_path.Get(), entry.name);
 
                         /* Open the subdirectory. */
                         R_TRY(this->OpenDirectory(entry_path.Get()));
@@ -288,7 +288,7 @@ namespace ams::ncm {
         }
 
         /* Set the path to the parent directory. */
-        m_path.Set(m_path.GetSubstring(0, i + 1));
+        m_path = m_path.MakeSubString(0, i + 1);
 
         /* Try to load again from the parent directory. */
         return this->LoadEntries();

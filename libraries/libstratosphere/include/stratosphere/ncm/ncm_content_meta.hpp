@@ -335,6 +335,10 @@ namespace ams::ncm {
             size_t CalculateConvertContentMetaSize() const;
             void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
 
+            size_t CalculateConvertFragmentOnlyInstallContentMetaSize(s32 fragment_count) const {
+                return CalculateSizeImpl<InstallContentMetaHeader, InstallContentInfo>(this->GetExtendedHeaderSize(), fragment_count + 1, 0, 0, false);
+            }
+
             Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) const;
             Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version);
 
@@ -342,6 +346,10 @@ namespace ams::ncm {
 
             static constexpr size_t CalculateSize(ContentMetaType type, size_t content_count, size_t content_meta_count, size_t extended_data_size) {
                 return ContentMetaAccessor::CalculateSize(type, content_count, content_meta_count, extended_data_size, true);
+            }
+
+            size_t GetExtendedDataOffset() const {
+                return this->GetExtendedDataAddress() - reinterpret_cast<uintptr_t>(this->GetData());
             }
     };
 
@@ -366,6 +374,17 @@ namespace ams::ncm {
             using ContentMetaAccessor::CalculateContentRequiredSize;
             using ContentMetaAccessor::GetWritableContentInfo;
             using ContentMetaAccessor::SetStorageId;
+    };
+
+    class PatchMetaExtendedDataAccessor;
+    struct PatchDeltaHeader;
+    class AutoBuffer;
+
+    class MetaConverter {
+        public:
+            static Result CountContentExceptForMeta(s32 *out, PatchMetaExtendedDataAccessor *accessor, const PatchDeltaHeader &header, s32 delta_index);
+            static Result FindDeltaIndex(s32 *out, PatchMetaExtendedDataAccessor *accessor, u32 source_version, u32 destination_version);
+            static Result GetFragmentOnlyInstallContentMeta(AutoBuffer *out, const InstallContentInfo &content_info, const PackagedContentMetaReader &reader, PatchMetaExtendedDataAccessor *accessor, u32 source_version);
     };
 
 }

@@ -269,8 +269,8 @@ namespace ams::kvdb {
                 R_UNLESS(entry_type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
                 /* Set paths. */
-                m_path.SetFormat("%s%s", dir, "/imkvdb.arc");
-                m_temp_path.SetFormat("%s%s", dir, "/imkvdb.tmp");
+                m_path.AssignFormat("%s%s", dir, "/imkvdb.arc");
+                m_temp_path.AssignFormat("%s%s", dir, "/imkvdb.tmp");
 
                 /* Initialize our index. */
                 R_TRY(m_index.Initialize(capacity, mr));
@@ -282,8 +282,8 @@ namespace ams::kvdb {
             Result Initialize(size_t capacity, MemoryResource *mr) {
                 /* This initializes without an archive file. */
                 /* A store initialized this way cannot have its contents loaded from or flushed to disk. */
-                m_path.Set("");
-                m_temp_path.Set("");
+                m_path.Assign("");
+                m_temp_path.Assign("");
 
                 /* Initialize our index. */
                 R_TRY(m_index.Initialize(capacity, mr));
