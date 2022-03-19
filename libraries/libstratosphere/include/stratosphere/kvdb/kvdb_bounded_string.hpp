@@ -24,11 +24,6 @@ namespace ams::kvdb {
         static_assert(N > 0, "BoundedString requires non-zero backing buffer!");
         private:
             char m_buffer[N];
-        private:
-            /* Utility. */
-            static inline void CheckLength(size_t len) {
-                AMS_ABORT_UNLESS(len < N);
-            }
         public:
             /* Constructors. */
             constexpr BoundedString() {
@@ -36,7 +31,8 @@ namespace ams::kvdb {
             }
 
             explicit constexpr BoundedString(const char *s) {
-                this->Set(s);
+                AMS_ABORT_UNLESS(static_cast<size_t>(util::Strnlen(s, N)) < N);
+                util::Strlcpy(m_buffer, s, N);
             }
 
             /* Static constructors. */
@@ -44,102 +40,114 @@ namespace ams::kvdb {
                 return BoundedString<N>(s);
             }
 
-            static constexpr BoundedString<N> MakeFormat(const char *format, ...) __attribute__((format (printf, 1, 2)))  {
+            static BoundedString<N> MakeFormat(const char *format, ...) __attribute__((format (printf, 1, 2)))  {
                 BoundedString<N> string;
 
-                std::va_list args;
-                va_start(args, format);
-                CheckLength(util::VSNPrintf(string.m_buffer, N, format, args));
-                string.m_buffer[N - 1] = 0;
-                va_end(args);
+                std::va_list vl;
+                va_start(vl, format);
+                AMS_ABORT_UNLESS(static_cast<size_t>(util::VSNPrintf(string.m_buffer, N, format, vl)) < N);
+                va_end(vl);
 
                 return string;
             }
 
             /* Getters. */
-            size_t GetLength() const {
+            constexpr size_t GetLength() const {
                 return util::Strnlen(m_buffer, N);
             }
 
-            const char *Get() const {
+            constexpr const char *Get() const {
                 return m_buffer;
             }
 
-            operator const char *() const {
+            constexpr operator const char *() const {
                 return m_buffer;
             }
 
-            /* Setters. */
-            void Set(const char *s) {
-                /* Ensure string can fit in our buffer. */
-                CheckLength(util::Strnlen(s, N));
-                std::strncpy(m_buffer, s, N);
-                m_buffer[N - 1] = 0;
+            /* Assignment. */
+            constexpr BoundedString<N> &Assign(const char *s) {
+                AMS_ABORT_UNLESS(static_cast<size_t>(util::Strnlen(s, N)) < N);
+                util::Strlcpy(m_buffer, s, N);
+
+                return *this;
             }
 
-            void SetFormat(const char *format, ...) __attribute__((format (printf, 2, 3))) {
-                /* Format into the buffer, abort if too large. */
-                std::va_list args;
-                va_start(args, format);
-                CheckLength(util::VSNPrintf(m_buffer, N, format, args));
-                va_end(args);
+            BoundedString<N> &AssignFormat(const char *format, ...) __attribute__((format (printf, 2, 3))) {
+                std::va_list vl;
+                va_start(vl, format);
+                AMS_ABORT_UNLESS(static_cast<size_t>(util::VSNPrintf(m_buffer, N, format, vl)) < N);
+                va_end(vl);
+
+                return *this;
             }
 
             /* Append to existing. */
-            void Append(const char *s) {
+            BoundedString<N> &Append(const char *s) {
                 const size_t length = GetLength();
-                CheckLength(length + util::Strnlen(s, N));
+                AMS_ABORT_UNLESS(length + static_cast<size_t>(util::Strnlen(s, N)) < N);
                 std::strncat(m_buffer, s, N - length - 1);
+
+                return *this;
             }
 
-            void Append(char c) {
+            BoundedString<N> &Append(char c) {
                 const size_t length = GetLength();
-                CheckLength(length + 1);
+                AMS_ABORT_UNLESS(length + 1 < N);
                 m_buffer[length] = c;
                 m_buffer[length + 1] = 0;
+
+                return *this;
             }
 
-            void AppendFormat(const char *format, ...) __attribute__((format (printf, 2, 3))) {
+            BoundedString<N> &AppendFormat(const char *format, ...) __attribute__((format (printf, 2, 3))) {
                 const size_t length = GetLength();
-                std::va_list args;
-                va_start(args, format);
-                CheckLength(util::VSNPrintf(m_buffer + length, N - length, format, args) + length);
-                va_end(args);
+
+                std::va_list vl;
+                va_start(vl, format);
+                AMS_ABORT_UNLESS(static_cast<size_t>(util::VSNPrintf(m_buffer + length, N - length, format, vl)) < static_cast<size_t>(N - length));
+                va_end(vl);
+
+                return *this;
             }
 
             /* Substring utilities. */
-            void GetSubstring(char *dst, size_t dst_size, size_t offset, size_t length) const {
+            void GetSubString(char *dst, size_t dst_size, size_t offset, size_t length) const {
                 /* Make sure output buffer can hold the substring. */
                 AMS_ABORT_UNLESS(offset + length <= GetLength());
                 AMS_ABORT_UNLESS(dst_size > length);
+
                 /* Copy substring to dst. */
                 std::strncpy(dst, m_buffer + offset, length);
                 dst[length] = 0;
             }
 
-            BoundedString<N> GetSubstring(size_t offset, size_t length) const {
+            BoundedString<N> MakeSubString(size_t offset, size_t length) const {
                 BoundedString<N> string;
-                GetSubstring(string.m_buffer, N, offset, length);
+                GetSubString(string.m_buffer, N, offset, length);
                 return string;
             }
 
             /* Comparison. */
+            constexpr bool Equals(const char *s, size_t offset = 0) const {
+                if (std::is_constant_evaluated()) {
+                    return util::Strncmp(m_buffer + offset, s, N - offset) == 0;
+                } else {
+                    return std::strncmp(m_buffer + offset, s, N - offset) == 0;
+                }
+            }
+
             constexpr bool operator==(const BoundedString<N> &rhs) const {
-                return std::strncmp(m_buffer, rhs.m_buffer, N) == 0;
+                return this->Equals(rhs.m_buffer);
             }
 
             constexpr bool operator!=(const BoundedString<N> &rhs) const {
                 return !(*this == rhs);
             }
 
-            bool EndsWith(const char *s, size_t offset) const {
-                return std::strncmp(m_buffer + offset, s, N - offset) == 0;
-            }
-
-            bool EndsWith(const char *s) const {
+            constexpr bool EqualsPostfix(const char *s) const {
                 const size_t suffix_length = util::Strnlen(s, N);
                 const size_t length = GetLength();
-                return suffix_length <= length && EndsWith(s, length - suffix_length);
+                return suffix_length <= length && this->Equals(s, length - suffix_length);
             }
     };
 

@@ -30,7 +30,7 @@ namespace ams::ncm {
         constexpr inline size_t PlaceHolderFileNameLength = PlaceHolderFileNameLengthWithoutExtension + PlaceHolderExtensionLength;
 
         void MakeBasePlaceHolderDirectoryPath(PathString *out, const char *root_path) {
-            out->SetFormat("%s%s", root_path, BasePlaceHolderDirectory);
+            out->AssignFormat("%s%s", root_path, BasePlaceHolderDirectory);
         }
 
         void MakePlaceHolderFilePath(PathString *out, PlaceHolderId id, MakePlaceHolderPathFunction func, const char *root_path) {

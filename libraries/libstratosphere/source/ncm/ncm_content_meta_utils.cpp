@@ -20,12 +20,6 @@ namespace ams::ncm {
 
     namespace {
 
-        using FilePathString = kvdb::BoundedString<64>;
-
-        bool IsContentMetaFileName(const char *name) {
-            return impl::PathView(name).HasSuffix(".cnmt");
-        }
-
         Result MountContentMetaByRemoteFileSystemProxy(const char *mount_name, const char *path) {
             return fs::MountContent(mount_name, path, fs::ContentType_Meta);
         }
@@ -34,10 +28,22 @@ namespace ams::ncm {
 
     }
 
-    Result ReadContentMetaPath(AutoBuffer *out, const char *path) {
+    namespace impl {
+
+        Result MountContentMetaImpl(const char *mount_name, const char *path) {
+            R_RETURN(g_mount_content_meta_func(mount_name, path));
+        }
+
+    }
+
+    bool IsContentMetaFileName(const char *name) {
+        return impl::PathView(name).HasSuffix(".cnmt");
+    }
+
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path) {
         /* Mount the content. */
         auto mount_name = impl::CreateUniqueMountName();
-        R_TRY(g_mount_content_meta_func(mount_name.str, path));
+        R_TRY(impl::MountContentMetaImpl(mount_name.str, path));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Open the root directory. */
@@ -59,7 +65,7 @@ namespace ams::ncm {
             /* If this is the content meta file, parse it. */
             if (IsContentMetaFileName(entry.name)) {
                 /* Create the file path. */
-                FilePathString file_path(root_path.str);
+                impl::FilePathString file_path(root_path.str);
                 file_path.Append(entry.name);
 
                 /* Open the content meta file. */
@@ -76,19 +82,89 @@ namespace ams::ncm {
                 R_TRY(out->Initialize(meta_size));
 
                 /* Read the meta into the buffer. */
-                return fs::ReadFile(file, 0, out->Get(), meta_size);
+                R_RETURN(fs::ReadFile(file, 0, out->Get(), meta_size));
             }
         }
 
-        return ncm::ResultContentMetaNotFound();
+        R_THROW(ncm::ResultContentMetaNotFound());
+    }
+
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path) {
+        fs::ScopedAutoAbortDisabler aad;
+        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
+    }
+
+    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path) {
+        /* Mount the content. */
+        auto mount_name = impl::CreateUniqueMountName();
+        R_TRY(impl::MountContentMetaImpl(mount_name.str, path));
+        ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
+
+        /* Open the root directory. */
+        auto root_path = impl::GetRootDirectoryPath(mount_name);
+        fs::DirectoryHandle dir;
+        R_TRY(fs::OpenDirectory(std::addressof(dir), root_path.str, fs::OpenDirectoryMode_File));
+        ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
+
+        /* Loop directory reading until we find the entry we're looking for. */
+        while (true) {
+            /* Read one entry, and finish when we fail to read. */
+            fs::DirectoryEntry entry;
+            s64 num_read;
+            R_TRY(fs::ReadDirectory(std::addressof(num_read), std::addressof(entry), dir, 1));
+            if (num_read == 0) {
+                break;
+            }
+
+            /* If this is the content meta file, parse it. */
+            if (IsContentMetaFileName(entry.name)) {
+                /* Create the file path. */
+                impl::FilePathString file_path(root_path.str);
+                file_path.Append(entry.name);
+
+                /* Open the content meta file. */
+                fs::FileHandle file;
+                R_TRY(fs::OpenFile(std::addressof(file), file_path, fs::OpenMode_Read));
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+                /* Get the meta size. */
+                s64 file_size;
+                R_TRY(fs::GetFileSize(std::addressof(file_size), file));
+                const size_t meta_file_size = static_cast<size_t>(file_size);
+
+                /* Check that the meta size is large enough. */
+                R_UNLESS(meta_file_size >= sizeof(PackagedContentMetaHeader), ncm::ResultInvalidContentMetaFileSize());
+
+                /* Read the header. */
+                PackagedContentMetaHeader header;
+                size_t read_size = 0;
+                R_TRY(fs::ReadFile(std::addressof(read_size), file, 0, std::addressof(header), sizeof(header)));
+
+                /* Check the right size was read. */
+                R_UNLESS(read_size == sizeof(PackagedContentMetaHeader), ncm::ResultInvalidContentMetaFileSize());
+
+                /* Determine the meta size. */
+                const size_t meta_size = PackagedContentMetaReader(std::addressof(header), sizeof(header)).GetExtendedDataOffset();
+
+                /* Create a buffer for the meta. */
+                R_TRY(out->Initialize(meta_size));
+
+                /* Read the meta into the buffer. */
+                R_RETURN(fs::ReadFile(file, 0, out->Get(), meta_size));
+            }
+        }
+
+        R_THROW(ncm::ResultContentMetaNotFound());
+    }
+
+    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path) {
+        fs::ScopedAutoAbortDisabler aad;
+        R_RETURN(ReadContentMetaPathAlongWithExtendedDataAndDigest(out, path));
     }
 
     Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id) {
         AutoBuffer meta;
-        {
-            fs::ScopedAutoAbortDisabler aad;
-            R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
-        }
+        R_TRY(ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(std::addressof(meta), path.str));
 
         /* Create a reader for the content meta. */
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());

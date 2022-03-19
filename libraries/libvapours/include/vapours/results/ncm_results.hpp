@@ -44,12 +44,14 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RESULT(ContentInfoNotFound,                      220);
     R_DEFINE_ERROR_RESULT(DeltaNotFound,                            237);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
+    R_DEFINE_ERROR_RESULT(FragmentIndicatorNotFound,                242);
     R_DEFINE_ERROR_RESULT(IgnorableInstallTicketFailure,            280);
 
     R_DEFINE_ERROR_RESULT(ContentStorageBaseNotFound,               310);
     R_DEFINE_ERROR_RESULT(ListPartiallyNotCommitted,                330);
     R_DEFINE_ERROR_RESULT(UnexpectedContentMetaPrepared,            360);
     R_DEFINE_ERROR_RESULT(InvalidFirmwareVariation,                 380);
+    R_DEFINE_ERROR_RESULT(InvalidContentMetaFileSize,               390);
 
     R_DEFINE_ERROR_RANGE(ContentStorageNotActive, 250, 258);
         R_DEFINE_ERROR_RESULT(GameCardContentStorageNotActive,              251);
@@ -68,6 +70,12 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RANGE(InstallTaskCancelled, 290, 299);
         R_DEFINE_ERROR_RESULT(CreatePlaceHolderCancelled,                   291);
         R_DEFINE_ERROR_RESULT(WritePlaceHolderCancelled,                    292);
+
+    /* TODO: Range */
+        R_DEFINE_ERROR_RESULT(MapperBusy,            1010);
+        R_DEFINE_ERROR_RESULT(MapperInvalidArgument, 1030);
+        R_DEFINE_ERROR_RESULT(MapperNotSupported,    1040);
+        R_DEFINE_ERROR_RESULT(MapperNotMapped,       1050);
 
     R_DEFINE_ERROR_RESULT(InvalidOperation,                                 8180);
     R_DEFINE_ERROR_RANGE(InvalidArgument, 8181, 8191);

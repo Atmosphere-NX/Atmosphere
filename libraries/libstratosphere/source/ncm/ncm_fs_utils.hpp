@@ -18,6 +18,8 @@
 
 namespace ams::ncm::impl {
 
+    using FilePathString = kvdb::BoundedString<64>;
+
     Result CopyFile(const char *dst_path, const char *src_path);
 
     class PathView {
@@ -34,11 +36,15 @@ namespace ams::ncm::impl {
         char str[fs::MountNameLengthMax + 1];
     };
 
+    using MountNameString = kvdb::BoundedString<sizeof(MountName{}.str)>;
+
     struct RootDirectoryPath {
         char str[fs::MountNameLengthMax + 3]; /* mount name + :/ */
     };
 
     MountName CreateUniqueMountName();
     RootDirectoryPath GetRootDirectoryPath(const MountName &mount_name);
+
+    Result MountContentMetaImpl(const char *mount_name, const char *path);
 
 }

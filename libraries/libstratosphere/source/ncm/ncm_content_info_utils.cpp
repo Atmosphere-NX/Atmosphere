@@ -18,6 +18,7 @@
 namespace ams::ncm {
 
     namespace {
+
         constexpr inline s64 EncryptionMetadataSize   = 16_KB;
         constexpr inline s64 ConcatenationFileSizeMax = 4_GB;
 

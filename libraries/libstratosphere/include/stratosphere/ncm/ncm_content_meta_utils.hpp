@@ -25,7 +25,14 @@ namespace ams::ncm {
 
     using MountContentMetaFunction = Result (*)(const char *mount_name, const char *path);
 
-    Result ReadContentMetaPath(AutoBuffer *out, const char *path);
+    bool IsContentMetaFileName(const char *name);
+
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigest(AutoBuffer *out, const char *path);
+    Result ReadContentMetaPathAlongWithExtendedDataAndDigestSuppressingFsAbort(AutoBuffer *out, const char *path);
+
+    Result ReadContentMetaPathWithoutExtendedDataOrDigest(AutoBuffer *out, const char *path);
+    Result ReadContentMetaPathWithoutExtendedDataOrDigestSuppressingFsAbort(AutoBuffer *out, const char *path);
+
     Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id);
 
     void SetMountContentMetaFunction(MountContentMetaFunction func);

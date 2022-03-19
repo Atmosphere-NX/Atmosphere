@@ -52,7 +52,7 @@ namespace ams::gc::impl {
 
     Result GcCrypto::VerifyT1CardCertificate(const void *cert_buffer, size_t cert_size) {
         /* Check pre-conditions. */
-        AMS_ASSERT(cert_size == sizeof(T1CardCertificate));
+        R_UNLESS(cert_size == sizeof(T1CardCertificate), fs::ResultGameCardPreconditionViolation());
 
         /* Get cert buffer as type. */
         const auto * const cert = static_cast<const T1CardCertificate *>(cert_buffer);
@@ -75,7 +75,7 @@ namespace ams::gc::impl {
 
     Result GcCrypto::VerifyCa10Certificate(const void *cert_buffer, size_t cert_size) {
         /* Check pre-conditions. */
-        AMS_ASSERT(cert_size == sizeof(Ca10Certificate));
+        R_UNLESS(cert_size == sizeof(Ca10Certificate), fs::ResultGameCardPreconditionViolation());
 
         /* Get header buffer as type. */
         const auto * const cert = static_cast<const Ca10Certificate *>(cert_buffer);

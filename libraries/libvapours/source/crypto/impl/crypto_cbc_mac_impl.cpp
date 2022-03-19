@@ -51,6 +51,7 @@ namespace ams::crypto::impl {
         /* Check pre-conditions. */
         AMS_ASSERT(m_state == State_Initialized || m_state == State_Done);
         AMS_ASSERT(mac_size >= BlockSize);
+        AMS_UNUSED(mac_size);
 
         /* Ensure we're done. */
         if (m_state == State_Initialized) {

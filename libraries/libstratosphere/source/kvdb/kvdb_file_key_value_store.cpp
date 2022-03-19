@@ -154,7 +154,7 @@ namespace ams::kvdb {
         const size_t file_name_len = file_name.GetLength();
         const size_t key_name_len = file_name_len - FileExtensionLength;
         R_UNLESS(file_name_len >= FileExtensionLength + 2, kvdb::ResultInvalidKeyValue());
-        R_UNLESS(file_name.EndsWith(FileExtension),        kvdb::ResultInvalidKeyValue());
+        R_UNLESS(file_name.EqualsPostfix(FileExtension),   kvdb::ResultInvalidKeyValue());
         R_UNLESS(util::IsAligned(key_name_len, 2),         kvdb::ResultInvalidKeyValue());
 
         /* Validate that we have space for the converted key. */
@@ -165,7 +165,7 @@ namespace ams::kvdb {
         u8 *out_key = static_cast<u8 *>(_out_key);
         for (size_t i = 0; i < key_size; i++) {
             char substr[2 * sizeof(u8) + 1];
-            file_name.GetSubstring(substr, sizeof(substr), 2 * i, sizeof(substr) - 1);
+            file_name.GetSubString(substr, sizeof(substr), 2 * i, sizeof(substr) - 1);
             out_key[i] = static_cast<u8>(std::strtoul(substr, nullptr, 0x10));
         }
 
@@ -184,7 +184,7 @@ namespace ams::kvdb {
         R_UNLESS(entry_type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
         /* Set path. */
-        m_dir_path.Set(dir);
+        m_dir_path.Assign(dir);
 
         /* Initialize our cache. */
         R_TRY(m_cache.Initialize(cache_buffer, cache_buffer_size, cache_capacity));

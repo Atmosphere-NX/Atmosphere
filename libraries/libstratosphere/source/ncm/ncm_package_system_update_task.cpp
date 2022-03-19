@@ -66,7 +66,7 @@ namespace ams::ncm {
         meta_db_guard.Cancel();
 
         /* Set the context path. */
-        m_context_path.Set(context_path);
+        m_context_path.Assign(context_path);
         return ResultSuccess();
     }
 
