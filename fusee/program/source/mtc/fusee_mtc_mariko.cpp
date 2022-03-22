@@ -95,6 +95,7 @@ namespace ams::nxboot {
                 HANDLE_CASE(0x0E, T210b01SdevEmcDvfsTableS1y4gb01)
                 HANDLE_CASE(0x0F, T210b01SdevEmcDvfsTableM1y4gb01)
                 HANDLE_CASE(0x10, T210b01SdevEmcDvfsTableH1y4gb01)
+                HANDLE_CASE(0x11, T210b01SdevEmcDvfsTableS1y8gb04)
                 HANDLE_CASE(0x12, T210b01SdevEmcDvfsTableS1z4gb01)
                 default:
                     ShowFatalError("Unknown EmcDvfsTimingTableIndex: %d\n", index);
