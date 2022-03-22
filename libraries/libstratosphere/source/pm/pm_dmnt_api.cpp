@@ -26,9 +26,7 @@ namespace ams::pm::dmnt {
     }
 
     Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id) {
-        /* TODO: return return pmdmntGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id)); */
-        AMS_UNUSED(out_program_id, process_id);
-        AMS_ABORT("TODO");
+        return pmdmntGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id));
     }
 
     Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id) {

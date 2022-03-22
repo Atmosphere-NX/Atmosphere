@@ -29,7 +29,7 @@ namespace ams::pm::shell {
     Result GetProcessEventInfo(ProcessEventInfo *out);
     Result GetApplicationProcessIdForShell(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
-    Result EnableApplicationExtraThread();
-    Result EnableSystemExtraThread();
+    Result BoostApplicationThreadResourceLimit();
+    Result BoostSystemThreadResourceLimit();
 
 }
