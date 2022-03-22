@@ -23,6 +23,8 @@ namespace ams::kern::board::nintendo::nx {
 
         constexpr size_t SecureAlignment = 128_KB;
 
+        constexpr size_t SecureSizeMax = util::AlignDown(512_MB - 1, SecureAlignment);
+
         /* Global variables for panic. */
         constinit bool g_call_smc_on_panic;
 
@@ -191,6 +193,11 @@ namespace ams::kern::board::nintendo::nx {
         }
 
         bool SetSecureRegion(KPhysicalAddress phys_addr, size_t size) {
+            /* Ensure size is valid. */
+            if (size > SecureSizeMax) {
+                return false;
+            }
+
             /* Ensure address and size are aligned. */
             if (!util::IsAligned(GetInteger(phys_addr), SecureAlignment)) {
                 return false;
