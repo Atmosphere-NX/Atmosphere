@@ -34,6 +34,7 @@ namespace ams::boot2 {
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr const ncm::SystemProgramId AdditionalLaunchPrograms[] = {
+            ncm::SystemProgramId::Omm,         /* omm */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -77,6 +78,7 @@ namespace ams::boot2 {
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr const ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
+            ncm::SystemProgramId::Omm,         /* omm */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
