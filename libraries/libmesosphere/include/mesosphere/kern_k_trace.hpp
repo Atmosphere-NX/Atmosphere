@@ -28,6 +28,7 @@ namespace ams::kern {
     constexpr inline size_t KTraceBufferSize = IsKTraceEnabled ? 16_MB : 0;
 
     static_assert(IsKTraceEnabled || !IsKTraceEnabled);
+    static_assert((IsKTraceEnabled) ^ (KTraceBufferSize == 0));
 
     class KTrace {
         public:

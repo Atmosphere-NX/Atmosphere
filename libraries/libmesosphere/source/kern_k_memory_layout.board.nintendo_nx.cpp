@@ -104,13 +104,6 @@ namespace ams::kern {
             /* Insert blocks into the tree. */
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
-
-            /* Insert the KTrace block at the end of Dram, if KTrace is enabled. */
-            static_assert(!IsKTraceEnabled || KTraceBufferSize > 0);
-            if constexpr (IsKTraceEnabled) {
-                const KPhysicalAddress ktrace_buffer_phys_addr = physical_memory_base_address + intended_memory_size - KTraceBufferSize;
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
-            }
         }
 
         void SetupPoolPartitionMemoryRegions() {
@@ -118,8 +111,15 @@ namespace ams::kern {
             const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
             MESOSPHERE_INIT_ABORT_UNLESS(dram_extents.GetEndAddress() != 0);
 
+            /* Find the pool partitions region. */
+            const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
+            MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
+
+            const uintptr_t pool_partitions_start = pool_partitions_region->GetAddress();
+
             /* Determine the end of the pool region. */
-            const uintptr_t pool_end = dram_extents.GetEndAddress() - KTraceBufferSize;
+            const uintptr_t pool_end = pool_partitions_region->GetEndAddress();
+            MESOSPHERE_INIT_ABORT_UNLESS(pool_end == dram_extents.GetEndAddress());
 
             /* Find the start of the kernel DRAM region. */
             const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernelBase);
@@ -127,11 +127,6 @@ namespace ams::kern {
 
             const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
-
-            /* Find the start of the pool partitions region. */
-            const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
-            MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
-            const uintptr_t pool_partitions_start = pool_partitions_region->GetAddress();
 
             /* Setup the pool partition layouts. */
             if (GetTargetFirmware() >= TargetFirmware_5_0_0) {

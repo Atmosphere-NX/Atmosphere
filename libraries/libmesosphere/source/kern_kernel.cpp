@@ -137,6 +137,10 @@ namespace ams::kern {
         PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionPhysicalExtents());
         PrintMemoryRegion("        PageTableHeap",  KMemoryLayout::GetKernelPageTableHeapRegionPhysicalExtents());
         PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
+        if constexpr (IsKTraceEnabled) {
+            MESOSPHERE_LOG("    DebugRegion\n");
+            PrintMemoryRegion("        Trace Buffer",   KMemoryLayout::GetKernelTraceBufferRegionPhysicalExtents());
+        }
         PrintMemoryRegion("    MemoryPoolRegion",   KMemoryLayout::GetKernelPoolPartitionRegionPhysicalExtents());
         if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
             PrintMemoryRegion("        Management",     KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
@@ -154,10 +158,6 @@ namespace ams::kern {
             PrintMemoryRegion("        Management", KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
             PrintMemoryRegion("        Secure",     KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
             PrintMemoryRegion("        Unsafe",     KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
-        }
-        if constexpr (IsKTraceEnabled) {
-            MESOSPHERE_LOG("    Debug\n");
-            PrintMemoryRegion("        Trace Buffer",   KMemoryLayout::GetKernelTraceBufferRegionPhysicalExtents());
         }
         MESOSPHERE_LOG("\n");
     }
