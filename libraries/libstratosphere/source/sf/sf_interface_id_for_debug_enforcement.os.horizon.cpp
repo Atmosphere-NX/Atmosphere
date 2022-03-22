@@ -92,6 +92,8 @@ namespace {
         return GenerateInterfaceIdFromName(nn);
     }
 
+    static_assert(GenerateInterfaceIdFromAtmosphereName("ams::sf::hipc::impl::IHipcManager") == GenerateInterfaceIdFromName("nn::sf::hipc::detail::IHipcManager"));
+
 }
 
 #define AMS_IMPL_CHECK_INTERFACE_ID(AMS_INTF) \
