@@ -28,11 +28,11 @@ namespace ams::sprofile::srv {
                 AutoUnregisterObserver(ProfileUpdateObserverManager *manager) : m_manager(manager) { /* ... */ }
                 virtual ~AutoUnregisterObserver() { m_manager->CloseObserver(this); }
         };
-        static_assert(sprofile::IsIProfileUpdateObserver<AutoUnregisterObserver>);
+        static_assert(sprofile::srv::IsIProfileUpdateObserver<AutoUnregisterObserver>);
 
     }
 
-    Result ProfileUpdateObserverManager::OpenObserver(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> &out, MemoryResource *memory_resource) {
+    Result ProfileUpdateObserverManager::OpenObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> &out, MemoryResource *memory_resource) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 

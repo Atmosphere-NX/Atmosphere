@@ -21,15 +21,21 @@ namespace ams::sprofile::srv {
 
     class ProfileImporter {
         private:
+            struct ImportingProfile {
+                Identifier identifier_0;
+                Identifier identifier_1;
+                bool is_new_import;
+            };
+        private:
             bool m_committed;
             bool m_imported_metadata;
             int m_importing_count;
             util::optional<ProfileMetadata> m_metadata;
-            Identifier m_importing_profiles[50];
-            util::BitFlagSet<50> m_imported_profiles;
+            ImportingProfile m_importing_profiles[50];
+            util::BitFlagSet<50> m_is_profile_importable;
             Identifier m_revision_key;
         public:
-            ProfileImporter(const util::optional<ProfileMetadata> &meta) : m_committed(false), m_imported_metadata(false), m_importing_count(0), m_metadata(util::nullopt), m_imported_profiles(), m_revision_key() {
+            ProfileImporter(const util::optional<ProfileMetadata> &meta) : m_committed(false), m_imported_metadata(false), m_importing_count(0), m_metadata(util::nullopt), m_is_profile_importable(), m_revision_key() {
                 if (meta.has_value()) {
                     m_metadata = *meta;
                 }
@@ -62,12 +68,23 @@ namespace ams::sprofile::srv {
                 /* Import the service revision key. */
                 m_revision_key = meta.revision_key;
 
-                /* Import all profiles. */
+                /* Set all profiles as importable. */
+                for (auto i = 0u; i < std::min<size_t>(meta.num_entries, util::size(meta.entries)); ++i) {
+                    m_is_profile_importable[i] = true;
+                }
+
+                /* Determine import status for all profiles. */
                 for (auto i = 0u; i < std::min<size_t>(meta.num_entries, util::size(meta.entries)); ++i) {
                     const auto &import_entry = meta.entries[i];
-                    if (!this->HasProfile(import_entry.identifier_0, import_entry.identifier_1)) {
-                        m_importing_profiles[m_importing_count++] = import_entry.identifier_0;
-                    }
+
+                    const bool is_new_import = !this->HasProfile(import_entry.identifier_0, import_entry.identifier_1);
+
+                    m_importing_profiles[i] = {
+                        .identifier_0  = import_entry.identifier_0,
+                        .identifier_1  = import_entry.identifier_1,
+                        .is_new_import = is_new_import,
+                    };
+                    m_is_profile_importable[i] = is_new_import;
                 }
             }
 
@@ -76,9 +93,9 @@ namespace ams::sprofile::srv {
                 if (m_imported_metadata) {
                     /* Find the specified profile. */
                     for (auto i = 0; i < m_importing_count; ++i) {
-                        if (m_importing_profiles[i] == profile) {
-                            /* Require the profile not already be imported. */
-                            return !m_imported_profiles[i];
+                        if (m_importing_profiles[i].identifier_0 == profile) {
+                            /* Require the profile be importable. */
+                            return m_is_profile_importable[i];
                         }
                     }
                 }
@@ -88,10 +105,10 @@ namespace ams::sprofile::srv {
             }
 
             void OnImportProfile(Identifier profile) {
-                /* Set the profile as imported. */
+                /* Set the profile as not importable (as it's imported). */
                 for (auto i = 0; i < m_importing_count; ++i) {
-                    if (m_importing_profiles[i] == profile) {
-                        m_imported_profiles[i] = true;
+                    if (m_importing_profiles[i].identifier_0 == profile) {
+                        m_is_profile_importable[i] = false;
                         break;
                     }
                 }
@@ -109,13 +126,39 @@ namespace ams::sprofile::srv {
                 }
 
                 /* We need to have imported everything we intended to import. */
-                return m_imported_profiles.PopCount() == m_importing_count;
+                return m_is_profile_importable.IsAllOff();
             }
 
             int GetImportingCount() const { return m_importing_count; }
-            Identifier GetImportingProfile(int i) const { return m_importing_profiles[i]; }
+            const ImportingProfile &GetImportingProfile(int i) const { return m_importing_profiles[i]; }
 
             Identifier GetRevisionKey() const { return m_revision_key; }
+
+            Result CleanupOrphanedProfiles(auto cleanup_impl) const {
+                /* Cleanup any orphaned profiles in our metadata. */
+                if (m_metadata.has_value()) {
+                    for (auto i = 0u; i < std::min<size_t>(m_metadata->num_entries, util::size(m_metadata->entries)); ++i) {
+                        const auto &entry = m_metadata->entries[i];
+                        if (!this->IsImportingProfile(entry.identifier_0)) {
+                            R_TRY(cleanup_impl(entry.identifier_0));
+                        }
+                    }
+                }
+
+                R_SUCCEED();
+            }
+        private:
+            bool IsImportingProfile(Identifier profile) const {
+                /* Check if we're importing the desired profile. */
+                for (auto i = 0; i < m_importing_count; ++i) {
+                    if (m_importing_profiles[i].identifier_0 == profile) {
+                        return true;
+                    }
+                }
+
+                /* We're not importing the desired profile. */
+                return false;
+            }
     };
 
 }

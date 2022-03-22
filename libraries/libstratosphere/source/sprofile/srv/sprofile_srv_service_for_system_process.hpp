@@ -28,10 +28,10 @@ namespace ams::sprofile::srv {
         public:
             constexpr ServiceForSystemProcess(MemoryResource *mr, ProfileManager *pm) : m_memory_resource(mr), m_profile_manager(pm) { /* ... */ }
         public:
-            Result OpenProfileReader(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileReader>> out);
-            Result OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> out);
-            Result OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileControllerForDebug>> out);
+            Result OpenProfileReader(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileReader>> out);
+            Result OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out);
+            Result OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileControllerForDebug>> out);
     };
-    static_assert(sprofile::IsISprofileServiceForSystemProcess<ServiceForSystemProcess>);
+    static_assert(sprofile::srv::IsISprofileServiceForSystemProcess<ServiceForSystemProcess>);
 
 }

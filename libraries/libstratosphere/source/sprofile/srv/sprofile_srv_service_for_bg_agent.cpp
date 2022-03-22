@@ -21,7 +21,7 @@
 
 namespace ams::sprofile::srv {
 
-    Result ServiceForBgAgent::OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out) {
+    Result ServiceForBgAgent::OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileImporter>> out) {
         /* Allocate an object. */
         auto obj = sf::ObjectFactory<sf::MemoryResourceAllocationPolicy>::CreateSharedEmplaced<IProfileImporter, ProfileImporterImpl>(m_memory_resource, m_profile_manager);
         R_UNLESS(obj != nullptr, sprofile::ResultAllocationFailed());

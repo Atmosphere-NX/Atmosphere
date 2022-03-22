@@ -20,8 +20,8 @@
 #include "sprofile_srv_i_profile_controller_for_debug.hpp"
 
 #define AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_SYSTEM_PROCESS_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileReader,             (sf::Out<sf::SharedPointer<::ams::sprofile::IProfileReader>> out),             (out)) \
-    AMS_SF_METHOD_INFO(C, H, 101,  Result, OpenProfileUpdateObserver,     (sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> out),     (out)) \
-    AMS_SF_METHOD_INFO(C, H, 900,  Result, OpenProfileControllerForDebug, (sf::Out<sf::SharedPointer<::ams::sprofile::IProfileControllerForDebug>> out), (out))
+    AMS_SF_METHOD_INFO(C, H, 100,  Result, OpenProfileReader,             (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileReader>> out),             (out)) \
+    AMS_SF_METHOD_INFO(C, H, 101,  Result, OpenProfileUpdateObserver,     (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out),     (out)) \
+    AMS_SF_METHOD_INFO(C, H, 900,  Result, OpenProfileControllerForDebug, (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileControllerForDebug>> out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile, ISprofileServiceForSystemProcess, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_SYSTEM_PROCESS_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForSystemProcess, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_SYSTEM_PROCESS_INTERFACE_INFO)

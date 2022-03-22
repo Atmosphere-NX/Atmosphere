@@ -68,7 +68,11 @@ namespace ams::sprofile::srv {
 
             ProfileUpdateObserverManager &GetUpdateObserverManager() { return m_update_observer_manager; }
         private:
-            Result CommitImpl();
+            Result CommitImportedProfiles();
+            Result CleanupOrphanedProfiles();
+
+            Result LoadPrimaryMetadataImpl();
+            void CloseProfileImporterImpl();
 
             void OnCommitted();
 

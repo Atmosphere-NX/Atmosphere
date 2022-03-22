@@ -23,4 +23,4 @@
     AMS_SF_METHOD_INFO(C, H, 3, Result, GetUnsigned32, (sf::Out<u32> out, sprofile::Identifier profile, sprofile::Identifier key), (out, profile, key)) \
     AMS_SF_METHOD_INFO(C, H, 4, Result, GetByte,       (sf::Out<u8> out, sprofile::Identifier profile, sprofile::Identifier key),  (out, profile, key))
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile, IProfileReader, AMS_SPROFILE_I_PROFILE_READER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileReader, AMS_SPROFILE_I_PROFILE_READER_INTERFACE_INFO)
