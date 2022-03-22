@@ -160,7 +160,15 @@ namespace ams::pgl::srv {
         const size_t sz = settings::fwdbg::GetSettingsItemValue(std::addressof(enable_application_extra_thread), sizeof(enable_application_extra_thread), "application_extra_thread", "enable_application_extra_thread");
         if (sz == sizeof(enable_application_extra_thread) && enable_application_extra_thread != 0) {
             /* NOTE: Nintendo does not check that this succeeds. */
-            pm::shell::EnableApplicationExtraThread();
+            pm::shell::BoostApplicationThreadResourceLimit();
+        }
+
+        /* Enable extra system threads, if we should. */
+        u8 enable_system_extra_thread;
+        const size_t sz = settings::fwdbg::GetSettingsItemValue(std::addressof(enable_system_extra_thread), sizeof(enable_system_extra_thread), "application_extra_thread", "enable_system_extra_thread");
+        if (sz == sizeof(enable_system_extra_thread) && enable_system_extra_thread != 0) {
+            /* NOTE: Nintendo does not check that this succeeds. */
+            pm::shell::BoostSystemThreadResourceLimit();
         }
 
         /* Register service session. */
