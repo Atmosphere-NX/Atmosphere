@@ -42,4 +42,4 @@
     AMS_SF_METHOD_INFO(C, H, 21, Result, GetCount,                      (sf::Out<u32> out_count),                                                                                                                                                                                                                         (out_count),                                                                                           hos::Version_10_0_0) \
     AMS_SF_METHOD_INFO(C, H, 22, Result, GetOwnerApplicationId,         (sf::Out<ncm::ApplicationId> out_id, const ncm::ContentMetaKey &key),                                                                                                                                                                             (out_id, key),                                                                                         hos::Version_10_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentMetaDatabase, AMS_NCM_I_CONTENT_META_DATABASE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentMetaDatabase, AMS_NCM_I_CONTENT_META_DATABASE_INTERFACE_INFO, 0x58021FEC)

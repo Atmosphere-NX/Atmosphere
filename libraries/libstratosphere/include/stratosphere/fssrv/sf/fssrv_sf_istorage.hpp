@@ -27,4 +27,4 @@
     AMS_SF_METHOD_INFO(C, H, 4, Result, GetSize,      (ams::sf::Out<s64> out),                                                             (out))                                          \
     AMS_SF_METHOD_INFO(C, H, 5, Result, OperateRange, (ams::sf::Out<ams::fs::StorageQueryRangeInfo> out, s32 op_id, s64 offset, s64 size), (out, op_id, offset, size), hos::Version_4_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IStorage, AMS_FSSRV_I_STORAGE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IStorage, AMS_FSSRV_I_STORAGE_INTERFACE_INFO, 0xC4D2CAEB)

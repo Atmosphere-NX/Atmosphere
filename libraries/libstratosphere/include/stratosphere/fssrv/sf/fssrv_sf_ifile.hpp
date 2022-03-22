@@ -28,4 +28,4 @@
     AMS_SF_METHOD_INFO(C, H, 5, Result, OperateRange,           (ams::sf::Out<ams::fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size),                                        (out, op_id, offset, size),             hos::Version_4_0_0) \
     AMS_SF_METHOD_INFO(C, H, 6, Result, OperateRangeWithBuffer, (const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size), (out_buf, in_buf, op_id, offset, size), hos::Version_12_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFile, AMS_FSSRV_I_FILE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFile, AMS_FSSRV_I_FILE_INTERFACE_INFO, 0xF3716DA1)

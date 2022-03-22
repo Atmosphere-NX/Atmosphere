@@ -13,23 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "usb_remote_ds_root_service.hpp"
-#include "usb_remote_ds_service.hpp"
 
 namespace ams::usb {
 
     #if defined(ATMOSPHERE_OS_HORIZON)
-    Result RemoteDsRootService::GetService(sf::Out<sf::SharedPointer<usb::ds::IDsService>> out) {
-        Service srv;
-
-        serviceAssumeDomain(std::addressof(m_srv));
-        R_TRY(serviceDispatch(std::addressof(m_srv), 0, .out_num_objects = 1, .out_objects = std::addressof(srv)));
-
-        *out = ObjectFactory::CreateSharedEmplaced<ds::IDsService, RemoteDsService>(m_allocator, srv, m_allocator);
-
-        return ResultSuccess();
-    }
+    class RemoteDsRootSession {
+        private:
+            using Allocator     = sf::ExpHeapAllocator;
+            using ObjectFactory = sf::ObjectFactory<Allocator::Policy>;
+        private:
+            Service m_srv;
+            Allocator *m_allocator;
+        public:
+            RemoteDsRootSession(Service &srv, sf::ExpHeapAllocator *allocator) : m_srv(srv), m_allocator(allocator) { /* ... */ }
+            virtual ~RemoteDsRootSession() { serviceClose(std::addressof(m_srv)); }
+        public:
+            Result GetService(sf::Out<sf::SharedPointer<usb::ds::IDsService>> out);
+    };
+    static_assert(ds::IsIDsRootSession<RemoteDsRootSession>);
     #endif
 
 }

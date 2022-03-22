@@ -40,4 +40,4 @@
     AMS_SF_METHOD_INFO(C, H, 30, Result, InvalidateForcedShutdownDetection,         (),                                                                                                                                                                      (),                                                                   hos::Version_12_0_0)
 
 
-AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IContext, AMS_ERPT_I_CONTEXT_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IContext, AMS_ERPT_I_CONTEXT_INTERFACE_INFO, 0xDD41DD03)

@@ -30,4 +30,4 @@
     AMS_SF_METHOD_INFO(C, H, 31, Result, PrepareEsArchiveKey,                     (sf::Out<spl::AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation), (out_access_key, base, mod, label_digest, generation), hos::Version_6_0_0)                     \
     AMS_SF_METHOD_INFO(C, H, 32, Result, LoadPreparedAesKey,                      (s32 keyslot, spl::AccessKey access_key),                                                                                                                           (keyslot, access_key),                                 hos::Version_6_0_0)
 
-AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IEsInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_ES_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IEsInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_ES_INTERFACE_INTERFACE_INFO, 0x346D5001)

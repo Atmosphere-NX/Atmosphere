@@ -26,4 +26,4 @@
     AMS_SF_METHOD_INFO(C, H,     2, Result, GetProcessModuleInfo,             (sf::Out<u32> count, const sf::OutPointerArray<ldr::ModuleInfo> &out, os::ProcessId process_id), (count, out, process_id))                                                \
     AMS_SF_METHOD_INFO(C, H, 65000, void,   AtmosphereHasLaunchedBootProgram, (sf::Out<bool> out, ncm::ProgramId program_id),                                                  (out, program_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IDebugMonitorInterface, AMS_LDR_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IDebugMonitorInterface, AMS_LDR_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO, 0xEE195D22)

@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "usb_remote_ds_root_service.hpp"
+#include "usb_remote_ds_root_session.hpp"
 #include "usb_remote_ds_service.hpp"
 #include "impl/usb_util.hpp"
 
@@ -48,9 +48,9 @@ namespace ams::usb {
             using ObjectFactory = sf::ObjectFactory<Allocator::Policy>;
 
             if (hos::GetVersion() >= hos::Version_11_0_0) {
-                m_root_service = ObjectFactory::CreateSharedEmplaced<ds::IDsRootService, RemoteDsRootService>(std::addressof(m_allocator), srv, std::addressof(m_allocator));
+                m_root_session = ObjectFactory::CreateSharedEmplaced<ds::IDsRootSession, RemoteDsRootSession>(std::addressof(m_allocator), srv, std::addressof(m_allocator));
 
-                R_TRY(m_root_service->GetService(std::addressof(m_ds_service)));
+                R_TRY(m_root_session->GetService(std::addressof(m_ds_service)));
             } else {
                 m_ds_service   = ObjectFactory::CreateSharedEmplaced<ds::IDsService, RemoteDsService>(std::addressof(m_allocator), srv, std::addressof(m_allocator));
             }
@@ -102,7 +102,7 @@ namespace ams::usb {
 
         /* Destroy interface objects. */
         m_ds_service   = nullptr;
-        m_root_service = nullptr;
+        m_root_session = nullptr;
 
         return ResultSuccess();
     }

@@ -27,4 +27,4 @@
     AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereHasLaunchedBootProgram,    (sf::Out<bool> out, ncm::ProgramId program_id),                                                             (out, program_id))                 \
     AMS_SF_METHOD_INFO(C, H, 65002, Result, AtmosphereGetProcessInfo,            (sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id), (out_loc, out_status, process_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IInformationInterface, AMS_PM_I_INFORMATION_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IInformationInterface, AMS_PM_I_INFORMATION_INTERFACE_INTERFACE_INFO, 0xF205AA1F)

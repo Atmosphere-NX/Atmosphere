@@ -34,4 +34,4 @@
     AMS_SF_METHOD_INFO(C, H,  9, Result, SetWakeEventActiveFlagSetForDebug2, (DeviceCode device_code, bool is_enabled),                                                                               (device_code, is_enabled),       hos::Version_5_0_0                    ) \
     AMS_SF_METHOD_INFO(C, H, 10, Result, SetRetryValues,                     (u32 arg0, u32 arg1),                                                                                                    (arg0, arg1),                    hos::Version_6_0_0                    )
 
-AMS_SF_DEFINE_INTERFACE(ams::gpio::sf, IManager, AMS_GPIO_I_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::gpio::sf, IManager, AMS_GPIO_I_MANAGER_INTERFACE_INFO, 0xD219501E)

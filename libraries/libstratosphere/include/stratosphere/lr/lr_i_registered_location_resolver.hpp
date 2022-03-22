@@ -33,4 +33,4 @@
     AMS_SF_METHOD_INFO(C, H, 8, Result, Refresh,                            (),                                                                 (),                   hos::Version_7_0_0)                     \
     AMS_SF_METHOD_INFO(C, H, 9, Result, RefreshExcluding,                   (const sf::InArray<ncm::ProgramId> &ids),                           (ids),                hos::Version_9_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::lr, IRegisteredLocationResolver, AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lr, IRegisteredLocationResolver, AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO, 0x35346AC9)

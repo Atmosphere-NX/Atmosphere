@@ -35,7 +35,7 @@ namespace ams::usb {
             sf::ExpHeapAllocator m_allocator{};
             u8 m_heap_buffer[32_KB];
             lmem::HeapHandle m_heap_handle{};
-            sf::SharedPointer<ds::IDsRootService> m_root_service{};
+            sf::SharedPointer<ds::IDsRootSession> m_root_session{};
             sf::SharedPointer<ds::IDsService> m_ds_service{};
             bool m_is_initialized{false};
             std::atomic<int> m_reference_count{0};

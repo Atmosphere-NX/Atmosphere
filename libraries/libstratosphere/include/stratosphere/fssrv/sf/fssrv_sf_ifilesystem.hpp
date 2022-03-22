@@ -40,4 +40,4 @@
     AMS_SF_METHOD_INFO(C, H, 14, Result, GetFileTimeStampRaw,        (ams::sf::Out<ams::fs::FileTimeStampRaw> out, const ams::fssrv::sf::Path &path),                                      (out, path),                       hos::Version_3_0_0) \
     AMS_SF_METHOD_INFO(C, H, 15, Result, QueryEntry,                 (const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const ams::fssrv::sf::Path &path), (out_buf, in_buf, query_id, path), hos::Version_4_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystem, AMS_FSSRV_I_FILESYSTEM_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystem, AMS_FSSRV_I_FILESYSTEM_INTERFACE_INFO, 0xD4EA59E7)

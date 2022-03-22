@@ -27,4 +27,4 @@
     AMS_SF_METHOD_INFO(C, H,  4, Result, RegisterProcessHandle,       (const sf::ClientProcessId &client_pid, sf::CopyHandle &&process_h),                                                                  (client_pid, std::move(process_h)))                                                               \
     AMS_SF_METHOD_INFO(C, H, 10, Result, RegisterProcessModuleInfo,   (const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h),                                   (client_pid, nrr_address, nrr_size, std::move(process_h)),                    hos::Version_7_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::ro::impl, IRoInterface, AMS_RO_I_RO_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ro::impl, IRoInterface, AMS_RO_I_RO_INTERFACE_INTERFACE_INFO, 0xA52C55A9)

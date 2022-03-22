@@ -28,4 +28,4 @@
     AMS_SF_METHOD_INFO(C, H, 5, Result, SetPriorityForFile, (s32 priority),                                                                                             (priority))                    \
     AMS_SF_METHOD_INFO(C, H, 6, Result, GetPriorityForFile, (ams::sf::Out<s32> out),                                                                                    (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, IFileAccessor, AMS_TMA_I_FILE_ACCESSOR_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, IFileAccessor, AMS_TMA_I_FILE_ACCESSOR_INTERFACE_INFO, 0x985A04E3)

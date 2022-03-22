@@ -23,12 +23,12 @@
     AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type),                                (application_id, content_type))                               \
     AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                    (out, application_id),                    hos::Version_6_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::mitm::ns::impl, IDocumentInterface, AMS_NS_DOCUMENT_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::mitm::ns::impl, IDocumentInterface, AMS_NS_DOCUMENT_MITM_INTERFACE_INFO, 0x0F9B1C00)
 
 #define AMS_NS_WEB_MITM_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 7999, Result, GetDocumentInterface, (sf::Out<sf::SharedPointer<mitm::ns::impl::IDocumentInterface>> out), (out))
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::ns::impl, IWebMitmInterface, AMS_NS_WEB_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::ns::impl, IWebMitmInterface, AMS_NS_WEB_MITM_INTERFACE_INFO, 0xF4EC2D1A)
 
 namespace ams::mitm::ns {
 

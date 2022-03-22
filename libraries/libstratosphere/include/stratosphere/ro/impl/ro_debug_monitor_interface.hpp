@@ -23,4 +23,4 @@
 #define AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                          \
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessModuleInfo, (sf::Out<u32> out_count, const sf::OutArray<ldr::ModuleInfo> &out_infos, os::ProcessId process_id), (out_count, out_infos, process_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::ro::impl, IDebugMonitorInterface, AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ro::impl, IDebugMonitorInterface, AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO, 0xBBA11B0A)

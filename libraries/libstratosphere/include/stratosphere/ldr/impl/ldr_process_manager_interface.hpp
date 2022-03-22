@@ -29,4 +29,4 @@
     AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereGetProgramInfo,         (sf::Out<ldr::ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc), (out_program_info, out_status, loc))                      \
     AMS_SF_METHOD_INFO(C, H, 65002, Result, AtmospherePinProgram,             (sf::Out<ldr::PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status),              (out_id, loc, override_status))
 
-AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IProcessManagerInterface, AMS_LDR_I_PROCESS_MANAGER_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IProcessManagerInterface, AMS_LDR_I_PROCESS_MANAGER_INTERFACE_INTERFACE_INFO, 0x01518B8E)

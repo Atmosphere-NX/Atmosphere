@@ -25,4 +25,4 @@
     AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    (),                                                                  ())                      \
     AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out),                                             (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IReport, AMS_ERPT_I_REPORT_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IReport, AMS_ERPT_I_REPORT_INTERFACE_INFO, 0xE4CD5A61)

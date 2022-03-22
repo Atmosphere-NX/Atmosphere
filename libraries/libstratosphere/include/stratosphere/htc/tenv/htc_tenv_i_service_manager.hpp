@@ -22,4 +22,4 @@
 #define AMS_HTC_TENV_I_SERVICE_MANAGER_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetServiceInterface, (sf::Out<sf::SharedPointer<htc::tenv::IService>> out, const sf::ClientProcessId &process_id), (out, process_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::htc::tenv, IServiceManager, AMS_HTC_TENV_I_SERVICE_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::htc::tenv, IServiceManager, AMS_HTC_TENV_I_SERVICE_MANAGER_INTERFACE_INFO, 0x38649D88)

@@ -38,4 +38,4 @@
     AMS_SF_METHOD_INFO(C, H, 16, Result, SetValueForSleepState, (gpio::GpioValue value),                   (value),     hos::Version_4_0_0) \
     AMS_SF_METHOD_INFO(C, H, 16, Result, GetValueForSleepState, (ams::sf::Out<gpio::GpioValue> out),       (out),       hos::Version_6_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::gpio::sf, IPadSession, AMS_GPIO_I_PAD_SESSION_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::gpio::sf, IPadSession, AMS_GPIO_I_PAD_SESSION_INTERFACE_INFO, 0x7448A8A7)

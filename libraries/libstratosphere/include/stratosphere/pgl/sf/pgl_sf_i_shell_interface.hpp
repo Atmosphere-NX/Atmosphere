@@ -36,4 +36,4 @@
     AMS_SF_METHOD_INFO(C, H, 20, Result, GetShellEventObserver,                 (ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out),                            (out))                                                \
     AMS_SF_METHOD_INFO(C, H, 21, Result, Command21NotImplemented,               (ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2),  (out, in, buf1, buf2),           hos::Version_11_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IShellInterface, AMS_PGL_I_SHELL_INTERFACE_INTERFACE_INFO);
+AMS_SF_DEFINE_INTERFACE(ams::pgl::sf, IShellInterface, AMS_PGL_I_SHELL_INTERFACE_INTERFACE_INFO, 0x00000000);

@@ -29,7 +29,7 @@
     AMS_SF_METHOD_INFO(C, H, 810, Result, RegisterProgramIndexMapInfo,     (const sf::InBuffer &info_buffer, s32 info_count),                                                                                           (info_buffer, info_count),                 hos::Version_7_0_0)
 
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::fs, IFsMitmInterface, AMS_FS_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::fs, IFsMitmInterface, AMS_FS_MITM_INTERFACE_INFO, 0x7DF34ED2)
 
 namespace ams::mitm::fs {
 

@@ -25,4 +25,4 @@
     AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    (),                                                                        ())                      \
     AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out),                                                   (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IAttachment, AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IAttachment, AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO, 0x10FC4A69)

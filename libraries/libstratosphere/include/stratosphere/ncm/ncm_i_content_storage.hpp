@@ -54,4 +54,4 @@
     AMS_SF_METHOD_INFO(C, H, 28, Result, RegisterPath,                           (const ncm::ContentId &content_id, const ncm::Path &path),                                                  (content_id, path),                                hos::Version_13_0_0)                    \
     AMS_SF_METHOD_INFO(C, H, 29, Result, ClearRegisteredPath,                    (),                                                                                                         (),                                                hos::Version_13_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentStorage, AMS_NCM_I_CONTENT_STORAGE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentStorage, AMS_NCM_I_CONTENT_STORAGE_INTERFACE_INFO, 0xFEAE3DD1)

@@ -25,4 +25,4 @@
     AMS_SF_METHOD_INFO(C, H, 1, Result, IsArchivedProgram,            (ams::sf::Out<bool> out, u64 process_id),                                                                                                                                        (out, process_id))                                                              \
     AMS_SF_METHOD_INFO(C, H, 2, Result, SetCurrentProcess,            (const ams::sf::ClientProcessId &client_pid),                                                                                                                                    (client_pid),                          hos::Version_4_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystemProxyForLoader, AMS_FSSRV_I_FILE_SYSTEM_PROXY_FOR_LOADER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystemProxyForLoader, AMS_FSSRV_I_FILE_SYSTEM_PROXY_FOR_LOADER_INTERFACE_INFO, 0xDC92EE15)

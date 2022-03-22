@@ -23,4 +23,4 @@
     AMS_SF_METHOD_INFO(C, H, 1, Result, GetVariableLength,          (sf::Out<s64> out_size,const htc::tenv::VariableName &name),                                   (out_size, name))             \
     AMS_SF_METHOD_INFO(C, H, 2, Result, WaitUntilVariableAvailable, (s64 timeout_ms),                                                                              (timeout_ms))
 
-AMS_SF_DEFINE_INTERFACE(ams::htc::tenv, IService, AMS_HTC_TENV_I_SERVICE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::htc::tenv, IService, AMS_HTC_TENV_I_SERVICE_INTERFACE_INFO, 0x041F65C5)

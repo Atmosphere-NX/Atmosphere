@@ -23,4 +23,4 @@
 #define AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 30, Result, ReencryptDeviceUniqueData, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, spl::AccessKey access_key_dec, spl::KeySource source_dec, spl::AccessKey access_key_enc, spl::KeySource source_enc, u32 option), (out, src, access_key_dec, source_dec, access_key_enc, source_enc, option))
 
-AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IManuInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IManuInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO, 0xF5643734)

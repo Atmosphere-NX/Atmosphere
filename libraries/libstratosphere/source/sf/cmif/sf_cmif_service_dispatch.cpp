@@ -83,7 +83,7 @@ namespace ams::sf::cmif {
 
     }
 
-    Result impl::ServiceDispatchTableBase::ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
+    Result impl::ServiceDispatchTableBase::ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count, u32 interface_id_for_debug) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
         const u32  max_cmif_version = hos_version >= hos::Version_5_0_0 ? 1 : 0;
@@ -115,13 +115,13 @@ namespace ams::sf::cmif {
         }
 
         /* Write output header to raw data. */
-        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), 0};
+        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), interface_id_for_debug};
 
         return ResultSuccess();
     }
 
     #if AMS_SF_MITM_SUPPORTED
-    Result impl::ServiceDispatchTableBase::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
+    Result impl::ServiceDispatchTableBase::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count, u32 interface_id_for_debug) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
         const u32  max_cmif_version = hos_version >= hos::Version_5_0_0 ? 1 : 0;
@@ -162,7 +162,7 @@ namespace ams::sf::cmif {
         }
 
         /* Write output header to raw data. */
-        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), 0};
+        *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), interface_id_for_debug};
 
         return ResultSuccess();
     }

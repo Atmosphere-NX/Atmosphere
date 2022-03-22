@@ -23,7 +23,7 @@
     AMS_SF_METHOD_INFO(C, H, 38, Result, GetSettingsItemValue,     (sf::Out<u64> out_size, const sf::OutBuffer &out, const ams::settings::SettingsName &name, const ams::settings::SettingsItemKey &key), (out_size, out, name, key)) \
     AMS_SF_METHOD_INFO(C, H, 62, Result, GetDebugModeFlag,         (sf::Out<bool> out),                                                                                                                                 (out))
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetSysMitmInterface, AMS_SETTINGS_SYSTEM_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetSysMitmInterface, AMS_SETTINGS_SYSTEM_MITM_INTERFACE_INFO, 0x0E82ED13)
 
 namespace ams::mitm::settings {
 

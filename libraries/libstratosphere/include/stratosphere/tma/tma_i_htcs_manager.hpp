@@ -40,4 +40,4 @@
     AMS_SF_METHOD_INFO(C, H, 130, Result, StartSelect,        (sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InMapAliasArray<s32> &read_handles, const sf::InMapAliasArray<s32> &write_handles, const sf::InMapAliasArray<s32> &exception_handles, s64 tv_sec, s64 tv_usec), (out_task_id, out_event, read_handles, write_handles, exception_handles, tv_sec, tv_usec)) \
     AMS_SF_METHOD_INFO(C, H, 131, Result, EndSelect,          (sf::Out<s32> out_err, sf::Out<s32> out_count, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id),                   (out_err, out_count, read_handles, write_handles, exception_handles, task_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, IHtcsManager, AMS_TMA_I_HTCS_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, IHtcsManager, AMS_TMA_I_HTCS_MANAGER_INTERFACE_INFO, 0x91ECD04F)

@@ -19,4 +19,5 @@
 #include <stratosphere/psc/psc_types.hpp>
 #include <stratosphere/psc/psc_pm_module_id.hpp>
 #include <stratosphere/psc/sf/psc_sf_i_pm_module.hpp>
+#include <stratosphere/psc/sf/psc_sf_i_pm_service.hpp>
 #include <stratosphere/psc/psc_pm_module.hpp>

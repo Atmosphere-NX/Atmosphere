@@ -22,4 +22,4 @@
 #define AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 0, Result, GenerateRandomBytes, (const sf::OutBuffer &out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::spl::impl, IRandomInterface, AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::spl::impl, IRandomInterface, AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO, 0xBDE33ED4)

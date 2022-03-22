@@ -35,4 +35,4 @@
     AMS_SF_METHOD_INFO(C, H, 13, Result, InvalidateRightsIdCache,          (),                                                                                     (),                hos::Version_9_0_0)                     \
     AMS_SF_METHOD_INFO(C, H, 14, Result, GetMemoryReport,                  (sf::Out<ncm::MemoryReport> out),                                                       (out),             hos::Version_10_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentManager, AMS_NCM_I_CONTENT_MANAGER_INTERFACE_INFO);
+AMS_SF_DEFINE_INTERFACE(ams::ncm, IContentManager, AMS_NCM_I_CONTENT_MANAGER_INTERFACE_INFO, 0xFDB4FFE1);
