@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,6 +15,20 @@
  */
 #include <stratosphere.hpp>
 #include "impl/settings_serial_number_impl.hpp"
+
+namespace ams::settings::factory {
+
+    Result GetSerialNumber(SerialNumber *out) {
+        const Result result = settings::impl::GetSerialNumber(out);
+
+        if (!settings::ResultCalibrationDataFileSystemCorrupted::Includes(result) && !settings::ResultCalibrationDataCrcError::Includes(result)) {
+            R_ABORT_UNLESS(result);
+        }
+
+        return result;
+    }
+
+}
 
 namespace ams::settings::system {
 

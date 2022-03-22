@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,7 +18,8 @@
 
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/spl_api.hpp>
-#include <stratosphere/spl/smc/spl_smc.hpp>
+#include <stratosphere/spl/smc/spl_secure_monitor_api.hpp>
+#include <stratosphere/spl/impl/spl_api_impl.hpp>
 #include <stratosphere/spl/impl/spl_random_interface.hpp>
 #include <stratosphere/spl/impl/spl_deprecated_general_interface.hpp>
 #include <stratosphere/spl/impl/spl_general_interface.hpp>

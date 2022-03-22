@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -39,7 +39,7 @@ namespace ams::ncm {
         return ApplicationId::Start <= program_id && program_id <= ApplicationId::End;
     }
 
-    inline constexpr bool IsApplicationId(const ApplicationId &id) {
+    inline constexpr bool IsApplicationId(const ApplicationId &) {
         return true;
     }
 

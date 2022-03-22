@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,7 +26,7 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        class MultiWaitObjectList;
 
     }
 
@@ -36,6 +36,8 @@ namespace ams::os {
     using ThreadImpl = ::Thread;
 
     struct ThreadType {
+        static constexpr u16 Magic = 0xF5A5;
+
         enum State {
             State_NotInitialized         = 0,
             State_Initialized            = 1,
@@ -44,12 +46,14 @@ namespace ams::os {
             State_Terminated             = 4,
         };
 
-        TYPED_STORAGE(util::IntrusiveListNode) all_threads_node;
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
+        util::TypedStorage<util::IntrusiveListNode> all_threads_node;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist;
         uintptr_t reserved[4];
         u8 state;
         u8 suspend_count;
-        s32 base_priority;
+        u16 magic;
+        s16 base_priority;
+        u16 version;
         char name_buffer[ThreadNameLengthMax];
         const char *name_pointer;
         ThreadId thread_id;

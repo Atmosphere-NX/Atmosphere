@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
- /* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
+/* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
@@ -31,12 +30,14 @@ namespace ams::util {
                 bool active;
             public:
                 constexpr ALWAYS_INLINE ScopeGuard(F f) : f(std::move(f)), active(true) { }
-                ALWAYS_INLINE ~ScopeGuard() { if (active) { f(); } }
-                ALWAYS_INLINE void Cancel() { active = false; }
+                constexpr ALWAYS_INLINE ~ScopeGuard() { if (active) { f(); } }
+                constexpr ALWAYS_INLINE void Cancel() { active = false; }
 
-                ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
+                constexpr ALWAYS_INLINE ScopeGuard(ScopeGuard&& rhs) : f(std::move(rhs.f)), active(rhs.active) {
                     rhs.Cancel();
                 }
+
+                ScopeGuard &operator=(ScopeGuard&& rhs) = delete;
         };
 
         template<class F>

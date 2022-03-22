@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -100,30 +100,30 @@ namespace ams::fssystem {
                 return BucketTree::QueryEntryStorageSize(NodeSize, sizeof(Entry), entry_count);
             }
         private:
-            BucketTree table;
-            fs::SubStorage data_storage[StorageCount];
+            BucketTree m_table;
+            fs::SubStorage m_data_storage[StorageCount];
         public:
-            IndirectStorage() : table(), data_storage() { /* ... */ }
+            IndirectStorage() : m_table(), m_data_storage() { /* ... */ }
             virtual ~IndirectStorage() { this->Finalize(); }
 
             Result Initialize(IAllocator *allocator, fs::SubStorage table_storage);
             void Finalize();
 
-            bool IsInitialized() const { return this->table.IsInitialized(); }
+            bool IsInitialized() const { return m_table.IsInitialized(); }
 
             Result Initialize(IAllocator *allocator, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 entry_count) {
-                return this->table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count);
+                return m_table.Initialize(allocator, node_storage, entry_storage, NodeSize, sizeof(Entry), entry_count);
             }
 
             void SetStorage(s32 idx, fs::SubStorage storage) {
                 AMS_ASSERT(0 <= idx && idx < StorageCount);
-                this->data_storage[idx] = storage;
+                m_data_storage[idx] = storage;
             }
 
             template<typename T>
             void SetStorage(s32 idx, T storage, s64 offset, s64 size) {
                 AMS_ASSERT(0 <= idx && idx < StorageCount);
-                this->data_storage[idx] = fs::SubStorage(storage, offset, size);
+                m_data_storage[idx] = fs::SubStorage(storage, offset, size);
             }
 
             Result GetEntryList(Entry *out_entries, s32 *out_entry_count, s32 entry_count, s64 offset, s64 size);
@@ -133,7 +133,7 @@ namespace ams::fssystem {
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ASSERT(out != nullptr);
-                *out = this->table.GetEnd();
+                *out = m_table.GetEnd();
                 return ResultSuccess();
             }
 
@@ -142,18 +142,20 @@ namespace ams::fssystem {
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                AMS_UNUSED(offset, buffer, size);
                 return fs::ResultUnsupportedOperationInIndirectStorageA();
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInIndirectStorageB();
             }
         protected:
-            BucketTree &GetEntryTable() { return this->table; }
+            BucketTree &GetEntryTable() { return m_table; }
 
             fs::SubStorage &GetDataStorage(s32 index) {
                 AMS_ASSERT(0 <= index && index < StorageCount);
-                return this->data_storage[index];
+                return m_data_storage[index];
             }
 
             template<bool ContinuousCheck, typename F>

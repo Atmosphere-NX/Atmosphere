@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,13 +26,13 @@ namespace ams::os::impl {
         /* Nintendo does not check the result of these invocations, but we will for safety. */
         /* Nintendo uses entropy values 0, 1 to seed the public TinyMT random, and values */
         /* 2, 3 to seed os::detail::RngManager's private TinyMT random. */
-        R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&seed[0]), InfoType_RandomEntropy, INVALID_HANDLE, 2));
-        R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&seed[2]), InfoType_RandomEntropy, INVALID_HANDLE, 3));
+        R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 0), svc::InfoType_RandomEntropy, svc::InvalidHandle, 2));
+        R_ABORT_UNLESS(svc::GetInfo(reinterpret_cast<u64 *>(seed + 2), svc::InfoType_RandomEntropy, svc::InvalidHandle, 3));
 
-        this->mt.Initialize(seed, util::size(seed));
+        m_mt.Initialize(seed, util::size(seed));
 
         /* Note that we've initialized. */
-        this->initialized = true;
+        m_initialized = true;
     }
 
 }

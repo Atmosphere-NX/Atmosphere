@@ -1,1 +1,14 @@
 config_templates/hbl_html/accessible-urls/accessible-urls.txt text eol=lf
+
+# Mark C++ "include" files as C++
+*.inc linguist-language=C++
+
+# Mark RapidJSON include as vendored
+libraries/include/stratosphere/rapidjson/** linguist-vendored
+
+# Mark emummc as vendored
+emummc/** linguist-vendored
+
+# Mark fatfs as vendored
+exosphere/mariko_fatal/source/fatfs/** linguist-vendored
+fusee/program/source/fatfs/** linguist-vendored

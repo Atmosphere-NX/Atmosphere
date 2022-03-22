@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,7 +21,7 @@
 namespace ams::os {
 
     struct InterruptEventType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     void InitializeInterruptEvent(InterruptEventType *event, InterruptName name, EventClearMode clear_mode);
     void FinalizeInterruptEvent(InterruptEventType *event);
@@ -31,6 +31,6 @@ namespace ams::os {
     bool TimedWaitInterruptEvent(InterruptEventType *event, TimeSpan timeout);
     void ClearInterruptEvent(InterruptEventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, InterruptEventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterruptEventType *event);
 
 }

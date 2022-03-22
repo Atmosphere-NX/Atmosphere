@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,21 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_waitable_object_list.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 #include "impl/os_timeout_helper.hpp"
 
 namespace ams::os {
 
     void InitializeSemaphore(SemaphoreType *sema, s32 count, s32 max_count) {
         AMS_ASSERT(max_count >= 1);
-        AMS_ASSERT(count     >= 0);
+        AMS_ASSERT(0 <= count && count <= max_count);
 
         /* Setup objects. */
-        new (GetPointer(sema->cs_sema))      impl::InternalCriticalSection;
-        new (GetPointer(sema->cv_not_zero))  impl::InternalConditionVariable;
+        util::ConstructAt(sema->cs_sema);
+        util::ConstructAt(sema->cv_not_zero);
 
         /* Setup wait lists. */
-        new (GetPointer(sema->waitlist)) impl::WaitableObjectList;
+        util::ConstructAt(sema->waitlist);
 
         /* Set member variables. */
         sema->count     = count;
@@ -47,11 +48,11 @@ namespace ams::os {
         sema->state = SemaphoreType::State_NotInitialized;
 
         /* Destroy wait lists. */
-        GetReference(sema->waitlist).~WaitableObjectList();
+        util::DestroyAt(sema->waitlist);
 
         /* Destroy objects. */
-        GetReference(sema->cv_not_zero).~InternalConditionVariable();
-        GetReference(sema->cs_sema).~InternalCriticalSection();
+        util::DestroyAt(sema->cv_not_zero);
+        util::DestroyAt(sema->cs_sema);
     }
 
     void AcquireSemaphore(SemaphoreType *sema) {
@@ -141,6 +142,12 @@ namespace ams::os {
         return sema->count;
     }
 
-    // void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SemaphoreType *sema);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SemaphoreType *sema) {
+        AMS_ASSERT(sema->state == SemaphoreType::State_Initialized);
+
+        util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_semaphore_storage, sema);
+
+        multi_wait_holder->user_data = 0;
+    }
 
 }

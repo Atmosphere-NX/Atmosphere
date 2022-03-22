@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,11 +21,12 @@ namespace ams::dmnt::cheat::impl {
     void InitializeCheatManager();
 
     bool GetHasActiveCheatProcess();
-    Handle GetCheatProcessEventHandle();
+    os::NativeHandle GetCheatProcessEventHandle();
     Result GetCheatProcessMetadata(CheatProcessMetadata *out);
     Result ForceOpenCheatProcess();
     Result PauseCheatProcess();
     Result ResumeCheatProcess();
+    Result ForceCloseCheatProcess();
 
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemoryUnsafe(u64 process_addr, void *data, size_t size);
@@ -34,10 +35,10 @@ namespace ams::dmnt::cheat::impl {
     Result ResumeCheatProcessUnsafe();
 
     Result GetCheatProcessMappingCount(u64 *out_count);
-    Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
+    Result GetCheatProcessMappings(svc::MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
     Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
-    Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
+    Result QueryCheatProcessMemory(svc::MemoryInfo *mapping, u64 address);
 
     Result GetCheatCount(u64 *out_count);
     Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
@@ -45,6 +46,7 @@ namespace ams::dmnt::cheat::impl {
     Result ToggleCheat(u32 cheat_id);
     Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled);
     Result RemoveCheat(u32 cheat_id);
+    Result SetMasterCheat(const CheatDefinition &def);
     Result ReadStaticRegister(u64 *out, size_t which);
     Result WriteStaticRegister(size_t which, u64 value);
     Result ResetStaticRegisters();

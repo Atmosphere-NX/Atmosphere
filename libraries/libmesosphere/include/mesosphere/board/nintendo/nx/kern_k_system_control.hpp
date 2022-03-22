@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,24 +15,26 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_system_control_base.hpp>
 
 namespace ams::kern::board::nintendo::nx {
 
-    class KSystemControl {
+    class KSystemControl : public KSystemControlBase {
         public:
-            class Init {
+            class Init : public KSystemControlBase::Init {
                 public:
                     /* Initialization. */
+                    static size_t GetRealMemorySize();
                     static size_t GetIntendedMemorySize();
-                    static KPhysicalAddress GetKernelPhysicalBaseAddress(uintptr_t base_address);
                     static bool ShouldIncreaseThreadResourceLimit();
                     static void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
                     static size_t GetApplicationPoolSize();
                     static size_t GetAppletPoolSize();
                     static size_t GetMinimumNonSecureSystemPoolSize();
+                    static u8 GetDebugLogUartPort();
 
                     /* Randomness. */
-                    static void GenerateRandomBytes(void *dst, size_t size);
+                    static void GenerateRandom(u64 *dst, size_t count);
                     static u64  GenerateRandomRange(u64 min, u64 max);
             };
         public:
@@ -42,7 +44,7 @@ namespace ams::kern::board::nintendo::nx {
             static NOINLINE u32 GetCreateProcessMemoryPool();
 
             /* Randomness. */
-            static void GenerateRandomBytes(void *dst, size_t size);
+            static void GenerateRandom(u64 *dst, size_t count);
             static u64  GenerateRandomRange(u64 min, u64 max);
             static u64  GenerateRandomU64();
 
@@ -50,23 +52,12 @@ namespace ams::kern::board::nintendo::nx {
             static void ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
             static Result ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
 
-            static ALWAYS_INLINE u32 ReadRegisterPrivileged(ams::svc::PhysicalAddress address) {
-                u32 v;
-                ReadWriteRegisterPrivileged(std::addressof(v), address, 0x00000000u, 0);
-                return v;
-            }
-
-            static ALWAYS_INLINE void WriteRegisterPrivileged(ams::svc::PhysicalAddress address, u32 value) {
-                u32 v;
-                ReadWriteRegisterPrivileged(std::addressof(v), address, 0xFFFFFFFFu, value);
-            }
-
             /* Power management. */
             static void SleepSystem();
-            static NORETURN void StopSystem();
+            static NORETURN void StopSystem(void *arg = nullptr);
 
             /* User access. */
-            static void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
+            static void CallSecureMonitorFromUserImpl(ams::svc::lp64::SecureMonitorArguments *args);
 
             /* Secure Memory. */
             static size_t CalculateRequiredSecureMemorySize(size_t size, u32 pool);

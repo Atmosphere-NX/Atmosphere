@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,22 +21,17 @@ namespace ams::sm::impl {
     namespace {
 
         /* Globals. */
-        os::Mutex g_user_session_mutex(true);
-        os::Mutex g_mitm_ack_session_mutex(true);
-        os::Mutex g_per_thread_session_mutex(true);
+        constinit os::SdkRecursiveMutex g_mitm_ack_session_mutex;
+        constinit os::SdkRecursiveMutex g_per_thread_session_mutex;
 
     }
 
     /* Utilities. */
-    os::Mutex &GetUserSessionMutex() {
-        return g_user_session_mutex;
-    }
-
-    os::Mutex &GetMitmAcknowledgementSessionMutex() {
+    os::SdkRecursiveMutex &GetMitmAcknowledgementSessionMutex() {
         return g_mitm_ack_session_mutex;
     }
 
-    os::Mutex &GetPerThreadSessionMutex() {
+    os::SdkRecursiveMutex &GetPerThreadSessionMutex() {
         return g_per_thread_session_mutex;
     }
 

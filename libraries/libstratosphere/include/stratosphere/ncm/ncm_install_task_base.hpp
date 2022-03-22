@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -82,18 +82,18 @@ namespace ams::ncm {
         NON_COPYABLE(InstallTaskBase);
         NON_MOVEABLE(InstallTaskBase);
         private:
-            crypto::Sha256Generator sha256_generator;
-            StorageId install_storage;
-            InstallTaskDataBase *data;
-            InstallProgress progress;
-            os::Mutex progress_mutex;
-            u32 config;
-            os::Mutex cancel_mutex;
-            bool cancel_requested;
-            InstallThroughput throughput;
-            TimeSpan throughput_start_time;
-            os::Mutex throughput_mutex;
-            FirmwareVariationId firmware_variation_id;
+            crypto::Sha256Generator m_sha256_generator;
+            StorageId m_install_storage;
+            InstallTaskDataBase *m_data;
+            InstallProgress m_progress;
+            os::SdkMutex m_progress_mutex;
+            u32 m_config;
+            os::SdkMutex m_cancel_mutex;
+            bool m_cancel_requested;
+            InstallThroughput m_throughput;
+            TimeSpan m_throughput_start_time;
+            os::SdkMutex m_throughput_mutex;
+            FirmwareVariationId m_firmware_variation_id;
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
                 if (R_FAILED(result)) {
@@ -102,7 +102,7 @@ namespace ams::ncm {
                 return result;
             }
         public:
-            InstallTaskBase() : data(), progress(), progress_mutex(false), cancel_mutex(false), cancel_requested(), throughput_mutex(false) { /* ... */ }
+            InstallTaskBase() : m_data(), m_progress(), m_progress_mutex(), m_cancel_mutex(), m_cancel_requested(), m_throughput_mutex() { /* ... */ }
             virtual ~InstallTaskBase() { /* ... */ };
         public:
             virtual void Cancel();
@@ -131,7 +131,7 @@ namespace ams::ncm {
         protected:
             Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
 
-            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> key, std::optional<u32> source_version);
+            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, util::optional<ContentMetaKey> key, util::optional<u32> source_version);
             Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
             Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
             void PrepareAgain();
@@ -144,10 +144,10 @@ namespace ams::ncm {
             virtual Result PrepareDependency();
             Result PrepareSystemUpdateDependency();
             virtual Result PrepareContentMetaIfLatest(const ContentMetaKey &key); /* NOTE: This is not virtual in Nintendo's code. We do so to facilitate downgrades. */
-            u32 GetConfig() const { return this->config; }
-            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
+            u32 GetConfig() const { return m_config; }
+            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, util::optional<bool> is_temporary);
 
-            StorageId GetInstallStorage() const { return this->install_storage; }
+            StorageId GetInstallStorage() const { return m_install_storage; }
 
             virtual Result OnPrepareComplete() { return ResultSuccess(); }
 
@@ -164,7 +164,7 @@ namespace ams::ncm {
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
 
             virtual Result PrepareInstallContentMetaData() = 0;
-            virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
+            virtual Result GetLatestVersion(util::optional<u32> *out_version, u64 id) { AMS_UNUSED(out_version, id); return ncm::ResultContentMetaNotFound(); }
 
             virtual Result OnExecuteComplete() { return ResultSuccess(); }
 
@@ -187,16 +187,16 @@ namespace ams::ncm {
             void StartThroughputMeasurement();
             void UpdateThroughputMeasurement(s64 throughput);
 
-            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version);
+            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, util::optional<u32> source_version);
 
-            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
+            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, util::optional<bool> is_temporary);
 
             Result ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
             Result ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset);
         public:
             virtual Result CheckInstallable() { return ResultSuccess(); }
 
-            void SetFirmwareVariationId(FirmwareVariationId id) { this->firmware_variation_id = id; }
+            void SetFirmwareVariationId(FirmwareVariationId id) { m_firmware_variation_id = id; }
             Result ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset);
     };
 

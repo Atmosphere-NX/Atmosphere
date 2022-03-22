@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,20 +19,21 @@ namespace ams::fs {
 
     namespace {
 
-        bool g_used_default_allocator;
+        constinit bool g_used_default_allocator = false;
 
         void *DefaultAllocate(size_t size) {
             g_used_default_allocator = true;
-            return std::malloc(size);
+            return ams::Malloc(size);
         }
 
         void DefaultDeallocate(void *ptr, size_t size) {
-            std::free(ptr);
+            AMS_UNUSED(size);
+            ams::Free(ptr);
         }
 
-        os::Mutex g_lock(false);
-        AllocateFunction g_allocate_func     = DefaultAllocate;
-        DeallocateFunction g_deallocate_func = DefaultDeallocate;
+        constinit os::SdkMutex g_mutex;
+        constinit AllocateFunction g_allocate_func     = DefaultAllocate;
+        constinit DeallocateFunction g_deallocate_func = DefaultDeallocate;
 
         constexpr size_t RequiredAlignment = alignof(u64);
 
@@ -58,24 +59,59 @@ namespace ams::fs {
 
     namespace impl {
 
-        void *Allocate(size_t size) {
-            void *ptr;
-            {
-                std::scoped_lock lk(g_lock);
-                ptr = g_allocate_func(size);
-                if (!util::IsAligned(reinterpret_cast<uintptr_t>(ptr), RequiredAlignment)) {
-                    R_ABORT_UNLESS(fs::ResultAllocatorAlignmentViolation());
-                }
+        void LockAllocatorMutex() {
+            g_mutex.Lock();
+        }
+
+        void UnlockAllocatorMutex() {
+            g_mutex.Unlock();
+        }
+
+        void *AllocateUnsafe(size_t size) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(g_mutex.IsLockedByCurrentThread());
+
+            /* Allocate. */
+            void * const ptr = g_allocate_func(size);
+
+            /* Check alignment. */
+            if (AMS_UNLIKELY(!util::IsAligned(reinterpret_cast<uintptr_t>(ptr), RequiredAlignment))) {
+                R_ABORT_UNLESS(fs::ResultAllocatorAlignmentViolation());
             }
+
+            /* Return allocated pointer. */
             return ptr;
         }
 
-        void Deallocate(void *ptr, size_t size) {
-            if (ptr == nullptr) {
-                return;
-            }
-            std::scoped_lock lk(g_lock);
+        void DeallocateUnsafe(void *ptr, size_t size) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(g_mutex.IsLockedByCurrentThread());
+
+            /* Deallocate the pointer. */
             g_deallocate_func(ptr, size);
+        }
+
+        void *Allocate(size_t size) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(g_allocate_func != nullptr);
+
+            /* Lock the allocator. */
+            std::scoped_lock lk(g_mutex);
+
+            return AllocateUnsafe(size);
+        }
+
+        void Deallocate(void *ptr, size_t size) {
+            /* Check pre-conditions. */
+            AMS_ASSERT(g_deallocate_func != nullptr);
+
+            /* If the pointer is non-null, deallocate it. */
+            if (ptr != nullptr) {
+                /* Lock the allocator. */
+                std::scoped_lock lk(g_mutex);
+
+                DeallocateUnsafe(ptr, size);
+            }
         }
 
     }

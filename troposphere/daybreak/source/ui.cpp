@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Adubbz
+ * Copyright (c) Adubbz
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <dirent.h>
 #include "ui.hpp"
 #include "ui_util.hpp"
@@ -29,6 +30,7 @@ namespace dbk {
         static constexpr u32 ExosphereApiVersionConfigItem = 65000;
         static constexpr u32 ExosphereHasRcmBugPatch       = 65004;
         static constexpr u32 ExosphereEmummcType           = 65007;
+        static constexpr u32 ExosphereSupportedHosVersion  = 65011;
 
         /* Insets of content within windows. */
         static constexpr float HorizontalInset       = 20.0f;
@@ -43,16 +45,19 @@ namespace dbk {
 
         static constexpr float VerticalGap           = 10.0f;
 
-
         u32 g_screen_width;
         u32 g_screen_height;
+
+        constinit u32 g_supported_version = std::numeric_limits<u32>::max();
 
         std::shared_ptr<Menu> g_current_menu;
         bool g_initialized = false;
         bool g_exit_requested = false;
 
+        PadState g_pad;
+
         u32 g_prev_touch_count = -1;
-        touchPosition g_start_touch_position;
+        HidTouchScreenState g_start_touch;
         bool g_started_touching = false;
         bool g_tapping = false;
         bool g_touches_moving = false;
@@ -67,15 +72,14 @@ namespace dbk {
         constexpr u32 MaxTapMovement = 20;
 
         void UpdateInput() {
-            /* Update the previous touch count. */
-            g_prev_touch_count = hidTouchCount();
-
             /* Scan for input and update touch state. */
-            hidScanInput();
-            const u32 touch_count = hidTouchCount();
+            padUpdate(&g_pad);
+            HidTouchScreenState current_touch;
+            hidGetTouchScreenStates(&current_touch, 1);
+            const u32 touch_count = current_touch.count;
 
             if (g_prev_touch_count == 0 && touch_count > 0) {
-                hidTouchRead(&g_start_touch_position, 0);
+                hidGetTouchScreenStates(&g_start_touch, 1);
                 g_started_touching = true;
                 g_tapping = true;
             } else {
@@ -91,10 +95,7 @@ namespace dbk {
 
             /* Check if currently moving. */
             if (g_prev_touch_count > 0 && touch_count > 0) {
-                touchPosition current_touch_position;
-                hidTouchRead(&current_touch_position, 0);
-
-                if ((abs(current_touch_position.px - g_start_touch_position.px) > MaxTapMovement || abs(current_touch_position.py - g_start_touch_position.py) > MaxTapMovement)) {
+                if ((abs(current_touch.touches[0].x - g_start_touch.touches[0].x) > MaxTapMovement || abs(current_touch.touches[0].y - g_start_touch.touches[0].y) > MaxTapMovement)) {
                     g_touches_moving = true;
                     g_tapping = false;
                 } else {
@@ -103,6 +104,9 @@ namespace dbk {
             } else {
                 g_touches_moving = false;
             }
+
+            /* Update the previous touch count. */
+            g_prev_touch_count = current_touch.count;
         }
 
         void ChangeMenu(std::shared_ptr<Menu> menu) {
@@ -135,6 +139,10 @@ namespace dbk {
             *out = entry_count == 0;
             fsDirClose(&dir);
             return rc;
+        }
+
+        u32 EncodeVersion(u32 major, u32 minor, u32 micro, u32 relstep = 0) {
+            return ((major & 0xFF) << 24) | ((minor & 0xFF) << 16) | ((micro & 0xFF) << 8) | ((relstep & 0xFF) << 8);
         }
 
     }
@@ -241,14 +249,13 @@ namespace dbk {
     }
 
     Button *Menu::GetTouchedButton() {
-        touchPosition touch;
-        const u32 touch_count = hidTouchCount();
+        HidTouchScreenState current_touch;
+        hidGetTouchScreenStates(&current_touch, 1);
+        const u32 touch_count = current_touch.count;
 
         for (u32 i = 0; i < touch_count && g_started_touching; i++) {
-            hidTouchRead(&touch, i);
-
             for (auto &button : m_buttons) {
-                if (button && button->enabled && button->IsPositionInBounds(touch.px, touch.py)) {
+                if (button && button->enabled && button->IsPositionInBounds(current_touch.touches[i].x, current_touch.touches[i].y)) {
                     return &(*button);
                 }
             }
@@ -264,9 +271,9 @@ namespace dbk {
             return nullptr;
         }
 
-        const u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        const u64 k_down = padGetButtonsDown(&g_pad);
 
-        if (k_down & KEY_A || this->GetTouchedButton() == selected_button) {
+        if (k_down & HidNpadButton_A || this->GetTouchedButton() == selected_button) {
             return selected_button;
         }
 
@@ -274,16 +281,16 @@ namespace dbk {
     }
 
     void Menu::UpdateButtons() {
-        const u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        const u64 k_down = padGetButtonsDown(&g_pad);
         Direction direction = Direction::Invalid;
 
-        if (k_down & KEY_DOWN) {
+        if (k_down & HidNpadButton_AnyDown) {
             direction = Direction::Down;
-        } else if (k_down & KEY_UP) {
+        } else if (k_down & HidNpadButton_AnyUp) {
             direction = Direction::Up;
-        } else if (k_down & KEY_LEFT) {
+        } else if (k_down & HidNpadButton_AnyLeft) {
             direction = Direction::Left;
-        } else if (k_down & KEY_RIGHT) {
+        } else if (k_down & HidNpadButton_AnyRight) {
             direction = Direction::Right;
         }
 
@@ -373,10 +380,10 @@ namespace dbk {
     }
 
     void ErrorMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             g_exit_requested = true;
             return;
         }
@@ -411,10 +418,10 @@ namespace dbk {
     }
 
     void WarningMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             ReturnToPreviousMenu();
             return;
         }
@@ -449,9 +456,9 @@ namespace dbk {
     }
 
     void MainMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             g_exit_requested = true;
         }
 
@@ -478,7 +485,7 @@ namespace dbk {
                     }
 
                     if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &is_emummc))) {
-                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to chech emuMMC status.", rc));
+                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to check emuMMC status.", rc));
                         return;
                     }
 
@@ -574,16 +581,16 @@ namespace dbk {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
-        touchPosition current_pos;
-        hidTouchRead(&current_pos, 0);
+        HidTouchScreenState current_touch;
+        hidGetTouchScreenStates(&current_touch, 1);
 
         /* Check if the tap is within the x bounds. */
-        if (current_pos.px >= x + TextBackgroundOffset + FileRowHorizontalInset && current_pos.px <= WindowWidth - (TextBackgroundOffset + FileRowHorizontalInset) * 2.0f) {
+        if (current_touch.touches[0].x >= x + TextBackgroundOffset + FileRowHorizontalInset && current_touch.touches[0].x <= WindowWidth - (TextBackgroundOffset + FileRowHorizontalInset) * 2.0f) {
             const float y_min = y + TitleGap + FileRowGap + i * (FileRowHeight + FileRowGap) - m_scroll_offset;
             const float y_max = y_min + FileRowHeight;
 
             /* Check if the tap is within the y bounds. */
-            if (current_pos.py >= y_min && current_pos.py <= y_max) {
+            if (current_touch.touches[0].y >= y_min && current_touch.touches[0].y <= y_max) {
                 return true;
             }
         }
@@ -604,10 +611,10 @@ namespace dbk {
 
         /* Scroll based on touch movement. */
         if (g_touches_moving) {
-            touchPosition current_pos;
-            hidTouchRead(&current_pos, 0);
+            HidTouchScreenState current_touch;
+            hidGetTouchScreenStates(&current_touch, 1);
 
-            const int dist_y = current_pos.py - g_start_touch_position.py;
+            const int dist_y = current_touch.touches[0].y - g_start_touch.touches[0].y;
             float new_scroll_offset = m_touch_start_scroll_offset - static_cast<float>(dist_y);
             float max_scroll = (FileRowHeight + FileRowGap) * static_cast<float>(m_file_entries.size()) - FileListHeight;
 
@@ -688,16 +695,16 @@ namespace dbk {
     }
 
     void FileMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             ReturnToPreviousMenu();
             return;
         }
 
         /* Finalize selection on pressing A. */
-        if (k_down & KEY_A) {
+        if (k_down & HidNpadButton_A) {
             this->FinalizeSelection();
         }
 
@@ -706,14 +713,14 @@ namespace dbk {
 
         const u32 prev_index = m_current_index;
 
-        if (k_down & KEY_DOWN) {
+        if (k_down & HidNpadButton_AnyDown) {
             /* Scroll down. */
             if (m_current_index >= (m_file_entries.size() - 1)) {
                 m_current_index = 0;
             } else {
                 m_current_index++;
             }
-        } else if (k_down & KEY_UP) {
+        } else if (k_down & HidNpadButton_AnyUp) {
             /* Scroll up. */
             if (m_current_index == 0) {
                 m_current_index = m_file_entries.size() - 1;
@@ -859,10 +866,10 @@ namespace dbk {
             this->ValidateUpdate();
         }
 
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             ReturnToPreviousMenu();
             return;
         }
@@ -885,13 +892,22 @@ namespace dbk {
                         g_use_exfat = false;
                     }
 
+                    /* Create the next menu. */
+                    std::shared_ptr<Menu> next_menu = std::make_shared<ChooseResetMenu>(g_current_menu);
+
                     /* Warn the user if they're updating with exFAT supposed to be supported but not present/corrupted. */
                     if (m_update_info.exfat_supported && R_FAILED(m_validation_info.exfat_result)) {
-                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<ChooseResetMenu>(g_current_menu), "Warning: exFAT firmware is missing or corrupt", "Are you sure you want to proceed?"));
-                    } else {
-                        ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
+                        next_menu = std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: exFAT firmware is missing or corrupt", "Are you sure you want to proceed?");
                     }
 
+                    /* Warn the user if they're updating to a version higher than supported. */
+                    const u32 version = m_validation_info.invalid_key.version;
+                    if (EncodeVersion((version >> 26) & 0x1f, (version >> 20) & 0x1f, (version >> 16) & 0xf) > g_supported_version) {
+                        next_menu = std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: firmware is too new and not known to be supported", "Are you sure you want to proceed?");
+                    }
+
+                    /* Change to the next menu. */
+                    ChangeMenu(next_menu);
                     return;
             }
         }
@@ -923,10 +939,10 @@ namespace dbk {
     }
 
     void ChooseResetMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             ReturnToPreviousMenu();
             return;
         }
@@ -942,10 +958,18 @@ namespace dbk {
                     break;
             }
 
+            std::shared_ptr<Menu> next_menu;
+
             if (g_exfat_supported) {
-                ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
+                next_menu = std::make_shared<ChooseExfatMenu>(g_current_menu);
             } else {
-                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
+                next_menu = std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?");
+            }
+
+            if (g_reset_to_factory) {
+                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, next_menu, "Warning: Factory reset selected", "Saves and installed games will be permanently deleted."));
+            } else {
+                ChangeMenu(next_menu);
             }
         }
 
@@ -986,10 +1010,10 @@ namespace dbk {
     }
 
     void ChooseExfatMenu::Update(u64 ns) {
-        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+        u64 k_down = padGetButtonsDown(&g_pad);
 
         /* Go back if B is pressed. */
-        if (k_down & KEY_B) {
+        if (k_down & HidNpadButton_B) {
             ReturnToPreviousMenu();
             return;
         }
@@ -1192,8 +1216,15 @@ namespace dbk {
         }
     }
 
-    void InitializeMenu(u32 screen_width, u32 screen_height) {
+    bool InitializeMenu(u32 screen_width, u32 screen_height) {
         Result rc = 0;
+
+        /* Configure and initialize the gamepad. */
+        padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+        padInitializeDefault(&g_pad);
+
+        /* Initialize the touch screen. */
+        hidInitializeTouchScreen();
 
         /* Set the screen width and height. */
         g_screen_width = screen_width;
@@ -1206,7 +1237,7 @@ namespace dbk {
         u64 version;
         if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &version))) {
             ChangeMenu(std::make_shared<ErrorMenu>("Atmosphere not found", "Daybreak requires Atmosphere to be installed.", rc));
-            return;
+            return false;
         }
 
         const u32 version_micro = (version >> 40) & 0xff;
@@ -1214,10 +1245,21 @@ namespace dbk {
         const u32 version_major = (version >> 56) & 0xff;
 
         /* Validate the exosphere version. */
-        const bool ams_supports_sysupdate_api = version_major >= 0 && version_minor >= 14 && version_micro >= 0;
+        const bool ams_supports_sysupdate_api = EncodeVersion(version_major, version_minor, version_micro) >= EncodeVersion(0, 14, 0);
         if (!ams_supports_sysupdate_api) {
             ChangeMenu(std::make_shared<ErrorMenu>("Outdated Atmosphere version", "Daybreak requires Atmosphere 0.14.0 or later.", rc));
-            return;
+            return false;
+        }
+
+        /* Ensure DayBreak is ran as a NRO. */
+        if (envIsNso()) {
+            ChangeMenu(std::make_shared<ErrorMenu>("Unsupported Environment", "Please launch Daybreak via the Homebrew menu.", rc));
+            return false;
+        }
+
+        /* Attempt to get the supported version. */
+        if (R_SUCCEEDED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereSupportedHosVersion), &version))) {
+            g_supported_version = static_cast<u32>(version);
         }
 
         /* Initialize ams:su. */
@@ -1227,6 +1269,23 @@ namespace dbk {
 
         /* Change the current menu to the main menu. */
         g_current_menu = std::make_shared<MainMenu>();
+
+        return true;
+    }
+
+    bool InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path) {
+        if (InitializeMenu(screen_width, screen_height)) {
+
+            /* Set the update path. */
+            strncpy(g_update_path, update_path, sizeof(g_update_path));
+
+            /* Change the menu. */
+            ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
+
+            return true;
+        }
+
+        return false;
     }
 
     void UpdateMenu(u64 ns) {

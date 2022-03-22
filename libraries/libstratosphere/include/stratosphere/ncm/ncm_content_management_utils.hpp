@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,11 +22,11 @@ namespace ams::ncm {
 
     class ContentMetaDatabaseBuilder {
         private:
-            ContentMetaDatabase *db;
+            ContentMetaDatabase *m_db;
         private:
             Result BuildFromPackageContentMeta(void *buf, size_t size, const ContentInfo &meta_info);
         public:
-            explicit ContentMetaDatabaseBuilder(ContentMetaDatabase *d) : db(d) { /* ... */ }
+            explicit ContentMetaDatabaseBuilder(ContentMetaDatabase *d) : m_db(d) { /* ... */ }
 
             Result BuildFromStorage(ContentStorage *storage);
             Result BuildFromPackage(const char *package_root_path);

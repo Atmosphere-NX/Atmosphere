@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,12 +15,15 @@
  */
 
 #pragma once
-#include "ams_types.hpp"
+#include <stratosphere/ams/ams_types.hpp>
 
 namespace ams::emummc {
 
     /* Get whether emummc is active. */
     bool IsActive();
+
+    /* Get the active emummc id. */
+    u32 GetActiveId();
 
     /* Get Nintendo redirection path. */
     const char *GetNintendoDirPath();

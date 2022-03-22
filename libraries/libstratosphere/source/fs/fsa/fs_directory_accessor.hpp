@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,8 +23,8 @@ namespace ams::fs::impl {
     class DirectoryAccessor : public util::IntrusiveListBaseNode<DirectoryAccessor>, public Newable {
         NON_COPYABLE(DirectoryAccessor);
         private:
-            std::unique_ptr<fsa::IDirectory> impl;
-            FileSystemAccessor &parent;
+            std::unique_ptr<fsa::IDirectory> m_impl;
+            FileSystemAccessor &m_parent;
         public:
             DirectoryAccessor(std::unique_ptr<fsa::IDirectory>&& d, FileSystemAccessor &p);
             ~DirectoryAccessor();
@@ -32,7 +32,7 @@ namespace ams::fs::impl {
             Result Read(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries);
             Result GetEntryCount(s64 *out);
 
-            FileSystemAccessor *GetParent() const { return std::addressof(this->parent); }
+            FileSystemAccessor *GetParent() const { return std::addressof(m_parent); }
     };
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -116,7 +116,7 @@ namespace ams::ncm {
         R_UNLESS(reader.GetExtendedDataSize() != 0, ReadMetaInfoListFromBase());
 
         SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
-        std::optional<s32> firmware_variation_index = std::nullopt;
+        util::optional<s32> firmware_variation_index = util::nullopt;
 
         /* NOTE: Atmosphere extension to support downgrading. */
         /* If all firmware variations refer to base, don't require the current variation be present. */

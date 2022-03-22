@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -119,7 +119,7 @@ namespace ams::mitm {
         }
 
         bool IsValid(const CalibrationInfoHeader &header) {
-            return header.magic == CalibrationMagic && GetCrc16(std::addressof(header), OFFSETOF(CalibrationInfoHeader, crc)) == header.crc;
+            return header.magic == CalibrationMagic && GetCrc16(std::addressof(header), AMS_OFFSETOF(CalibrationInfoHeader, crc)) == header.crc;
         }
 
         bool IsValid(const CalibrationInfoHeader &header, const void *body) {
@@ -213,7 +213,7 @@ namespace ams::mitm {
             /* Set header. */
             info.header.magic       = CalibrationMagic;
             info.header.body_size   = sizeof(info.body);
-            info.header.crc         = GetCrc16(std::addressof(info.header), OFFSETOF(CalibrationInfoHeader, crc));
+            info.header.crc         = GetCrc16(std::addressof(info.header), AMS_OFFSETOF(CalibrationInfoHeader, crc));
 
             /* Set blocks. */
             Blank(info.GetBlock<SerialNumberBlock>());
@@ -222,8 +222,6 @@ namespace ams::mitm {
             Blank(info.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>());
             Blank(info.GetBlock<EcqvBlsAmiiboRootCertificateBlock>());
             Blank(info.GetBlock<ExtendedSslKeyBlock>());
-            if (IsValid(info.GetBlock<Rsa2048DeviceKeyBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceKeyBlock>())) Blank(info.GetBlock<Rsa2048DeviceKeyBlock>());
-            if (IsValid(info.GetBlock<Rsa2048DeviceCertificateBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceCertificateBlock>())) Blank(info.GetBlock<Rsa2048DeviceCertificateBlock>());
 
             /* Set header hash. */
             crypto::GenerateSha256Hash(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
@@ -299,28 +297,28 @@ namespace ams::mitm {
 
         void ReadStorageCalibrationBinary(CalibrationInfo *out) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, 0, out, sizeof(*out)));
+            R_ABORT_UNLESS(fsStorageRead(std::addressof(calibration_binary_storage), 0, out, sizeof(*out)));
         }
 
         constexpr inline const u8 SecureCalibrationBinaryBackupIv[crypto::Aes128CtrDecryptor::IvSize] = {};
 
         void ReadStorageEncryptedSecureCalibrationBinaryBackupUnsafe(SecureCalibrationInfoBackup *out) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, SecureCalibrationInfoBackupOffset, out, sizeof(*out)));
+            R_ABORT_UNLESS(fsStorageRead(std::addressof(calibration_binary_storage), SecureCalibrationInfoBackupOffset, out, sizeof(*out)));
         }
 
         void WriteStorageEncryptedSecureCalibrationBinaryBackupUnsafe(const SecureCalibrationInfoBackup *src) {
             FsStorage calibration_binary_storage;
-            R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-            ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
+            R_ABORT_UNLESS(fsOpenBisStorage(std::addressof(calibration_binary_storage), FsBisPartitionId_CalibrationBinary));
+            ON_SCOPE_EXIT { fsStorageClose(std::addressof(calibration_binary_storage)); };
 
-            R_ABORT_UNLESS(fsStorageWrite(&calibration_binary_storage, SecureCalibrationInfoBackupOffset, src, sizeof(*src)));
+            R_ABORT_UNLESS(fsStorageWrite(std::addressof(calibration_binary_storage), SecureCalibrationInfoBackupOffset, src, sizeof(*src)));
         }
 
         void GenerateSecureCalibrationBinaryBackupKey(void *dst, size_t dst_size) {
@@ -406,7 +404,7 @@ namespace ams::mitm {
 
             if (IsValidForSecureBackup(info)) {
                 GetSerialNumber(sn, info);
-                std::snprintf(dst, dst_size, "automatic_backups/%s_PRODINFO.bin", sn);
+                util::SNPrintf(dst, dst_size, "automatic_backups/%s_PRODINFO.bin", sn);
             } else {
                 Sha256Hash hash;
                 crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(info), sizeof(info));
@@ -414,13 +412,13 @@ namespace ams::mitm {
 
                 if (IsValid(info)) {
                     if (IsBlank(info)) {
-                        std::snprintf(dst, dst_size, "automatic_backups/BLANK_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                        util::SNPrintf(dst, dst_size, "automatic_backups/BLANK_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                     } else {
                         GetSerialNumber(sn, info);
-                        std::snprintf(dst, dst_size, "automatic_backups/%s_PRODINFO_%02X%02X%02X%02X.bin", sn, hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                        util::SNPrintf(dst, dst_size, "automatic_backups/%s_PRODINFO_%02X%02X%02X%02X.bin", sn, hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                     }
                 } else {
-                    std::snprintf(dst, dst_size, "automatic_backups/INVALID_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                    util::SNPrintf(dst, dst_size, "automatic_backups/INVALID_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                 }
             }
         }
@@ -433,7 +431,7 @@ namespace ams::mitm {
 
         alignas(os::MemoryPageSize) CalibrationInfo g_temp_calibration_info = {};
 
-        void SaveProdInfoBackup(std::optional<ams::fs::FileStorage> *dst, const CalibrationInfo &info) {
+        void SaveProdInfoBackup(util::optional<ams::fs::FileStorage> *dst, const CalibrationInfo &info) {
             char backup_fn[0x100];
             GetBackupFileName(backup_fn, sizeof(backup_fn), info);
 
@@ -503,18 +501,18 @@ namespace ams::mitm {
             crypto::EncryptAes128Ctr(dst, dst_size, entropy.data, crypto::Aes128CtrEncryptor::KeySize, entropy.data + crypto::Aes128CtrEncryptor::KeySize, crypto::Aes128CtrEncryptor::IvSize, dst, dst_size);
         }
 
-        alignas(os::MemoryPageSize) CalibrationInfo g_calibration_info = {};
-        alignas(os::MemoryPageSize) CalibrationInfo g_blank_calibration_info = {};
-        alignas(os::MemoryPageSize) SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
+        alignas(os::MemoryPageSize) constinit CalibrationInfo g_calibration_info = {};
+        alignas(os::MemoryPageSize) constinit CalibrationInfo g_blank_calibration_info = {};
+        alignas(os::MemoryPageSize) constinit SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
 
-        std::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
-        std::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
-        std::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
+        constinit util::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
+        constinit util::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
+        constinit util::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
 
-        bool g_allow_writes     = false;
-        bool g_has_secure_backup = false;
+        constinit bool g_allow_writes     = false;
+        constinit bool g_has_secure_backup = false;
 
-        os::Mutex g_prodinfo_management_lock(false);
+        constinit os::SdkMutex g_prodinfo_management_lock;
 
     }
 
@@ -583,7 +581,7 @@ namespace ams::mitm {
                 ON_SCOPE_EXIT { crypto::ClearMemory(std::addressof(hash), sizeof(hash)); };
                 crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(g_calibration_info), sizeof(g_calibration_info));
 
-                std::snprintf(out_name, out_name_size, "%02X%02X%02X%02X", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                util::SNPrintf(out_name, out_name_size, "%02X%02X%02X%02X", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
             }
             SaveProdInfoBackup(std::addressof(g_prodinfo_backup_file), g_calibration_info);
         }

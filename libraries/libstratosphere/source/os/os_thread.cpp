@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "impl/os_thread_manager.hpp"
 #include "impl/os_timeout_helper.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 
 namespace ams::os {
 
@@ -38,6 +38,8 @@ namespace ams::os {
             AMS_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(stack), ThreadStackAlignment));
             AMS_ASSERT(stack_size > 0);
             AMS_ASSERT(util::IsAligned(stack_size, ThreadStackAlignment));
+
+            AMS_UNUSED(thread, stack, stack_size, priority);
         }
 
     }
@@ -123,8 +125,9 @@ namespace ams::os {
 
             const s32 prev_prio = thread->base_priority;
 
-            bool success = impl::GetThreadManager().ChangePriority(thread, priority);
+            const bool success = impl::GetThreadManager().ChangePriority(thread, priority);
             AMS_ASSERT(success);
+            AMS_UNUSED(success);
 
             thread->base_priority = priority;
 

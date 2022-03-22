@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -53,5 +53,6 @@ namespace ams::hw::arch::arm64 {
     }
 
     void FlushDataCache(const void *ptr, size_t size);
+    void InvalidateDataCache(const void *ptr, size_t size);
 
 }

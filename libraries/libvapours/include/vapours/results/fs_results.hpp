@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -82,6 +82,7 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,              3249);
             R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplD,      3256);
             R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplE,      3257);
+            R_DEFINE_ERROR_RESULT(AllocationFailureInProgramRegistryManagerA,       3258);
             R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA,   3280);
             R_DEFINE_ERROR_RESULT(AllocationFailureInRomFileSystemCreatorA,         3281);
             R_DEFINE_ERROR_RESULT(AllocationFailureInStorageOnNcaCreatorA,          3288);
@@ -205,8 +206,10 @@ namespace ams::fs {
             R_DEFINE_ERROR_RANGE(NcaCorrupted, 4501, 4599);
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeA, 4508);
                 R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeB, 4509);
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeC, 4510);
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeD, 4511);
 
-                R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4511, 4529);
+                R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4512, 4529);
                     R_DEFINE_ERROR_RESULT(InvalidNcaFileSystemType,              4512);
                     R_DEFINE_ERROR_RESULT(InvalidAcidFileSize,                   4513);
                     R_DEFINE_ERROR_RESULT(InvalidAcidSize,                       4514);
@@ -226,6 +229,8 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(InvalidNcaHeader,                      4528);
                     R_DEFINE_ERROR_RESULT(InvalidNcaFsHeader,                    4529);
 
+                R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeE, 4530);
+
                 R_DEFINE_ERROR_RANGE(NcaHierarchicalSha256StorageCorrupted, 4531, 4539);
                     R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256BlockSize,       4532);
                     R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256LayerCount,      4533);
@@ -234,6 +239,9 @@ namespace ams::fs {
 
                 /* TODO: Range? */
                 R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration, 4543);
+
+                /* TODO: Range? */
+                R_DEFINE_ERROR_RESULT(InvalidCompressedStorageSize, 4547);
 
             R_DEFINE_ERROR_RANGE(IntegrityVerificationStorageCorrupted, 4601, 4639);
                  R_DEFINE_ERROR_RESULT(IncorrectIntegrityVerificationMagic,                4602);
@@ -257,6 +265,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(GptHeaderVerificationFailed, 4662);
 
             R_DEFINE_ERROR_RANGE(FatFileSystemCorrupted, 4681, 4699);
+                R_DEFINE_ERROR_RESULT(ExFatUnavailable, 4685);
 
             R_DEFINE_ERROR_RANGE(HostFileSystemCorrupted, 4701, 4719);
                 R_DEFINE_ERROR_RESULT(HostEntryCorrupted,    4702);
@@ -275,9 +284,12 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(GameCardLogoDataCorrupted, 4781);
 
         R_DEFINE_ERROR_RANGE(Unexpected, 5000, 5999);
-            R_DEFINE_ERROR_RESULT(UnexpectedInAesCtrStorageA,  5315);
-            R_DEFINE_ERROR_RESULT(UnexpectedInAesXtsStorageA,  5316);
-            R_DEFINE_ERROR_RESULT(UnexpectedInFindFileSystemA, 5319);
+            R_DEFINE_ERROR_RESULT(UnexpectedInAesCtrStorageA,     5315);
+            R_DEFINE_ERROR_RESULT(UnexpectedInAesXtsStorageA,     5316);
+            R_DEFINE_ERROR_RESULT(UnexpectedInFindFileSystemA,    5319);
+            R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageA, 5324);
+            R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageB, 5325);
+            R_DEFINE_ERROR_RESULT(UnexpectedInCompressedStorageC, 5326);
 
         R_DEFINE_ERROR_RANGE(PreconditionViolation, 6000, 6499);
             R_DEFINE_ERROR_RANGE(InvalidArgument, 6001, 6199);
@@ -360,9 +372,11 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemB,                       6375);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileA,                             6376);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileB,                             6377);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperationInCompressedStorageA,                         6387);
 
                 R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 
+                R_DEFINE_ERROR_RESULT(PortAcceptableCountLimited, 6450);
                 R_DEFINE_ERROR_RESULT(NeedFlush, 6454);
                 R_DEFINE_ERROR_RESULT(FileNotClosed, 6455);
                 R_DEFINE_ERROR_RESULT(DirectoryNotClosed, 6456);
@@ -373,6 +387,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(UserNotExist,           6465);
 
         R_DEFINE_ERROR_RANGE(NotFound, 6600, 6699);
+            R_DEFINE_ERROR_RESULT(ProgramInfoNotFound, 6605);
 
         R_DEFINE_ERROR_RANGE(OutOfResource, 6700, 6799);
             R_DEFINE_ERROR_RESULT(BufferAllocationFailed, 6705);

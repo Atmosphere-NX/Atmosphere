@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,58 +14,62 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "impl/fs_newable.hpp"
-#include "fs_istorage.hpp"
+#include <stratosphere/fs/impl/fs_newable.hpp>
+#include <stratosphere/fs/fs_istorage.hpp>
 
 namespace ams::fs {
 
     class SubStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
-            std::shared_ptr<IStorage> shared_base_storage;
-            fs::IStorage *base_storage;
-            s64 offset;
-            s64 size;
-            bool resizable;
+            std::shared_ptr<IStorage> m_shared_base_storage;
+            fs::IStorage *m_base_storage;
+            s64 m_offset;
+            s64 m_size;
+            bool m_resizable;
         private:
             constexpr bool IsValid() const {
-                return this->base_storage != nullptr;
+                return m_base_storage != nullptr;
             }
         public:
-            SubStorage() : shared_base_storage(), base_storage(nullptr), offset(0), size(0), resizable(false) { /* ... */ }
+            SubStorage() : m_shared_base_storage(), m_base_storage(nullptr), m_offset(0), m_size(0), m_resizable(false) { /* ... */ }
 
-            SubStorage(const SubStorage &rhs) : shared_base_storage(), base_storage(rhs.base_storage), offset(rhs.offset), size(rhs.size), resizable(rhs.resizable) { /* ... */}
+            SubStorage(const SubStorage &rhs) : m_shared_base_storage(rhs.m_shared_base_storage), m_base_storage(rhs.m_base_storage), m_offset(rhs.m_offset), m_size(rhs.m_size), m_resizable(rhs.m_resizable) { /* ... */}
             SubStorage &operator=(const SubStorage &rhs) {
                 if (this != std::addressof(rhs)) {
-                    this->base_storage        = rhs.base_storage;
-                    this->offset              = rhs.offset;
-                    this->size                = rhs.size;
-                    this->resizable           = rhs.resizable;
+                    m_shared_base_storage = rhs.m_shared_base_storage;
+                    m_base_storage        = rhs.m_base_storage;
+                    m_offset              = rhs.m_offset;
+                    m_size                = rhs.m_size;
+                    m_resizable           = rhs.m_resizable;
                 }
                 return *this;
             }
 
-            SubStorage(IStorage *storage, s64 o, s64 sz) : shared_base_storage(), base_storage(storage), offset(o), size(sz), resizable(false) {
+            SubStorage(IStorage *storage, s64 o, s64 sz) : m_shared_base_storage(), m_base_storage(storage), m_offset(o), m_size(sz), m_resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
-                AMS_ABORT_UNLESS(this->offset  >= 0);
-                AMS_ABORT_UNLESS(this->size    >= 0);
+                AMS_ABORT_UNLESS(m_offset  >= 0);
+                AMS_ABORT_UNLESS(m_size    >= 0);
             }
 
-            SubStorage(std::shared_ptr<IStorage> storage, s64 o, s64 sz) : shared_base_storage(storage), base_storage(storage.get()), offset(o), size(sz), resizable(false) {
+            SubStorage(std::shared_ptr<IStorage> storage, s64 o, s64 sz) : m_shared_base_storage(storage), m_base_storage(storage.get()), m_offset(o), m_size(sz), m_resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
-                AMS_ABORT_UNLESS(this->offset  >= 0);
-                AMS_ABORT_UNLESS(this->size    >= 0);
+                AMS_ABORT_UNLESS(m_offset  >= 0);
+                AMS_ABORT_UNLESS(m_size    >= 0);
             }
 
-            SubStorage(SubStorage *sub, s64 o, s64 sz) : shared_base_storage(), base_storage(sub->base_storage), offset(o + sub->offset), size(sz), resizable(false) {
+            SubStorage(SubStorage *sub, s64 o, s64 sz) : m_shared_base_storage(sub->m_shared_base_storage), m_base_storage(sub->m_base_storage), m_offset(o + sub->m_offset), m_size(sz), m_resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
-                AMS_ABORT_UNLESS(this->offset  >= 0);
-                AMS_ABORT_UNLESS(this->size    >= 0);
-                AMS_ABORT_UNLESS(sub->size     >= o + sz);
+                AMS_ABORT_UNLESS(m_offset    >= 0);
+                AMS_ABORT_UNLESS(m_size      >= 0);
+                AMS_ABORT_UNLESS(sub->m_size >= o + sz);
             }
 
+            ALWAYS_INLINE ::ams::fs::IStorage *operator->() {
+                return this;
+            }
         public:
             void SetResizable(bool rsz) {
-                this->resizable = rsz;
+                m_resizable = rsz;
             }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
@@ -78,8 +82,8 @@ namespace ams::fs {
 
                 /* Validate arguments and read. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
-                return this->base_storage->Read(this->offset + offset, buffer, size);
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+                return m_base_storage->Read(m_offset + offset, buffer, size);
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override{
@@ -91,30 +95,30 @@ namespace ams::fs {
 
                 /* Validate arguments and write. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
-                return this->base_storage->Write(this->offset + offset, buffer, size);
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
+                return m_base_storage->Write(m_offset + offset, buffer, size);
             }
 
             virtual Result Flush() override {
                 R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
-                return this->base_storage->Flush();
+                return m_base_storage->Flush();
             }
 
             virtual Result SetSize(s64 size) override {
                 /* Ensure we're initialized and validate arguments. */
-                R_UNLESS(this->IsValid(),                                    fs::ResultNotInitialized());
-                R_UNLESS(this->resizable,                                    fs::ResultUnsupportedOperationInSubStorageA());
-                R_UNLESS(IStorage::IsOffsetAndSizeValid(this->offset, size), fs::ResultInvalidSize());
+                R_UNLESS(this->IsValid(),                              fs::ResultNotInitialized());
+                R_UNLESS(m_resizable,                                  fs::ResultUnsupportedOperationInSubStorageA());
+                R_UNLESS(IStorage::CheckOffsetAndSize(m_offset, size), fs::ResultInvalidSize());
 
                 /* Ensure that we're allowed to set size. */
                 s64 cur_size;
-                R_TRY(this->base_storage->GetSize(std::addressof(cur_size)));
-                R_UNLESS(cur_size == this->offset + this->size, fs::ResultUnsupportedOperationInSubStorageB());
+                R_TRY(m_base_storage->GetSize(std::addressof(cur_size)));
+                R_UNLESS(cur_size == m_offset + m_size, fs::ResultUnsupportedOperationInSubStorageB());
 
                 /* Set the size. */
-                R_TRY(this->base_storage->SetSize(this->offset + size));
+                R_TRY(m_base_storage->SetSize(m_offset + size));
 
-                this->size = size;
+                m_size = size;
                 return ResultSuccess();
             }
 
@@ -122,7 +126,7 @@ namespace ams::fs {
                 /* Ensure we're initialized. */
                 R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
 
-                *out = this->size;
+                *out = m_size;
                 return ResultSuccess();
             }
 
@@ -134,8 +138,8 @@ namespace ams::fs {
                 R_SUCCEED_IF(size == 0);
 
                 /* Validate arguments and operate. */
-                R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
-                return this->base_storage->OperateRange(dst, dst_size, op_id, this->offset + offset, size, src, src_size);
+                R_UNLESS(IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
+                return m_base_storage->OperateRange(dst, dst_size, op_id, m_offset + offset, size, src, src_size);
             }
 
             using IStorage::OperateRange;

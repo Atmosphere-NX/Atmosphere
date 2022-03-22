@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "fsa/fs_mount_utils.hpp"
+#include "impl/fs_event_notifier_object_adapter.hpp"
 
 namespace ams::fs {
 
@@ -34,8 +35,9 @@ namespace ams::fs {
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
-                    auto size = std::snprintf(dst, dst_size, "%s:", impl::SdCardFileSystemMountName);
+                    const auto size = util::SNPrintf(dst, dst_size, "%s:", impl::SdCardFileSystemMountName);
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
+                    AMS_UNUSED(size);
 
                     return ResultSuccess();
                 }
@@ -85,6 +87,32 @@ namespace ams::fs {
 
         /* Register. */
         return fsa::Register(name, std::move(subdir_fs));
+    }
+
+    Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out) {
+        /* Try to open an event notifier. */
+        FsEventNotifier notifier;
+        AMS_FS_R_TRY(fsOpenSdCardDetectionEventNotifier(std::addressof(notifier)));
+
+        /* Create an event notifier adapter. */
+        auto adapter = std::make_unique<impl::RemoteEventNotifierObjectAdapter>(notifier);
+        R_UNLESS(adapter != nullptr, fs::ResultAllocationFailureInSdCardB());
+
+        *out = std::move(adapter);
+        return ResultSuccess();
+    }
+
+    bool IsSdCardInserted() {
+        /* Open device operator. */
+        FsDeviceOperator device_operator;
+        AMS_FS_R_ABORT_UNLESS(::fsOpenDeviceOperator(std::addressof(device_operator)));
+        ON_SCOPE_EXIT { ::fsDeviceOperatorClose(std::addressof(device_operator)); };
+
+        /* Get SD card inserted. */
+        bool inserted;
+        AMS_FS_R_ABORT_UNLESS(::fsDeviceOperatorIsSdCardInserted(std::addressof(device_operator), std::addressof(inserted)));
+
+        return inserted;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,6 +23,18 @@ namespace ams::lr {
 
         bool g_initialized;
 
+        /* TODO: This belongs inside lr_location_resolver_manager_factory */
+        struct LocationResolverManagerAllocatorTag;
+        using LocationResolverManagerAllocator = sf::ExpHeapStaticAllocator<1_KB, LocationResolverManagerAllocatorTag>;
+
+        using LocationResolverManagerFactory = sf::ObjectFactory<typename LocationResolverManagerAllocator::Policy>;
+
+        class StaticAllocatorInitializer {
+            public:
+                StaticAllocatorInitializer() {
+                    LocationResolverManagerAllocator::Initialize(lmem::CreateOption_None);
+                }
+        } g_static_allocator_initializer;
     }
 
     void Initialize() {
@@ -42,7 +54,7 @@ namespace ams::lr {
         LrLocationResolver lr;
         R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(storage_id), std::addressof(lr)));
 
-        *out = LocationResolver(sf::MakeShared<ILocationResolver, RemoteLocationResolverImpl>(lr));
+        *out = LocationResolver(LocationResolverManagerFactory::CreateSharedEmplaced<ILocationResolver, RemoteLocationResolverImpl>(lr));
         return ResultSuccess();
     }
 
@@ -50,17 +62,19 @@ namespace ams::lr {
         LrRegisteredLocationResolver lr;
         R_TRY(lrOpenRegisteredLocationResolver(std::addressof(lr)));
 
-        *out = RegisteredLocationResolver(sf::MakeShared<IRegisteredLocationResolver, RemoteRegisteredLocationResolverImpl>(lr));
+        *out = RegisteredLocationResolver(LocationResolverManagerFactory::CreateSharedEmplaced<IRegisteredLocationResolver, RemoteRegisteredLocationResolverImpl>(lr));
         return ResultSuccess();
     }
 
     Result OpenAddOnContentLocationResolver(AddOnContentLocationResolver *out) {
         /* TODO: libnx binding */
+        AMS_UNUSED(out);
         AMS_ABORT();
     }
 
     Result RefreshLocationResolver(ncm::StorageId storage_id) {
         /* TODO: libnx binding */
+        AMS_UNUSED(storage_id);
         AMS_ABORT();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,43 +28,45 @@ namespace ams::fs {
             NON_COPYABLE(ReadOnlyFile);
             NON_MOVEABLE(ReadOnlyFile);
             private:
-                std::unique_ptr<fsa::IFile> base_file;
+                std::unique_ptr<fsa::IFile> m_base_file;
             public:
-                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : base_file(std::move(f)) { /* ... */ }
+                explicit ReadOnlyFile(std::unique_ptr<fsa::IFile> &&f) : m_base_file(std::move(f)) { /* ... */ }
                 virtual ~ReadOnlyFile() { /* ... */ }
             private:
-                virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
-                    return this->base_file->Read(out, offset, buffer, size, option);
+                virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
+                    return m_base_file->Read(out, offset, buffer, size, option);
                 }
 
-                virtual Result GetSizeImpl(s64 *out) override final {
-                    return this->base_file->GetSize(out);
+                virtual Result DoGetSize(s64 *out) override final {
+                    return m_base_file->GetSize(out);
                 }
 
-                virtual Result FlushImpl() override final {
+                virtual Result DoFlush() override final {
                     return ResultSuccess();
                 }
 
-                virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
+                virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
+                    AMS_UNUSED(offset, buffer, size, option);
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 
-                virtual Result SetSizeImpl(s64 size) override final {
+                virtual Result DoSetSize(s64 size) override final {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInReadOnlyFileA();
                 }
 
-                virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
+                virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
                     switch (op_id) {
-                        case OperationId::InvalidateCache:
+                        case OperationId::Invalidate:
                         case OperationId::QueryRange:
-                            return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+                            return m_base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
                         default:
                             return fs::ResultUnsupportedOperationInReadOnlyFileB();
                     }
                 }
             public:
                 virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
-                    return this->base_file->GetDomainObjectId();
+                    return m_base_file->GetDomainObjectId();
                 }
         };
 
@@ -75,17 +77,17 @@ namespace ams::fs {
         NON_COPYABLE(ReadOnlyFileSystemTemplate);
         NON_MOVEABLE(ReadOnlyFileSystemTemplate);
         private:
-            T base_fs;
+            T m_base_fs;
         public:
-            explicit ReadOnlyFileSystemTemplate(T &&fs) : base_fs(std::move(fs)) { /* ... */ }
+            explicit ReadOnlyFileSystemTemplate(T &&fs) : m_base_fs(std::move(fs)) { /* ... */ }
             virtual ~ReadOnlyFileSystemTemplate() { /* ... */ }
         private:
-            virtual Result OpenFileImpl(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+            virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
                 /* Only allow opening files with mode = read. */
                 R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
                 std::unique_ptr<fsa::IFile> base_file;
-                R_TRY(this->base_fs->OpenFile(std::addressof(base_file), path, mode));
+                R_TRY(m_base_fs->OpenFile(std::addressof(base_file), path, mode));
 
                 auto read_only_file = std::make_unique<ReadOnlyFile>(std::move(base_file));
                 R_UNLESS(read_only_file != nullptr, fs::ResultAllocationFailureInReadOnlyFileSystemA());
@@ -94,59 +96,70 @@ namespace ams::fs {
                 return ResultSuccess();
             }
 
-            virtual Result OpenDirectoryImpl(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
-                return this->base_fs->OpenDirectory(out_dir, path, mode);
+            virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
+                return m_base_fs->OpenDirectory(out_dir, path, mode);
             }
 
-            virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const char *path) override final {
-                return this->base_fs->GetEntryType(out, path);
+            virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
+                return m_base_fs->GetEntryType(out, path);
             }
 
-            virtual Result CommitImpl() override final {
+            virtual Result DoCommit() override final {
                 return ResultSuccess();
             }
 
-            virtual Result CreateFileImpl(const char *path, s64 size, int flags) override final {
+            virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
+                AMS_UNUSED(path, size, flags);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DeleteFileImpl(const char *path) override final {
+            virtual Result DoDeleteFile(const char *path) override final {
+                AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result CreateDirectoryImpl(const char *path) override final {
+            virtual Result DoCreateDirectory(const char *path) override final {
+                AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DeleteDirectoryImpl(const char *path) override final {
+            virtual Result DoDeleteDirectory(const char *path) override final {
+                AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result DeleteDirectoryRecursivelyImpl(const char *path) override final {
+            virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
+                AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result RenameFileImpl(const char *old_path, const char *new_path) override final {
+            virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
+                AMS_UNUSED(old_path, new_path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override final {
+            virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
+                AMS_UNUSED(old_path, new_path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result CleanDirectoryRecursivelyImpl(const char *path) override final {
+            virtual Result DoCleanDirectoryRecursively(const char *path) override final {
+                AMS_UNUSED(path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateA();
             }
 
-            virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) override final {
+            virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override final {
+                AMS_UNUSED(out, path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateB();
             }
 
-            virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) override final {
+            virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override final {
+                AMS_UNUSED(out, path);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateB();
             }
 
-            virtual Result CommitProvisionallyImpl(s64 counter) override final {
+            virtual Result DoCommitProvisionally(s64 counter) override final {
+                AMS_UNUSED(counter);
                 return fs::ResultUnsupportedOperationInReadOnlyFileSystemTemplateC();
             }
     };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -187,6 +187,11 @@ namespace ams::svc::codegen::impl {
             template<size_t Dst, size_t Src>
             static ALWAYS_INLINE void MoveRegister() {
                 __asm__ __volatile__("mov     x%c[dst], x%c[src]" :: [dst]"i"(Dst), [src]"i"(Src) : "memory");
+            }
+
+            template<size_t Reg>
+            static ALWAYS_INLINE void ConvertToBoolean() {
+                __asm__ __volatile__("and     x%c[reg], x%c[reg], #1" :: [reg]"i"(Reg) : "memory");
             }
 
             template<size_t Reg, size_t Offset, size_t Size>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,11 +19,7 @@
 #include <stratosphere/fatal/fatal_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::fatal::impl {
+#define AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H)                                   \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetFatalEvent, (sf::OutCopyHandle out_h), (out_h))
 
-    #define AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H)                            \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, GetFatalEvent, (sf::OutCopyHandle out_h))
-
-    AMS_SF_DEFINE_INTERFACE(IPrivateService, AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::fatal::impl, IPrivateService, AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO)

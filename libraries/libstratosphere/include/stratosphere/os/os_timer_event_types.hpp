@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,12 +24,12 @@ namespace ams::os {
 
     namespace impl {
 
-        class WaitableObjectList;
+        class MultiWaitObjectList;
 
     }
 
     struct TimerEventType {
-        using TimeSpanStorage = TYPED_STORAGE(TimeSpan);
+        using TimeSpanStorage = util::TypedStorage<TimeSpan>;
 
         enum State {
             State_NotInitialized = 0,
@@ -42,7 +42,7 @@ namespace ams::os {
             TimerState_Periodic = 2,
         };
 
-        util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
+        util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> multi_wait_object_list_storage;
 
         u8 state;
         u8 clear_mode;

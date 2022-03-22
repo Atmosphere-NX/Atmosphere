@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -37,27 +37,28 @@ namespace ams::fssystem::save {
             };
             static_assert(util::is_pod<BlockHash>::value);
         private:
-            fs::SubStorage hash_storage;
-            fs::SubStorage data_storage;
-            s64 verification_block_size;
-            s64 verification_block_order;
-            s64 upper_layer_verification_block_size;
-            s64 upper_layer_verification_block_order;
-            IBufferManager *buffer_manager;
-            fs::HashSalt salt;
-            bool is_real_data;
-            fs::StorageType storage_type;
+            fs::SubStorage m_hash_storage;
+            fs::SubStorage m_data_storage;
+            s64 m_verification_block_size;
+            s64 m_verification_block_order;
+            s64 m_upper_layer_verification_block_size;
+            s64 m_upper_layer_verification_block_order;
+            IBufferManager *m_buffer_manager;
+            fs::HashSalt m_salt;
+            bool m_is_real_data;
+            fs::StorageType m_storage_type;
+            fssystem::IHash256GeneratorFactory *m_hash_generator_factory;
         public:
-            IntegrityVerificationStorage() : verification_block_size(0), verification_block_order(0), upper_layer_verification_block_size(0), upper_layer_verification_block_order(0), buffer_manager(nullptr) { /* ... */ }
+            IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
+            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64 size) override { return fs::ResultUnsupportedOperationInIntegrityVerificationStorageA(); }
+            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInIntegrityVerificationStorageA(); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;
@@ -65,18 +66,23 @@ namespace ams::fssystem::save {
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
             using IStorage::OperateRange;
 
-            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const;
+            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size) const {
+                auto generator = m_hash_generator_factory->Create();
+                return this->CalcBlockHash(out, buffer, block_size, generator);
+            }
 
             s64 GetBlockSize() const {
-                return this->verification_block_size;
+                return m_verification_block_size;
             }
         private:
             Result ReadBlockSignature(void *dst, size_t dst_size, s64 offset, size_t size);
             Result WriteBlockSignature(const void *src, size_t src_size, s64 offset, size_t size);
-            Result VerifyHash(const void *buf, BlockHash *hash);
+            Result VerifyHash(const void *buf, BlockHash *hash, std::unique_ptr<fssystem::IHash256Generator> &generator);
 
-            void CalcBlockHash(BlockHash *out, const void *buffer) const {
-                return this->CalcBlockHash(out, buffer, static_cast<size_t>(this->verification_block_size));
+            void CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const;
+
+            void CalcBlockHash(BlockHash *out, const void *buffer, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
+                return this->CalcBlockHash(out, buffer, static_cast<size_t>(m_verification_block_size), generator);
             }
 
             Result IsCleared(bool *is_cleared, const BlockHash &hash);

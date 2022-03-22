@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -38,7 +38,7 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RESULT(InvalidInstallTaskState,                  160);
     R_DEFINE_ERROR_RESULT(InvalidPlaceHolderFile,                   170);
     R_DEFINE_ERROR_RESULT(BufferInsufficient,                       180);
-    R_DEFINE_ERROR_RESULT(WriteToReadOnlyContentStorage,            190);
+    R_DEFINE_ERROR_RESULT(NotSupported,                             190);
     R_DEFINE_ERROR_RESULT(NotEnoughInstallSpace,                    200);
     R_DEFINE_ERROR_RESULT(SystemUpdateNotFoundInPackage,            210);
     R_DEFINE_ERROR_RESULT(ContentInfoNotFound,                      220);
@@ -69,6 +69,7 @@ namespace ams::ncm {
         R_DEFINE_ERROR_RESULT(CreatePlaceHolderCancelled,                   291);
         R_DEFINE_ERROR_RESULT(WritePlaceHolderCancelled,                    292);
 
+    R_DEFINE_ERROR_RESULT(InvalidOperation,                                 8180);
     R_DEFINE_ERROR_RANGE(InvalidArgument, 8181, 8191);
         R_DEFINE_ERROR_RESULT(InvalidOffset, 8182);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,23 +29,29 @@ namespace ams::kern {
             static constexpr size_t RegionsPerPage = PageSize / ams::svc::ThreadLocalRegionSize;
             static_assert(RegionsPerPage > 0);
         private:
-            KProcessAddress virt_addr;
-            KProcess *owner;
-            bool is_region_free[RegionsPerPage];
+            KProcessAddress m_virt_addr;
+            KProcess *m_owner;
+            bool m_is_region_free[RegionsPerPage];
         public:
-            constexpr explicit KThreadLocalPage(KProcessAddress addr) : virt_addr(addr), owner(nullptr), is_region_free() {
-                for (size_t i = 0; i < RegionsPerPage; i++) {
-                    this->is_region_free[i] = true;
+            explicit KThreadLocalPage(KProcessAddress addr) : m_virt_addr(addr), m_owner(nullptr) {
+                for (size_t i = 0; i < util::size(m_is_region_free); i++) {
+                    m_is_region_free[i] = true;
                 }
             }
 
-            constexpr explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
+            explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return this->virt_addr; }
+            constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return m_virt_addr; }
+        public:
+            using RedBlackKeyType = KProcessAddress;
 
-            static constexpr ALWAYS_INLINE int Compare(const KThreadLocalPage &lhs, const KThreadLocalPage &rhs) {
-                const KProcessAddress lval = lhs.GetAddress();
-                const KProcessAddress rval = rhs.GetAddress();
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const RedBlackKeyType  &v) { return v; }
+            static constexpr ALWAYS_INLINE RedBlackKeyType GetRedBlackKey(const KThreadLocalPage &v) { return v.GetAddress(); }
+
+            template<typename T> requires (std::same_as<T, KThreadLocalPage> || std::same_as<T, RedBlackKeyType>)
+            static constexpr ALWAYS_INLINE int Compare(const T &lhs, const KThreadLocalPage &rhs) {
+                const KProcessAddress lval = GetRedBlackKey(lhs);
+                const KProcessAddress rval = GetRedBlackKey(rhs);
 
                 if (lval < rval) {
                     return -1;
@@ -80,7 +86,7 @@ namespace ams::kern {
 
             bool IsAllUsed() const {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
-                    if (this->is_region_free[i]) {
+                    if (m_is_region_free[i]) {
                         return false;
                     }
                 }
@@ -89,7 +95,7 @@ namespace ams::kern {
 
             bool IsAllFree() const {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
-                    if (!this->is_region_free[i]) {
+                    if (!m_is_region_free[i]) {
                         return false;
                     }
                 }
@@ -104,5 +110,11 @@ namespace ams::kern {
                 return !this->IsAllUsed();
             }
     };
+
+    /* Miscellaneous sanity checking. */
+    static_assert(ams::svc::ThreadLocalRegionSize == THREAD_LOCAL_REGION_SIZE);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, message_buffer) == THREAD_LOCAL_REGION_MESSAGE_BUFFER);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, disable_count)  == THREAD_LOCAL_REGION_DISABLE_COUNT);
+    static_assert(AMS_OFFSETOF(ams::svc::ThreadLocalRegion, interrupt_flag) == THREAD_LOCAL_REGION_INTERRUPT_FLAG);
 
 }

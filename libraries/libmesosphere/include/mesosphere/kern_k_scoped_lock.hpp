@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,11 +29,11 @@ namespace ams::kern {
         NON_COPYABLE(KScopedLock);
         NON_MOVEABLE(KScopedLock);
         private:
-            T *lock_ptr;
+            T &m_lock;
         public:
-            explicit ALWAYS_INLINE KScopedLock(T *l) : lock_ptr(l) { this->lock_ptr->Lock(); }
-            explicit ALWAYS_INLINE KScopedLock(T &l) : KScopedLock(std::addressof(l)) { /* ... */ }
-            ALWAYS_INLINE ~KScopedLock() { this->lock_ptr->Unlock(); }
+            explicit ALWAYS_INLINE KScopedLock(T &l) : m_lock(l) { m_lock.Lock(); }
+            explicit ALWAYS_INLINE KScopedLock(T *l) : KScopedLock(*l) { /* ... */ }
+            ALWAYS_INLINE ~KScopedLock() { m_lock.Unlock(); }
     };
 
 }

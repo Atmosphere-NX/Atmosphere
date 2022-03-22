@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,43 +24,14 @@ namespace ams::kern {
 
     class KLightConditionVariable {
         private:
-            KThreadQueue thread_queue;
+            KThread::WaiterList m_wait_list;
         public:
-            constexpr ALWAYS_INLINE KLightConditionVariable() : thread_queue() { /* ... */ }
-        private:
-            void WaitImpl(KLightLock *lock, s64 timeout) {
-                KThread *owner = GetCurrentThreadPointer();
-                KHardwareTimer *timer;
+            constexpr explicit ALWAYS_INLINE KLightConditionVariable(util::ConstantInitializeTag) : m_wait_list() { /* ... */ }
 
-                /* Sleep the thread. */
-                {
-                    KScopedSchedulerLockAndSleep lk(&timer, owner, timeout);
-                    lock->Unlock();
-
-                    if (!this->thread_queue.SleepThread(owner)) {
-                        lk.CancelSleep();
-                        return;
-                    }
-                }
-
-                /* Cancel the task that the sleep setup. */
-                if (timer != nullptr) {
-                    timer->CancelTask(owner);
-                }
-            }
+            explicit ALWAYS_INLINE KLightConditionVariable() { /* ... */ }
         public:
-            void Wait(KLightLock *lock, s64 timeout = -1ll) {
-                this->WaitImpl(lock, timeout);
-                lock->Lock();
-            }
-
-            void Broadcast() {
-                KScopedSchedulerLock lk;
-                while (this->thread_queue.WakeupFrontThread() != nullptr) {
-                    /* We want to signal all threads, and so should continue waking up until there's nothing to wake. */
-                }
-            }
-
+            void Wait(KLightLock *lock, s64 timeout = -1ll, bool allow_terminating_thread = true);
+            void Broadcast();
     };
 
 }

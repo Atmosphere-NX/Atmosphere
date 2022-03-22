@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,13 +21,13 @@ namespace ams::kern::arch::arm64 {
 
         class AlignedMemoryBlock {
             private:
-                uintptr_t before_start;
-                uintptr_t before_end;
-                uintptr_t after_start;
-                uintptr_t after_end;
-                size_t current_alignment;
+                uintptr_t m_before_start;
+                uintptr_t m_before_end;
+                uintptr_t m_after_start;
+                uintptr_t m_after_end;
+                size_t m_current_alignment;
             public:
-                constexpr AlignedMemoryBlock(uintptr_t start, size_t num_pages, size_t alignment) : before_start(0), before_end(0), after_start(0), after_end(0), current_alignment(0) {
+                constexpr AlignedMemoryBlock(uintptr_t start, size_t num_pages, size_t alignment) : m_before_start(0), m_before_end(0), m_after_start(0), m_after_end(0), m_current_alignment(0) {
                     MESOSPHERE_ASSERT(util::IsAligned(start, PageSize));
                     MESOSPHERE_ASSERT(num_pages > 0);
 
@@ -38,41 +38,41 @@ namespace ams::kern::arch::arm64 {
                         alignment = KPageTable::GetSmallerAlignment(alignment * PageSize) / PageSize;
                     }
 
-                    this->before_start      = start_page;
-                    this->before_end        = util::AlignUp(start_page, alignment);
-                    this->after_start       = this->before_end;
-                    this->after_end         = start_page + num_pages;
-                    this->current_alignment = alignment;
-                    MESOSPHERE_ASSERT(this->current_alignment > 0);
+                    m_before_start      = start_page;
+                    m_before_end        = util::AlignUp(start_page, alignment);
+                    m_after_start       = m_before_end;
+                    m_after_end         = start_page + num_pages;
+                    m_current_alignment = alignment;
+                    MESOSPHERE_ASSERT(m_current_alignment > 0);
                 }
 
                 constexpr void SetAlignment(size_t alignment) {
                     /* We can only ever decrease the granularity. */
-                    MESOSPHERE_ASSERT(this->current_alignment >= alignment / PageSize);
-                    this->current_alignment = alignment / PageSize;
+                    MESOSPHERE_ASSERT(m_current_alignment >= alignment / PageSize);
+                    m_current_alignment = alignment / PageSize;
                 }
 
                 constexpr size_t GetAlignment() const {
-                    return this->current_alignment * PageSize;
+                    return m_current_alignment * PageSize;
                 }
 
                 constexpr void FindBlock(uintptr_t &out, size_t &num_pages) {
-                    if ((this->after_end - this->after_start) >= this->current_alignment) {
+                    if ((m_after_end - m_after_start) >= m_current_alignment) {
                         /* Select aligned memory from after block. */
-                        const size_t available_pages = util::AlignDown(this->after_end, this->current_alignment) - this->after_start;
+                        const size_t available_pages = util::AlignDown(m_after_end, m_current_alignment) - m_after_start;
                         if (num_pages == 0 || available_pages < num_pages) {
                             num_pages = available_pages;
                         }
-                        out = this->after_start * PageSize;
-                        this->after_start += num_pages;
-                    } else if ((this->before_end - this->before_start) >= this->current_alignment) {
+                        out = m_after_start * PageSize;
+                        m_after_start += num_pages;
+                    } else if ((m_before_end - m_before_start) >= m_current_alignment) {
                         /* Select aligned memory from before block. */
-                        const size_t available_pages = this->before_end - util::AlignUp(this->before_start, this->current_alignment);
+                        const size_t available_pages = m_before_end - util::AlignUp(m_before_start, m_current_alignment);
                         if (num_pages == 0 || available_pages < num_pages) {
                             num_pages = available_pages;
                         }
-                        this->before_end -= num_pages;
-                        out = this->before_end * PageSize;
+                        m_before_end -= num_pages;
+                        out = m_before_end * PageSize;
                     } else {
                         /* Neither after or before can get an aligned bit of memory. */
                         out = 0;
@@ -95,32 +95,32 @@ namespace ams::kern::arch::arm64 {
                 static constexpr size_t NumWords = AsidCount / BitsPerWord;
                 static constexpr WordType FullWord = ~WordType(0u);
             private:
-                WordType state[NumWords];
-                KLightLock lock;
-                u8 hint;
+                WordType m_state[NumWords];
+                KLightLock m_lock;
+                u8 m_hint;
             private:
                 constexpr bool TestImpl(u8 asid) const {
-                    return this->state[asid / BitsPerWord] & (1u << (asid % BitsPerWord));
+                    return m_state[asid / BitsPerWord] & (1u << (asid % BitsPerWord));
                 }
                 constexpr void ReserveImpl(u8 asid) {
                     MESOSPHERE_ASSERT(!this->TestImpl(asid));
-                    this->state[asid / BitsPerWord] |= (1u << (asid % BitsPerWord));
+                    m_state[asid / BitsPerWord] |= (1u << (asid % BitsPerWord));
                 }
 
                 constexpr void ReleaseImpl(u8 asid) {
                     MESOSPHERE_ASSERT(this->TestImpl(asid));
-                    this->state[asid / BitsPerWord] &= ~(1u << (asid % BitsPerWord));
+                    m_state[asid / BitsPerWord] &= ~(1u << (asid % BitsPerWord));
                 }
 
                 constexpr u8 FindAvailable() const {
-                    for (size_t i = 0; i < util::size(this->state); i++) {
-                        if (this->state[i] == FullWord) {
+                    for (size_t i = 0; i < util::size(m_state); i++) {
+                        if (m_state[i] == FullWord) {
                             continue;
                         }
-                        const WordType clear_bit = (this->state[i] + 1) ^ (this->state[i]);
+                        const WordType clear_bit = (m_state[i] + 1) ^ (m_state[i]);
                         return BitsPerWord * i + BitsPerWord - 1 - ClearLeadingZero(clear_bit);
                     }
-                    if (this->state[util::size(this->state)-1] == FullWord) {
+                    if (m_state[util::size(m_state)-1] == FullWord) {
                         MESOSPHERE_PANIC("Unable to reserve ASID");
                     }
                     __builtin_unreachable();
@@ -130,26 +130,26 @@ namespace ams::kern::arch::arm64 {
                     return __builtin_clzll(value) - (BITSIZEOF(unsigned long long) - BITSIZEOF(WordType));
                 }
             public:
-                constexpr KPageTableAsidManager() : state(), lock(), hint() {
+                constexpr KPageTableAsidManager() : m_state(), m_lock(), m_hint() {
                     for (size_t i = 0; i < NumReservedAsids; i++) {
                         this->ReserveImpl(ReservedAsids[i]);
                     }
                 }
 
                 u8 Reserve() {
-                    KScopedLightLock lk(this->lock);
+                    KScopedLightLock lk(m_lock);
 
-                    if (this->TestImpl(this->hint)) {
-                        this->hint = this->FindAvailable();
+                    if (this->TestImpl(m_hint)) {
+                        m_hint = this->FindAvailable();
                     }
 
-                    this->ReserveImpl(this->hint);
+                    this->ReserveImpl(m_hint);
 
-                    return this->hint++;
+                    return m_hint++;
                 }
 
                 void Release(u8 asid) {
-                    KScopedLightLock lk(this->lock);
+                    KScopedLightLock lk(m_lock);
                     this->ReleaseImpl(asid);
                 }
         };
@@ -165,52 +165,48 @@ namespace ams::kern::arch::arm64 {
 
     Result KPageTable::InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize basic fields. */
-        this->asid = 0;
-        this->manager = std::addressof(Kernel::GetPageTableManager());
+        m_asid = 0;
+        m_manager = std::addressof(Kernel::GetSystemPageTableManager());
 
         /* Allocate a page for ttbr. */
-        const u64 asid_tag = (static_cast<u64>(this->asid) << 48ul);
-        const KVirtualAddress page = this->manager->Allocate();
+        /* NOTE: It is a postcondition of page table manager allocation that the page is all-zero. */
+        const u64 asid_tag = (static_cast<u64>(m_asid) << 48ul);
+        const KVirtualAddress page = m_manager->Allocate();
         MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
-        cpu::ClearPageToZero(GetVoidPointer(page));
-        this->ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
+        m_ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
 
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
+    Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit) {
         /* The input ID isn't actually used. */
         MESOSPHERE_UNUSED(id);
 
         /* Get an ASID */
-        this->asid = g_asid_manager.Reserve();
-        auto asid_guard = SCOPE_GUARD { g_asid_manager.Release(this->asid); };
+        m_asid = g_asid_manager.Reserve();
+        ON_RESULT_FAILURE { g_asid_manager.Release(m_asid); };
 
         /* Set our manager. */
-        this->manager = pt_manager;
+        m_manager = pt_manager;
 
         /* Allocate a new table, and set our ttbr value. */
-        const KVirtualAddress new_table = this->manager->Allocate();
+        const KVirtualAddress new_table = m_manager->Allocate();
         R_UNLESS(new_table != Null<KVirtualAddress>, svc::ResultOutOfResource());
-        this->ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), asid);
-        auto table_guard = SCOPE_GUARD { this->manager->Free(new_table); };
+        m_ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), m_asid);
+        ON_RESULT_FAILURE_2 { m_manager->Free(new_table); };
 
         /* Initialize our base table. */
         const size_t as_width = GetAddressSpaceWidth(as_type);
         const KProcessAddress as_start = 0;
         const KProcessAddress as_end   = (1ul << as_width);
-        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager));
-
-        /* We succeeded! */
-        table_guard.Cancel();
-        asid_guard.Cancel();
+        R_TRY(KPageTableBase::InitializeForProcess(as_type, enable_aslr, enable_das_merge, from_back, pool, GetVoidPointer(new_table), as_start, as_end, code_address, code_size, mem_block_slab_manager, block_info_manager, resource_limit));
 
         /* Note that we've updated the table (since we created it). */
         this->NoteUpdated();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::Finalize() {
@@ -233,7 +229,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Begin the traversal. */
                 TraversalContext context;
-                TraversalEntry   cur_entry  = {};
+                TraversalEntry   cur_entry  = { .phys_addr = Null<KPhysicalAddress>, .block_size = 0, .sw_reserved_bits = 0 };
                 bool             cur_valid  = false;
                 TraversalEntry   next_entry;
                 bool             next_valid;
@@ -247,7 +243,7 @@ namespace ams::kern::arch::arm64 {
                         cur_entry.block_size += next_entry.block_size;
                     } else {
                         if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                            mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                            mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
                         }
 
                         /* Update tracking variables. */
@@ -265,7 +261,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Handle the last block. */
                 if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
-                    mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                    mm.Close(cur_entry.phys_addr, cur_entry.block_size / PageSize);
                 }
             }
 
@@ -279,9 +275,10 @@ namespace ams::kern::arch::arm64 {
                 if (l1_entry->IsTable()) {
                     L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
                     if (l2_entry->IsTable()) {
-                        KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
+                        const KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
                         if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
                             while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
+                            ClearPageTable(l3_table);
                             this->GetPageTableManager().Free(l3_table);
                         }
                     }
@@ -292,28 +289,33 @@ namespace ams::kern::arch::arm64 {
             for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
                 L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
                 if (l1_entry->IsTable()) {
-                    KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
+                    const KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
                     if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
                         while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
+                        ClearPageTable(l2_table);
                         this->GetPageTableManager().Free(l2_table);
                     }
                 }
             }
 
             /* Free the L1 table. */
-            this->GetPageTableManager().Free(reinterpret_cast<uintptr_t>(impl.Finalize()));
+            {
+                const KVirtualAddress l1_table = reinterpret_cast<uintptr_t>(impl.Finalize());
+                ClearPageTable(l1_table);
+                this->GetPageTableManager().Free(l1_table);
+            }
 
             /* Perform inherited finalization. */
             KPageTableBase::Finalize();
         }
 
         /* Release our asid. */
-        g_asid_manager.Release(this->asid);
+        g_asid_manager.Release(m_asid);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+    Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
         /* Check validity of parameters. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(num_pages > 0);
@@ -328,23 +330,23 @@ namespace ams::kern::arch::arm64 {
         }
 
         if (operation == OperationType_Unmap) {
-            return this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll);
+            R_RETURN(this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll));
         } else {
             auto entry_template = this->GetEntryTemplate(properties);
 
             switch (operation) {
                 case OperationType_Map:
-                    return this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                    R_RETURN(this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
                 case OperationType_ChangePermissions:
-                    return this->ChangePermissions(virt_addr, num_pages, entry_template, false, page_list, reuse_ll);
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, false, page_list, reuse_ll));
                 case OperationType_ChangePermissionsAndRefresh:
-                    return this->ChangePermissions(virt_addr, num_pages, entry_template, true, page_list, reuse_ll);
+                    R_RETURN(this->ChangePermissions(virt_addr, num_pages, entry_template, properties.disable_merge_attributes, true, page_list, reuse_ll));
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
     }
 
-    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+    Result KPageTable::OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
         /* Check validity of parameters. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
@@ -355,12 +357,12 @@ namespace ams::kern::arch::arm64 {
         auto entry_template = this->GetEntryTemplate(properties);
         switch (operation) {
             case OperationType_MapGroup:
-                return this->MapGroup(virt_addr, page_group, num_pages, entry_template, page_list, reuse_ll);
+                R_RETURN(this->MapGroup(virt_addr, page_group, num_pages, entry_template, properties.disable_merge_attributes == DisableMergeAttribute_DisableHead, page_list, reuse_ll));
             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    Result KPageTable::MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L1BlockSize));
@@ -371,18 +373,21 @@ namespace ams::kern::arch::arm64 {
 
         auto &impl = this->GetImpl();
 
+        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
+
         /* Iterate, mapping each block. */
         for (size_t i = 0; i < num_pages; i += L1BlockSize / PageSize) {
             /* Map the block. */
-            *impl.GetL1Entry(virt_addr) = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            *impl.GetL1Entry(virt_addr) = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
+            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
             virt_addr += L1BlockSize;
             phys_addr += L1BlockSize;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L2BlockSize));
@@ -391,6 +396,8 @@ namespace ams::kern::arch::arm64 {
         auto &impl = this->GetImpl();
         KVirtualAddress l2_virt = Null<KVirtualAddress>;
         int l2_open_count = 0;
+
+        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
 
         /* Iterate, mapping each block. */
         for (size_t i = 0; i < num_pages; i += L2BlockSize / PageSize) {
@@ -415,7 +422,8 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_ASSERT(l2_virt != Null<KVirtualAddress>);
 
             /* Map the block. */
-            *impl.GetL2EntryFromTable(l2_virt, virt_addr) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            *impl.GetL2EntryFromTable(l2_virt, virt_addr) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
+            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
             l2_open_count++;
             virt_addr += L2BlockSize;
             phys_addr += L2BlockSize;
@@ -435,10 +443,10 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l2_virt, l2_open_count);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
@@ -448,6 +456,8 @@ namespace ams::kern::arch::arm64 {
         KVirtualAddress l3_virt = Null<KVirtualAddress>;
         int l2_open_count = 0;
         int l3_open_count = 0;
+
+        u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, false, false);
 
         /* Iterate, mapping each page. */
         for (size_t i = 0; i < num_pages; i++) {
@@ -489,7 +499,8 @@ namespace ams::kern::arch::arm64 {
                             } else if (this->GetPageTableManager().IsInPageTableHeap(l2_virt) && l2_open_count > 0) {
                                 this->GetPageTableManager().Open(l2_virt, l2_open_count);
                             }
-                            return svc::ResultOutOfResource();
+
+                            R_THROW(svc::ResultOutOfResource());
                         }
 
                         /* Set the entry. */
@@ -505,7 +516,8 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_ASSERT(l3_virt != Null<KVirtualAddress>);
 
             /* Map the page. */
-            *impl.GetL3EntryFromTable(l3_virt, virt_addr) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            *impl.GetL3EntryFromTable(l3_virt, virt_addr) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
+            sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
             l3_open_count++;
             virt_addr += PageSize;
             phys_addr += PageSize;
@@ -536,7 +548,7 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l3_virt, l3_open_count);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll) {
@@ -547,14 +559,14 @@ namespace ams::kern::arch::arm64 {
         /* If we're not forcing an unmap, separate pages immediately. */
         if (!force) {
             const size_t size = num_pages * PageSize;
-            R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+            R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
+            ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
+
             if (num_pages > 1) {
                 const auto end_page  = virt_addr + size;
                 const auto last_page = end_page - PageSize;
 
-                auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-                R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
-                merge_guard.Cancel();
+                R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
             }
         }
 
@@ -564,7 +576,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Ensure that any pages we track close on exit. */
         KPageGroup pages_to_close(this->GetBlockInfoManager());
-        KScopedPageGroup spg(pages_to_close);
+        ON_SCOPE_EXIT { pages_to_close.CloseAndReset(); };
 
         /* Begin traversal. */
         TraversalContext context;
@@ -586,8 +598,9 @@ namespace ams::kern::arch::arm64 {
             if (next_entry.block_size > remaining_pages * PageSize) {
                 MESOSPHERE_ABORT_UNLESS(force);
                 MESOSPHERE_R_ABORT_UNLESS(this->SeparatePages(virt_addr, remaining_pages * PageSize, page_list, reuse_ll));
-                next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
-                MESOSPHERE_ASSERT(next_valid);
+                const bool new_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
+                MESOSPHERE_ASSERT(new_valid);
+                MESOSPHERE_UNUSED(new_valid);
             }
 
             /* Check that our state is coherent. */
@@ -626,6 +639,7 @@ namespace ams::kern::arch::arm64 {
                                 *l1_entry = InvalidL1PageTableEntry;
                                 this->NoteUpdated();
                                 this->FreePageTable(page_list, l2_virt);
+                                pages_to_close.CloseAndReset();
                             }
                         }
                     }
@@ -669,6 +683,7 @@ namespace ams::kern::arch::arm64 {
                                 }
 
                                 this->FreePageTable(page_list, l3_virt);
+                                pages_to_close.CloseAndReset();
                             }
                         }
                     }
@@ -678,11 +693,11 @@ namespace ams::kern::arch::arm64 {
 
             /* Close the blocks. */
             if (!force && IsHeapPhysicalAddress(next_entry.phys_addr)) {
-                const KVirtualAddress block_virt_addr = GetHeapVirtualAddress(next_entry.phys_addr);
                 const size_t block_num_pages = next_entry.block_size / PageSize;
-                if (R_FAILED(pages_to_close.AddBlock(block_virt_addr, block_num_pages))) {
+                if (R_FAILED(pages_to_close.AddBlock(next_entry.phys_addr, block_num_pages))) {
                     this->NoteUpdated();
-                    Kernel::GetMemoryManager().Close(block_virt_addr, block_num_pages);
+                    Kernel::GetMemoryManager().Close(next_entry.phys_addr, block_num_pages);
+                    pages_to_close.CloseAndReset();
                 }
             }
 
@@ -699,10 +714,10 @@ namespace ams::kern::arch::arm64 {
             this->NoteUpdated();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Cache initial addresses for use on cleanup. */
@@ -713,10 +728,10 @@ namespace ams::kern::arch::arm64 {
 
         /* Map the pages, using a guard to ensure we don't leak. */
         {
-            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
+            ON_RESULT_FAILURE { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
 
             if (num_pages < ContiguousPageSize / PageSize) {
-                R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, L3BlockSize, page_list, reuse_ll));
+                R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge && virt_addr == orig_virt_addr, L3BlockSize, page_list, reuse_ll));
                 remaining_pages -= num_pages;
                 virt_addr += num_pages * PageSize;
                 phys_addr += num_pages * PageSize;
@@ -732,7 +747,7 @@ namespace ams::kern::arch::arm64 {
 
                     /* Map pages, if we should. */
                     if (pages_to_map > 0) {
-                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, GetSmallerAlignment(alignment), page_list, reuse_ll));
+                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, disable_head_merge && virt_addr == orig_virt_addr, GetSmallerAlignment(alignment), page_list, reuse_ll));
                         remaining_pages -= pages_to_map;
                         virt_addr += pages_to_map * PageSize;
                         phys_addr += pages_to_map * PageSize;
@@ -753,16 +768,13 @@ namespace ams::kern::arch::arm64 {
                     /* Map pages, if we should. */
                     const size_t pages_to_map = util::AlignDown(remaining_pages, alignment / PageSize);
                     if (pages_to_map > 0) {
-                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, alignment, page_list, reuse_ll));
+                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, disable_head_merge && virt_addr == orig_virt_addr, alignment, page_list, reuse_ll));
                         remaining_pages -= pages_to_map;
                         virt_addr += pages_to_map * PageSize;
                         phys_addr += pages_to_map * PageSize;
                     }
                 }
             }
-
-            /* We successfully mapped, so cancel our guard. */
-            map_guard.Cancel();
         }
 
         /* Perform what coalescing we can. */
@@ -773,13 +785,13 @@ namespace ams::kern::arch::arm64 {
 
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
-            Kernel::GetMemoryManager().Open(GetHeapVirtualAddress(orig_phys_addr), num_pages);
+            Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* We want to maintain a new reference to every page in the group. */
@@ -792,13 +804,13 @@ namespace ams::kern::arch::arm64 {
 
         /* Map the pages, using a guard to ensure we don't leak. */
         {
-            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
+            ON_RESULT_FAILURE { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 for (const auto &block : pg) {
-                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = block.GetAddress();
                     const size_t cur_pages = block.GetNumPages();
-                    R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, L3BlockSize, page_list, reuse_ll));
+                    R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, disable_head_merge && virt_addr == orig_virt_addr, L3BlockSize, page_list, reuse_ll));
 
                     virt_addr    += cur_pages * PageSize;
                     mapped_pages += cur_pages;
@@ -808,7 +820,7 @@ namespace ams::kern::arch::arm64 {
                 AlignedMemoryBlock virt_block(GetInteger(virt_addr), num_pages, L1BlockSize);
                 for (const auto &block : pg) {
                     /* Create a block representing this physical group, synchronize its alignment to our virtual block. */
-                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = block.GetAddress();
                     size_t cur_pages = block.GetNumPages();
 
                     AlignedMemoryBlock phys_block(GetInteger(block_phys_addr), cur_pages, virt_block.GetAlignment());
@@ -846,7 +858,7 @@ namespace ams::kern::arch::arm64 {
                             }
 
                             /* Map! */
-                            R_TRY(this->Map(virt_choice, phys_choice, virt_pages, entry_template, virt_block.GetAlignment(), page_list, reuse_ll));
+                            R_TRY(this->Map(virt_choice, phys_choice, virt_pages, entry_template, disable_head_merge && virt_addr == orig_virt_addr, virt_block.GetAlignment(), page_list, reuse_ll));
 
                             /* Advance. */
                             phys_choice  += virt_pages * PageSize;
@@ -857,9 +869,6 @@ namespace ams::kern::arch::arm64 {
                     }
                 }
             }
-
-            /* We successfully mapped, so cancel our guard. */
-            map_guard.Cancel();
         }
         MESOSPHERE_ASSERT(mapped_pages == num_pages);
 
@@ -871,7 +880,7 @@ namespace ams::kern::arch::arm64 {
 
         /* We succeeded! We want to persist the reference to the pages. */
         spg.CancelClose();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool KPageTable::MergePages(KProcessAddress virt_addr, PageLinkedList *page_list) {
@@ -893,26 +902,39 @@ namespace ams::kern::arch::arm64 {
         if (l2_entry->IsTable()) {
             /* We have an L3 entry. */
             L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);
-            if (!l3_entry->IsBlock() || !l3_entry->IsContiguousAllowed()) {
+            if (!l3_entry->IsBlock()) {
                 return merged;
             }
 
             /* If it's not contiguous, try to make it so. */
             if (!l3_entry->IsContiguous()) {
                 virt_addr = util::AlignDown(GetInteger(virt_addr), L3ContiguousBlockSize);
-                KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L3ContiguousBlockSize);
-                const u64 entry_template = l3_entry->GetEntryTemplate();
+                const KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L3ContiguousBlockSize);
+                const u64 entry_template = l3_entry->GetEntryTemplateForMerge();
 
                 /* Validate that we can merge. */
                 for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                    if (!impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L3BlockSize * i) | PageTableEntry::Type_L3Block)) {
+                    const L3PageTableEntry *check_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i);
+                    if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3BlockSize * i) | PageTableEntry::Type_L3Block)) {
+                        return merged;
+                    }
+                    if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
+                        return merged;
+                    }
+                    if ((i < (L3ContiguousBlockSize / L3BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
                         return merged;
                     }
                 }
 
+                /* Determine the new software reserved bits. */
+                const L3PageTableEntry *head_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * 0);
+                const L3PageTableEntry *tail_entry = impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * ((L3ContiguousBlockSize / L3BlockSize) - 1));
+                auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
+
                 /* Merge! */
                 for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                    impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i)->SetContiguous(true);
+                    *impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + L3BlockSize * i, PageTableEntry(entry_template), sw_reserved_bits, true);
+                    sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
                 }
 
                 /* Note that we updated. */
@@ -923,18 +945,30 @@ namespace ams::kern::arch::arm64 {
             /* We might be able to upgrade a contiguous set of L3 entries into an L2 block. */
             virt_addr = util::AlignDown(GetInteger(virt_addr), L2BlockSize);
             KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L2BlockSize);
-            const u64 entry_template = l3_entry->GetEntryTemplate();
+            const u64 entry_template = l3_entry->GetEntryTemplateForMerge();
 
             /* Validate that we can merge. */
             for (size_t i = 0; i < L2BlockSize / L3ContiguousBlockSize; i++) {
-                if (!impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * i)->Is(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L3Block)) {
+                const L3PageTableEntry *check_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * i);
+                if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L3Block)) {
+                    return merged;
+                }
+                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
+                    return merged;
+                }
+                if ((i < (L2BlockSize / L3ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
                     return merged;
                 }
             }
 
+            /* Determine the new software reserved bits. */
+            const L3PageTableEntry *head_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * 0);
+            const L3PageTableEntry *tail_entry = impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * ((L2BlockSize / L3ContiguousBlockSize) - 1));
+            auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
+
             /* Merge! */
             PteDataSynchronizationBarrier();
-            *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
 
             /* Note that we updated. */
             this->NoteUpdated();
@@ -950,7 +984,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* If the l2 entry is not a block or we can't make it contiguous, we're done. */
-        if (!l2_entry->IsBlock() || !l2_entry->IsContiguousAllowed()) {
+        if (!l2_entry->IsBlock()) {
             return merged;
         }
 
@@ -958,18 +992,31 @@ namespace ams::kern::arch::arm64 {
         if (!l2_entry->IsContiguous()) {
             virt_addr = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
             KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
-            const u64 entry_template = l2_entry->GetEntryTemplate();
+            const u64 entry_template = l2_entry->GetEntryTemplateForMerge();
 
             /* Validate that we can merge. */
             for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                if (!impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L2BlockSize * i) | PageTableEntry::Type_L2Block)) {
+                const L2PageTableEntry *check_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i);
+                if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2BlockSize * i) | PageTableEntry::Type_L2Block)) {
+                    return merged;
+                }
+                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
+                    return merged;
+                }
+                if ((i < (L2ContiguousBlockSize / L2BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
                     return merged;
                 }
             }
 
+            /* Determine the new software reserved bits. */
+            const L2PageTableEntry *head_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * 0);
+            const L2PageTableEntry *tail_entry = impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * ((L2ContiguousBlockSize / L2BlockSize) - 1));
+            auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
+
             /* Merge! */
             for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->SetContiguous(true);
+                *impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr + L2BlockSize * i, PageTableEntry(entry_template), sw_reserved_bits, true);
+                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
             }
 
             /* Note that we updated. */
@@ -980,18 +1027,30 @@ namespace ams::kern::arch::arm64 {
         /* We might be able to upgrade a contiguous set of L2 entries into an L1 block. */
         virt_addr = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
         KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L1BlockSize);
-        const u64 entry_template = l2_entry->GetEntryTemplate();
+        const u64 entry_template = l2_entry->GetEntryTemplateForMerge();
 
         /* Validate that we can merge. */
         for (size_t i = 0; i < L1BlockSize / L2ContiguousBlockSize; i++) {
-            if (!impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * i)->Is(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L2Block)) {
+            const L2PageTableEntry *check_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * i);
+            if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L2Block)) {
+                return merged;
+            }
+            if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
+                return merged;
+            }
+            if ((i < (L1ContiguousBlockSize / L2ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
                 return merged;
             }
         }
 
+        /* Determine the new software reserved bits. */
+        const L2PageTableEntry *head_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * 0);
+        const L2PageTableEntry *tail_entry = impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * ((L1BlockSize / L2ContiguousBlockSize) - 1));
+        auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
+
         /* Merge! */
-        PteDataSynchronizationBarrier();
-        *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+        /* NOTE: As of 13.1.0, Nintendo does not do: PteDataSynchronizationBarrier(); */
+        *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
 
         /* Note that we updated. */
         this->NoteUpdated();
@@ -1029,9 +1088,9 @@ namespace ams::kern::arch::arm64 {
             const KPhysicalAddress l2_phys = GetPageTablePhysicalAddress(l2_table);
 
             /* Set the entries in the L2 table. */
-            const u64 entry_template = l1_entry->GetEntryTemplate();
             for (size_t i = 0; i < L1BlockSize / L2BlockSize; i++) {
-                *(impl.GetL2EntryFromTable(l2_table, block_virt_addr + L2BlockSize * i)) = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), true);
+                const u64 entry_template = l1_entry->GetEntryTemplateForL2Block(i);
+                *(impl.GetL2EntryFromTable(l2_table, block_virt_addr + L2BlockSize * i)) = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, true);
             }
 
             /* Open references to the L2 table. */
@@ -1055,10 +1114,13 @@ namespace ams::kern::arch::arm64 {
             /* If we're contiguous, try to separate. */
             if (l2_entry->IsContiguous()) {
                 const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
+                const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
 
                 /* Mark the entries as non-contiguous. */
                 for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                    impl.GetL2Entry(l1_entry, block_virt_addr + L2BlockSize * i)->SetContiguous(false);
+                    L2PageTableEntry *target = impl.GetL2Entry(l1_entry, block_virt_addr + L2BlockSize * i);
+                    const u64 entry_template = target->GetEntryTemplateForL2Block(i);
+                    *target = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
                 }
                 this->NoteUpdated();
             }
@@ -1076,9 +1138,9 @@ namespace ams::kern::arch::arm64 {
             const KPhysicalAddress l3_phys = GetPageTablePhysicalAddress(l3_table);
 
             /* Set the entries in the L3 table. */
-            const u64 entry_template = l2_entry->GetEntryTemplate();
             for (size_t i = 0; i < L2BlockSize / L3BlockSize; i++) {
-                *(impl.GetL3EntryFromTable(l3_table, block_virt_addr + L3BlockSize * i)) = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), true);
+                const u64 entry_template = l2_entry->GetEntryTemplateForL3Block(i);
+                *(impl.GetL3EntryFromTable(l3_table, block_virt_addr + L3BlockSize * i)) = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, true);
             }
 
             /* Open references to the L3 table. */
@@ -1101,42 +1163,44 @@ namespace ams::kern::arch::arm64 {
         L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);
         if (l3_entry->IsBlock() && l3_entry->IsContiguous()) {
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L3ContiguousBlockSize);
+            const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L3ContiguousBlockSize);
 
             /* Mark the entries as non-contiguous. */
             for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                impl.GetL3Entry(l2_entry, block_virt_addr + L3BlockSize * i)->SetContiguous(false);
+                L3PageTableEntry *target = impl.GetL3Entry(l2_entry, block_virt_addr + L3BlockSize * i);
+                const u64 entry_template = target->GetEntryTemplateForL3Block(i);
+                *target = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
             }
             this->NoteUpdated();
         }
 
         /* We're done! */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KPageTable::SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-        /* Try to separate pages, re-merging if we fail. */
-        auto guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-        R_TRY(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
-        guard.Cancel();
+        /* If we fail while separating, re-merge. */
+        ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
 
-        return ResultSuccess();
+        /* Try to separate pages. */
+        R_RETURN(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
     }
 
-    Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Separate pages before we change permissions. */
         const size_t size = num_pages * PageSize;
-        R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+        R_TRY(this->SeparatePages(virt_addr, std::min(util::GetAlignment(GetInteger(virt_addr)), size), page_list, reuse_ll));
         if (num_pages > 1) {
             const auto end_page  = virt_addr + size;
             const auto last_page = end_page - PageSize;
 
-            auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
-            R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
-            merge_guard.Cancel();
+            ON_RESULT_FAILURE { this->MergePages(virt_addr, page_list); };
+
+            R_TRY(this->SeparatePages(last_page, std::min(util::GetAlignment(GetInteger(end_page)), size), page_list, reuse_ll));
         }
 
         /* ===================================================== */
@@ -1149,12 +1213,22 @@ namespace ams::kern::arch::arm64 {
             ApplyOption_MergeMappings  = (1u << 1),
         };
 
-        auto ApplyEntryTemplate = [this, virt_addr, num_pages, page_list](PageTableEntry entry_template, u32 apply_option) -> void {
+        auto ApplyEntryTemplate = [this, virt_addr, disable_merge_attr, num_pages, page_list](PageTableEntry entry_template, u32 apply_option) -> void {
             /* Create work variables for us to use. */
+            const KProcessAddress orig_virt_addr = virt_addr;
+            const KProcessAddress end_virt_addr  = orig_virt_addr + (num_pages * PageSize);
             KProcessAddress cur_virt_addr = virt_addr;
             size_t remaining_pages = num_pages;
 
             auto &impl = this->GetImpl();
+
+            /* Parse the disable merge attrs. */
+            const bool attr_disable_head           = (disable_merge_attr & DisableMergeAttribute_DisableHead) != 0;
+            const bool attr_disable_head_body      = (disable_merge_attr & DisableMergeAttribute_DisableHeadAndBody) != 0;
+            const bool attr_enable_head_body       = (disable_merge_attr & DisableMergeAttribute_EnableHeadAndBody) != 0;
+            const bool attr_disable_tail           = (disable_merge_attr & DisableMergeAttribute_DisableTail) != 0;
+            const bool attr_enable_tail            = (disable_merge_attr & DisableMergeAttribute_EnableTail) != 0;
+            const bool attr_enable_and_merge       = (disable_merge_attr & DisableMergeAttribute_EnableAndMergeHeadBodyTail) != 0;
 
             /* Begin traversal. */
             TraversalContext context;
@@ -1162,9 +1236,51 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_virt_addr));
 
             /* Continue changing properties until we've changed them for all pages. */
+            bool cleared_disable_merge_bits = false;
             while (remaining_pages > 0) {
                 MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(next_entry.phys_addr), next_entry.block_size));
                 MESOSPHERE_ABORT_UNLESS(next_entry.block_size <= remaining_pages * PageSize);
+
+                /* Determine if we're at the start. */
+                const bool is_start = (cur_virt_addr == orig_virt_addr);
+                const bool is_end   = ((cur_virt_addr + next_entry.block_size) == end_virt_addr);
+
+                /* Determine the relevant merge attributes. */
+                bool disable_head_merge, disable_head_body_merge, disable_tail_merge;
+                if (next_entry.IsHeadMergeDisabled()) {
+                    disable_head_merge = true;
+                } else if (attr_disable_head) {
+                    disable_head_merge = is_start;
+                } else {
+                    disable_head_merge = false;
+                }
+                if (is_start) {
+                    if (attr_disable_head_body) {
+                        disable_head_body_merge = true;
+                    } else if (attr_enable_head_body) {
+                        disable_head_body_merge = false;
+                    } else {
+                        disable_head_body_merge = (!attr_enable_and_merge && next_entry.IsHeadAndBodyMergeDisabled());
+                    }
+                } else {
+                    disable_head_body_merge = (!attr_enable_and_merge && next_entry.IsHeadAndBodyMergeDisabled());
+                    cleared_disable_merge_bits |= (attr_enable_and_merge && next_entry.IsHeadAndBodyMergeDisabled());
+                }
+                if (is_end) {
+                    if (attr_disable_tail) {
+                        disable_tail_merge = true;
+                    } else if (attr_enable_tail) {
+                        disable_tail_merge = false;
+                    } else {
+                        disable_tail_merge = (!attr_enable_and_merge && next_entry.IsTailMergeDisabled());
+                    }
+                } else {
+                    disable_tail_merge = (!attr_enable_and_merge && next_entry.IsTailMergeDisabled());
+                    cleared_disable_merge_bits |= (attr_enable_and_merge && next_entry.IsTailMergeDisabled());
+                }
+
+                /* Encode the merge disable flags into the software reserved bits. */
+                u8 sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(disable_head_merge, disable_head_body_merge, disable_tail_merge);
 
                 /* If we should flush entries, do so. */
                 if ((apply_option & ApplyOption_FlushDataCache) != 0) {
@@ -1179,7 +1295,7 @@ namespace ams::kern::arch::arm64 {
                     case L1BlockSize:
                         {
                             /* Write the updated entry. */
-                            *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr, entry_template, false);
+                            *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr, entry_template, sw_reserved_bits, false);
                         }
                         break;
                     case L2ContiguousBlockSize:
@@ -1196,7 +1312,8 @@ namespace ams::kern::arch::arm64 {
                             /* Write the updated entry. */
                             const bool contig = next_entry.block_size == L2ContiguousBlockSize;
                             for (size_t i = 0; i < num_l2_blocks; i++) {
-                                *impl.GetL2EntryFromTable(l2_virt, cur_virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L2BlockSize * i, entry_template, contig);
+                                *impl.GetL2EntryFromTable(l2_virt, cur_virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L2BlockSize * i, entry_template, sw_reserved_bits, contig);
+                                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
                             }
                         }
                         break;
@@ -1220,7 +1337,8 @@ namespace ams::kern::arch::arm64 {
                             /* Write the updated entry. */
                             const bool contig = next_entry.block_size == L3ContiguousBlockSize;
                             for (size_t i = 0; i < num_l3_blocks; i++) {
-                                *impl.GetL3EntryFromTable(l3_virt, cur_virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L3BlockSize * i, entry_template, contig);
+                                *impl.GetL3EntryFromTable(l3_virt, cur_virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L3BlockSize * i, entry_template, sw_reserved_bits, contig);
+                                sw_reserved_bits &= ~(PageTableEntry::SoftwareReservedBit_DisableMergeHead);
                             }
                         }
                         break;
@@ -1228,12 +1346,12 @@ namespace ams::kern::arch::arm64 {
                 }
 
                 /* If our option asks us to, try to merge mappings. */
-                bool merge = ((apply_option & ApplyOption_MergeMappings) != 0) && next_entry.block_size < L1BlockSize;
+                bool merge = ((apply_option & ApplyOption_MergeMappings) != 0 || cleared_disable_merge_bits) && next_entry.block_size < L1BlockSize;
                 if (merge) {
                     const size_t larger_align = GetLargerAlignment(next_entry.block_size);
                     if (util::IsAligned(GetInteger(cur_virt_addr) + next_entry.block_size, larger_align)) {
                         const uintptr_t aligned_start = util::AlignDown(GetInteger(cur_virt_addr), larger_align);
-                        if (virt_addr <= aligned_start && aligned_start + larger_align - 1 < GetInteger(virt_addr) + (num_pages * PageSize) - 1) {
+                        if (orig_virt_addr <= aligned_start && aligned_start + larger_align - 1 < GetInteger(orig_virt_addr) + (num_pages * PageSize) - 1) {
                             merge = this->MergePages(cur_virt_addr, page_list);
                         } else {
                             merge = false;
@@ -1298,10 +1416,10 @@ namespace ams::kern::arch::arm64 {
             this->MergePages(virt_addr + (num_pages - 1) * PageSize, page_list);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    void KPageTable::FinalizeUpdate(PageLinkedList *page_list) {
+    void KPageTable::FinalizeUpdateImpl(PageLinkedList *page_list) {
         while (page_list->Peek()) {
             KVirtualAddress page = KVirtualAddress(page_list->Pop());
             MESOSPHERE_ASSERT(this->GetPageTableManager().IsInPageTableHeap(page));

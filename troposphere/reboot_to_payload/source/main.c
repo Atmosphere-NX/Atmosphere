@@ -3,63 +3,67 @@
 #include <stdbool.h>
 
 #include <switch.h>
+#include "ams_bpc.h"
 
-#define IRAM_PAYLOAD_MAX_SIZE 0x2F000
-#define IRAM_PAYLOAD_BASE 0x40010000
+#define IRAM_PAYLOAD_MAX_SIZE 0x24000
+static u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
 
-static alignas(0x1000) u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
-static alignas(0x1000) u8 g_ff_page[0x1000];
-static alignas(0x1000) u8 g_work_page[0x1000];
-
-void do_iram_dram_copy(void *buf, uintptr_t iram_addr, size_t size, int option) {
-    memcpy(g_work_page, buf, size);
-    
-    SecmonArgs args = {0};
-    args.X[0] = 0xF0000201;             /* smcAmsIramCopy */
-    args.X[1] = (uintptr_t)g_work_page;  /* DRAM Address */
-    args.X[2] = iram_addr;              /* IRAM Address */
-    args.X[3] = size;                   /* Copy size */
-    args.X[4] = option;                 /* 0 = Read, 1 = Write */
-    svcCallSecureMonitor(&args);
-    
-    memcpy(buf, g_work_page, size);
-}
-
-void copy_to_iram(uintptr_t iram_addr, void *buf, size_t size) {
-    do_iram_dram_copy(buf, iram_addr, size, 1);
-}
-
-void copy_from_iram(void *buf, uintptr_t iram_addr, size_t size) {
-    do_iram_dram_copy(buf, iram_addr, size, 0);
-}
-
-static void clear_iram(void) {
-    memset(g_ff_page, 0xFF, sizeof(g_ff_page));
-    for (size_t i = 0; i < IRAM_PAYLOAD_MAX_SIZE; i += sizeof(g_ff_page)) {
-        copy_to_iram(IRAM_PAYLOAD_BASE + i, g_ff_page, sizeof(g_ff_page));
-    }
+void userAppExit(void)
+{
+    amsBpcExit();
+    setsysExit();
+    spsmExit();
 }
 
 static void reboot_to_payload(void) {
-    clear_iram();
-    
-    for (size_t i = 0; i < IRAM_PAYLOAD_MAX_SIZE; i += 0x1000) {
-        copy_to_iram(IRAM_PAYLOAD_BASE + i, &g_reboot_payload[i], 0x1000);
+    Result rc = amsBpcSetRebootPayload(g_reboot_payload, IRAM_PAYLOAD_MAX_SIZE);
+    if (R_FAILED(rc)) {
+        printf("Failed to set reboot payload: 0x%x\n", rc);
     }
-    
-    splSetConfig((SplConfigItem)65001, 2);
+    else {
+        spsmShutdown(true);
+    }
 }
 
 int main(int argc, char **argv)
 {
     consoleInit(NULL);
-    
+
+    padConfigureInput(8, HidNpadStyleSet_NpadStandard);
+
+    PadState pad;
+    padInitializeAny(&pad);
+
+    Result rc = 0;
     bool can_reboot = true;
-    Result rc = splInitialize();
-    if (R_FAILED(rc)) {
-        printf("Failed to initialize spl: 0x%x\n", rc);
+
+    if (R_FAILED(rc = setsysInitialize())) {
+        printf("Failed to initialize set:sys: 0x%x\n", rc);
         can_reboot = false;
-    } else {
+    }
+    else {
+        SetSysProductModel model;
+        setsysGetProductModel(&model);
+        if (model != SetSysProductModel_Nx && model != SetSysProductModel_Copper) {
+            printf("Reboot to payload cannot be used on a Mariko system\n");
+            can_reboot = false;
+        }
+    }
+
+    if (can_reboot && R_FAILED(rc = spsmInitialize())) {
+        printf("Failed to initialize spsm: 0x%x\n", rc);
+        can_reboot = false;
+    }
+
+    if (can_reboot) {
+        smExit(); //Required to connect to ams:bpc
+        if R_FAILED(rc = amsBpcInitialize()) {
+            printf("Failed to initialize ams:bpc: 0x%x\n", rc);
+            can_reboot = false;
+        }
+    }
+
+    if (can_reboot) {
         FILE *f = fopen("sdmc:/atmosphere/reboot_payload.bin", "rb");
         if (f == NULL) {
             printf("Failed to open atmosphere/reboot_payload.bin!\n");
@@ -70,35 +74,23 @@ int main(int argc, char **argv)
             printf("Press [-] to reboot to payload\n");
         }
     }
-        
+
     printf("Press [L] to exit\n");
 
     // Main loop
     while(appletMainLoop())
     {
-        //Scan all the inputs. This should be done once for each frame
-        hidScanInput();
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
 
-        u64 kDown = 0;
-
-        for (int controller = 0; controller < 10; controller++) {
-            // hidKeysDown returns information about which buttons have been just pressed (and they weren't in the previous frame)
-            kDown |= hidKeysDown((HidControllerID) controller);
-        }
-
-        if (can_reboot && kDown & KEY_MINUS) {
+        if (can_reboot && (kDown & HidNpadButton_Minus)) {
             reboot_to_payload();
         }
-        if (kDown & KEY_L)  { break; } // break in order to return to hbmenu 
+        if (kDown & HidNpadButton_L)  { break; } // break in order to return to hbmenu
 
         consoleUpdate(NULL);
     }
 
-    if (can_reboot) {
-        splExit();
-    }
-    
     consoleExit(NULL);
     return 0;
 }
-

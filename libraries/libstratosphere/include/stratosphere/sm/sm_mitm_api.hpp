@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "sm_types.hpp"
+#include <stratosphere/sm/sm_types.hpp>
 
 namespace ams::sm::mitm {
 
     /* Mitm API. */
-    Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name);
+    Result InstallMitm(os::NativeHandle *out_port, os::NativeHandle *out_query, ServiceName name);
     Result UninstallMitm(ServiceName name);
     Result DeclareFutureMitm(ServiceName name);
     Result ClearFutureMitm(ServiceName name);

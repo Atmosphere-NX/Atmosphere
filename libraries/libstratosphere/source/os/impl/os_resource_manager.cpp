@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,6 +18,6 @@
 
 namespace ams::os::impl {
 
-    constinit TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+    constinit util::TypedStorage<OsResourceManager> ResourceManagerHolder::s_resource_manager_storage = {};
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,9 +24,9 @@ namespace ams::lr {
     class AddOnContentLocationResolverImpl {
         private:
             /* Storage for RegisteredData entries by data id. */
-            RegisteredStorages<ncm::DataId, 0x800> registered_storages;
+            RegisteredStorages<ncm::DataId, 0x800> m_registered_storages;
         public:
-            AddOnContentLocationResolverImpl() : registered_storages(hos::GetVersion() < hos::Version_9_0_0 ? 0x800 : 0x2) { /* ... */ }
+            AddOnContentLocationResolverImpl() : m_registered_storages(hos::GetVersion() < hos::Version_9_0_0 ? 0x800 : 0x2) { /* ... */ }
 
             /* Actual commands. */
             Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id);

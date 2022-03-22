@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,6 +27,8 @@ namespace ams::fssystem {
     /* TODO: This is kind of really a fs process function/tied into fs main. */
     /* This should be re-examined when FS is reimplemented. */
     void InitializeForFileSystemProxy();
+
+    void InitializeForAtmosphereMitm();
 
     const ::ams::fssrv::fscreator::FileSystemCreatorInterfaces *GetFileSystemCreatorInterfaces();
 

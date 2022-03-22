@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,18 +19,18 @@
 namespace ams::mitm::sysupdater {
 
     Result ThreadAllocator::Allocate(ThreadInfo *out) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
-        for (int i = 0; i < this->thread_count; ++i) {
+        for (int i = 0; i < m_thread_count; ++i) {
             const u64 mask = (static_cast<u64>(1) << i);
-            if ((this->bitmap & mask) == 0) {
+            if ((m_bitmap & mask) == 0) {
                 *out = {
-                    .thread     = this->thread_list + i,
-                    .priority   = this->thread_priority,
-                    .stack      = this->stack_heap + (this->stack_size * i),
-                    .stack_size = this->stack_size,
+                    .thread     = m_thread_list + i,
+                    .priority   = m_thread_priority,
+                    .stack      = m_stack_heap + (m_stack_size * i),
+                    .stack_size = m_stack_size,
                 };
-                this->bitmap |= mask;
+                m_bitmap |= mask;
                 return ResultSuccess();
             }
         }
@@ -39,12 +39,12 @@ namespace ams::mitm::sysupdater {
     }
 
     void ThreadAllocator::Free(const ThreadInfo &info) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
-        for (int i = 0; i < this->thread_count; ++i) {
-            if (info.thread == std::addressof(this->thread_list[i])) {
+        for (int i = 0; i < m_thread_count; ++i) {
+            if (info.thread == std::addressof(m_thread_list[i])) {
                 const u64 mask = (static_cast<u64>(1) << i);
-                this->bitmap &= ~mask;
+                m_bitmap &= ~mask;
                 return;
             }
         }

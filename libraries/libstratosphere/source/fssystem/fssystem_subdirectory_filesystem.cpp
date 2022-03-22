@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,20 +20,20 @@ namespace ams::fssystem {
     SubDirectoryFileSystem::SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc)
         : PathResolutionFileSystem(fs, unc)
     {
-        this->base_path = nullptr;
+        m_base_path = nullptr;
         R_ABORT_UNLESS(this->Initialize(bp));
     }
 
     SubDirectoryFileSystem::SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc)
         : PathResolutionFileSystem(std::move(fs), unc)
     {
-        this->base_path = nullptr;
+        m_base_path = nullptr;
         R_ABORT_UNLESS(this->Initialize(bp));
     }
 
     SubDirectoryFileSystem::~SubDirectoryFileSystem() {
-        if (this->base_path != nullptr) {
-            std::free(this->base_path);
+        if (m_base_path != nullptr) {
+            fs::impl::Deallocate(m_base_path, m_base_path_len);
         }
     }
 
@@ -44,39 +44,39 @@ namespace ams::fssystem {
         /* Normalize the path. */
         char normalized_path[fs::EntryNameLengthMax + 2];
         size_t normalized_path_len;
-        R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, bp, sizeof(normalized_path), this->IsUncPreserved()));
+        R_TRY(fs::PathNormalizer::Normalize(normalized_path, std::addressof(normalized_path_len), bp, sizeof(normalized_path), this->IsUncPreserved()));
 
         /* Ensure terminating '/' */
-        if (!PathTool::IsSeparator(normalized_path[normalized_path_len - 1])) {
-            AMS_ABORT_UNLESS(normalized_path_len + 2 <= sizeof(normalized_path));
-            normalized_path[normalized_path_len]     = StringTraits::DirectorySeparator;
-            normalized_path[normalized_path_len + 1] = StringTraits::NullTerminator;
+        if (!fs::PathNormalizer::IsSeparator(normalized_path[normalized_path_len - 1])) {
+            AMS_ASSERT(normalized_path_len + 2 < sizeof(normalized_path));
+            normalized_path[normalized_path_len]     = fs::StringTraits::DirectorySeparator;
+            normalized_path[normalized_path_len + 1] = fs::StringTraits::NullTerminator;
 
-            normalized_path_len++;
+            ++normalized_path_len;
         }
 
         /* Allocate new path. */
-        this->base_path_len = normalized_path_len + 1;
-        this->base_path = static_cast<char *>(std::malloc(this->base_path_len));
-        R_UNLESS(this->base_path != nullptr, fs::ResultAllocationFailureInSubDirectoryFileSystem());
+        m_base_path_len = normalized_path_len + 1;
+        m_base_path = static_cast<char *>(fs::impl::Allocate(m_base_path_len));
+        R_UNLESS(m_base_path != nullptr, fs::ResultAllocationFailureInSubDirectoryFileSystem());
 
         /* Copy path in. */
-        std::memcpy(this->base_path, normalized_path, normalized_path_len);
-        this->base_path[normalized_path_len] = StringTraits::NullTerminator;
+        std::memcpy(m_base_path, normalized_path, normalized_path_len);
+        m_base_path[normalized_path_len] = fs::StringTraits::NullTerminator;
         return ResultSuccess();
     }
 
     Result SubDirectoryFileSystem::ResolveFullPath(char *out, size_t out_size, const char *relative_path) {
         /* Ensure path will fit. */
-        R_UNLESS(this->base_path_len + strnlen(relative_path, fs::EntryNameLengthMax + 1) <= out_size, fs::ResultTooLongPath());
+        R_UNLESS(m_base_path_len + strnlen(relative_path, fs::EntryNameLengthMax + 1) <= out_size, fs::ResultTooLongPath());
 
         /* Copy base path. */
-        std::memcpy(out, this->base_path, this->base_path_len);
+        std::memcpy(out, m_base_path, m_base_path_len);
 
         /* Normalize it. */
-        const size_t prefix_size = this->base_path_len - 2;
+        const size_t prefix_size = m_base_path_len - 2;
         size_t normalized_len;
-        return PathTool::Normalize(out + prefix_size, &normalized_len, relative_path, out_size - prefix_size, this->IsUncPreserved());
+        return fs::PathNormalizer::Normalize(out + prefix_size, std::addressof(normalized_len), relative_path, out_size - prefix_size, this->IsUncPreserved(), false);
     }
 
 }

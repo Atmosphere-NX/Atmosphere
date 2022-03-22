@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,10 +18,12 @@
 namespace ams::os {
 
     Result AllocateMemoryBlock(uintptr_t *out_address, size_t size) {
+        AMS_UNUSED(out_address, size);
         AMS_ABORT("Not implemented yet");
     }
 
     void FreeMemoryBlock(uintptr_t address, size_t size) {
+        AMS_UNUSED(address, size);
         AMS_ABORT("Not implemented yet");
     }
 

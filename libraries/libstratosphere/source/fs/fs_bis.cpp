@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,19 +22,20 @@ namespace ams::fs {
 
         class BisCommonMountNameGenerator : public fsa::ICommonMountNameGenerator, public impl::Newable {
             private:
-                const BisPartitionId id;
+                const BisPartitionId m_id;
             public:
-                explicit BisCommonMountNameGenerator(BisPartitionId i) : id(i) { /* ... */ }
+                explicit BisCommonMountNameGenerator(BisPartitionId i) : m_id(i) { /* ... */ }
 
                 virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
                     /* Determine how much space we need. */
-                    const char *bis_mount_name = GetBisMountName(this->id);
-                    const size_t needed_size = strnlen(bis_mount_name, MountNameLengthMax) + 2;
+                    const char *bis_mount_name = GetBisMountName(m_id);
+                    const size_t needed_size = util::Strnlen(bis_mount_name, MountNameLengthMax) + 2;
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
-                    auto size = std::snprintf(dst, dst_size, "%s:", bis_mount_name);
+                    const auto size = util::SNPrintf(dst, dst_size, "%s:", bis_mount_name);
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
+                    AMS_UNUSED(size);
 
                     return ResultSuccess();
                 }
@@ -49,7 +50,8 @@ namespace ams::fs {
             R_TRY(impl::CheckMountNameAllowingReserved(name));
 
             /* Open the partition. This uses libnx bindings. */
-            /* Note: Nintendo ignores the root_path here. */
+            /* NOTE: Nintendo ignores the root_path here. */
+            AMS_UNUSED(root_path);
             FsFileSystem fs;
             R_TRY(fsOpenBisFileSystem(std::addressof(fs), static_cast<::FsBisPartitionId>(id), ""));
 
@@ -72,13 +74,14 @@ namespace ams::fs {
 
             fssrv::sf::Path sf_path;
             if (len > 0) {
-                const bool ending_sep = PathTool::IsSeparator(root_path[len - 1]);
+                const bool ending_sep = PathNormalizer::IsSeparator(root_path[len - 1]);
                 FspPathPrintf(std::addressof(sf_path), "%s%s", root_path, ending_sep ? "" : "/");
             } else {
                 sf_path.str[0] = '\x00';
             }
 
             /* TODO: Libnx binding for fsSetBisRootForHost */
+            AMS_UNUSED(id);
             AMS_ABORT();
         }
 

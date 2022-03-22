@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,7 +19,8 @@
 namespace ams::settings::impl {
 
     Result GetProductModel(s32 *out) {
-        return ::setsysGetProductModel(out);
+        static_assert(sizeof(*out) == sizeof(::SetSysProductModel));
+        return ::setsysGetProductModel(reinterpret_cast<::SetSysProductModel *>(out));
     }
 
 }

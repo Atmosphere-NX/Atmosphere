@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,27 +28,26 @@ namespace ams::fatal::srv {
             }
 
             bool in_repair;
-            return R_SUCCEEDED(setsysGetInRepairProcessEnableFlag(&in_repair)) && in_repair;
+            return R_SUCCEEDED(setsysGetInRepairProcessEnableFlag(std::addressof(in_repair))) && in_repair;
         }
 
         bool IsInRepairWithoutVolHeld() {
             if (IsInRepair()) {
-                GpioPadSession vol_btn;
-                if (R_FAILED(gpioOpenSession(&vol_btn, GpioPadName_ButtonVolUp))) {
+                gpio::GpioPadSession vol_btn;
+                if (R_FAILED(gpio::OpenSession(std::addressof(vol_btn), gpio::DeviceCode_ButtonVolUp))) {
                     return true;
                 }
 
                 /* Ensure we close even on early return. */
-                ON_SCOPE_EXIT { gpioPadClose(&vol_btn); };
+                ON_SCOPE_EXIT { gpio::CloseSession(std::addressof(vol_btn)); };
 
                 /* Set direction input. */
-                gpioPadSetDirection(&vol_btn, GpioDirection_Input);
+                gpio::SetDirection(std::addressof(vol_btn), gpio::Direction_Input);
 
                 /* Ensure that we're holding the volume button for a full second. */
                 auto start = os::GetSystemTick();
                 do {
-                    GpioValue val;
-                    if (R_FAILED(gpioPadGetValue(&vol_btn, &val)) || val != GpioValue_Low) {
+                    if (gpio::GetValue(std::addressof(vol_btn)) != gpio::GpioValue_Low) {
                         return true;
                     }
 
@@ -67,7 +66,7 @@ namespace ams::fatal::srv {
             }
 
             bool requires_time_reviser;
-            return R_SUCCEEDED(setsysGetRequiresRunRepairTimeReviser(&requires_time_reviser)) && requires_time_reviser;
+            return R_SUCCEEDED(setsysGetRequiresRunRepairTimeReviser(std::addressof(requires_time_reviser))) && requires_time_reviser;
         }
 
         bool IsTimeReviserCartridgeInserted() {
@@ -75,21 +74,21 @@ namespace ams::fatal::srv {
             u8 gc_attr;
             {
                 FsDeviceOperator devop;
-                if (R_FAILED(fsOpenDeviceOperator(&devop))) {
+                if (R_FAILED(fsOpenDeviceOperator(std::addressof(devop)))) {
                     return false;
                 }
 
                 /* Ensure we close even on early return. */
-                ON_SCOPE_EXIT { fsDeviceOperatorClose(&devop); };
+                ON_SCOPE_EXIT { fsDeviceOperatorClose(std::addressof(devop)); };
 
                 /* Check that a gamecard is inserted. */
                 bool inserted;
-                if (R_FAILED(fsDeviceOperatorIsGameCardInserted(&devop, &inserted)) || !inserted) {
+                if (R_FAILED(fsDeviceOperatorIsGameCardInserted(std::addressof(devop), std::addressof(inserted))) || !inserted) {
                     return false;
                 }
 
                 /* Check that we can retrieve the gamecard's attributes. */
-                if (R_FAILED(fsDeviceOperatorGetGameCardHandle(&devop, &gc_hnd)) || R_FAILED(fsDeviceOperatorGetGameCardAttribute(&devop, &gc_hnd, &gc_attr))) {
+                if (R_FAILED(fsDeviceOperatorGetGameCardHandle(std::addressof(devop), std::addressof(gc_hnd))) || R_FAILED(fsDeviceOperatorGetGameCardAttribute(std::addressof(devop), std::addressof(gc_hnd), std::addressof(gc_attr)))) {
                     return false;
                 }
             }

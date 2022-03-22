@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,48 +14,68 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "i2c/driver/i2c_api.hpp"
+#include <stratosphere.hpp>
 
 namespace ams::boot {
 
     class BatteryDriver {
+        NON_COPYABLE(BatteryDriver);
+        NON_MOVEABLE(BatteryDriver);
         private:
-            i2c::driver::Session i2c_session;
+            static constinit inline powctl::Session s_battery_session{powctl::Session::ConstantInitializeTag{}};
+            static constinit inline int s_reference_count{0};
         public:
             BatteryDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max17050);
+                if ((s_reference_count++) == 0) {
+                    R_ABORT_UNLESS(powctl::OpenSession(std::addressof(s_battery_session), powctl::DeviceCode_Max17050, ddsf::AccessMode_ReadWrite));
+                }
             }
 
             ~BatteryDriver() {
-                i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
+                if ((--s_reference_count) == 0) {
+                    powctl::CloseSession(s_battery_session);
+                }
             }
-        private:
-            Result Read(u8 addr, u16 *out_data);
-            Result Write(u8 addr, u16 val);
-            Result ReadWrite(u8 addr, u16 mask, u16 val);
-            bool WriteValidate(u8 addr, u16 val);
-
-            bool IsPowerOnReset();
-            Result LockVfSoc();
-            Result UnlockVfSoc();
-            Result LockModelTable();
-            Result UnlockModelTable();
-            bool IsModelTableLocked();
-            Result SetModelTable(const u16 *model_table);
-            bool IsModelTableSet(const u16 *model_table);
-
         public:
-            Result InitializeBatteryParameters();
-            Result IsBatteryRemoved(bool *out);
-            Result GetTemperature(double *out);
-            Result GetAverageVCell(u32 *out);
-            Result GetSocRep(double *out);
-            Result GetBatteryPercentage(size_t *out);
-            Result SetShutdownTimer();
-            Result GetShutdownEnabled(bool *out);
-            Result SetShutdownEnabled(bool enabled);
+            Result IsBatteryRemoved(bool *out) {
+                bool present;
+                R_TRY(powctl::IsBatteryPresent(std::addressof(present), s_battery_session));
+
+                *out = !present;
+                return ResultSuccess();
+            }
+
+            Result GetChargePercentage(float *out) {
+                return powctl::GetBatteryChargePercentage(out, s_battery_session);
+            }
+
+            Result GetAverageVCell(int *out) {
+                return powctl::GetBatteryAverageVCell(out, s_battery_session);
+            }
+
+            Result GetVoltageFuelGaugePercentage(float *out) {
+                return powctl::GetBatteryVoltageFuelGaugePercentage(out, s_battery_session);
+            }
+
+            Result GetAverageCurrent(int *out) {
+                return powctl::GetBatteryAverageCurrent(out, s_battery_session);
+            }
+
+            Result GetCurrent(int *out) {
+                return powctl::GetBatteryCurrent(out, s_battery_session);
+            }
+
+            Result GetTemperature(float *out) {
+                return powctl::GetBatteryTemperature(out, s_battery_session);
+            }
+
+            Result IsI2cShutdownEnabled(bool *out) {
+                return powctl::IsBatteryI2cShutdownEnabled(out, s_battery_session);
+            }
+
+            Result SetI2cShutdownEnabled(bool en) {
+                return powctl::SetBatteryI2cShutdownEnabled(s_battery_session, en);
+            }
     };
 
 }

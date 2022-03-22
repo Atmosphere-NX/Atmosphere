@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,9 +27,9 @@ namespace ams::util {
             static constexpr size_t AlignedSize = ((Size + Alignment - 1) / Alignment) * Alignment;
             static_assert(AlignedSize % Alignment == 0);
         private:
-            u8 buffer[Alignment + AlignedSize];
+            u8 m_buffer[Alignment + AlignedSize];
         public:
-            ALWAYS_INLINE operator u8 *() { return reinterpret_cast<u8 *>(util::AlignUp(reinterpret_cast<uintptr_t>(this->buffer), Alignment)); }
+            ALWAYS_INLINE operator u8 *() { return reinterpret_cast<u8 *>(util::AlignUp(reinterpret_cast<uintptr_t>(m_buffer), Alignment)); }
     };
 
 }

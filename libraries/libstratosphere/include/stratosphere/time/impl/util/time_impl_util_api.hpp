@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,5 +22,16 @@
 namespace ams::time::impl::util {
 
     Result GetSpanBetween(s64 *out, const SteadyClockTimePoint &from, const SteadyClockTimePoint &to);
+
+    bool IsLeapYear(int year);
+    bool IsValidDate(int year, int month, int day);
+
+    int GetDaysInMonth(int year, int month);
+
+    int DateToDays(int year, int month, int day);
+    void DaysToDate(int *out_year, int *out_month, int *out_day, int days);
+
+    CalendarTime ToCalendarTimeInUtc(const PosixTime &posix_time);
+    PosixTime ToPosixTimeFromUtc(const CalendarTime &calendar_time);
 
 }

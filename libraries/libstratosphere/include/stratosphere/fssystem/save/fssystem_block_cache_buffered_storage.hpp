@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -61,30 +61,30 @@ namespace ams::fssystem::save {
                 Flag_RealData      = (1 << 10),
             };
         private:
-            IBufferManager *buffer_manager;
-            os::Mutex *mutex;
-            std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> entries;
-            IStorage *data_storage;
-            Result last_result;
-            s64 data_size;
-            size_t verification_block_size;
-            size_t verification_block_shift;
-            CacheIndex invalidate_index;
-            s32 max_cache_entry_count;
-            s32 flags;
-            s32 buffer_level;
-            fs::StorageType storage_type;
+            IBufferManager *m_buffer_manager;
+            os::SdkRecursiveMutex *m_mutex;
+            std::unique_ptr<CacheEntry[], ::ams::fs::impl::Deleter> m_entries;
+            IStorage *m_data_storage;
+            Result m_last_result;
+            s64 m_data_size;
+            size_t m_verification_block_size;
+            size_t m_verification_block_shift;
+            CacheIndex m_invalidate_index;
+            s32 m_max_cache_entry_count;
+            s32 m_flags;
+            s32 m_buffer_level;
+            fs::StorageType m_storage_type;
         public:
             BlockCacheBufferedStorage();
             virtual ~BlockCacheBufferedStorage() override;
 
-            Result Initialize(IBufferManager *bm, os::Mutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
+            Result Initialize(IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64 size) override { return fs::ResultUnsupportedOperationInBlockCacheBufferedStorageA(); }
+            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedOperationInBlockCacheBufferedStorageA(); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;
@@ -96,31 +96,31 @@ namespace ams::fssystem::save {
             Result OnRollback();
 
             bool IsEnabledKeepBurstMode() const {
-                return (this->flags & Flag_KeepBurstMode) != 0;
+                return (m_flags & Flag_KeepBurstMode) != 0;
             }
 
             bool IsRealDataCache() const {
-                return (this->flags & Flag_RealData) != 0;
+                return (m_flags & Flag_RealData) != 0;
             }
 
             void SetKeepBurstMode(bool en) {
                 if (en) {
-                    this->flags |= Flag_KeepBurstMode;
+                    m_flags |= Flag_KeepBurstMode;
                 } else {
-                    this->flags &= ~Flag_KeepBurstMode;
+                    m_flags &= ~Flag_KeepBurstMode;
                 }
             }
 
             void SetRealDataCache(bool en) {
                 if (en) {
-                    this->flags |= Flag_RealData;
+                    m_flags |= Flag_RealData;
                 } else {
-                    this->flags &= ~Flag_RealData;
+                    m_flags &= ~Flag_RealData;
                 }
             }
         private:
             s32 GetMaxCacheEntryCount() const {
-                return this->max_cache_entry_count;
+                return m_max_cache_entry_count;
             }
 
             Result ClearImpl(s64 offset, s64 size);
@@ -143,12 +143,11 @@ namespace ams::fssystem::save {
             Result StoreOrDestroyBuffer(const MemoryRange &range, CacheEntry *entry) {
                 AMS_ASSERT(entry != nullptr);
 
-                auto buf_guard = SCOPE_GUARD { this->DestroyBuffer(entry, range); };
+                ON_RESULT_FAILURE { this->DestroyBuffer(entry, range); };
 
                 R_TRY(this->StoreAssociateBuffer(range, *entry));
 
-                buf_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result FlushCacheEntry(CacheIndex index, bool invalidate);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,20 +21,8 @@
 namespace ams::sm::impl {
 
     /* Utilities. */
-    os::Mutex &GetUserSessionMutex();
-    os::Mutex &GetMitmAcknowledgementSessionMutex();
-    os::Mutex &GetPerThreadSessionMutex();
-
-    template<typename F>
-    Result DoWithUserSession(F f) {
-        std::scoped_lock lk(GetUserSessionMutex());
-        {
-            R_ABORT_UNLESS(smInitialize());
-            ON_SCOPE_EXIT { smExit(); };
-
-            return f();
-        }
-    }
+    os::SdkRecursiveMutex &GetMitmAcknowledgementSessionMutex();
+    os::SdkRecursiveMutex &GetPerThreadSessionMutex();
 
     template<typename F>
     Result DoWithMitmAcknowledgementSession(F f) {
@@ -49,22 +37,20 @@ namespace ams::sm::impl {
 
     template<typename F>
     Result DoWithPerThreadSession(F f) {
-        Service srv;
+        TipcService srv;
         {
             std::scoped_lock lk(GetPerThreadSessionMutex());
-            R_ABORT_UNLESS(smAtmosphereOpenSession(&srv));
+            R_ABORT_UNLESS(smAtmosphereOpenSession(std::addressof(srv)));
         }
         {
-            ON_SCOPE_EXIT { smAtmosphereCloseSession(&srv); };
-            return f(&srv);
+            ON_SCOPE_EXIT { smAtmosphereCloseSession(std::addressof(srv)); };
+            return f(std::addressof(srv));
         }
     }
 
-    NX_CONSTEXPR SmServiceName ConvertName(sm::ServiceName name) {
+    constexpr ALWAYS_INLINE SmServiceName ConvertName(sm::ServiceName name) {
         static_assert(sizeof(SmServiceName) == sizeof(sm::ServiceName));
-        SmServiceName ret = {};
-        __builtin_memcpy(&ret, &name, sizeof(sm::ServiceName));
-        return ret;
+        return std::bit_cast<SmServiceName>(name);
     }
 
 }

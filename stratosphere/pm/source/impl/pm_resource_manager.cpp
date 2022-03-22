@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,42 +29,36 @@ namespace ams::pm::resource {
         };
 
         /* Definitions for limit differences over time. */
-        constexpr size_t ExtraSystemThreadCount400   = 100;
         constexpr size_t ExtraSystemMemorySize400    = 10_MB;
-        constexpr size_t ExtraSystemMemorySize500    = 12_MB;
-        constexpr size_t ExtraSystemEventCount600    = 100;
-        constexpr size_t ExtraSystemSessionCount600  = 100;
         constexpr size_t ReservedMemorySize600       = 5_MB;
-        constexpr size_t ExtraSystemSessionCount920  = 33;
 
         /* Atmosphere always allocates extra memory for system usage. */
         constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24_MB;
-        constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33_MB; /* Applet pool is 0x20100000 */
 
         /* Globals. */
-        os::Mutex g_resource_limit_lock(false);
-        Handle g_resource_limit_handles[ResourceLimitGroup_Count];
-        spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
-        u64 g_system_memory_boost_size = 0;
-        u64 g_extra_application_threads_available = 0;
+        constinit os::SdkMutex g_resource_limit_lock;
+        constinit os::NativeHandle g_resource_limit_handles[ResourceLimitGroup_Count];
+        constinit spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
+        constinit u64 g_system_memory_boost_size = 0;
+        constinit u64 g_extra_application_threads_available = 0;
 
-        u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
+        constinit u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
             [ResourceLimitGroup_System] = {
-                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized by more complicated logic later. */
-                [svc::LimitableResource_ThreadCountMax]         = 508,
-                [svc::LimitableResource_EventCountMax]          = 600,
-                [svc::LimitableResource_TransferMemoryCountMax] = 128,
-                [svc::LimitableResource_SessionCountMax]        = 794,
+                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
+                [svc::LimitableResource_ThreadCountMax]         = 608,
+                [svc::LimitableResource_EventCountMax]          = 0,   /* Initialized dynamically later. */
+                [svc::LimitableResource_TransferMemoryCountMax] = 0,   /* Initialized dynamically later. */
+                [svc::LimitableResource_SessionCountMax]        = 0,   /* Initialized dynamically later. */
             },
             [ResourceLimitGroup_Application] = {
-                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized by more complicated logic later. */
+                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
                 [svc::LimitableResource_ThreadCountMax]         = 96,
                 [svc::LimitableResource_EventCountMax]          = 0,
                 [svc::LimitableResource_TransferMemoryCountMax] = 32,
                 [svc::LimitableResource_SessionCountMax]        = 1,
             },
             [ResourceLimitGroup_Applet] = {
-                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized by more complicated logic later. */
+                [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
                 [svc::LimitableResource_ThreadCountMax]         = 96,
                 [svc::LimitableResource_EventCountMax]          = 0,
                 [svc::LimitableResource_TransferMemoryCountMax] = 32,
@@ -72,7 +66,7 @@ namespace ams::pm::resource {
             },
         };
 
-        u64 g_memory_resource_limits[spl::MemoryArrangement_Count][ResourceLimitGroup_Count] = {
+        constinit u64 g_memory_resource_limits[spl::MemoryArrangement_Count][ResourceLimitGroup_Count] = {
             [spl::MemoryArrangement_Standard] = {
                 [ResourceLimitGroup_System]      =  269_MB,
                 [ResourceLimitGroup_Application] = 3285_MB,
@@ -105,14 +99,11 @@ namespace ams::pm::resource {
             const u64 old_memory_limit = g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax];
             g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = new_memory_limit;
 
-            {
-                /* If we fail, restore the old memory limit. */
-                auto limit_guard = SCOPE_GUARD { g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = old_memory_limit; };
-                R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), svc::LimitableResource_PhysicalMemoryMax, g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax]));
-                limit_guard.Cancel();
-            }
+            /* Restore the old memory limit if we fail. */
+            ON_RESULT_FAILURE { g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax] = old_memory_limit; };
 
-            return ResultSuccess();
+            /* Set the resource limit. */
+            R_RETURN(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), svc::LimitableResource_PhysicalMemoryMax, g_resource_limits[group][svc::LimitableResource_PhysicalMemoryMax]));
         }
 
         Result SetResourceLimitLimitValues(ResourceLimitGroup group, u64 new_memory_limit) {
@@ -142,7 +133,7 @@ namespace ams::pm::resource {
         }
 
         void WaitResourceAvailable(ResourceLimitGroup group) {
-            const Handle reslimit_hnd = GetResourceLimitHandle(group);
+            const auto reslimit_hnd = GetResourceLimitHandle(group);
             for (size_t i = 0; i < svc::LimitableResource_Count; i++) {
                 const auto resource = LimitableResources[i];
 
@@ -152,7 +143,7 @@ namespace ams::pm::resource {
                     if (value == 0) {
                         break;
                     }
-                    svc::SleepThread(1'000'000ul);
+                    os::SleepThread(TimeSpan::FromMilliSeconds(1));
                 }
             }
         }
@@ -160,21 +151,17 @@ namespace ams::pm::resource {
         void WaitApplicationMemoryAvailable() {
             u64 value = 0;
             while (true) {
-                R_ABORT_UNLESS(svc::GetSystemInfo(&value, svc::SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, svc::PhysicalMemorySystemInfo_Application));
+                R_ABORT_UNLESS(svc::GetSystemInfo(&value, svc::SystemInfoType_UsedPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
                 if (value == 0) {
                     break;
                 }
-                svc::SleepThread(1'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(1));
             }
         }
 
         bool IsKTraceEnabled() {
-            if (!svc::IsKernelMesosphere()) {
-                return false;
-            }
-
             u64 value = 0;
-            R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_MesosphereMeta, INVALID_HANDLE, svc::MesosphereMetaInfo_IsKTraceEnabled));
+            R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_MesosphereMeta, svc::InvalidHandle, svc::MesosphereMetaInfo_IsKTraceEnabled));
 
             return value != 0;
         }
@@ -190,58 +177,60 @@ namespace ams::pm::resource {
                 R_ABORT_UNLESS(svc::GetInfo(&value, svc::InfoType_ResourceLimit, svc::InvalidHandle, 0));
                 g_resource_limit_handles[i] = static_cast<svc::Handle>(value);
             } else {
-                R_ABORT_UNLESS(svc::CreateResourceLimit(&g_resource_limit_handles[i]));
+                R_ABORT_UNLESS(svc::CreateResourceLimit(g_resource_limit_handles + i));
             }
         }
 
-        /* Adjust resource limits based on hos firmware version. */
+        /* Adjust memory limits based on hos firmware version. */
         const auto hos_version = hos::GetVersion();
         if (hos_version >= hos::Version_4_0_0) {
-            /* 4.0.0 increased the system thread limit. */
-            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] += ExtraSystemThreadCount400;
-            /* 4.0.0 also took memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
+            /* 4.0.0 took memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_System] += ExtraSystemMemorySize400;
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize400;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize400;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize400;
         }
-        if (hos_version >= hos::Version_5_0_0) {
-            /* 5.0.0 took more memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
-            g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
-            g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
-            g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
-            g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
+
+        /* Determine system resource counts. */
+        {
+            /* Get the total resource counts. */
+            s64 total_events, total_transfer_memories, total_sessions;
+            R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(std::addressof(total_events), GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_EventCountMax));
+            R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(std::addressof(total_transfer_memories), GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_TransferMemoryCountMax));
+            R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(std::addressof(total_sessions), GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_SessionCountMax));
+
+            /* Determine system counts. */
+            const s64 sys_events            = total_events - (g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_EventCountMax] + g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_EventCountMax]);
+            const s64 sys_transfer_memories = total_transfer_memories - (g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_TransferMemoryCountMax] + g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_TransferMemoryCountMax]);
+            const s64 sys_sessions          = total_sessions - (g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_SessionCountMax] + g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_SessionCountMax]);
+
+            /* Check system counts. */
+            AMS_ABORT_UNLESS(sys_events >= 0);
+            AMS_ABORT_UNLESS(sys_transfer_memories >= 0);
+            AMS_ABORT_UNLESS(sys_sessions >= 0);
+
+            /* Set system counts. */
+            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_EventCountMax]          = sys_events;
+            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_TransferMemoryCountMax] = sys_transfer_memories;
+            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax]        = sys_sessions;
         }
-        if (hos_version >= hos::Version_6_0_0) {
-            /* 6.0.0 increased the system event and session limits. */
-            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_EventCountMax]   += ExtraSystemEventCount600;
-            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount600;
-        }
-        if (hos_version >= hos::Version_9_2_0) {
-            /* 9.2.0 increased the system session limit. */
-            g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount920;
-        }
 
-        /* 7.0.0+: Calculate the number of extra application threads available. */
-        if (hos::GetVersion() >= hos::Version_7_0_0) {
-            /* See how many threads we have available. */
-            s64 total_threads_available = 0;
-            R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_ThreadCountMax));
+        /* Determine extra application threads. */
+        {
+            /* Get total threads available. */
+            s64 total_threads;
+            R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(std::addressof(total_threads), GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_ThreadCountMax));
 
-            /* See how many threads we're expecting. */
-            const s64 total_threads_allocated = g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] +
-                                                       g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] +
-                                                       g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_ThreadCountMax];
+            /* Check that we have enough threads. */
+            const s64 required_threads = g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] + g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] + g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_ThreadCountMax];
+            AMS_ABORT_UNLESS(total_threads >= required_threads);
 
-            /* Ensure we don't over-commit threads. */
-            AMS_ABORT_UNLESS(total_threads_allocated <= total_threads_available);
-
-            /* Set number of extra threads. */
-            g_extra_application_threads_available = total_threads_available - total_threads_allocated;
+            /* Set the number of extra application threads. */
+            g_extra_application_threads_available = total_threads - required_threads;
         }
 
         /* Choose and initialize memory arrangement. */
-        const bool use_dynamic_memory_arrangement = (hos_version >= hos::Version_6_0_0) || (svc::IsKernelMesosphere() && hos_version >= hos::Version_5_0_0);
+        const bool use_dynamic_memory_arrangement = (hos_version >= hos::Version_5_0_0);
         if (use_dynamic_memory_arrangement) {
             /* 6.0.0 retrieves memory limit information from the kernel, rather than using a hardcoded profile. */
             g_memory_arrangement = spl::MemoryArrangement_Dynamic;
@@ -251,8 +240,8 @@ namespace ams::pm::resource {
             R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(&total_memory, GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_PhysicalMemoryMax));
 
             /* Get and save application + applet memory. */
-            R_ABORT_UNLESS(svc::GetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application], svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
-            R_ABORT_UNLESS(svc::GetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet],      svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Applet));
+            R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application]), svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Application));
+            R_ABORT_UNLESS(svc::GetSystemInfo(std::addressof(g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet]),      svc::SystemInfoType_TotalPhysicalMemorySize, svc::InvalidHandle, svc::PhysicalMemorySystemInfo_Applet));
 
             const s64 application_size         = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application];
             const s64 applet_size              = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet];
@@ -268,9 +257,7 @@ namespace ams::pm::resource {
 
             /* Adjust memory limits for atmosphere. */
             /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
-            /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
-            /* via patches in fusee-secondary. */
-            const size_t extra_memory_size = hos_version == hos::Version_5_0_0 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
+            const size_t extra_memory_size = ExtraSystemMemorySizeAtmosphere;
             const auto src_group = hos_version >= hos::Version_3_0_0 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
             for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
                 g_memory_resource_limits[i][ResourceLimitGroup_System] += extra_memory_size;
@@ -334,6 +321,7 @@ namespace ams::pm::resource {
 
     Result BoostApplicationThreadResourceLimit() {
         std::scoped_lock lk(g_resource_limit_lock);
+
         /* Set new limit. */
         const s64 new_thread_count = g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] + g_extra_application_threads_available;
         R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(ResourceLimitGroup_Application), svc::LimitableResource_ThreadCountMax, new_thread_count));
@@ -345,11 +333,11 @@ namespace ams::pm::resource {
         return ResultSuccess();
     }
 
-    Handle GetResourceLimitHandle(ResourceLimitGroup group) {
+    os::NativeHandle GetResourceLimitHandle(ResourceLimitGroup group) {
         return g_resource_limit_handles[group];
     }
 
-    Handle GetResourceLimitHandle(const ldr::ProgramInfo *info) {
+    os::NativeHandle GetResourceLimitHandle(const ldr::ProgramInfo *info) {
         return GetResourceLimitHandle(GetResourceLimitGroup(info));
     }
 
@@ -367,7 +355,7 @@ namespace ams::pm::resource {
         AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
         AMS_ABORT_UNLESS(resource < svc::LimitableResource_Count);
 
-        const Handle reslimit_hnd = GetResourceLimitHandle(group);
+        const auto reslimit_hnd = GetResourceLimitHandle(group);
         R_TRY(svc::GetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));
         R_TRY(svc::GetResourceLimitLimitValue(out_lim, reslimit_hnd, resource));
 

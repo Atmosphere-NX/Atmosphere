@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -37,14 +37,14 @@ namespace ams::fssrv::impl {
 
     class FileSystemInterfaceAdapter;
 
-    class FileInterfaceAdapter final {
+    class FileInterfaceAdapter {
         NON_COPYABLE(FileInterfaceAdapter);
         private:
-            std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
-            std::unique_ptr<fs::fsa::IFile> base_file;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> m_parent_filesystem;
+            std::unique_ptr<fs::fsa::IFile> m_base_file;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
         public:
-            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~FileInterfaceAdapter();
         private:
             void InvalidateCache();
@@ -56,17 +56,18 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
+            Result OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size);
     };
     static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
-    class DirectoryInterfaceAdapter final {
+    class DirectoryInterfaceAdapter {
         NON_COPYABLE(DirectoryInterfaceAdapter);
         private:
-            std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
-            std::unique_ptr<fs::fsa::IDirectory> base_dir;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> m_parent_filesystem;
+            std::unique_ptr<fs::fsa::IDirectory> m_base_dir;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
         public:
-            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~DirectoryInterfaceAdapter();
         public:
             /* Command API */
@@ -75,14 +76,14 @@ namespace ams::fssrv::impl {
     };
     static_assert(fssrv::sf::IsIDirectory<DirectoryInterfaceAdapter>);
 
-    class FileSystemInterfaceAdapter final : public std::enable_shared_from_this<FileSystemInterfaceAdapter> {
+    class FileSystemInterfaceAdapter : public ams::sf::ISharedObject {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         private:
-            std::shared_ptr<fs::fsa::IFileSystem> base_fs;
-            std::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
-            os::ReadWriteLock invalidation_lock;
-            bool open_count_limited;
-            bool deep_retry_enabled = false;
+            std::shared_ptr<fs::fsa::IFileSystem> m_base_fs;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_mount_count_semaphore;
+            os::ReaderWriterLock m_invalidation_lock;
+            bool m_open_count_limited;
+            bool m_deep_retry_enabled = false;
         public:
             FileSystemInterfaceAdapter(std::shared_ptr<fs::fsa::IFileSystem> &&fs, bool open_limited);
             /* TODO: Other constructors. */
@@ -91,8 +92,8 @@ namespace ams::fssrv::impl {
         public:
             bool IsDeepRetryEnabled() const;
             bool IsAccessFailureDetectionObserved() const;
-            std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
-            os::ReadWriteLock &GetReadWriteLockForCacheInvalidation();
+            util::optional<std::shared_lock<os::ReaderWriterLock>> AcquireCacheInvalidationReadLock();
+            os::ReaderWriterLock &GetReaderWriterLockForCacheInvalidation();
         public:
             /* Command API. */
             Result CreateFile(const fssrv::sf::Path &path, s64 size, s32 option);
@@ -103,8 +104,8 @@ namespace ams::fssrv::impl {
             Result RenameFile(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result RenameDirectory(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result GetEntryType(ams::sf::Out<u32> out, const fssrv::sf::Path &path);
-            Result OpenFile(ams::sf::Out<std::shared_ptr<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);
-            Result OpenDirectory(ams::sf::Out<std::shared_ptr<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenFile(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenDirectory(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode);
             Result Commit();
             Result GetFreeSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);
             Result GetTotalSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,32 +20,38 @@ namespace ams::kern {
     void KEvent::Initialize() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Increment reference count. */
-        /* Because reference count is one on creation, this will result */
-        /* in a reference count of two. Thus, when both readable and */
-        /* writable events are closed this object will be destroyed. */
-        this->Open();
+        /* Create our readable event. */
+        KAutoObject::Create<KReadableEvent>(std::addressof(m_readable_event));
 
-        /* Create our sub events. */
-        KAutoObject::Create(std::addressof(this->readable_event));
-        KAutoObject::Create(std::addressof(this->writable_event));
-
-        /* Initialize our sub sessions. */
-        this->readable_event.Initialize(this);
-        this->writable_event.Initialize(this);
+        /* Initialize our readable event. */
+        m_readable_event.Initialize(this);
 
         /* Set our owner process. */
-        this->owner = GetCurrentProcessPointer();
-        this->owner->Open();
+        m_owner = GetCurrentProcessPointer();
+        m_owner->Open();
 
         /* Mark initialized. */
-        this->initialized = true;
+        m_initialized = true;
     }
 
     void KEvent::Finalize() {
         MESOSPHERE_ASSERT_THIS();
+    }
 
-        KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList>::Finalize();
+    Result KEvent::Signal() {
+        KScopedSchedulerLock sl;
+
+        R_SUCCEED_IF(m_readable_event_destroyed);
+
+        R_RETURN(m_readable_event.Signal());
+    }
+
+    Result KEvent::Clear() {
+        KScopedSchedulerLock sl;
+
+        R_SUCCEED_IF(m_readable_event_destroyed);
+
+        R_RETURN(m_readable_event.Clear());
     }
 
     void KEvent::PostDestroy(uintptr_t arg) {

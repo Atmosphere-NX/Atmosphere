@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,12 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-
-namespace ams {
-
-    extern ncm::ProgramId CurrentProgramId;
-
-}
 
 namespace ams::diag {
 
@@ -43,14 +37,14 @@ namespace ams::diag {
 
         inline void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-#ifdef AMS_ENABLE_DEBUG_PRINT
-        os::Mutex g_debug_log_lock(true);
-        char g_debug_buffer[0x400];
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
+        constinit os::SdkRecursiveMutex g_debug_log_lock;
+        constinit char g_debug_buffer[0x400];
 
         void DebugLogImpl(const char *format, ::std::va_list vl) {
             std::scoped_lock lk(g_debug_log_lock);
 
-            std::vsnprintf(g_debug_buffer, sizeof(g_debug_buffer), format, vl);
+            util::VSNPrintf(g_debug_buffer, sizeof(g_debug_buffer), format, vl);
 
             svc::OutputDebugString(g_debug_buffer, strlen(g_debug_buffer));
         }
@@ -63,25 +57,27 @@ namespace ams::diag {
         }
 
 #else
-        void DebugLog(const char *format, ...)  { /* ... */ }
+        void DebugLog(const char *format, ...)  { AMS_UNUSED(format); }
 #endif
 
     }
 
     NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Assertion Failure\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
         {
             ::std::va_list vl;
             va_start(vl, format);
             DebugLogImpl(format, vl);
             va_end(vl);
         }
+#else
+        AMS_UNUSED(format);
 #endif
         DebugLog("\n");
 
@@ -89,11 +85,11 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Assertion Failure\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Assertion Failure\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
         DebugLog("\n");
 
@@ -101,19 +97,21 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
-        DebugLog("%016lx: Abort Called\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
         {
             ::std::va_list vl;
             va_start(vl, format);
             DebugLogImpl(format, vl);
             va_end(vl);
         }
+#else
+        AMS_UNUSED(format);
 #endif
         DebugLog("\n");
 
@@ -121,11 +119,11 @@ namespace ams::diag {
     }
 
     NORETURN WEAK_SYMBOL void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
-        DebugLog("%016lx: Abort Called\n", static_cast<u64>(ams::CurrentProgramId));
+        DebugLog("%016lx: Abort Called\n", os::GetCurrentProgramId().value);
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
         DebugLog("\n");
 

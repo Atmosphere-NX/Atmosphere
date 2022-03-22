@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,7 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "impl/os_interrupt_event_impl.hpp"
-#include "impl/os_waitable_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
 
 namespace ams::os {
 
@@ -24,7 +25,7 @@ namespace ams::os {
         event->clear_mode = static_cast<u8>(clear_mode);
 
         /* Initialize implementation. */
-        new (GetPointer(event->impl)) impl::InterruptEventImpl(name, clear_mode);
+        util::ConstructAt(event->impl, name, clear_mode);
 
         /* Mark initialized. */
         event->state = InterruptEventType::State_Initialized;
@@ -37,7 +38,7 @@ namespace ams::os {
         event->state = InterruptEventType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(event->impl).~InterruptEventImpl();
+        util::DestroyAt(event->impl);
     }
 
     void WaitInterruptEvent(InterruptEventType *event) {
@@ -59,6 +60,14 @@ namespace ams::os {
     void ClearInterruptEvent(InterruptEventType *event) {
         AMS_ASSERT(event->state == InterruptEventType::State_Initialized);
         return GetReference(event->impl).Clear();
+    }
+
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, InterruptEventType *event) {
+        AMS_ASSERT(event->state == InterruptEventType::State_Initialized);
+
+        util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_interrupt_event_storage, event);
+
+        multi_wait_holder->user_data = 0;
     }
 
 }

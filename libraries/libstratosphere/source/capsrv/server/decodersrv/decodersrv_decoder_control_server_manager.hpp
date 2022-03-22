@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,16 +26,16 @@ namespace ams::capsrv::server {
             static constexpr inline size_t MaxSessions          = 2;
             static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("caps:dc");
 
-            using Interface     = IDecoderControlService;
-            using Service       = DecoderControlService;
+            using ServiceHolderType = sf::UnmanagedServiceObject<IDecoderControlService, DecoderControlService>;
+
             using ServerOptions = sf::hipc::DefaultServerManagerOptions;
             using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
         private:
-            std::optional<Service> service_holder;
-            std::optional<ServerManager> server_manager_holder;
-            os::EventType idle_event;
+            util::optional<ServiceHolderType> m_service_holder;
+            util::optional<ServerManager> m_server_manager_holder;
+            os::EventType m_idle_event;
         public:
-            constexpr DecoderControlServerManager() : service_holder(), server_manager_holder(), idle_event{} { /* ... */ }
+            constexpr DecoderControlServerManager() : m_service_holder(), m_server_manager_holder(), m_idle_event{} { /* ... */ }
 
             Result Initialize();
             void   Finalize();

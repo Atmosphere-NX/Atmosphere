@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -39,7 +39,7 @@ namespace ams::os::impl {
 
             /* Set the thread's id. */
             u64 thread_id;
-            R_ABORT_UNLESS(svc::GetThreadId(std::addressof(thread_id), svc::Handle(thread->thread_impl->handle)));
+            R_ABORT_UNLESS(svc::GetThreadId(std::addressof(thread_id), thread->thread_impl->handle));
             thread->thread_id = thread_id;
 
             /* Invoke the thread. */
@@ -52,6 +52,26 @@ namespace ams::os::impl {
         /* Get the thread impl object from libnx. */
         ThreadImpl *thread_impl = ::threadGetSelf();
 
+        /* Hack around libnx's main thread, to ensure stratosphere thread type consistency. */
+        {
+            auto *tlr = reinterpret_cast<uintptr_t *>(svc::GetThreadLocalRegion());
+            for (size_t i = sizeof(svc::ThreadLocalRegion) / sizeof(uintptr_t); i > 0; --i) {
+                if (auto *candidate = reinterpret_cast<ThreadImpl *>(tlr[i - 1]); candidate == thread_impl) {
+                    ThreadImpl *embedded_thread = std::addressof(main_thread->thread_impl_storage);
+
+                    *embedded_thread = *thread_impl;
+
+                    if (embedded_thread->next) {
+                        embedded_thread->next->prev_next = std::addressof(embedded_thread->next);
+                    }
+
+                    thread_impl = embedded_thread;
+                    tlr[i-1]    = reinterpret_cast<uintptr_t>(thread_impl);
+                    break;
+                }
+            }
+        }
+
         /* Get the thread priority. */
         s32 horizon_priority;
         R_ABORT_UNLESS(svc::GetThreadPriority(std::addressof(horizon_priority), thread_impl->handle));
@@ -60,7 +80,7 @@ namespace ams::os::impl {
 
         /* Set the thread id. */
         u64 thread_id;
-        R_ABORT_UNLESS(svc::GetThreadId(std::addressof(thread_id), svc::Handle(thread_impl->handle)));
+        R_ABORT_UNLESS(svc::GetThreadId(std::addressof(thread_id), thread_impl->handle));
         main_thread->thread_id = thread_id;
 
         /* NOTE: Here Nintendo would set the thread pointer in TLS. */
@@ -71,7 +91,7 @@ namespace ams::os::impl {
 
         s32 count = 0;
         while (true) {
-            R_TRY_CATCH(::threadCreate(thread->thread_impl, reinterpret_cast<::ThreadFunc>(&InvokeThread), thread, thread->stack, thread->stack_size, ConvertToHorizonPriority(thread->base_priority), ideal_core)) {
+            R_TRY_CATCH(::threadCreate(thread->thread_impl, reinterpret_cast<::ThreadFunc>(reinterpret_cast<void *>(&InvokeThread)), thread, thread->stack, thread->stack_size, ConvertToHorizonPriority(thread->base_priority), ideal_core)) {
                 R_CATCH(svc::ResultOutOfResource) {
                     if ((++count) < 10) {
                         os::SleepThread(TimeSpan::FromMilliSeconds(10));
@@ -94,7 +114,7 @@ namespace ams::os::impl {
     }
 
     void ThreadManagerHorizonImpl::WaitForThreadExit(ThreadType *thread) {
-        const svc::Handle handle(thread->thread_impl->handle);
+        const svc::Handle handle = thread->thread_impl->handle;
 
         while (true) {
             s32 index;
@@ -107,7 +127,7 @@ namespace ams::os::impl {
     }
 
     bool ThreadManagerHorizonImpl::TryWaitForThreadExit(ThreadType *thread) {
-        const svc::Handle handle(thread->thread_impl->handle);
+        const svc::Handle handle = thread->thread_impl->handle;
 
         while (true) {
             /* Continuously wait, until success or timeout. */
@@ -137,9 +157,7 @@ namespace ams::os::impl {
     }
 
     bool ThreadManagerHorizonImpl::ChangePriority(ThreadType *thread, s32 priority) {
-        const svc::Handle handle(thread->thread_impl->handle);
-
-        auto res = svc::SetThreadPriority(handle, ConvertToHorizonPriority(priority));
+        auto res = svc::SetThreadPriority(thread->thread_impl->handle, ConvertToHorizonPriority(priority));
         if (svc::ResultInvalidPriority::Includes(res)) {
             AMS_ABORT("Invalid thread priority");
         }
@@ -148,10 +166,8 @@ namespace ams::os::impl {
     }
 
     s32 ThreadManagerHorizonImpl::GetCurrentPriority(const ThreadType *thread) const {
-        const svc::Handle handle(thread->thread_impl->handle);
         s32 priority;
-
-        R_ABORT_UNLESS(svc::GetThreadPriority(std::addressof(priority), handle));
+        R_ABORT_UNLESS(svc::GetThreadPriority(std::addressof(priority), thread->thread_impl->handle));
 
         return ConvertToUserPriority(priority);
     }
@@ -161,21 +177,15 @@ namespace ams::os::impl {
     }
 
     void ThreadManagerHorizonImpl::SuspendThreadUnsafe(ThreadType *thread) {
-        const svc::Handle handle(thread->thread_impl->handle);
-
-        R_ABORT_UNLESS(svc::SetThreadActivity(handle, svc::ThreadActivity_Paused));
+        R_ABORT_UNLESS(svc::SetThreadActivity(thread->thread_impl->handle, svc::ThreadActivity_Paused));
     }
 
     void ThreadManagerHorizonImpl::ResumeThreadUnsafe(ThreadType *thread) {
-        const svc::Handle handle(thread->thread_impl->handle);
-
-        R_ABORT_UNLESS(svc::SetThreadActivity(handle, svc::ThreadActivity_Runnable));
+        R_ABORT_UNLESS(svc::SetThreadActivity(thread->thread_impl->handle, svc::ThreadActivity_Runnable));
     }
 
     void ThreadManagerHorizonImpl::CancelThreadSynchronizationUnsafe(ThreadType *thread) {
-        const svc::Handle handle(thread->thread_impl->handle);
-
-        R_ABORT_UNLESS(svc::CancelSynchronization(handle));
+        R_ABORT_UNLESS(svc::CancelSynchronization(thread->thread_impl->handle));
     }
 
     /* TODO: void GetThreadContextUnsafe(ThreadContextInfo *out_context, const ThreadType *thread); */
@@ -185,16 +195,14 @@ namespace ams::os::impl {
     }
 
     void ThreadManagerHorizonImpl::SetThreadCoreMask(ThreadType *thread, s32 ideal_core, u64 affinity_mask) const {
-        const svc::Handle handle(thread->thread_impl->handle);
-        R_ABORT_UNLESS(svc::SetThreadCoreMask(handle, ideal_core, affinity_mask));
+        R_ABORT_UNLESS(svc::SetThreadCoreMask(thread->thread_impl->handle, ideal_core, affinity_mask));
     }
 
     void ThreadManagerHorizonImpl::GetThreadCoreMask(s32 *out_ideal_core, u64 *out_affinity_mask, const ThreadType *thread) const {
         s32 ideal_core;
         u64 affinity_mask;
 
-        const svc::Handle handle(thread->thread_impl->handle);
-        R_ABORT_UNLESS(svc::GetThreadCoreMask(std::addressof(ideal_core), std::addressof(affinity_mask), handle));
+        R_ABORT_UNLESS(svc::GetThreadCoreMask(std::addressof(ideal_core), std::addressof(affinity_mask), thread->thread_impl->handle));
 
         if (out_ideal_core) {
             *out_ideal_core = ideal_core;

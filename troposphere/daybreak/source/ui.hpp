@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Adubbz
+ * Copyright (c) Adubbz
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -263,7 +263,8 @@ namespace dbk {
             virtual void Draw(NVGcontext *vg, u64 ns) override;
     };
 
-    void InitializeMenu(u32 screen_width, u32 screen_height);
+    bool InitializeMenu(u32 screen_width, u32 screen_height);
+    bool InitializeMenu(u32 screen_width, u32 screen_height, const char *update_path);
     void UpdateMenu(u64 ns);
     void RenderMenu(NVGcontext *vg, u64 ns);
     bool IsExitRequested();

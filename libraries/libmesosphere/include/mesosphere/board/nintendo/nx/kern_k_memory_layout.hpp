@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,11 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_typed_address.hpp>
 
 namespace ams::kern {
+
+    constexpr inline KPhysicalAddress MainMemoryAddress = 0x80000000;
 
     constexpr inline size_t MainMemorySize    = 4_GB;
     constexpr inline size_t MainMemorySizeMax = 8_GB;

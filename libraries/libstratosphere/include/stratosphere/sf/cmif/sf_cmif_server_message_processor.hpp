@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../sf_service_object.hpp"
-#include "sf_cmif_pointer_and_size.hpp"
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 
 namespace ams::sf::cmif {
 
@@ -35,27 +35,27 @@ namespace ams::sf::cmif {
         u8 out_object_count;
 
         constexpr size_t GetInDataSize() const {
-            return size_t(this->in_data_size);
+            return static_cast<size_t>(this->in_data_size);
         }
 
         constexpr size_t GetOutDataSize() const {
-            return size_t(this->out_data_size);
+            return static_cast<size_t>(this->out_data_size);
         }
 
         constexpr size_t GetInHeadersSize() const {
-            return size_t(this->in_headers_size);
+            return static_cast<size_t>(this->in_headers_size);
         }
 
         constexpr size_t GetOutHeadersSize() const {
-            return size_t(this->out_headers_size);
+            return static_cast<size_t>(this->out_headers_size);
         }
 
         constexpr size_t GetInObjectCount() const {
-            return size_t(this->in_object_count);
+            return static_cast<size_t>(this->in_object_count);
         }
 
         constexpr size_t GetOutObjectCount() const {
-            return size_t(this->out_object_count);
+            return static_cast<size_t>(this->out_object_count);
         }
 
         constexpr size_t GetUnfixedOutPointerSizeOffset() const {

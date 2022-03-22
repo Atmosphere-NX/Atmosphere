@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -37,32 +37,32 @@ namespace ams::util {
                 return __builtin_ctzll(static_cast<u64>(v));
             }
 
-            T value;
+            T m_value;
         public:
             /* Note: GCC has a bug in constant-folding here. Workaround: wrap entire caller with constexpr. */
-            constexpr ALWAYS_INLINE BitsOf(T value = T(0u)) : value(value) {
+            constexpr ALWAYS_INLINE BitsOf(T value = T(0u)) : m_value(value) {
                 /* ... */
             }
 
             constexpr ALWAYS_INLINE bool operator==(const BitsOf &other) const {
-                return this->value == other.value;
+                return m_value == other.m_value;
             }
 
             constexpr ALWAYS_INLINE bool operator!=(const BitsOf &other) const {
-                return this->value != other.value;
+                return m_value != other.m_value;
             }
 
             constexpr ALWAYS_INLINE int operator*() const {
-                return GetLsbPos(this->value);
+                return GetLsbPos(m_value);
             }
 
             constexpr ALWAYS_INLINE BitsOf &operator++() {
-                this->value &= ~(T(1u) << GetLsbPos(this->value));
+                m_value &= ~(T(1u) << GetLsbPos(m_value));
                 return *this;
             }
 
             constexpr ALWAYS_INLINE BitsOf &operator++(int) {
-                BitsOf ret(this->value);
+                BitsOf ret(m_value);
                 ++(*this);
                 return ret;
             }
@@ -133,7 +133,6 @@ namespace ams::util {
 
     template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE int PopCount(T x) {
-        /* TODO: C++20 std::bit_cast */
         using U = typename std::make_unsigned<T>::type;
         U u = static_cast<U>(x);
 
@@ -174,22 +173,63 @@ namespace ams::util {
             }
             return PopCount(static_cast<T>(~x));
         } else {
-            /* TODO: C++20 std::bit_cast */
             using U = typename std::make_unsigned<T>::type;
             const U u = static_cast<U>(x);
-            if constexpr (std::is_same<U, unsigned long long>::value) {
-                return __builtin_clzll(u);
-            } else if constexpr (std::is_same<U, unsigned long>::value) {
-                return __builtin_clzl(u);
-            }  else if constexpr(std::is_same<U, unsigned int>::value) {
-                return __builtin_clz(u);
+
+            if (u != 0) {
+                if constexpr (std::is_same<U, unsigned long long>::value) {
+                    return __builtin_clzll(u);
+                } else if constexpr (std::is_same<U, unsigned long>::value) {
+                    return __builtin_clzl(u);
+                }  else if constexpr(std::is_same<U, unsigned int>::value) {
+                    return __builtin_clz(u);
+                } else {
+                    static_assert(sizeof(U) < sizeof(unsigned int));
+                    constexpr size_t BitDiff = BITSIZEOF(unsigned int) - BITSIZEOF(U);
+                    return __builtin_clz(static_cast<unsigned int>(u)) - BitDiff;
+                }
             } else {
-                static_assert(sizeof(U) < sizeof(unsigned int));
-                constexpr size_t BitDiff = BITSIZEOF(unsigned int) - BITSIZEOF(U);
-                return __builtin_clz(static_cast<unsigned int>(u)) - BitDiff;
+                return BITSIZEOF(U);
             }
         }
     }
+
+    static_assert(CountLeadingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountLeadingZeros(static_cast<u64>(1) << 5) == BITSIZEOF(u64) - 1 - 5);
+    static_assert(CountLeadingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
+
+    template<typename T> requires std::integral<T>
+    constexpr ALWAYS_INLINE int CountTrailingZeros(T x) {
+        if (std::is_constant_evaluated()) {
+            auto count = 0;
+            for (size_t i = 0; i < BITSIZEOF(T) && (x & 1) == 0; ++i) {
+                x >>= 1;
+                ++count;
+            }
+            return count;
+        } else {
+            using U = typename std::make_unsigned<T>::type;
+            const U u = static_cast<U>(x);
+            if (u != 0) {
+                if constexpr (std::is_same<U, unsigned long long>::value) {
+                    return __builtin_ctzll(u);
+                } else if constexpr (std::is_same<U, unsigned long>::value) {
+                    return __builtin_ctzl(u);
+                }  else if constexpr(std::is_same<U, unsigned int>::value) {
+                    return __builtin_ctz(u);
+                } else {
+                    static_assert(sizeof(U) < sizeof(unsigned int));
+                    return __builtin_ctz(static_cast<unsigned int>(u));
+                }
+            } else {
+                return BITSIZEOF(U);
+            }
+        }
+    }
+
+    static_assert(CountTrailingZeros(~static_cast<u64>(0)) == 0);
+    static_assert(CountTrailingZeros(static_cast<u64>(1) << 5) == 5);
+    static_assert(CountTrailingZeros(static_cast<u64>(0)) == BITSIZEOF(u64));
 
     template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE bool IsPowerOfTwo(T x) {
@@ -213,6 +253,46 @@ namespace ams::util {
         using Unsigned = typename std::make_unsigned<U>::type;
         const Unsigned add = static_cast<Unsigned>(d) - 1;
         return static_cast<T>((v + add) / d);
+    }
+
+    template<typename T, T N, T D>
+    constexpr ALWAYS_INLINE T ScaleByConstantFactorUp(const T V) {
+        /* Multiplying and dividing by large numerator/denominator can cause error to be introduced. */
+        /* This algorithm multiples/divides in stages, so as to mitigate this (particularly with large denominator). */
+
+        /* Justification for the algorithm.                                                                         */
+        /* Calculate: (V * N) / D                                                                                   */
+        /*          = (Quot_V * D + Rem_V) * (Quot_N * D + Rem_N) / D                                               */
+        /*          = (D^2 * (Quot_V * Quot_N) + D * (Quot_V * Rem_N + Rem_V * Quot_N) + Rem_V * Rem_N) / D         */
+        /*          = (D * Quot_V * Quot_N) + (Quot_V * Rem_N) + (Rem_V * Quot_N) + ((Rem_V * Rem_N) / D)           */
+
+        /* Calculate quotients/remainders. */
+        const     T Quot_V = V / D;
+        const     T Rem_V  = V % D;
+        constexpr T Quot_N = N / D;
+        constexpr T Rem_N  = N % D;
+
+        /* Calculate the remainder multiplication, rounding up. */
+        const T rem_mult = ((Rem_V * Rem_N) + (D - 1)) / D;
+
+        /* Calculate results. */
+        return (D * Quot_N * Quot_V) + (Quot_V * Rem_N) + (Rem_V * Quot_N) + rem_mult;
+    }
+
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T RotateLeft(T v, int n) {
+        using Unsigned = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(Unsigned) == sizeof(T));
+
+        return static_cast<T>(std::rotl<Unsigned>(static_cast<Unsigned>(v), n));
+    }
+
+    template<std::integral T>
+    constexpr ALWAYS_INLINE T RotateRight(T v, int n) {
+        using Unsigned = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(Unsigned) == sizeof(T));
+
+        return static_cast<T>(std::rotr<Unsigned>(static_cast<Unsigned>(v), n));
     }
 
 }

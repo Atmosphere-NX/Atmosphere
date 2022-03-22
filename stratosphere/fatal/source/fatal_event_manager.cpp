@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,26 +18,26 @@
 
 namespace ams::fatal::srv {
 
-    FatalEventManager::FatalEventManager() : lock(false) {
+    FatalEventManager::FatalEventManager() : m_lock() {
         /* Just create all the events. */
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-            R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(this->events[i]), os::EventClearMode_AutoClear, true));
+            R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(m_events[i]), os::EventClearMode_AutoClear, true));
         }
     }
 
     Result FatalEventManager::GetEvent(const os::SystemEventType **out) {
-        std::scoped_lock lk{this->lock};
+        std::scoped_lock lk{m_lock};
 
         /* Only allow GetEvent to succeed NumFatalEvents times. */
-        R_UNLESS(this->num_events_gotten < FatalEventManager::NumFatalEvents, ResultTooManyEvents());
+        R_UNLESS(m_num_events_gotten < FatalEventManager::NumFatalEvents, fatal::ResultTooManyEvents());
 
-        *out = std::addressof(this->events[this->num_events_gotten++]);
+        *out = std::addressof(m_events[m_num_events_gotten++]);
         return ResultSuccess();
     }
 
     void FatalEventManager::SignalEvents() {
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-            os::SignalSystemEvent(std::addressof(this->events[i]));
+            os::SignalSystemEvent(std::addressof(m_events[i]));
         }
     }
 

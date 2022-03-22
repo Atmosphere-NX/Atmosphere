@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,6 +29,11 @@ namespace ams::kern::arch::arm64 {
             struct TraversalEntry {
                 KPhysicalAddress phys_addr;
                 size_t block_size;
+                u8 sw_reserved_bits;
+
+                constexpr bool IsHeadMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHead) != 0; }
+                constexpr bool IsHeadAndBodyMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadAndBody) != 0; }
+                constexpr bool IsTailMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadTail) != 0; }
             };
 
             struct TraversalContext {
@@ -37,7 +42,7 @@ namespace ams::kern::arch::arm64 {
                 const L3PageTableEntry *l3_entry;
             };
         private:
-            static constexpr size_t PageBits  = __builtin_ctzll(PageSize);
+            static constexpr size_t PageBits  = util::CountTrailingZeros(PageSize);
             static constexpr size_t NumLevels = 3;
             static constexpr size_t LevelBits = 9;
             static_assert(NumLevels > 0);
@@ -72,16 +77,16 @@ namespace ams::kern::arch::arm64 {
             ALWAYS_INLINE bool ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const;
             ALWAYS_INLINE bool ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const;
         private:
-            L1PageTableEntry *table;
-            bool is_kernel;
-            u32  num_entries;
+            L1PageTableEntry *m_table;
+            bool m_is_kernel;
+            u32  m_num_entries;
         public:
             ALWAYS_INLINE KVirtualAddress GetTableEntry(KVirtualAddress table, size_t index) const {
                 return table + index * sizeof(PageTableEntry);
             }
 
             ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KProcessAddress address) const {
-                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(this->table), GetL1Index(address) & (this->num_entries - 1)));
+                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(m_table), GetL1Index(address) & (m_num_entries - 1)));
             }
 
             ALWAYS_INLINE L2PageTableEntry *GetL2EntryFromTable(KVirtualAddress table, KProcessAddress address) const {
@@ -100,13 +105,16 @@ namespace ams::kern::arch::arm64 {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
         public:
-            constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
+            constexpr explicit KPageTableImpl(util::ConstantInitializeTag) : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
+
+            explicit KPageTableImpl() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);
             L1PageTableEntry *Finalize();
 
             void Dump(uintptr_t start, size_t size) const;
+            size_t CountPageTables() const;
 
             bool BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const;
             bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;

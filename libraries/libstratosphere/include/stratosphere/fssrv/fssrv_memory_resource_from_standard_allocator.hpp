@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,23 +27,24 @@ namespace ams::fssrv {
 
     class MemoryResourceFromStandardAllocator : public ams::MemoryResource {
         private:
-            mem::StandardAllocator *allocator;
-            os::SdkMutex mutex;
-            size_t peak_free_size;
-            size_t current_free_size;
-            size_t peak_allocated_size;
+            mem::StandardAllocator *m_allocator;
+            os::SdkMutex m_mutex;
+            size_t m_peak_free_size;
+            size_t m_current_free_size;
+            size_t m_peak_allocated_size;
         public:
             explicit MemoryResourceFromStandardAllocator(mem::StandardAllocator *allocator);
         public:
-            size_t GetPeakFreeSize() const { return this->peak_free_size; }
-            size_t GetCurrentFreeSize() const { return this->current_free_size; }
-            size_t GetPeakAllocatedSize() const { return this->peak_allocated_size; }
+            size_t GetPeakFreeSize() const { return m_peak_free_size; }
+            size_t GetCurrentFreeSize() const { return m_current_free_size; }
+            size_t GetPeakAllocatedSize() const { return m_peak_allocated_size; }
 
             void ClearPeak();
         protected:
             virtual void *AllocateImpl(size_t size, size_t align) override;
             virtual void DeallocateImpl(void *p, size_t size, size_t align) override;
             virtual bool IsEqualImpl(const MemoryResource &rhs) const override {
+                AMS_UNUSED(rhs);
                 return false;
             }
     };

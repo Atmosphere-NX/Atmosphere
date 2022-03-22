@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -72,6 +72,8 @@ namespace ams::fs {
             } else {
                 g_local_access_log_target &= ~(fs::impl::AccessLogTarget_Application | fs::impl::AccessLogTarget_System);
             }
+        #else
+            AMS_UNUSED(enabled);
         #endif
     }
 
@@ -80,9 +82,10 @@ namespace ams::fs {
 namespace ams::fs::impl {
 
     const char *IdString::ToValueString(int id) {
-        const int len = std::snprintf(this->buffer, sizeof(this->buffer), "%d", id);
-        AMS_ASSERT(static_cast<size_t>(len) < sizeof(this->buffer));
-        return this->buffer;
+        const int len = util::SNPrintf(m_buffer, sizeof(m_buffer), "%d", id);
+        AMS_ASSERT(static_cast<size_t>(len) < sizeof(m_buffer));
+        AMS_UNUSED(len);
+        return m_buffer;
     }
 
     template<> const char *IdString::ToString<fs::Priority>(fs::Priority id) {
@@ -156,24 +159,32 @@ namespace ams::fs::impl {
         }
     }
 
+    template<> const char *IdString::ToString<fs::DirectoryEntryType>(fs::DirectoryEntryType type) {
+        switch (type) {
+            case fs::DirectoryEntryType_Directory: return "Directory";
+            case fs::DirectoryEntryType_File:      return "File";
+            default:                               return ToValueString(static_cast<int>(type));
+        }
+    }
+
     namespace {
 
         class AccessLogPrinterCallbackManager {
             private:
-                AccessLogPrinterCallback callback;
+                AccessLogPrinterCallback m_callback;
             public:
-                constexpr AccessLogPrinterCallbackManager() : callback(nullptr) { /* ... */ }
+                constexpr AccessLogPrinterCallbackManager() : m_callback(nullptr) { /* ... */ }
 
-                constexpr bool IsRegisteredCallback() const { return this->callback != nullptr; }
+                constexpr bool IsRegisteredCallback() const { return m_callback != nullptr; }
 
                 constexpr void RegisterCallback(AccessLogPrinterCallback c) {
-                    AMS_ASSERT(this->callback == nullptr);
-                    this->callback = c;
+                    AMS_ASSERT(m_callback == nullptr);
+                    m_callback = c;
                 }
 
                 constexpr int InvokeCallback(char *buf, size_t size) const {
-                    AMS_ASSERT(this->callback != nullptr);
-                    return this->callback(buf, size);
+                    AMS_ASSERT(m_callback != nullptr);
+                    return m_callback(buf, size);
                 }
         };
 
@@ -202,7 +213,7 @@ namespace ams::fs::impl {
                         return;
                     }
 
-                    const auto size = std::vsnprintf(log_buffer.get(), log_buffer_size, format, vl);
+                    const auto size = util::VSNPrintf(log_buffer.get(), log_buffer_size, format, vl);
                     if (size < log_buffer_size) {
                         break;
                     }
@@ -233,7 +244,7 @@ namespace ams::fs::impl {
                     return;
                 }
 
-                const auto size = std::vsnprintf(str_buffer.get(), str_buffer_size, format, vl);
+                const auto size = util::VSNPrintf(str_buffer.get(), str_buffer_size, format, vl);
                 if (size < str_buffer_size) {
                     break;
                 }
@@ -269,7 +280,7 @@ namespace ams::fs::impl {
                         return;
                     }
 
-                    log_buffer_size = 1 + std::snprintf(log_buffer.get(), try_size, FormatString, start_ms, end_ms, result.GetValue(), handle, priority, name, str_buffer.get());
+                    log_buffer_size = 1 + util::SNPrintf(log_buffer.get(), try_size, FormatString, start_ms, end_ms, result.GetValue(), handle, priority, name, str_buffer.get());
                     if (log_buffer_size <= try_size) {
                         break;
                     }
@@ -312,7 +323,7 @@ namespace ams::fs::impl {
                                                   " }\n";
 
                 char log_buffer[0x80];
-                const int len = 1 + std::snprintf(log_buffer, sizeof(log_buffer), StartLog, static_cast<int>(program_index));
+                const int len = 1 + util::SNPrintf(log_buffer, sizeof(log_buffer), StartLog, static_cast<int>(program_index));
                 if (static_cast<size_t>(len) <= sizeof(log_buffer)) {
                     OutputAccessLogImpl(log_buffer, len);
                 }
@@ -502,6 +513,7 @@ namespace ams::fs::impl {
     }
 
     bool IsEnabledHandleAccessLog(fs::impl::IdentifyAccessLogHandle handle) {
+        AMS_UNUSED(handle);
         return true;
     }
 

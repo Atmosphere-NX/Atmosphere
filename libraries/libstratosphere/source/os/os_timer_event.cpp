@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,8 +17,8 @@
 #include "impl/os_timer_event_helper.hpp"
 #include "impl/os_tick_manager.hpp"
 #include "impl/os_timeout_helper.hpp"
-#include "impl/os_waitable_object_list.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 
 namespace ams::os {
 
@@ -49,18 +49,18 @@ namespace ams::os {
             }
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->waitable_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
         }
 
     }
 
     void InitializeTimerEvent(TimerEventType *event, EventClearMode clear_mode) {
         /* Initialize internal variables. */
-        new (GetPointer(event->cs_timer_event))    impl::InternalCriticalSection;
-        new (GetPointer(event->cv_signaled)) impl::InternalConditionVariable;
+        util::ConstructAt(event->cs_timer_event);
+        util::ConstructAt(event->cv_signaled);
 
-        /* Initialize the waitable object list. */
-        new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList();
+        /* Initialize the multi wait object list. */
+        util::ConstructAt(event->multi_wait_object_list_storage);
 
         /* Initialize member variables. */
         event->clear_mode             = static_cast<u8>(clear_mode);
@@ -83,9 +83,9 @@ namespace ams::os {
         event->state = TimerEventType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
-        GetReference(event->cv_signaled).~InternalConditionVariable();
-        GetReference(event->cs_timer_event).~InternalCriticalSection();
+        util::DestroyAt(event->multi_wait_object_list_storage);
+        util::DestroyAt(event->cv_signaled);
+        util::DestroyAt(event->cs_timer_event);
     }
 
     void StartOneShotTimerEvent(TimerEventType *event, TimeSpan first_time) {
@@ -110,7 +110,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->waitable_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
         }
     }
 
@@ -137,7 +137,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->waitable_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
         }
     }
 
@@ -154,7 +154,7 @@ namespace ams::os {
             GetReference(event->cv_signaled).Broadcast();
 
             /* Wake up whatever manager, if any. */
-            GetReference(event->waitable_object_list_storage).SignalAllThreads();
+            GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
         }
     }
 
@@ -252,12 +252,12 @@ namespace ams::os {
         }
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, TimerEventType *event) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, TimerEventType *event) {
         AMS_ASSERT(event->state == EventType::State_Initialized);
 
-        new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfTimerEvent(event);
+        util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_timer_event_storage, event);
 
-        waitable_holder->user_data = 0;
+        multi_wait_holder->user_data = 0;
     }
 
 }

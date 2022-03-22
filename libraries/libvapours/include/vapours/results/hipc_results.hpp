@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,7 +28,8 @@ namespace ams::sf::hipc {
 
         R_DEFINE_ERROR_RESULT(OutOfDomains,          200);
 
-    R_DEFINE_ERROR_RESULT(SessionClosed,        301);
+    R_DEFINE_ABSTRACT_ERROR_RANGE(CommunicationError, 300, 349);
+        R_DEFINE_ERROR_RESULT(SessionClosed,         301);
 
     R_DEFINE_ERROR_RESULT(InvalidRequestSize,   402);
     R_DEFINE_ERROR_RESULT(UnknownCommandType,   403);

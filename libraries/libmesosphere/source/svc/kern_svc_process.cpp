@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,8 +21,8 @@ namespace ams::kern::svc {
 
     namespace {
 
-        constexpr bool IsValidCoreId(int32_t core_id) {
-            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumCores));
+        constexpr bool IsValidVirtualCoreId(int32_t core_id) {
+            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumVirtualCores));
         }
 
         void ExitProcess() {
@@ -36,28 +36,36 @@ namespace ams::kern::svc {
             R_UNLESS(obj.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Get the process from the object. */
-            KProcess *process = nullptr;
-            if (KProcess *p = obj->DynamicCast<KProcess *>(); p != nullptr) {
+            if (KProcess *process = obj->DynamicCast<KProcess *>(); process != nullptr) {
                 /* The object is a process, so we can use it directly. */
-                process = p;
+
+                /* Make sure the target process exists. */
+                R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+                /* Get the process id. */
+                *out_process_id = process->GetId();
             } else if (KThread *t = obj->DynamicCast<KThread *>(); t != nullptr) {
                 /* The object is a thread, so we want to use its parent. */
-                process = reinterpret_cast<KThread *>(obj.GetPointerUnsafe())->GetOwnerProcess();
+                KProcess *process = t->GetOwnerProcess();
+
+                /* Make sure the target process exists. */
+                R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+                /* Get the process id. */
+                *out_process_id = process->GetId();
             } else if (KDebug *d = obj->DynamicCast<KDebug *>(); d != nullptr) {
                 /* The object is a debug, so we want to use the process it's attached to. */
-                obj = d->GetProcess();
 
-                if (obj.IsNotNull()) {
-                    process = static_cast<KProcess *>(obj.GetPointerUnsafe());
-                }
+                /* Make sure the target process exists. */
+                R_UNLESS(d->IsAttached(),  svc::ResultInvalidHandle());
+                R_UNLESS(d->OpenProcess(), svc::ResultInvalidHandle());
+                ON_SCOPE_EXIT { d->CloseProcess(); };
+
+                /* Get the process id. */
+                *out_process_id = d->GetProcessUnsafe()->GetProcessId();
             }
 
-            /* Make sure the target process exists. */
-            R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
-
-            /* Get the process id. */
-            *out_process_id = process->GetId();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetProcessList(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
@@ -70,7 +78,7 @@ namespace ams::kern::svc {
             }
 
             /* Get the process list. */
-            return KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count);
+            R_RETURN(KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count));
         }
 
         Result CreateProcess(ams::svc::Handle *out, const ams::svc::CreateProcessParameter &params, KUserPointer<const uint32_t *> user_caps, int32_t num_caps) {
@@ -127,7 +135,7 @@ namespace ams::kern::svc {
                     }
                     break;
                 default:
-                    return svc::ResultInvalidEnumValue();
+                    R_THROW(svc::ResultInvalidEnumValue());
             }
 
             /* Validate the pool partition. */
@@ -139,7 +147,7 @@ namespace ams::kern::svc {
                     case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
                         break;
                     default:
-                        return svc::ResultInvalidEnumValue();
+                        R_THROW(svc::ResultInvalidEnumValue());
                 }
             }
 
@@ -175,9 +183,9 @@ namespace ams::kern::svc {
             R_UNLESS(params.code_address + code_size - 1 <= map_end - 1,    svc::ResultInvalidMemoryRegion());
 
             /* Check that the number of pages is valid for the kernel address space. */
-            R_UNLESS(code_num_pages            < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
-            R_UNLESS(system_resource_num_pages < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
-            R_UNLESS(total_pages               < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(code_num_pages            < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(system_resource_num_pages < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(total_pages               < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
 
             /* Check that optimized memory allocation is used only for applications. */
             const bool optimize_allocs = (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0;
@@ -202,7 +210,7 @@ namespace ams::kern::svc {
             KResourceLimit *process_resource_limit = resource_limit.IsNotNull() ? resource_limit.GetPointerUnsafe() : std::addressof(Kernel::GetSystemResourceLimit());
 
             /* Get the pool for the process. */
-            const auto pool = [] ALWAYS_INLINE_LAMBDA (u32 flags) -> KMemoryManager::Pool {
+            const auto pool = [](u32 flags) ALWAYS_INLINE_LAMBDA -> KMemoryManager::Pool {
                 if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
                     switch (flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
                         case ams::svc::CreateProcessFlag_PoolPartitionApplication:
@@ -230,12 +238,12 @@ namespace ams::kern::svc {
             R_TRY(process->Initialize(params, user_caps, num_caps, process_resource_limit, pool));
 
             /* Register the process. */
-            R_TRY(KProcess::Register(process));
+            KProcess::Register(process);
 
             /* Add the process to the handle table. */
             R_TRY(handle_table.Add(out, process));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         template<typename T>
@@ -246,7 +254,7 @@ namespace ams::kern::svc {
 
             /* Invoke the implementation. */
             if constexpr (std::same_as<T, ams::svc::CreateProcessParameter>) {
-                return CreateProcess(out, params, user_caps, num_caps);
+                R_RETURN(CreateProcess(out, params, user_caps, num_caps));
             } else {
                 /* Convert the parameters. */
                 ams::svc::CreateProcessParameter converted_params;
@@ -262,7 +270,7 @@ namespace ams::kern::svc {
                 converted_params.system_resource_num_pages = params.system_resource_num_pages;
 
                 /* Invoke. */
-                return CreateProcess(out, converted_params, user_caps, num_caps);
+                R_RETURN(CreateProcess(out, converted_params, user_caps, num_caps));
             }
         }
 
@@ -275,7 +283,7 @@ namespace ams::kern::svc {
             R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Validate the core id. */
-            R_UNLESS(IsValidCoreId(core_id),                           svc::ResultInvalidCoreId());
+            R_UNLESS(IsValidVirtualCoreId(core_id),                    svc::ResultInvalidCoreId());
             R_UNLESS(((1ul << core_id) & process->GetCoreMask()) != 0, svc::ResultInvalidCoreId());
 
             /* Validate the priority. */
@@ -286,12 +294,7 @@ namespace ams::kern::svc {
             process->SetIdealCoreId(core_id);
 
             /* Run the process. */
-            R_TRY(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
-
-            /* Open a reference to the process, since it's now running. */
-            process->Open();
-
-            return ResultSuccess();
+            R_RETURN(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
         }
 
         Result TerminateProcess(ams::svc::Handle process_handle) {
@@ -313,7 +316,7 @@ namespace ams::kern::svc {
                 ExitProcess();
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetProcessInfo(int64_t *out, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
@@ -349,10 +352,10 @@ namespace ams::kern::svc {
                     }
                     break;
                 default:
-                    return svc::ResultInvalidEnumValue();
+                    R_THROW(svc::ResultInvalidEnumValue());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -364,27 +367,27 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessId64(uint64_t *out_process_id, ams::svc::Handle process_handle) {
-        return GetProcessId(out_process_id, process_handle);
+        R_RETURN(GetProcessId(out_process_id, process_handle));
     }
 
     Result GetProcessList64(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
-        return GetProcessList(out_num_processes, out_process_ids, max_out_count);
+        R_RETURN(GetProcessList(out_num_processes, out_process_ids, max_out_count));
     }
 
     Result CreateProcess64(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::lp64::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {
-        return CreateProcess(out_handle, parameters, caps, num_caps);
+        R_RETURN(CreateProcess(out_handle, parameters, caps, num_caps));
     }
 
     Result StartProcess64(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
-        return StartProcess(process_handle, priority, core_id, main_thread_stack_size);
+        R_RETURN(StartProcess(process_handle, priority, core_id, main_thread_stack_size));
     }
 
     Result TerminateProcess64(ams::svc::Handle process_handle) {
-        return TerminateProcess(process_handle);
+        R_RETURN(TerminateProcess(process_handle));
     }
 
     Result GetProcessInfo64(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
-        return GetProcessInfo(out_info, process_handle, info_type);
+        R_RETURN(GetProcessInfo(out_info, process_handle, info_type));
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -394,27 +397,27 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessId64From32(uint64_t *out_process_id, ams::svc::Handle process_handle) {
-        return GetProcessId(out_process_id, process_handle);
+        R_RETURN(GetProcessId(out_process_id, process_handle));
     }
 
     Result GetProcessList64From32(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
-        return GetProcessList(out_num_processes, out_process_ids, max_out_count);
+        R_RETURN(GetProcessList(out_num_processes, out_process_ids, max_out_count));
     }
 
     Result CreateProcess64From32(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::ilp32::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {
-        return CreateProcess(out_handle, parameters, caps, num_caps);
+        R_RETURN(CreateProcess(out_handle, parameters, caps, num_caps));
     }
 
     Result StartProcess64From32(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
-        return StartProcess(process_handle, priority, core_id, main_thread_stack_size);
+        R_RETURN(StartProcess(process_handle, priority, core_id, main_thread_stack_size));
     }
 
     Result TerminateProcess64From32(ams::svc::Handle process_handle) {
-        return TerminateProcess(process_handle);
+        R_RETURN(TerminateProcess(process_handle));
     }
 
     Result GetProcessInfo64From32(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
-        return GetProcessInfo(out_info, process_handle, info_type);
+        R_RETURN(GetProcessInfo(out_info, process_handle, info_type));
     }
 
 }

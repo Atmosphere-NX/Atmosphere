@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -25,21 +25,22 @@ namespace ams::erpt::srv {
 
     class Context : public Allocator, public util::IntrusiveListBaseNode<Context> {
         private:
-            const CategoryId category;
-            const u32 max_record_count;
-            u32 record_count;
-            util::IntrusiveListBaseTraits<ContextRecord>::ListType record_list;
+            const CategoryId m_category;
+            const u32 m_max_record_count;
+            u32 m_record_count;
+            util::IntrusiveListBaseTraits<ContextRecord>::ListType m_record_list;
         public:
             Context(CategoryId cat, u32 max_records);
             ~Context();
 
             Result AddCategoryToReport(Report *report);
             Result AddContextToCategory(const ContextEntry *entry, const u8 *data, u32 data_size);
-            Result AddContextRecordToCategory(ContextRecord *record);
+            Result AddContextRecordToCategory(std::unique_ptr<ContextRecord> record);
         public:
             static Result SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size);
-            static Result SubmitContextRecord(ContextRecord *record);
+            static Result SubmitContextRecord(std::unique_ptr<ContextRecord> record);
             static Result WriteContextsToReport(Report *report);
+            static Result ClearContext(CategoryId cat);
     };
 
 }

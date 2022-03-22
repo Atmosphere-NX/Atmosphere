@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -36,7 +36,6 @@
 #include <random>
 #include <atomic>
 #include <utility>
-#include <optional>
 #include <functional>
 #include <tuple>
 #include <array>

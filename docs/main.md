@@ -12,7 +12,6 @@ Atmosphère provides six core components, mimicking to some degree the various l
 
 Additionally, Atmosphère also provides the following secondary components:
 + [emummc](components/emummc.md)
-+ [sept](components/sept.md)
 + [libraries](components/libraries.md)
 
 ## Features

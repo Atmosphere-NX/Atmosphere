@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -41,6 +41,11 @@ namespace ams::util {
         using U = typename std::make_unsigned<T>::type;
         const U invmask = static_cast<U>(alignment - 1);
         return (value & invmask) == 0;
+    }
+
+    template<typename T> requires std::unsigned_integral<T>
+    constexpr ALWAYS_INLINE T GetAlignment(T value) {
+        return value & -value;
     }
 
     template<>

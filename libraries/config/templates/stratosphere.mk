@@ -16,10 +16,19 @@ include $(DEVKITPRO)/libnx/switch_rules
 # options for code generation
 #---------------------------------------------------------------------------------
 export DEFINES     = $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
-export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2
+export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2 -Wextra -Werror -Wno-missing-field-initializers
 export CFLAGS      = $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 export CXXFLAGS    = $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
 export ASFLAGS     = $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
+
+export CXXREQUIRED := -Wl,--require-defined,__libnx_initheap \
+                      -Wl,--require-defined,__libnx_exception_handler \
+                      -Wl,--require-defined,__libnx_alloc \
+                      -Wl,--require-defined,__libnx_aligned_alloc \
+                      -Wl,--require-defined,__libnx_free \
+                      -Wl,--require-defined,__appInit \
+                      -Wl,--require-defined,__appExit \
+                      -Wl,--require-defined,argvSetup
 
 export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,__cxa_throw \
@@ -34,9 +43,10 @@ export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,_Unwind_Resume \
 			-Wl,--wrap,_ZSt19__throw_logic_errorPKc \
 			-Wl,--wrap,_ZSt20__throw_length_errorPKc \
-			-Wl,--wrap,_ZNSt11logic_errorC2EPKc
+			-Wl,--wrap,_ZNSt11logic_errorC2EPKc \
+			-Wl,--wrap,exit
 
-export LDFLAGS     = -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
+export LDFLAGS     = -specs=$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/stratosphere.specs -specs=$(DEVKITPRO)/libnx/switch.specs $(CXXFLAGS) $(CXXWRAPS) $(CXXREQUIRED) -Wl,-Map,$(notdir $*.map)
 
 export LIBS	= -lstratosphere -lnx
 

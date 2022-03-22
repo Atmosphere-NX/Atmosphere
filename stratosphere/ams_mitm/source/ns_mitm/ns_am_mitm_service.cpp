@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@
 namespace ams::mitm::ns {
 
     Result NsAmMitmService::GetApplicationContentPath(const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type) {
-        return nsamGetApplicationContentPathFwd(this->forward_service.get(), out_path.GetPointer(), out_path.GetSize(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+        return nsamGetApplicationContentPathFwd(m_forward_service.get(), out_path.GetPointer(), out_path.GetSize(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
     }
 
     Result NsAmMitmService::ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type) {
@@ -28,14 +28,14 @@ namespace ams::mitm::ns {
         /* This enables hbl html. */
         bool is_hbl;
         if (R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, application_id)) && is_hbl) {
-            nsamResolveApplicationContentPathFwd(this->forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+            nsamResolveApplicationContentPathFwd(m_forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
             return ResultSuccess();
         }
-        return nsamResolveApplicationContentPathFwd(this->forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
+        return nsamResolveApplicationContentPathFwd(m_forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
     }
 
     Result NsAmMitmService::GetRunningApplicationProgramId(sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id) {
-        return nsamGetRunningApplicationProgramIdFwd(this->forward_service.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id));
+        return nsamGetRunningApplicationProgramIdFwd(m_forward_service.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id));
     }
 
 }

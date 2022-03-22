@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,11 @@
 #include "settings_serial_number_impl.hpp"
 
 namespace ams::settings::impl {
+
+    Result GetSerialNumber(settings::factory::SerialNumber *out) {
+        static_assert(sizeof(*out) == sizeof(::SetCalSerialNumber));
+        return ::setcalGetSerialNumber(reinterpret_cast<::SetCalSerialNumber *>(out));
+    }
 
     Result GetSerialNumber(settings::system::SerialNumber *out) {
         static_assert(sizeof(*out) == sizeof(::SetSysSerialNumber));

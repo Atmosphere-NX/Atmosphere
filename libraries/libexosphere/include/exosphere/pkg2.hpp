@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,8 +23,8 @@ namespace ams::pkg2 {
 
     constexpr inline int PayloadCount = 3;
 
-    constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x10 in Nintendo's code. */
-    constexpr inline int CurrentBootloaderVersion = 0xD;
+    constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x14 in Nintendo's code. */
+    constexpr inline int CurrentBootloaderVersion = 0x10;
 
     struct Package2Meta {
         using Magic = util::FourCC<'P','K','2','1'>;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -66,26 +66,25 @@ namespace ams::kern::board::nintendo::nx {
         constinit u64 g_sleep_target_cores;
         constinit KLightLock g_request_lock;
         constinit KLightLock g_cv_lock;
-        constinit KLightConditionVariable g_cv;
+        constinit KLightConditionVariable g_cv{util::ConstantInitialize};
         constinit KPhysicalAddress g_sleep_buffer_phys_addrs[cpu::NumCores];
         alignas(1_KB) constinit u64 g_sleep_buffers[cpu::NumCores][1_KB / sizeof(u64)];
         constinit SavedSystemRegisters g_sleep_system_registers[cpu::NumCores] = {};
 
         void PowerOnCpu(int core_id, KPhysicalAddress entry_phys_addr, u64 context_id) {
             /* Request the secure monitor power on the core. */
-            smc::CpuOn(cpu::MultiprocessorAffinityRegisterAccessor().GetCpuOnArgument() | core_id, GetInteger(entry_phys_addr), context_id);
+            ::ams::kern::arch::arm64::smc::CpuOn<smc::SmcId_Supervisor, true>(cpu::MultiprocessorAffinityRegisterAccessor().GetCpuOnArgument() | core_id, GetInteger(entry_phys_addr), context_id);
         }
 
         void WaitOtherCpuPowerOff() {
             constexpr u64 PmcPhysicalAddress = 0x7000E400;
-            constexpr u64 APBDEV_PMC_PWRGATE_STATUS = PmcPhysicalAddress + 0x38;
-
             constexpr u32 PWRGATE_STATUS_CE123_MASK = ((1u << 3) - 1) << 9;
 
             u32 value;
             do {
-                bool res = smc::ReadWriteRegister(std::addressof(value), APBDEV_PMC_PWRGATE_STATUS, 0, 0);
+                bool res = smc::ReadWriteRegister(std::addressof(value), PmcPhysicalAddress + APBDEV_PMC_PWRGATE_STATUS, 0, 0);
                 MESOSPHERE_ASSERT(res);
+                MESOSPHERE_UNUSED(res);
             } while ((value & PWRGATE_STATUS_CE123_MASK) != 0);
         }
 
@@ -342,7 +341,9 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Restore pmu registers. */
             cpu::SetPmUserEnrEl0(0);
-            cpu::PerformanceMonitorsControlRegisterAccessor().SetEventCounterReset(true).SetCycleCounterReset(true).Store();
+            cpu::PerformanceMonitorsControlRegisterAccessor(0).SetEventCounterReset(true).SetCycleCounterReset(true).Store();
+            cpu::EnsureInstructionConsistency();
+
             cpu::SetPmOvsClrEl0(static_cast<u64>(static_cast<u32>(~u32())));
             cpu::SetPmIntEnClrEl1(static_cast<u64>(static_cast<u32>(~u32())));
             cpu::SetPmCntEnClrEl0(static_cast<u64>(static_cast<u32>(~u32())));
@@ -493,7 +494,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Wait for a request. */
             {
                 KScopedLightLock lk(g_cv_lock);
-                while (!(g_sleep_target_cores & target_core_mask)) {
+                while ((g_sleep_target_cores & target_core_mask) == 0) {
                     g_cv.Wait(std::addressof(g_cv_lock));
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,12 +20,12 @@
 namespace ams::ldr::pm {
 
     /* Process Manager API. */
-    Result CreateProcess(Handle *out, PinId pin_id, u32 flags, Handle reslimit);
+    Result CreateProcess(os::NativeHandle *out, PinId pin_id, u32 flags, os::NativeHandle reslimit);
     Result GetProgramInfo(ProgramInfo *out, const ncm::ProgramLocation &loc);
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc);
     Result UnpinProgram(PinId pin_id);
     Result SetEnabledProgramVerification(bool enabled);
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id);
+    Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id);
 
     /* Atmosphere extension API. */
     Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,11 +23,11 @@ namespace ams::erpt::srv {
 
         using ManagerList = util::IntrusiveListBaseTraits<ManagerImpl>::ListType;
 
-        ManagerList g_manager_list;
+        constinit ManagerList g_manager_list;
 
     }
 
-    ManagerImpl::ManagerImpl() : system_event(os::EventClearMode_AutoClear, true) {
+    ManagerImpl::ManagerImpl() : m_system_event(os::EventClearMode_AutoClear, true) {
         g_manager_list.push_front(*this);
     }
 
@@ -36,7 +36,7 @@ namespace ams::erpt::srv {
     }
 
     void ManagerImpl::NotifyOne() {
-        this->system_event.Signal();
+        m_system_event.Signal();
     }
 
     Result ManagerImpl::NotifyAll() {
@@ -53,7 +53,7 @@ namespace ams::erpt::srv {
     }
 
     Result ManagerImpl::GetEvent(ams::sf::OutCopyHandle out) {
-        out.SetValue(this->system_event.GetReadableHandle());
+        out.SetValue(m_system_event.GetReadableHandle(), false);
         return ResultSuccess();
     }
 

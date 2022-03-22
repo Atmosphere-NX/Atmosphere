@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -37,12 +37,12 @@ namespace ams::crypto::impl {
                 bool finalized;
             };
         private:
-            State state;
+            State m_state;
         public:
-            Sha1Impl() { /* ... */ }
+            Sha1Impl() { m_state.finalized = false; }
             ~Sha1Impl() {
                 static_assert(std::is_trivially_destructible<State>::value);
-                ClearMemory(std::addressof(this->state), sizeof(this->state));
+                ClearMemory(std::addressof(m_state), sizeof(m_state));
             }
 
             void Initialize();

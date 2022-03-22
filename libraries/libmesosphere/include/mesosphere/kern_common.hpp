@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,7 @@
 #include <vapours.hpp>
 #include <mesosphere/kern_build_config.hpp>
 #include <mesosphere/svc/kern_svc_results.hpp>
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 namespace ams::kern {
 

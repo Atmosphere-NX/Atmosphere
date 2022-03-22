@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -73,7 +73,8 @@ namespace ams::erpt::srv {
         }
 
         bool IsProductionMode() {
-            static bool s_is_prod_mode = IsProductionModeImpl();
+            AMS_FUNCTION_LOCAL_STATIC(bool, s_is_prod_mode, IsProductionModeImpl());
+
             return s_is_prod_mode;
         }
 

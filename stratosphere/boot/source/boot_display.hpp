@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,5 +22,7 @@ namespace ams::boot {
     void InitializeDisplay();
     void ShowDisplay(size_t x, size_t y, size_t width, size_t height, const u32 *img);
     void FinalizeDisplay();
+
+    void SetDisplayBrightness(int percentage);
 
 }

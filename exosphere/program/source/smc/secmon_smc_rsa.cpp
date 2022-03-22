@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -55,31 +55,31 @@ namespace ams::secmon::smc {
 
         class PrepareEsDeviceUniqueKeyAsyncArguments {
             private:
-                int generation;
-                EsCommonKeyType type;
-                u8 label_digest[crypto::Sha256Generator::HashSize];
+                int m_generation;
+                EsCommonKeyType m_type;
+                u8 m_label_digest[crypto::Sha256Generator::HashSize];
             public:
                 void Set(int gen, EsCommonKeyType t, const u8 ld[crypto::Sha256Generator::HashSize]) {
-                    this->generation = gen;
-                    this->type       = t;
-                    std::memcpy(this->label_digest, ld, sizeof(this->label_digest));
+                    m_generation = gen;
+                    m_type       = t;
+                    std::memcpy(m_label_digest, ld, sizeof(m_label_digest));
                 }
 
-                int GetKeyGeneration() const { return this->generation; }
-                EsCommonKeyType GetCommonKeyType() const { return this->type; }
-                void GetLabelDigest(u8 dst[crypto::Sha256Generator::HashSize]) const { std::memcpy(dst, this->label_digest, sizeof(this->label_digest)); }
+                int GetKeyGeneration() const { return m_generation; }
+                EsCommonKeyType GetCommonKeyType() const { return m_type; }
+                void GetLabelDigest(u8 dst[crypto::Sha256Generator::HashSize]) const { std::memcpy(dst, m_label_digest, sizeof(m_label_digest)); }
         };
 
         class ModularExponentiateByStorageKeyAsyncArguments {
             private:
-                u8 msg[se::RsaSize];
+                u8 m_msg[se::RsaSize];
             public:
                 void Set(const void *m, size_t m_size) {
                     AMS_UNUSED(m_size);
-                    std::memcpy(this->msg, m, sizeof(this->msg));
+                    std::memcpy(m_msg, m, sizeof(m_msg));
                 }
 
-                const u8 *GetMessage() const { return this->msg; }
+                const u8 *GetMessage() const { return m_msg; }
         };
 
         constinit SmcResult    g_exp_mod_result    = SmcResult::Success;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -41,6 +41,7 @@ namespace ams::pkg1 {
         AesKeySlot_SecmonEnd                      = AesKeySlot_Count,
 
         /* Used only during boot. */
+        AesKeySlot_TsecRootDev                    = 11,
         AesKeySlot_Tsec                           = 12,
         AesKeySlot_TsecRoot                       = 13,
         AesKeySlot_SecureBoot                     = 14,
@@ -53,6 +54,13 @@ namespace ams::pkg1 {
         /* Mariko only keyslots, used during boot. */
         AesKeySlot_MarikoKek                      = 12,
         AesKeySlot_MarikoBek                      = 13,
+
+        /* Bootloader keyslots, for fusee only. */
+        AesKeySlot_BootloaderSystem0              = 2,
+        AesKeySlot_BootloaderSystem1              = 3,
+        AesKeySlot_BootloaderDeviceMaster         = 6,
+        AesKeySlot_BootloaderMaster               = 7,
+        AesKeySlot_BootloaderTemporary            = 8,
     };
 
     enum RsaKeySlot {

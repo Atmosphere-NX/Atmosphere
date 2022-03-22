@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,11 +18,11 @@
 
 namespace ams::erpt::srv {
 
-    class SessionImpl final {
+    class SessionImpl {
         public:
-            Result OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out);
-            Result OpenManager(ams::sf::Out<std::shared_ptr<erpt::sf::IManager>> out);
-            Result OpenAttachment(ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out);
+            Result OpenReport(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IReport>> out);
+            Result OpenManager(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IManager>> out);
+            Result OpenAttachment(ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IAttachment>> out);
     };
     static_assert(erpt::sf::IsISession<SessionImpl>);
 

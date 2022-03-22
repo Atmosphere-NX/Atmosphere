@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,15 +20,21 @@ namespace ams::mem::impl {
 
     namespace {
 
-        os::Mutex g_virt_mem_enabled_lock(false);
-        bool g_virt_mem_enabled_detected;
-        bool g_virt_mem_enabled;
+        constinit os::SdkMutex g_virt_mem_enabled_lock;
+        constinit bool g_virt_mem_enabled_detected = false;
+        constinit bool g_virt_mem_enabled = false;
 
         void EnsureVirtualAddressMemoryDetected() {
-            std::scoped_lock lk(g_virt_mem_enabled_lock);
             if (AMS_LIKELY(g_virt_mem_enabled_detected)) {
                 return;
             }
+
+            std::scoped_lock lk(g_virt_mem_enabled_lock);
+
+            if (AMS_UNLIKELY(g_virt_mem_enabled_detected)) {
+                return;
+            }
+
             g_virt_mem_enabled = os::IsVirtualAddressMemoryEnabled();
         }
 
@@ -48,7 +54,8 @@ namespace ams::mem::impl {
         ALWAYS_INLINE os::MemoryPermission ConvertToOsPermission(Prot prot) {
             static_assert(static_cast<int>(Prot_read) == static_cast<int>(os::MemoryPermission_ReadOnly));
             static_assert(static_cast<int>(Prot_write) == static_cast<int>(os::MemoryPermission_WriteOnly));
-            return static_cast<os::MemoryPermission>(prot & os::MemoryPermission_ReadWrite);
+            static_assert((util::ToUnderlying(Prot_read) | util::ToUnderlying(Prot_write)) == util::ToUnderlying(os::MemoryPermission_ReadWrite));
+            return static_cast<os::MemoryPermission>(prot & (Prot_read | Prot_write));
         }
 
     }
@@ -68,8 +75,12 @@ namespace ams::mem::impl {
             if (auto err = ConvertResult(os::AllocateMemoryBlock(std::addressof(addr), util::AlignUp(size, os::MemoryBlockUnitSize))); err != 0) {
                 return err;
             }
+
             os::SetMemoryPermission(addr, size, os::MemoryPermission_None);
         }
+
+        /* Set the output pointer. */
+        *ptr = reinterpret_cast<void *>(addr);
 
         return 0;
     }

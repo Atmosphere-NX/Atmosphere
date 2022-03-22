@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -133,7 +133,7 @@ namespace ams::secmon::smc {
                                                                         REG_BITS_VALUE(which_core + 0x10, 1, 1)); /* CORERESETn */
         }
 
-        void PowerOffCpu() {
+        void PowerOffCpuImpl() {
             /* Get the current core id. */
             const auto core_id = hw::GetCurrentCoreId();
 
@@ -333,12 +333,24 @@ namespace ams::secmon::smc {
         }
 
         void SaveSecureContext() {
+            /* Save the appropriate secure context. */
             const auto soc_type = GetSocType();
             if (soc_type == fuse::SocType_Erista) {
                 SaveSecureContextForErista();
             } else /* if (soc_type == fuse::SocType_Mariko) */ {
                 SaveSecureContextForMariko();
             }
+
+            /* Save the debug code. */
+            #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+            {
+                const void * const debug_code_src = MemoryRegionVirtualDebugCode.GetPointer<void>();
+                      void * const debug_code_dst = MemoryRegionVirtualDramDebugDataStore.GetPointer<void>();
+                std::memcpy(debug_code_dst, debug_code_src, MemoryRegionVirtualDebugCode.GetSize());
+                hw::FlushDataCache(debug_code_dst, MemoryRegionVirtualDebugCode.GetSize());
+                hw::DataSynchronizationBarrierInnerShareable();
+            }
+            #endif
         }
 
         void LoadAndStartSc7BpmpFirmware() {
@@ -397,6 +409,7 @@ namespace ams::secmon::smc {
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
             if (true /* !pkg1::IsProduction() */) {
                 log::SendText("OYASUMI\n", 8);
+                log::Flush();
             }
 
             /* If we're on erista, configure the bootrom to allow our custom warmboot firmware. */
@@ -491,9 +504,7 @@ namespace ams::secmon::smc {
 
     }
 
-    SmcResult SmcPowerOffCpu(SmcArguments &args) {
-        AMS_UNUSED(args);
-
+    void PowerOffCpu() {
         /* Get the current core id. */
         const auto core_id = hw::GetCurrentCoreId();
 
@@ -502,13 +513,19 @@ namespace ams::secmon::smc {
 
         /* If we're on the final core, shut down directly. Otherwise, invoke with special stack. */
         if (core_id == NumCores - 1) {
-            PowerOffCpu();
+            PowerOffCpuImpl();
         } else {
-            PivotStackAndInvoke(GetCoreExceptionStackVirtual(), PowerOffCpu);
+            PivotStackAndInvoke(GetCoreExceptionStackVirtual(), PowerOffCpuImpl);
         }
 
         /* This code will never be reached. */
         __builtin_unreachable();
+    }
+
+    SmcResult SmcPowerOffCpu(SmcArguments &args) {
+        AMS_UNUSED(args);
+
+        PowerOffCpu();
     }
 
     SmcResult SmcPowerOnCpu(SmcArguments &args) {

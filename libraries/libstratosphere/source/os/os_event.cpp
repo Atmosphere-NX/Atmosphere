@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "impl/os_timeout_helper.hpp"
-#include "impl/os_waitable_object_list.hpp"
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_object_list.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 
 namespace ams::os {
 
@@ -37,11 +37,11 @@ namespace ams::os {
 
     void InitializeEvent(EventType *event, bool signaled, EventClearMode clear_mode) {
         /* Initialize internal variables. */
-        new (GetPointer(event->cs_event))    impl::InternalCriticalSection;
-        new (GetPointer(event->cv_signaled)) impl::InternalConditionVariable;
+        util::ConstructAt(event->cs_event);
+        util::ConstructAt(event->cv_signaled);
 
-        /* Initialize the waitable object list. */
-        new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList();
+        /* Initialize the multi wait object list. */
+        util::ConstructAt(event->multi_wait_object_list_storage);
 
         /* Initialize member variables. */
         event->signaled               = signaled;
@@ -61,9 +61,9 @@ namespace ams::os {
         event->state = EventType::State_NotInitialized;
 
         /* Destroy objects. */
-        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
-        GetReference(event->cv_signaled).~InternalConditionVariable();
-        GetReference(event->cs_event).~InternalCriticalSection();
+        util::DestroyAt(event->multi_wait_object_list_storage);
+        util::DestroyAt(event->cv_signaled);
+        util::DestroyAt(event->cs_event);
     }
 
     void SignalEvent(EventType *event) {
@@ -89,7 +89,7 @@ namespace ams::os {
         }
 
         /* Wake up whatever manager, if any. */
-        GetReference(event->waitable_object_list_storage).SignalAllThreads();
+        GetReference(event->multi_wait_object_list_storage).SignalAllThreads();
     }
 
     void WaitEvent(EventType *event) {
@@ -160,12 +160,12 @@ namespace ams::os {
         event->signaled = false;
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, EventType *event) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, EventType *event) {
         AMS_ASSERT(event->state == EventType::State_Initialized);
 
-        new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(event);
+        util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_event_storage, event);
 
-        waitable_holder->user_data = 0;
+        multi_wait_holder->user_data = 0;
     }
 
 }

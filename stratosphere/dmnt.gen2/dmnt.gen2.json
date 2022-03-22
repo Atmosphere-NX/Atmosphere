@@ -1,0 +1,111 @@
+{
+	"name":	"dmnt.gen2",
+	"title_id":	"0x010000000000D609",
+	"title_id_range_min":	"0x010000000000D609",
+	"title_id_range_max":	"0x010000000000D609",
+	"main_thread_stack_size":	"0x00001000",
+	"main_thread_priority":	39,
+	"default_cpu_id":	3,
+	"process_category":	0,
+	"is_retail":	true,
+	"pool_partition":	2,
+	"is_64_bit":	true,
+	"address_space_type":	3,
+    "disable_device_address_space_merge":    true,
+	"filesystem_access":	{
+		"permissions":	"0xFFFFFFFFFFFFFFFF"
+	},
+	"service_access":	["pm:dmnt", "ldr:dmnt", "ro:dmnt", "ns:dev", "lr", "fsp-srv", "fatal:u", "pgl", "htcs", "bsd:s", "set:sys"],
+	"service_host":	[],
+	"kernel_capabilities":	[{
+			"type":	"kernel_flags",
+			"value":	{
+				"highest_thread_priority":	63,
+				"lowest_thread_priority":	24,
+				"lowest_cpu_id":	0,
+				"highest_cpu_id":	3
+			}
+		}, {
+			"type":	"syscalls",
+			"value":	{
+				"svcSetHeapSize":	"0x01",
+				"svcSetMemoryPermission":	"0x02",
+				"svcSetMemoryAttribute":	"0x03",
+				"svcMapMemory":	"0x04",
+				"svcUnmapMemory":	"0x05",
+				"svcQueryMemory":	"0x06",
+				"svcExitProcess":	"0x07",
+				"svcCreateThread":	"0x08",
+				"svcStartThread":	"0x09",
+				"svcExitThread":	"0x0a",
+				"svcSleepThread":	"0x0b",
+				"svcGetThreadPriority":	"0x0c",
+				"svcSetThreadPriority":	"0x0d",
+				"svcGetThreadCoreMask":	"0x0e",
+				"svcSetThreadCoreMask":	"0x0f",
+				"svcGetCurrentProcessorNumber":	"0x10",
+				"svcSignalEvent":	"0x11",
+				"svcClearEvent":	"0x12",
+				"svcMapSharedMemory":	"0x13",
+				"svcUnmapSharedMemory":	"0x14",
+				"svcCreateTransferMemory":	"0x15",
+				"svcCloseHandle":	"0x16",
+				"svcResetSignal":	"0x17",
+				"svcWaitSynchronization":	"0x18",
+				"svcCancelSynchronization":	"0x19",
+				"svcArbitrateLock":	"0x1a",
+				"svcArbitrateUnlock":	"0x1b",
+				"svcWaitProcessWideKeyAtomic":	"0x1c",
+				"svcSignalProcessWideKey":	"0x1d",
+				"svcGetSystemTick":	"0x1e",
+				"svcConnectToNamedPort":	"0x1f",
+				"svcSendSyncRequestLight":	"0x20",
+				"svcSendSyncRequest":	"0x21",
+				"svcSendSyncRequestWithUserBuffer":	"0x22",
+				"svcSendAsyncRequestWithUserBuffer":	"0x23",
+				"svcGetProcessId":	"0x24",
+				"svcGetThreadId":	"0x25",
+				"svcBreak":	"0x26",
+				"svcOutputDebugString":	"0x27",
+				"svcReturnFromException":	"0x28",
+				"svcGetInfo":	"0x29",
+				"svcWaitForAddress":	"0x34",
+				"svcSignalToAddress":	"0x35",
+                "svcSynchronizePreemptionState": "0x36",
+				"svcCreateSession":	"0x40",
+				"svcAcceptSession":	"0x41",
+				"svcReplyAndReceiveLight":	"0x42",
+				"svcReplyAndReceive":	"0x43",
+				"svcReplyAndReceiveWithUserBuffer":	"0x44",
+				"svcCreateEvent":	"0x45",
+				"svcDebugActiveProcess":	"0x60",
+				"svcBreakDebugProcess":	"0x61",
+				"svcTerminateDebugProcess":	"0x62",
+				"svcGetDebugEvent":	"0x63",
+				"svcContinueDebugEvent":	"0x64",
+				"svcGetProcessList":	"0x65",
+				"svcGetThreadList":	"0x66",
+				"svcGetDebugThreadContext":	"0x67",
+				"svcSetDebugThreadContext":	"0x68",
+				"svcQueryDebugProcessMemory":	"0x69",
+				"svcReadDebugProcessMemory":	"0x6a",
+				"svcWriteDebugProcessMemory":	"0x6b",
+				"svcSetHardwareBreakPoint":	"0x6c",
+				"svcGetDebugThreadParam":	"0x6d",
+				"svcCallSecureMonitor":	"0x7f"
+			}
+		}, {
+			"type":	"min_kernel_version",
+			"value":	"0x0030"
+		}, {
+			"type":	"handle_table_size",
+			"value":	0
+		},
+        {
+            "type": "debug_flags",
+            "value": {
+                "allow_debug": false,
+                "force_debug": true
+            }
+        }]
+}

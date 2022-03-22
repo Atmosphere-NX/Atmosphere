@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -54,7 +54,7 @@ namespace ams::spl {
 
         enum class Result {
             Success               = 0,
-            NotImplemented        = 1,
+            NotSupported          = 1,
             InvalidArgument       = 2,
             InProgress            = 3,
             NoAsyncOperation      = 4,
@@ -69,7 +69,7 @@ namespace ams::spl {
 
             /* Convert to the list of known SecureMonitorErrors. */
             const auto converted = R_MAKE_NAMESPACE_RESULT(::ams::spl, static_cast<u32>(smc_result));
-            R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnknownSecureMonitorError());
+            R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnexpectedSecureMonitorResult());
 
             /* Return the error. */
             return converted;
@@ -95,7 +95,7 @@ namespace ams::spl {
             DrmDeviceCert = 2,
         };
 
-        enum class EsCommonKeyType {
+        enum class EsDeviceUniqueKeyType {
             TitleKey   = 0,
             ArchiveKey = 1,
         };
@@ -105,13 +105,16 @@ namespace ams::spl {
         };
     }
 
+    constexpr inline size_t AesKeySize   = crypto::AesEncryptor128::KeySize;
+    constexpr inline size_t AesBlockSize = crypto::AesEncryptor128::BlockSize;
+
     enum class HardwareType {
-        Icosa   = 0,
-        Copper  = 1,
-        Hoag    = 2,
-        Iowa    = 3,
-        Calcio  = 4,
-        _Five_  = 5,
+        Icosa  = 0,
+        Copper = 1,
+        Hoag   = 2,
+        Iowa   = 3,
+        Calcio = 4,
+        Aula   = 5,
     };
 
     enum SocType {
@@ -138,6 +141,11 @@ namespace ams::spl {
         MemoryArrangement_Count,
     };
 
+    enum RetailInteractiveDisplayState {
+        RetailInteractiveDisplayState_Disabled = 0,
+        RetailInteractiveDisplayState_Enabled  = 1,
+    };
+
     struct BootReasonValue {
         union {
             struct {
@@ -150,44 +158,53 @@ namespace ams::spl {
         };
     };
     static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
+
+    enum BootReason {
+        BootReason_Unknown   = 0,
+        BootReason_AcOk      = 1,
+        BootReason_OnKey     = 2,
+        BootReason_RtcAlarm1 = 3,
+        BootReason_RtcAlarm2 = 4,
+    };
+
     #pragma pack(push, 1)
 
     struct AesKey {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AesKey) == alignof(u8), "AesKey definition!");
 
     struct IvCtr {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(IvCtr) == alignof(u8), "IvCtr definition!");
 
     struct Cmac {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(Cmac) == alignof(u8), "Cmac definition!");
 
     struct AccessKey {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AccessKey) == alignof(u8), "AccessKey definition!");
 
     struct KeySource {
         union {
-            u8 data[AES_128_KEY_SIZE];
-            u64 data64[AES_128_KEY_SIZE / sizeof(u64)];
+            u8 data[AesKeySize];
+            u64 data64[AesKeySize / sizeof(u64)];
         };
     };
     static_assert(alignof(AccessKey) == alignof(u8), "KeySource definition!");
@@ -208,30 +225,38 @@ namespace ams::spl {
         IsDevelopmentFunctionEnabled  = 11,
         KernelConfiguration           = 12,
         IsChargerHiZModeEnabled       = 13,
-        QuestState                    = 14,
+        RetailInteractiveDisplayState = 14,
         RegulatorType                 = 15,
         DeviceUniqueKeyGeneration     = 16,
         Package2Hash                  = 17,
 
         /* Extension config items for exosphere. */
-        ExosphereApiVersion     = 65000,
-        ExosphereNeedsReboot    = 65001,
-        ExosphereNeedsShutdown  = 65002,
-        ExosphereGitCommitHash  = 65003,
-        ExosphereHasRcmBugPatch = 65004,
-        ExosphereBlankProdInfo  = 65005,
-        ExosphereAllowCalWrites = 65006,
-        ExosphereEmummcType     = 65007,
+        ExosphereApiVersion            = 65000,
+        ExosphereNeedsReboot           = 65001,
+        ExosphereNeedsShutdown         = 65002,
+        ExosphereGitCommitHash         = 65003,
+        ExosphereHasRcmBugPatch        = 65004,
+        ExosphereBlankProdInfo         = 65005,
+        ExosphereAllowCalWrites        = 65006,
+        ExosphereEmummcType            = 65007,
+        ExospherePayloadAddress        = 65008,
+        ExosphereLogConfiguration      = 65009,
+        ExosphereForceEnableUsb30      = 65010,
+        ExosphereSupportedHosVersion   = 65011,
+        ExosphereApproximateApiVersion = 65012, /* NOTE: Internal use only. */
     };
 
 }
 
 /* Extensions to libnx spl config item enum. */
-constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion     = static_cast<SplConfigItem>(65000);
-constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot    = static_cast<SplConfigItem>(65001);
-constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsShutdown  = static_cast<SplConfigItem>(65002);
-constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash  = static_cast<SplConfigItem>(65003);
-constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch = static_cast<SplConfigItem>(65004);
-constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo  = static_cast<SplConfigItem>(65005);
-constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites = static_cast<SplConfigItem>(65006);
-constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType     = static_cast<SplConfigItem>(65007);
+constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion       = static_cast<SplConfigItem>(65000);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot      = static_cast<SplConfigItem>(65001);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsShutdown    = static_cast<SplConfigItem>(65002);
+constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash    = static_cast<SplConfigItem>(65003);
+constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch   = static_cast<SplConfigItem>(65004);
+constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo    = static_cast<SplConfigItem>(65005);
+constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites   = static_cast<SplConfigItem>(65006);
+constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType       = static_cast<SplConfigItem>(65007);
+constexpr inline SplConfigItem SplConfigItem_ExospherePayloadAddress   = static_cast<SplConfigItem>(65008);
+constexpr inline SplConfigItem SplConfigItem_ExosphereLogConfiguration = static_cast<SplConfigItem>(65009);
+constexpr inline SplConfigItem SplConfigItem_ExosphereForceEnableUsb30 = static_cast<SplConfigItem>(65010);

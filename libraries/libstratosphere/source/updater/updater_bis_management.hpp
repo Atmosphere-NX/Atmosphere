@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,10 +24,10 @@ namespace ams::updater {
         public:
             static constexpr size_t SectorAlignment = 0x200;
         private:
-            std::unique_ptr<fs::IStorage> storage;
-            const fs::BisPartitionId partition_id;
+            std::unique_ptr<fs::IStorage> m_storage;
+            const fs::BisPartitionId m_partition_id;
         public:
-            explicit BisAccessor(fs::BisPartitionId id) : partition_id(id) { /* ... */ }
+            explicit BisAccessor(fs::BisPartitionId id) : m_partition_id(id) { /* ... */ }
 
         public:
             Result Initialize();
@@ -127,7 +127,7 @@ namespace ams::updater {
                 const OffsetSizeType *entry = nullptr;
                 for (size_t i = 0; i < Meta::NumEntries; i++) {
                     if (Meta::Entries[i].which == which) {
-                        entry = &Meta::Entries[i];
+                        entry = std::addressof(Meta::Entries[i]);
                         break;
                     }
                 }
@@ -199,7 +199,8 @@ namespace ams::updater {
     class Boot0Accessor : public PartitionAccessor<Boot0Meta> {
         public:
             static constexpr fs::BisPartitionId PartitionId = fs::BisPartitionId::BootPartition1Root;
-            static constexpr size_t BctPubkOffset = 0x210;
+            static constexpr size_t BctPubkOffsetErista = 0x210;
+            static constexpr size_t BctPubkOffsetMariko = 0x10;
             static constexpr size_t BctPubkSize = 0x100;
             static constexpr size_t BctEksOffset = 0x450;
             static constexpr size_t BctVersionOffset = 0x2330;
@@ -210,10 +211,22 @@ namespace ams::updater {
             static size_t GetBootloaderVersion(void *bct);
             static size_t GetEksIndex(size_t bootloader_version);
             static void CopyEks(void *dst_bct, const void *src_eks, size_t eks_index);
+
+            static size_t GetBctPubkOffset(BootImageUpdateType boot_image_update_type) {
+                switch (boot_image_update_type) {
+                    case BootImageUpdateType::Erista:
+                        return BctPubkOffsetErista;
+                    case BootImageUpdateType::Mariko:
+                        return BctPubkOffsetMariko;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
         public:
             Result UpdateEks(void *dst_bct, void *eks_work_buffer);
             Result UpdateEksManually(void *dst_bct, const void *src_eks);
             Result PreserveAutoRcm(void *dst_bct, void *work_buffer, Boot0Partition which);
+
+            Result DetectCustomPublicKey(bool *out, void *work_buffer, BootImageUpdateType boot_image_update_type);
     };
 
     class Boot1Accessor : public PartitionAccessor<Boot1Meta> {

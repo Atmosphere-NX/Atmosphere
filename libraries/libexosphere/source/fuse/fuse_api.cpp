@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,6 +24,8 @@ namespace ams::fuse {
         static_assert(SocType_CommonInternal != SocType_Erista);
         static_assert(SocType_CommonInternal != SocType_Mariko);
 
+        constinit SocType g_soc_type = SocType_CommonInternal;
+
         struct BypassEntry {
             u32 offset;
             u32 value;
@@ -35,15 +37,15 @@ namespace ams::fuse {
         };
 
         struct OdmWord4 {
-            using HardwareState1 = util::BitPack32::Field<0,                    2, int>;
-            using HardwareType1  = util::BitPack32::Field<HardwareState1::Next, 1, int>;
-            using DramId         = util::BitPack32::Field<HardwareType1::Next,  5, int>;
-            using HardwareType2  = util::BitPack32::Field<DramId::Next,         1, int>;
-            using HardwareState2 = util::BitPack32::Field<HardwareType2::Next,  1, int>;
-            using QuestState     = util::BitPack32::Field<HardwareState2::Next, 1, int>;
-            using FormatVersion  = util::BitPack32::Field<QuestState::Next,     1, int>;
-            using Reserved       = util::BitPack32::Field<FormatVersion::Next,  4, int>;
-            using HardwareType3  = util::BitPack32::Field<Reserved::Next,       4, int>;
+            using HardwareState1                = util::BitPack32::Field<0,                                   2, int>;
+            using HardwareType1                 = util::BitPack32::Field<HardwareState1::Next,                1, int>;
+            using DramId                        = util::BitPack32::Field<HardwareType1::Next,                 5, int>;
+            using HardwareType2                 = util::BitPack32::Field<DramId::Next,                        1, int>;
+            using HardwareState2                = util::BitPack32::Field<HardwareType2::Next,                 1, int>;
+            using RetailInteractiveDisplayState = util::BitPack32::Field<HardwareState2::Next,                1, int>;
+            using FormatVersion                 = util::BitPack32::Field<RetailInteractiveDisplayState::Next, 1, int>;
+            using Reserved                      = util::BitPack32::Field<FormatVersion::Next,                 4, int>;
+            using HardwareType3                 = util::BitPack32::Field<Reserved::Next,                      4, int>;
         };
 
         struct OdmWord28 {
@@ -165,6 +167,9 @@ namespace ams::fuse {
         }
 
         constexpr const TargetFirmware FuseVersionIncrementFirmwares[] = {
+            TargetFirmware_13_2_1,
+            TargetFirmware_12_0_2,
+            TargetFirmware_11_0_0,
             TargetFirmware_10_0_0,
             TargetFirmware_9_1_0,
             TargetFirmware_9_0_0,
@@ -207,7 +212,7 @@ namespace ams::fuse {
             return 0;
         }
 
-        static_assert(GetExpectedFuseVersionImpl(TargetFirmware_10_0_0)          == 13);
+        static_assert(GetExpectedFuseVersionImpl(TargetFirmware_11_0_0)          == 14);
         static_assert(GetExpectedFuseVersionImpl(TargetFirmware_1_0_0)           ==  1);
         static_assert(GetExpectedFuseVersionImpl(static_cast<TargetFirmware>(0)) ==  0);
 
@@ -315,7 +320,7 @@ namespace ams::fuse {
             case 0x02: return (true /* TODO: GetSocType() == SocType_Mariko */) ? HardwareType_Calcio : HardwareType_Copper;
             case 0x04: return HardwareType_Iowa;
             case 0x08: return HardwareType_Hoag;
-            case 0x10: return HardwareType_Five;
+            case 0x10: return HardwareType_Aula;
             default:   return HardwareType_Undefined;
         }
     }
@@ -339,8 +344,8 @@ namespace ams::fuse {
         return static_cast<PatchVersion>(static_cast<int>(GetSocType() << 12) | patch_version);
     }
 
-    QuestState GetQuestState() {
-        return static_cast<QuestState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::QuestState>());
+    RetailInteractiveDisplayState GetRetailInteractiveDisplayState() {
+        return static_cast<RetailInteractiveDisplayState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::RetailInteractiveDisplayState>());
     }
 
     pmic::Regulator GetRegulator() {
@@ -363,22 +368,35 @@ namespace ams::fuse {
     }
 
     SocType GetSocType() {
-        switch (GetHardwareType()) {
-            case HardwareType_Icosa:
-            case HardwareType_Copper:
-                return SocType_Erista;
-            case HardwareType_Iowa:
-            case HardwareType_Hoag:
-            case HardwareType_Calcio:
-            case HardwareType_Five:
-                return SocType_Mariko;
-            default:
-                return SocType_Undefined;
+        if (AMS_LIKELY(g_soc_type != SocType_CommonInternal)) {
+            return g_soc_type;
+        } else {
+            switch (GetHardwareType()) {
+                case HardwareType_Icosa:
+                case HardwareType_Copper:
+                    g_soc_type = SocType_Erista;
+                    break;
+                case HardwareType_Iowa:
+                case HardwareType_Hoag:
+                case HardwareType_Calcio:
+                case HardwareType_Aula:
+                    g_soc_type = SocType_Mariko;
+                    break;
+                default:
+                    g_soc_type = SocType_Undefined;
+                    break;
+            }
+
+            return g_soc_type;
         }
     }
 
     int GetExpectedFuseVersion(TargetFirmware target_fw) {
         return GetExpectedFuseVersionImpl(target_fw);
+    }
+
+    int GetFuseVersion() {
+        return util::PopCount(GetCommonOdmWord(7));
     }
 
     bool HasRcmVulnerabilityPatch() {
@@ -428,6 +446,19 @@ namespace ams::fuse {
 
     bool IsOdmProductionMode() {
         return reg::HasValue(GetChipRegistersCommon().FUSE_SECURITY_MODE, FUSE_REG_BITS_ENUM(SECURITY_MODE_SECURITY_MODE, ENABLED));
+    }
+
+    bool GetSecureBootKey(void *dst) {
+        /* Get the sbk from fuse data. */
+        bool valid = false;
+        for (size_t i = 0; i < 4; ++i) {
+            const u32 key_word = GetChipRegistersCommon().FUSE_PRIVATE_KEY[i];
+
+            static_cast<u32 *>(dst)[i] = key_word;
+            valid |= key_word != 0xFFFFFFFF;
+        }
+
+        return valid;
     }
 
     void ConfigureFuseBypass() {

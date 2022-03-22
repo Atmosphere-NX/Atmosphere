@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,6 +19,7 @@
 
 #include <vapours/crypto/crypto_memory_compare.hpp>
 #include <vapours/crypto/crypto_memory_clear.hpp>
+#include <vapours/crypto/crypto_md5_generator.hpp>
 #include <vapours/crypto/crypto_sha1_generator.hpp>
 #include <vapours/crypto/crypto_sha256_generator.hpp>
 #include <vapours/crypto/crypto_aes_encryptor.hpp>

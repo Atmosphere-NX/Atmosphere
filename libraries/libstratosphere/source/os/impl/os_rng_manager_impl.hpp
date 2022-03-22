@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,13 +20,13 @@ namespace ams::os::impl {
 
     class RngManager {
         private:
-            util::TinyMT mt;
-            os::Mutex lock;
-            bool initialized;
+            util::TinyMT m_mt;
+            os::SdkMutex m_lock;
+            bool m_initialized;
         private:
             void Initialize();
         public:
-            constexpr RngManager() : mt(), lock(false), initialized() { /* ... */ }
+            RngManager() : m_mt(), m_lock(), m_initialized() { /* ... */ }
         public:
             u64 GenerateRandomU64();
     };

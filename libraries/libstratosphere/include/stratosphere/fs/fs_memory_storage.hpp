@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,18 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "impl/fs_newable.hpp"
-#include "fs_istorage.hpp"
-#include "fs_query_range.hpp"
+#include <stratosphere/fs/impl/fs_newable.hpp>
+#include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fs/fs_query_range.hpp>
 
 namespace ams::fs {
 
     class MemoryStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
-            u8 * const buf;
-            const s64 size;
+            u8 * const m_buf;
+            const s64 m_size;
         public:
-            MemoryStorage(void *b, s64 sz) : buf(static_cast<u8 *>(b)), size(sz) { /* .. */ }
+            MemoryStorage(void *b, s64 sz) : m_buf(static_cast<u8 *>(b)), m_size(sz) { /* .. */ }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
                 /* Succeed immediately on zero-sized read. */
@@ -33,10 +33,10 @@ namespace ams::fs {
 
                 /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
 
                 /* Copy from memory. */
-                std::memcpy(buffer, this->buf + offset, size);
+                std::memcpy(buffer, m_buf + offset, size);
                 return ResultSuccess();
             }
 
@@ -46,10 +46,10 @@ namespace ams::fs {
 
                 /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, m_size), fs::ResultOutOfRange());
 
                 /* Copy to memory. */
-                std::memcpy(this->buf + offset, buffer, size);
+                std::memcpy(m_buf + offset, buffer, size);
                 return ResultSuccess();
             }
 
@@ -58,17 +58,20 @@ namespace ams::fs {
             }
 
             virtual Result GetSize(s64 *out) override {
-                *out = this->size;
+                *out = m_size;
                 return ResultSuccess();
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInMemoryStorageA();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                AMS_UNUSED(offset, size, src, src_size);
+
                 switch (op_id) {
-                    case OperationId::InvalidateCache:
+                    case OperationId::Invalidate:
                         return ResultSuccess();
                     case OperationId::QueryRange:
                         R_UNLESS(dst != nullptr,                     fs::ResultNullptrArgument());

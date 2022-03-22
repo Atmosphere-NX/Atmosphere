@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,25 +20,23 @@
 
 namespace ams::kern {
 
-    extern KThread g_cv_arbiter_compare_thread;
-
     class KConditionVariable {
         public:
             using ThreadTree = typename KThread::ConditionVariableThreadTreeType;
         private:
-            ThreadTree tree;
+            ThreadTree m_tree;
         public:
-            constexpr KConditionVariable() : tree() { /* ... */ }
+            constexpr KConditionVariable() = default;
 
             /* Arbitration. */
-            Result SignalToAddress(KProcessAddress addr);
-            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress addr, u32 value);
+            static Result SignalToAddress(KProcessAddress addr);
+            static Result WaitForAddress(ams::svc::Handle handle, KProcessAddress addr, u32 value);
 
             /* Condition variable. */
             void Signal(uintptr_t cv_key, s32 count);
             Result Wait(KProcessAddress addr, uintptr_t key, u32 value, s64 timeout);
         private:
-            KThread *SignalImpl(KThread *thread);
+            void SignalImpl(KThread *thread);
     };
 
     ALWAYS_INLINE void BeforeUpdatePriority(KConditionVariable::ThreadTree *tree, KThread *thread) {

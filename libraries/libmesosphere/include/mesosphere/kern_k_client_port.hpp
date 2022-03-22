@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,21 +28,27 @@ namespace ams::kern {
     class KClientPort final : public KSynchronizationObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KClientPort, KSynchronizationObject);
         private:
-            std::atomic<s32> num_sessions;
-            std::atomic<s32> peak_sessions;
-            s32 max_sessions;
-            KPort *parent;
+            util::Atomic<s32> m_num_sessions;
+            util::Atomic<s32> m_peak_sessions;
+            s32 m_max_sessions;
+            KPort *m_parent;
         public:
-            constexpr KClientPort() : num_sessions(), peak_sessions(), max_sessions(), parent() { /* ... */ }
-            virtual ~KClientPort() { /* ... */ }
+            constexpr explicit KClientPort(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_num_sessions(0), m_peak_sessions(0), m_max_sessions(), m_parent() { /* ... */ }
+
+            explicit KClientPort() { /* ... */ }
 
             void Initialize(KPort *parent, s32 max_sessions);
             void OnSessionFinalized();
             void OnServerClosed();
 
-            constexpr const KPort *GetParent() const { return this->parent; }
+            constexpr const KPort *GetParent() const { return m_parent; }
+
+            ALWAYS_INLINE s32 GetNumSessions()  const { return m_num_sessions.Load(); }
+            ALWAYS_INLINE s32 GetPeakSessions() const { return m_peak_sessions.Load(); }
+            ALWAYS_INLINE s32 GetMaxSessions()  const { return m_max_sessions; }
 
             bool IsLight() const;
+            bool IsServerClosed() const;
 
             /* Overridden virtual functions. */
             virtual void Destroy() override;

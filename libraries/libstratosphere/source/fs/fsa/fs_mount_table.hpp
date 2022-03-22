@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -25,10 +25,10 @@ namespace ams::fs::impl {
         private:
             using FileSystemList = util::IntrusiveListBaseTraits<FileSystemAccessor>::ListType;
         private:
-            FileSystemList fs_list;
-            os::Mutex mutex;
+            FileSystemList m_fs_list;
+            os::SdkMutex m_mutex;
         public:
-            constexpr MountTable() : fs_list(), mutex(false) { /* ... */ }
+            constexpr MountTable() : m_fs_list(), m_mutex() { /* ... */ }
         private:
             bool CanAcceptMountName(const char *name);
         public:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,32 +30,24 @@ namespace ams::kern::svc {
             /* Determine aligned extents. */
             const uintptr_t aligned_start = util::AlignDown(address, PageSize);
             const uintptr_t aligned_end   = util::AlignUp(address + size, PageSize);
-            const size_t num_pages        = (aligned_end - aligned_start) / PageSize;
 
-            /* Create a page group for the process's memory. */
-            KPageGroup pg(page_table.GetBlockInfoManager());
-
-            /* Make and open the page group. */
-            R_TRY(page_table.MakeAndOpenPageGroup(std::addressof(pg),
-                                                  aligned_start, num_pages,
-                                                  KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                  KMemoryPermission_UserRead, KMemoryPermission_UserRead,
-                                                  KMemoryAttribute_Uncached, KMemoryAttribute_None));
-
-            /* Ensure we don't leak references to the pages we're operating on. */
-            ON_SCOPE_EXIT { pg.Close(); };
-
-            /* Operate on all the blocks. */
+            /* Iterate over and operate on contiguous ranges. */
             uintptr_t cur_address = aligned_start;
             size_t remaining = size;
-            for (const auto &block : pg) {
-                /* Get the block extents. */
-                KVirtualAddress operate_address = block.GetAddress();
-                size_t operate_size             = block.GetSize();
+            while (remaining > 0) {
+                /* Get a contiguous range to operate on. */
+                KPageTableBase::MemoryRange contig_range = { .address = Null<KPhysicalAddress>, .size = 0 };
+                R_TRY(page_table.OpenMemoryRangeForProcessCacheOperation(std::addressof(contig_range), cur_address, aligned_end - cur_address));
+
+                /* Close the range when we're done operating on it. */
+                ON_SCOPE_EXIT { contig_range.Close(); };
 
                 /* Adjust to remain within range. */
+                KVirtualAddress operate_address = KMemoryLayout::GetLinearVirtualAddress(contig_range.address);
+                size_t operate_size             = contig_range.size;
                 if (cur_address < address) {
                     operate_address += (address - cur_address);
+                    operate_size    -= (address - cur_address);
                 }
                 if (operate_size > remaining) {
                     operate_size = remaining;
@@ -65,12 +57,12 @@ namespace ams::kern::svc {
                 operation.Operate(GetVoidPointer(operate_address), operate_size);
 
                 /* Advance. */
-                cur_address += block.GetSize();
+                cur_address += contig_range.size;
                 remaining   -= operate_size;
             }
             MESOSPHERE_ASSERT(remaining == 0);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void FlushEntireDataCache() {
@@ -96,7 +88,7 @@ namespace ams::kern::svc {
             /* Flush the cache. */
             R_TRY(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result InvalidateProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -112,7 +104,7 @@ namespace ams::kern::svc {
             /* Invalidate the cache. */
             R_TRY(process->GetPageTable().InvalidateProcessDataCache(address, size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result StoreProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -131,14 +123,14 @@ namespace ams::kern::svc {
 
             /* Perform the operation. */
             if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
-                return cpu::StoreDataCache(reinterpret_cast<void *>(address), size);
+                R_RETURN(cpu::StoreDataCache(reinterpret_cast<void *>(address), size));
             } else {
                 class StoreCacheOperation : public CacheOperation {
                     public:
                         virtual void Operate(void *address, size_t size) const override { cpu::StoreDataCache(address, size); }
                 } operation;
 
-                return DoProcessCacheOperation(operation, page_table, address, size);
+                R_RETURN(DoProcessCacheOperation(operation, page_table, address, size));
             }
         }
 
@@ -158,14 +150,14 @@ namespace ams::kern::svc {
 
             /* Perform the operation. */
             if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
-                return cpu::FlushDataCache(reinterpret_cast<void *>(address), size);
+                R_RETURN(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));
             } else {
                 class FlushCacheOperation : public CacheOperation {
                     public:
                         virtual void Operate(void *address, size_t size) const override { cpu::FlushDataCache(address, size); }
                 } operation;
 
-                return DoProcessCacheOperation(operation, page_table, address, size);
+                R_RETURN(DoProcessCacheOperation(operation, page_table, address, size));
             }
         }
 
@@ -178,19 +170,19 @@ namespace ams::kern::svc {
     }
 
     Result FlushDataCache64(ams::svc::Address address, ams::svc::Size size) {
-        return FlushDataCache(address, size);
+        R_RETURN(FlushDataCache(address, size));
     }
 
     Result InvalidateProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return InvalidateProcessDataCache(process_handle, address, size);
+        R_RETURN(InvalidateProcessDataCache(process_handle, address, size));
     }
 
     Result StoreProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return StoreProcessDataCache(process_handle, address, size);
+        R_RETURN(StoreProcessDataCache(process_handle, address, size));
     }
 
     Result FlushProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return FlushProcessDataCache(process_handle, address, size);
+        R_RETURN(FlushProcessDataCache(process_handle, address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -200,19 +192,19 @@ namespace ams::kern::svc {
     }
 
     Result FlushDataCache64From32(ams::svc::Address address, ams::svc::Size size) {
-        return FlushDataCache(address, size);
+        R_RETURN(FlushDataCache(address, size));
     }
 
     Result InvalidateProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return InvalidateProcessDataCache(process_handle, address, size);
+        R_RETURN(InvalidateProcessDataCache(process_handle, address, size));
     }
 
     Result StoreProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return StoreProcessDataCache(process_handle, address, size);
+        R_RETURN(StoreProcessDataCache(process_handle, address, size));
     }
 
     Result FlushProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        return FlushProcessDataCache(process_handle, address, size);
+        R_RETURN(FlushProcessDataCache(process_handle, address, size));
     }
 
 }

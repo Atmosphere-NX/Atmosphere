@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,14 +30,16 @@ namespace ams::mitm::bpc_ams {
         using ServerOptions = sf::hipc::DefaultServerManagerOptions;
         sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
 
+        constinit sf::UnmanagedServiceObject<bpc::impl::IAtmosphereInterface, bpc::AtmosphereService> g_ams_service_object;
+
     }
 
-    void MitmModule::ThreadFunction(void *arg) {
+    void MitmModule::ThreadFunction(void *) {
         /* Create bpc:ams. */
         {
-            Handle bpcams_h;
-            R_ABORT_UNLESS(svcManageNamedPort(&bpcams_h, AtmosphereServiceName.name, AtmosphereMaxSessions));
-            g_server_manager.RegisterServer<bpc::impl::IAtmosphereInterface, bpc::AtmosphereService>(bpcams_h);
+            os::NativeHandle bpcams_h;
+            R_ABORT_UNLESS(svc::ManageNamedPort(&bpcams_h, AtmosphereServiceName.name, AtmosphereMaxSessions));
+            g_server_manager.RegisterObjectForServer(g_ams_service_object.GetShared(), bpcams_h);
         }
 
         /* Loop forever, servicing our services. */

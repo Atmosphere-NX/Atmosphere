@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,19 +28,19 @@ namespace ams::kern {
         private:
             using RequestList = util::IntrusiveListBaseTraits<KSessionRequest>::ListType;
         private:
-            KSession *parent;
-            RequestList request_list;
-            KSessionRequest *current_request;
-            KLightLock lock;
+            KSession *m_parent;
+            RequestList m_request_list;
+            KSessionRequest *m_current_request;
+            KLightLock m_lock;
         public:
-            constexpr KServerSession() : parent(), request_list(), current_request(), lock() { /* ... */ }
-            virtual ~KServerSession() { /* ... */ }
+            constexpr explicit KServerSession(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_parent(), m_request_list(), m_current_request(), m_lock() { /* ... */ }
+            explicit KServerSession() : m_current_request(nullptr), m_lock() { /* ... */ }
 
             virtual void Destroy() override;
 
-            void Initialize(KSession *p) { this->parent = p; }
+            void Initialize(KSession *p) { m_parent = p; }
 
-            constexpr const KSession *GetParent() const { return this->parent; }
+            constexpr const KSession *GetParent() const { return m_parent; }
 
             virtual bool IsSignaled() const override;
 
@@ -50,8 +50,10 @@ namespace ams::kern {
             Result SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr);
 
             void OnClientClosed();
+
+            void Dump();
         private:
-            bool IsSignaledImpl() const;
+            ALWAYS_INLINE bool IsSignaledImpl() const;
             void CleanupRequests();
     };
 

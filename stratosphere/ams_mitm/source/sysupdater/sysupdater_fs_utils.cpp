@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -151,7 +151,7 @@ namespace ams::mitm::sysupdater {
             return ResultSuccess();
         }
 
-        Result OpenMetaStorage(std::shared_ptr<ams::fs::IStorage> *out, std::shared_ptr<fssystem::NcaReader> nca_reader, fssystem::NcaFsHeader::FsType *out_fs_type) {
+        Result OpenMetaStorage(std::shared_ptr<ams::fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, std::shared_ptr<fssystem::NcaReader> nca_reader, fssystem::NcaFsHeader::FsType *out_fs_type) {
             /* Ensure the nca is a meta nca. */
             R_UNLESS(nca_reader->GetContentType() == fssystem::NcaHeader::ContentType::Meta, fs::ResultPreconditionViolation());
 
@@ -163,7 +163,7 @@ namespace ams::mitm::sysupdater {
 
             /* Open fs header reader. */
             fssystem::NcaFsHeaderReader fs_header_reader;
-            R_TRY(fssystem::GetFileSystemCreatorInterfaces()->storage_on_nca_creator->Create(out, std::addressof(fs_header_reader), std::move(nca_reader), MetaPartitionIndex, false));
+            R_TRY(fssystem::GetFileSystemCreatorInterfaces()->storage_on_nca_creator->Create(out, out_splitter, std::addressof(fs_header_reader), std::move(nca_reader), MetaPartitionIndex));
 
             /* Set the output fs type. */
             *out_fs_type = fs_header_reader.GetFsType();
@@ -195,8 +195,9 @@ namespace ams::mitm::sysupdater {
 
             /* Open meta storage. */
             std::shared_ptr<ams::fs::IStorage> storage;
+            std::shared_ptr<fssystem::IAsynchronousAccessSplitter> splitter;
             fssystem::NcaFsHeader::FsType fs_type;
-            R_TRY(OpenMetaStorage(std::addressof(storage), std::move(nca_reader), std::addressof(fs_type)));
+            R_TRY(OpenMetaStorage(std::addressof(storage), std::addressof(splitter), std::move(nca_reader), std::addressof(fs_type)));
 
             /* Open the appropriate interface. */
             const auto * const creator_intfs = fssystem::GetFileSystemCreatorInterfaces();
@@ -210,17 +211,17 @@ namespace ams::mitm::sysupdater {
 
     }
 
-    bool PathView::HasPrefix(std::string_view prefix) const {
-        return this->path.compare(0, prefix.length(), prefix) == 0;
+    bool PathView::HasPrefix(util::string_view prefix) const {
+        return m_path.compare(0, prefix.length(), prefix) == 0;
     }
 
-    bool PathView::HasSuffix(std::string_view suffix) const {
-        return this->path.compare(this->path.length() - suffix.length(), suffix.length(), suffix) == 0;
+    bool PathView::HasSuffix(util::string_view suffix) const {
+        return m_path.compare(m_path.length() - suffix.length(), suffix.length(), suffix) == 0;
     }
 
-    std::string_view PathView::GetFileName() const {
-        auto pos = this->path.find_last_of("/");
-        return pos != std::string_view::npos ? this->path.substr(pos + 1) : this->path;
+    util::string_view PathView::GetFileName() const {
+        auto pos = m_path.find_last_of("/");
+        return pos != util::string_view::npos ? m_path.substr(pos + 1) : m_path;
     }
 
     Result MountSdCardContentMeta(const char *mount_name, const char *path) {

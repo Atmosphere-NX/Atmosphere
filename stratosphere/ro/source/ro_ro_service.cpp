@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,41 +27,45 @@ namespace ams::ro {
         impl::SetDevelopmentFunctionEnabled(is_development_function_enabled);
     }
 
-    RoService::RoService(NrrKind k) : context_id(impl::InvalidContextId), nrr_kind(k) {
+    RoService::RoService(NrrKind k) : m_context_id(impl::InvalidContextId), m_nrr_kind(k) {
         /* ... */
     }
 
     RoService::~RoService() {
-        impl::UnregisterProcess(this->context_id);
+        impl::UnregisterProcess(m_context_id);
     }
 
     Result RoService::MapManualLoadModuleMemory(sf::Out<u64> load_address, const sf::ClientProcessId &client_pid, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
-        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::MapManualLoadModuleMemory(load_address.GetPointer(), this->context_id, nro_address, nro_size, bss_address, bss_size);
+        R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
+        return impl::MapManualLoadModuleMemory(load_address.GetPointer(), m_context_id, nro_address, nro_size, bss_address, bss_size);
     }
 
     Result RoService::UnmapManualLoadModuleMemory(const sf::ClientProcessId &client_pid, u64 nro_address) {
-        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::UnmapManualLoadModuleMemory(this->context_id, nro_address);
+        R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
+        return impl::UnmapManualLoadModuleMemory(m_context_id, nro_address);
     }
 
     Result RoService::RegisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size) {
-        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(this->context_id, svc::InvalidHandle, nrr_address, nrr_size, NrrKind_User, true);
+        R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
+        return impl::RegisterModuleInfo(m_context_id, os::InvalidNativeHandle, nrr_address, nrr_size, NrrKind_User, true);
     }
 
     Result RoService::UnregisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address) {
-        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::UnregisterModuleInfo(this->context_id, nrr_address);
+        R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
+        return impl::UnregisterModuleInfo(m_context_id, nrr_address);
     }
 
-    Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h) {
-        return impl::RegisterProcess(std::addressof(this->context_id), process_h.GetValue(), client_pid.GetValue());
+    Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle &&process_h) {
+        /* Register the process. */
+        return impl::RegisterProcess(std::addressof(m_context_id), std::move(process_h), client_pid.GetValue());
     }
 
-    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
-        R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(this->context_id, process_h.GetValue(), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
+    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle &&process_h) {
+        /* Validate the process. */
+        R_TRY(impl::ValidateProcess(m_context_id, client_pid.GetValue()));
+
+        /* Register the module. */
+        return impl::RegisterModuleInfo(m_context_id, process_h.GetOsHandle(), nrr_address, nrr_size, m_nrr_kind, m_nrr_kind == NrrKind_JitPlugin);
     }
 
 }

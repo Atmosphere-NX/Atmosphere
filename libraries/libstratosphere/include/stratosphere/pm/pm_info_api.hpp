@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,12 +27,12 @@ namespace ams::pm::info {
     /* Information API. */
     Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id);
     Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id);
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id);
+    Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id);
 
     Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id);
 
     /* Information convenience API. */
-    bool HasLaunchedProgram(ncm::ProgramId program_id);
+    bool HasLaunchedBootProgram(ncm::ProgramId program_id);
 
     Result IsHblProcessId(bool *out, os::ProcessId process_id);
     Result IsHblProgramId(bool *out, ncm::ProgramId program_id);

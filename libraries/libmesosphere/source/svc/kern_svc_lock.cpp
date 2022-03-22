@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,7 +30,7 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            return GetCurrentProcess().WaitForAddress(thread_handle, address, tag);
+            R_RETURN(KConditionVariable::WaitForAddress(thread_handle, address, tag));
         }
 
         Result ArbitrateUnlock(uintptr_t address) {
@@ -38,7 +38,7 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            return GetCurrentProcess().SignalToAddress(address);
+            R_RETURN(KConditionVariable::SignalToAddress(address));
         }
 
     }
@@ -46,21 +46,21 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result ArbitrateLock64(ams::svc::Handle thread_handle, ams::svc::Address address, uint32_t tag) {
-        return ArbitrateLock(thread_handle, address, tag);
+        R_RETURN(ArbitrateLock(thread_handle, address, tag));
     }
 
     Result ArbitrateUnlock64(ams::svc::Address address) {
-        return ArbitrateUnlock(address);
+        R_RETURN(ArbitrateUnlock(address));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result ArbitrateLock64From32(ams::svc::Handle thread_handle, ams::svc::Address address, uint32_t tag) {
-        return ArbitrateLock(thread_handle, address, tag);
+        R_RETURN(ArbitrateLock(thread_handle, address, tag));
     }
 
     Result ArbitrateUnlock64From32(ams::svc::Address address) {
-        return ArbitrateUnlock(address);
+        R_RETURN(ArbitrateUnlock(address));
     }
 
 }

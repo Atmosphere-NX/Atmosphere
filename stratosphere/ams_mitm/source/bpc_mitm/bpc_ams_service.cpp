@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,7 +27,7 @@ namespace ams::mitm::bpc {
     }
 
     void AtmosphereService::RebootToFatalError(const ams::FatalErrorContext &ctx) {
-        bpc::RebootForFatalError(&ctx);
+        bpc::RebootForFatalError(std::addressof(ctx));
     }
 
     void AtmosphereService::SetRebootPayload(const ams::sf::InBuffer &payload) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,7 +31,7 @@ namespace ams::svc {
         struct DebugInfoCreateThread {
             u64 thread_id;
             u64 tls_address;
-            u64 entrypoint;
+            /* Removed in 11.0.0 u64 entrypoint; */
         };
 
         struct DebugInfoExitProcess {
@@ -121,7 +121,7 @@ namespace ams::svc {
         struct DebugInfoCreateThread {
             u64 thread_id;
             u32 tls_address;
-            u32 entrypoint;
+            /* Removed in 11.0.0 u32 entrypoint; */
         };
 
         struct DebugInfoExitProcess {

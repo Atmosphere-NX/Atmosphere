@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,3 +23,4 @@
 #include <vapours/svc/svc_types_dd.hpp>
 #include <vapours/svc/svc_types_dmnt.hpp>
 #include <vapours/svc/svc_types_priv.hpp>
+#include <vapours/svc/svc_select_io_pool_type.hpp>

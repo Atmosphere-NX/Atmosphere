@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,54 +15,53 @@
  */
 
 #pragma once
-#include "../sf_service_object.hpp"
-#include "sf_cmif_service_dispatch.hpp"
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
 
 namespace ams::sf::cmif {
 
     class ServiceObjectHolder {
         private:
-            std::shared_ptr<sf::IServiceObject> srv;
-            const ServiceDispatchMeta *dispatch_meta;
+            SharedPointer<IServiceObject> m_srv;
+            const ServiceDispatchMeta *m_dispatch_meta;
         private:
             /* Copy constructor. */
-            ServiceObjectHolder(const ServiceObjectHolder &o) : srv(o.srv), dispatch_meta(o.dispatch_meta) { /* ... */ }
+            ServiceObjectHolder(const ServiceObjectHolder &o) : m_srv(o.m_srv), m_dispatch_meta(o.m_dispatch_meta) { /* ... */ }
             ServiceObjectHolder &operator=(const ServiceObjectHolder &o) = delete;
         public:
             /* Default constructor, null all members. */
-            ServiceObjectHolder() : srv(nullptr), dispatch_meta(nullptr) { /* ... */ }
+            ServiceObjectHolder() : m_srv(nullptr, false), m_dispatch_meta(nullptr) { /* ... */ }
 
             ~ServiceObjectHolder() {
-                this->dispatch_meta = nullptr;
+                m_dispatch_meta = nullptr;
             }
 
             /* Ensure correct type id at runtime through template constructor. */
             template<typename ServiceImpl>
-            constexpr explicit ServiceObjectHolder(std::shared_ptr<ServiceImpl> &&s) {
-                this->srv = std::move(s);
-                this->dispatch_meta = GetServiceDispatchMeta<ServiceImpl>();
+            constexpr explicit ServiceObjectHolder(SharedPointer<ServiceImpl> &&s) : m_srv(std::move(s)), m_dispatch_meta(GetServiceDispatchMeta<ServiceImpl>()) {
+                /* ... */
             }
 
             /* Move constructor, assignment operator. */
-            ServiceObjectHolder(ServiceObjectHolder &&o) : srv(std::move(o.srv)), dispatch_meta(std::move(o.dispatch_meta)) {
-                o.dispatch_meta = nullptr;
+            ServiceObjectHolder(ServiceObjectHolder &&o) : m_srv(std::move(o.m_srv)), m_dispatch_meta(std::move(o.m_dispatch_meta)) {
+                o.m_dispatch_meta = nullptr;
             }
 
             ServiceObjectHolder &operator=(ServiceObjectHolder &&o) {
                 ServiceObjectHolder tmp(std::move(o));
-                tmp.Swap(*this);
+                tmp.swap(*this);
                 return *this;
             }
 
             /* State management. */
-            void Swap(ServiceObjectHolder &o) {
-                std::swap(this->srv, o.srv);
-                std::swap(this->dispatch_meta, o.dispatch_meta);
+            void swap(ServiceObjectHolder &o) {
+                m_srv.swap(o.m_srv);
+                std::swap(m_dispatch_meta, o.m_dispatch_meta);
             }
 
             void Reset() {
-                this->srv = nullptr;
-                this->dispatch_meta = nullptr;
+                m_srv = nullptr;
+                m_dispatch_meta = nullptr;
             }
 
             ServiceObjectHolder Clone() const {
@@ -71,36 +70,36 @@ namespace ams::sf::cmif {
 
             /* Boolean operators. */
             explicit constexpr operator bool() const {
-                return this->dispatch_meta != nullptr;
+                return m_srv != nullptr;
             }
 
             constexpr bool operator!() const {
-                return this->dispatch_meta == nullptr;
+                return m_srv == nullptr;
             }
 
             /* Getters. */
             constexpr uintptr_t GetServiceId() const {
-                if (this->dispatch_meta) {
-                    return this->dispatch_meta->GetServiceId();
+                if (m_dispatch_meta) {
+                    return m_dispatch_meta->GetServiceId();
                 }
                 return 0;
             }
 
-            template<typename ServiceImpl>
+            template<typename Interface>
             constexpr inline bool IsServiceObjectValid() const {
-                return this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId();
+                return this->GetServiceId() == GetServiceDispatchMeta<Interface>()->GetServiceId();
             }
 
-            template<typename ServiceImpl>
-            inline std::shared_ptr<ServiceImpl> GetServiceObject() const {
-                if (this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId()) {
-                    return std::static_pointer_cast<ServiceImpl>(this->srv);
+            template<typename Interface>
+            inline Interface *GetServiceObject() const {
+                if (this->GetServiceId() == GetServiceDispatchMeta<Interface>()->GetServiceId()) {
+                    return static_cast<Interface *>(m_srv.Get());
                 }
                 return nullptr;
             }
 
             inline sf::IServiceObject *GetServiceObjectUnsafe() const {
-                return this->srv.get();
+                return static_cast<sf::IServiceObject *>(m_srv.Get());
             }
 
             /* Processing. */

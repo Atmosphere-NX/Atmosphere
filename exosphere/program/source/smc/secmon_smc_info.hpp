@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -34,20 +34,25 @@ namespace ams::secmon::smc {
         IsDevelopmentFunctionEnabled  = 11,
         KernelConfiguration           = 12,
         IsChargerHiZModeEnabled       = 13,
-        QuestState                    = 14,
+        RetailInteractiveDisplayState = 14,
         RegulatorType                 = 15,
         DeviceUniqueKeyGeneration     = 16,
         Package2Hash                  = 17,
 
         /* Extension config items for exosphere. */
-        ExosphereApiVersion     = 65000,
-        ExosphereNeedsReboot    = 65001,
-        ExosphereNeedsShutdown  = 65002,
-        ExosphereGitCommitHash  = 65003,
-        ExosphereHasRcmBugPatch = 65004,
-        ExosphereBlankProdInfo  = 65005,
-        ExosphereAllowCalWrites = 65006,
-        ExosphereEmummcType     = 65007,
+        ExosphereApiVersion            = 65000,
+        ExosphereNeedsReboot           = 65001,
+        ExosphereNeedsShutdown         = 65002,
+        ExosphereGitCommitHash         = 65003,
+        ExosphereHasRcmBugPatch        = 65004,
+        ExosphereBlankProdInfo         = 65005,
+        ExosphereAllowCalWrites        = 65006,
+        ExosphereEmummcType            = 65007,
+        ExospherePayloadAddress        = 65008,
+        ExosphereLogConfiguration      = 65009,
+        ExosphereForceEnableUsb30      = 65010,
+        ExosphereSupportedHosVersion   = 65011,
+        ExosphereApproximateApiVersion = 65012,
     };
 
     SmcResult SmcGetConfigUser(SmcArguments &args);

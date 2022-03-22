@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,7 +26,7 @@ namespace ams::os {
     }
 
     Result AllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
-        s32 slot = ::threadTlsAlloc(reinterpret_cast<LibnxTlsDestructor>(destructor));
+        s32 slot = ::threadTlsAlloc(reinterpret_cast<LibnxTlsDestructor>(reinterpret_cast<void *>(destructor)));
         R_UNLESS(slot >= 0, os::ResultOutOfResource());
 
         *out = { static_cast<u32>(slot) };

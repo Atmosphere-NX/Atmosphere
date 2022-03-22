@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,6 +28,8 @@ namespace ams::kern {
             static NOINLINE void Printf(const char *format, ...) __attribute__((format(printf, 1, 2)));
             static NOINLINE void VPrintf(const char *format, ::std::va_list vl);
 
+            static NOINLINE void LogException(const char *str);
+
             static NOINLINE Result PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len);
 
             /* Functionality for preserving across sleep. */
@@ -40,7 +42,9 @@ namespace ams::kern {
 #ifndef MESOSPHERE_DEBUG_LOG_SELECTED
 
     #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-        #define MESOSPHERE_DEBUG_LOG_USE_UART_C
+        #define MESOSPHERE_DEBUG_LOG_USE_UART
+    #elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+        #define MESOSPHERE_DEBUG_LOG_USE_SEMIHOSTING
     #else
         #error "Unknown board for Default Debug Log Source"
     #endif
@@ -48,6 +52,8 @@ namespace ams::kern {
     #define MESOSPHERE_DEBUG_LOG_SELECTED
 
 #endif
+
+#define MESOSPHERE_EXCEPTION_LOG(str) ::ams::kern::KDebugLog::LogException(str)
 
 #define MESOSPHERE_RELEASE_LOG(fmt, ...) ::ams::kern::KDebugLog::Printf((fmt), ## __VA_ARGS__)
 #define MESOSPHERE_RELEASE_VLOG(fmt, vl) ::ams::kern::KDebugLog::VPrintf((fmt), (vl))

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,7 +23,7 @@ namespace ams::boot2 {
 
         /* psc, bus, pcv is the minimal set of required programs to get SD card. */
         /* bus depends on pcie, and pcv depends on settings. */
-        constexpr ncm::SystemProgramId PreSdCardLaunchPrograms[] = {
+        constexpr const ncm::SystemProgramId PreSdCardLaunchPrograms[] = {
             ncm::SystemProgramId::Psc,         /* psc */
             ncm::SystemProgramId::Pcie,        /* pcie */
             ncm::SystemProgramId::Bus,         /* bus */
@@ -33,15 +33,14 @@ namespace ams::boot2 {
         };
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
-        constexpr ncm::SystemProgramId AdditionalLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+        constexpr const ncm::SystemProgramId AdditionalLaunchPrograms[] = {
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
             ncm::SystemProgramId::Vi,          /* vi */
             ncm::SystemProgramId::Pgl,         /* pgl */
             ncm::SystemProgramId::Ns,          /* ns */
-            ncm::SystemProgramId::LogManager,  /* lm */
+            //ncm::SystemProgramId::LogManager,  /* lm */
             ncm::SystemProgramId::Ppc,         /* ppc */
             ncm::SystemProgramId::Ptm,         /* ptm */
             ncm::SystemProgramId::Hid,         /* hid */
@@ -72,22 +71,19 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
-            ncm::SystemProgramId::Grc,         /* grc */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
-        constexpr ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+        constexpr const ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
             ncm::SystemProgramId::Vi,          /* vi */
             ncm::SystemProgramId::Pgl,         /* pgl */
             ncm::SystemProgramId::Ns,          /* ns */
-            ncm::SystemProgramId::LogManager,  /* lm */
+            //ncm::SystemProgramId::LogManager,  /* lm */
             ncm::SystemProgramId::Ppc,         /* ppc */
             ncm::SystemProgramId::Ptm,         /* ptm */
             ncm::SystemProgramId::Hid,         /* hid */
@@ -114,8 +110,6 @@ namespace ams::boot2 {
             ncm::SystemProgramId::Ro,          /* ro */
             ncm::SystemProgramId::Profiler,    /* profiler */
             ncm::SystemProgramId::Sdb,         /* sdb */
-            ncm::SystemProgramId::Migration,   /* migration */
-            ncm::SystemProgramId::Grc,         /* grc */
             ncm::SystemProgramId::Olsc,        /* olsc */
             ncm::SystemProgramId::Ngct,        /* ngct */
         };
@@ -149,7 +143,7 @@ namespace ams::boot2 {
             if (IsAllowedLaunchProgram(loc)) {
                 /* Launch, lightly validate result. */
                 {
-                    const auto launch_result = pm::shell::LaunchProgram(&process_id, loc, launch_flags);
+                    const auto launch_result = pm::shell::LaunchProgram(std::addressof(process_id), loc, launch_flags);
                     AMS_ABORT_UNLESS(!(svc::ResultOutOfResource::Includes(launch_result)));
                     AMS_ABORT_UNLESS(!(svc::ResultOutOfMemory::Includes(launch_result)));
                     AMS_ABORT_UNLESS(!(svc::ResultLimitReached::Includes(launch_result)));
@@ -167,26 +161,48 @@ namespace ams::boot2 {
             }
         }
 
-        bool GetGpioPadLow(GpioPadName pad) {
-            GpioPadSession button;
-            if (R_FAILED(gpioOpenSession(&button, pad))) {
+        bool GetGpioPadLow(DeviceCode device_code) {
+            gpio::GpioPadSession button;
+            if (R_FAILED(gpio::OpenSession(std::addressof(button), device_code))) {
                 return false;
             }
 
             /* Ensure we close even on early return. */
-            ON_SCOPE_EXIT { gpioPadClose(&button); };
+            ON_SCOPE_EXIT { gpio::CloseSession(std::addressof(button)); };
 
             /* Set direction input. */
-            gpioPadSetDirection(&button, GpioDirection_Input);
+            gpio::SetDirection(std::addressof(button), gpio::Direction_Input);
 
-            GpioValue val;
-            return R_SUCCEEDED(gpioPadGetValue(&button, &val)) && val == GpioValue_Low;
+            return gpio::GetValue(std::addressof(button)) == gpio::GpioValue_Low;
         }
 
         bool IsForceMaintenance() {
             u8 force_maintenance = 1;
-            settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+            settings::fwdbg::GetSettingsItemValue(std::addressof(force_maintenance), sizeof(force_maintenance), "boot", "force_maintenance");
             return force_maintenance != 0;
+        }
+
+        bool IsHtcEnabled() {
+            u8 enable_htc = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_htc), sizeof(enable_htc), "atmosphere", "enable_htc");
+            return enable_htc != 0;
+        }
+
+        bool IsStandaloneGdbstubEnabled() {
+            u8 enable_gdbstub = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_gdbstub), sizeof(enable_gdbstub), "atmosphere", "enable_standalone_gdbstub");
+            return enable_gdbstub != 0;
+        }
+
+        bool IsAtmosphereLogManagerEnabled() {
+            /* If htc is enabled, ams log manager is enabled. */
+            if (IsHtcEnabled()) {
+                return true;
+            }
+
+            u8 enable_ams_lm = 0;
+            settings::fwdbg::GetSettingsItemValue(std::addressof(enable_ams_lm), sizeof(enable_ams_lm), "atmosphere", "enable_log_manager");
+            return enable_ams_lm != 0;
         }
 
         bool IsMaintenanceMode() {
@@ -197,7 +213,7 @@ namespace ams::boot2 {
 
             /* Contact GPIO, read plus/minus buttons. */
             {
-                return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
+                return GetGpioPadLow(gpio::DeviceCode_ButtonVolUp) && GetGpioPadLow(gpio::DeviceCode_ButtonVolDn);
             }
         }
 
@@ -205,7 +221,7 @@ namespace ams::boot2 {
         void IterateOverFlaggedProgramsOnSdCard(F f) {
             /* Validate that the contents directory exists. */
             fs::DirectoryHandle contents_dir;
-            if (R_FAILED(fs::OpenDirectory(&contents_dir, "sdmc:/atmosphere/contents", fs::OpenDirectoryMode_Directory))) {
+            if (R_FAILED(fs::OpenDirectory(std::addressof(contents_dir), "sdmc:/atmosphere/contents", fs::OpenDirectoryMode_Directory))) {
                 return;
             }
             ON_SCOPE_EXIT { fs::CloseDirectory(contents_dir); };
@@ -213,7 +229,7 @@ namespace ams::boot2 {
             /* Iterate over entries in the contents directory */
             fs::DirectoryEntry entry;
             s64 count;
-            while (R_SUCCEEDED(fs::ReadDirectory(&count, &entry, contents_dir, 1)) && count == 1) {
+            while (R_SUCCEEDED(fs::ReadDirectory(std::addressof(count), std::addressof(entry), contents_dir, 1)) && count == 1) {
                 /* Check that the subdirectory can be converted to a program id. */
                 if (std::strlen(entry.name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(entry.name)) {
                     /* Check if we've already launched the program. */
@@ -239,15 +255,15 @@ namespace ams::boot2 {
                 /* Read the mitm list off the SD card. */
                 {
                     char path[fs::EntryNameLengthMax];
-                    std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
+                    util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
 
                     fs::FileHandle f;
-                    if (R_FAILED(fs::OpenFile(&f, path, fs::OpenMode_Read))) {
+                    if (R_FAILED(fs::OpenFile(std::addressof(f), path, fs::OpenMode_Read))) {
                         return;
                     }
                     ON_SCOPE_EXIT { fs::CloseFile(f); };
 
-                    R_ABORT_UNLESS(fs::ReadFile(&mitm_list_size, f, 0, mitm_list, sizeof(mitm_list)));
+                    R_ABORT_UNLESS(fs::ReadFile(std::addressof(mitm_list_size), f, 0, mitm_list, sizeof(mitm_list)));
                 }
 
                 /* Validate read size. */
@@ -295,13 +311,17 @@ namespace ams::boot2 {
         void LaunchFlaggedProgramsOnSdCard() {
             IterateOverFlaggedProgramsOnSdCard([](ncm::ProgramId program_id) {
                 /* Check if we've already launched the program. */
-                if (pm::info::HasLaunchedProgram(program_id)) {
+                if (pm::info::HasLaunchedBootProgram(program_id)) {
                     return;
                 }
 
                 /* Launch the program. */
                 LaunchProgram(nullptr, ncm::ProgramLocation::Make(program_id, ncm::StorageId::None), 0);
             });
+        }
+
+        bool IsUsbRequiredToMountSdCard() {
+            return hos::GetVersion() >= hos::Version_9_0_0;
         }
 
     }
@@ -333,19 +353,21 @@ namespace ams::boot2 {
             /* NOTE: Here we work around a race condition in the boot process by ensuring that settings initializes its db. */
             {
                 /* Connect to set:sys. */
-                sm::ScopedServiceHolder<::setsysInitialize, ::setsysExit> setsys_holder;
-                AMS_ABORT_UNLESS(setsys_holder);
+                R_ABORT_UNLESS(::setsysInitialize());
+                ON_SCOPE_EXIT { ::setsysExit(); };
 
                 /* Retrieve setting from the database. */
                 u8 force_maintenance = 0;
-                settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+                settings::fwdbg::GetSettingsItemValue(std::addressof(force_maintenance), sizeof(force_maintenance), "boot", "force_maintenance");
             }
 
             /* Launch pcv. */
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Pcv, ncm::StorageId::BuiltInSystem), 0);
 
-            /* Launch usb. */
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            /* On 9.0.0+, FS depends on the USB sysmodule having been launched in order to mount the SD card. */
+            if (IsUsbRequiredToMountSdCard()) {
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            }
         }
 
         /* Wait for the SD card required services to be ready. */
@@ -353,10 +375,12 @@ namespace ams::boot2 {
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
-        } else {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            if (hos::GetVersion() >= hos::Version_2_0_0) {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
+            } else {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+            }
         }
 
         /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */
@@ -366,17 +390,39 @@ namespace ams::boot2 {
     void LaunchPostSdCardBootPrograms() {
         /* This code is normally run by boot2. */
 
+        /* Launch the usb system module, if we haven't already. */
+        if (!IsUsbRequiredToMountSdCard()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+        }
+
         /* Find out whether we are maintenance mode. */
         const bool maintenance = IsMaintenanceMode();
         if (maintenance) {
             pm::bm::SetMaintenanceBoot();
         }
 
-        /* Launch Atmosphere dmnt, using NcmStorageId_None to force SD card boot. */
-        LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Dmnt, ncm::StorageId::None), 0);
-
         /* Check for and forward declare non-atmosphere mitm modules. */
         DetectAndDeclareFutureMitms();
+
+        /* Decide whether to launch tma or htc. */
+        if (IsHtcEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc,      ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Cs,       ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::DmntGen2, ncm::StorageId::None), 0);
+        } else if (IsStandaloneGdbstubEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::DmntGen2, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma,  ncm::StorageId::BuiltInSystem), 0);
+        } else {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Dmnt, ncm::StorageId::None), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma,  ncm::StorageId::BuiltInSystem), 0);
+        }
+
+        /* Decide whether to launch atmosphere or nintendo's log manager. */
+        if (IsAtmosphereLogManagerEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::AtmosphereProgramId::AtmosphereLogManager, ncm::StorageId::None), 0);
+        } else {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::LogManager, ncm::StorageId::BuiltInSystem), 0);
+        }
 
         /* Launch additional programs. */
         if (maintenance) {
@@ -387,6 +433,12 @@ namespace ams::boot2 {
             }
         } else {
             LaunchList(AdditionalLaunchPrograms, NumAdditionalLaunchPrograms);
+        }
+
+        /* Prior to 12.0.0, boot2 was responsible for launching grc and migration. */
+        if (hos::GetVersion() < hos::Version_12_0_0) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Grc, ncm::StorageId::BuiltInSystem), 0);
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Migration, ncm::StorageId::BuiltInSystem), 0);
         }
 
         /* Launch user programs off of the SD. */

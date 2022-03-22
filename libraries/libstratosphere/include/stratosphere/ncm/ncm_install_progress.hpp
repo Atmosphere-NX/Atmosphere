@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,7 +29,7 @@ namespace ams::ncm {
     struct InstallProgress {
         InstallProgressState state;
         u8 pad[3];
-        TYPED_STORAGE(Result) last_result;
+        util::TypedStorage<Result> last_result;
         s64 installed_size;
         s64 total_size;
 

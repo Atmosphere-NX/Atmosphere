@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,6 +19,7 @@
 #include "erpt_srv_context.hpp"
 #include "erpt_srv_reporter.hpp"
 #include "erpt_srv_journal.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
@@ -32,10 +33,12 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry), erpt::ResultInvalidArgument());
         R_UNLESS(data_size <= ArrayBufferSizeMax,  erpt::ResultInvalidArgument());
 
+        SubmitContextForForcedShutdownDetection(ctx, data, data_size);
+
         return Context::SubmitContext(ctx, data, data_size);
     }
 
-    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
+    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result) {
         const   ContextEntry *ctx  = reinterpret_cast<const   ContextEntry *>( ctx_buffer.GetPointer());
         const             u8 *data = reinterpret_cast<const             u8 *>(data_buffer.GetPointer());
         const ReportMetaData *meta = reinterpret_cast<const ReportMetaData *>(meta_buffer.GetPointer());
@@ -47,12 +50,15 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0));
 
         ManagerImpl::NotifyAll();
 
         return ResultSuccess();
+    }
+
+    Result ContextImpl::CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
+        return this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess());
     }
 
     Result ContextImpl::SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) {
@@ -66,17 +72,17 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::UpdatePowerOnTime() {
-        Reporter::UpdatePowerOnTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
     Result ContextImpl::UpdateAwakeTime() {
-        Reporter::UpdateAwakeTime();
+        /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
         return ResultSuccess();
     }
 
     Result ContextImpl::SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) {
-        R_UNLESS(0 <= ctx_entry.category_count && ctx_entry.category_count <= CategoriesPerMultipleCategoryContext, erpt::ResultInvalidArgument());
+        R_UNLESS(ctx_entry.category_count <= CategoriesPerMultipleCategoryContext, erpt::ResultInvalidArgument());
 
         const u8 *str      = reinterpret_cast<const u8 *>(str_buffer.GetPointer());
         const u32 str_size = static_cast<u32>(str_buffer.GetSize());
@@ -132,7 +138,7 @@ namespace ams::erpt::srv {
         return JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size);
     }
 
-    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
+    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
         const u32 ctx_size  = static_cast<u32>(ctx_buffer.GetSize());
@@ -144,11 +150,32 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        Reporter reporter(report_type, ctx, data, data_size, nullptr, attachments, num_attachments);
-        R_TRY(reporter.CreateReport());
+        R_TRY(Reporter::CreateReport(report_type, result, ctx, data, data_size, nullptr, attachments, num_attachments));
 
         ManagerImpl::NotifyAll();
 
+        return ResultSuccess();
+    }
+
+    Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
+        return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess());
+    }
+
+    Result ContextImpl::RegisterRunningApplet(ncm::ProgramId program_id) {
+        return Reporter::RegisterRunningApplet(program_id);
+    }
+
+    Result ContextImpl::UnregisterRunningApplet(ncm::ProgramId program_id) {
+        return Reporter::UnregisterRunningApplet(program_id);
+    }
+
+    Result ContextImpl::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration) {
+        return Reporter::UpdateAppletSuspendedDuration(program_id, duration);
+    }
+
+    Result ContextImpl::InvalidateForcedShutdownDetection() {
+        /* NOTE: Nintendo does not check the result here. */
+        erpt::srv::InvalidateForcedShutdownDetection();
         return ResultSuccess();
     }
 

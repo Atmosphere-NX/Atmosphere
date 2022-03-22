@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -42,35 +42,35 @@ namespace ams::kvdb {
 
             class Cache {
                 private:
-                    u8 *backing_buffer = nullptr;
-                    size_t backing_buffer_size = 0;
-                    size_t backing_buffer_free_offset = 0;
-                    Entry *entries = nullptr;
-                    size_t count = 0;
-                    size_t capacity = 0;
+                    u8 *m_backing_buffer = nullptr;
+                    size_t m_backing_buffer_size = 0;
+                    size_t m_backing_buffer_free_offset = 0;
+                    Entry *m_entries = nullptr;
+                    size_t m_count = 0;
+                    size_t m_capacity = 0;
                 private:
                     void *Allocate(size_t size);
 
                     bool HasEntries() const {
-                        return this->entries != nullptr && this->capacity != 0;
+                        return m_entries != nullptr && m_capacity != 0;
                     }
                 public:
                     Result Initialize(void *buffer, size_t buffer_size, size_t capacity);
                     void Invalidate();
-                    std::optional<size_t> TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size);
-                    std::optional<size_t> TryGetSize(const void *key, size_t key_size);
+                    util::optional<size_t> TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size);
+                    util::optional<size_t> TryGetSize(const void *key, size_t key_size);
                     void Set(const void *key, size_t key_size, const void *value, size_t value_size);
                     bool Contains(const void *key, size_t key_size);
             };
         private:
-            os::Mutex lock;
-            Path dir_path;
-            Cache cache;
+            os::SdkMutex m_lock;
+            Path m_dir_path;
+            Cache m_cache;
         private:
             Path GetPath(const void *key, size_t key_size);
             Result GetKey(size_t *out_size, void *out_key, size_t max_out_size, const FileName &file_name);
         public:
-            FileKeyValueStore() : lock(false) { /* ... */ }
+            FileKeyValueStore() : m_lock() { /* ... */ }
 
             /* Basic accessors. */
             Result Initialize(const char *dir);
@@ -84,38 +84,38 @@ namespace ams::kvdb {
             template<typename Key>
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
                 static_assert(util::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
-                return this->Get(out_size, out_value, max_out_size, &key, sizeof(Key));
+                return this->Get(out_size, out_value, max_out_size, std::addressof(key), sizeof(Key));
             }
 
             template<typename Key, typename Value>
             Result Get(Value *out_value, const Key &key) {
                 static_assert(util::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
                 size_t size = 0;
-                R_TRY(this->Get(&size, out_value, sizeof(Value), key));
+                R_TRY(this->Get(std::addressof(size), out_value, sizeof(Value), key));
                 AMS_ABORT_UNLESS(size >= sizeof(Value));
                 return ResultSuccess();
             }
 
             template<typename Key>
             Result GetSize(size_t *out_size, const Key &key) {
-                return this->GetSize(out_size, &key, sizeof(Key));
+                return this->GetSize(out_size, std::addressof(key), sizeof(Key));
             }
 
             template<typename Key>
             Result Set(const Key &key, const void *value, size_t value_size) {
                 static_assert(util::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
-                return this->Set(&key, sizeof(Key), value, value_size);
+                return this->Set(std::addressof(key), sizeof(Key), value, value_size);
             }
 
             template<typename Key, typename Value>
             Result Set(const Key &key, const Value &value) {
                 static_assert(util::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
-                return this->Set(key, &value, sizeof(Value));
+                return this->Set(key, std::addressof(value), sizeof(Value));
             }
 
             template<typename Key>
             Result Remove(const Key &key) {
-                return this->Remove(&key, sizeof(Key));
+                return this->Remove(std::addressof(key), sizeof(Key));
             }
     };
 

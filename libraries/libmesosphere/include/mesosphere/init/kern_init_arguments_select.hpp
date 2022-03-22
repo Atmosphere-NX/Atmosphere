@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,7 +24,8 @@
 
 namespace ams::kern::init {
 
+    static_assert(util::IsPowerOfTwo(alignof(KInitArguments)) && util::IsPowerOfTwo(sizeof(KInitArguments)));
+
     KPhysicalAddress GetInitArgumentsAddress(s32 core_id);
-    void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg);
 
 }

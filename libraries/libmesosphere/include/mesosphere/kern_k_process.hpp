@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,18 +22,19 @@
 #include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_k_thread_local_page.hpp>
 #include <mesosphere/kern_k_shared_memory_info.hpp>
+#include <mesosphere/kern_k_io_region.hpp>
 #include <mesosphere/kern_k_worker_task.hpp>
 #include <mesosphere/kern_select_page_table.hpp>
 #include <mesosphere/kern_k_condition_variable.hpp>
 #include <mesosphere/kern_k_address_arbiter.hpp>
 #include <mesosphere/kern_k_capabilities.hpp>
 #include <mesosphere/kern_k_wait_object.hpp>
-#include <mesosphere/kern_k_dynamic_slab_heap.hpp>
+#include <mesosphere/kern_k_dynamic_resource_manager.hpp>
 #include <mesosphere/kern_k_page_table_manager.hpp>
 
 namespace ams::kern {
 
-    class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject>, public KWorkerTask {
+    class KProcess final : public KAutoObjectWithSlabHeapAndContainer<KProcess, KWorkerTask> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KProcess, KSynchronizationObject);
         public:
             enum State {
@@ -47,163 +48,170 @@ namespace ams::kern {
                 State_DebugBreak      = ams::svc::ProcessState_DebugBreak,
             };
 
-            using ThreadList = util::IntrusiveListMemberTraits<&KThread::process_list_node>::ListType;
+            using ThreadList = util::IntrusiveListMemberTraits<&KThread::m_process_list_node>::ListType;
 
             static constexpr size_t AslrAlignment = KernelAslrAlignment;
         private:
             using SharedMemoryInfoList = util::IntrusiveListBaseTraits<KSharedMemoryInfo>::ListType;
+            using IoRegionList = util::IntrusiveListMemberTraits<&KIoRegion::m_process_list_node>::ListType;
             using TLPTree = util::IntrusiveRedBlackTreeBaseTraits<KThreadLocalPage>::TreeType<KThreadLocalPage>;
             using TLPIterator = TLPTree::iterator;
         private:
-            KProcessPageTable           page_table{};
-            std::atomic<size_t>         used_kernel_memory_size{};
-            TLPTree                     fully_used_tlp_tree{};
-            TLPTree                     partially_used_tlp_tree{};
-            s32                         ideal_core_id{};
-            void                       *attached_object{};
-            KResourceLimit             *resource_limit{};
-            KVirtualAddress             system_resource_address{};
-            size_t                      system_resource_num_pages{};
-            size_t                      memory_release_hint{};
-            State                       state{};
-            KLightLock                  state_lock{};
-            KLightLock                  list_lock{};
-            KConditionVariable          cond_var{};
-            KAddressArbiter             address_arbiter{};
-            u64                         entropy[4]{};
-            bool                        is_signaled{};
-            bool                        is_initialized{};
-            bool                        is_application{};
-            char                        name[13]{};
-            std::atomic<u16>            num_threads{};
-            u16                         peak_num_threads{};
-            u32                         flags{};
-            KMemoryManager::Pool        memory_pool{};
-            s64                         schedule_count{};
-            KCapabilities               capabilities{};
-            ams::svc::ProgramId         program_id{};
-            u64                         process_id{};
-            s64                         creation_time{};
-            KProcessAddress             code_address{};
-            size_t                      code_size{};
-            size_t                      main_thread_stack_size{};
-            size_t                      max_process_memory{};
-            u32                         version{};
-            KHandleTable                handle_table{};
-            KProcessAddress             plr_address{};
-            void                       *plr_heap_address{};
-            KThread                    *exception_thread{};
-            ThreadList                  thread_list{};
-            SharedMemoryInfoList        shared_memory_list{};
-            bool                        is_suspended{};
-            bool                        is_jit_debug{};
-            ams::svc::DebugEvent        jit_debug_event_type{};
-            ams::svc::DebugException    jit_debug_exception_type{};
-            uintptr_t                   jit_debug_params[4]{};
-            u64                         jit_debug_thread_id{};
-            KWaitObject                 wait_object{};
-            KThread                    *running_threads[cpu::NumCores]{};
-            u64                         running_thread_idle_counts[cpu::NumCores]{};
-            KThread                    *pinned_threads[cpu::NumCores]{};
-            std::atomic<s32>            num_created_threads{};
-            std::atomic<s64>            cpu_time{};
-            std::atomic<s64>            num_process_switches{};
-            std::atomic<s64>            num_thread_switches{};
-            std::atomic<s64>            num_fpu_switches{};
-            std::atomic<s64>            num_supervisor_calls{};
-            std::atomic<s64>            num_ipc_messages{};
-            std::atomic<s64>            num_ipc_replies{};
-            std::atomic<s64>            num_ipc_receives{};
-            KDynamicPageManager         dynamic_page_manager{};
-            KMemoryBlockSlabManager     memory_block_slab_manager{};
-            KBlockInfoManager           block_info_manager{};
-            KPageTableManager           page_table_manager{};
+            KProcessPageTable           m_page_table;
+            util::Atomic<size_t>        m_used_kernel_memory_size;
+            TLPTree                     m_fully_used_tlp_tree;
+            TLPTree                     m_partially_used_tlp_tree;
+            s32                         m_ideal_core_id;
+            void                       *m_attached_object;
+            KResourceLimit             *m_resource_limit;
+            KVirtualAddress             m_system_resource_address;
+            size_t                      m_system_resource_num_pages;
+            size_t                      m_memory_release_hint;
+            State                       m_state;
+            KLightLock                  m_state_lock;
+            KLightLock                  m_list_lock;
+            KConditionVariable          m_cond_var;
+            KAddressArbiter             m_address_arbiter;
+            u64                         m_entropy[4];
+            bool                        m_is_signaled;
+            bool                        m_is_initialized;
+            bool                        m_is_application;
+            char                        m_name[13];
+            util::Atomic<u16>           m_num_running_threads;
+            u32                         m_flags;
+            KMemoryManager::Pool        m_memory_pool;
+            s64                         m_schedule_count;
+            KCapabilities               m_capabilities;
+            ams::svc::ProgramId         m_program_id;
+            u64                         m_process_id;
+            s64                         m_creation_time;
+            KProcessAddress             m_code_address;
+            size_t                      m_code_size;
+            size_t                      m_main_thread_stack_size;
+            size_t                      m_max_process_memory;
+            u32                         m_version;
+            KHandleTable                m_handle_table;
+            KProcessAddress             m_plr_address;
+            void                       *m_plr_heap_address;
+            KThread                    *m_exception_thread;
+            ThreadList                  m_thread_list;
+            SharedMemoryInfoList        m_shared_memory_list;
+            IoRegionList                m_io_region_list;
+            bool                        m_is_suspended;
+            bool                        m_is_immortal;
+            bool                        m_is_jit_debug;
+            bool                        m_is_handle_table_initialized;
+            ams::svc::DebugEvent        m_jit_debug_event_type;
+            ams::svc::DebugException    m_jit_debug_exception_type;
+            uintptr_t                   m_jit_debug_params[4];
+            u64                         m_jit_debug_thread_id;
+            KWaitObject                 m_wait_object;
+            KThread                    *m_running_threads[cpu::NumCores];
+            u64                         m_running_thread_idle_counts[cpu::NumCores];
+            KThread                    *m_pinned_threads[cpu::NumCores];
+            util::Atomic<s64>           m_cpu_time;
+            util::Atomic<s64>           m_num_process_switches;
+            util::Atomic<s64>           m_num_thread_switches;
+            util::Atomic<s64>           m_num_fpu_switches;
+            util::Atomic<s64>           m_num_supervisor_calls;
+            util::Atomic<s64>           m_num_ipc_messages;
+            util::Atomic<s64>           m_num_ipc_replies;
+            util::Atomic<s64>           m_num_ipc_receives;
+            KDynamicPageManager         m_dynamic_page_manager;
+            KMemoryBlockSlabManager     m_memory_block_slab_manager;
+            KBlockInfoManager           m_block_info_manager;
+            KPageTableManager           m_page_table_manager;
+            KMemoryBlockSlabHeap        m_memory_block_heap;
+            KBlockInfoSlabHeap          m_block_info_heap;
+            KPageTableSlabHeap          m_page_table_heap;
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
 
-            void StartTermination();
+            Result StartTermination();
             void FinishTermination();
 
-            void PinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void PinThread(s32 core_id, KThread *thread) {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
-                this->pinned_threads[core_id] = thread;
+                MESOSPHERE_ASSERT(m_pinned_threads[core_id] == nullptr);
+                m_pinned_threads[core_id] = thread;
             }
 
-            void UnpinThread(s32 core_id, KThread *thread) {
+            ALWAYS_INLINE void UnpinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_UNUSED(thread);
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
-                this->pinned_threads[core_id] = nullptr;
+                MESOSPHERE_ASSERT(m_pinned_threads[core_id] == thread);
+                m_pinned_threads[core_id] = nullptr;
             }
         public:
-            KProcess() { /* ... */ }
-            virtual ~KProcess() { /* ... */ }
+            explicit KProcess() : m_is_initialized(false) { /* ... */ }
 
-            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool, bool immortal);
             Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
             void Exit();
 
-            constexpr const char *GetName() const { return this->name; }
+            constexpr const char *GetName() const { return m_name; }
 
-            constexpr ams::svc::ProgramId GetProgramId() const { return this->program_id; }
+            constexpr ams::svc::ProgramId GetProgramId() const { return m_program_id; }
 
-            constexpr u64 GetProcessId() const { return this->process_id; }
+            constexpr u64 GetProcessId() const { return m_process_id; }
 
-            constexpr State GetState() const { return this->state; }
+            constexpr State GetState() const { return m_state; }
 
-            constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
-            constexpr u64 GetPriorityMask() const { return this->capabilities.GetPriorityMask(); }
+            constexpr u64 GetCoreMask() const { return m_capabilities.GetCoreMask(); }
+            constexpr u64 GetPriorityMask() const { return m_capabilities.GetPriorityMask(); }
 
-            constexpr s32 GetIdealCoreId() const { return this->ideal_core_id; }
-            constexpr void SetIdealCoreId(s32 core_id) { this->ideal_core_id = core_id; }
+            constexpr s32 GetIdealCoreId() const { return m_ideal_core_id; }
+            constexpr void SetIdealCoreId(s32 core_id) { m_ideal_core_id = core_id; }
 
             constexpr bool CheckThreadPriority(s32 prio) const { return ((1ul << prio) & this->GetPriorityMask()) != 0; }
 
-            constexpr u32 GetCreateProcessFlags() const { return this->flags; }
+            constexpr u32 GetCreateProcessFlags() const { return m_flags; }
 
-            constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
+            constexpr bool Is64Bit() const { return m_flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
-            constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
+            constexpr KProcessAddress GetEntryPoint() const { return m_code_address; }
 
-            constexpr KMemoryManager::Pool GetMemoryPool() const { return this->memory_pool; }
+            constexpr size_t GetMainStackSize() const { return m_main_thread_stack_size; }
 
-            constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
+            constexpr KMemoryManager::Pool GetMemoryPool() const { return m_memory_pool; }
 
-            constexpr bool IsApplication() const { return this->is_application; }
+            constexpr u64 GetRandomEntropy(size_t i) const { return m_entropy[i]; }
 
-            constexpr bool IsSuspended() const { return this->is_suspended; }
-            constexpr void SetSuspended(bool suspended) { this->is_suspended = suspended; }
+            constexpr bool IsApplication() const { return m_is_application; }
+
+            constexpr bool IsSuspended() const { return m_is_suspended; }
+            constexpr void SetSuspended(bool suspended) { m_is_suspended = suspended; }
 
             Result Terminate();
 
             constexpr bool IsTerminated() const {
-                return this->state == State_Terminated;
+                return m_state == State_Terminated;
             }
 
             constexpr bool IsAttachedToDebugger() const {
-                return this->attached_object != nullptr;
+                return m_attached_object != nullptr;
             }
 
             constexpr bool IsPermittedInterrupt(int32_t interrupt_id) const {
-                return this->capabilities.IsPermittedInterrupt(interrupt_id);
+                return m_capabilities.IsPermittedInterrupt(interrupt_id);
             }
 
             constexpr bool IsPermittedDebug() const {
-                return this->capabilities.IsPermittedDebug();
+                return m_capabilities.IsPermittedDebug();
             }
 
             constexpr bool CanForceDebug() const {
-                return this->capabilities.CanForceDebug();
+                return m_capabilities.CanForceDebug();
             }
 
-            u32 GetAllocateOption() const { return this->page_table.GetAllocateOption(); }
+            u32 GetAllocateOption() const { return m_page_table.GetAllocateOption(); }
 
-            ThreadList &GetThreadList() { return this->thread_list; }
-            const ThreadList &GetThreadList() const { return this->thread_list; }
+            ThreadList &GetThreadList() { return m_thread_list; }
+            const ThreadList &GetThreadList() const { return m_thread_list; }
 
-            constexpr void *GetDebugObject() const { return this->attached_object; }
+            constexpr void *GetDebugObject() const { return m_attached_object; }
             KProcess::State SetDebugObject(void *debug_object);
             void ClearDebugObject(KProcess::State state);
 
@@ -218,46 +226,46 @@ namespace ams::kern {
 
             KThread *GetPinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
-                return this->pinned_threads[core_id];
+                return m_pinned_threads[core_id];
             }
 
             void CopySvcPermissionsTo(KThread::StackParameters &sp) {
-                this->capabilities.CopySvcPermissionsTo(sp);
+                m_capabilities.CopySvcPermissionsTo(sp);
             }
 
             void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) {
-                this->capabilities.CopyPinnedSvcPermissionsTo(sp);
+                m_capabilities.CopyPinnedSvcPermissionsTo(sp);
             }
 
             void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) {
-                this->capabilities.CopyUnpinnedSvcPermissionsTo(sp);
+                m_capabilities.CopyUnpinnedSvcPermissionsTo(sp);
             }
 
             void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
-                this->capabilities.CopyEnterExceptionSvcPermissionsTo(sp);
+                m_capabilities.CopyEnterExceptionSvcPermissionsTo(sp);
             }
 
             void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
-                this->capabilities.CopyLeaveExceptionSvcPermissionsTo(sp);
+                m_capabilities.CopyLeaveExceptionSvcPermissionsTo(sp);
             }
 
-            constexpr KResourceLimit *GetResourceLimit() const { return this->resource_limit; }
+            constexpr KResourceLimit *GetResourceLimit() const { return m_resource_limit; }
 
             bool ReserveResource(ams::svc::LimitableResource which, s64 value);
             bool ReserveResource(ams::svc::LimitableResource which, s64 value, s64 timeout);
             void ReleaseResource(ams::svc::LimitableResource which, s64 value);
             void ReleaseResource(ams::svc::LimitableResource which, s64 value, s64 hint);
 
-            constexpr KLightLock &GetStateLock() { return this->state_lock; }
-            constexpr KLightLock &GetListLock() { return this->list_lock; }
+            constexpr KLightLock &GetStateLock() { return m_state_lock; }
+            constexpr KLightLock &GetListLock() { return m_list_lock; }
 
-            constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
-            constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }
+            constexpr KProcessPageTable &GetPageTable() { return m_page_table; }
+            constexpr const KProcessPageTable &GetPageTable() const { return m_page_table; }
 
-            constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
-            constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
+            constexpr KHandleTable &GetHandleTable() { return m_handle_table; }
+            constexpr const KHandleTable &GetHandleTable() const { return m_handle_table; }
 
-            KWaitObject *GetWaitObjectPointer() { return std::addressof(this->wait_object); }
+            KWaitObject *GetWaitObjectPointer() { return std::addressof(m_wait_object); }
 
             size_t GetUsedUserPhysicalMemorySize() const;
             size_t GetTotalUserPhysicalMemorySize() const;
@@ -267,43 +275,56 @@ namespace ams::kern {
             Result AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
             void RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
 
+            void AddIoRegion(KIoRegion *io_region);
+            void RemoveIoRegion(KIoRegion *io_region);
+
             Result CreateThreadLocalRegion(KProcessAddress *out);
             Result DeleteThreadLocalRegion(KProcessAddress addr);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
 
-            constexpr KProcessAddress GetProcessLocalRegionAddress() const { return this->plr_address; }
+            constexpr KProcessAddress GetProcessLocalRegionAddress() const { return m_plr_address; }
 
-            void AddCpuTime(s64 diff) { this->cpu_time += diff; }
+            constexpr void *GetProcessLocalRegionHeapAddress() const { return m_plr_heap_address; }
 
-            constexpr s64 GetScheduledCount() const { return this->schedule_count; }
-            void IncrementScheduledCount() { ++this->schedule_count; }
+            KThread *GetExceptionThread() const { return m_exception_thread; }
 
-            void IncrementThreadCount();
-            void DecrementThreadCount();
+            void AddCpuTime(s64 diff) { m_cpu_time += diff; }
+            s64 GetCpuTime() { return m_cpu_time.Load(); }
 
-            size_t GetTotalSystemResourceSize() const { return this->system_resource_num_pages * PageSize; }
+            constexpr s64 GetScheduledCount() const { return m_schedule_count; }
+            void IncrementScheduledCount() { ++m_schedule_count; }
+
+            void IncrementRunningThreadCount();
+            void DecrementRunningThreadCount();
+
+            size_t GetTotalSystemResourceSize() const { return m_system_resource_num_pages * PageSize; }
             size_t GetUsedSystemResourceSize() const {
-                if (this->system_resource_num_pages == 0) {
+                if (m_system_resource_num_pages == 0) {
                     return 0;
                 }
-                return this->dynamic_page_manager.GetUsed() * PageSize;
+                return m_dynamic_page_manager.GetUsed() * PageSize;
             }
 
             void SetRunningThread(s32 core, KThread *thread, u64 idle_count) {
-                this->running_threads[core]            = thread;
-                this->running_thread_idle_counts[core] = idle_count;
+                m_running_threads[core]            = thread;
+                m_running_thread_idle_counts[core] = idle_count;
             }
 
             void ClearRunningThread(KThread *thread) {
-                for (size_t i = 0; i < util::size(this->running_threads); ++i) {
-                    if (this->running_threads[i] == thread) {
-                        this->running_threads[i] = nullptr;
+                for (size_t i = 0; i < util::size(m_running_threads); ++i) {
+                    if (m_running_threads[i] == thread) {
+                        m_running_threads[i] = nullptr;
                     }
                 }
             }
 
-            constexpr KThread *GetRunningThread(s32 core) const { return this->running_threads[core]; }
-            constexpr u64 GetRunningThreadIdleCount(s32 core) const { return this->running_thread_idle_counts[core]; }
+            const KDynamicPageManager &GetDynamicPageManager() const { return m_dynamic_page_manager; }
+            const KMemoryBlockSlabManager &GetMemoryBlockSlabManager() const { return m_memory_block_slab_manager; }
+            const KBlockInfoManager &GetBlockInfoManager() const { return m_block_info_manager; }
+            const KPageTableManager &GetPageTableManager() const { return m_page_table_manager; }
+
+            constexpr KThread *GetRunningThread(s32 core) const { return m_running_threads[core]; }
+            constexpr u64 GetRunningThreadIdleCount(s32 core) const { return m_running_thread_idle_counts[core]; }
 
             void RegisterThread(KThread *thread);
             void UnregisterThread(KThread *thread);
@@ -313,13 +334,13 @@ namespace ams::kern {
             Result Reset();
 
             void SetDebugBreak() {
-                if (this->state == State_RunningAttached) {
+                if (m_state == State_RunningAttached) {
                     this->ChangeState(State_DebugBreak);
                 }
             }
 
             void SetAttached() {
-                if (this->state == State_DebugBreak) {
+                if (m_state == State_DebugBreak) {
                     this->ChangeState(State_RunningAttached);
                 }
             }
@@ -328,29 +349,22 @@ namespace ams::kern {
 
             void PinCurrentThread();
             void UnpinCurrentThread();
-
-            Result SignalToAddress(KProcessAddress address) {
-                return this->cond_var.SignalToAddress(address);
-            }
-
-            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress address, u32 tag) {
-                return this->cond_var.WaitForAddress(handle, address, tag);
-            }
+            void UnpinThread(KThread *thread);
 
             void SignalConditionVariable(uintptr_t cv_key, int32_t count) {
-                return this->cond_var.Signal(cv_key, count);
+                return m_cond_var.Signal(cv_key, count);
             }
 
             Result WaitConditionVariable(KProcessAddress address, uintptr_t cv_key, u32 tag, s64 ns) {
-                return this->cond_var.Wait(address, cv_key, tag, ns);
+                R_RETURN(m_cond_var.Wait(address, cv_key, tag, ns));
             }
 
             Result SignalAddressArbiter(uintptr_t address, ams::svc::SignalType signal_type, s32 value, s32 count) {
-                return this->address_arbiter.SignalToAddress(address, signal_type, value, count);
+                R_RETURN(m_address_arbiter.SignalToAddress(address, signal_type, value, count));
             }
 
             Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
-                return this->address_arbiter.WaitForAddress(address, arb_type, value, timeout);
+                R_RETURN(m_address_arbiter.WaitForAddress(address, arb_type, value, timeout));
             }
 
             Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
@@ -361,9 +375,6 @@ namespace ams::kern {
             static void Switch(KProcess *cur_process, KProcess *next_process) {
                 MESOSPHERE_UNUSED(cur_process);
 
-                /* Set the current process pointer. */
-                SetCurrentProcess(next_process);
-
                 /* Update the current page table. */
                 if (next_process) {
                     next_process->GetPageTable().Activate(next_process->GetProcessId());
@@ -373,28 +384,46 @@ namespace ams::kern {
             }
         public:
             /* Overridden parent functions. */
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual u64 GetId() const override final { return this->GetProcessId(); }
+            ALWAYS_INLINE u64 GetIdImpl() const { return this->GetProcessId(); }
+            ALWAYS_INLINE u64 GetId() const { return this->GetIdImpl(); }
 
             virtual bool IsSignaled() const override {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-                return this->is_signaled;
+                return m_is_signaled;
             }
 
-            virtual void DoWorkerTask() override;
+            void DoWorkerTaskImpl();
         private:
             void ChangeState(State new_state) {
-                if (this->state != new_state) {
-                    this->state = new_state;
-                    this->is_signaled = true;
+                if (m_state != new_state) {
+                    m_state = new_state;
+                    m_is_signaled = true;
                     this->NotifyAvailable();
                 }
+            }
+
+            ALWAYS_INLINE Result InitializeHandleTable(s32 size) {
+                /* Try to initialize the handle table. */
+                R_TRY(m_handle_table.Initialize(size));
+
+                /* We succeeded, so note that we did. */
+                m_is_handle_table_initialized = true;
+                R_SUCCEED();
+            }
+
+            ALWAYS_INLINE void FinalizeHandleTable() {
+                /* Finalize the table. */
+                m_handle_table.Finalize();
+
+                /* Note that the table is finalized. */
+                m_is_handle_table_initialized = false;
             }
     };
 

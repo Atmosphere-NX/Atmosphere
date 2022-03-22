@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -38,51 +38,51 @@ namespace ams::lmem::impl {
             void *end;
         };
 
-        constexpr inline bool IsValidHeapHandle(HeapHandle handle) {
+        inline bool IsValidHeapHandle(HeapHandle handle) {
             return handle->magic == ExpHeapMagic;
         }
 
-        constexpr inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
-            return &heap_head->impl_head.exp_heap_head;
+        inline ExpHeapHead *GetExpHeapHead(HeapHead *heap_head) {
+            return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        constexpr inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
-            return &heap_head->impl_head.exp_heap_head;
+        inline const ExpHeapHead *GetExpHeapHead(const HeapHead *heap_head) {
+            return std::addressof(heap_head->impl_head.exp_heap_head);
         }
 
-        constexpr inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
+        inline HeapHead *GetHeapHead(ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 
-        constexpr inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
+        inline const HeapHead *GetHeapHead(const ExpHeapHead *exp_heap_head) {
             return util::GetParentPointer<&HeapHead::impl_head>(util::GetParentPointer<&ImplementationHeapHead::exp_heap_head>(exp_heap_head));
         }
 
-        constexpr inline void *GetExpHeapMemoryStart(ExpHeapHead *exp_heap_head) {
+        inline void *GetExpHeapMemoryStart(ExpHeapHead *exp_heap_head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(exp_heap_head) + sizeof(ImplementationHeapHead));
         }
 
-        constexpr inline void *GetMemoryBlockStart(ExpHeapMemoryBlockHead *head) {
+        inline void *GetMemoryBlockStart(ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(head) + sizeof(*head));
         }
 
-        constexpr inline const void *GetMemoryBlockStart(const ExpHeapMemoryBlockHead *head) {
+        inline const void *GetMemoryBlockStart(const ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(head) + sizeof(*head));
         }
 
-        constexpr inline void *GetMemoryBlockEnd(ExpHeapMemoryBlockHead *head) {
+        inline void *GetMemoryBlockEnd(ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(GetMemoryBlockStart(head)) + head->block_size);
         }
 
-        constexpr inline const void *GetMemoryBlockEnd(const ExpHeapMemoryBlockHead *head) {
+        inline const void *GetMemoryBlockEnd(const ExpHeapMemoryBlockHead *head) {
             return reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(GetMemoryBlockStart(head)) + head->block_size);
         }
 
-        constexpr inline ExpHeapMemoryBlockHead *GetHeadForMemoryBlock(const void *block) {
+        inline ExpHeapMemoryBlockHead *GetHeadForMemoryBlock(const void *block) {
             return reinterpret_cast<ExpHeapMemoryBlockHead *>(reinterpret_cast<uintptr_t>(block) - sizeof(ExpHeapMemoryBlockHead));
         }
 
-        constexpr inline bool IsValidUsedMemoryBlock(const HeapHead *heap, const void *block) {
+        inline bool IsValidUsedMemoryBlock(const HeapHead *heap, const void *block) {
             /* Block must fall within the heap range. */
             if (heap != nullptr) {
                 if (block < heap->heap_start || heap->heap_end <= block) {
@@ -106,7 +106,7 @@ namespace ams::lmem::impl {
             return true;
         }
 
-        constexpr inline u16 GetMemoryBlockAlignmentPadding(const ExpHeapMemoryBlockHead *block_head) {
+        inline u16 GetMemoryBlockAlignmentPadding(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<u16>((block_head->attributes >> 8) & 0x7F);
         }
 
@@ -115,7 +115,7 @@ namespace ams::lmem::impl {
             block_head->attributes |= static_cast<decltype(block_head->attributes)>(padding & 0x7F) << 8;
         }
 
-        constexpr inline u16 GetMemoryBlockGroupId(const ExpHeapMemoryBlockHead *block_head) {
+        inline u16 GetMemoryBlockGroupId(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<u16>(block_head->attributes & 0xFF);
         }
 
@@ -124,7 +124,7 @@ namespace ams::lmem::impl {
             block_head->attributes |= static_cast<decltype(block_head->attributes)>(group_id & 0xFF);
         }
 
-        constexpr inline AllocationDirection GetMemoryBlockAllocationDirection(const ExpHeapMemoryBlockHead *block_head) {
+        inline AllocationDirection GetMemoryBlockAllocationDirection(const ExpHeapMemoryBlockHead *block_head) {
             return static_cast<AllocationDirection>((block_head->attributes >> 15) & 1);
         }
 
@@ -138,7 +138,7 @@ namespace ams::lmem::impl {
             out->end   = GetMemoryBlockEnd(head);
         }
 
-        constexpr inline AllocationMode GetAllocationModeImpl(const ExpHeapHead *head) {
+        inline AllocationMode GetAllocationModeImpl(const ExpHeapHead *head) {
             return static_cast<AllocationMode>(head->mode);
         }
 
@@ -147,12 +147,11 @@ namespace ams::lmem::impl {
         }
 
         inline ExpHeapMemoryBlockHead *InitializeMemoryBlock(const MemoryRegion &region, u16 magic) {
-            ExpHeapMemoryBlockHead *block = reinterpret_cast<ExpHeapMemoryBlockHead *>(region.start);
+            /* Construct the block. */
+            ExpHeapMemoryBlockHead *block = std::construct_at(reinterpret_cast<ExpHeapMemoryBlockHead *>(region.start));
 
-            /* Ensure all member constructors are called. */
-            new (block) ExpHeapMemoryBlockHead;
-
-            block->magic = magic;
+            /* Initialize all members. */
+            block->magic      = magic;
             block->attributes = 0;
             block->block_size = GetPointerDifference(GetMemoryBlockStart(block), region.end);
 
@@ -175,8 +174,8 @@ namespace ams::lmem::impl {
             InitializeHeapHead(heap_head, ExpHeapMagic, GetExpHeapMemoryStart(exp_heap_head), end, option);
 
             /* Call exp heap member constructors. */
-            new (&exp_heap_head->free_list) ExpHeapMemoryBlockList;
-            new (&exp_heap_head->used_list) ExpHeapMemoryBlockList;
+            std::construct_at(std::addressof(exp_heap_head->free_list));
+            std::construct_at(std::addressof(exp_heap_head->used_list));
 
             /* Set exp heap fields. */
             exp_heap_head->group_id = DefaultGroupId;
@@ -198,7 +197,7 @@ namespace ams::lmem::impl {
 
             /* Locate the block. */
             for (auto it = head->free_list.begin(); it != head->free_list.end(); it++) {
-                ExpHeapMemoryBlockHead *cur_free_block = &*it;
+                ExpHeapMemoryBlockHead *cur_free_block = std::addressof(*it);
 
                 if (cur_free_block < region->start) {
                     prev_free_block_it = it;
@@ -221,9 +220,9 @@ namespace ams::lmem::impl {
             auto insertion_it = head->free_list.begin();
             if (prev_free_block_it != head->free_list.end()) {
                 /* There's a previous free block, so we want to insert as the next iterator. */
-                if (GetMemoryBlockEnd(&*prev_free_block_it) == region->start) {
+                if (GetMemoryBlockEnd(std::addressof(*prev_free_block_it)) == region->start) {
                     /* We can coalesce, so do so. */
-                    free_region.start = &*prev_free_block_it;
+                    free_region.start = std::addressof(*prev_free_block_it);
                     insertion_it = head->free_list.erase(prev_free_block_it);
                 } else {
                     /* We can't coalesce, so just select the next iterator. */
@@ -250,7 +249,7 @@ namespace ams::lmem::impl {
         void *ConvertFreeBlockToUsedBlock(ExpHeapHead *head, ExpHeapMemoryBlockHead *block_head, void *block, size_t size, AllocationDirection direction) {
             /* Calculate freed memory regions. */
             MemoryRegion free_region_front;
-            GetMemoryBlockRegion(&free_region_front, block_head);
+            GetMemoryBlockRegion(std::addressof(free_region_front), block_head);
             MemoryRegion free_region_back{ .start = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(block) + size), .end = free_region_front.end, };
 
             /* Adjust end of head region. */
@@ -309,12 +308,12 @@ namespace ams::lmem::impl {
             size_t best_size = std::numeric_limits<size_t>::max();
 
             for (auto it = exp_heap_head->free_list.begin(); it != exp_heap_head->free_list.end(); it++) {
-                const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(&*it));
+                const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(std::addressof(*it)));
                 const uintptr_t block_start          = util::AlignUp(absolute_block_start, alignment);
                 const size_t    block_offset         = block_start - absolute_block_start;
 
                 if (it->block_size >= size + block_offset && best_size > it->block_size) {
-                    found_block_head = &*it;
+                    found_block_head = std::addressof(*it);
                     found_block      = reinterpret_cast<void *>(block_start);
                     best_size        = it->block_size;
 
@@ -343,12 +342,12 @@ namespace ams::lmem::impl {
             size_t best_size = std::numeric_limits<size_t>::max();
 
             for (auto it = exp_heap_head->free_list.rbegin(); it != exp_heap_head->free_list.rend(); it++) {
-                const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(&*it));
+                const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(std::addressof(*it)));
                 const uintptr_t block_start          = util::AlignUp(absolute_block_start, alignment);
                 const size_t    block_offset         = block_start - absolute_block_start;
 
                 if (it->block_size >= size + block_offset && best_size > it->block_size) {
-                    found_block_head = &*it;
+                    found_block_head = std::addressof(*it);
                     found_block      = reinterpret_cast<void *>(block_start);
                     best_size        = it->block_size;
 
@@ -397,7 +396,7 @@ namespace ams::lmem::impl {
         }
 
         /* Get the memory block end, make sure it really is the last block. */
-        ExpHeapMemoryBlockHead *block = &exp_heap_head->free_list.back();
+        ExpHeapMemoryBlockHead *block = std::addressof(exp_heap_head->free_list.back());
         void * const block_start = GetMemoryBlockStart(block);
         const size_t block_size = block->block_size;
         void * const block_end   = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(block_start) + block_size);
@@ -428,6 +427,7 @@ namespace ams::lmem::impl {
         const s32 abs_alignment = std::abs(alignment);
         AMS_ASSERT((abs_alignment & (abs_alignment - 1)) == 0);
         AMS_ASSERT(MinimumAlignment <= static_cast<size_t>(abs_alignment));
+        AMS_UNUSED(abs_alignment);
 
         /* Fix size to be correctly aligned. */
         if (size == 0) {
@@ -460,9 +460,13 @@ namespace ams::lmem::impl {
         MemoryRegion region;
 
         /* Erase the heap from the used list, and coalesce it with adjacent blocks. */
-        GetMemoryBlockRegion(&region, block);
+        GetMemoryBlockRegion(std::addressof(region), block);
         exp_heap_head->used_list.erase(exp_heap_head->used_list.iterator_to(*block));
-        AMS_ASSERT(CoalesceFreedRegion(exp_heap_head, &region));
+
+        /* Coalesce with adjacent blocks. */
+        const bool coalesced = CoalesceFreedRegion(exp_heap_head, std::addressof(region));
+        AMS_ASSERT(coalesced);
+        AMS_UNUSED(coalesced);
     }
 
     size_t ResizeExpHeapMemoryBlock(HeapHandle handle, void *mem_block, size_t size) {
@@ -489,8 +493,8 @@ namespace ams::lmem::impl {
             ExpHeapMemoryBlockHead *next_block_head = nullptr;
 
             for (auto it = exp_heap_head->free_list.begin(); it != exp_heap_head->free_list.end(); it++) {
-                if (&*it == cur_block_end) {
-                    next_block_head = &*it;
+                if (std::addressof(*it) == cur_block_end) {
+                    next_block_head = std::addressof(*it);
                     break;
                 }
             }
@@ -504,7 +508,7 @@ namespace ams::lmem::impl {
             {
                 /* Get block region. */
                 MemoryRegion new_free_region;
-                GetMemoryBlockRegion(&new_free_region, next_block_head);
+                GetMemoryBlockRegion(std::addressof(new_free_region), next_block_head);
 
                 /* Remove the next block from the free list. */
                 auto insertion_it = exp_heap_head->free_list.erase(exp_heap_head->free_list.iterator_to(*next_block_head));
@@ -535,7 +539,7 @@ namespace ams::lmem::impl {
 
             /* Try to free the new memory. */
             block_head->block_size = size;
-            if (!CoalesceFreedRegion(exp_heap_head, &new_free_region)) {
+            if (!CoalesceFreedRegion(exp_heap_head, std::addressof(new_free_region))) {
                 /* We didn't shrink the block successfully, so restore the size. */
                 block_head->block_size = original_block_size;
             }
@@ -563,9 +567,9 @@ namespace ams::lmem::impl {
         size_t max_size   = std::numeric_limits<size_t>::min();
         size_t min_offset = std::numeric_limits<size_t>::max();
         for (const auto &it : GetExpHeapHead(handle)->free_list) {
-            const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(&it));
+            const uintptr_t absolute_block_start = reinterpret_cast<uintptr_t>(GetMemoryBlockStart(std::addressof(it)));
             const uintptr_t block_start          = util::AlignUp(absolute_block_start, alignment);
-            const uintptr_t block_end            = reinterpret_cast<uintptr_t>(GetMemoryBlockEnd(&it));
+            const uintptr_t block_end            = reinterpret_cast<uintptr_t>(GetMemoryBlockEnd(std::addressof(it)));
 
             if (block_start < block_end) {
                 const size_t block_size = GetPointerDifference(block_start, block_end);
@@ -616,7 +620,7 @@ namespace ams::lmem::impl {
         AMS_ASSERT(IsValidHeapHandle(handle));
 
         for (auto &it : GetExpHeapHead(handle)->used_list) {
-            (*visitor)(GetMemoryBlockStart(&it), handle, user_data);
+            (*visitor)(GetMemoryBlockStart(std::addressof(it)), handle, user_data);
         }
     }
 

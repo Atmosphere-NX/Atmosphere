@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -51,12 +51,12 @@ namespace ams::kern::svc {
             R_TRY(event->Initialize(interrupt_id, type));
 
             /* Register the event. */
-            R_TRY(KInterruptEvent::Register(event));
+            KInterruptEvent::Register(event);
 
             /* Add the event to the handle table. */
             R_TRY(handle_table.Add(out, event));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -64,13 +64,13 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateInterruptEvent64(ams::svc::Handle *out_read_handle, int32_t interrupt_id, ams::svc::InterruptType interrupt_type) {
-        return CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type);
+        R_RETURN(CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateInterruptEvent64From32(ams::svc::Handle *out_read_handle, int32_t interrupt_id, ams::svc::InterruptType interrupt_type) {
-        return CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type);
+        R_RETURN(CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type));
     }
 
 }

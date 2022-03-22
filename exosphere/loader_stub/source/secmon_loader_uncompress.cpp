@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,14 +22,14 @@ namespace ams::secmon::loader {
 
         class Lz4Uncompressor {
             private:
-                const u8 *src;
-                size_t src_size;
-                size_t src_offset;
-                u8 *dst;
-                size_t dst_size;
-                size_t dst_offset;
+                const u8 *m_src;
+                size_t m_src_size;
+                size_t m_src_offset;
+                u8 *m_dst;
+                size_t m_dst_size;
+                size_t m_dst_offset;
             public:
-                Lz4Uncompressor(void *dst, size_t dst_size, const void *src, size_t src_size) : src(static_cast<const u8 *>(src)), src_size(src_size), src_offset(0), dst(static_cast<u8 *>(dst)), dst_size(dst_size), dst_offset(0) {
+                Lz4Uncompressor(void *dst, size_t dst_size, const void *src, size_t src_size) : m_src(static_cast<const u8 *>(src)), m_src_size(src_size), m_src_offset(0), m_dst(static_cast<u8 *>(dst)), m_dst_size(dst_size), m_dst_offset(0) {
                     /* ... */
                 }
 
@@ -42,7 +42,7 @@ namespace ams::secmon::loader {
                         this->Copy(this->GetCopySize(control >> 4));
 
                         /* If we've exceeded size, we're done. */
-                        if (this->src_offset >= this->src_size) {
+                        if (m_src_offset >= m_src_size) {
                             break;
                         }
 
@@ -55,21 +55,21 @@ namespace ams::secmon::loader {
                         const size_t wide_copy_size = this->GetCopySize(control & 0xF);
 
                         /* Copy bytes. */
-                        const size_t end_offset = this->dst_offset + wide_copy_size + 4;
-                        for (size_t cur_offset = this->dst_offset; cur_offset < end_offset; this->dst_offset = (++cur_offset)) {
+                        const size_t end_offset = m_dst_offset + wide_copy_size + 4;
+                        for (size_t cur_offset = m_dst_offset; cur_offset < end_offset; m_dst_offset = (++cur_offset)) {
                             AMS_ABORT_UNLESS(wide_offset <= cur_offset);
 
-                            this->dst[cur_offset] = this->dst[cur_offset - wide_offset];
+                            m_dst[cur_offset] = m_dst[cur_offset - wide_offset];
                         }
                     }
                 }
             private:
                 u8 ReadByte() {
-                    return this->src[this->src_offset++];
+                    return m_src[m_src_offset++];
                 }
 
                 bool CanRead() const {
-                    return this->src_offset < this->src_size;
+                    return m_src_offset < m_src_size;
                 }
 
                 size_t GetCopySize(u8 control) {
@@ -87,9 +87,9 @@ namespace ams::secmon::loader {
                 }
 
                 void Copy(size_t size) {
-                    __builtin_memcpy(this->dst + this->dst_offset, this->src + this->src_offset, size);
-                    this->dst_offset += size;
-                    this->src_offset += size;
+                    __builtin_memcpy(m_dst + m_dst_offset, m_src + m_src_offset, size);
+                    m_dst_offset += size;
+                    m_src_offset += size;
                 }
         };
 

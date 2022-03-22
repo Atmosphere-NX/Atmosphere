@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -40,13 +40,13 @@ namespace ams::ncm {
 
     class HeapState {
         private:
-            os::Mutex mutex;
-            lmem::HeapHandle heap_handle;
-            size_t total_alloc_size;
-            size_t peak_total_alloc_size;
-            size_t peak_alloc_size;
+            os::SdkMutex m_mutex;
+            lmem::HeapHandle m_heap_handle;
+            size_t m_total_alloc_size;
+            size_t m_peak_total_alloc_size;
+            size_t m_peak_alloc_size;
         public:
-            constexpr HeapState() : mutex(false), heap_handle(nullptr), total_alloc_size(0), peak_total_alloc_size(0), peak_alloc_size(0) { /* ... */ }
+            constexpr HeapState() : m_mutex(), m_heap_handle(nullptr), m_total_alloc_size(0), m_peak_total_alloc_size(0), m_peak_alloc_size(0) { /* ... */ }
 
             void Initialize(lmem::HeapHandle heap_handle);
             void Allocate(size_t size);

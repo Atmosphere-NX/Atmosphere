@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,26 +21,24 @@ namespace ams::boot {
     /* Driver object. */
     class PmicDriver {
         private:
-            i2c::driver::Session i2c_session;
+            i2c::driver::I2cSession m_i2c_session;
         public:
             PmicDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Pmic);
+                R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(m_i2c_session), i2c::DeviceCode_Max77620Pmic));
             }
 
             ~PmicDriver() {
-                i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
+                i2c::driver::CloseSession(m_i2c_session);
             }
         private:
             Result GetPowerStatus(u8 *out);
-            Result ShutdownSystem(bool reboot);
-            void FinalizeBattery(BatteryDriver *battery_driver);
+            void ShutdownSystem(bool reboot);
+            void FinalizeBattery(BatteryDriver &battery_driver);
         public:
             void ShutdownSystem();
             void RebootSystem();
             Result GetAcOk(bool *out);
-            Result GetPowerIntr(u8 *out);
+            Result GetOnOffIrq(u8 *out);
             Result GetNvErc(u8 *out);
             Result GetPowerButtonPressed(bool *out);
     };

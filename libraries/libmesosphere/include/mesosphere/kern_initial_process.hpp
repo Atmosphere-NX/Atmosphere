@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,11 +29,19 @@ namespace ams::kern {
         u32 reserved;
     };
 
-    NOINLINE void CopyInitialProcessBinaryToKernelMemory();
-    NOINLINE void CreateAndRunInitialProcesses();
+    struct InitialProcessBinaryLayout {
+        uintptr_t address;
+        uintptr_t _08;
+    };
+
+    KPhysicalAddress GetInitialProcessBinaryPhysicalAddress();
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr);
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
     size_t GetInitialProcessesSecureMemorySize();
+
+    NOINLINE size_t CopyInitialProcessBinaryToKernelMemory();
+    NOINLINE void CreateAndRunInitialProcesses();
 
 }

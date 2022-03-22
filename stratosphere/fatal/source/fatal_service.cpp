@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,27 +28,27 @@ namespace ams::fatal::srv {
         /* Service Context. */
         class ServiceContext {
             private:
-                os::Event erpt_event;
-                os::Event battery_event;
-                ThrowContext context;
-                FatalEventManager event_manager;
-                bool has_thrown;
+                os::Event m_erpt_event;
+                os::Event m_battery_event;
+                ThrowContext m_context;
+                FatalEventManager m_event_manager;
+                bool m_has_thrown;
             private:
                 Result TrySetHasThrown() {
-                    R_UNLESS(!this->has_thrown, ResultAlreadyThrown());
-                    this->has_thrown = true;
+                    R_UNLESS(!m_has_thrown, fatal::ResultAlreadyThrown());
+                    m_has_thrown = true;
                     return ResultSuccess();
                 }
             public:
                 ServiceContext()
-                    : erpt_event(os::EventClearMode_ManualClear), battery_event(os::EventClearMode_ManualClear),
-                      context(std::addressof(erpt_event), std::addressof(battery_event)), has_thrown(false)
+                    : m_erpt_event(os::EventClearMode_ManualClear), m_battery_event(os::EventClearMode_ManualClear),
+                      m_context(std::addressof(m_erpt_event), std::addressof(m_battery_event)), m_has_thrown(false)
                 {
                     /* ... */
                 }
 
                 Result GetEvent(const os::SystemEventType **out) {
-                    return this->event_manager.GetEvent(out);
+                    return m_event_manager.GetEvent(out);
                 }
 
                 Result ThrowFatal(Result result, os::ProcessId process_id) {
@@ -73,51 +73,51 @@ namespace ams::fatal::srv {
             /* Note that we've thrown fatal. */
             R_TRY(this->TrySetHasThrown());
 
-            /* At this point we have exclusive access to this->context. */
-            this->context.result = result;
-            this->context.cpu_ctx = cpu_ctx;
+            /* At this point we have exclusive access to m_context. */
+            m_context.result = result;
+            m_context.cpu_ctx = cpu_ctx;
 
             /* Cap the stack trace to a sane limit. */
             if (cpu_ctx.architecture == CpuContext::Architecture_Aarch64) {
-                this->context.cpu_ctx.aarch64_ctx.stack_trace_size = std::max(size_t(this->context.cpu_ctx.aarch64_ctx.stack_trace_size), aarch64::CpuContext::MaxStackTraceDepth);
+                m_context.cpu_ctx.aarch64_ctx.stack_trace_size = std::max(size_t(m_context.cpu_ctx.aarch64_ctx.stack_trace_size), aarch64::CpuContext::MaxStackTraceDepth);
             } else {
-                this->context.cpu_ctx.aarch32_ctx.stack_trace_size = std::max(size_t(this->context.cpu_ctx.aarch32_ctx.stack_trace_size), aarch32::CpuContext::MaxStackTraceDepth);
+                m_context.cpu_ctx.aarch32_ctx.stack_trace_size = std::max(size_t(m_context.cpu_ctx.aarch32_ctx.stack_trace_size), aarch32::CpuContext::MaxStackTraceDepth);
             }
 
             /* Get program id. */
-            pm::info::GetProgramId(&this->context.program_id, process_id);
-            this->context.is_creport = (this->context.program_id == ncm::SystemProgramId::Creport);
+            pm::info::GetProgramId(std::addressof(m_context.program_id), process_id);
+            m_context.is_creport = (m_context.program_id == ncm::SystemProgramId::Creport);
 
-            if (!this->context.is_creport) {
+            if (!m_context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
                 if (hos::GetVersion() >= hos::Version_2_0_0) {
-                    fatal::srv::TryCollectDebugInformation(&this->context, process_id);
+                    fatal::srv::TryCollectDebugInformation(std::addressof(m_context), process_id);
                 }
             } else {
                 /* We received info from creport. Parse program id from afsr0. */
                 if (cpu_ctx.architecture == CpuContext::Architecture_Aarch64) {
-                    this->context.program_id = cpu_ctx.aarch64_ctx.GetProgramIdForAtmosphere();
+                    m_context.program_id = cpu_ctx.aarch64_ctx.GetProgramIdForAtmosphere();
                 } else {
-                    this->context.program_id = cpu_ctx.aarch32_ctx.GetProgramIdForAtmosphere();
+                    m_context.program_id = cpu_ctx.aarch32_ctx.GetProgramIdForAtmosphere();
                 }
             }
 
             /* Decide whether to generate a report. */
-            this->context.generate_error_report = (policy == FatalPolicy_ErrorReportAndErrorScreen);
+            m_context.generate_error_report = (policy == FatalPolicy_ErrorReportAndErrorScreen);
 
-            /* Adjust error code (2000-0000 -> 2162-0002). */
-            if (R_SUCCEEDED(this->context.result)) {
-                this->context.result = err::ResultSystemModuleAborted();
+            /* Adjust error code (ResultSuccess()/2000-0000 -> err::ResultSystemProgramAbort()/2162-0002). */
+            if (R_SUCCEEDED(m_context.result)) {
+                m_context.result = err::ResultSystemProgramAbort();
             }
 
             switch (policy) {
                 case FatalPolicy_ErrorReportAndErrorScreen:
                 case FatalPolicy_ErrorScreen:
                     /* Signal that we're throwing. */
-                    this->event_manager.SignalEvents();
+                    m_event_manager.SignalEvents();
 
                     if (GetFatalConfig().ShouldTransitionToFatal()) {
-                        RunTasks(&this->context);
+                        RunTasks(std::addressof(m_context));
                     }
                     break;
                 /* N aborts here. Should we just return an error code? */
@@ -145,10 +145,10 @@ namespace ams::fatal::srv {
         return g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx);
     }
 
-    Result PrivateService::GetFatalEvent(sf::OutCopyHandle out_h) {
+    Result Service::GetFatalEvent(sf::OutCopyHandle out_h) {
         const os::SystemEventType *event;
         R_TRY(g_context.GetEvent(std::addressof(event)));
-        out_h.SetValue(os::GetReadableHandleOfSystemEvent(event));
+        out_h.SetValue(os::GetReadableHandleOfSystemEvent(event), false);
         return ResultSuccess();
     }
 

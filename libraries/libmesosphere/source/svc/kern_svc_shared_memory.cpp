@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -60,14 +60,10 @@ namespace ams::kern::svc {
             R_TRY(process.AddSharedMemory(shmem.GetPointerUnsafe(), address, size));
 
             /* Ensure that we clean up the shared memory if we fail to map it. */
-            auto guard = SCOPE_GUARD { process.RemoveSharedMemory(shmem.GetPointerUnsafe(), address, size); };
+            ON_RESULT_FAILURE { process.RemoveSharedMemory(shmem.GetPointerUnsafe(), address, size); };
 
             /* Map the shared memory. */
-            R_TRY(shmem->Map(std::addressof(page_table), address, size, std::addressof(process), map_perm));
-
-            /* We succeeded. */
-            guard.Cancel();
-            return ResultSuccess();
+            R_RETURN(shmem->Map(std::addressof(page_table), address, size, std::addressof(process), map_perm));
         }
 
         Result UnmapSharedMemory(ams::svc::Handle shmem_handle, uintptr_t address, size_t size) {
@@ -94,13 +90,13 @@ namespace ams::kern::svc {
             /* Remove the shared memory from the process. */
             process.RemoveSharedMemory(shmem.GetPointerUnsafe(), address, size);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateSharedMemory(ams::svc::Handle *out, size_t size, ams::svc::MemoryPermission owner_perm, ams::svc::MemoryPermission remote_perm) {
             /* Validate the size. */
-            R_UNLESS(0 < size && size < kern::MainMemorySize, svc::ResultInvalidSize());
-            R_UNLESS(util::IsAligned(size, PageSize),         svc::ResultInvalidSize());
+            R_UNLESS(0 < size && size < kern::MainMemorySizeMax, svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, PageSize),            svc::ResultInvalidSize());
 
             /* Validate the permissions. */
             R_UNLESS(IsValidSharedMemoryPermission(owner_perm),        svc::ResultInvalidNewMemoryPermission());
@@ -117,12 +113,12 @@ namespace ams::kern::svc {
             R_TRY(shmem->Initialize(GetCurrentProcessPointer(), size, owner_perm, remote_perm));
 
             /* Register the shared memory. */
-            R_TRY(KSharedMemory::Register(shmem));
+            KSharedMemory::Register(shmem);
 
             /* Add the shared memory to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out, shmem));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -130,29 +126,29 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result MapSharedMemory64(ams::svc::Handle shmem_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission map_perm) {
-        return MapSharedMemory(shmem_handle, address, size, map_perm);
+        R_RETURN(MapSharedMemory(shmem_handle, address, size, map_perm));
     }
 
     Result UnmapSharedMemory64(ams::svc::Handle shmem_handle, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapSharedMemory(shmem_handle, address, size);
+        R_RETURN(UnmapSharedMemory(shmem_handle, address, size));
     }
 
     Result CreateSharedMemory64(ams::svc::Handle *out_handle, ams::svc::Size size, ams::svc::MemoryPermission owner_perm, ams::svc::MemoryPermission remote_perm) {
-        return CreateSharedMemory(out_handle, size, owner_perm, remote_perm);
+        R_RETURN(CreateSharedMemory(out_handle, size, owner_perm, remote_perm));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result MapSharedMemory64From32(ams::svc::Handle shmem_handle, ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission map_perm) {
-        return MapSharedMemory(shmem_handle, address, size, map_perm);
+        R_RETURN(MapSharedMemory(shmem_handle, address, size, map_perm));
     }
 
     Result UnmapSharedMemory64From32(ams::svc::Handle shmem_handle, ams::svc::Address address, ams::svc::Size size) {
-        return UnmapSharedMemory(shmem_handle, address, size);
+        R_RETURN(UnmapSharedMemory(shmem_handle, address, size));
     }
 
     Result CreateSharedMemory64From32(ams::svc::Handle *out_handle, ams::svc::Size size, ams::svc::MemoryPermission owner_perm, ams::svc::MemoryPermission remote_perm) {
-        return CreateSharedMemory(out_handle, size, owner_perm, remote_perm);
+        R_RETURN(CreateSharedMemory(out_handle, size, owner_perm, remote_perm));
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,6 +29,7 @@ namespace ams::svc::codegen {
         public:
 /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
 #pragma GCC push_options
+#pragma GCC optimize ("-O2")
 #pragma GCC optimize ("omit-frame-pointer")
 
             static ALWAYS_INLINE void Call64() {

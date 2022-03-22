@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,9 +20,9 @@ namespace ams::erpt::srv {
 
     class Report;
 
-    class ReportImpl final {
+    class ReportImpl {
         private:
-            Report *report;
+            Report *m_report;
         public:
             ReportImpl();
             ~ReportImpl();

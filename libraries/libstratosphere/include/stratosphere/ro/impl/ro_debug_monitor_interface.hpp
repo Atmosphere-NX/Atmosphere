@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,13 +17,10 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/ro/ro_types.hpp>
+#include <stratosphere/ldr/ldr_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::ro::impl {
+#define AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                          \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessModuleInfo, (sf::Out<u32> out_count, const sf::OutArray<ldr::ModuleInfo> &out_infos, os::ProcessId process_id), (out_count, out_infos, process_id))
 
-    #define AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                       \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessModuleInfo, (sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id))
-
-    AMS_SF_DEFINE_INTERFACE(IDebugMonitorInterface, AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::ro::impl, IDebugMonitorInterface, AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)

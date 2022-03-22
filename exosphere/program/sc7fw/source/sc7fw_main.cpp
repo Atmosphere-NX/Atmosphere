@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -58,8 +58,8 @@ namespace ams::sc7fw {
 
         void EnterSc7() {
             /* Disable read buffering and write buffering in the BPMP cache. */
-            reg::ReadWrite(AVP_CACHE_ADDRESS(AVP_CACHE_CONFIG), AVP_CACHE_REG_BITS_ENUM(DISABLE_WB, TRUE),
-                                                                AVP_CACHE_REG_BITS_ENUM(DISABLE_RB, TRUE));
+            reg::ReadWrite(AVP_CACHE_ADDR(AVP_CACHE_CONFIG), AVP_CACHE_REG_BITS_ENUM(CONFIG_DISABLE_WB, TRUE),
+                                                             AVP_CACHE_REG_BITS_ENUM(CONFIG_DISABLE_RB, TRUE));
 
             /* Ensure the CPU Rail is turned off. */
             DisableCrail();
@@ -114,5 +114,7 @@ namespace ams::diag {
     void AbortImpl() {
         sc7fw::ExceptionHandler();
     }
+
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
 
 }

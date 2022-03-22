@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -34,10 +34,10 @@ namespace ams::crypto::impl {
     void AesImpl<KeySize>::Initialize(const void *key, size_t key_size, bool is_encrypt) {
         static_assert(IsSupportedKeySize(KeySize));
         AMS_ASSERT(key_size == sizeof(int));
-        AMS_UNUSED(is_encrypt);
+        AMS_UNUSED(key_size, is_encrypt);
 
         /* Set the security engine keyslot. */
-        this->slot = *static_cast<const int *>(key);
+        m_slot = *static_cast<const int *>(key);
     }
 
     template<size_t KeySize>
@@ -48,14 +48,14 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            se::EncryptAes128(dst, dst_size, this->slot, src, src_size);
+            se::EncryptAes128(dst, dst_size, m_slot, src, src_size);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            /* TODO: se::EncryptAes192(dst, dst_size, this->slot, src, src_size); */
+            /* TODO: se::EncryptAes192(dst, dst_size, m_slot, src, src_size); */
             AMS_UNUSED(dst, dst_size, src, src_size);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            /* TODO: se::EncryptAes256(dst, dst_size, this->slot, src, src_size); */
+            /* TODO: se::EncryptAes256(dst, dst_size, m_slot, src, src_size); */
             AMS_UNUSED(dst, dst_size, src, src_size);
         } else {
             /* Invalid key size. */
@@ -71,14 +71,14 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            se::DecryptAes128(dst, dst_size, this->slot, src, src_size);
+            se::DecryptAes128(dst, dst_size, m_slot, src, src_size);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            /* TODO: se::DecryptAes192(dst, dst_size, this->slot, src, src_size); */
+            /* TODO: se::DecryptAes192(dst, dst_size, m_slot, src, src_size); */
             AMS_UNUSED(dst, dst_size, src, src_size);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            /* TODO: se::DecryptAes256(dst, dst_size, this->slot, src, src_size); */
+            /* TODO: se::DecryptAes256(dst, dst_size, m_slot, src, src_size); */
             AMS_UNUSED(dst, dst_size, src, src_size);
         } else {
             /* Invalid key size. */

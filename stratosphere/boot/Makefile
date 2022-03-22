@@ -14,7 +14,7 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) $(TOPDIR)/../../fusee/fusee-primary
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) $(TOPDIR)/../../fusee
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -22,17 +22,7 @@ CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
 CPPFILES    :=	$(call FIND_SOURCE_FILES,$(SOURCES),cpp)
 SFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),s)
 
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin
-
-#---------------------------------------------------------------------------------
-# boot has a custom bin2o rule for fusee-primary -> fusee_primary
-#---------------------------------------------------------------------------------
-define _bin2o
-	bin2s $< | $(AS) -o $(@)
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"_end[];" > `(echo $(<F) | tr . _ | tr - _)`.h
-	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"[];" >> `(echo $(<F) | tr . _ | tr - _)`.h
-	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`_size";" >> `(echo $(<F) | tr . _ | tr - _)`.h
-endef
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -78,7 +68,7 @@ endif
 all: $(BUILD)
 
 check_fusee:
-	@$(MAKE) -C $(TOPDIR)/../../fusee/fusee-primary all
+	@$(MAKE) -C $(TOPDIR)/../../fusee release
 
 $(BUILD): check_fusee
 	@[ -d $@ ] || mkdir -p $@
@@ -87,7 +77,7 @@ $(BUILD): check_fusee
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(TOPDIR)/../../fusee/fusee-primary clean
+	@$(MAKE) -C $(TOPDIR)/../../fusee clean
 	@rm -fr $(BUILD) $(TARGET).kip $(TARGET).elf
 
 
@@ -106,17 +96,12 @@ $(OUTPUT).kip	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
 
-boot_power_utils.o: fusee_primary.bin.o fusee_primary_bin.h
+boot_power_utils.o: fusee.bin.o
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-fusee_primary.bin.o	fusee_primary_bin.h:	fusee-primary.bin
-#---------------------------------------------------------------------------------
-	@echo $(notdir $<)
-	@$(_bin2o)
-
-%.bin.o	:	%.bin
+fusee.bin.o:	fusee.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -32,20 +32,20 @@ namespace ams::crypto {
             static constexpr size_t HashSize  = Impl::HashSize;
             static constexpr size_t BlockSize = Impl::BlockSize;
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             HmacGenerator() { /* ... */ }
 
             void Initialize(const void *key, size_t key_size) {
-                return this->impl.Initialize(key, key_size);
+                return m_impl.Initialize(key, key_size);
             }
 
             void Update(const void *data, size_t size) {
-                return this->impl.Update(data, size);
+                return m_impl.Update(data, size);
             }
 
             void GetMac(void *dst, size_t dst_size) {
-                return this->impl.GetMac(dst, dst_size);
+                return m_impl.GetMac(dst, dst_size);
             }
     };
 }

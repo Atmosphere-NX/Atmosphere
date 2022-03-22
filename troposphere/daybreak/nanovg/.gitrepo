@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
 ;
 [subrepo]
-	remote = https://github.com/Adubbz/nanovg-deko.git
+	remote = https://github.com/Adubbz/nanovg-deko3d.git
 	branch = master
-	commit = c197ba2f0d1fe2c70e2d49c61f16b4063aef569e
-	parent = 171d97e0ac2eaf1bca1c48727404fec45621f1fd
+	commit = a8c9778aff08420b5b4af7b54bef5d4f3b5ac568
+	parent = 797e3651d5e425231dd7f252489338e38872b116
 	method = merge
-	cmdver = 0.4.1
+	cmdver = 0.4.3

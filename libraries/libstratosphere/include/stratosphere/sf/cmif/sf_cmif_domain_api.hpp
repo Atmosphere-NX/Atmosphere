@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "sf_cmif_service_object_holder.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
 
 namespace ams::sf::cmif {
 

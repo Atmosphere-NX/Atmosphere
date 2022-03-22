@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,12 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
+#include <stratosphere/fs/fs_common.hpp>
 
 namespace ams::fs {
 
     struct ReadOption {
-        u32 value;
+        u32 _value;
 
         static const ReadOption None;
     };
@@ -27,7 +27,7 @@ namespace ams::fs {
     inline constexpr const ReadOption ReadOption::None = {FsReadOption_None};
 
     inline constexpr bool operator==(const ReadOption &lhs, const ReadOption &rhs) {
-        return lhs.value == rhs.value;
+        return lhs._value == rhs._value;
     }
 
     inline constexpr bool operator!=(const ReadOption &lhs, const ReadOption &rhs) {
@@ -37,10 +37,10 @@ namespace ams::fs {
     static_assert(util::is_pod<ReadOption>::value && sizeof(ReadOption) == sizeof(u32));
 
     struct WriteOption {
-        u32 value;
+        u32 _value;
 
         constexpr inline bool HasFlushFlag() const {
-            return this->value & FsWriteOption_Flush;
+            return _value & FsWriteOption_Flush;
         }
 
         static const WriteOption None;
@@ -51,7 +51,7 @@ namespace ams::fs {
     inline constexpr const WriteOption WriteOption::Flush = {FsWriteOption_Flush};
 
     inline constexpr bool operator==(const WriteOption &lhs, const WriteOption &rhs) {
-        return lhs.value == rhs.value;
+        return lhs._value == rhs._value;
     }
 
     inline constexpr bool operator!=(const WriteOption &lhs, const WriteOption &rhs) {

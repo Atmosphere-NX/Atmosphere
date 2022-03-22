@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -74,27 +74,27 @@ namespace ams::fssystem {
             static Result CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index);
             static Result CreateSoftwareDecryptor(std::unique_ptr<IDecryptor> *out);
         private:
-            BucketTree table;
-            fs::SubStorage data_storage;
-            u8 key[KeySize];
-            u32 secure_value;
-            s64 counter_offset;
-            std::unique_ptr<IDecryptor> decryptor;
+            BucketTree m_table;
+            fs::SubStorage m_data_storage;
+            u8 m_key[KeySize];
+            u32 m_secure_value;
+            s64 m_counter_offset;
+            std::unique_ptr<IDecryptor> m_decryptor;
         public:
-            AesCtrCounterExtendedStorage() : table(), data_storage(), secure_value(), counter_offset(), decryptor() { /* ... */ }
+            AesCtrCounterExtendedStorage() : m_table(), m_data_storage(), m_secure_value(), m_counter_offset(), m_decryptor() { /* ... */ }
             virtual ~AesCtrCounterExtendedStorage() { this->Finalize(); }
 
             Result Initialize(IAllocator *allocator, const void *key, size_t key_size, u32 secure_value, s64 counter_offset, fs::SubStorage data_storage, fs::SubStorage node_storage, fs::SubStorage entry_storage, s32 entry_count, std::unique_ptr<IDecryptor> &&decryptor);
             void Finalize();
 
-            bool IsInitialized() const { return this->table.IsInitialized(); }
+            bool IsInitialized() const { return m_table.IsInitialized(); }
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ASSERT(out != nullptr);
-                *out = this->table.GetSize();
+                *out = m_table.GetSize();
                 return ResultSuccess();
             }
 
@@ -103,10 +103,12 @@ namespace ams::fssystem {
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                AMS_UNUSED(offset, buffer, size);
                 return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageA();
             }
 
             virtual Result SetSize(s64 size) override {
+                AMS_UNUSED(size);
                 return fs::ResultUnsupportedOperationInAesCtrCounterExtendedStorageB();
             }
         private:

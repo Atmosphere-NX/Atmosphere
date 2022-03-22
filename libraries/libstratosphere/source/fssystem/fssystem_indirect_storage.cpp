@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -35,9 +35,9 @@ namespace ams::fssystem {
 
     void IndirectStorage::Finalize() {
         if (this->IsInitialized()) {
-            this->table.Finalize();
+            m_table.Finalize();
             for (auto i = 0; i < StorageCount; i++) {
-                this->data_storage[i] = fs::SubStorage();
+                m_data_storage[i] = fs::SubStorage();
             }
         }
     }
@@ -59,14 +59,14 @@ namespace ams::fssystem {
         R_UNLESS(out_entries != nullptr || entry_count == 0, fs::ResultNullptrArgument());
 
         /* Check that our range is valid. */
-        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
+        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
 
         /* Find the offset in our tree. */
         BucketTree::Visitor visitor;
-        R_TRY(this->table.Find(std::addressof(visitor), offset));
+        R_TRY(m_table.Find(std::addressof(visitor), offset));
         {
             const auto entry_offset = visitor.Get<Entry>()->GetVirtualOffset();
-            R_UNLESS(0 <= entry_offset && this->table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
+            R_UNLESS(0 <= entry_offset && m_table.Includes(entry_offset), fs::ResultInvalidIndirectEntryOffset());
         }
 
         /* Prepare to loop over entries. */
@@ -120,17 +120,18 @@ namespace ams::fssystem {
 
     Result IndirectStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         switch (op_id) {
-            case fs::OperationId::InvalidateCache:
+            case fs::OperationId::Invalidate:
                 {
                     if (size > 0) {
                         /* Validate arguments. */
-                        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
-                        if (!this->table.IsEmpty()) {
+                        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
+                        if (!m_table.IsEmpty()) {
                             /* Invalidate our table's cache. */
-                            R_TRY(this->table.InvalidateCache());
+                            R_TRY(m_table.InvalidateCache());
 
                             /* Operate on our entries. */
                             R_TRY(this->OperatePerEntry<false>(offset, size,  [=](fs::IStorage *storage, s64 data_offset, s64 cur_offset, s64 cur_size) -> Result {
+                                AMS_UNUSED(cur_offset);
                                 R_TRY(storage->OperateRange(dst, dst_size, op_id, data_offset, cur_size, src, src_size));
                                 return ResultSuccess();
                             }));
@@ -147,14 +148,16 @@ namespace ams::fssystem {
 
                     if (size > 0) {
                         /* Validate arguments. */
-                        R_UNLESS(this->table.Includes(offset, size), fs::ResultOutOfRange());
-                        if (!this->table.IsEmpty()) {
+                        R_UNLESS(m_table.Includes(offset, size), fs::ResultOutOfRange());
+                        if (!m_table.IsEmpty()) {
                             /* Create a new info. */
                             fs::QueryRangeInfo merged_info;
                             merged_info.Clear();
 
                             /* Operate on our entries. */
                             R_TRY(this->OperatePerEntry<false>(offset, size,  [=, &merged_info](fs::IStorage *storage, s64 data_offset, s64 cur_offset, s64 cur_size) -> Result {
+                                AMS_UNUSED(cur_offset);
+
                                 fs::QueryRangeInfo cur_info;
                                 R_TRY(storage->OperateRange(std::addressof(cur_info), sizeof(cur_info), op_id, data_offset, cur_size, src, src_size));
                                 merged_info.Merge(cur_info);

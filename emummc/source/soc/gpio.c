@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
+ * Copyright (c) 2019 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,78 +18,151 @@
 #include "../soc/gpio.h"
 #include "../soc/t210.h"
 
-static const u16 _gpio_cnf[31] = {
-	0x000, 0x004, 0x008, 0x00C,
-	0x100, 0x104, 0x108, 0x10C,
-	0x200, 0x204, 0x208, 0x20C,
-	0x300, 0x304, 0x308, 0x30C,
-	0x400, 0x404, 0x408, 0x40C,
-	0x500, 0x504, 0x508, 0x50C,
-	0x600, 0x604, 0x608, 0x60C,
-	0x700, 0x704, 0x708
-};
+#define GPIO_BANK_IDX(port)       ((port) >> 2)
 
-static const u16 _gpio_oe[31] = {
-	0x010, 0x014, 0x018, 0x01C,
-	0x110, 0x114, 0x118, 0x11C,
-	0x210, 0x214, 0x218, 0x21C,
-	0x310, 0x314, 0x318, 0x31C,
-	0x410, 0x414, 0x418, 0x41C,
-	0x510, 0x514, 0x518, 0x51C,
-	0x610, 0x614, 0x618, 0x61C,
-	0x710, 0x714, 0x718
-};
+#define GPIO_CNF_OFFSET(port)     (0x00 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_OE_OFFSET(port)      (0x10 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_OUT_OFFSET(port)     (0x20 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_IN_OFFSET(port)      (0x30 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_STA_OFFSET(port) (0x40 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_ENB_OFFSET(port) (0x50 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_LVL_OFFSET(port) (0x60 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_CLR_OFFSET(port) (0x70 + (((port) >> 2) << 8) + (((port) % 4) << 2))
 
-static const u16 _gpio_out[31] = {
-	0x020, 0x024, 0x028, 0x02C,
-	0x120, 0x124, 0x128, 0x12C,
-	0x220, 0x224, 0x228, 0x22C,
-	0x320, 0x324, 0x328, 0x32C,
-	0x420, 0x424, 0x428, 0x42C,
-	0x520, 0x524, 0x528, 0x52C,
-	0x620, 0x624, 0x628, 0x62C,
-	0x720, 0x724, 0x728
-};
+#define GPIO_CNF_MASKED_OFFSET(port)     (0x80 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_OE_MASKED_OFFSET(port)      (0x90 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_OUT_MASKED_OFFSET(port)     (0xA0 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_STA_MASKED_OFFSET(port) (0xC0 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_ENB_MASKED_OFFSET(port) (0xD0 + (((port) >> 2) << 8) + (((port) % 4) << 2))
+#define GPIO_INT_LVL_MASKED_OFFSET(port) (0xE0 + (((port) >> 2) << 8) + (((port) % 4) << 2))
 
-static const u16 _gpio_in[31] = {
-	0x030, 0x034, 0x038, 0x03C,
-	0x130, 0x134, 0x138, 0x13C,
-	0x230, 0x234, 0x238, 0x23C,
-	0x330, 0x334, 0x338, 0x33C,
-	0x430, 0x434, 0x438, 0x43C,
-	0x530, 0x534, 0x538, 0x53C,
-	0x630, 0x634, 0x638, 0x63C,
-	0x730, 0x734, 0x738
+#define GPIO_IRQ_BANK1 32
+#define GPIO_IRQ_BANK2 33
+#define GPIO_IRQ_BANK3 34
+#define GPIO_IRQ_BANK4 35
+#define GPIO_IRQ_BANK5 55
+#define GPIO_IRQ_BANK6 87
+#define GPIO_IRQ_BANK7 89
+#define GPIO_IRQ_BANK8 125
+
+static u8 gpio_bank_irq_ids[8] = {
+	GPIO_IRQ_BANK1, GPIO_IRQ_BANK2, GPIO_IRQ_BANK3, GPIO_IRQ_BANK4,
+	GPIO_IRQ_BANK5, GPIO_IRQ_BANK6, GPIO_IRQ_BANK7, GPIO_IRQ_BANK8
 };
 
 void gpio_config(u32 port, u32 pins, int mode)
 {
+	u32 offset = GPIO_CNF_OFFSET(port);
+
 	if (mode)
-		GPIO(_gpio_cnf[port]) |= pins;
+		GPIO(offset) |= pins;
 	else
-		GPIO(_gpio_cnf[port]) &= ~pins;
-	(void)GPIO(_gpio_cnf[port]);
+		GPIO(offset) &= ~pins;
+
+	(void)GPIO(offset); // Commit the write.
 }
 
 void gpio_output_enable(u32 port, u32 pins, int enable)
 {
+	u32 port_offset = GPIO_OE_OFFSET(port);
+
 	if (enable)
-		GPIO(_gpio_oe[port]) |= pins;
+		GPIO(port_offset) |= pins;
 	else
-		GPIO(_gpio_oe[port]) &= ~pins;
-	(void)GPIO(_gpio_oe[port]);
+		GPIO(port_offset) &= ~pins;
+
+	(void)GPIO(port_offset); // Commit the write.
 }
 
 void gpio_write(u32 port, u32 pins, int high)
 {
+	u32 port_offset = GPIO_OUT_OFFSET(port);
+
 	if (high)
-		GPIO(_gpio_out[port]) |= pins;
+		GPIO(port_offset) |= pins;
 	else
-		GPIO(_gpio_out[port]) &= ~pins;
-	(void)GPIO(_gpio_out[port]);
+		GPIO(port_offset) &= ~pins;
+
+	(void)GPIO(port_offset); // Commit the write.
 }
 
 int gpio_read(u32 port, u32 pins)
 {
-	return (GPIO(_gpio_in[port]) & pins) ? 1 : 0;
+	u32 port_offset = GPIO_IN_OFFSET(port);
+
+	return (GPIO(port_offset) & pins) ? 1 : 0;
+}
+
+static void _gpio_interrupt_clear(u32 port, u32 pins)
+{
+	u32 port_offset = GPIO_INT_CLR_OFFSET(port);
+
+	GPIO(port_offset) |= pins;
+
+	(void)GPIO(port_offset); // Commit the write.
+}
+
+int gpio_interrupt_status(u32 port, u32 pins)
+{
+	u32 port_offset = GPIO_INT_STA_OFFSET(port);
+	u32 enabled = GPIO(GPIO_INT_ENB_OFFSET(port)) & pins;
+
+	int status = ((GPIO(port_offset) & pins) && enabled) ? 1 : 0;
+
+	// Clear the interrupt status.
+	if (status)
+		_gpio_interrupt_clear(port, pins);
+
+	return status;
+}
+
+void gpio_interrupt_enable(u32 port, u32 pins, int enable)
+{
+	u32 port_offset = GPIO_INT_ENB_OFFSET(port);
+
+	// Clear any possible stray interrupt.
+	_gpio_interrupt_clear(port, pins);
+
+	if (enable)
+		GPIO(port_offset) |= pins;
+	else
+		GPIO(port_offset) &= ~pins;
+
+	(void)GPIO(port_offset); // Commit the write.
+}
+
+void gpio_interrupt_level(u32 port, u32 pins, int high, int edge, int delta)
+{
+	u32 port_offset = GPIO_INT_LVL_OFFSET(port);
+
+	u32 val = GPIO(port_offset);
+
+	if (high)
+		val |= pins;
+	else
+		val &= ~pins;
+
+	if (edge)
+		val |= pins << 8;
+	else
+		val &= ~(pins << 8);
+
+	if (delta)
+		val |= pins << 16;
+	else
+		val &= ~(pins << 16);
+
+	GPIO(port_offset) = val;
+
+	(void)GPIO(port_offset); // Commit the write.
+
+	// Clear any possible stray interrupt.
+	_gpio_interrupt_clear(port, pins);
+}
+
+u32 gpio_get_bank_irq_id(u32 port)
+{
+	u32 bank_idx = GPIO_BANK_IDX(port);
+
+	return gpio_bank_irq_ids[bank_idx];
 }

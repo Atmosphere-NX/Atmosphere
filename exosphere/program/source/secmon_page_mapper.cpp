@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,16 +23,16 @@ namespace ams::secmon {
 
         void *PageMapperImpl::GetPointerTo(uintptr_t phys, size_t size) const {
             /* Ensure we stay within the page. */
-            if (util::AlignDown(phys, 4_KB) != this->physical_address) {
+            if (util::AlignDown(phys, 4_KB) != m_physical_address) {
                 return nullptr;
             }
             if (size != 0) {
-                if (util::AlignDown(phys + size - 1, 4_KB) != this->physical_address) {
+                if (util::AlignDown(phys + size - 1, 4_KB) != m_physical_address) {
                     return nullptr;
                 }
             }
 
-            return reinterpret_cast<void *>(phys + (this->virtual_address - this->physical_address));
+            return reinterpret_cast<void *>(phys + (m_virtual_address - m_physical_address));
         }
 
         bool PageMapperImpl::CopyToMapping(uintptr_t dst_phys, const void *src, size_t size) const {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,42 +23,47 @@ namespace ams::creport {
         private:
             static constexpr size_t ModuleCountMax      = 0x60;
             static constexpr size_t ModuleNameLengthMax = 0x20;
-            static constexpr size_t ModuleBuildIdLength = 0x20;
+            static constexpr size_t ModuleIdSize = 0x20;
 
             struct ModuleInfo {
                 char name[ModuleNameLengthMax];
-                u8   build_id[ModuleBuildIdLength];
+                u8   module_id[ModuleIdSize];
                 u64  start_address;
                 u64  end_address;
+                bool has_sym_table;
+                u64  sym_tab;
+                u64  str_tab;
+                u32  num_sym;
             };
         private:
-            Handle debug_handle;
-            size_t num_modules;
-            ModuleInfo modules[ModuleCountMax];
+            os::NativeHandle m_debug_handle;
+            size_t m_num_modules;
+            ModuleInfo m_modules[ModuleCountMax];
 
             /* For pretty-printing. */
-            char address_str_buf[0x280];
+            char m_address_str_buf[1_KB];
         public:
-            ModuleList() : debug_handle(INVALID_HANDLE), num_modules(0) {
-                std::memset(this->modules, 0, sizeof(this->modules));
+            ModuleList() : m_debug_handle(os::InvalidNativeHandle), m_num_modules(0) {
+                std::memset(m_modules, 0, sizeof(m_modules));
             }
 
             size_t GetModuleCount() const {
-                return this->num_modules;
+                return m_num_modules;
             }
 
             u64 GetModuleStartAddress(size_t i) const {
-                return this->modules[i].start_address;
+                return m_modules[i].start_address;
             }
 
-            void FindModulesFromThreadInfo(Handle debug_handle, const ThreadInfo &thread);
+            void FindModulesFromThreadInfo(os::NativeHandle debug_handle, const ThreadInfo &thread, bool is_64_bit);
             const char *GetFormattedAddressString(uintptr_t address);
             void SaveToFile(ScopedFile &file);
         private:
-            bool TryFindModule(uintptr_t *out_address, uintptr_t guess);
-            void TryAddModule(uintptr_t guess);
+            bool TryFindModule(uintptr_t *out_address, uintptr_t guess, bool is_64_bit);
+            void TryAddModule(uintptr_t guess, bool is_64_bit);
             void GetModuleName(char *out_name, uintptr_t text_start, uintptr_t ro_start);
-            void GetModuleBuildId(u8 *out_build_id, uintptr_t ro_start);
+            void GetModuleId(u8 *out, uintptr_t ro_start);
+            void DetectModuleSymbolTable(ModuleInfo &module);
     };
 
 }

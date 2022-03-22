@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -47,23 +47,23 @@ namespace ams::kern::arch::arm64 {
                 constexpr KGlobalInterruptEntry() : handler(nullptr), manually_cleared(false), needs_clear(false) { /* ... */ }
             };
         private:
-            static KSpinLock s_lock;
-            static std::array<KGlobalInterruptEntry, KInterruptController::NumGlobalInterrupts> s_global_interrupts;
-            static KInterruptController::GlobalState s_global_state;
-            static bool s_global_state_saved;
+            KCoreLocalInterruptEntry m_core_local_interrupts[cpu::NumCores][KInterruptController::NumLocalInterrupts]{};
+            KInterruptController m_interrupt_controller{};
+            KInterruptController::LocalState m_local_states[cpu::NumCores]{};
+            bool m_local_state_saved[cpu::NumCores]{};
+            mutable KSpinLock m_global_interrupt_lock{};
+            KGlobalInterruptEntry m_global_interrupts[KInterruptController::NumGlobalInterrupts]{};
+            KInterruptController::GlobalState m_global_state{};
+            bool m_global_state_saved{};
         private:
-            KCoreLocalInterruptEntry core_local_interrupts[KInterruptController::NumLocalInterrupts];
-            KInterruptController interrupt_controller;
-            KInterruptController::LocalState local_state;
-            bool local_state_saved;
-        private:
-            static ALWAYS_INLINE KSpinLock &GetLock() { return s_lock; }
-            static ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return s_global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
-            ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return this->core_local_interrupts[KInterruptController::GetLocalInterruptIndex(irq)]; }
+            ALWAYS_INLINE KSpinLock &GetGlobalInterruptLock() const { return m_global_interrupt_lock; }
+            ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return m_global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
+            ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return m_core_local_interrupts[GetCurrentCoreId()][KInterruptController::GetLocalInterruptIndex(irq)]; }
 
             bool OnHandleInterrupt();
         public:
-            constexpr KInterruptManager() : core_local_interrupts(), interrupt_controller(), local_state(), local_state_saved(false) { /* ... */ }
+            constexpr KInterruptManager() = default;
+
             NOINLINE void Initialize(s32 core_id);
             NOINLINE void Finalize(s32 core_id);
 
@@ -71,29 +71,28 @@ namespace ams::kern::arch::arm64 {
             NOINLINE void Restore(s32 core_id);
 
             bool IsInterruptDefined(s32 irq) const {
-                return this->interrupt_controller.IsInterruptDefined(irq);
+                return m_interrupt_controller.IsInterruptDefined(irq);
             }
 
             bool IsGlobal(s32 irq) const {
-                return this->interrupt_controller.IsGlobal(irq);
+                return m_interrupt_controller.IsGlobal(irq);
             }
 
             bool IsLocal(s32 irq) const {
-                return this->interrupt_controller.IsLocal(irq);
+                return m_interrupt_controller.IsLocal(irq);
             }
 
             NOINLINE Result BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
             NOINLINE Result UnbindHandler(s32 irq, s32 core);
 
-            NOINLINE Result ClearInterrupt(s32 irq);
             NOINLINE Result ClearInterrupt(s32 irq, s32 core_id);
 
             ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
-                this->interrupt_controller.SendInterProcessorInterrupt(irq, core_mask);
+                m_interrupt_controller.SendInterProcessorInterrupt(irq, core_mask);
             }
 
             ALWAYS_INLINE void SendInterProcessorInterrupt(s32 irq) {
-                this->interrupt_controller.SendInterProcessorInterrupt(irq);
+                m_interrupt_controller.SendInterProcessorInterrupt(irq);
             }
 
             static void HandleInterrupt(bool user_mode);
@@ -106,35 +105,48 @@ namespace ams::kern::arch::arm64 {
             Result UnbindLocal(s32 irq);
             Result ClearGlobal(s32 irq);
             Result ClearLocal(s32 irq);
-        public:
-            static ALWAYS_INLINE u32 DisableInterrupts() {
+        private:
+            [[nodiscard]] static ALWAYS_INLINE u32 GetInterruptsEnabledState() {
                 u64 intr_state;
-                __asm__ __volatile__("mrs %[intr_state], daif\n"
-                                     "msr daifset, #2"
+                __asm__ __volatile__("mrs   %[intr_state], daif\n"
+                                     "ubfx  %[intr_state], %[intr_state], #7, #1"
                                      : [intr_state]"=r"(intr_state)
                                      :: "memory");
                 return intr_state;
             }
+        public:
+            static ALWAYS_INLINE void EnableInterrupts() {
+                __asm__ __volatile__("msr   daifclr, #2" ::: "memory");
+            }
 
-            static ALWAYS_INLINE u32 EnableInterrupts() {
-                u64 intr_state;
-                __asm__ __volatile__("mrs %[intr_state], daif\n"
-                                     "msr daifclr, #2"
-                                     : [intr_state]"=r"(intr_state)
-                                     :: "memory");
+            static ALWAYS_INLINE void DisableInterrupts() {
+                __asm__ __volatile__("msr   daifset, #2" ::: "memory");
+            }
+
+            [[nodiscard]] static ALWAYS_INLINE u32 GetInterruptsEnabledStateAndDisableInterrupts() {
+                const auto intr_state = GetInterruptsEnabledState();
+                DisableInterrupts();
+                return intr_state;
+            }
+
+            [[nodiscard]] static ALWAYS_INLINE u32 GetInterruptsEnabledStateAndEnableInterrupts() {
+                const auto intr_state = GetInterruptsEnabledState();
+                EnableInterrupts();
                 return intr_state;
             }
 
             static ALWAYS_INLINE void RestoreInterrupts(u32 intr_state) {
-                u64 cur_state;
-                __asm__ __volatile__("mrs %[cur_state], daif" : [cur_state]"=r"(cur_state));
-                __asm__ __volatile__("msr daif, %[intr_state]" :: [intr_state]"r"((cur_state & ~0x80ul) | (intr_state & 0x80)));
+                u64 tmp;
+                __asm__ __volatile__("mrs   %[tmp], daif\n"
+                                     "bfi   %[tmp], %[intr_state], #7, #1\n"
+                                     "msr daif, %[tmp]"
+                                     : [tmp]"=&r"(tmp)
+                                     : [intr_state]"r"(intr_state)
+                                     : "memory");
             }
 
             static ALWAYS_INLINE bool AreInterruptsEnabled() {
-                u64 intr_state;
-                __asm__ __volatile__("mrs %[intr_state], daif" : [intr_state]"=r"(intr_state));
-                return (intr_state & 0x80) == 0;
+                return GetInterruptsEnabledState() == 0;
             }
     };
 

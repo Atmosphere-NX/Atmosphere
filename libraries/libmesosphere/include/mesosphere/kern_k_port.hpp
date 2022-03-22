@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -35,31 +35,37 @@ namespace ams::kern {
                 ServerClosed = 3,
             };
         private:
-            KServerPort server;
-            KClientPort client;
-            uintptr_t name;
-            State state;
-            bool is_light;
+            KServerPort m_server;
+            KClientPort m_client;
+            uintptr_t m_name;
+            State m_state;
+            bool m_is_light;
         public:
-            constexpr KPort() : server(), client(), name(), state(State::Invalid), is_light() { /* ... */ }
-            virtual ~KPort() { /* ... */ }
+            explicit KPort() : m_state(State::Invalid), m_is_light() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize(s32 max_sessions, bool is_light, uintptr_t name);
+            void Finalize() { /* ... */ }
+
             void OnClientClosed();
             void OnServerClosed();
 
-            uintptr_t GetName() const { return this->name; }
-            bool IsLight() const { return this->is_light; }
+            uintptr_t GetName() const { return m_name; }
+            bool IsLight() const { return m_is_light; }
+
+            bool IsServerClosed() const {
+                KScopedSchedulerLock sl;
+                return m_state == State::ServerClosed;
+            }
 
             Result EnqueueSession(KServerSession *session);
             Result EnqueueSession(KLightServerSession *session);
 
-            KClientPort &GetClientPort() { return this->client; }
-            KServerPort &GetServerPort() { return this->server; }
-            const KClientPort &GetClientPort() const { return this->client; }
-            const KServerPort &GetServerPort() const { return this->server; }
+            KClientPort &GetClientPort() { return m_client; }
+            KServerPort &GetServerPort() { return m_server; }
+            const KClientPort &GetClientPort() const { return m_client; }
+            const KServerPort &GetServerPort() const { return m_server; }
     };
 
 }

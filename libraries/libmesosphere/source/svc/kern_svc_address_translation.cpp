@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -34,7 +34,7 @@ namespace ams::kern::svc {
             /* Query the physical mapping. */
             R_TRY(pt.QueryPhysicalAddress(out_info, address));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result QueryIoMapping(uintptr_t *out_address, size_t *out_size, uint64_t phys_addr, size_t size) {
@@ -48,7 +48,7 @@ namespace ams::kern::svc {
             /* Check whether the address is aligned. */
             const bool aligned = util::IsAligned(phys_addr, PageSize);
 
-            auto QueryIoMappingFromPageTable = [&] ALWAYS_INLINE_LAMBDA (uint64_t phys_addr, size_t size) -> Result {
+            auto QueryIoMappingFromPageTable = [&](uint64_t phys_addr, size_t size) ALWAYS_INLINE_LAMBDA -> Result {
                 /* The size must be non-zero. */
                 R_UNLESS(size > 0, svc::ResultInvalidSize());
 
@@ -61,7 +61,7 @@ namespace ams::kern::svc {
                 /* Use the size as the found size. */
                 found_size = size;
 
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             if (aligned) {
@@ -92,6 +92,9 @@ namespace ams::kern::svc {
                     /* Ensure that we found the region. */
                     R_UNLESS(region != nullptr, svc::ResultNotFound());
 
+                    /* Chcek that the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     R_TRY(pt.QueryStaticMapping(std::addressof(found_address), region->GetAddress(), region->GetSize()));
                     found_size = region->GetSize();
                 }
@@ -106,7 +109,7 @@ namespace ams::kern::svc {
             if (out_size != nullptr) {
                 *out_size = found_size;
             }
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -114,18 +117,18 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result QueryPhysicalAddress64(ams::svc::lp64::PhysicalMemoryInfo *out_info, ams::svc::Address address) {
-        return QueryPhysicalAddress(out_info, address);
+        R_RETURN(QueryPhysicalAddress(out_info, address));
     }
 
     Result QueryIoMapping64(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
         static_assert(sizeof(*out_size)    == sizeof(size_t));
-        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size);
+        R_RETURN(QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size));
     }
 
     Result LegacyQueryIoMapping64(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
-        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
+        R_RETURN(QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size));
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -139,18 +142,18 @@ namespace ams::kern::svc {
             .virtual_address  = static_cast<u32>(info.virtual_address),
             .size             = static_cast<u32>(info.size),
         };
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result QueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
         static_assert(sizeof(*out_size)    == sizeof(size_t));
-        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size);
+        R_RETURN(QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size));
     }
 
     Result LegacyQueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
-        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
+        R_RETURN(QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size));
     }
 
 }

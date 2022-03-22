@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,15 +31,15 @@ namespace ams::fssystem {
             /* Normalize the path. */
             char normalized_path[fs::EntryNameLengthMax + 1];
             size_t normalized_path_len;
-            R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, path, sizeof(normalized_path)));
+            R_TRY(fs::PathNormalizer::Normalize(normalized_path, std::addressof(normalized_path_len), path, sizeof(normalized_path)));
 
             /* Repeatedly call CreateDirectory on each directory leading to the target. */
             for (size_t i = 1; i < normalized_path_len; i++) {
                 /* If we detect a separator, create the directory. */
-                if (PathTool::IsSeparator(normalized_path[i])) {
-                    normalized_path[i] = StringTraits::NullTerminator;
+                if (fs::PathNormalizer::IsSeparator(normalized_path[i])) {
+                    normalized_path[i] = fs::StringTraits::NullTerminator;
                     R_TRY(EnsureDirectory(fs, normalized_path));
-                    normalized_path[i] = StringTraits::DirectorySeparator;
+                    normalized_path[i] = fs::StringTraits::DirectorySeparator;
                 }
             }
 
@@ -72,18 +72,18 @@ namespace ams::fssystem {
     Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
         /* Open source file. */
         std::unique_ptr<fs::fsa::IFile> src_file;
-        R_TRY(src_fs->OpenFile(&src_file, src_path, fs::OpenMode_Read));
+        R_TRY(src_fs->OpenFile(std::addressof(src_file), src_path, fs::OpenMode_Read));
 
         /* Open dst file. */
         std::unique_ptr<fs::fsa::IFile> dst_file;
         {
             char dst_path[fs::EntryNameLengthMax + 1];
-            const size_t original_size = static_cast<size_t>(std::snprintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
+            const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
             /* TODO: Error code? N aborts here. */
             AMS_ABORT_UNLESS(original_size < sizeof(dst_path));
 
             R_TRY(dst_fs->CreateFile(dst_path, entry->file_size));
-            R_TRY(dst_fs->OpenFile(&dst_file, dst_path, fs::OpenMode_Write));
+            R_TRY(dst_fs->OpenFile(std::addressof(dst_file), dst_path, fs::OpenMode_Write));
         }
 
         /* Read/Write file in work buffer sized chunks. */
@@ -91,7 +91,7 @@ namespace ams::fssystem {
         s64 offset = 0;
         while (remaining > 0) {
             size_t read_size;
-            R_TRY(src_file->Read(&read_size, offset, work_buf, work_buf_size, fs::ReadOption()));
+            R_TRY(src_file->Read(std::addressof(read_size), offset, work_buf, work_buf_size, fs::ReadOption()));
             R_TRY(dst_file->Write(offset, work_buf, read_size, fs::WriteOption()));
 
             remaining -= read_size;
@@ -103,32 +103,36 @@ namespace ams::fssystem {
 
     Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
         char dst_path_buf[fs::EntryNameLengthMax + 1];
-        const size_t original_size = static_cast<size_t>(std::snprintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
+        const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
         AMS_ABORT_UNLESS(original_size < sizeof(dst_path_buf));
 
         return IterateDirectoryRecursively(src_fs, src_path,
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Enter Directory */
+                AMS_UNUSED(path);
+
                 /* Update path, create new dir. */
                 std::strncat(dst_path_buf, entry.name, sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
                 std::strncat(dst_path_buf, "/",        sizeof(dst_path_buf) - strnlen(dst_path_buf, sizeof(dst_path_buf) - 1) - 1);
                 return dst_fs->CreateDirectory(dst_path_buf);
             },
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Exit Directory */
+                AMS_UNUSED(path, entry);
+
                 /* Check we have a parent directory. */
                 const size_t len = strnlen(dst_path_buf, sizeof(dst_path_buf));
                 R_UNLESS(len >= 2, fs::ResultInvalidPathFormat());
 
                 /* Find previous separator, add null terminator */
-                char *cur = &dst_path_buf[len - 2];
-                while (!PathTool::IsSeparator(*cur) && cur > dst_path_buf) {
+                char *cur = dst_path_buf + len - 2;
+                while (!fs::PathNormalizer::IsSeparator(*cur) && cur > dst_path_buf) {
                     cur--;
                 }
-                cur[1] = StringTraits::NullTerminator;
+                cur[1] = fs::StringTraits::NullTerminator;
 
                 return ResultSuccess();
             },
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On File */
-                return CopyFile(dst_fs, src_fs, dst_path_buf, path, &entry, work_buf, work_buf_size);
+                return CopyFile(dst_fs, src_fs, dst_path_buf, path, std::addressof(entry), work_buf, work_buf_size);
             }
         );
     }

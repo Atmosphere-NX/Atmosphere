@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,6 +31,7 @@ namespace ams::fs {
     }
 
     AbortSpecifier DefaultResultHandler(Result result) {
+        AMS_UNUSED(result);
         if (g_auto_abort_enabled) {
             return AbortSpecifier::Default;
         } else {
@@ -39,6 +40,7 @@ namespace ams::fs {
     }
 
     AbortSpecifier AlwaysReturnResultHandler(Result result) {
+        AMS_UNUSED(result);
         return AbortSpecifier::Return;
     }
 
@@ -67,7 +69,7 @@ namespace ams::fs {
         g_context_tls.SetValue(reinterpret_cast<uintptr_t>(context));
     }
 
-    ScopedAutoAbortDisabler::ScopedAutoAbortDisabler() : prev_context(GetCurrentThreadFsContext()) {
+    ScopedAutoAbortDisabler::ScopedAutoAbortDisabler() : m_prev_context(GetCurrentThreadFsContext()) {
         SetCurrentThreadFsContext(std::addressof(g_always_return_context));
     }
 

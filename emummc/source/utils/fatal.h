@@ -35,6 +35,7 @@ enum FatalReason
     Fatal_FatfsMount,
     Fatal_FatfsFileOpen,
     Fatal_FatfsMemExhaustion,
+    Fatal_InvalidEnum,
     Fatal_Max
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_event_types.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -28,14 +29,14 @@ namespace ams::os {
                 State_Initialized    = 1,
             };
 
-            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
+            util::TypedStorage<impl::MultiWaitObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> multi_wait_object_list_storage;
 
             bool auto_clear;
             u8   state;
             bool is_readable_handle_managed;
             bool is_writable_handle_managed;
-            Handle readable_handle;
-            Handle writable_handle;
+            NativeHandle readable_handle;
+            NativeHandle writable_handle;
         };
         static_assert(std::is_trivial<InterProcessEventType>::value);
 

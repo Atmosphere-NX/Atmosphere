@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -34,6 +34,8 @@ namespace ams::kern::init {
         size_t num_KObjectName;
         size_t num_KResourceLimit;
         size_t num_KDebug;
+        size_t num_KIoPool;
+        size_t num_KIoRegion;
     };
 
     NOINLINE void InitializeSlabResourceCounts();

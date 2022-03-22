@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -89,7 +89,8 @@ _main:
     bl _ZN3ams4kern4init3Elf18CallInitArrayFuncsEmm
 
     /* Setup system registers, for detection of errors during init later. */
-    msr tpidr_el1, xzr /* Clear TPIDR_EL1 */
+    msr tpidr_el1, xzr
+    msr cntv_cval_el0, xzr
     adr x0, __external_references
     adr x1, _start
     ldr x0, [x0,  #0x30]
@@ -109,10 +110,10 @@ _main:
     str x0, [sp, #0x20]
 
 
-    /* Call ams::kern::init::loader::GetFinalPageAllocatorState() */
-    bl _ZN3ams4kern4init6loader26GetFinalPageAllocatorStateEv
+    /* Call ams::kern::init::loader::GetFinalState() */
+    bl _ZN3ams4kern4init6loader13GetFinalStateEv
 
-    /* X0 is now the saved state for the page allocator. */
+    /* X0 is now the saved state. */
     /* We will return this to the kernel. */
 
     /* Return to the newly-relocated kernel. */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -66,7 +66,7 @@ namespace ams::fs::impl {
 
     class IdString {
         private:
-            char buffer[0x20];
+            char m_buffer[0x20];
         private:
             const char *ToValueString(int id);
         public:
@@ -132,7 +132,7 @@ namespace ams::fs::impl {
 
 /* Access log invocation lambdas. */
 #define AMS_FS_IMPL_ACCESS_LOG_IMPL(__EXPR__, __HANDLE__, __ENABLED__, __NAME__, ...)                                        \
-    [&](const char *name) {                                                                                                  \
+    [&](const char *name) -> Result {                                                                                                  \
         if (!(__ENABLED__)) {                                                                                                \
             return (__EXPR__);                                                                                               \
         } else {                                                                                                             \
@@ -145,7 +145,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_WITH_PRIORITY_IMPL(__EXPR__, __PRIORITY__, __HANDLE__, __ENABLED__, __NAME__, ...)                           \
-    [&](const char *name) {                                                                                                                 \
+    [&](const char *name) -> Result {                                                                                                                 \
         if (!(__ENABLED__)) {                                                                                                               \
             return (__EXPR__);                                                                                                              \
         } else {                                                                                                                            \
@@ -158,7 +158,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_EXPLICIT_IMPL(__RESULT__, __START__, __END__, __HANDLE__, __ENABLED__, __NAME__, ...)                 \
-    [&](const char *name) {                                                                                                          \
+    [&](const char *name) -> Result {                                                                                                          \
         if (!(__ENABLED__)) {                                                                                                        \
             return __RESULT__;                                                                                                       \
         } else {                                                                                                                     \
@@ -169,7 +169,7 @@ namespace ams::fs::impl {
     }(__NAME__)
 
 #define AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED_IMPL(__EXPR__, __ENABLED__, __NAME__, ...)                                                 \
-    [&](const char *name) {                                                                                                                  \
+    [&](const char *name) -> Result {                                                                                                                  \
         if (!(__ENABLED__)) {                                                                                                                \
             return (__EXPR__);                                                                                                               \
         } else {                                                                                                                             \

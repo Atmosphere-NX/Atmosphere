@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_multiple_wait_holder_impl.hpp"
 #include "impl/os_inter_process_event.hpp"
 #include "impl/os_timeout_helper.hpp"
 
@@ -42,36 +42,36 @@ namespace ams::os {
         }
     }
 
-    void AttachSystemEvent(SystemEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
+    void AttachSystemEvent(SystemEventType *event, NativeHandle read_handle, bool read_handle_managed, NativeHandle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
         AMS_ASSERT(read_handle != svc::InvalidHandle || write_handle != svc::InvalidHandle);
         impl::AttachInterProcessEvent(std::addressof(event->inter_process_event), read_handle, read_handle_managed, write_handle, write_handle_managed, clear_mode);
         event->state = SystemEventType::State_InitializedAsInterProcessEvent;
     }
 
-    void AttachReadableHandleToSystemEvent(SystemEventType *event, Handle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
+    void AttachReadableHandleToSystemEvent(SystemEventType *event, NativeHandle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
         return AttachSystemEvent(event, read_handle, manage_read_handle, svc::InvalidHandle, false, clear_mode);
     }
 
-    void AttachWritableHandleToSystemEvent(SystemEventType *event, Handle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
+    void AttachWritableHandleToSystemEvent(SystemEventType *event, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
         return AttachSystemEvent(event, svc::InvalidHandle, false, write_handle, manage_write_handle, clear_mode);
     }
 
-    Handle DetachReadableHandleOfSystemEvent(SystemEventType *event) {
+    NativeHandle DetachReadableHandleOfSystemEvent(SystemEventType *event) {
         AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
         return impl::DetachReadableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
     }
 
-    Handle DetachWritableHandleOfSystemEvent(SystemEventType *event) {
+    NativeHandle DetachWritableHandleOfSystemEvent(SystemEventType *event) {
         AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
         return impl::DetachWritableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
     }
 
-    Handle GetReadableHandleOfSystemEvent(const SystemEventType *event) {
+    NativeHandle GetReadableHandleOfSystemEvent(const SystemEventType *event) {
         AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
         return impl::GetReadableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
     }
 
-    Handle GetWritableHandleOfSystemEvent(const SystemEventType *event) {
+    NativeHandle GetWritableHandleOfSystemEvent(const SystemEventType *event) {
         AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
         return impl::GetWritableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
 
@@ -119,13 +119,13 @@ namespace ams::os {
         }
     }
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event) {
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SystemEventType *event) {
         switch (event->state) {
             case SystemEventType::State_InitializedAsInterProcessEvent:
-                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfInterProcessEvent(std::addressof(event->inter_process_event));
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_inter_process_event_storage, std::addressof(event->inter_process_event));
                 break;
             case SystemEventType::State_InitializedAsEvent:
-                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(std::addressof(event->event));
+                util::ConstructAt(GetReference(multi_wait_holder->impl_storage).holder_of_event_storage, std::addressof(event->event));
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,18 +31,21 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDebug, KSynchronizationObject);
         public:
             explicit KDebug() { /* ... */ }
-            virtual ~KDebug() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
         public:
-            virtual Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) override;
-            virtual Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) override;
+            /* NOTE: These are virtual in Nintendo's kernel. */
+            Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags);
+            Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags);
         private:
             Result GetFpuContext(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags);
             Result SetFpuContext(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags);
         public:
             static uintptr_t GetProgramCounter(const KThread &thread);
             static void SetPreviousProgramCounter();
+
+            static void PrintRegister(KThread *thread = nullptr);
+            static void PrintBacktrace(KThread *thread = nullptr);
 
             static Result BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size);
             static Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value);
@@ -61,8 +64,6 @@ namespace ams::kern::arch::arm64 {
                     }
                 }
             }
-
-            /* TODO: This is a placeholder definition. */
     };
 
 }

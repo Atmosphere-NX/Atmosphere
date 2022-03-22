@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -39,6 +39,7 @@ namespace ams::spl {
     Result DecryptAesKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 generation, u32 option);
 
     Result GetConfig(u64 *out, ConfigItem item);
+    Result SetConfig(ConfigItem item, u64 v);
     bool IsDevelopment();
     MemoryArrangement GetMemoryArrangement();
 
@@ -60,6 +61,12 @@ namespace ams::spl {
         return static_cast<HardwareState>(v);
     }
 
+    inline RetailInteractiveDisplayState GetRetailInteractiveDisplayState() {
+        u64 v;
+        R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::RetailInteractiveDisplayState));
+        return static_cast<RetailInteractiveDisplayState>(v);
+    }
+
     inline u64 GetDeviceIdLow() {
         u64 v;
         R_ABORT_UNLESS(::ams::spl::GetConfig(std::addressof(v), ::ams::spl::ConfigItem::DeviceId));
@@ -76,6 +83,10 @@ namespace ams::spl {
 
     inline bool IsDisabledProgramVerification() {
         return ::ams::spl::GetConfigBool(::ams::spl::ConfigItem::DisableProgramVerification);
+    }
+
+    inline bool IsUsb30ForceEnabled() {
+        return ::ams::spl::GetConfigBool(::ams::spl::ConfigItem::ExosphereForceEnableUsb30);
     }
 
     Result SetBootReason(BootReasonValue boot_reason);

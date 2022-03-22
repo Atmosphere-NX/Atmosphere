@@ -17,19 +17,20 @@ def split_binary(data):
     assert D == 0xDDDDDDDDDDDDDDDD
     data = data[0x40:]
 
+    #print ('%X %X %X %X' % (START, BOOT_CODE_START, BOOT_CODE_END, PROGRAM_START))
     boot_code = data[BOOT_CODE_START - START:BOOT_CODE_END - BOOT_CODE_START]
     program   = data[PROGRAM_START   - START:]
-    return [('boot_code.lz4', lz4_compress(boot_code)), ('program.lz4', lz4_compress(program))]
+    return [('boot_code%s.lz4', lz4_compress(boot_code)), ('program%s.lz4', lz4_compress(program))]
 
 def main(argc, argv):
-    if argc != 3:
-        print('Usage: %s in outdir' % argv[0])
+    if argc != 4:
+        print('Usage: %s in suffix outdir' % argv[0])
         return 1
     with open(argv[1], 'rb') as f:
         data = f.read()
     assert len(data) >= 0x40
     for (fn, fdata) in split_binary(data):
-        with open('%s/%s' % (argv[2], fn), 'wb') as f:
+        with open('%s/%s' % (argv[3], fn % argv[2]), 'wb') as f:
             f.write(fdata)
     return 0
 

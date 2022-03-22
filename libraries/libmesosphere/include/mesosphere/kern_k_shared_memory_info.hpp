@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,30 +23,30 @@ namespace ams::kern {
 
     class KSharedMemoryInfo : public KSlabAllocated<KSharedMemoryInfo>, public util::IntrusiveListBaseNode<KSharedMemoryInfo> {
         private:
-            KSharedMemory *shared_memory;
-            size_t reference_count;
+            KSharedMemory *m_shared_memory;
+            size_t m_reference_count;
         public:
-            constexpr KSharedMemoryInfo() : shared_memory(), reference_count() { /* ... */ }
+            explicit KSharedMemoryInfo() { /* ... */ }
             ~KSharedMemoryInfo() { /* ... */ }
 
             constexpr void Initialize(KSharedMemory *m) {
                 MESOSPHERE_ASSERT_THIS();
-                this->shared_memory   = m;
-                this->reference_count = 0;
+                m_shared_memory   = m;
+                m_reference_count = 0;
             }
 
             constexpr void Open() {
-                const size_t ref_count = ++this->reference_count;
-                MESOSPHERE_ASSERT(ref_count > 0);
+                ++m_reference_count;
+                MESOSPHERE_ASSERT(m_reference_count > 0);
             }
 
             constexpr bool Close() {
-                MESOSPHERE_ASSERT(this->reference_count > 0);
-                return (--this->reference_count) == 0;
+                MESOSPHERE_ASSERT(m_reference_count > 0);
+                return (--m_reference_count) == 0;
             }
 
-            constexpr KSharedMemory *GetSharedMemory() const { return this->shared_memory; }
-            constexpr size_t GetReferenceCount() const { return this->reference_count; }
+            constexpr KSharedMemory *GetSharedMemory() const { return m_shared_memory; }
+            constexpr size_t GetReferenceCount() const { return m_reference_count; }
     };
 
 }

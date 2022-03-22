@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -39,7 +39,11 @@ namespace ams::pm {
     }
 
     Result DebugMonitorService::HookToCreateProcess(sf::OutCopyHandle out_hook, ncm::ProgramId program_id) {
-        return impl::HookToCreateProcess(out_hook.GetHandlePointer(), program_id);
+        os::NativeHandle event_handle;
+        R_TRY(impl::HookToCreateProcess(std::addressof(event_handle), program_id));
+
+        out_hook.SetValue(event_handle, false);
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::GetApplicationProcessId(sf::Out<os::ProcessId> out) {
@@ -47,7 +51,11 @@ namespace ams::pm {
     }
 
     Result DebugMonitorService::HookToCreateApplicationProcess(sf::OutCopyHandle out_hook) {
-        return impl::HookToCreateApplicationProcess(out_hook.GetHandlePointer());
+        os::NativeHandle event_handle;
+        R_TRY(impl::HookToCreateApplicationProcess(std::addressof(event_handle)));
+
+        out_hook.SetValue(event_handle, false);
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::ClearHook(u32 which) {
@@ -56,7 +64,11 @@ namespace ams::pm {
 
     /* Atmosphere extension commands. */
     Result DebugMonitorService::AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
-        return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), out_status.GetPointer(), process_id);
+        os::NativeHandle process_handle;
+        R_TRY(impl::AtmosphereGetProcessInfo(std::addressof(process_handle), out_loc.GetPointer(), out_status.GetPointer(), process_id));
+
+        out_process_handle.SetValue(process_handle, false);
+        return ResultSuccess();
     }
 
     Result DebugMonitorService::AtmosphereGetCurrentLimitInfo(sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource) {

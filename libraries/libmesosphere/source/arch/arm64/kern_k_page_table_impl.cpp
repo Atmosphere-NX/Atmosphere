@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,19 +18,19 @@
 namespace ams::kern::arch::arm64 {
 
     void KPageTableImpl::InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        this->table       = static_cast<L1PageTableEntry *>(tb);
-        this->is_kernel   = true;
-        this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+        m_table       = static_cast<L1PageTableEntry *>(tb);
+        m_is_kernel   = true;
+        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
     void KPageTableImpl::InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        this->table       = static_cast<L1PageTableEntry *>(tb);
-        this->is_kernel   = false;
-        this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+        m_table       = static_cast<L1PageTableEntry *>(tb);
+        m_is_kernel   = false;
+        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
     L1PageTableEntry *KPageTableImpl::Finalize() {
-        return this->table;
+        return m_table;
     }
 
     bool KPageTableImpl::ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const {
@@ -45,11 +45,13 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L3BlockSize;
             }
+            out_entry->sw_reserved_bits = l3_entry->GetSoftwareReservedBits();
 
             return true;
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L3BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L3BlockSize;
+            out_entry->sw_reserved_bits = 0;
             return false;
         }
     }
@@ -66,14 +68,17 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L2BlockSize;
             }
+            out_entry->sw_reserved_bits = l2_entry->GetSoftwareReservedBits();
+
             /* Set the output context. */
             out_context->l3_entry = nullptr;
             return true;
         } else if (l2_entry->IsTable()) {
             return this->ExtractL3Entry(out_entry, out_context, this->GetL3EntryFromTable(GetPageTableVirtualAddress(l2_entry->GetTable()), virt_addr), virt_addr);
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L2BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L2BlockSize;
+            out_entry->sw_reserved_bits = 0;
             out_context->l3_entry = nullptr;
             return false;
         }
@@ -91,6 +96,8 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L1BlockSize;
             }
+            out_entry->sw_reserved_bits = l1_entry->GetSoftwareReservedBits();
+
             /* Set the output context. */
             out_context->l2_entry = nullptr;
             out_context->l3_entry = nullptr;
@@ -98,8 +105,9 @@ namespace ams::kern::arch::arm64 {
         } else if (l1_entry->IsTable()) {
             return this->ExtractL2Entry(out_entry, out_context, this->GetL2EntryFromTable(GetPageTableVirtualAddress(l1_entry->GetTable()), virt_addr), virt_addr);
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L1BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L1BlockSize;
+            out_entry->sw_reserved_bits = 0;
             out_context->l2_entry = nullptr;
             out_context->l3_entry = nullptr;
             return false;
@@ -108,23 +116,24 @@ namespace ams::kern::arch::arm64 {
 
     bool KPageTableImpl::BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const {
         /* Setup invalid defaults. */
-        out_entry->phys_addr  = Null<KPhysicalAddress>;
-        out_entry->block_size = L1BlockSize;
-        out_context->l1_entry = this->table + this->num_entries;
+        out_entry->phys_addr        = Null<KPhysicalAddress>;
+        out_entry->block_size       = L1BlockSize;
+        out_entry->sw_reserved_bits = 0;
+        out_context->l1_entry = m_table + m_num_entries;
         out_context->l2_entry = nullptr;
         out_context->l3_entry = nullptr;
 
         /* Validate that we can read the actual entry. */
         const size_t l0_index = GetL0Index(address);
         const size_t l1_index = GetL1Index(address);
-        if (this->is_kernel) {
+        if (m_is_kernel) {
             /* Kernel entries must be accessed via TTBR1. */
-            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                 return false;
             }
         } else {
             /* User entries must be accessed with TTBR0. */
-            if ((l0_index != 0) || l1_index >= this->num_entries) {
+            if ((l0_index != 0) || l1_index >= m_num_entries) {
                 return false;
             }
         }
@@ -203,14 +212,15 @@ namespace ams::kern::arch::arm64 {
             }
         } else {
             /* We need to update the l1 entry. */
-            const size_t l1_index = context->l1_entry - this->table;
-            if (l1_index < this->num_entries) {
+            const size_t l1_index = context->l1_entry - m_table;
+            if (l1_index < m_num_entries) {
                 valid = this->ExtractL1Entry(out_entry, context, context->l1_entry, Null<KProcessAddress>);
             } else {
                 /* Invalid, end traversal. */
-                out_entry->phys_addr  = Null<KPhysicalAddress>;
-                out_entry->block_size = L1BlockSize;
-                context->l1_entry = this->table + this->num_entries;
+                out_entry->phys_addr        = Null<KPhysicalAddress>;
+                out_entry->block_size       = L1BlockSize;
+                out_entry->sw_reserved_bits = 0;
+                context->l1_entry = m_table + m_num_entries;
                 context->l2_entry = nullptr;
                 context->l3_entry = nullptr;
                 return false;
@@ -252,14 +262,14 @@ namespace ams::kern::arch::arm64 {
         /* Validate that we can read the actual entry. */
         const size_t l0_index = GetL0Index(address);
         const size_t l1_index = GetL1Index(address);
-        if (this->is_kernel) {
+        if (m_is_kernel) {
             /* Kernel entries must be accessed via TTBR1. */
-            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                 return false;
             }
         } else {
             /* User entries must be accessed with TTBR0. */
-            if ((l0_index != 0) || l1_index >= this->num_entries) {
+            if ((l0_index != 0) || l1_index >= m_num_entries) {
                 return false;
             }
         }
@@ -302,9 +312,6 @@ namespace ams::kern::arch::arm64 {
         const uintptr_t end  = start + size;
         const uintptr_t last = end - 1;
 
-        MESOSPHERE_LOG("==== PAGE TABLE DUMP START (%012lx - %012lx) ====\n", start, last);
-        ON_SCOPE_EXIT { MESOSPHERE_LOG("==== PAGE TABLE DUMP END ====\n"); };
-
         /* Define tracking variables. */
         bool unmapped = false;
         uintptr_t unmapped_start = 0;
@@ -315,14 +322,14 @@ namespace ams::kern::arch::arm64 {
             /* Validate that we can read the actual entry. */
             const size_t l0_index = GetL0Index(cur);
             const size_t l1_index = GetL1Index(cur);
-            if (this->is_kernel) {
+            if (m_is_kernel) {
                 /* Kernel entries must be accessed via TTBR1. */
-                if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+                if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                     return;
                 }
             } else {
                 /* User entries must be accessed with TTBR0. */
-                if ((l0_index != 0) || l1_index >= this->num_entries) {
+                if ((l0_index != 0) || l1_index >= m_num_entries) {
                     return;
                 }
             }
@@ -334,11 +341,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L1BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l1_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=1G Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l1_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l1_entry->GetBlock())),
+                                                                                                                                                                        l1_entry->IsMapped(),
+                                                                                                                                                                        l1_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l1_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l1_entry->IsContiguous(),
+                                                                                                                                                                        !l1_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l1_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l1_entry->GetShareable()),
+                                                                                                                                                                        l1_entry->IsReadOnly(),
+                                                                                                                                                                        l1_entry->IsUserAccessible(),
+                                                                                                                                                                        l1_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l1_entry->GetPageAttribute()),
+                                                                                                                                                                        l1_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l1_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l1_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L1BlockSize;
@@ -363,11 +386,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L2BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l2_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=2M Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l2_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l2_entry->GetBlock())),
+                                                                                                                                                                        l2_entry->IsMapped(),
+                                                                                                                                                                        l2_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l2_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l2_entry->IsContiguous(),
+                                                                                                                                                                        !l2_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l2_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l2_entry->GetShareable()),
+                                                                                                                                                                        l2_entry->IsReadOnly(),
+                                                                                                                                                                        l2_entry->IsUserAccessible(),
+                                                                                                                                                                        l2_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l2_entry->GetPageAttribute()),
+                                                                                                                                                                        l2_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l2_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l2_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L2BlockSize;
@@ -392,11 +431,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L3BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l3_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=4K Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l3_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l3_entry->GetBlock())),
+                                                                                                                                                                        l3_entry->IsMapped(),
+                                                                                                                                                                        l3_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l3_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l3_entry->IsContiguous(),
+                                                                                                                                                                        !l3_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l3_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l3_entry->GetShareable()),
+                                                                                                                                                                        l3_entry->IsReadOnly(),
+                                                                                                                                                                        l3_entry->IsUserAccessible(),
+                                                                                                                                                                        l3_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l3_entry->GetPageAttribute()),
+                                                                                                                                                                        l3_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l3_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l3_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L3BlockSize;
@@ -417,9 +472,32 @@ namespace ams::kern::arch::arm64 {
 
         /* Print the last unmapped range if necessary. */
         if (unmapped) {
-            MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, last);
+            MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, last);
         }
     }
 
+    size_t KPageTableImpl::CountPageTables() const {
+        size_t num_tables = 0;
+
+        #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+        {
+            ++num_tables;
+            for (size_t l1_index = 0; l1_index < m_num_entries; ++l1_index) {
+                auto &l1_entry = m_table[l1_index];
+                if (l1_entry.IsTable()) {
+                    ++num_tables;
+                    for (size_t l2_index = 0; l2_index < MaxPageTableEntries; ++l2_index) {
+                        auto *l2_entry = GetPointer<L2PageTableEntry>(GetTableEntry(KMemoryLayout::GetLinearVirtualAddress(l1_entry.GetTable()), l2_index));
+                        if (l2_entry->IsTable()) {
+                            ++num_tables;
+                        }
+                    }
+                }
+            }
+        }
+        #endif
+
+        return num_tables;
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,36 +24,34 @@ namespace ams::kern {
     class KDeviceAddressSpace final : public KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDeviceAddressSpace, KAutoObject);
         private:
-            KLightLock lock;
-            KDevicePageTable table;
-            u64 space_address;
-            u64 space_size;
-            bool is_initialized;
+            KLightLock m_lock;
+            KDevicePageTable m_table;
+            u64 m_space_address;
+            u64 m_space_size;
+            bool m_is_initialized;
         public:
-            constexpr KDeviceAddressSpace() : lock(), table(), space_address(), space_size(), is_initialized() { /* ... */ }
-            virtual ~KDeviceAddressSpace() { /* ... */ }
+            explicit KDeviceAddressSpace() : m_is_initialized(false) { /* ... */ }
 
             Result Initialize(u64 address, u64 size);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            bool IsInitialized() const { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Attach(ams::svc::DeviceName device_name);
             Result Detach(ams::svc::DeviceName device_name);
 
-            Result Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
-                return this->Map(out_mapped_size, page_table, process_address, size, device_address, device_perm, false, refresh_mappings);
+            Result MapByForce(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
+                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, false));
             }
 
             Result MapAligned(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
-                size_t dummy;
-                return this->Map(std::addressof(dummy), page_table, process_address, size, device_address, device_perm, true, false);
+                R_RETURN(this->Map(page_table, process_address, size, device_address, device_perm, true));
             }
 
             Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address);
         private:
-            Result Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings);
+            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
         public:
             static void Initialize();
     };

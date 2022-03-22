@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,15 +29,15 @@ namespace ams::cfg {
         constexpr size_t NumRequiredServicesForSdCardAccess = util::size(RequiredServicesForSdCardAccess);
 
         /* SD card globals. */
-        os::Mutex g_sd_card_lock(false);
-        bool g_sd_card_initialized = false;
-        FsFileSystem g_sd_card_filesystem = {};
+        constinit os::SdkMutex g_sd_card_lock;
+        constinit bool g_sd_card_initialized = false;
+        constinit FsFileSystem g_sd_card_filesystem = {};
 
         /* SD card helpers. */
         Result CheckSdCardServicesReady() {
             for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
                 bool service_present = false;
-                R_TRY(sm::HasService(&service_present, RequiredServicesForSdCardAccess[i]));
+                R_TRY(sm::HasService(std::addressof(service_present), RequiredServicesForSdCardAccess[i]));
                 if (!service_present) {
                     return fs::ResultSdCardNotPresent();
                 }
@@ -54,14 +54,14 @@ namespace ams::cfg {
 
         Result TryInitializeSdCard() {
             R_TRY(CheckSdCardServicesReady());
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(g_sd_card_filesystem)));
             g_sd_card_initialized = true;
             return ResultSuccess();
         }
 
         void InitializeSdCard() {
             WaitSdCardServicesReadyImpl();
-            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(std::addressof(g_sd_card_filesystem)));
             g_sd_card_initialized = true;
         }
 

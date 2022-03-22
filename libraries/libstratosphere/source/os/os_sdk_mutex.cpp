@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,25 +18,36 @@
 namespace ams::os {
 
     void InitializeSdkMutex(SdkMutexType *mutex) {
+        /* Initialize the critical section. */
         GetReference(mutex->_storage).Initialize();
     }
 
     bool IsSdkMutexLockedByCurrentThread(const SdkMutexType *mutex) {
+        /* Check whether the critical section is held. */
         return GetReference(mutex->_storage).IsLockedByCurrentThread();
     }
 
     void LockSdkMutex(SdkMutexType *mutex) {
+        /* Check pre-conditions. */
         AMS_ABORT_UNLESS(!IsSdkMutexLockedByCurrentThread(mutex));
+
+        /* Enter the critical section. */
         return GetReference(mutex->_storage).Enter();
     }
 
     bool TryLockSdkMutex(SdkMutexType *mutex) {
+        /* Check pre-conditions. */
         AMS_ABORT_UNLESS(!IsSdkMutexLockedByCurrentThread(mutex));
+
+        /* Try to enter the critical section. */
         return GetReference(mutex->_storage).TryEnter();
     }
 
     void UnlockSdkMutex(SdkMutexType *mutex) {
+        /* Check pre-conditions. */
         AMS_ABORT_UNLESS(IsSdkMutexLockedByCurrentThread(mutex));
+
+        /* Leave the critical section. */
         return GetReference(mutex->_storage).Leave();
     }
 

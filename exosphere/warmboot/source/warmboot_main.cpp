@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -36,7 +36,6 @@ namespace ams::warmboot {
     void Main(const Metadata *metadata) {
         /* Ensure that we're running under vaguely sane conditions. */
         AMS_ABORT_UNLESS(metadata->magic == Metadata::Magic);
-        AMS_ABORT_UNLESS(metadata->target_firmware <= ams::TargetFirmware_Max);
 
         /* Restrict the bpmp's access to dram. */
         if (metadata->target_firmware >= TargetFirmware_4_0_0) {
@@ -102,5 +101,7 @@ namespace ams::diag {
     void AbortImpl() {
         warmboot::ExceptionHandler();
     }
+
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
 
 }

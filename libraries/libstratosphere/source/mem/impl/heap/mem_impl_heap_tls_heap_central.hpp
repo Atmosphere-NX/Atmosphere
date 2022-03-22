@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -195,21 +195,21 @@ namespace ams::mem::impl::heap {
 
             static_assert(NumFreeListBitmaps * BITSIZEOF(FreeListAvailableWord) == FreeListCount);
         private:
-            SpanTable span_table;
-            u8 *physical_page_flags;
-            s32 num_threads;
-            s32 static_thread_quota;
-            s32 dynamic_thread_quota;
-            bool use_virtual_memory;
-            os::Mutex lock;
-            ListHeader<SpanPage> spanpage_list;
-            ListHeader<SpanPage> full_spanpage_list;
-            ListHeader<Span> freelists[FreeListCount];
-            FreeListAvailableWord freelists_bitmap[NumFreeListBitmaps];
-            ListHeader<Span> smallmem_lists[TlsHeapStatic::NumClassInfo];
+            SpanTable m_span_table;
+            u8 *m_physical_page_flags;
+            s32 m_num_threads;
+            s32 m_static_thread_quota;
+            s32 m_dynamic_thread_quota;
+            bool m_use_virtual_memory;
+            os::SdkRecursiveMutex m_lock;
+            ListHeader<SpanPage> m_spanpage_list;
+            ListHeader<SpanPage> m_full_spanpage_list;
+            ListHeader<Span> m_freelists[FreeListCount];
+            FreeListAvailableWord m_freelists_bitmap[NumFreeListBitmaps];
+            ListHeader<Span> m_smallmem_lists[TlsHeapStatic::NumClassInfo];
         public:
-            TlsHeapCentral() : lock(true) {
-                this->span_table.total_pages = 0;
+            TlsHeapCentral() : m_lock() {
+                m_span_table.total_pages = 0;
             }
 
             errno_t Initialize(void *start, size_t size, bool use_virtual_memory);
@@ -221,27 +221,31 @@ namespace ams::mem::impl::heap {
             void CalculateHeapHash(HeapHash *out);
 
             errno_t AddThreadCache(TlsHeapCache *cache) {
-                std::scoped_lock lk(this->lock);
+                AMS_UNUSED(cache);
+
+                std::scoped_lock lk(m_lock);
 
                 /* Add thread and recalculate. */
-                this->num_threads++;
-                this->dynamic_thread_quota = this->GetTotalHeapSize() / (2 * this->num_threads);
+                m_num_threads++;
+                m_dynamic_thread_quota = this->GetTotalHeapSize() / (2 * m_num_threads);
 
                 return 0;
             }
 
             errno_t RemoveThreadCache(TlsHeapCache *cache) {
-                std::scoped_lock lk(this->lock);
+                AMS_UNUSED(cache);
+
+                std::scoped_lock lk(m_lock);
 
                 /* Remove thread and recalculate. */
-                this->num_threads--;
-                this->dynamic_thread_quota = this->GetTotalHeapSize() / (2 * this->num_threads);
+                m_num_threads--;
+                m_dynamic_thread_quota = this->GetTotalHeapSize() / (2 * m_num_threads);
 
                 return 0;
             }
 
             void *CacheLargeMemory(size_t size) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 const size_t num_pages = util::AlignUp(size, TlsHeapStatic::PageSize) / TlsHeapStatic::PageSize;
                 if (Span *span = this->AllocatePagesImpl(num_pages); span != nullptr) {
@@ -252,7 +256,7 @@ namespace ams::mem::impl::heap {
             }
 
             void *CacheLargeMemoryWithBigAlign(size_t size, size_t align) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 const size_t num_pages = util::AlignUp(size, TlsHeapStatic::PageSize) / TlsHeapStatic::PageSize;
 
@@ -271,34 +275,34 @@ namespace ams::mem::impl::heap {
             }
 
             void *CacheSmallMemory(size_t cls, size_t align = 0) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 return this->CacheSmallMemoryImpl(cls, align, false);
             }
 
             void *CacheSmallMemoryForSystem(size_t cls) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 return this->CacheSmallMemoryImpl(cls, 0, true);
             }
 
             size_t CacheSmallMemoryList(TlsHeapCache *cache, size_t *cls, size_t count, void **p, size_t align = 0) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 s32 cpu_id = 0;
                 if (*cls < 8) {
                     getcpu(std::addressof(cpu_id));
                 }
 
-                return this->CacheSmallMemoryListImpl(cache, cls, count, p, cpu_id, 0);
+                return this->CacheSmallMemoryListImpl(cache, cls, count, p, cpu_id, align);
             }
 
             bool CheckCachedSize(s32 size) const {
-                return size < this->dynamic_thread_quota && size < this->static_thread_quota;
+                return size < m_dynamic_thread_quota && size < m_static_thread_quota;
             }
 
             void Dump(DumpMode dump_mode, int fd, bool json) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
                 return this->DumpImpl(dump_mode, fd, json);
             }
 
@@ -306,8 +310,8 @@ namespace ams::mem::impl::heap {
                 if (TlsHeapStatic::IsPageAligned(ptr)) {
                     Span *span = nullptr;
                     {
-                        std::scoped_lock lk(this->lock);
-                        span = GetSpanFromPointer(std::addressof(this->span_table), ptr);
+                        std::scoped_lock lk(m_lock);
+                        span = GetSpanFromPointer(std::addressof(m_span_table), ptr);
                     }
                     if (span != nullptr) {
                         return span->num_pages * TlsHeapStatic::PageSize;
@@ -321,24 +325,24 @@ namespace ams::mem::impl::heap {
                 }
             }
 
-            size_t GetClassFromPointer(const void *ptr) {
+            s32 GetClassFromPointer(const void *ptr) {
                 std::atomic_thread_fence(std::memory_order_acquire);
 
                 const size_t idx = (reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(this)) / TlsHeapStatic::PageSize;
-                if (idx < this->span_table.total_pages) {
+                if (idx < m_span_table.total_pages) {
                     if (ptr != nullptr) {
-                        std::scoped_lock lk(this->lock);
-                        Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr);
+                        std::scoped_lock lk(m_lock);
+                        Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr);
                         if (span != nullptr) {
-                            AMS_ASSERT(span->page_class == this->span_table.pageclass_cache[idx]);
+                            AMS_ASSERT(span->page_class == m_span_table.pageclass_cache[idx]);
                         } else {
                             AMS_ASSERT(span != nullptr);
                         }
                     }
-                    return this->span_table.pageclass_cache[idx];
+                    return m_span_table.pageclass_cache[idx];
                 } else {
                     /* TODO: Handle error? */
-                    return 0xFFFFFFFF;
+                    return -1;
                 }
             }
 
@@ -347,9 +351,9 @@ namespace ams::mem::impl::heap {
                     return EINVAL;
                 }
 
-                std::scoped_lock lk(this->lock);
-                if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    *out = (span->aux.large.color[0] << 0) | (span->aux.large.color[1] << 0) | (span->aux.large.color[2] << 16);
+                std::scoped_lock lk(m_lock);
+                if (Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr); span != nullptr && !span->page_class) {
+                    *out = (span->aux.large.color[0] << 0) | (span->aux.large.color[1] << 8) | (span->aux.large.color[2] << 16);
                     return 0;
                 } else {
                     return EINVAL;
@@ -357,8 +361,8 @@ namespace ams::mem::impl::heap {
             }
 
             errno_t SetColor(const void *ptr, int color) {
-                std::scoped_lock lk(this->lock);
-                if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
+                std::scoped_lock lk(m_lock);
+                if (Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr); span != nullptr && !span->page_class) {
                     span->aux.large.color[0] = (color >>  0) & 0xFF;
                     span->aux.large.color[1] = (color >>  8) & 0xFF;
                     span->aux.large.color[2] = (color >> 16) & 0xFF;
@@ -369,21 +373,21 @@ namespace ams::mem::impl::heap {
             }
 
             errno_t GetMappedMemStats(size_t *out_free_size, size_t *out_max_allocatable_size) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 return this->GetMappedMemStatsImpl(out_free_size, out_max_allocatable_size);
             }
 
             errno_t GetMemStats(TlsHeapMemStats *out) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 return this->GetMemStatsImpl(out);
             }
 
             errno_t GetName(const void *ptr, char *dst, size_t dst_size) {
-                std::scoped_lock lk(this->lock);
-                if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    strlcpy(dst, span->aux.large.name, dst_size);
+                std::scoped_lock lk(m_lock);
+                if (Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr); span != nullptr && !span->page_class) {
+                    util::Strlcpy(dst, span->aux.large.name, dst_size);
                     return 0;
                 } else {
                     return EINVAL;
@@ -391,9 +395,9 @@ namespace ams::mem::impl::heap {
             }
 
             errno_t SetName(const void *ptr, const char *name) {
-                std::scoped_lock lk(this->lock);
-                if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr && !span->page_class) {
-                    strlcpy(span->aux.large.name, name, sizeof(span->aux.large.name));
+                std::scoped_lock lk(m_lock);
+                if (Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr); span != nullptr && !span->page_class) {
+                    util::Strlcpy(span->aux.large.name, name, sizeof(span->aux.large.name));
                     return 0;
                 } else {
                     return EINVAL;
@@ -401,13 +405,13 @@ namespace ams::mem::impl::heap {
             }
 
             size_t GetTotalHeapSize() const {
-                return this->span_table.total_pages * TlsHeapStatic::PageSize;
+                return m_span_table.total_pages * TlsHeapStatic::PageSize;
             }
 
             errno_t UncacheLargeMemory(void *ptr) {
                 if (TlsHeapStatic::IsPageAligned(ptr)) {
-                    std::scoped_lock lk(this->lock);
-                    if (Span *span = GetSpanFromPointer(std::addressof(this->span_table), ptr); span != nullptr) {
+                    std::scoped_lock lk(m_lock);
+                    if (Span *span = GetSpanFromPointer(std::addressof(m_span_table), ptr); span != nullptr) {
                         this->FreePagesImpl(span);
                         return 0;
                     } else {
@@ -419,12 +423,12 @@ namespace ams::mem::impl::heap {
             }
 
             errno_t UncacheSmallMemory(void *ptr) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
                 return this->UncacheSmallMemoryImpl(ptr);
             }
 
             errno_t UncacheSmallMemoryList(TlsHeapCache *cache, void *ptr) {
-                std::scoped_lock lk(this->lock);
+                std::scoped_lock lk(m_lock);
 
                 while (true) {
                     if (ptr == nullptr) {
@@ -441,8 +445,8 @@ namespace ams::mem::impl::heap {
 
             errno_t WalkAllocatedPointers(HeapWalkCallback callback, void *user_data) {
                 /* Explicitly handle locking, as we will release the lock during callback. */
-                this->lock.lock();
-                ON_SCOPE_EXIT { this->lock.unlock(); };
+                m_lock.lock();
+                ON_SCOPE_EXIT { m_lock.unlock(); };
 
                 return this->WalkAllocatedPointersImpl(callback, user_data);
             }
@@ -484,8 +488,8 @@ namespace ams::mem::impl::heap {
         private:
             size_t FreeListFirstNonEmpty(size_t start) const {
                 if (start < FreeListCount) {
-                    for (size_t i = FreeListAvailableIndex(start); i < util::size(this->freelists_bitmap); i++) {
-                        const FreeListAvailableWord masked = this->freelists_bitmap[i] & ~(FreeListAvailableMask(start) - 1);
+                    for (size_t i = FreeListAvailableIndex(start); i < util::size(m_freelists_bitmap); i++) {
+                        const FreeListAvailableWord masked = m_freelists_bitmap[i] & ~(FreeListAvailableMask(start) - 1);
                         if (masked) {
                             const size_t b = __builtin_ctzll(masked);
                             const size_t res = i * BITSIZEOF(FreeListAvailableWord) + b;
@@ -502,20 +506,20 @@ namespace ams::mem::impl::heap {
                 AMS_ASSERT(GetSpanPageSpan(GetSpanPage(span)) != span);
                 AMS_ASSERT(span->status == Span::Status_InFreeList);
                 const size_t which = std::min(span->num_pages, FreeListCount) - 1;
-                ListInsertAfter(std::addressof(this->freelists[which]), span);
-                this->freelists_bitmap[FreeListAvailableIndex(which)] |= FreeListAvailableMask(which);
+                ListInsertAfter(std::addressof(m_freelists[which]), span);
+                m_freelists_bitmap[FreeListAvailableIndex(which)] |= FreeListAvailableMask(which);
             }
 
             ALWAYS_INLINE void RemoveFromFreeBlockList(Span *span) {
                 const size_t which = std::min(span->num_pages, FreeListCount) - 1;
                 ListRemoveSelf(span);
-                if (!ListGetNext(std::addressof(this->freelists[which]))) {
-                    this->freelists_bitmap[FreeListAvailableIndex(which)] &= ~FreeListAvailableMask(which);
+                if (!ListGetNext(std::addressof(m_freelists[which]))) {
+                    m_freelists_bitmap[FreeListAvailableIndex(which)] &= ~FreeListAvailableMask(which);
                 }
             }
 
             Span *AllocateSpanStruct() {
-                SpanPage *sp = ListGetNext(std::addressof(this->spanpage_list));
+                SpanPage *sp = ListGetNext(std::addressof(m_spanpage_list));
                 while (sp && (sp->info.is_sticky || !CanAllocateSpan(sp))) {
                     sp = ListGetNext(sp);
                 }
@@ -532,9 +536,9 @@ namespace ams::mem::impl::heap {
             }
 
             s32 CallWalkCallback(HeapWalkCallback callback, void *ptr, size_t size, void *user_data) {
-                this->lock.unlock();
+                m_lock.unlock();
                 int res = callback(ptr, size, user_data);
-                this->lock.lock();
+                m_lock.lock();
                 if (res) {
                     return 0;
                 } else {

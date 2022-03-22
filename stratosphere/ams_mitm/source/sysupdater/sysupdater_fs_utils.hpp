@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,12 +20,12 @@ namespace ams::mitm::sysupdater {
 
     class PathView {
         private:
-            std::string_view path; /* Nintendo uses util::string_view here. */
+            util::string_view m_path;
         public:
-            PathView(std::string_view p) : path(p) { /* ...*/ }
-            bool HasPrefix(std::string_view prefix) const;
-            bool HasSuffix(std::string_view suffix) const;
-            std::string_view GetFileName() const;
+            PathView(util::string_view p) : m_path(p) { /* ...*/ }
+            bool HasPrefix(util::string_view prefix) const;
+            bool HasSuffix(util::string_view suffix) const;
+            util::string_view GetFileName() const;
     };
 
     Result MountSdCardContentMeta(const char *mount_name, const char *path);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -77,14 +77,14 @@ namespace ams::kern {
 
     Result KInitialProcessReader::MakeCreateProcessParameter(ams::svc::CreateProcessParameter *out, bool enable_aslr) const {
         /* Get and validate addresses/sizes. */
-        const uintptr_t rx_address  = this->kip_header->GetRxAddress();
-        const size_t    rx_size     = this->kip_header->GetRxSize();
-        const uintptr_t ro_address  = this->kip_header->GetRoAddress();
-        const size_t    ro_size     = this->kip_header->GetRoSize();
-        const uintptr_t rw_address  = this->kip_header->GetRwAddress();
-        const size_t    rw_size     = this->kip_header->GetRwSize();
-        const uintptr_t bss_address = this->kip_header->GetBssAddress();
-        const size_t    bss_size    = this->kip_header->GetBssSize();
+        const uintptr_t rx_address  = m_kip_header.GetRxAddress();
+        const size_t    rx_size     = m_kip_header.GetRxSize();
+        const uintptr_t ro_address  = m_kip_header.GetRoAddress();
+        const size_t    ro_size     = m_kip_header.GetRoSize();
+        const uintptr_t rw_address  = m_kip_header.GetRwAddress();
+        const size_t    rw_size     = m_kip_header.GetRwSize();
+        const uintptr_t bss_address = m_kip_header.GetBssAddress();
+        const size_t    bss_size    = m_kip_header.GetBssSize();
         R_UNLESS(util::IsAligned(rx_address, PageSize),                          svc::ResultInvalidAddress());
         R_UNLESS(util::IsAligned(ro_address, PageSize),                          svc::ResultInvalidAddress());
         R_UNLESS(util::IsAligned(rw_address, PageSize),                          svc::ResultInvalidAddress());
@@ -115,13 +115,13 @@ namespace ams::kern {
         /* Set fields in parameter. */
         out->code_address   = map_start + start_address;
         out->code_num_pages = util::AlignUp(end_address - start_address, PageSize) / PageSize;
-        out->program_id     = this->kip_header->GetProgramId();
-        out->version        = this->kip_header->GetVersion();
+        out->program_id     = m_kip_header.GetProgramId();
+        out->version        = m_kip_header.GetVersion();
         out->flags          = 0;
         MESOSPHERE_ABORT_UNLESS((out->code_address / PageSize) + out->code_num_pages <= (map_end / PageSize));
 
         /* Copy name field. */
-        this->kip_header->GetName(out->name, sizeof(out->name));
+        m_kip_header.GetName(out->name, sizeof(out->name));
 
         /* Apply ASLR, if needed. */
         if (enable_aslr) {
@@ -140,80 +140,82 @@ namespace ams::kern {
             out->flags |= ams::svc::CreateProcessFlag_AddressSpace32Bit;
         }
 
-        return ResultSuccess();
+        /* All initial processes should disable device address space merge. */
+        out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+
+        R_SUCCEED();
     }
 
-    Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params) const {
-        /* Clear memory at the address. */
-        std::memset(GetVoidPointer(address), 0, params.code_num_pages * PageSize);
-
+    Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params, KProcessAddress src) const {
         /* Prepare to layout the data. */
-        const KProcessAddress rx_address = address + this->kip_header->GetRxAddress();
-        const KProcessAddress ro_address = address + this->kip_header->GetRoAddress();
-        const KProcessAddress rw_address = address + this->kip_header->GetRwAddress();
-        const u8 *rx_binary = reinterpret_cast<const u8 *>(this->kip_header + 1);
-        const u8 *ro_binary = rx_binary + this->kip_header->GetRxCompressedSize();
-        const u8 *rw_binary = ro_binary + this->kip_header->GetRoCompressedSize();
+        const KProcessAddress rx_address = address + m_kip_header.GetRxAddress();
+        const KProcessAddress ro_address = address + m_kip_header.GetRoAddress();
+        const KProcessAddress rw_address = address + m_kip_header.GetRwAddress();
+        const u8 *rx_binary = GetPointer<const u8>(src);
+        const u8 *ro_binary = rx_binary + m_kip_header.GetRxCompressedSize();
+        const u8 *rw_binary = ro_binary + m_kip_header.GetRoCompressedSize();
 
         /* Copy text. */
-        if (util::AlignUp(this->kip_header->GetRxSize(), PageSize)) {
-            std::memcpy(GetVoidPointer(rx_address), rx_binary, this->kip_header->GetRxCompressedSize());
-            if (this->kip_header->IsRxCompressed()) {
-                BlzUncompress(GetVoidPointer(rx_address + this->kip_header->GetRxCompressedSize()));
+        if (util::AlignUp(m_kip_header.GetRxSize(), PageSize)) {
+            std::memmove(GetVoidPointer(rx_address), rx_binary, m_kip_header.GetRxCompressedSize());
+            if (m_kip_header.IsRxCompressed()) {
+                BlzUncompress(GetVoidPointer(rx_address + m_kip_header.GetRxCompressedSize()));
             }
         }
 
         /* Copy rodata. */
-        if (util::AlignUp(this->kip_header->GetRoSize(), PageSize)) {
-            std::memcpy(GetVoidPointer(ro_address), ro_binary, this->kip_header->GetRoCompressedSize());
-            if (this->kip_header->IsRoCompressed()) {
-                BlzUncompress(GetVoidPointer(ro_address + this->kip_header->GetRoCompressedSize()));
+        if (util::AlignUp(m_kip_header.GetRoSize(), PageSize)) {
+            std::memmove(GetVoidPointer(ro_address), ro_binary, m_kip_header.GetRoCompressedSize());
+            if (m_kip_header.IsRoCompressed()) {
+                BlzUncompress(GetVoidPointer(ro_address + m_kip_header.GetRoCompressedSize()));
             }
         }
 
         /* Copy rwdata. */
-        if (util::AlignUp(this->kip_header->GetRwSize(), PageSize)) {
-            std::memcpy(GetVoidPointer(rw_address), rw_binary, this->kip_header->GetRwCompressedSize());
-            if (this->kip_header->IsRwCompressed()) {
-                BlzUncompress(GetVoidPointer(rw_address + this->kip_header->GetRwCompressedSize()));
+        if (util::AlignUp(m_kip_header.GetRwSize(), PageSize)) {
+            std::memmove(GetVoidPointer(rw_address), rw_binary, m_kip_header.GetRwCompressedSize());
+            if (m_kip_header.IsRwCompressed()) {
+                BlzUncompress(GetVoidPointer(rw_address + m_kip_header.GetRwCompressedSize()));
             }
         }
 
         /* Flush caches. */
-        /* NOTE: official kernel does an entire cache flush by set/way here, which is incorrect as other cores are online. */
-        /* We will simply flush by virtual address, since that's what ARM says is correct to do. */
-        MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(GetVoidPointer(address), params.code_num_pages * PageSize));
+        /* NOTE: This seems incorrect according to arm spec, which says not to flush via set/way after boot. */
+        /* However, Nintendo flushes the entire cache here and not doing so has caused reports of abort with ESR_EL1 */
+        /* as 0x02000000 (unknown abort) to occur. */
+        MESOSPHERE_UNUSED(params);
+        cpu::FlushEntireDataCache();
         cpu::InvalidateEntireInstructionCache();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KInitialProcessReader::SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const {
-        const size_t rx_size  = this->kip_header->GetRxSize();
-        const size_t ro_size  = this->kip_header->GetRoSize();
-        const size_t rw_size  = this->kip_header->GetRwSize();
-        const size_t bss_size = this->kip_header->GetBssSize();
+        const size_t rx_size  = m_kip_header.GetRxSize();
+        const size_t ro_size  = m_kip_header.GetRoSize();
+        const size_t rw_size  = m_kip_header.GetRwSize();
+        const size_t bss_size = m_kip_header.GetBssSize();
 
         /* Set R-X pages. */
         if (rx_size) {
-            const uintptr_t start = this->kip_header->GetRxAddress() + params.code_address;
+            const uintptr_t start = m_kip_header.GetRxAddress() + params.code_address;
             R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(rx_size, PageSize), ams::svc::MemoryPermission_ReadExecute));
         }
 
         /* Set R-- pages. */
         if (ro_size) {
-            const uintptr_t start = this->kip_header->GetRoAddress() + params.code_address;
+            const uintptr_t start = m_kip_header.GetRoAddress() + params.code_address;
             R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(ro_size, PageSize), ams::svc::MemoryPermission_Read));
         }
 
         /* Set RW- pages. */
         if (rw_size || bss_size) {
-            const uintptr_t start = (rw_size ? this->kip_header->GetRwAddress() : this->kip_header->GetBssAddress()) + params.code_address;
-            const uintptr_t end  = (bss_size ? this->kip_header->GetBssAddress() + bss_size : this->kip_header->GetRwAddress() + rw_size) + params.code_address;
+            const uintptr_t start = (rw_size ? m_kip_header.GetRwAddress() : m_kip_header.GetBssAddress()) + params.code_address;
+            const uintptr_t end  = (bss_size ? m_kip_header.GetBssAddress() + bss_size : m_kip_header.GetRwAddress() + rw_size) + params.code_address;
             R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(end - start, PageSize), ams::svc::MemoryPermission_ReadWrite));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

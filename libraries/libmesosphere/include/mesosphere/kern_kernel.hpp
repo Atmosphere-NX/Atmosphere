@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,7 +19,10 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
-#include <mesosphere/kern_k_core_local_region.hpp>
+#include <mesosphere/kern_k_scheduler.hpp>
+#include <mesosphere/kern_k_interrupt_task_manager.hpp>
+#include <mesosphere/kern_select_interrupt_manager.hpp>
+#include <mesosphere/kern_select_hardware_timer.hpp>
 #include <mesosphere/kern_k_worker_task_manager.hpp>
 
 namespace ams::kern {
@@ -34,10 +37,7 @@ namespace ams::kern {
     class KPageTableManager;
     class KMemoryBlockSlabManager;
     class KBlockInfoManager;
-    class KSynchronization;
     class KUnsafeMemory;
-
-
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
@@ -63,25 +63,28 @@ namespace ams::kern {
             static constexpr size_t ApplicationMemoryBlockSlabHeapSize = 20000;
             static constexpr size_t SystemMemoryBlockSlabHeapSize      = 10000;
             static constexpr size_t BlockInfoSlabHeapSize              = 4000;
+            static constexpr size_t ReservedDynamicPageCount           = 70;
         private:
             static State s_state;
             static KResourceLimit s_system_resource_limit;
             static KMemoryManager s_memory_manager;
-            static KPageTableManager s_page_table_manager;
+            static KPageTableSlabHeap s_page_table_heap;
+            static KMemoryBlockSlabHeap s_app_memory_block_heap;
+            static KMemoryBlockSlabHeap s_sys_memory_block_heap;
+            static KBlockInfoSlabHeap s_block_info_heap;
+            static KPageTableManager s_app_page_table_manager;
+            static KPageTableManager s_sys_page_table_manager;
             static KMemoryBlockSlabManager s_app_memory_block_manager;
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
-            static KBlockInfoManager s_block_info_manager;
+            static KBlockInfoManager s_app_block_info_manager;
+            static KBlockInfoManager s_sys_block_info_manager;
             static KSupervisorPageTable s_supervisor_page_table;
-            static KSynchronization s_synchronization;
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
-        private:
-            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
-                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
-            }
-            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext(s32 core_id) {
-                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->absolute[core_id].context;
-            }
+            static KInterruptManager s_interrupt_manager;
+            static KScheduler s_schedulers[cpu::NumCores];
+            static KInterruptTaskManager s_interrupt_task_managers[cpu::NumCores];
+            static KHardwareTimer s_hardware_timers[cpu::NumCores];
         public:
             static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
             static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
@@ -94,28 +97,28 @@ namespace ams::kern {
             static KThread &GetMainThread(s32 core_id);
             static KThread &GetIdleThread(s32 core_id);
 
-            static ALWAYS_INLINE KCurrentContext &GetCurrentContext(s32 core_id) {
-                return GetCoreLocalContext(core_id).current;
-            }
-
             static ALWAYS_INLINE KScheduler &GetScheduler() {
-                return GetCoreLocalContext().scheduler;
+                return s_schedulers[GetCurrentCoreId()];
             }
 
             static ALWAYS_INLINE KScheduler &GetScheduler(s32 core_id) {
-                return GetCoreLocalContext(core_id).scheduler;
+                return s_schedulers[core_id];
             }
 
             static ALWAYS_INLINE KInterruptTaskManager &GetInterruptTaskManager() {
-                return GetCoreLocalContext().interrupt_task_manager;
+                return s_interrupt_task_managers[GetCurrentCoreId()];
             }
 
             static ALWAYS_INLINE KInterruptManager &GetInterruptManager() {
-                return GetCoreLocalContext().interrupt_manager;
+                return s_interrupt_manager;
             }
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
-                return GetCoreLocalContext(GetCurrentCoreId()).hardware_timer;
+                return s_hardware_timers[GetCurrentCoreId()];
+            }
+
+            static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer(s32 core_id) {
+                return s_hardware_timers[core_id];
             }
 
             static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
@@ -134,20 +137,24 @@ namespace ams::kern {
                 return s_sys_memory_block_manager;
             }
 
-            static ALWAYS_INLINE KBlockInfoManager &GetBlockInfoManager() {
-                return s_block_info_manager;
+            static ALWAYS_INLINE KBlockInfoManager &GetApplicationBlockInfoManager() {
+                return s_app_block_info_manager;
             }
 
-            static ALWAYS_INLINE KPageTableManager &GetPageTableManager() {
-                return s_page_table_manager;
+            static ALWAYS_INLINE KBlockInfoManager &GetSystemBlockInfoManager() {
+                return s_sys_block_info_manager;
+            }
+
+            static ALWAYS_INLINE KPageTableManager &GetApplicationPageTableManager() {
+                return s_app_page_table_manager;
+            }
+
+            static ALWAYS_INLINE KPageTableManager &GetSystemPageTableManager() {
+                return s_sys_page_table_manager;
             }
 
             static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {
                 return s_supervisor_page_table;
-            }
-
-            static ALWAYS_INLINE KSynchronization &GetSynchronization() {
-                return s_synchronization;
             }
 
             static ALWAYS_INLINE KUnsafeMemory &GetUnsafeMemory() {
@@ -159,5 +166,9 @@ namespace ams::kern {
                 return s_worker_task_managers[type];
             }
     };
+
+    ALWAYS_INLINE KScheduler &GetCurrentScheduler() {
+        return Kernel::GetScheduler();
+    }
 
 }

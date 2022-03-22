@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,11 +15,12 @@
  */
 #include <stratosphere.hpp>
 #include <stratosphere/fssrv/fssrv_interface_adapters.hpp>
+#include "impl/fssrv_allocator_for_service_framework.hpp"
 
 namespace ams::fssrv::impl {
 
-    FileInterfaceAdapter::FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema)
-        : parent_filesystem(std::move(parent)), base_file(std::move(file)), open_count_semaphore(std::move(sema))
+    FileInterfaceAdapter::FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
+        : m_parent_filesystem(parent, true), m_base_file(std::move(file)), m_open_count_semaphore(std::move(sema))
     {
         /* ... */
     }
@@ -29,19 +30,19 @@ namespace ams::fssrv::impl {
     }
 
     void FileInterfaceAdapter::InvalidateCache() {
-        AMS_ABORT_UNLESS(this->parent_filesystem->IsDeepRetryEnabled());
-        std::scoped_lock<os::ReadWriteLock> scoped_write_lock(this->parent_filesystem->GetReadWriteLockForCacheInvalidation());
-        this->base_file->OperateRange(nullptr, 0, fs::OperationId::InvalidateCache, 0, std::numeric_limits<s64>::max(), nullptr, 0);
+        AMS_ABORT_UNLESS(m_parent_filesystem->IsDeepRetryEnabled());
+        std::scoped_lock<os::ReaderWriterLock> scoped_write_lock(m_parent_filesystem->GetReaderWriterLockForCacheInvalidation());
+        m_base_file->OperateRange(nullptr, 0, fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max(), nullptr, 0);
     }
 
     Result FileInterfaceAdapter::Read(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size, fs::ReadOption option) {
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         /* TODO: Deep retry */
         R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
 
         size_t read_size = 0;
-        R_TRY(this->base_file->Read(&read_size, offset, buffer.GetPointer(), static_cast<size_t>(size), option));
+        R_TRY(m_base_file->Read(std::addressof(read_size), offset, buffer.GetPointer(), static_cast<size_t>(size), option));
 
         out.SetValue(read_size);
         return ResultSuccess();
@@ -52,24 +53,24 @@ namespace ams::fssrv::impl {
         R_UNLESS(offset >= 0, fs::ResultInvalidOffset());
         R_UNLESS(size >= 0,   fs::ResultInvalidSize());
 
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
-        return this->base_file->Write(offset, buffer.GetPointer(), size, option);
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
+        return m_base_file->Write(offset, buffer.GetPointer(), size, option);
     }
 
     Result FileInterfaceAdapter::Flush() {
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
-        return this->base_file->Flush();
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
+        return m_base_file->Flush();
     }
 
     Result FileInterfaceAdapter::SetSize(s64 size) {
         R_UNLESS(size >= 0, fs::ResultInvalidSize());
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
-        return this->base_file->SetSize(size);
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
+        return m_base_file->SetSize(size);
     }
 
     Result FileInterfaceAdapter::GetSize(ams::sf::Out<s64> out) {
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
-        return this->base_file->GetSize(out.GetPointer());
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
+        return m_base_file->GetSize(out.GetPointer());
     }
 
     Result FileInterfaceAdapter::OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size) {
@@ -78,18 +79,39 @@ namespace ams::fssrv::impl {
 
         out->Clear();
         if (op_id == static_cast<s32>(fs::OperationId::QueryRange)) {
-            auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
+            auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
 
             fs::FileQueryRangeInfo info;
-            R_TRY(this->base_file->OperateRange(&info, sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
+            R_TRY(m_base_file->OperateRange(std::addressof(info), sizeof(info), fs::OperationId::QueryRange, offset, size, nullptr, 0));
             out->Merge(info);
         }
 
         return ResultSuccess();
     }
 
-    DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema)
-        : parent_filesystem(std::move(parent)), base_dir(std::move(dir)), open_count_semaphore(std::move(sema))
+    Result FileInterfaceAdapter::OperateRangeWithBuffer(const ams::sf::OutNonSecureBuffer &out_buf, const ams::sf::InNonSecureBuffer &in_buf, s32 op_id, s64 offset, s64 size) {
+        /* Check that we have permission to perform the operation. */
+        switch (static_cast<fs::OperationId>(op_id)) {
+            using enum fs::OperationId;
+            case QueryUnpreparedRange:
+            case QueryLazyLoadCompletionRate:
+            case SetLazyLoadPriority:
+                /* Lazy load/unprepared operations are always allowed to be performed with buffer. */
+                break;
+            default:
+                /* TODO: Nintendo requires that a class member here be true here, but this class member seems to always be false. */
+                /* If this changes (or reverse engineering is wrong), this should be updated. */
+                return fs::ResultPermissionDenied();
+        }
+
+        /* Perform the operation. */
+        R_TRY(m_base_file->OperateRange(out_buf.GetPointer(), out_buf.GetSize(), static_cast<fs::OperationId>(op_id), offset, size, in_buf.GetPointer(), in_buf.GetSize()));
+
+        return ResultSuccess();
+    }
+
+    DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
+        : m_parent_filesystem(parent, true), m_base_dir(std::move(dir)), m_open_count_semaphore(std::move(sema))
     {
         /* ... */
     }
@@ -99,22 +121,22 @@ namespace ams::fssrv::impl {
     }
 
     Result DirectoryInterfaceAdapter::Read(ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries) {
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
 
-        const size_t max_num_entries = out_entries.GetSize() / sizeof(fs::DirectoryEntry);
+        const s64 max_num_entries = out_entries.GetSize() / sizeof(fs::DirectoryEntry);
         R_UNLESS(max_num_entries >= 0, fs::ResultInvalidSize());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
-        return this->base_dir->Read(out.GetPointer(), reinterpret_cast<fs::DirectoryEntry *>(out_entries.GetPointer()), max_num_entries);
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
+        return m_base_dir->Read(out.GetPointer(), reinterpret_cast<fs::DirectoryEntry *>(out_entries.GetPointer()), max_num_entries);
     }
 
     Result DirectoryInterfaceAdapter::GetEntryCount(ams::sf::Out<s64> out) {
-        auto read_lock = this->parent_filesystem->AcquireCacheInvalidationReadLock();
-        return this->base_dir->GetEntryCount(out.GetPointer());
+        auto read_lock = m_parent_filesystem->AcquireCacheInvalidationReadLock();
+        return m_base_dir->GetEntryCount(out.GetPointer());
     }
 
     FileSystemInterfaceAdapter::FileSystemInterfaceAdapter(std::shared_ptr<fs::fsa::IFileSystem> &&fs, bool open_limited)
-        : base_fs(std::move(fs)), open_count_limited(open_limited), deep_retry_enabled(false)
+        : m_base_fs(std::move(fs)), m_open_count_limited(open_limited), m_deep_retry_enabled(false)
     {
         /* ... */
     }
@@ -124,7 +146,7 @@ namespace ams::fssrv::impl {
     }
 
     bool FileSystemInterfaceAdapter::IsDeepRetryEnabled() const {
-        return this->deep_retry_enabled;
+        return m_deep_retry_enabled;
     }
 
     bool FileSystemInterfaceAdapter::IsAccessFailureDetectionObserved() const {
@@ -132,16 +154,16 @@ namespace ams::fssrv::impl {
         AMS_ABORT_UNLESS(false);
     }
 
-    std::optional<std::shared_lock<os::ReadWriteLock>> FileSystemInterfaceAdapter::AcquireCacheInvalidationReadLock() {
-        std::optional<std::shared_lock<os::ReadWriteLock>> lock;
-        if (this->deep_retry_enabled) {
-            lock.emplace(this->invalidation_lock);
+    util::optional<std::shared_lock<os::ReaderWriterLock>> FileSystemInterfaceAdapter::AcquireCacheInvalidationReadLock() {
+        util::optional<std::shared_lock<os::ReaderWriterLock>> lock;
+        if (m_deep_retry_enabled) {
+            lock.emplace(m_invalidation_lock);
         }
         return lock;
     }
 
-    os::ReadWriteLock &FileSystemInterfaceAdapter::GetReadWriteLockForCacheInvalidation() {
-        return this->invalidation_lock;
+    os::ReaderWriterLock &FileSystemInterfaceAdapter::GetReaderWriterLockForCacheInvalidation() {
+        return m_invalidation_lock;
     }
 
     Result FileSystemInterfaceAdapter::CreateFile(const fssrv::sf::Path &path, s64 size, s32 option) {
@@ -152,7 +174,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->CreateFile(normalizer.GetPath(), size, option);
+        return m_base_fs->CreateFile(normalizer.GetPath(), size, option);
     }
 
     Result FileSystemInterfaceAdapter::DeleteFile(const fssrv::sf::Path &path) {
@@ -161,7 +183,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->DeleteFile(normalizer.GetPath());
+        return m_base_fs->DeleteFile(normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::CreateDirectory(const fssrv::sf::Path &path) {
@@ -172,7 +194,7 @@ namespace ams::fssrv::impl {
 
         R_UNLESS(strncmp(normalizer.GetPath(), "/", 2) != 0, fs::ResultPathAlreadyExists());
 
-        return this->base_fs->CreateDirectory(normalizer.GetPath());
+        return m_base_fs->CreateDirectory(normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::DeleteDirectory(const fssrv::sf::Path &path) {
@@ -183,7 +205,7 @@ namespace ams::fssrv::impl {
 
         R_UNLESS(strncmp(normalizer.GetPath(), "/", 2) != 0, fs::ResultDirectoryNotDeletable());
 
-        return this->base_fs->DeleteDirectory(normalizer.GetPath());
+        return m_base_fs->DeleteDirectory(normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::DeleteDirectoryRecursively(const fssrv::sf::Path &path) {
@@ -194,7 +216,7 @@ namespace ams::fssrv::impl {
 
         R_UNLESS(strncmp(normalizer.GetPath(), "/", 2) != 0, fs::ResultDirectoryNotDeletable());
 
-        return this->base_fs->DeleteDirectoryRecursively(normalizer.GetPath());
+        return m_base_fs->DeleteDirectoryRecursively(normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::RenameFile(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path) {
@@ -205,7 +227,7 @@ namespace ams::fssrv::impl {
         R_UNLESS(old_normalizer.GetPath() != nullptr, old_normalizer.GetResult());
         R_UNLESS(new_normalizer.GetPath() != nullptr, new_normalizer.GetResult());
 
-        return this->base_fs->RenameFile(old_normalizer.GetPath(), new_normalizer.GetPath());
+        return m_base_fs->RenameFile(old_normalizer.GetPath(), new_normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::RenameDirectory(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path) {
@@ -216,10 +238,10 @@ namespace ams::fssrv::impl {
         R_UNLESS(old_normalizer.GetPath() != nullptr, old_normalizer.GetResult());
         R_UNLESS(new_normalizer.GetPath() != nullptr, new_normalizer.GetResult());
 
-        const bool is_subpath = fssystem::PathTool::IsSubPath(old_normalizer.GetPath(), new_normalizer.GetPath());
+        const bool is_subpath = fs::IsSubPath(old_normalizer.GetPath(), new_normalizer.GetPath());
         R_UNLESS(!is_subpath, fs::ResultDirectoryNotRenamable());
 
-        return this->base_fs->RenameFile(old_normalizer.GetPath(), new_normalizer.GetPath());
+        return m_base_fs->RenameFile(old_normalizer.GetPath(), new_normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::GetEntryType(ams::sf::Out<u32> out, const fssrv::sf::Path &path) {
@@ -229,14 +251,14 @@ namespace ams::fssrv::impl {
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
         static_assert(sizeof(*out.GetPointer()) == sizeof(fs::DirectoryEntryType));
-        return this->base_fs->GetEntryType(reinterpret_cast<fs::DirectoryEntryType *>(out.GetPointer()), normalizer.GetPath());
+        return m_base_fs->GetEntryType(reinterpret_cast<fs::DirectoryEntryType *>(out.GetPointer()), normalizer.GetPath());
     }
 
-    Result FileSystemInterfaceAdapter::OpenFile(ams::sf::Out<std::shared_ptr<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode) {
+    Result FileSystemInterfaceAdapter::OpenFile(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode) {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
 
-        std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
-        if (this->open_count_limited) {
+        util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+        if (m_open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
             AMS_ABORT_UNLESS(false);
         }
@@ -244,28 +266,27 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IFile> file;
-        R_TRY(this->base_fs->OpenFile(&file, normalizer.GetPath(), static_cast<fs::OpenMode>(mode)));
+        R_TRY(m_base_fs->OpenFile(std::addressof(file), normalizer.GetPath(), static_cast<fs::OpenMode>(mode)));
 
         /* TODO: This is a hack to get the mitm API to work. Better solution? */
         const auto target_object_id = file->GetDomainObjectId();
 
         /* TODO: N creates an nn::fssystem::AsynchronousAccessFile here. */
 
-        std::shared_ptr<FileSystemInterfaceAdapter> shared_this = this->shared_from_this();
-        auto file_intf = ams::sf::MakeShared<fssrv::sf::IFile, FileInterfaceAdapter>(std::move(file), std::move(shared_this), std::move(open_count_semaphore));
+        ams::sf::SharedPointer<fssrv::sf::IFile> file_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IFile, FileInterfaceAdapter>(std::move(file), this, std::move(open_count_semaphore));
         R_UNLESS(file_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
 
         out.SetValue(std::move(file_intf), target_object_id);
         return ResultSuccess();
     }
 
-    Result FileSystemInterfaceAdapter::OpenDirectory(ams::sf::Out<std::shared_ptr<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode) {
+    Result FileSystemInterfaceAdapter::OpenDirectory(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode) {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
 
-        std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
-        if (this->open_count_limited) {
+        util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+        if (m_open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
             AMS_ABORT_UNLESS(false);
         }
@@ -273,15 +294,14 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        /* TODO: N retries on ResultDataCorrupted, we may want to eventually. */
+        /* TODO: N retries on fs::ResultDataCorrupted, we may want to eventually. */
         std::unique_ptr<fs::fsa::IDirectory> dir;
-        R_TRY(this->base_fs->OpenDirectory(&dir, normalizer.GetPath(), static_cast<fs::OpenDirectoryMode>(mode)));
+        R_TRY(m_base_fs->OpenDirectory(std::addressof(dir), normalizer.GetPath(), static_cast<fs::OpenDirectoryMode>(mode)));
 
         /* TODO: This is a hack to get the mitm API to work. Better solution? */
         const auto target_object_id = dir->GetDomainObjectId();
 
-        std::shared_ptr<FileSystemInterfaceAdapter> shared_this = this->shared_from_this();
-        auto dir_intf = ams::sf::MakeShared<fssrv::sf::IDirectory, DirectoryInterfaceAdapter>(std::move(dir), std::move(shared_this), std::move(open_count_semaphore));
+        ams::sf::SharedPointer<fssrv::sf::IDirectory> dir_intf = FileSystemObjectFactory::CreateSharedEmplaced<fssrv::sf::IDirectory, DirectoryInterfaceAdapter>(std::move(dir), this, std::move(open_count_semaphore));
         R_UNLESS(dir_intf != nullptr, fs::ResultAllocationFailureInFileSystemInterfaceAdapter());
 
         out.SetValue(std::move(dir_intf), target_object_id);
@@ -291,7 +311,7 @@ namespace ams::fssrv::impl {
     Result FileSystemInterfaceAdapter::Commit() {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
 
-        return this->base_fs->Commit();
+        return m_base_fs->Commit();
     }
 
     Result FileSystemInterfaceAdapter::GetFreeSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path) {
@@ -300,7 +320,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->GetFreeSpaceSize(out.GetPointer(), normalizer.GetPath());
+        return m_base_fs->GetFreeSpaceSize(out.GetPointer(), normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::GetTotalSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path) {
@@ -309,7 +329,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->GetTotalSpaceSize(out.GetPointer(), normalizer.GetPath());
+        return m_base_fs->GetTotalSpaceSize(out.GetPointer(), normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::CleanDirectoryRecursively(const fssrv::sf::Path &path) {
@@ -318,7 +338,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->CleanDirectoryRecursively(normalizer.GetPath());
+        return m_base_fs->CleanDirectoryRecursively(normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::GetFileTimeStampRaw(ams::sf::Out<fs::FileTimeStampRaw> out, const fssrv::sf::Path &path) {
@@ -327,7 +347,7 @@ namespace ams::fssrv::impl {
         PathNormalizer normalizer(path.str);
         R_UNLESS(normalizer.GetPath() != nullptr, normalizer.GetResult());
 
-        return this->base_fs->GetFileTimeStampRaw(out.GetPointer(), normalizer.GetPath());
+        return m_base_fs->GetFileTimeStampRaw(out.GetPointer(), normalizer.GetPath());
     }
 
     Result FileSystemInterfaceAdapter::QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path) {
@@ -337,7 +357,7 @@ namespace ams::fssrv::impl {
 
         char *dst       = reinterpret_cast<      char *>(out_buf.GetPointer());
         const char *src = reinterpret_cast<const char *>(in_buf.GetPointer());
-        return this->base_fs->QueryEntry(dst, out_buf.GetSize(), src, in_buf.GetSize(), static_cast<fs::fsa::QueryId>(query_id), path.str);
+        return m_base_fs->QueryEntry(dst, out_buf.GetSize(), src, in_buf.GetSize(), static_cast<fs::fsa::QueryId>(query_id), path.str);
     }
 
 }

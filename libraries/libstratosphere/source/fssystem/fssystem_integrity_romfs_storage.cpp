@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,29 +17,29 @@
 
 namespace ams::fssystem {
 
-    Result IntegrityRomFsStorage::Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm) {
+    Result IntegrityRomFsStorage::Initialize(save::HierarchicalIntegrityVerificationInformation level_hash_info, Hash master_hash, save::HierarchicalIntegrityVerificationStorage::HierarchicalStorageInformation storage_info, IBufferManager *bm, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(bm != nullptr);
 
         /* Set master hash. */
-        this->master_hash = master_hash;
-        this->master_hash_storage = std::make_unique<fs::MemoryStorage>(std::addressof(this->master_hash), sizeof(Hash));
-        R_UNLESS(this->master_hash_storage != nullptr, fs::ResultAllocationFailureInIntegrityRomFsStorageA());
+        m_master_hash = master_hash;
+        m_master_hash_storage = std::make_unique<fs::MemoryStorage>(std::addressof(m_master_hash), sizeof(Hash));
+        R_UNLESS(m_master_hash_storage != nullptr, fs::ResultAllocationFailureInIntegrityRomFsStorageA());
 
         /* Set the master hash storage. */
-        storage_info[0] = fs::SubStorage(this->master_hash_storage.get(), 0, sizeof(Hash));
+        storage_info[0] = fs::SubStorage(m_master_hash_storage.get(), 0, sizeof(Hash));
 
         /* Set buffers. */
-        for (size_t i = 0; i < util::size(this->buffers.buffers); ++i) {
-            this->buffers.buffers[i] = bm;
+        for (size_t i = 0; i < util::size(m_buffers.buffers); ++i) {
+            m_buffers.buffers[i] = bm;
         }
 
         /* Initialize our integrity storage. */
-        return this->integrity_storage.Initialize(level_hash_info, storage_info, std::addressof(this->buffers), std::addressof(this->mutex), fs::StorageType_RomFs);
+        return m_integrity_storage.Initialize(level_hash_info, storage_info, std::addressof(m_buffers), hgf, std::addressof(m_mutex), fs::StorageType_RomFs);
     }
 
     void IntegrityRomFsStorage::Finalize() {
-        this->integrity_storage.Finalize();
+        m_integrity_storage.Finalize();
     }
 
 }

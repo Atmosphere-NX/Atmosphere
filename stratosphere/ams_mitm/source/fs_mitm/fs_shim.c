@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -48,6 +48,20 @@ Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, Ncm
     return serviceDispatchIn(s, 202, in,
         .out_num_objects = 1,
         .out_objects = &out->s,
+    );
+}
+
+Result fsOpenDataStorageWithProgramIndexFwd(Service* s, FsStorage* out, u8 program_index) {
+    return serviceDispatchIn(s, 205, program_index,
+        .out_num_objects = 1,
+        .out_objects = &out->s,
+    );
+}
+
+Result fsRegisterProgramIndexMapInfoFwd(Service* s, const void *buf, size_t buf_size, s32 count) {
+    return serviceDispatchIn(s, 810, count,
+        .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_In },
+        .buffers = { { buf, buf_size } },
     );
 }
 

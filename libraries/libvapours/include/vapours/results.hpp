@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,13 +26,21 @@
 #include <vapours/results/cal_results.hpp>
 #include <vapours/results/capsrv_results.hpp>
 #include <vapours/results/creport_results.hpp>
+#include <vapours/results/cs_results.hpp>
+#include <vapours/results/dd_results.hpp>
+#include <vapours/results/ddsf_results.hpp>
 #include <vapours/results/debug_results.hpp>
 #include <vapours/results/dmnt_results.hpp>
 #include <vapours/results/erpt_results.hpp>
 #include <vapours/results/err_results.hpp>
 #include <vapours/results/fatal_results.hpp>
 #include <vapours/results/fs_results.hpp>
+#include <vapours/results/gpio_results.hpp>
 #include <vapours/results/hipc_results.hpp>
+#include <vapours/results/htc_results.hpp>
+#include <vapours/results/htcfs_results.hpp>
+#include <vapours/results/htclow_results.hpp>
+#include <vapours/results/htcs_results.hpp>
 #include <vapours/results/i2c_results.hpp>
 #include <vapours/results/kvdb_results.hpp>
 #include <vapours/results/loader_results.hpp>
@@ -41,17 +49,28 @@
 #include <vapours/results/nim_results.hpp>
 #include <vapours/results/ns_results.hpp>
 #include <vapours/results/os_results.hpp>
+#include <vapours/results/osdbg_results.hpp>
+#include <vapours/results/pcv_results.hpp>
 #include <vapours/results/pgl_results.hpp>
 #include <vapours/results/pm_results.hpp>
+#include <vapours/results/powctl_results.hpp>
 #include <vapours/results/psc_results.hpp>
+#include <vapours/results/pwm_results.hpp>
 #include <vapours/results/ro_results.hpp>
+#include <vapours/results/scs_results.hpp>
+#include <vapours/results/sdmmc_results.hpp>
 #include <vapours/results/settings_results.hpp>
 #include <vapours/results/sf_results.hpp>
 #include <vapours/results/sm_results.hpp>
+#include <vapours/results/socket_results.hpp>
 #include <vapours/results/spl_results.hpp>
+#include <vapours/results/sprofile_results.hpp>
 #include <vapours/results/svc_results.hpp>
 #include <vapours/results/time_results.hpp>
+#include <vapours/results/tipc_results.hpp>
+#include <vapours/results/tma_results.hpp>
 #include <vapours/results/updater_results.hpp>
+#include <vapours/results/usb_results.hpp>
 #include <vapours/results/vi_results.hpp>
 
 /* Unofficial. */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,9 +15,10 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "sf_cmif_domain_api.hpp"
-#include "sf_cmif_domain_service_object.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_api.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_service_object.hpp>
+#include <stratosphere/sf/impl/sf_service_object_impl.hpp>
 
 namespace ams::sf::cmif {
 
@@ -39,19 +40,29 @@ namespace ams::sf::cmif {
                 explicit Entry() : owner(nullptr) { /* ... */ }
             };
 
-            class Domain final : public DomainServiceObject {
+            class Domain final : public DomainServiceObject, private sf::impl::ServiceObjectImplBase2 {
                 NON_COPYABLE(Domain);
                 NON_MOVEABLE(Domain);
                 private:
                     using EntryList = typename util::IntrusiveListMemberTraits<&Entry::domain_list_node>::ListType;
                 private:
-                    ServerDomainManager *manager;
-                    EntryList entries;
+                    ServerDomainManager *m_manager;
+                    EntryList m_entries;
                 public:
-                    explicit Domain(ServerDomainManager *m) : manager(m) { /* ... */ }
+                    explicit Domain(ServerDomainManager *m) : m_manager(m) { /* ... */ }
                     ~Domain();
 
-                    void DestroySelf();
+                    void DisposeImpl();
+
+                    virtual void AddReference() override {
+                        ServiceObjectImplBase2::AddReferenceImpl();
+                    }
+
+                    virtual void Release() override {
+                        if (ServiceObjectImplBase2::ReleaseImpl()) {
+                            this->DisposeImpl();
+                        }
+                    }
 
                     virtual ServerDomainBase *GetServerDomain() override final {
                         return static_cast<ServerDomainBase *>(this);
@@ -66,17 +77,17 @@ namespace ams::sf::cmif {
                     virtual ServiceObjectHolder GetObject(DomainObjectId id) override final;
             };
         public:
-            using DomainEntryStorage  = TYPED_STORAGE(Entry);
-            using DomainStorage = TYPED_STORAGE(Domain);
+            using DomainEntryStorage  = util::TypedStorage<Entry>;
+            using DomainStorage       = util::TypedStorage<Domain>;
         private:
             class EntryManager {
                 private:
                     using EntryList = typename util::IntrusiveListMemberTraits<&Entry::free_list_node>::ListType;
                 private:
-                    os::Mutex lock;
-                    EntryList free_list;
-                    Entry *entries;
-                    size_t num_entries;
+                    os::SdkMutex m_lock;
+                    EntryList m_free_list;
+                    Entry *m_entries;
+                    size_t m_num_entries;
                 public:
                     EntryManager(DomainEntryStorage *entry_storage, size_t entry_count);
                     ~EntryManager();
@@ -86,8 +97,8 @@ namespace ams::sf::cmif {
                     void AllocateSpecificEntries(const DomainObjectId *ids, size_t count);
 
                     inline DomainObjectId GetId(Entry *e) {
-                        const size_t index = e - this->entries;
-                        AMS_ABORT_UNLESS(index < this->num_entries);
+                        const size_t index = e - m_entries;
+                        AMS_ABORT_UNLESS(index < m_num_entries);
                         return DomainObjectId{ u32(index + 1) };
                     }
 
@@ -96,31 +107,32 @@ namespace ams::sf::cmif {
                             return nullptr;
                         }
                         const size_t index = id.value - 1;
-                        if (!(index < this->num_entries)) {
+                        if (!(index < m_num_entries)) {
                             return nullptr;
                         }
-                        return this->entries + index;
+                        return m_entries + index;
                     }
             };
         private:
-            os::Mutex entry_owner_lock;
-            EntryManager entry_manager;
+            os::SdkMutex m_entry_owner_lock;
+            EntryManager m_entry_manager;
         private:
             virtual void *AllocateDomain()   = 0;
             virtual void  FreeDomain(void *) = 0;
         protected:
-            ServerDomainManager(DomainEntryStorage *entry_storage, size_t entry_count) : entry_owner_lock(false), entry_manager(entry_storage, entry_count) { /* ... */ }
+            ServerDomainManager(DomainEntryStorage *entry_storage, size_t entry_count) : m_entry_owner_lock(), m_entry_manager(entry_storage, entry_count) { /* ... */ }
 
             inline DomainServiceObject *AllocateDomainServiceObject() {
                 void *storage = this->AllocateDomain();
                 if (storage == nullptr) {
                     return nullptr;
                 }
-                return new (storage) Domain(this);
+
+                return std::construct_at(static_cast<Domain *>(storage), this);
             }
         public:
             static void DestroyDomainServiceObject(DomainServiceObject *obj) {
-                static_cast<Domain *>(obj)->DestroySelf();
+                static_cast<Domain *>(obj)->DisposeImpl();
             }
     };
 

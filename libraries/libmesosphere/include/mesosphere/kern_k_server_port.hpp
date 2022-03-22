@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,12 +30,12 @@ namespace ams::kern {
             using SessionList      = util::IntrusiveListBaseTraits<KServerSession>::ListType;
             using LightSessionList = util::IntrusiveListBaseTraits<KLightServerSession>::ListType;
         private:
-            SessionList session_list;
-            LightSessionList light_session_list;
-            KPort *parent;
+            SessionList m_session_list;
+            LightSessionList m_light_session_list;
+            KPort *m_parent;
         public:
-            constexpr KServerPort() : session_list(), light_session_list(), parent() { /* ... */ }
-            virtual ~KServerPort() { /* ... */ }
+            constexpr explicit KServerPort(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_session_list(), m_light_session_list(), m_parent() { /* ... */ }
+            explicit KServerPort() { /* ... */ }
 
             void Initialize(KPort *parent);
             void EnqueueSession(KServerSession *session);
@@ -44,7 +44,7 @@ namespace ams::kern {
             KServerSession *AcceptSession();
             KLightServerSession *AcceptLightSession();
 
-            constexpr const KPort *GetParent() const { return this->parent; }
+            constexpr const KPort *GetParent() const { return m_parent; }
 
             bool IsLight() const;
 

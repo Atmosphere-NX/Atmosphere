@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -39,20 +39,20 @@ namespace ams::kern {
         NON_COPYABLE(KScopedInterruptDisable);
         NON_MOVEABLE(KScopedInterruptDisable);
         private:
-            u32 prev_intr_state;
+            u32 m_prev_intr_state;
         public:
-            ALWAYS_INLINE KScopedInterruptDisable() : prev_intr_state(KInterruptManager::DisableInterrupts()) { /* ... */ }
-            ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE KScopedInterruptDisable() : m_prev_intr_state(KInterruptManager::GetInterruptsEnabledStateAndDisableInterrupts()) { /* ... */ }
+            ALWAYS_INLINE ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(m_prev_intr_state); }
     };
 
     class KScopedInterruptEnable {
         NON_COPYABLE(KScopedInterruptEnable);
         NON_MOVEABLE(KScopedInterruptEnable);
         private:
-            u32 prev_intr_state;
+            u32 m_prev_intr_state;
         public:
-            ALWAYS_INLINE KScopedInterruptEnable() : prev_intr_state(KInterruptManager::EnableInterrupts()) { /* ... */ }
-            ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE KScopedInterruptEnable() : m_prev_intr_state(KInterruptManager::GetInterruptsEnabledStateAndEnableInterrupts()) { /* ... */ }
+            ALWAYS_INLINE ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(m_prev_intr_state); }
     };
 
 }

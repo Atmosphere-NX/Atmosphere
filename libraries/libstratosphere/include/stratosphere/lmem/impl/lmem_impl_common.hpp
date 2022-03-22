@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../../os.hpp"
+#include <stratosphere/os.hpp>
 
 namespace ams::lmem::impl {
 
@@ -79,17 +79,16 @@ namespace ams::lmem::impl {
         u32 magic;
         util::IntrusiveListNode list_node;
 
-        using ChildListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&HeapHead::list_node>;
+        using ChildListTraits = util::IntrusiveListMemberTraits<&HeapHead::list_node>;
         using ChildList       = ChildListTraits::ListType;
         ChildList child_list;
 
         void *heap_start;
         void *heap_end;
-        os::MutexType mutex;
+        os::SdkMutexType mutex;
         u8 option;
         ImplementationHeapHead impl_head;
     };
     static_assert(std::is_trivially_destructible<HeapHead>::value);
-    static_assert(HeapHead::ChildListTraits::IsValid());
 
 }

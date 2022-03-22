@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -51,9 +51,9 @@ namespace ams::updater {
 
         /* Implementations. */
         Result ValidateWorkBuffer(const void *work_buffer, size_t work_buffer_size) {
-            R_UNLESS(work_buffer_size >= BctSize + EksSize,            ResultTooSmallWorkBuffer());
-            R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), ResultNotAlignedWorkBuffer());
-            R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         ResultNotAlignedWorkBuffer());
+            R_UNLESS(work_buffer_size >= BctSize + EksSize,            updater::ResultTooSmallWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), updater::ResultNotAlignedWorkBuffer());
+            R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         updater::ResultNotAlignedWorkBuffer());
             return ResultSuccess();
         }
 
@@ -112,7 +112,7 @@ namespace ams::updater {
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Get system data id for boot images (819/81A/81B/81C). */
             ncm::SystemDataId bip_data_id = {};
-            R_TRY(GetBootImagePackageId(&bip_data_id, mode, work_buffer, work_buffer_size));
+            R_TRY(GetBootImagePackageId(std::addressof(bip_data_id), mode, work_buffer, work_buffer_size));
 
             /* Verify the boot images in NAND. */
             R_TRY_CATCH(VerifyBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type)) {
@@ -144,7 +144,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -158,16 +158,23 @@ namespace ams::updater {
                 R_TRY(boot0_accessor.Initialize());
                 ON_SCOPE_EXIT { boot0_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to validate BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
+
                 /* Compare BCT hashes. */
-                R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalMain));
-                R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                if (!custom_public_key) {
+                    R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalMain));
+                    R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                }
 
                 /* Compare BCT Sub hashes. */
                 R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalSub));
                 R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalSub, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
 
                 /* Compare Package1 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -176,7 +183,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -195,7 +202,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -213,17 +220,23 @@ namespace ams::updater {
                 R_TRY(boot1_accessor.Initialize());
                 ON_SCOPE_EXIT { boot1_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to validate BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
 
                 /* Compare BCT hashes. */
-                R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeMain));
-                R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                if (!custom_public_key) {
+                    R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeMain));
+                    R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                }
 
                 /* Compare BCT Sub hashes. */
                 R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeSub));
                 R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeSub, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
 
                 /* Compare Package1 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -232,7 +245,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
-                R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+                R_TRY(GetFileHash(std::addressof(size), file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
 
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeMain));
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
@@ -251,7 +264,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -259,6 +272,11 @@ namespace ams::updater {
                 Boot0Accessor boot0_accessor;
                 R_TRY(boot0_accessor.Initialize());
                 ON_SCOPE_EXIT { boot0_accessor.Finalize(); };
+
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to update BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
 
                 /* Write Package1 sub. */
                 R_TRY(boot0_accessor.Clear(work_buffer, work_buffer_size, Boot0Partition::Package1NormalSub));
@@ -273,7 +291,7 @@ namespace ams::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -282,11 +300,15 @@ namespace ams::updater {
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
-                        R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        }
                     } else {
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        }
                     }
                 }
 
@@ -308,7 +330,7 @@ namespace ams::updater {
             /* Mount the boot image package. */
             const char *mount_name = GetMountName();
             R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
-                R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
+                R_CONVERT(fs::ResultTargetNotFound, updater::ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
             ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
@@ -321,6 +343,10 @@ namespace ams::updater {
                 R_TRY(boot1_accessor.Initialize());
                 ON_SCOPE_EXIT { boot1_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to update BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
 
                 /* Write Package1 sub. */
                 R_TRY(boot1_accessor.Clear(work_buffer, work_buffer_size, Boot1Partition::Package1SafeSub));
@@ -335,7 +361,7 @@ namespace ams::updater {
                     void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
                     size_t size;
-                    R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+                    R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
                     if (HasEks(boot_image_update_type)) {
                         R_TRY(boot0_accessor.UpdateEks(bct, work));
                     }
@@ -343,11 +369,15 @@ namespace ams::updater {
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
-                        R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        }
                     } else {
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        }
                     }
                 }
 
@@ -389,7 +419,7 @@ namespace ams::updater {
             void *work = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(work_buffer) + BctSize);
 
             size_t size;
-            R_TRY(ReadFile(&size, bct, BctSize, GetBctPath(boot_image_update_type)));
+            R_TRY(ReadFile(std::addressof(size), bct, BctSize, GetBctPath(boot_image_update_type)));
             if (HasEks(boot_image_update_type)) {
                 R_TRY(accessor.UpdateEks(bct, work));
             }
@@ -420,7 +450,7 @@ namespace ams::updater {
         }
 
         Result CompareHash(const void *lhs, const void *rhs, size_t size) {
-            R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), ResultNeedsRepairBootImages());
+            R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), updater::ResultNeedsRepairBootImages());
             return ResultSuccess();
         }
 
@@ -433,6 +463,8 @@ namespace ams::updater {
                 return BootImageUpdateType::Erista;
             case spl::HardwareType::Hoag:
             case spl::HardwareType::Iowa:
+            case spl::HardwareType::Calcio:
+            case spl::HardwareType::Aula:
                 return BootImageUpdateType::Mariko;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
@@ -461,7 +493,7 @@ namespace ams::updater {
         const auto content_meta_type = GetContentMetaType(mode);
 
         auto count = db.ListContentMeta(keys, MaxContentMetas, content_meta_type);
-        R_UNLESS(count.total > 0, ResultBootImagePackageNotFound());
+        R_UNLESS(count.total > 0, updater::ResultBootImagePackageNotFound());
 
         /* Output is sorted, return the lowest valid exfat entry. */
         if (count.total > 1) {
@@ -509,7 +541,7 @@ namespace ams::updater {
 
         /* Get verification state from NAND. */
         VerificationState verification_state;
-        R_TRY(GetVerificationState(&verification_state, work_buffer, work_buffer_size));
+        R_TRY(GetVerificationState(std::addressof(verification_state), work_buffer, work_buffer_size));
 
         /* If we don't need to verify anything, we're done. */
         if (!verification_state.needs_verify_normal && !verification_state.needs_verify_safe) {
@@ -517,8 +549,8 @@ namespace ams::updater {
         }
 
         /* Get a session to ncm. */
-        sm::ScopedServiceHolder<ncm::Initialize, ncm::Finalize> ncm_holder;
-        R_ABORT_UNLESS(ncm_holder.GetResult());
+        ncm::Initialize();
+        ON_SCOPE_EXIT { ncm::Finalize(); };
 
         /* Verify normal, verify safe as needed. */
         if (verification_state.needs_verify_normal) {

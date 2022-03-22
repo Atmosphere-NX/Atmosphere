@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,9 +23,9 @@ namespace ams::fssrv::fscreator {
         NON_COPYABLE(RomFileSystemCreator);
         NON_MOVEABLE(RomFileSystemCreator);
         private:
-            MemoryResource *allocator;
+            MemoryResource *m_allocator;
         public:
-            explicit RomFileSystemCreator(MemoryResource *mr) : allocator(mr) { /* ... */ }
+            explicit RomFileSystemCreator(MemoryResource *mr) : m_allocator(mr) { /* ... */ }
 
             virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) override;
     };

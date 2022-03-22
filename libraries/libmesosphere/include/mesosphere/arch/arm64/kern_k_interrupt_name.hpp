@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -32,10 +32,14 @@ namespace ams::kern::arch::arm64 {
             KInterruptName_VirtualMaintenance     = 25,
             KInterruptName_HypervisorTimer        = 26,
             KInterruptName_VirtualTimer           = 27,
-            KInterruptName_LegacyNFiq             = 38,
+            KInterruptName_LegacyNFiq             = 28,
             KInterruptName_SecurePhysicalTimer    = 29,
             KInterruptName_NonSecurePhysicalTimer = 30,
             KInterruptName_LegacyNIrq             = 31,
+    #elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+            KInterruptName_VirtualTimer           = 27,
+            KInterruptName_SecurePhysicalTimer    = 29,
+            KInterruptName_NonSecurePhysicalTimer = 30,
     #endif
 
     #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)

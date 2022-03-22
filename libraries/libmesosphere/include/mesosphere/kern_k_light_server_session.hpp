@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,27 +23,25 @@ namespace ams::kern {
 
     class KLightSession;
 
-    class KLightServerSession final : public KAutoObjectWithSlabHeapAndContainer<KLightServerSession, KAutoObjectWithList>, public util::IntrusiveListBaseNode<KLightServerSession> {
+    class KLightServerSession final : public KAutoObject, public util::IntrusiveListBaseNode<KLightServerSession> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KLightServerSession, KAutoObject);
         private:
-            KLightSession *parent;
-            KThreadQueue request_queue;
-            KThreadQueue server_queue;
-            KThread *current_request;
-            KThread *server_thread;
+            KLightSession *m_parent;
+            KThread::WaiterList m_request_list;
+            KThread *m_current_request;
+            u64 m_server_thread_id;
+            KThread *m_server_thread;
         public:
-            constexpr KLightServerSession() : parent(), request_queue(), server_queue(), current_request(), server_thread() { /* ... */ }
-            virtual ~KLightServerSession() { /* ... */ }
+            explicit KLightServerSession() : m_current_request(nullptr), m_server_thread_id(std::numeric_limits<u64>::max()), m_server_thread() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */
-                this->parent = parent;
+                m_parent = parent;
             }
 
             virtual void Destroy() override;
-            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr const KLightSession *GetParent() const { return this->parent; }
+            constexpr const KLightSession *GetParent() const { return m_parent; }
 
             Result OnRequest(KThread *request_thread);
             Result ReplyAndReceive(u32 *data);

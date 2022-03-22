@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,15 +23,19 @@ namespace ams::mitm::settings {
 
     namespace {
 
-        os::Mutex g_firmware_version_lock(false);
-        bool g_cached_firmware_version;
-        settings::FirmwareVersion g_firmware_version;
-        settings::FirmwareVersion g_ams_firmware_version;
+        constinit os::SdkMutex g_firmware_version_lock;
+        constinit bool g_cached_firmware_version;
+        constinit settings::FirmwareVersion g_firmware_version;
+        constinit settings::FirmwareVersion g_ams_firmware_version;
 
         void CacheFirmwareVersion() {
+            if (AMS_LIKELY(g_cached_firmware_version)) {
+                return;
+            }
+
             std::scoped_lock lk(g_firmware_version_lock);
 
-            if (AMS_LIKELY(g_cached_firmware_version)) {
+            if (AMS_UNLIKELY(g_cached_firmware_version)) {
                 return;
             }
 
@@ -59,7 +63,9 @@ namespace ams::mitm::settings {
                 /* NOTE: We have carefully accounted for the size of the string we print. */
                 /* No truncation occurs assuming two-digits for all version number components. */
                 char display_version[sizeof(g_ams_firmware_version.display_version)];
-                std::snprintf(display_version, sizeof(display_version), "%s|AMS %u.%u.%u|%c", g_ams_firmware_version.display_version, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+
+                util::SNPrintf(display_version, sizeof(display_version), "%s|AMS %u.%u.%u|%c", g_ams_firmware_version.display_version, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+
                 std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
             }
 
@@ -84,7 +90,7 @@ namespace ams::mitm::settings {
     }
 
     Result SetSysMitmService::GetFirmwareVersion(sf::Out<settings::FirmwareVersion> out) {
-        R_TRY(GetFirmwareVersionImpl(out.GetPointer(), this->client_info));
+        R_TRY(GetFirmwareVersionImpl(out.GetPointer(), m_client_info));
 
         /* GetFirmwareVersion sanitizes the revision fields. */
         out.GetPointer()->revision_major = 0;
@@ -93,10 +99,10 @@ namespace ams::mitm::settings {
     }
 
     Result SetSysMitmService::GetFirmwareVersion2(sf::Out<settings::FirmwareVersion> out) {
-        return GetFirmwareVersionImpl(out.GetPointer(), this->client_info);
+        return GetFirmwareVersionImpl(out.GetPointer(), m_client_info);
     }
 
-    Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::fwdbg::SettingsName &name, const settings::fwdbg::SettingsItemKey &key) {
+    Result SetSysMitmService::GetSettingsItemValueSize(sf::Out<u64> out_size, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
         R_TRY_CATCH(settings::fwdbg::GetSdCardKeyValueStoreSettingsItemValueSize(out_size.GetPointer(), name.value, key.value)) {
             R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CONVERT_ALL(sm::mitm::ResultShouldForwardToSession());
@@ -105,12 +111,24 @@ namespace ams::mitm::settings {
         return ResultSuccess();
     }
 
-    Result SetSysMitmService::GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const settings::fwdbg::SettingsName &name, const settings::fwdbg::SettingsItemKey &key) {
+    Result SetSysMitmService::GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const settings::SettingsName &name, const settings::SettingsItemKey &key) {
         R_TRY_CATCH(settings::fwdbg::GetSdCardKeyValueStoreSettingsItemValue(out_size.GetPointer(), out.GetPointer(), out.GetSize(), name.value, key.value)) {
             R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
             R_CONVERT_ALL(sm::mitm::ResultShouldForwardToSession());
         } R_END_TRY_CATCH;
 
+        return ResultSuccess();
+    }
+
+    Result SetSysMitmService::GetDebugModeFlag(sf::Out<bool> out) {
+        /* If we're not processing for am, just return the real flag value. */
+        R_UNLESS(m_client_info.program_id == ncm::SystemProgramId::Am, sm::mitm::ResultShouldForwardToSession());
+
+        /* Retrieve the user configuration. */
+        u8 en = 0;
+        settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "enable_am_debug_mode");
+
+        out.SetValue(en != 0);
         return ResultSuccess();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -57,7 +57,7 @@ namespace ams::svc {
 
     /* This is the highest SVC version supported by Atmosphere, to be updated on new kernel releases. */
     /* NOTE: Official kernel versions have SVC major = SDK major + 4, SVC minor = SDK minor. */
-    constexpr inline u32 SupportedKernelMajorVersion = ConvertToSvcMajorVersion(10);
+    constexpr inline u32 SupportedKernelMajorVersion = ConvertToSvcMajorVersion(13);
     constexpr inline u32 SupportedKernelMinorVersion = ConvertToSvcMinorVersion( 4);
 
     constexpr inline u32 SupportedKernelVersion = EncodeKernelVersion(SupportedKernelMajorVersion, SupportedKernelMinorVersion);

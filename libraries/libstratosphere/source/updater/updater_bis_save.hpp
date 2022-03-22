@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,10 +23,10 @@ namespace ams::updater {
         public:
             static constexpr size_t SaveSize = BctSize;
         private:
-            Boot0Accessor accessor;
-            void *save_buffer;
+            Boot0Accessor m_accessor;
+            void *m_save_buffer;
         public:
-            BisSave() : save_buffer(nullptr) { }
+            BisSave() : m_accessor(), m_save_buffer(nullptr) { }
         private:
             static size_t GetVerificationFlagOffset(BootModeType mode);
         public:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -74,6 +74,7 @@ namespace ams::kern::arch::arm64::cpu {
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntkCtlEl1,  cntkctl_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCtlEl0,  cntp_ctl_el0)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCvalEl0, cntp_cval_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntvCvalEl0, cntv_cval_el0)
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Daif, daif)
 
@@ -135,36 +136,36 @@ namespace ams::kern::arch::arm64::cpu {
         NON_COPYABLE(GenericRegisterAccessorBase);
         NON_MOVEABLE(GenericRegisterAccessorBase);
         private:
-            u64 value;
+            u64 m_value;
         public:
-            constexpr ALWAYS_INLINE GenericRegisterAccessorBase(u64 v) : value(v) { /* ... */ }
+            constexpr ALWAYS_INLINE GenericRegisterAccessorBase(u64 v) : m_value(v) { /* ... */ }
         protected:
             constexpr ALWAYS_INLINE u64 GetValue() const {
-                return this->value;
+                return m_value;
             }
 
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->value >> offset) & ((1ul << count) - 1);
+                return (m_value >> offset) & ((1ul << count) - 1);
             }
 
             constexpr ALWAYS_INLINE void SetBits(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->value &= ~mask;
-                this->value |= (value & (mask >> offset)) << offset;
+                m_value &= ~mask;
+                m_value |= (value & (mask >> offset)) << offset;
             }
 
             constexpr ALWAYS_INLINE void SetBitsDirect(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->value &= ~mask;
-                this->value |= (value & mask);
+                m_value &= ~mask;
+                m_value |= (value & mask);
             }
 
             constexpr ALWAYS_INLINE void SetBit(size_t offset, bool enabled) {
                 const u64 mask = 1ul << offset;
                 if (enabled) {
-                    this->value |= mask;
+                    m_value |= mask;
                 } else {
-                    this->value &= ~mask;
+                    m_value &= ~mask;
                 }
             }
     };
@@ -196,6 +197,11 @@ namespace ams::kern::arch::arm64::cpu {
     MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(TranslationControl) {
         public:
             MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(TranslationControl, tcr_el1)
+
+            constexpr ALWAYS_INLINE size_t GetT0Size() const {
+                const size_t shift_value = this->GetBits(0, 6);
+                return size_t(1) << (size_t(64) - shift_value);
+            }
 
             constexpr ALWAYS_INLINE size_t GetT1Size() const {
                 const size_t shift_value = this->GetBits(16, 6);
@@ -259,6 +265,10 @@ namespace ams::kern::arch::arm64::cpu {
                 return this->GetBits(12, 1) != 0;
             }
 
+            constexpr ALWAYS_INLINE bool GetSoftwareStep() const {
+                return this->GetBits(0, 1) != 0;
+            }
+
             constexpr ALWAYS_INLINE decltype(auto) SetMde(bool set) {
                 this->SetBit(15, set);
                 return *this;
@@ -266,6 +276,11 @@ namespace ams::kern::arch::arm64::cpu {
 
             constexpr ALWAYS_INLINE decltype(auto) SetTdcc(bool set) {
                 this->SetBit(12, set);
+                return *this;
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetSoftwareStep(bool set) {
+                this->SetBit(0, set);
                 return *this;
             }
     };

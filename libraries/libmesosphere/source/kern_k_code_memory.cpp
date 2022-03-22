@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,108 +21,105 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set members. */
-        this->owner = GetCurrentProcessPointer();
+        m_owner = GetCurrentProcessPointer();
 
-        /* Initialize the page group. */
-        auto &page_table = this->owner->GetPageTable();
-        new (GetPointer(this->page_group)) KPageGroup(page_table.GetBlockInfoManager());
+        /* Get the owner page table. */
+        auto &page_table = m_owner->GetPageTable();
 
-        /* Ensure that our page group's state is valid on exit. */
-        auto pg_guard = SCOPE_GUARD { GetReference(this->page_group).~KPageGroup(); };
+        /* Construct the page group, guarding to make sure our state is valid on exit. */
+        auto pg_guard = util::ConstructAtGuarded(m_page_group, page_table.GetBlockInfoManager());
 
         /* Lock the memory. */
-        R_TRY(page_table.LockForCodeMemory(GetPointer(this->page_group), addr, size));
+        R_TRY(page_table.LockForCodeMemory(GetPointer(m_page_group), addr, size));
 
         /* Clear the memory. */
-        for (const auto &block : GetReference(this->page_group)) {
+        for (const auto &block : GetReference(m_page_group)) {
             /* Clear and store cache. */
-            std::memset(GetVoidPointer(block.GetAddress()), 0xFF, block.GetSize());
-            cpu::StoreDataCache(GetVoidPointer(block.GetAddress()), block.GetSize());
+            void * const block_address = GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(block.GetAddress()));
+            std::memset(block_address, 0xFF, block.GetSize());
+            cpu::StoreDataCache(block_address, block.GetSize());
         }
 
         /* Set remaining tracking members. */
-        this->owner->Open();
-        this->address         = addr;
-        this->is_initialized  = true;
-        this->is_owner_mapped = false;
-        this->is_mapped       = false;
+        m_owner->Open();
+        m_address         = addr;
+        m_is_initialized  = true;
+        m_is_owner_mapped = false;
+        m_is_mapped       = false;
 
         /* We succeeded. */
         pg_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void KCodeMemory::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
         /* Unlock. */
-        if (!this->is_mapped && !this->is_owner_mapped) {
-            const size_t size = GetReference(this->page_group).GetNumPages() * PageSize;
-            MESOSPHERE_R_ABORT_UNLESS(this->owner->GetPageTable().UnlockForCodeMemory(this->address, size, GetReference(this->page_group)));
+        if (!m_is_mapped && !m_is_owner_mapped) {
+            const size_t size = GetReference(m_page_group).GetNumPages() * PageSize;
+            MESOSPHERE_R_ABORT_UNLESS(m_owner->GetPageTable().UnlockForCodeMemory(m_address, size, GetReference(m_page_group)));
         }
 
         /* Close the page group. */
-        GetReference(this->page_group).Close();
-        GetReference(this->page_group).Finalize();
+        GetReference(m_page_group).Close();
+        GetReference(m_page_group).Finalize();
 
         /* Close our reference to our owner. */
-        this->owner->Close();
-
-        /* Perform inherited finalization. */
-        KAutoObjectWithSlabHeapAndContainer<KCodeMemory, KAutoObjectWithList>::Finalize();
+        m_owner->Close();
     }
 
     Result KCodeMemory::Map(KProcessAddress address, size_t size) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Ensure we're not already mapped. */
-        R_UNLESS(!this->is_mapped, svc::ResultInvalidState());
+        R_UNLESS(!m_is_mapped, svc::ResultInvalidState());
 
         /* Map the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(this->page_group), KMemoryState_CodeOut, KMemoryPermission_UserReadWrite));
+        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(m_page_group), KMemoryState_CodeOut, KMemoryPermission_UserReadWrite));
 
         /* Mark ourselves as mapped. */
-        this->is_mapped = true;
+        m_is_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::Unmap(KProcessAddress address, size_t size) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Unmap the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(this->page_group), KMemoryState_CodeOut));
+        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(m_page_group), KMemoryState_CodeOut));
 
         /* Mark ourselves as unmapped. */
-        MESOSPHERE_ASSERT(this->is_mapped);
-        this->is_mapped = false;
+        MESOSPHERE_ASSERT(m_is_mapped);
+        m_is_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::MapToOwner(KProcessAddress address, size_t size, ams::svc::MemoryPermission perm) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Ensure we're not already mapped. */
-        R_UNLESS(!this->is_owner_mapped, svc::ResultInvalidState());
+        R_UNLESS(!m_is_owner_mapped, svc::ResultInvalidState());
 
         /* Convert the memory permission. */
         KMemoryPermission k_perm;
@@ -133,31 +130,31 @@ namespace ams::kern {
         }
 
         /* Map the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode, k_perm));
+        R_TRY(m_owner->GetPageTable().MapPageGroup(address, GetReference(m_page_group), KMemoryState_GeneratedCode, k_perm));
 
         /* Mark ourselves as mapped. */
-        this->is_owner_mapped = true;
+        m_is_owner_mapped = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KCodeMemory::UnmapFromOwner(KProcessAddress address, size_t size) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Unmap the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode));
+        R_TRY(m_owner->GetPageTable().UnmapPageGroup(address, GetReference(m_page_group), KMemoryState_GeneratedCode));
 
         /* Mark ourselves as unmapped. */
-        MESOSPHERE_ASSERT(this->is_owner_mapped);
-        this->is_owner_mapped = false;
+        MESOSPHERE_ASSERT(m_is_owner_mapped);
+        m_is_owner_mapped = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -6,6 +6,7 @@
     "default_cpu_id": 3,
     "process_category": 1,
     "use_secure_memory": false,
+    "immortal": false,
     "kernel_capabilities": [
         {
             "type": "handle_table_size",
@@ -57,6 +58,7 @@
                 "svcGetInfo": "0x29",
                 "svcWaitForAddress": "0x34",
                 "svcSignalToAddress": "0x35",
+                "svcSynchronizePreemptionState": "0x36",
                 "svcReadWriteRegister": "0x4E",
                 "svcCreateInterruptEvent": "0x53",
                 "svcQueryIoMapping": "0x55",
@@ -119,6 +121,15 @@
             "value": {
                 "address": "0x70000000",
                 "size": "0x4000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x7000A000",
+                "size": "0x1000",
                 "is_ro": false,
                 "is_io": true
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/secmon/secmon_log.hpp>
 #include <exosphere/secmon/secmon_memory_layout.hpp>
 #include <exosphere/secmon/secmon_configuration_context.hpp>
 #include <exosphere/secmon/secmon_volatile_context.hpp>

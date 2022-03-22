@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "impl/fssystem_path_resolution_filesystem.hpp"
+#include <stratosphere/fssystem/impl/fssystem_path_resolution_filesystem.hpp>
 
 namespace ams::fssystem {
 
@@ -24,17 +24,17 @@ namespace ams::fssystem {
             using PathResolutionFileSystem = impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
             friend class impl::IPathResolutionFileSystem<SubDirectoryFileSystem>;
         private:
-            char *base_path;
-            size_t base_path_len;
+            char *m_base_path;
+            size_t m_base_path_len;
         public:
             SubDirectoryFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
             SubDirectoryFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *bp, bool unc = false);
 
             virtual ~SubDirectoryFileSystem();
         protected:
-            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+            inline util::optional<std::scoped_lock<os::SdkMutex>> GetAccessorLock() const {
                 /* No accessor lock is needed. */
-                return std::nullopt;
+                return util::nullopt;
             }
         private:
             Result Initialize(const char *bp);

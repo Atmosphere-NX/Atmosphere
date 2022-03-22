@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,7 +17,6 @@
 #include <vapours.hpp>
 
 #include <exosphere/common.hpp>
-#include <exosphere/reg.hpp>
 #include <exosphere/hw.hpp>
 #include <exosphere/util.hpp>
 #include <exosphere/mmu.hpp>
@@ -35,10 +34,10 @@
 #include <exosphere/uart.hpp>
 #include <exosphere/pinmux.hpp>
 #include <exosphere/pmic.hpp>
+#include <exosphere/pmic_setup.hpp>
 #include <exosphere/rtc.hpp>
 #include <exosphere/log.hpp>
 #include <exosphere/clkrst.hpp>
 #include <exosphere/actmon.hpp>
 #include <exosphere/pmc.hpp>
 #include <exosphere/secmon.hpp>
-#include <exosphere/tegra.hpp>

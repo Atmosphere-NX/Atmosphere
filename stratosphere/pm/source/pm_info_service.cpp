@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,8 +22,8 @@ namespace ams::pm {
     /* Overrides for libstratosphere pm::info commands. */
     namespace info {
 
-        Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-            return ldr::pm::HasLaunchedProgram(out, program_id);
+        Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
+            return ldr::pm::HasLaunchedBootProgram(out, program_id);
         }
 
     }
@@ -38,12 +38,13 @@ namespace ams::pm {
         return impl::GetProcessId(out.GetPointer(), program_id);
     }
 
-    Result InformationService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
-        return pm::info::HasLaunchedProgram(out.GetPointer(), program_id);
+    Result InformationService::AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
+        return pm::info::HasLaunchedBootProgram(out.GetPointer(), program_id);
     }
 
     Result InformationService::AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
-        Handle dummy_handle;
+        /* NOTE: We don't need to worry about closing this handle, because it's an in-process copy, not a newly allocated handle. */
+        os::NativeHandle dummy_handle;
         return impl::AtmosphereGetProcessInfo(&dummy_handle, out_loc.GetPointer(), out_status.GetPointer(), process_id);
     }
 

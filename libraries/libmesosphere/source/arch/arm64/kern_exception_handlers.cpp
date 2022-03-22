@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -109,6 +109,11 @@ namespace ams::kern::arch::arm64 {
                     break;
             }
 
+            /* In the event that we return from this exception, we want SPSR.SS set so that we advance an instruction if single-stepping. */
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            context->psr |= (1ul << 21);
+            #endif
+
             /* If we should process the user exception (and it's not a breakpoint), try to enter. */
             const bool is_software_break = (ec == EsrEc_Unknown || ec == EsrEc_IllegalExecution || ec == EsrEc_BkptInstruction || ec == EsrEc_BrkInstruction);
             const bool is_breakpoint     = (ec == EsrEc_BreakPointEl0 || ec == EsrEc_SoftwareStepEl0 || ec == EsrEc_WatchPointEl0);
@@ -121,7 +126,7 @@ namespace ams::kern::arch::arm64 {
                     const bool is_aarch64 = (context->psr & 0x10) == 0;
                     if (is_aarch64) {
                         /* 64-bit. */
-                        ams::svc::aarch64::ExceptionInfo *info = std::addressof(GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info);
+                        ams::svc::aarch64::ExceptionInfo *info = std::addressof(static_cast<ams::svc::aarch64::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info);
 
                         for (size_t i = 0; i < util::size(info->r); ++i) {
                             info->r[i] = context->x[i];
@@ -136,7 +141,7 @@ namespace ams::kern::arch::arm64 {
                         info->far    = far;
                     } else {
                         /* 32-bit. */
-                        ams::svc::aarch32::ExceptionInfo *info = std::addressof(GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info);
+                        ams::svc::aarch32::ExceptionInfo *info = std::addressof(static_cast<ams::svc::aarch32::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info);
 
                         for (size_t i = 0; i < util::size(info->r); ++i) {
                             info->r[i] = context->x[i];
@@ -196,17 +201,17 @@ namespace ams::kern::arch::arm64 {
                     context->pc   = GetInteger(cur_process.GetEntryPoint());
                     context->x[0] = type;
                     if (is_aarch64) {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + __builtin_offsetof(ams::svc::aarch64::ProcessLocalRegion, exception_info));
+                        context->x[1]   = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch64::ProcessLocalRegion, exception_info));
 
-                        auto *plr    = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
-                        context->sp  = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
-                        context->psr = 0;
+                        const auto *plr = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
+                        context->sp     = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
+                        context->psr    = 0;
                     } else {
-                        context->x[1] = GetInteger(cur_process.GetProcessLocalRegionAddress() + __builtin_offsetof(ams::svc::aarch32::ProcessLocalRegion, exception_info));
+                        context->x[1]   = GetInteger(cur_process.GetProcessLocalRegionAddress() + AMS_OFFSETOF(ams::svc::aarch32::ProcessLocalRegion, exception_info));
 
-                        auto *plr      = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
-                        context->x[13] = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x10);
-                        context->psr   = 0x10;
+                        const auto *plr = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress());
+                        context->x[13]  = util::AlignDown(reinterpret_cast<uintptr_t>(plr->data) + sizeof(plr->data), 0x08);
+                        context->psr    = 0x10;
                     }
 
                     /* Set exception SVC permissions. */
@@ -214,6 +219,15 @@ namespace ams::kern::arch::arm64 {
                     return;
                 }
             }
+
+            /* If we should, clear the thread's state as single-step. */
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            if (AMS_UNLIKELY(GetCurrentThread().IsSingleStep())) {
+                GetCurrentThread().ClearSingleStep();
+                cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(false).Store();
+                cpu::InstructionMemoryBarrier();
+            }
+            #endif
 
             {
                 /* Collect additional information based on the ec. */
@@ -258,7 +272,7 @@ namespace ams::kern::arch::arm64 {
                          {
                              exception = ams::svc::DebugException_BreakPoint;
                              param2    = far;
-                             param3    = ams::svc::BreakPointType_HardwareInstruction;
+                             param3    = ams::svc::BreakPointType_HardwareData;
                          }
                          break;
                      case EsrEc_SErrorInterrupt:
@@ -290,9 +304,40 @@ namespace ams::kern::arch::arm64 {
                     return;
                 }
 
-                /* Print that an exception occurred. */
-                MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
+                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+                {
+                    if (ec != EsrEc_SoftwareStepEl0) {
+                        /* If the exception wasn't single-step, print details. */
+                        MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
+                        {
+                            /* Print the current thread's registers. */
+                            KDebug::PrintRegister();
+
+                            /* Print a backtrace. */
+                            KDebug::PrintBacktrace();
+                        }
+                    } else {
+                        /* If the exception was single-step and we have no debug object, we should just return. */
+                        if (AMS_UNLIKELY(!cur_process.IsAttachedToDebugger())) {
+                            return;
+                        }
+                    }
+                }
+                #else
+                {
+                    /* Print that an exception occurred. */
+                    MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
+
+                    {
+                        /* Print the current thread's registers. */
+                        KDebug::PrintRegister();
+
+                        /* Print a backtrace. */
+                        KDebug::PrintBacktrace();
+                    }
+                }
+                #endif
 
                 /* If the SVC is handled, handle it. */
                 if (!svc::ResultNotHandled::Includes(result)) {
@@ -335,10 +380,10 @@ namespace ams::kern::arch::arm64 {
         const bool is_aarch64 = (e_ctx->psr & 0x10) == 0;
         if (is_aarch64) {
             /* We're 64-bit. */
-            info.info64 = GetPointer<ams::svc::aarch64::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info;
+            info.info64 = static_cast<const ams::svc::aarch64::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info;
         } else {
             /* We're 32-bit. */
-            info.info32 = GetPointer<ams::svc::aarch32::ProcessLocalRegion>(cur_process.GetProcessLocalRegionAddress())->exception_info;
+            info.info32 = static_cast<const ams::svc::aarch32::ProcessLocalRegion *>(cur_process.GetProcessLocalRegionHeapAddress())->exception_info;
         }
 
         /* Try to leave the user exception. */
@@ -451,7 +496,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Print that an exception occurred. */
-        MESOSPHERE_RELEASE_LOG("Exception occurred. %016lx\n", GetCurrentProcess().GetProgramId());
+        MESOSPHERE_EXCEPTION_LOG("Exception occurred. ");
 
         /* Exit the current process. */
         GetCurrentProcess().Exit();
@@ -521,6 +566,11 @@ namespace ams::kern::arch::arm64 {
                 {
                     KScopedInterruptEnable ei;
 
+                    /* Terminate the thread, if we should. */
+                    if (GetCurrentThread().IsTerminationRequested()) {
+                        GetCurrentThread().Exit();
+                    }
+
                     HandleUserException(context, esr, far, afsr0, afsr1, data);
                 }
             } else {
@@ -547,6 +597,7 @@ namespace ams::kern::arch::arm64 {
                 KDpcManager::HandleDpc();
             }
         }
+
         /* Note that we're no longer in an exception handler. */
         GetCurrentThread().ClearInExceptionHandler();
     }

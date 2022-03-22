@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,7 +23,7 @@ namespace ams::os {
 
     struct ThreadType;
 
-    struct ReadWriteLockType {
+    struct ReaderWriterLockType {
         enum State {
             State_NotInitialized = 0,
             State_Initialized    = 1,
@@ -65,6 +65,6 @@ namespace ams::os {
             impl::InternalConditionVariableStorage _storage;
         } cv_write_lock;
     };
-    static_assert(std::is_trivial<ReadWriteLockType>::value);
+    static_assert(std::is_trivial<ReaderWriterLockType>::value);
 
 }

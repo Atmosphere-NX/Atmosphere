@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,10 +21,12 @@ namespace ams::pgl {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(228);
 
+    R_DEFINE_ERROR_RESULT(NotImplemented,             1);
     R_DEFINE_ERROR_RESULT(NotAvailable,               2);
     R_DEFINE_ERROR_RESULT(ApplicationNotRunning,      3);
     R_DEFINE_ERROR_RESULT(BufferNotEnough,            4);
     R_DEFINE_ERROR_RESULT(ApplicationContentNotFound, 5);
     R_DEFINE_ERROR_RESULT(ContentMetaNotFound,        6);
+    R_DEFINE_ERROR_RESULT(OutOfMemory,                7);
 
 }

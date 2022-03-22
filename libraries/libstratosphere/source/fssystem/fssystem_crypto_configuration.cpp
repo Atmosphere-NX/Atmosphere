@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -112,13 +112,13 @@ namespace ams::fssystem {
         NcaCryptoConfiguration g_nca_crypto_configuration_prod;
 
         constexpr inline s32 KeySlotCacheEntryCount = 3;
-        KeySlotCache g_key_slot_cache;
-        std::optional<KeySlotCacheEntry> g_key_slot_cache_entry[KeySlotCacheEntryCount];
+        constinit KeySlotCache g_key_slot_cache;
+        constinit util::optional<KeySlotCacheEntry> g_key_slot_cache_entry[KeySlotCacheEntryCount];
 
         spl::AccessKey &GetNcaKekAccessKey(s32 key_type) {
-            static spl::AccessKey s_nca_kek_access_key_array[KeyAreaEncryptionKeyCount] = {};
-            static spl::AccessKey s_nca_header_kek_access_key                           = {};
-            static spl::AccessKey s_invalid_nca_kek_access_key                          = {};
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(spl::AccessKey, s_nca_kek_access_key_array[KeyAreaEncryptionKeyCount]);
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(spl::AccessKey, s_nca_header_kek_access_key);
+            AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(spl::AccessKey, s_invalid_nca_kek_access_key);
 
             if (key_type > static_cast<s32>(KeyType::NcaHeaderKey) || IsInvalidKeyTypeValue(key_type)) {
                 return s_invalid_nca_kek_access_key;
@@ -130,6 +130,8 @@ namespace ams::fssystem {
         }
 
         void GenerateNcaKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 key_type, const NcaCryptoConfiguration &cfg) {
+            AMS_UNUSED(cfg);
+
             R_ABORT_UNLESS(spl::GenerateAesKey(dst, dst_size, GetNcaKekAccessKey(key_type), src, src_size));
         }
 

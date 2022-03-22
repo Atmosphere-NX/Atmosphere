@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -53,17 +53,17 @@ namespace ams::fatal::srv {
 
         class RebootTimingObserver {
             private:
-                os::Tick start_tick;
-                TimeSpan interval;
-                bool flag;
+                os::Tick m_start_tick;
+                TimeSpan m_interval;
+                bool m_flag;
             public:
-                RebootTimingObserver(bool flag, TimeSpan iv) : start_tick(os::GetSystemTick()), interval(iv), flag(flag)  {
+                RebootTimingObserver(bool flag, TimeSpan iv) : m_start_tick(os::GetSystemTick()), m_interval(iv), m_flag(flag)  {
                     /* ... */
                 }
 
                 bool IsRebootTiming() const {
                     auto current_tick = os::GetSystemTick();
-                    return this->flag && (current_tick - this->start_tick).ToTimeSpan() >= this->interval;
+                    return m_flag && (current_tick - m_start_tick).ToTimeSpan() >= m_interval;
                 }
         };
 
@@ -88,7 +88,7 @@ namespace ams::fatal::srv {
                     break;
                 }
 
-                if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+                if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state))) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                     break;
                 }
 
@@ -112,19 +112,19 @@ namespace ams::fatal::srv {
             PsmBatteryVoltageState bv_state = PsmBatteryVoltageState_Normal;
 
             /* Check the battery state, and shutdown on low voltage. */
-            if (R_FAILED(psmGetBatteryVoltageState(&bv_state)) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
+            if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state))) || bv_state == PsmBatteryVoltageState_NeedsShutdown) {
                 /* Wait a second for the error report task to finish. */
-                this->context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
+                m_context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
                 this->TryShutdown();
                 return;
             }
 
             /* Signal we've checked the battery at least once. */
-            this->context->battery_event->Signal();
+            m_context->battery_event->Signal();
 
             /* Loop querying voltage state every 5 seconds. */
             while (true) {
-                if (R_FAILED(psmGetBatteryVoltageState(&bv_state))) {
+                if (R_FAILED(psmGetBatteryVoltageState(std::addressof(bv_state)))) {
                     bv_state = PsmBatteryVoltageState_NeedsShutdown;
                 }
 
@@ -148,7 +148,7 @@ namespace ams::fatal::srv {
 
         void PowerButtonObserveTask::WaitForPowerButton() {
             /* Wait up to a second for error report generation to finish. */
-            this->context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
+            m_context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
 
             /* Force a reboot after some time if kiosk unit. */
             const auto &config = GetFatalConfig();
@@ -156,33 +156,33 @@ namespace ams::fatal::srv {
             RebootTimingObserver fatal_reboot_helper(config.IsFatalRebootEnabled(), config.GetFatalRebootTimeoutInterval());
 
             bool check_vol_up = true, check_vol_down = true;
-            GpioPadSession vol_up_btn, vol_down_btn;
-            if (R_FAILED(gpioOpenSession(&vol_up_btn, GpioPadName_ButtonVolUp))) {
+            gpio::GpioPadSession vol_up_btn, vol_down_btn;
+            if (R_FAILED(gpio::OpenSession(std::addressof(vol_up_btn), gpio::DeviceCode_ButtonVolUp))) {
                 check_vol_up = false;
             }
-            if (R_FAILED(gpioOpenSession(&vol_down_btn, GpioPadName_ButtonVolDown))) {
+            if (R_FAILED(gpio::OpenSession(std::addressof(vol_down_btn), gpio::DeviceCode_ButtonVolDn))) {
                 check_vol_down = false;
             }
 
             /* Ensure we close on early return. */
-            ON_SCOPE_EXIT { if (check_vol_up) { gpioPadClose(&vol_up_btn); } };
-            ON_SCOPE_EXIT { if (check_vol_down) { gpioPadClose(&vol_down_btn); } };
+            ON_SCOPE_EXIT { if (check_vol_up)   { gpio::CloseSession(std::addressof(vol_up_btn)); } };
+            ON_SCOPE_EXIT { if (check_vol_down) { gpio::CloseSession(std::addressof(vol_down_btn)); } };
 
             /* Set direction input. */
             if (check_vol_up) {
-                gpioPadSetDirection(&vol_up_btn, GpioDirection_Input);
+                gpio::SetDirection(std::addressof(vol_up_btn), gpio::Direction_Input);
             }
             if (check_vol_down) {
-                gpioPadSetDirection(&vol_down_btn, GpioDirection_Input);
+                gpio::SetDirection(std::addressof(vol_down_btn), gpio::Direction_Input);
             }
 
             BpcSleepButtonState state;
-            GpioValue val;
             while (true) {
                 if (fatal_reboot_helper.IsRebootTiming() || (quest_reboot_helper.IsRebootTiming()) ||
-                    (check_vol_up && R_SUCCEEDED(gpioPadGetValue(&vol_up_btn, &val)) && val == GpioValue_Low) ||
-                    (check_vol_down && R_SUCCEEDED(gpioPadGetValue(&vol_down_btn, &val)) && val == GpioValue_Low) ||
-                    (R_SUCCEEDED(bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held)) {
+                    (check_vol_up && gpio::GetValue(std::addressof(vol_up_btn)) == gpio::GpioValue_Low) ||
+                    (check_vol_down && gpio::GetValue(std::addressof(vol_down_btn)) == gpio::GpioValue_Low) ||
+                    (R_SUCCEEDED(bpcGetSleepButtonState(std::addressof(state))) && state == BpcSleepButtonState_Held))
+                {
                     /* If any of the above conditions succeeded, we should reboot. */
                     bpcRebootSystem();
                     return;
@@ -214,17 +214,17 @@ namespace ams::fatal::srv {
 
     ITask *GetPowerControlTask(const ThrowContext *ctx) {
         g_power_control_task.Initialize(ctx);
-        return &g_power_control_task;
+        return std::addressof(g_power_control_task);
     }
 
     ITask *GetPowerButtonObserveTask(const ThrowContext *ctx) {
         g_power_button_observe_task.Initialize(ctx);
-        return &g_power_button_observe_task;
+        return std::addressof(g_power_button_observe_task);
     }
 
     ITask *GetStateTransitionStopTask(const ThrowContext *ctx) {
         g_state_transition_stop_task.Initialize(ctx);
-        return &g_state_transition_stop_task;
+        return std::addressof(g_state_transition_stop_task);
     }
 
 }

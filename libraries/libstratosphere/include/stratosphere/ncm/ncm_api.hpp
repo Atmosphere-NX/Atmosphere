@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,7 +24,7 @@ namespace ams::ncm {
     void Initialize();
     void Finalize();
 
-    void InitializeWithObject(std::shared_ptr<IContentManager> manager_object);
+    void InitializeWithObject(sf::SharedPointer<IContentManager> manager_object);
 
     /* Service API. */
     Result CreateContentStorage(StorageId storage_id);

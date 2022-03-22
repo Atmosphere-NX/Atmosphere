@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,24 +24,24 @@ namespace ams::erpt::srv {
         attachment_id.uuid.ToString(uuid_str, sizeof(uuid_str));
 
         AttachmentFileName attachment_name;
-        std::snprintf(attachment_name.name, sizeof(attachment_name.name), "%s/%s.att", ReportStoragePath, uuid_str);
+        util::SNPrintf(attachment_name.name, sizeof(attachment_name.name), "%s:/%s.att", ReportStoragePath, uuid_str);
         return attachment_name;
     }
 
-    Attachment::Attachment(JournalRecord<AttachmentInfo> *r) : record(r) {
-        this->record->AddReference();
+    Attachment::Attachment(JournalRecord<AttachmentInfo> *r) : m_record(r) {
+        m_record->AddReference();
     }
 
     Attachment::~Attachment() {
         this->CloseStream();
-        if (this->record->RemoveReference()) {
+        if (m_record->RemoveReference()) {
             this->DeleteStream(this->FileName().name);
-            delete this->record;
+            delete m_record;
         }
     }
 
-    AttachmentFileName Attachment::FileName() {
-        return FileName(this->record->info.attachment_id);
+    AttachmentFileName Attachment::FileName() const {
+        return FileName(m_record->m_info.attachment_id);
     }
 
     Result Attachment::Open(AttachmentOpenType type) {
@@ -64,20 +64,20 @@ namespace ams::erpt::srv {
         return this->CloseStream();
     }
 
-    Result Attachment::GetFlags(AttachmentFlagSet *out) {
-        *out = this->record->info.flags;
+    Result Attachment::GetFlags(AttachmentFlagSet *out) const {
+        *out = m_record->m_info.flags;
         return ResultSuccess();
     }
 
     Result Attachment::SetFlags(AttachmentFlagSet flags) {
-        if (((~this->record->info.flags) & flags).IsAnySet()) {
-            this->record->info.flags |= flags;
+        if (((~m_record->m_info.flags) & flags).IsAnySet()) {
+            m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
         return ResultSuccess();
     }
 
-    Result Attachment::GetSize(s64 *out) {
+    Result Attachment::GetSize(s64 *out) const {
         return this->GetStreamSize(out);
     }
 

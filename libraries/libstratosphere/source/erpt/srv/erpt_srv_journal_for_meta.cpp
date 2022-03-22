@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,7 +18,7 @@
 
 namespace ams::erpt::srv {
 
-    JournalMeta JournalForMeta::s_journal_meta;
+    constinit JournalMeta JournalForMeta::s_journal_meta;
 
     void JournalForMeta::InitializeJournal() {
         std::memset(std::addressof(s_journal_meta), 0, sizeof(s_journal_meta));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/fs/fs_file_storage.hpp>
+#include <stratosphere/fs/common/fs_file_storage.hpp>
 #include <stratosphere/ncm/ncm_package_install_task.hpp>
 
 namespace ams::ncm {
@@ -23,7 +23,7 @@ namespace ams::ncm {
         private:
             class Impl;
         private:
-            std::unique_ptr<Impl> impl;
+            std::unique_ptr<Impl> m_impl;
         public:
             SubmissionPackageInstallTask();
             virtual ~SubmissionPackageInstallTask() override;

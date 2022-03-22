@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,34 +18,37 @@
 #include "os_rng_manager_impl.hpp"
 #include "os_thread_manager_types.hpp"
 #include "os_tick_manager_impl.hpp"
+#include "os_aslr_space_manager_types.hpp"
 
 namespace ams::os::impl {
 
     class OsResourceManager {
         private:
-            RngManager  rng_manager{};
+            RngManager  m_rng_manager{};
+            AslrSpaceManager m_aslr_space_manager{};
             /* TODO */
-            ThreadManager thread_manager{};
+            ThreadManager m_thread_manager{};
             /* TODO */
-            TickManager tick_manager{};
+            TickManager m_tick_manager{};
             /* TODO */
         public:
             OsResourceManager() = default;
 
-            constexpr ALWAYS_INLINE RngManager &GetRngManager() { return this->rng_manager; }
-            constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return this->thread_manager; }
-            constexpr ALWAYS_INLINE TickManager &GetTickManager() { return this->tick_manager; }
+            constexpr ALWAYS_INLINE RngManager &GetRngManager() { return m_rng_manager; }
+            constexpr ALWAYS_INLINE AslrSpaceManager &GetAslrSpaceManager() { return m_aslr_space_manager; }
+            constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return m_thread_manager; }
+            constexpr ALWAYS_INLINE TickManager &GetTickManager() { return m_tick_manager; }
     };
 
     class ResourceManagerHolder {
         private:
-            static TYPED_STORAGE(OsResourceManager) s_resource_manager_storage;
+            static util::TypedStorage<OsResourceManager> s_resource_manager_storage;
         private:
             constexpr ResourceManagerHolder() { /* ... */ }
         public:
             static ALWAYS_INLINE void InitializeResourceManagerInstance() {
                 /* Construct the resource manager instance. */
-                new (GetPointer(s_resource_manager_storage)) OsResourceManager;
+                util::ConstructAt(s_resource_manager_storage);
             }
 
             static ALWAYS_INLINE OsResourceManager &GetResourceManagerInstance() {

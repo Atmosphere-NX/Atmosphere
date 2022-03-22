@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@ namespace ams::kern {
     void KLightClientSession::Destroy() {
         MESOSPHERE_ASSERT_THIS();
 
-        this->parent->OnClientClosed();
+        m_parent->OnClientClosed();
     }
 
     void KLightClientSession::OnServerClosed() {
@@ -37,17 +37,7 @@ namespace ams::kern {
         cur_thread->SetLightSessionData(data);
 
         /* Send the request. */
-        {
-            KScopedSchedulerLock sl;
-
-            cur_thread->SetSyncedObject(nullptr, ResultSuccess());
-
-            R_TRY(this->parent->OnRequest(cur_thread));
-        }
-
-        /* Get the result. */
-        KSynchronizationObject *dummy;
-        return cur_thread->GetWaitResult(std::addressof(dummy));
+        R_RETURN(m_parent->OnRequest(cur_thread));
     }
 
 }

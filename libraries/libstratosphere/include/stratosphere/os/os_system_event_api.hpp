@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,24 +17,25 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_event_common.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
     struct SystemEventType;
-    struct WaitableHolderType;
+    struct MultiWaitHolderType;
 
     Result CreateSystemEvent(SystemEventType *event, EventClearMode clear_mode, bool inter_process);
     void DestroySystemEvent(SystemEventType *event);
 
-    void AttachSystemEvent(SystemEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode);
-    void AttachReadableHandleToSystemEvent(SystemEventType *event, Handle read_handle, bool manage_read_handle, EventClearMode clear_mode);
-    void AttachWritableHandleToSystemEvent(SystemEventType *event, Handle write_handle, bool manage_write_handle, EventClearMode clear_mode);
+    void AttachSystemEvent(SystemEventType *event, NativeHandle read_handle, bool read_handle_managed, NativeHandle write_handle, bool write_handle_managed, EventClearMode clear_mode);
+    void AttachReadableHandleToSystemEvent(SystemEventType *event, NativeHandle read_handle, bool manage_read_handle, EventClearMode clear_mode);
+    void AttachWritableHandleToSystemEvent(SystemEventType *event, NativeHandle write_handle, bool manage_write_handle, EventClearMode clear_mode);
 
-    Handle DetachReadableHandleOfSystemEvent(SystemEventType *event);
-    Handle DetachWritableHandleOfSystemEvent(SystemEventType *event);
+    NativeHandle DetachReadableHandleOfSystemEvent(SystemEventType *event);
+    NativeHandle DetachWritableHandleOfSystemEvent(SystemEventType *event);
 
-    Handle GetReadableHandleOfSystemEvent(const SystemEventType *event);
-    Handle GetWritableHandleOfSystemEvent(const SystemEventType *event);
+    NativeHandle GetReadableHandleOfSystemEvent(const SystemEventType *event);
+    NativeHandle GetWritableHandleOfSystemEvent(const SystemEventType *event);
 
     void SignalSystemEvent(SystemEventType *event);
     void WaitSystemEvent(SystemEventType *event);
@@ -42,6 +43,6 @@ namespace ams::os {
     bool TimedWaitSystemEvent(SystemEventType *event, TimeSpan timeout);
     void ClearSystemEvent(SystemEventType *event);
 
-    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event);
+    void InitializeMultiWaitHolder(MultiWaitHolderType *multi_wait_holder, SystemEventType *event);
 
 }

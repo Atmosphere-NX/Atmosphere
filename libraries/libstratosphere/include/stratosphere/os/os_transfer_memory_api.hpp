@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/os/os_memory_permission.hpp>
+#include <stratosphere/os/os_native_handle.hpp>
 
 namespace ams::os {
 
@@ -24,8 +25,8 @@ namespace ams::os {
 
     Result CreateTransferMemory(TransferMemoryType *tmem, void *address, size_t size, MemoryPermission perm);
 
-    Result AttachTransferMemory(TransferMemoryType *tmem, size_t size, Handle handle, bool managed);
-    Handle DetachTransferMemory(TransferMemoryType *tmem);
+    void AttachTransferMemory(TransferMemoryType *tmem, size_t size, NativeHandle handle, bool managed);
+    NativeHandle DetachTransferMemory(TransferMemoryType *tmem);
 
     void DestroyTransferMemory(TransferMemoryType *tmem);
 

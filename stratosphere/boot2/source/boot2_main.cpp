@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,94 +15,73 @@
  */
 #include <stratosphere.hpp>
 
-extern "C" {
-    extern u32 __start__;
-
-    u32 __nx_applet_type = AppletType_None;
-    u32 __nx_fs_num_sessions = 1;
-
-    #define INNER_HEAP_SIZE 0x2000
-    size_t nx_inner_heap_size = INNER_HEAP_SIZE;
-    char   nx_inner_heap[INNER_HEAP_SIZE];
-
-    void __libnx_initheap(void);
-    void __appInit(void);
-    void __appExit(void);
-
-    /* Exception handling. */
-    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
-    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
-    void __libnx_exception_handler(ThreadExceptionDump *ctx);
-}
-
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Boot2;
+    namespace boot2 {
 
-    namespace result {
+        namespace {
 
-        bool CallFatalOnResultAssertion = false;
+            constinit u8 g_fs_heap_memory[2_KB];
+            constinit lmem::HeapHandle g_fs_heap_handle;
+
+            void *AllocateForFs(size_t size) {
+                return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
+            }
+
+            void DeallocateForFs(void *p, size_t size) {
+                AMS_UNUSED(size);
+                return lmem::FreeToExpHeap(g_fs_heap_handle, p);
+            }
+
+            void InitializeFsHeap() {
+                g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
+            }
+
+        }
 
     }
 
+    namespace init {
+
+        void InitializeSystemModule() {
+            /* Initialize heap. */
+            boot2::InitializeFsHeap();
+
+            /* Initialize our connection to sm. */
+            R_ABORT_UNLESS(sm::Initialize());
+
+            /* Initialize fs. */
+            fs::InitializeForSystem();
+            fs::SetAllocator(boot2::AllocateForFs, boot2::DeallocateForFs);
+            fs::SetEnabledAutoAbort(false);
+
+            /* Initialize other services we need. */
+            R_ABORT_UNLESS(pmbmInitialize());
+            R_ABORT_UNLESS(pminfoInitialize());
+            R_ABORT_UNLESS(pmshellInitialize());
+            R_ABORT_UNLESS(setsysInitialize());
+            gpio::Initialize();
+
+            /* Mount the SD card. */
+            R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+
+            /* Verify that we can sanely execute. */
+            ams::CheckApiVersion();
+        }
+
+        void FinalizeSystemModule() { /* ... */ }
+
+        void Startup() { /* ... */ }
+
+    }
+
+    void Main() {
+        /* Set thread name. */
+        os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot2, Main));
+        AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot2, Main));
+
+        /* Launch all programs off of SYSTEM/the SD. */
+        boot2::LaunchPostSdCardBootPrograms();
+    }
+
 }
-
-using namespace ams;
-
-void __libnx_exception_handler(ThreadExceptionDump *ctx) {
-    ams::CrashHandler(ctx);
-}
-
-void __libnx_initheap(void) {
-	void*  addr = nx_inner_heap;
-	size_t size = nx_inner_heap_size;
-
-	/* Newlib */
-	extern char* fake_heap_start;
-	extern char* fake_heap_end;
-
-	fake_heap_start = (char*)addr;
-	fake_heap_end   = (char*)addr + size;
-}
-
-void __appInit(void) {
-    hos::InitializeForStratosphere();
-
-    /* Initialize services we need. */
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(pmbmInitialize());
-        R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(pmshellInitialize());
-        R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(gpioInitialize());
-    });
-
-    /* Mount the SD card. */
-    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
-
-    ams::CheckApiVersion();
-}
-
-void __appExit(void) {
-    fs::Unmount("sdmc");
-    gpioExit();
-    setsysExit();
-    pmshellExit();
-    pminfoExit();
-    pmbmExit();
-    fsExit();
-}
-
-int main(int argc, char **argv)
-{
-    /* Set thread name. */
-    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot2, Main));
-    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot2, Main));
-
-    /* Launch all programs off of SYSTEM/the SD. */
-    boot2::LaunchPostSdCardBootPrograms();
-
-    return 0;
-}
-

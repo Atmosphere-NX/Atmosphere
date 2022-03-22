@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,7 +23,7 @@ namespace ams::os {
 
         #ifdef ATMOSPHERE_BUILD_FOR_AUDITING
 
-            void PushAndCheckLockLevel(MutexType *mutex) {
+            void PushAndCheckLockLevel(const MutexType *mutex) {
                 /* If auditing isn't specified, don't bother. */
                 if (mutex->lock_level == 0) {
                     return;
@@ -32,7 +32,7 @@ namespace ams::os {
                 /* TODO: Implement mutex level auditing. */
             }
 
-            void PopAndCheckLockLevel(MutexType *mutex) {
+            void PopAndCheckLockLevel(const MutexType *mutex) {
                 /* If auditing isn't specified, don't bother. */
                 if (mutex->lock_level == 0) {
                     return;
@@ -43,12 +43,12 @@ namespace ams::os {
 
         #else
 
-            void PushAndCheckLockLevel(MutexType *mutex) {
-                /* ... */
+            void PushAndCheckLockLevel(const MutexType *mutex) {
+                AMS_UNUSED(mutex);
             }
 
-            void PopAndCheckLockLevel(MutexType *mutex) {
-                /* ... */
+            void PopAndCheckLockLevel(const MutexType *mutex) {
+                AMS_UNUSED(mutex);
             }
 
         #endif
@@ -72,7 +72,7 @@ namespace ams::os {
         AMS_ASSERT((lock_level == 0) || (MutexLockLevelMin <= lock_level && lock_level <= MutexLockLevelMax));
 
         /* Create object. */
-        new (GetPointer(mutex->_storage)) impl::InternalCriticalSection;
+        util::ConstructAt(mutex->_storage);
 
         /* Set member variables. */
         mutex->is_recursive = recursive;
@@ -91,7 +91,7 @@ namespace ams::os {
         mutex->state = MutexType::State_NotInitialized;
 
         /* Destroy object. */
-        GetReference(mutex->_storage).~InternalCriticalSection();
+        util::DestroyAt(mutex->_storage);
     }
 
     void LockMutex(MutexType *mutex) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,6 +20,7 @@
 #include <stratosphere/settings/settings_fwdbg_types.hpp>
 #include <stratosphere/settings/settings_fwdbg_api.hpp>
 #include <stratosphere/settings/factory/settings_serial_number.hpp>
+#include <stratosphere/settings/factory/settings_configuration_id.hpp>
 #include <stratosphere/settings/factory/settings_device_certificate.hpp>
 #include <stratosphere/settings/system/settings_error_report.hpp>
 #include <stratosphere/settings/system/settings_firmware_version.hpp>

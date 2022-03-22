@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,16 +18,23 @@
 
 namespace ams::kern {
 
-    class KWorkerTask {
+    /* NOTE: We inherit KWorkerTask from KSynchronizationObject in order to devirtualize DoWorkerTask, which is exclusive to KThread/KProcess. */
+    /* This should be reverted, if Nintendo adds new types of worker tasks in the future. */
+
+    /* Nintendo has class KWorkerTask { ... } with identical interface but DoWorkerTask() virtual. */
+
+    class KWorkerTask : public KSynchronizationObject {
         private:
-            KWorkerTask *next_task;
+            KWorkerTask *m_next_task;
         public:
-            constexpr ALWAYS_INLINE KWorkerTask() : next_task(nullptr) { /* ... */ }
+            constexpr ALWAYS_INLINE explicit KWorkerTask(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_next_task(nullptr) { /* ... */  }
 
-            constexpr ALWAYS_INLINE KWorkerTask *GetNextTask() const { return this->next_task; }
-            constexpr ALWAYS_INLINE void SetNextTask(KWorkerTask *task) { this->next_task = task; }
+            ALWAYS_INLINE explicit KWorkerTask() : m_next_task(nullptr) { /* ... */  }
 
-            virtual void DoWorkerTask() = 0;
+            constexpr ALWAYS_INLINE KWorkerTask *GetNextTask() const { return m_next_task; }
+            constexpr ALWAYS_INLINE void SetNextTask(KWorkerTask *task) { m_next_task = task; }
+
+            void DoWorkerTask();
     };
 
 }

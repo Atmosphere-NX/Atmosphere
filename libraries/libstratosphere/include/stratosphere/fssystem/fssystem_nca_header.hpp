@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -181,6 +181,11 @@ namespace ams::fssystem {
     };
     static_assert(util::is_pod<NcaSparseInfo>::value);
 
+    struct NcaCompressionInfo {
+        NcaBucketInfo bucket;
+    };
+    static_assert(util::is_pod<NcaCompressionInfo>::value);
+
     struct NcaFsHeader {
         static constexpr size_t Size           = 0x200;
         static constexpr size_t HashDataOffset = 0x8;
@@ -263,13 +268,14 @@ namespace ams::fssystem {
         NcaPatchInfo patch_info;
         NcaAesCtrUpperIv aes_ctr_upper_iv;
         NcaSparseInfo sparse_info;
-        u8 pad[0x88];
+        NcaCompressionInfo compression_info;
+        u8 pad[0x68];
     };
     static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
     static_assert(util::is_pod<NcaFsHeader>::value);
-    static_assert(offsetof(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
+    static_assert(AMS_OFFSETOF(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
 
-    inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = offsetof(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);
-    inline constexpr const size_t NcaFsHeader::HashData::IntegrityMetaInfo::MasterHashOffset      = offsetof(NcaFsHeader, hash_data.integrity_meta_info.master_hash);
+    inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = AMS_OFFSETOF(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);
+    inline constexpr const size_t NcaFsHeader::HashData::IntegrityMetaInfo::MasterHashOffset      = AMS_OFFSETOF(NcaFsHeader, hash_data.integrity_meta_info.master_hash);
 
 }

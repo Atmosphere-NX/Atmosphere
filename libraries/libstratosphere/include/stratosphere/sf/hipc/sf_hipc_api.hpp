@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "../cmif/sf_cmif_pointer_and_size.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
 
 namespace ams::sf::hipc {
 
@@ -28,13 +28,13 @@ namespace ams::sf::hipc {
         NeedsRetry,
     };
 
-    void AttachWaitableHolderForAccept(os::WaitableHolderType *holder, Handle port);
-    void AttachWaitableHolderForReply(os::WaitableHolderType *holder, Handle request);
+    void AttachMultiWaitHolderForAccept(os::MultiWaitHolderType *holder, os::NativeHandle port);
+    void AttachMultiWaitHolderForReply(os::MultiWaitHolderType *holder, os::NativeHandle request);
 
-    Result Receive(ReceiveResult *out_recv_result, Handle session_handle, const cmif::PointerAndSize &message_buffer);
-    Result Receive(bool *out_closed, Handle session_handle, const cmif::PointerAndSize &message_buffer);
-    Result Reply(Handle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Receive(ReceiveResult *out_recv_result, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Receive(bool *out_closed, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
+    Result Reply(os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer);
 
-    Result CreateSession(Handle *out_server_handle, Handle *out_client_handle);
+    Result CreateSession(os::NativeHandle *out_server_handle, os::NativeHandle *out_client_handle);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -38,28 +38,24 @@ namespace ams::kern::svc {
                 KPort *port = KPort::Create();
                 R_UNLESS(port != nullptr, svc::ResultOutOfResource());
 
-                /* Reserve a handle for the server port. */
-                R_TRY(handle_table.Reserve(out_server_handle));
-                auto reserve_guard = SCOPE_GUARD { handle_table.Unreserve(*out_server_handle); };
-
                 /* Initialize the new port. */
                 port->Initialize(max_sessions, false, 0);
 
                 /* Register the port. */
-                R_TRY(KPort::Register(port));
+                KPort::Register(port);
+
+                /* Ensure that our only reference to the port is in the handle table when we're done. */
+                ON_SCOPE_EXIT {
+                    port->GetClientPort().Close();
+                    port->GetServerPort().Close();
+                };
 
                 /* Register the handle in the table. */
-                handle_table.Register(*out_server_handle, std::addressof(port->GetServerPort()));
-                reserve_guard.Cancel();
-                auto register_guard = SCOPE_GUARD { handle_table.Remove(*out_server_handle); };
+                R_TRY(handle_table.Add(out_server_handle, std::addressof(port->GetServerPort())));
+                ON_RESULT_FAILURE { handle_table.Remove(*out_server_handle); };
 
                 /* Create a new object name. */
                 R_TRY(KObjectName::NewFromName(std::addressof(port->GetClientPort()), name));
-
-                /* Perform resource cleanup. */
-                port->GetServerPort().Close();
-                port->GetClientPort().Close();
-                register_guard.Cancel();
             } else /* if (max_sessions == 0) */ {
                 /* Ensure that this else case is correct. */
                 MESOSPHERE_AUDIT(max_sessions == 0);
@@ -71,7 +67,7 @@ namespace ams::kern::svc {
                 R_TRY(KObjectName::Delete<KClientPort>(name));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreatePort(ams::svc::Handle *out_server, ams::svc::Handle *out_client, int32_t max_sessions, bool is_light, uintptr_t name) {
@@ -95,20 +91,16 @@ namespace ams::kern::svc {
             };
 
             /* Register the port. */
-            R_TRY(KPort::Register(port));
+            KPort::Register(port);
 
             /* Add the client to the handle table. */
             R_TRY(handle_table.Add(out_client, std::addressof(port->GetClientPort())));
 
             /* Ensure that we maintaing a clean handle state on exit. */
-            auto handle_guard = SCOPE_GUARD { handle_table.Remove(*out_client); };
+            ON_RESULT_FAILURE { handle_table.Remove(*out_client); };
 
             /* Add the server to the handle table. */
-            R_TRY(handle_table.Add(out_server, std::addressof(port->GetServerPort())));
-
-            /* We succeeded! */
-            handle_guard.Cancel();
-            return ResultSuccess();
+            R_RETURN(handle_table.Add(out_server, std::addressof(port->GetServerPort())));
         }
 
         Result ConnectToNamedPort(ams::svc::Handle *out, KUserPointer<const char *> user_name) {
@@ -129,7 +121,7 @@ namespace ams::kern::svc {
             /* Reserve a handle for the port. */
             /* NOTE: Nintendo really does write directly to the output handle here. */
             R_TRY(handle_table.Reserve(out));
-            auto handle_guard = SCOPE_GUARD { handle_table.Unreserve(*out); };
+            ON_RESULT_FAILURE { handle_table.Unreserve(*out); };
 
             /* Create a session. */
             KClientSession *session;
@@ -140,8 +132,7 @@ namespace ams::kern::svc {
             session->Close();
 
             /* We succeeded. */
-            handle_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ConnectToPort(ams::svc::Handle *out, ams::svc::Handle port) {
@@ -155,26 +146,22 @@ namespace ams::kern::svc {
             /* Reserve a handle for the port. */
             /* NOTE: Nintendo really does write directly to the output handle here. */
             R_TRY(handle_table.Reserve(out));
-            auto handle_guard = SCOPE_GUARD { handle_table.Unreserve(*out); };
+            ON_RESULT_FAILURE { handle_table.Unreserve(*out); };
 
-            /* Create and register session. */
+            /* Create the session. */
+            KAutoObject *session;
             if (client_port->IsLight()) {
-                KLightClientSession *session;
-                R_TRY(client_port->CreateLightSession(std::addressof(session)));
-
-                handle_table.Register(*out, session);
-                session->Close();
+                R_TRY(client_port->CreateLightSession(reinterpret_cast<KLightClientSession **>(std::addressof(session))));
             } else {
-                KClientSession *session;
-                R_TRY(client_port->CreateSession(std::addressof(session)));
-
-                handle_table.Register(*out, session);
-                session->Close();
+                R_TRY(client_port->CreateSession(reinterpret_cast<KClientSession **>(std::addressof(session))));
             }
 
+            /* Register the session. */
+            handle_table.Register(*out, session);
+            session->Close();
+
             /* We succeeded. */
-            handle_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -182,37 +169,37 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result ConnectToNamedPort64(ams::svc::Handle *out_handle, KUserPointer<const char *> name) {
-        return ConnectToNamedPort(out_handle, name);
+        R_RETURN(ConnectToNamedPort(out_handle, name));
     }
 
     Result CreatePort64(ams::svc::Handle *out_server_handle, ams::svc::Handle *out_client_handle, int32_t max_sessions, bool is_light, ams::svc::Address name) {
-        return CreatePort(out_server_handle, out_client_handle, max_sessions, is_light, name);
+        R_RETURN(CreatePort(out_server_handle, out_client_handle, max_sessions, is_light, name));
     }
 
     Result ManageNamedPort64(ams::svc::Handle *out_server_handle, KUserPointer<const char *> name, int32_t max_sessions) {
-        return ManageNamedPort(out_server_handle, name, max_sessions);
+        R_RETURN(ManageNamedPort(out_server_handle, name, max_sessions));
     }
 
     Result ConnectToPort64(ams::svc::Handle *out_handle, ams::svc::Handle port) {
-        return ConnectToPort(out_handle, port);
+        R_RETURN(ConnectToPort(out_handle, port));
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result ConnectToNamedPort64From32(ams::svc::Handle *out_handle, KUserPointer<const char *> name) {
-        return ConnectToNamedPort(out_handle, name);
+        R_RETURN(ConnectToNamedPort(out_handle, name));
     }
 
     Result CreatePort64From32(ams::svc::Handle *out_server_handle, ams::svc::Handle *out_client_handle, int32_t max_sessions, bool is_light, ams::svc::Address name) {
-        return CreatePort(out_server_handle, out_client_handle, max_sessions, is_light, name);
+        R_RETURN(CreatePort(out_server_handle, out_client_handle, max_sessions, is_light, name));
     }
 
     Result ManageNamedPort64From32(ams::svc::Handle *out_server_handle, KUserPointer<const char *> name, int32_t max_sessions) {
-        return ManageNamedPort(out_server_handle, name, max_sessions);
+        R_RETURN(ManageNamedPort(out_server_handle, name, max_sessions));
     }
 
     Result ConnectToPort64From32(ams::svc::Handle *out_handle, ams::svc::Handle port) {
-        return ConnectToPort(out_handle, port);
+        R_RETURN(ConnectToPort(out_handle, port));
     }
 
 }

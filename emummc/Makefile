@@ -32,7 +32,7 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=$(EMUMMCDIR)/emummc.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
@@ -98,7 +98,10 @@ else
 
 DEPENDS	:=	$(OFILES:.o=.d)
 
-all	:	$(OUTPUT).kip
+all	:	$(OUTPUT)_unpacked.kip
+
+$(OUTPUT)_unpacked.kip	:	$(OUTPUT).kip
+	@hactool -t kip --uncompressed=$(OUTPUT)_unpacked.kip $(OUTPUT).kip
 
 $(OUTPUT).kip	:	$(OUTPUT).elf
 

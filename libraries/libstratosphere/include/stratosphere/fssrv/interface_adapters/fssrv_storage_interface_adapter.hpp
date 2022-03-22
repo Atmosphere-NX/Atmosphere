@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,24 +27,24 @@ namespace ams::fs {
 
 namespace ams::fssrv::impl {
 
-    class StorageInterfaceAdapter final {
+    class StorageInterfaceAdapter {
         NON_COPYABLE(StorageInterfaceAdapter);
         private:
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
-            std::shared_ptr<fs::IStorage> base_storage;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
-            os::ReadWriteLock invalidation_lock;
+            std::shared_ptr<fs::IStorage> m_base_storage;
+            util::unique_lock<fssystem::SemaphoreAdapter> m_open_count_semaphore;
+            os::ReaderWriterLock m_invalidation_lock;
             /* TODO: DataStorageContext. */
-            bool deep_retry_enabled = false;
+            bool m_deep_retry_enabled = false;
         public:
             StorageInterfaceAdapter(fs::IStorage *storage);
             StorageInterfaceAdapter(std::unique_ptr<fs::IStorage> storage);
-            explicit StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> &&storage);
+            explicit StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> storage);
             /* TODO: Other constructors. */
 
             ~StorageInterfaceAdapter();
         private:
-            std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
+            util::optional<std::shared_lock<os::ReaderWriterLock>> AcquireCacheInvalidationReadLock();
         public:
             /* Command API. */
             Result Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,43 +22,45 @@ namespace ams::fssrv {
 
     class MemoryResourceFromExpHeap : public ams::MemoryResource {
         private:
-            lmem::HeapHandle heap_handle;
+            lmem::HeapHandle m_heap_handle;
         public:
-            constexpr explicit MemoryResourceFromExpHeap(lmem::HeapHandle handle) : heap_handle(handle) { /* ... */ }
+            constexpr explicit MemoryResourceFromExpHeap(lmem::HeapHandle handle) : m_heap_handle(handle) { /* ... */ }
         protected:
             virtual void *AllocateImpl(size_t size, size_t align) override {
-                return lmem::AllocateFromExpHeap(this->heap_handle, size, static_cast<s32>(align));
+                return lmem::AllocateFromExpHeap(m_heap_handle, size, static_cast<s32>(align));
             }
 
             virtual void DeallocateImpl(void *p, size_t size, size_t align) override {
-                return lmem::FreeToExpHeap(this->heap_handle, p);
+                AMS_UNUSED(size, align);
+                return lmem::FreeToExpHeap(m_heap_handle, p);
             }
 
             virtual bool IsEqualImpl(const MemoryResource &rhs) const override {
+                AMS_UNUSED(rhs);
                 return false;
             }
     };
 
     class PeakCheckableMemoryResourceFromExpHeap : public ams::MemoryResource {
         private:
-            lmem::HeapHandle heap_handle;
-            os::Mutex mutex;
-            size_t peak_free_size;
-            size_t current_free_size;
+            lmem::HeapHandle m_heap_handle;
+            os::SdkMutex m_mutex;
+            size_t m_peak_free_size;
+            size_t m_current_free_size;
         public:
-            constexpr explicit PeakCheckableMemoryResourceFromExpHeap(size_t heap_size) : heap_handle(nullptr), mutex(false), peak_free_size(heap_size), current_free_size(heap_size) { /* ... */ }
+            constexpr explicit PeakCheckableMemoryResourceFromExpHeap(size_t heap_size) : m_heap_handle(nullptr), m_mutex(), m_peak_free_size(heap_size), m_current_free_size(heap_size) { /* ... */ }
 
             void SetHeapHandle(lmem::HeapHandle handle) {
-                this->heap_handle = handle;
+                m_heap_handle = handle;
             }
 
-            size_t GetPeakFreeSize() const { return this->peak_free_size; }
-            size_t GetCurrentFreeSize() const { return this->current_free_size; }
+            size_t GetPeakFreeSize() const { return m_peak_free_size; }
+            size_t GetCurrentFreeSize() const { return m_current_free_size; }
 
-            void ClearPeak() { this->peak_free_size = this->current_free_size; }
+            void ClearPeak() { m_peak_free_size = m_current_free_size; }
 
-            std::scoped_lock<os::Mutex> GetScopedLock() {
-                return std::scoped_lock(this->mutex);
+            std::scoped_lock<os::SdkMutex> GetScopedLock() {
+                return std::scoped_lock(m_mutex);
             }
 
             void OnAllocate(void *p, size_t size);
@@ -67,6 +69,7 @@ namespace ams::fssrv {
             virtual void *AllocateImpl(size_t size, size_t align) override;
             virtual void DeallocateImpl(void *p, size_t size, size_t align) override;
             virtual bool IsEqualImpl(const MemoryResource &rhs) const override {
+                AMS_UNUSED(rhs);
                 return false;
             }
     };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -57,5 +57,7 @@ namespace ams::diag {
         /* This can never be reached. */
         __builtin_unreachable();
     }
+
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
 
 }

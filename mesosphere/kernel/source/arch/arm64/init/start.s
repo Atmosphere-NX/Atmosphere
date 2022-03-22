@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <mesosphere/kern_select_assembly_offsets.h>
 
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
@@ -53,7 +54,7 @@ __metadata_kernel_layout:
     .word __bss_start__      - _start /* rw_end_offset */
     .word __bss_start__      - _start /* bss_offset */
     .word __bss_end__        - _start /* bss_end_offset */
-    .word __end__            - _start /* ini_load_offset */
+    .word __end__            - _start /* resource_offset */
     .word _DYNAMIC           - _start /* dynamic_offset */
     .word __init_array_start - _start /* init_array_offset */
     .word __init_array_end   - _start /* init_array_end_offset */
@@ -123,10 +124,10 @@ core0_el1:
 
     /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */
     /* Next thing to do is to set up our memory management and slabheaps -- all the other core initialization. */
-    /* Call ams::kern::init::InitializeCore(uintptr_t, uintptr_t) */
-    mov x1, x0  /* Kernelldr returns a KInitialPageAllocator state for the kernel to re-use. */
+    /* Call ams::kern::init::InitializeCore(uintptr_t, void **) */
+    mov x1, x0  /* Kernelldr returns a state object for the kernel to re-use. */
     mov x0, xzr /* Official kernel always passes zero, when this is non-zero the address is mapped. */
-    bl _ZN3ams4kern4init14InitializeCoreEmm
+    bl _ZN3ams4kern4init14InitializeCoreEmPPv
 
     /* Get the init arguments for core 0. */
     mov x0, xzr
@@ -157,13 +158,13 @@ othercore_el1:
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
     /* Setup system registers using values from our KInitArguments. */
-    ldr x1, [x20, #0x00]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TTBR0)]
     msr ttbr0_el1, x1
-    ldr x1, [x20, #0x08]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TTBR1)]
     msr ttbr1_el1, x1
-    ldr x1, [x20, #0x10]
+    ldr x1, [x20, #(INIT_ARGUMENTS_TCR)]
     msr tcr_el1, x1
-    ldr x1, [x20, #0x18]
+    ldr x1, [x20, #(INIT_ARGUMENTS_MAIR)]
     msr mair_el1, x1
 
     /* Perform cpu-specific setup. */
@@ -179,9 +180,9 @@ othercore_el1:
     b othercore_cpu_specific_setup_end
 othercore_cpu_specific_setup_cortex_a57:
 othercore_cpu_specific_setup_cortex_a53:
-    ldr x1, [x20, #0x20]
+    ldr x1, [x20, #(INIT_ARGUMENTS_CPUACTLR)]
     msr cpuactlr_el1, x1
-    ldr x1, [x20, #0x28]
+    ldr x1, [x20, #(INIT_ARGUMENTS_CPUECTLR)]
     msr cpuectlr_el1, x1
 
 othercore_cpu_specific_setup_end:
@@ -190,14 +191,14 @@ othercore_cpu_specific_setup_end:
     isb
 
     /* Set sctlr_el1 and ensure instruction consistency. */
-    ldr x1, [x20, #0x30]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SCTLR)]
     msr sctlr_el1, x1
 
     dsb sy
     isb
 
     /* Jump to the virtual address equivalent to ams::kern::init::InvokeEntrypoint */
-    ldr x1, [x20, #0x50]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SETUP_FUNCTION)]
     adr x2, _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE
     sub x1, x1, x2
     adr x2, _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE
@@ -218,7 +219,7 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     isb
 
     /* Setup the stack pointer. */
-    ldr x1, [x20, #0x38]
+    ldr x1, [x20, #(INIT_ARGUMENTS_SP)]
     mov sp, x1
 
     /* Ensure that system debug registers are setup. */
@@ -227,9 +228,13 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     /* Ensure that the exception vectors are setup. */
     bl _ZN3ams4kern4init26InitializeExceptionVectorsEv
 
+    /* Setup the exception stack in cntv_cval_el0. */
+    ldr x1, [x20, #(INIT_ARGUMENTS_EXCEPTION_STACK)]
+    msr cntv_cval_el0, x1
+
     /* Jump to the entrypoint. */
-    ldr x1, [x20, #0x40]
-    ldr x0, [x20, #0x48]
+    ldr x1, [x20, #(INIT_ARGUMENTS_ENTRYPOINT)]
+    ldr x0, [x20, #(INIT_ARGUMENTS_ARGUMENT)]
     br x1
 
 
@@ -245,6 +250,27 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     bl _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv
 
     /* Setup system registers for deprivileging. */
+
+    /* Check if we're on cortex A57 or A53. If we are, set ACTLR_EL2. */
+    mrs  x1, midr_el1
+
+    /* Is the manufacturer ID 'A' (ARM)? */
+    ubfx x2, x1, #0x18, #8
+    cmp x2, #0x41
+    b.ne 2f
+
+    /* Is the board ID Cortex-A57? */
+    ubfx x2, x1, #4, #0xC
+    mov x3, #0xD07
+    cmp x2, x3
+    b.eq 1f
+
+    /* Is the board ID Cortex-A53? */
+    mov x3, #0xD03
+    cmp x2, x3
+    b.ne 2f
+
+1:
     /* ACTLR_EL2: */
     /*  - CPUACTLR access control = 1 */
     /*  - CPUECTLR access control = 1 */
@@ -254,6 +280,7 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     mov x0, #0x73
     msr actlr_el2, x0
 
+2:
     /* HCR_EL2: */
     /*  - RW = 1 (el1 is aarch64) */
     mov x0, #0x80000000
@@ -270,6 +297,14 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     /*  - Manager access for all D<n> */
     mov x0, #0xFFFFFFFF
     msr dacr32_el2, x0
+
+    /* Set VPIDR_EL2 = MIDR_EL1 */
+    mrs x0, midr_el1
+    msr vpidr_el2, x0
+
+    /* SET VMPIDR_EL2 = MPIDR_EL1 */
+    mrs x0, mpidr_el1
+    msr vmpidr_el2, x0
 
     /* SPSR_EL2: */
     /*  - EL1h */
@@ -348,20 +383,20 @@ _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv:
     /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
     ubfx x10, x10, #0x15, 3
 
-    /* int level = levels_of_unification - 1 */
-    sub w9, w10, #1
+    /* int level = 0 */
+    mov x9, xzr
 
-    /* while (level >= 0) { */
+    /* while (level <= levels_of_unification) { */
 begin_flush_cache_local_loop:
-    cmn w9, #1
+    cmp x9, x10
     b.eq done_flush_cache_local_loop
 
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
-    /*     level--; */
-    sub w9, w9, #1
+    /*     level++; */
+    add w9, w9, #1
 
     /* } */
     b begin_flush_cache_local_loop
@@ -381,23 +416,23 @@ _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
     /* CacheLineIdAccessor clidr_el1; */
     mrs x10, clidr_el1
     /* const int levels_of_coherency   = clidr_el1.GetLevelsOfCoherency(); */
-    ubfx x9, x10,  #0x18, 3
+    ubfx x9, x10,  #0x15, 3
     /* const int levels_of_unification = clidr_el1.GetLevelsOfUnification(); */
-    ubfx x10, x10, #0x15, 3
+    ubfx x10, x10, #0x18, 3
 
-    /* int level = levels_of_coherency */
+    /* int level = levels_of_unification */
 
-    /* while (level >= levels_of_unification) { */
+    /* while (level <= levels_of_coherency) { */
 begin_flush_cache_shared_loop:
-    cmp w10, w9
-    b.gt done_flush_cache_shared_loop
+    cmp w9, w10
+    b.hi done_flush_cache_shared_loop
 
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
-    /*     level--; */
-    sub w9, w9, #1
+    /*     level++; */
+    add w9, w9, #1
 
     /* } */
     b begin_flush_cache_shared_loop

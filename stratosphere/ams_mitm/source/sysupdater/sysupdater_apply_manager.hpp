@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,9 +20,9 @@ namespace ams::mitm::sysupdater {
 
     class SystemUpdateApplyManager {
         private:
-            os::Mutex apply_mutex;
+            os::SdkMutex m_apply_mutex;
         public:
-            constexpr SystemUpdateApplyManager() : apply_mutex(false) { /* ... */ }
+            constexpr SystemUpdateApplyManager() : m_apply_mutex() { /* ... */ }
 
             Result ApplyPackageTask(ncm::PackageSystemDowngradeTask *task);
     };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,7 +21,7 @@ namespace ams::erpt::srv {
 
     ReportFileName Report::FileName(ReportId report_id, bool redirect_to_sd) {
         ReportFileName report_name;
-        std::snprintf(report_name.name, sizeof(report_name.name),
+        util::SNPrintf(report_name.name, sizeof(report_name.name),
                       "%s:/%08x-%04x-%04x-%02x%02x-%04x%08x",
                       (redirect_to_sd ? ReportOnSdStoragePath : ReportStoragePath),
                       report_id.uuid_data.time_low,
@@ -34,20 +34,20 @@ namespace ams::erpt::srv {
         return report_name;
     }
 
-    Report::Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd) : record(r), redirect_to_sd_card(redirect_to_sd) {
-        this->record->AddReference();
+    Report::Report(JournalRecord<ReportInfo> *r, bool redirect_to_sd) : m_record(r), m_redirect_to_sd_card(redirect_to_sd) {
+        m_record->AddReference();
     }
 
     Report::~Report() {
         this->CloseStream();
-        if (this->record->RemoveReference()) {
+        if (m_record->RemoveReference()) {
             this->DeleteStream(this->FileName().name);
-            delete this->record;
+            delete m_record;
         }
     }
 
-    ReportFileName Report::FileName() {
-        return FileName(this->record->info.id, this->redirect_to_sd_card);
+    ReportFileName Report::FileName() const {
+        return FileName(m_record->m_info.id, m_redirect_to_sd_card);
     }
 
     Result Report::Open(ReportOpenType type) {
@@ -70,20 +70,20 @@ namespace ams::erpt::srv {
         return this->CloseStream();
     }
 
-    Result Report::GetFlags(ReportFlagSet *out) {
-        *out = this->record->info.flags;
+    Result Report::GetFlags(ReportFlagSet *out) const {
+        *out = m_record->m_info.flags;
         return ResultSuccess();
     }
 
     Result Report::SetFlags(ReportFlagSet flags) {
-        if (((~this->record->info.flags) & flags).IsAnySet()) {
-            this->record->info.flags |= flags;
+        if (((~m_record->m_info.flags) & flags).IsAnySet()) {
+            m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
         return ResultSuccess();
     }
 
-    Result Report::GetSize(s64 *out) {
+    Result Report::GetSize(s64 *out) const {
         return this->GetStreamSize(out);
     }
 

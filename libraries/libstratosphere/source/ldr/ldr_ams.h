@@ -16,8 +16,8 @@ typedef struct {
     u64 flags;
 } CfgOverrideStatus;
 
-Result ldrPmAtmosphereHasLaunchedProgram(bool *out, u64 program_id);
-Result ldrDmntAtmosphereHasLaunchedProgram(bool *out, u64 program_id);
+Result ldrPmAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id);
+Result ldrDmntAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id);
 
 Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out, CfgOverrideStatus *out_status, const NcmProgramLocation *loc);
 Result ldrPmAtmospherePinProgram(u64 *out, const NcmProgramLocation *loc, const CfgOverrideStatus *status);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -317,6 +317,38 @@ namespace ams::svc::codegen::impl {
                 return true;
             }
 
+            template<typename Conversion, size_t ParameterIndex = 0>
+            static constexpr void SanitizeInputBooleans(MetaCodeGenerator &mcg) {
+                /* Get the input layout. */
+                constexpr auto InputLayout = Conversion::LayoutForSvc.GetInputLayout();
+
+                /* Check if we're done. */
+                if constexpr (ParameterIndex < InputLayout.GetNumParameters()) {
+                    /* Get the relevant parameter. */
+                    constexpr auto Param = InputLayout.GetParameter(ParameterIndex);
+
+                    /* Handle the case where the parameter is a boolean. */
+                    if constexpr (Param.IsBoolean()) {
+                        /* Boolean parameters should have one location. */
+                        static_assert(Param.GetNumLocations() == 1);
+
+                        /* Get the location. */
+                        constexpr auto Loc = Param.GetLocation(0);
+
+                        /* TODO: Support boolean parameters passed-by-stack. */
+                        static_assert(Loc.GetStorage() == Storage::Register);
+
+                        /* Convert the input to boolean. */
+                        mcg.template ConvertToBoolean<Loc.GetIndex()>();
+                    }
+
+                    /* Handle the next parameter. */
+                    if constexpr (ParameterIndex + 1 < InputLayout.GetNumParameters()) {
+                        SanitizeInputBooleans<Conversion, ParameterIndex + 1>(mcg);
+                    }
+                }
+            }
+
             template<typename... T>
             struct TypeIndexFilter {
 
@@ -436,6 +468,9 @@ namespace ams::svc::codegen::impl {
                     mcg.template AllocateStackSpace<UsedStackSpace>();
                 }
 
+                /* Sanitize all input booleans. */
+                SanitizeInputBooleans<Conversion>(mcg);
+
                 /* Generate code for before operations. */
                 if constexpr (Conversion::NumBeforeOperations > 0) {
                     allocator = GenerateBeforeOperations<Conversion, InitialAllocator>(mcg, typename Conversion::BeforeOperations{});
@@ -528,6 +563,7 @@ namespace ams::svc::codegen::impl {
 
 /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
 #pragma GCC push_options
+#pragma GCC optimize ("-O2")
 #pragma GCC optimize ("omit-frame-pointer")
 
             static ALWAYS_INLINE ReturnType WrapSvcFunction() {

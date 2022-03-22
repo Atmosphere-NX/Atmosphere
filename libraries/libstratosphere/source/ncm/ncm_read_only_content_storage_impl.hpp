@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,7 +28,7 @@ namespace ams::ncm {
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) override;
             virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) override;
             virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) override;
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) override;
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) override;
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) override;
             virtual Result Delete(ContentId content_id) override;
             virtual Result Has(sf::Out<bool> out, ContentId content_id) override;
@@ -42,18 +42,20 @@ namespace ams::ncm {
             virtual Result DisableForcibly() override;
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) override;
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) override;
-            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) override;
+            virtual Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) override;
             virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) override;
             virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) override;
             virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) override;
             virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) override;
-            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) override;
+            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) override;
             virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) override;
             virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) override;
             virtual Result FlushPlaceHolder() override;
             virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) override;
             virtual Result RepairInvalidFileAttribute() override;
             virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
+            virtual Result RegisterPath(const ContentId &content_id, const Path &path) override;
+            virtual Result ClearRegisteredPath() override;
     };
 
 }

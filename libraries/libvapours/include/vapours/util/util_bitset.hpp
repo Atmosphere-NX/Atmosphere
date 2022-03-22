@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_bitutil.hpp>
 
 namespace ams::util {
 
@@ -30,32 +31,28 @@ namespace ams::util {
                 static_assert(sizeof(Storage) <= sizeof(u64));
 
                 static constexpr size_t FlagsPerWord = BITSIZEOF(Storage);
-                static constexpr size_t NumWords     = util::AlignUp(N, FlagsPerWord) / FlagsPerWord;
-
-                static constexpr ALWAYS_INLINE auto CountLeadingZeroImpl(Storage word) {
-                    return __builtin_clzll(static_cast<unsigned long long>(word)) - (BITSIZEOF(unsigned long long) - FlagsPerWord);
-                }
+                static constexpr size_t NumWords     = util::DivideUp(N, FlagsPerWord);
 
                 static constexpr ALWAYS_INLINE Storage GetBitMask(size_t bit) {
-                    return Storage(1) << (FlagsPerWord - 1 - bit);
+                    return static_cast<Storage>(1) << (FlagsPerWord - 1 - bit);
                 }
             private:
-                Storage words[NumWords];
+                Storage m_words[NumWords];
             public:
-                constexpr ALWAYS_INLINE BitSet() : words() { /* ... */ }
+                constexpr ALWAYS_INLINE BitSet() : m_words() { /* ... */ }
 
                 constexpr ALWAYS_INLINE void SetBit(size_t i) {
-                    this->words[i / FlagsPerWord] |= GetBitMask(i % FlagsPerWord);
+                    m_words[i / FlagsPerWord] |= GetBitMask(i % FlagsPerWord);
                 }
 
                 constexpr ALWAYS_INLINE void ClearBit(size_t i) {
-                    this->words[i / FlagsPerWord] &= ~GetBitMask(i % FlagsPerWord);
+                    m_words[i / FlagsPerWord] &= ~GetBitMask(i % FlagsPerWord);
                 }
 
                 constexpr ALWAYS_INLINE size_t CountLeadingZero() const {
                     for (size_t i = 0; i < NumWords; i++) {
-                        if (this->words[i]) {
-                            return FlagsPerWord * i + CountLeadingZeroImpl(this->words[i]);
+                        if (m_words[i]) {
+                            return FlagsPerWord * i + util::CountLeadingZeros<Storage>(m_words[i]);
                         }
                     }
                     return FlagsPerWord * NumWords;
@@ -63,12 +60,12 @@ namespace ams::util {
 
                 constexpr ALWAYS_INLINE size_t GetNextSet(size_t n) const {
                     for (size_t i = (n + 1) / FlagsPerWord; i < NumWords; i++) {
-                        Storage word = this->words[i];
+                        Storage word = m_words[i];
                         if (!util::IsAligned(n + 1, FlagsPerWord)) {
                             word &= GetBitMask(n % FlagsPerWord) - 1;
                         }
                         if (word) {
-                            return FlagsPerWord * i + CountLeadingZeroImpl(word);
+                            return FlagsPerWord * i + util::CountLeadingZeros<Storage>(word);
                         }
                     }
                     return FlagsPerWord * NumWords;

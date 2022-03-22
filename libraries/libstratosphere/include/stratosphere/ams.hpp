@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ams/ams_types.hpp"
-#include "ams/ams_exosphere_api.hpp"
-#include "ams/ams_emummc_api.hpp"
-#include "ams/ams_environment.hpp"
+#include <stratosphere/ams/ams_types.hpp>
+#include <stratosphere/ams/ams_exosphere_api.hpp>
+#include <stratosphere/ams/ams_emummc_api.hpp>
+#include <stratosphere/ams/ams_environment.hpp>

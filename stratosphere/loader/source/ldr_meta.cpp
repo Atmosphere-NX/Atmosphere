@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -43,24 +43,33 @@ namespace ams::ldr {
 
         /* Helpers. */
         Result ValidateSubregion(size_t allowed_start, size_t allowed_end, size_t start, size_t size, size_t min_size = 0) {
-            R_UNLESS(size >= min_size,            ResultInvalidMeta());
-            R_UNLESS(allowed_start <= start,      ResultInvalidMeta());
-            R_UNLESS(start <= allowed_end,        ResultInvalidMeta());
-            R_UNLESS(start + size <= allowed_end, ResultInvalidMeta());
+            R_UNLESS(size >= min_size,            ldr::ResultInvalidMeta());
+            R_UNLESS(allowed_start <= start,      ldr::ResultInvalidMeta());
+            R_UNLESS(start <= allowed_end,        ldr::ResultInvalidMeta());
+            R_UNLESS(start + size <= allowed_end, ldr::ResultInvalidMeta());
             return ResultSuccess();
         }
 
         Result ValidateNpdm(const Npdm *npdm, size_t size) {
             /* Validate magic. */
-            R_UNLESS(npdm->magic == Npdm::Magic, ResultInvalidMeta());
+            R_UNLESS(npdm->magic == Npdm::Magic, ldr::ResultInvalidMeta());
 
             /* Validate flags. */
-            u32 mask = ~0x1F;
-            if (hos::GetVersion() < hos::Version_7_0_0) {
-                /* 7.0.0 added 0x10 as a valid bit to NPDM flags, so before that we only check 0xF. */
+            u32 mask;
+            if (hos::GetVersion() >= hos::Version_11_0_0) {
+                /* 11.0.0 added bit 5 = "DisableDeviceAddressSpaceMerge". */
+                mask = ~0x3F;
+            } else if (hos::GetVersion() >= hos::Version_7_0_0) {
+                /* 7.0.0 added bit 4 = "UseOptimizedMemory" */
+                mask = ~0x1F;
+            } else {
                 mask = ~0xF;
             }
-            R_UNLESS(!(npdm->flags & mask), ResultInvalidMeta());
+
+            /* We set the "DisableDeviceAddressSpaceMerge" bit on all versions, so be permissive with it. */
+            mask &= ~0x20;
+
+            R_UNLESS(!(npdm->flags & mask), ldr::ResultInvalidMeta());
 
             /* Validate Acid extents. */
             R_TRY(ValidateSubregion(sizeof(Npdm), size, npdm->acid_offset, npdm->acid_size, sizeof(Acid)));
@@ -73,11 +82,11 @@ namespace ams::ldr {
 
         Result ValidateAcid(const Acid *acid, size_t size) {
             /* Validate magic. */
-            R_UNLESS(acid->magic == Acid::Magic, ResultInvalidMeta());
+            R_UNLESS(acid->magic == Acid::Magic, ldr::ResultInvalidMeta());
 
             /* Validate that the acid is for production if not development. */
             if (!IsDevelopmentForAcidProductionCheck()) {
-                R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ResultInvalidMeta());
+                R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ldr::ResultInvalidMeta());
             }
 
             /* Validate Fac, Sac, Kac. */
@@ -90,7 +99,7 @@ namespace ams::ldr {
 
         Result ValidateAci(const Aci *aci, size_t size) {
             /* Validate magic. */
-            R_UNLESS(aci->magic == Aci::Magic, ResultInvalidMeta());
+            R_UNLESS(aci->magic == Aci::Magic, ldr::ResultInvalidMeta());
 
             /* Validate Fah, Sac, Kac. */
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->fah_offset, aci->fah_size));
@@ -121,7 +130,7 @@ namespace ams::ldr {
             const u8 *msg         = meta->acid->modulus;
             const size_t msg_size = meta->acid->size;
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
-            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ResultInvalidAcidSignature());
+            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ldr::ResultInvalidAcidSignature());
 
             meta->check_verification_data = is_signature_valid;
             return ResultSuccess();
@@ -138,16 +147,16 @@ namespace ams::ldr {
                 R_TRY(fs::GetFileSize(std::addressof(npdm_size), file));
 
                 /* Read data into cache buffer. */
-                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ResultTooLargeMeta());
+                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ldr::ResultMetaOverflow());
                 R_TRY(fs::ReadFile(file, 0, cache->buffer, npdm_size));
             }
 
             /* Ensure size is big enough. */
-            R_UNLESS(npdm_size >= static_cast<s64>(sizeof(Npdm)), ResultInvalidMeta());
+            R_UNLESS(npdm_size >= static_cast<s64>(sizeof(Npdm)), ldr::ResultInvalidMeta());
 
             /* Validate the meta. */
             {
-                Meta *meta = &cache->meta;
+                Meta *meta = std::addressof(cache->meta);
 
                 Npdm *npdm = reinterpret_cast<Npdm *>(cache->buffer);
                 R_TRY(ValidateNpdm(npdm, npdm_size));
@@ -185,11 +194,11 @@ namespace ams::ldr {
         R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
         {
             ON_SCOPE_EXIT { fs::CloseFile(file); };
-            R_TRY(LoadMetaFromFile(file, &g_meta_cache));
+            R_TRY(LoadMetaFromFile(file, std::addressof(g_meta_cache)));
         }
 
         /* Patch meta. Start by setting all program ids to the current program id. */
-        Meta *meta = &g_meta_cache.meta;
+        Meta *meta = std::addressof(g_meta_cache.meta);
         meta->acid->program_id_min = loc.program_id;
         meta->acid->program_id_max = loc.program_id;
         meta->aci->program_id      = loc.program_id;
@@ -198,8 +207,10 @@ namespace ams::ldr {
         if (status.IsHbl()) {
             if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), SdOrBaseMetaPath, fs::OpenMode_Read))) {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
-                if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
-                    Meta *o_meta = &g_original_meta_cache.meta;
+
+
+                if (R_SUCCEEDED(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)))) {
+                    Meta *o_meta = std::addressof(g_original_meta_cache.meta);
 
                     /* Fix pool partition. */
                     if (hos::GetVersion() >= hos::Version_5_0_0) {
@@ -207,9 +218,33 @@ namespace ams::ldr {
                     }
 
                     /* Fix flags. */
-                    const u16 program_info_flags = caps::GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
-                    caps::SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
-                    caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
+                    const u16 program_info_flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(o_meta->aci_kac), o_meta->aci->kac_size / sizeof(util::BitPack32));
+                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+                    UpdateProgramInfoFlag(program_info_flags, static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
+                }
+            }
+
+            /* Perform address space override. */
+            if (status.HasOverrideAddressSpace()) {
+                /* Clear the existing address space. */
+                meta->npdm->flags &= ~Npdm::MetaFlag_AddressSpaceTypeMask;
+
+                /* Set the new address space flag. */
+                switch (status.GetOverrideAddressSpaceFlags()) {
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_32Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+
+            /* When hbl is applet, adjust main thread priority. */
+            if ((MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32)) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
+                constexpr auto HblMainThreadPriorityApplication = 44;
+                constexpr auto HblMainThreadPriorityApplet      = 40;
+                if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
+                    meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
                 }
             }
         } else if (hos::GetVersion() >= hos::Version_10_0_0) {
@@ -218,8 +253,8 @@ namespace ams::ldr {
             if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None || ncm::IsApplicationId(loc.program_id)) {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
-                R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
-                R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
+                R_TRY(LoadMetaFromFile(file, std::addressof(g_original_meta_cache)));
+                R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));
                 meta->modulus                 = g_original_meta_cache.meta.modulus;
                 meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
             }
@@ -227,8 +262,8 @@ namespace ams::ldr {
 
         /* Pre-process the capabilities. */
         /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
-        caps::ProcessCapabilities(meta->acid_kac, meta->acid->kac_size);
-        caps::ProcessCapabilities(meta->aci_kac, meta->aci->kac_size);
+        PreProcessCapability(static_cast<util::BitPack32 *>(meta->acid_kac), meta->acid->kac_size / sizeof(util::BitPack32));
+        PreProcessCapability(static_cast<util::BitPack32 *>(meta->aci_kac),  meta->aci->kac_size  / sizeof(util::BitPack32));
 
         /* Set output. */
         g_cached_program_id = loc.program_id;

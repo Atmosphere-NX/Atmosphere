@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,26 +24,34 @@ namespace ams::kern {
     class KReadableEvent : public KSynchronizationObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KReadableEvent, KSynchronizationObject);
         private:
-            bool is_signaled;
-            KEvent *parent_event;
+            bool m_is_signaled;
+            KEvent *m_parent;
         public:
-            constexpr explicit KReadableEvent() : KSynchronizationObject(), is_signaled(), parent_event() { MESOSPHERE_ASSERT_THIS(); }
-            virtual ~KReadableEvent() { MESOSPHERE_ASSERT_THIS(); }
+            constexpr explicit KReadableEvent(util::ConstantInitializeTag) : KSynchronizationObject(util::ConstantInitialize), m_is_signaled(), m_parent() { MESOSPHERE_ASSERT_THIS(); }
 
-            constexpr void Initialize(KEvent *parent) {
+            explicit KReadableEvent() { /* ... */ }
+
+            void Initialize(KEvent *parent);
+
+            constexpr KEvent *GetParent() const { return m_parent; }
+
+            Result Signal();
+            Result Reset();
+
+            Result Clear() {
                 MESOSPHERE_ASSERT_THIS();
-                this->is_signaled  = false;
-                this->parent_event = parent;
-            }
 
-            constexpr KEvent *GetParent() const { return this->parent_event; }
+                /* Try to perform a reset, succeeding unconditionally. */
+                this->Reset();
+
+                R_SUCCEED();
+            }
 
             virtual bool IsSignaled() const override;
             virtual void Destroy() override;
 
-            virtual Result Signal();
-            virtual Result Clear();
-            virtual Result Reset();
+            /* NOTE: This is a virtual function in Nintendo's kernel. */
+            /* virtual Result Reset(); */
     };
 
 }

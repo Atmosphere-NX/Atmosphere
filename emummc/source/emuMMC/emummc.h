@@ -36,6 +36,9 @@ extern "C" {
 #include "../FS/FS.h"
 #include "../libs/fatfs/ff.h"
 
+#define EMUMMC_FILE_MAX_PARTS 32
+#define EMUMMC_FP_CLMT_COUNT  1024
+
 // FS typedefs
 typedef sdmmc_accessor_t *(*_sdmmc_accessor_gc)();
 typedef sdmmc_accessor_t *(*_sdmmc_accessor_sd)();
@@ -52,6 +55,7 @@ void mutex_lock_handler(int mmc_id);
 void mutex_unlock_handler(int mmc_id);
 
 // Hooks
+uint64_t sdmmc_wrapper_controller_open(int mmc_id);
 uint64_t sdmmc_wrapper_controller_close(int mmc_id);
 uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned int sector, unsigned int num_sectors);
 uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_sectors, void *buf, uint64_t bufSize);
@@ -62,11 +66,12 @@ typedef struct _file_based_ctxt
 	uint64_t parts;
 	uint64_t part_size;
 	FIL fp_boot0;
-	DWORD clmt_boot0[0x400];
+	DWORD clmt_boot0[EMUMMC_FP_CLMT_COUNT];
 	FIL fp_boot1;
-	DWORD clmt_boot1[0x400];
-	FIL fp_gpp[32];
-	DWORD clmt_gpp[0x8000];
+	DWORD clmt_boot1[EMUMMC_FP_CLMT_COUNT];
+	FIL fp_gpp[EMUMMC_FILE_MAX_PARTS];
+	DWORD clmt_gpp[EMUMMC_FILE_MAX_PARTS * EMUMMC_FP_CLMT_COUNT];
+	uint64_t total_sect;
 } file_based_ctxt;
 
 #ifdef __cplusplus

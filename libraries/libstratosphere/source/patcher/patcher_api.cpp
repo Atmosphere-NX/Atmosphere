@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,8 +31,8 @@ namespace ams::patcher {
         constexpr size_t ModuleIpsPatchLength = 2 * sizeof(ro::ModuleId) + IpsFileExtensionLength;
 
         /* Global data. */
-        os::Mutex apply_patch_lock(false);
-        u8 g_patch_read_buffer[os::MemoryPageSize];
+        constinit os::SdkMutex g_apply_patch_lock;
+        constinit u8 g_patch_read_buffer[os::MemoryPageSize];
 
         /* Helpers. */
         inline u8 ConvertHexNybble(const char nybble) {
@@ -56,8 +56,8 @@ namespace ams::patcher {
             /* Read module id from name. */
             std::memset(out_module_id, 0, sizeof(*out_module_id));
             for (unsigned int name_ofs = 0, id_ofs = 0; name_ofs < name_len - extension_len && id_ofs < sizeof(*out_module_id); id_ofs++) {
-                out_module_id->build_id[id_ofs] |= ConvertHexNybble(name[name_ofs++]) << 4;
-                out_module_id->build_id[id_ofs] |= ConvertHexNybble(name[name_ofs++]);
+                out_module_id->data[id_ofs] |= ConvertHexNybble(name[name_ofs++]) << 4;
+                out_module_id->data[id_ofs] |= ConvertHexNybble(name[name_ofs++]);
             }
 
             return true;
@@ -66,17 +66,17 @@ namespace ams::patcher {
         bool MatchesModuleId(const char *name, size_t name_len, size_t extension_len, const ro::ModuleId *module_id) {
             /* Get module id. */
             ro::ModuleId module_id_from_name;
-            if (!ParseModuleIdFromPath(&module_id_from_name, name, name_len, extension_len)) {
+            if (!ParseModuleIdFromPath(std::addressof(module_id_from_name), name, name_len, extension_len)) {
                 return false;
             }
 
-            return std::memcmp(&module_id_from_name, module_id, sizeof(*module_id)) == 0;
+            return std::memcmp(std::addressof(module_id_from_name), module_id, sizeof(*module_id)) == 0;
         }
 
         bool IsIpsFileForModule(const char *name, const ro::ModuleId *module_id) {
             const size_t name_len = std::strlen(name);
 
-            /* The path must be correct size for a build id (with trailing zeroes optionally trimmed) + ".ips". */
+            /* The path must be correct size for a module id (with trailing zeroes optionally trimmed) + ".ips". */
             if (!(IpsFileExtensionLength < name_len && name_len <= ModuleIpsPatchLength)) {
                 return false;
             }
@@ -112,6 +112,7 @@ namespace ams::patcher {
         }
 
         inline u32 GetIpsPatchSize(bool is_ips32, u8 *buffer) {
+            AMS_UNUSED(is_ips32);
             return (buffer[0] << 8) | (buffer[1]);
         }
 
@@ -213,11 +214,11 @@ namespace ams::patcher {
 
     void LocateAndApplyIpsPatchesToModule(const char *mount_name, const char *patch_dir_name, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size) {
         /* Ensure only one thread tries to apply patches at a time. */
-        std::scoped_lock lk(apply_patch_lock);
+        std::scoped_lock lk(g_apply_patch_lock);
 
         /* Inspect all patches from /atmosphere/<patch_dir>/<*>/<*>.ips */
         char path[fs::EntryNameLengthMax + 1];
-        std::snprintf(path, sizeof(path), "%s:/atmosphere/%s", mount_name, patch_dir_name);
+        util::SNPrintf(path, sizeof(path), "%s:/atmosphere/%s", mount_name, patch_dir_name);
         const size_t patches_dir_path_len = std::strlen(path);
 
         /* Open the patch directory. */
@@ -237,7 +238,7 @@ namespace ams::patcher {
             }
 
             /* Print the path for this directory. */
-            std::snprintf(path + patches_dir_path_len, sizeof(path) - patches_dir_path_len, "/%s", entry.name);
+            util::SNPrintf(path + patches_dir_path_len, sizeof(path) - patches_dir_path_len, "/%s", entry.name);
             const size_t patch_dir_path_len = patches_dir_path_len + 1 + std::strlen(entry.name);
 
             /* Open the patch directory. */
@@ -259,7 +260,7 @@ namespace ams::patcher {
                 }
 
                 /* Print the path for this file. */
-                std::snprintf(path + patch_dir_path_len, sizeof(path) - patch_dir_path_len, "/%s", entry.name);
+                util::SNPrintf(path + patch_dir_path_len, sizeof(path) - patch_dir_path_len, "/%s", entry.name);
 
                 /* Open the file. */
                 fs::FileHandle file;

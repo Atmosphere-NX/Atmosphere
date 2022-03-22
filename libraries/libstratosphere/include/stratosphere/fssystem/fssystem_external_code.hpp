@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,7 +22,7 @@ namespace ams::fssystem {
 
     fs::fsa::IFileSystem *GetExternalCodeFileSystem(ncm::ProgramId program_id);
 
-    Result CreateExternalCode(Handle *out, ncm::ProgramId program_id);
+    Result CreateExternalCode(os::NativeHandle *out, ncm::ProgramId program_id);
     void   DestroyExternalCode(ncm::ProgramId program_id);
 
 }

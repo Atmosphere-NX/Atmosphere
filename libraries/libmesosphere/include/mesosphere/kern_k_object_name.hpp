@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,10 +27,8 @@ namespace ams::kern {
 
             using List = util::IntrusiveListBaseTraits<KObjectName>::ListType;
         private:
-            char name[NameLengthMax];
-            KAutoObject *object;
-        public:
-            constexpr KObjectName() : name(), object() { /* ... */ }
+            char m_name[NameLengthMax];
+            KAutoObject *m_object;
         public:
             static Result NewFromName(KAutoObject *obj, const char *name);
             static Result Delete(KAutoObject *obj, const char *name);
@@ -47,6 +45,9 @@ namespace ams::kern {
                 Derived *derived = obj->DynamicCast<Derived *>();
                 R_UNLESS(derived != nullptr, svc::ResultNotFound());
 
+                /* Check that the object is closed. */
+                R_UNLESS(derived->IsServerClosed(), svc::ResultInvalidState());
+
                 return Delete(obj.GetPointerUnsafe(), name);
             }
 
@@ -60,7 +61,7 @@ namespace ams::kern {
             void Initialize(KAutoObject *obj, const char *name);
 
             bool MatchesName(const char *name) const;
-            KAutoObject *GetObject() const { return this->object; }
+            KAutoObject *GetObject() const { return m_object; }
     };
 
 }

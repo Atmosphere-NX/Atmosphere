@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,10 @@
 
 namespace ams::ncm {
 
-    class RemoteContentManagerImpl final {
+    class RemoteContentManagerImpl {
+        private:
+            /* TODO: sf::ProxyObjectAllocator */
+            using ObjectFactory = sf::ObjectFactory<sf::StdAllocationPolicy<std::allocator>>;
         public:
             RemoteContentManagerImpl() { /* ... */ }
 
@@ -42,19 +45,19 @@ namespace ams::ncm {
                 return ::ncmVerifyContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) {
+            Result OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id) {
                 NcmContentStorage cs;
                 R_TRY(::ncmOpenContentStorage(std::addressof(cs), static_cast<NcmStorageId>(storage_id)));
 
-                out.SetValue(sf::MakeShared<IContentStorage, RemoteContentStorageImpl>(cs));
+                out.SetValue(ObjectFactory::CreateSharedEmplaced<IContentStorage, RemoteContentStorageImpl>(cs));
                 return ResultSuccess();
             }
 
-            Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) {
+            Result OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
                 NcmContentMetaDatabase db;
                 R_TRY(::ncmOpenContentMetaDatabase(std::addressof(db), static_cast<NcmStorageId>(storage_id)));
 
-                out.SetValue(sf::MakeShared<IContentMetaDatabase, RemoteContentMetaDatabaseImpl>(db));
+                out.SetValue(ObjectFactory::CreateSharedEmplaced<IContentMetaDatabase, RemoteContentMetaDatabaseImpl>(db));
                 return ResultSuccess();
             }
 
@@ -92,6 +95,7 @@ namespace ams::ncm {
 
             Result GetMemoryReport(sf::Out<MemoryReport> out) {
                 /* TODO: libnx bindings */
+                AMS_UNUSED(out);
                 AMS_ABORT();
             }
     };

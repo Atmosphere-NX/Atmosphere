@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,10 +20,12 @@
 #include "erpt_srv_reporter.hpp"
 #include "erpt_srv_journal.hpp"
 #include "erpt_srv_service.hpp"
+#include "erpt_srv_forced_shutdown.hpp"
 
 namespace ams::erpt::srv {
 
-    lmem::HeapHandle g_heap_handle;
+    constinit lmem::HeapHandle g_heap_handle;
+    constinit ams::sf::ExpHeapAllocator g_sf_allocator;
 
     namespace {
 
@@ -31,6 +33,8 @@ namespace ams::erpt::srv {
         constexpr                  u32 SystemSaveDataFlags       = fs::SaveDataFlags_KeepAfterResettingSystemSaveDataWithoutUserSaveData;
         constexpr                  s64 SystemSaveDataSize        = 11_MB;
         constexpr                  s64 SystemSaveDataJournalSize = 2720_KB;
+
+        constinit bool g_automatic_report_cleanup_enabled = true;
 
         Result ExtendSystemSaveData() {
             s64 cur_journal_size;
@@ -73,11 +77,33 @@ namespace ams::erpt::srv {
         g_heap_handle = lmem::CreateExpHeap(mem, mem_size, lmem::CreateOption_ThreadSafe);
         AMS_ABORT_UNLESS(g_heap_handle != nullptr);
 
+        fs::InitializeForSystem();
         fs::SetAllocator(Allocate, DeallocateWithSize);
+        fs::SetEnabledAutoAbort(false);
 
         R_ABORT_UNLESS(fs::MountSdCardErrorReportDirectoryForAtmosphere(ReportOnSdStoragePath));
 
+        if (g_automatic_report_cleanup_enabled) {
+            constexpr s64 MinimumReportCountForCleanup = 1000;
+            s64 report_count = MinimumReportCountForCleanup;
+
+            fs::DirectoryHandle dir;
+            if (R_SUCCEEDED(fs::OpenDirectory(std::addressof(dir), ReportOnSdStoragePath, fs::OpenDirectoryMode_All))) {
+                ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
+
+                if (R_FAILED(fs::GetDirectoryEntryCount(std::addressof(report_count), dir))) {
+                    report_count = MinimumReportCountForCleanup;
+                }
+            }
+
+            if (report_count >= MinimumReportCountForCleanup) {
+                fs::CleanDirectoryRecursively(ReportOnSdStoragePath);
+            }
+        }
+
         R_ABORT_UNLESS(MountSystemSaveData());
+
+        g_sf_allocator.Attach(g_heap_handle);
 
         for (auto i = 0; i < CategoryId_Count; i++) {
             Context *ctx = new Context(static_cast<CategoryId>(i), 1);
@@ -86,10 +112,17 @@ namespace ams::erpt::srv {
 
         Journal::Restore();
 
+        Reporter::UpdatePowerOnTime();
+        Reporter::UpdateAwakeTime();
+
         return ResultSuccess();
     }
 
     Result InitializeAndStartService() {
+        /* Initialize forced shutdown detection. */
+        /* NOTE: Nintendo does not check error code here. */
+        InitializeForcedShutdownDetection();
+
         return InitializeService();
     }
 
@@ -99,22 +132,22 @@ namespace ams::erpt::srv {
 
     Result SetProductModel(const char *model, u32 model_len) {
         /* NOTE: Nintendo does not check that this allocation succeeds. */
-        auto *record = new ContextRecord(CategoryId_ProductModelInfo);
+        auto record = std::make_unique<ContextRecord>(CategoryId_ProductModelInfo);
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
         R_TRY(record->Add(FieldId_ProductModel, model, model_len));
-        R_TRY(Context::SubmitContextRecord(record));
+        R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         return ResultSuccess();
     }
 
     Result SetRegionSetting(const char *region, u32 region_len) {
         /* NOTE: Nintendo does not check that this allocation succeeds. */
-        auto *record = new ContextRecord(CategoryId_RegionSettingInfo);
+        auto record = std::make_unique<ContextRecord>(CategoryId_RegionSettingInfo);
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
 
         R_TRY(record->Add(FieldId_RegionSetting, region, region_len));
-        R_TRY(Context::SubmitContextRecord(record));
+        R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         return ResultSuccess();
     }
@@ -124,8 +157,21 @@ namespace ams::erpt::srv {
         return ResultSuccess();
     }
 
+    Result SetEnabledAutomaticReportCleanup(bool en) {
+        g_automatic_report_cleanup_enabled = en;
+        return ResultSuccess();
+    }
+
     void Wait() {
-        return WaitService();
+        /* Get the update event. */
+        os::Event *event = GetForcedShutdownUpdateEvent();
+
+        /* Forever wait, saving any updates. */
+        while (true) {
+            event->Wait();
+            event->Clear();
+            SaveForcedShutdownContext();
+        }
     }
 
 

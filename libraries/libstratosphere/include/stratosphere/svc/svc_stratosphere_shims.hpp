@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,6 +23,11 @@
             namespace aarch64::lp64 {
 
                 ALWAYS_INLINE Result SetHeapSize(::ams::svc::Address *out_address, ::ams::svc::Size size) {
+                    return ::svcSetHeapSize(reinterpret_cast<void **>(out_address), size);
+                }
+
+                ALWAYS_INLINE Result SetHeapSize(uintptr_t *out_address, ::ams::svc::Size size) {
+                    static_assert(sizeof(::ams::svc::Address) == sizeof(uintptr_t));
                     return ::svcSetHeapSize(reinterpret_cast<void **>(out_address), size);
                 }
 
@@ -238,6 +243,10 @@
                     return ::svcSynchronizePreemptionState();
                 }
 
+                ALWAYS_INLINE Result GetResourceLimitPeakValue(int64_t *out_peak_value, ::ams::svc::Handle resource_limit_handle, ::ams::svc::LimitableResource which) {
+                    return ::svcGetResourceLimitPeakValue(out_peak_value, resource_limit_handle, static_cast<::LimitableResource>(which));
+                }
+
                 ALWAYS_INLINE void KernelDebug(::ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
                     return ::svcKernelDebug(kern_debug_type, arg0, arg1, arg2);
                 }
@@ -350,10 +359,6 @@
                     return ::svcMapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm));
                 }
 
-                ALWAYS_INLINE Result MapDeviceAddressSpace(::ams::svc::Size *out_mapped_size, ::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address, ::ams::svc::MemoryPermission device_perm) {
-                    return ::svcMapDeviceAddressSpace(reinterpret_cast<u64 *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, static_cast<u32>(device_perm));
-                }
-
                 ALWAYS_INLINE Result UnmapDeviceAddressSpace(::ams::svc::Handle das_handle, ::ams::svc::Handle process_handle, uint64_t process_address, ::ams::svc::Size size, uint64_t device_address) {
                     return ::svcUnmapDeviceAddressSpace(das_handle, process_handle, process_address, size, device_address);
                 }
@@ -388,6 +393,10 @@
 
                 ALWAYS_INLINE Result ContinueDebugEvent(::ams::svc::Handle debug_handle, uint32_t flags, ::ams::svc::UserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {
                     return ::svcContinueDebugEvent(debug_handle, flags, const_cast<u64 *>(thread_ids.GetPointerUnsafe()), num_thread_ids);
+                }
+
+                ALWAYS_INLINE Result LegacyContinueDebugEvent(::ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
+                    return ::svcLegacyContinueDebugEvent(debug_handle, flags, thread_id);
                 }
 
                 ALWAYS_INLINE Result GetProcessList(int32_t *out_num_processes, ::ams::svc::UserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
@@ -501,6 +510,11 @@
         ALWAYS_INLINE bool IsKernelMesosphere() {
             uint64_t dummy;
             return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(dummy), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_KernelVersion));
+        }
+
+        ALWAYS_INLINE bool IsKTraceEnabled() {
+            uint64_t value = 0;
+            return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(value), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_IsKTraceEnabled)) && value != 0;
         }
 
     }

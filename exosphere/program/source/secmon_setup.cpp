@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,6 +18,7 @@
 #include "secmon_error.hpp"
 #include "secmon_map.hpp"
 #include "secmon_cpu_context.hpp"
+#include "secmon_mariko_fatal_error.hpp"
 #include "secmon_interrupt_handler.hpp"
 #include "secmon_misc.hpp"
 #include "smc/secmon_random_cache.hpp"
@@ -408,8 +409,8 @@ namespace ams::secmon {
                     reg0 |= reg::Encode(SLAVE_SECURITY_REG_BITS_ENUM(0, CEC, ENABLE));
                 }
 
-                /* Icosa, Iowa, and Five all set I2C4 to be secure. */
-                if (hw_type == fuse::HardwareType_Icosa && hw_type == fuse::HardwareType_Iowa && hw_type == fuse::HardwareType_Five) {
+                /* Icosa, Iowa, and Aula all set I2C4 to be secure. */
+                if (hw_type == fuse::HardwareType_Icosa && hw_type == fuse::HardwareType_Iowa && hw_type == fuse::HardwareType_Aula) {
                     reg1 |= reg::Encode(SLAVE_SECURITY_REG_BITS_ENUM(1, I2C4, ENABLE));
 
                 }
@@ -474,8 +475,8 @@ namespace ams::secmon {
 
             /* Lock cluster switching, to prevent usage of the A53 cores. */
             reg::Write(FLOW_CTLR + FLOW_CTLR_BPMP_CLUSTER_CONTROL, FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_ACTIVE_CLUSTER_LOCK,    ENABLE),
-                                                                FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_CLUSTER_SWITCH_ENABLE, DISABLE),
-                                                                FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_ACTIVE_CLUSTER,           FAST));
+                                                                   FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_CLUSTER_SWITCH_ENABLE, DISABLE),
+                                                                   FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_ACTIVE_CLUSTER,           FAST));
 
             /* Enable flow controller debug qualifier for legacy FIQs. */
             reg::Write(FLOW_CTLR + FLOW_CTLR_FLOW_DBG_QUAL, FLOW_REG_BITS_ENUM(FLOW_DBG_QUAL_FIQ2CCPLEX_ENABLE, ENABLE));
@@ -599,8 +600,8 @@ namespace ams::secmon {
                 g_kernel_carveouts[0].size = 200 * 128_KB;
             }
 
-            /* Configure the two kernel carveouts. */
-            SetupKernelCarveouts();
+            /* NOTE: Here Nintendo configures the two kernel carveouts; we will do this later, to allow fusee to continue using AVP_CACHE. */
+            /* SetupKernelCarveouts(); */
 
             /* Configure slave register security. */
             ConfigureSlaveSecurity();
@@ -648,7 +649,7 @@ namespace ams::secmon {
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Write(MC + MC_SMMU_PTC_FLUSH_0, 0);
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
@@ -814,6 +815,16 @@ namespace ams::secmon {
             reg::Read(MC + MC_IRAM_REG_CTRL);
         }
 
+        void DisableUntranslatedDeviceMemoryAccess() {
+            /* If we can (mariko only), disable GMMU accesses that bypass the SMMU. */
+            /* Additionally, force all untranslated acccesses to hit one of the carveouts. */
+            if (GetSocType() == fuse::SocType_Mariko) {
+                reg::Write(MC + MC_UNTRANSLATED_REGION_CHECK, MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_UNTRANSLATED_REGION_CHECK_ACCESS,          DISABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_CLIENTS_HIT_CARVEOUT,  ENABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_GPU_HIT_CARVEOUT,      ENABLED));
+            }
+        }
+
         void FinalizeCarveoutSecureScratchRegisters() {
             /* Define carveout scratch values. */
             constexpr uintptr_t WarmbootCarveoutAddress = MemoryRegionDram.GetAddress();
@@ -822,7 +833,7 @@ namespace ams::secmon {
             #define MC_ENABLE_CLIENT_ACCESS(INDEX, WHICH) MC_REG_BITS_ENUM(CLIENT_ACCESS##INDEX##_##WHICH, ENABLE)
 
             constexpr u32 WarmbootCarveoutClientAccess0     = reg::Encode(MC_ENABLE_CLIENT_ACCESS(0, AVPCARM7R),
-                                                          MC_ENABLE_CLIENT_ACCESS(0, PPCSAHBSLVR));
+                                                                          MC_ENABLE_CLIENT_ACCESS(0, PPCSAHBSLVR));
 
             constexpr u32 WarmbootCarveoutClientAccess1     = reg::Encode(MC_ENABLE_CLIENT_ACCESS(1, AVPCARM7W));
 
@@ -907,7 +918,7 @@ namespace ams::secmon {
             reg::Write(MC + MC_SMMU_PPCS1_ASID, MC_REG_BITS_ENUM(SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE, ENABLE), MC_REG_BITS_VALUE(SMMU_PPCS1_ASID_PPCS1_ASID, BpmpAsid));
 
             /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Write(MC + MC_SMMU_PTC_FLUSH_0, 0);
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
@@ -949,7 +960,7 @@ namespace ams::secmon {
         }
 
         void SetupLogForBoot() {
-            log::Initialize();
+            log::Initialize(secmon::GetLogPort(), secmon::GetLogBaudRate(), secmon::GetLogFlags());
             log::SendText("OHAYO\n", 6);
             log::Flush();
         }
@@ -1072,25 +1083,36 @@ namespace ams::secmon {
 
         /* Setup the security engine interrupt. */
         constexpr int SecurityEngineInterruptId = 90;
-        gic::SetPriority      (SecurityEngineInterruptId,     gic::HighestPriority);
-        gic::SetInterruptGroup(SecurityEngineInterruptId,                        0);
-        gic::SetEnable        (SecurityEngineInterruptId,                     true);
-        gic::SetSpiTargetCpu  (SecurityEngineInterruptId,                 (1 << 3));
-        gic::SetSpiMode       (SecurityEngineInterruptId, gic::InterruptMode_Level);
+        constexpr u8  SecurityEngineInterruptCoreMask = (1 << 3);
+        gic::SetPriority      (SecurityEngineInterruptId,            gic::HighestPriority);
+        gic::SetInterruptGroup(SecurityEngineInterruptId,                               0);
+        gic::SetEnable        (SecurityEngineInterruptId,                            true);
+        gic::SetSpiTargetCpu  (SecurityEngineInterruptId, SecurityEngineInterruptCoreMask);
+        gic::SetSpiMode       (SecurityEngineInterruptId,        gic::InterruptMode_Level);
 
         /* Setup the activity monitor interrupt. */
         constexpr int ActivityMonitorInterruptId = 77;
-        gic::SetPriority      (ActivityMonitorInterruptId,     gic::HighestPriority);
-        gic::SetInterruptGroup(ActivityMonitorInterruptId,                        0);
-        gic::SetEnable        (ActivityMonitorInterruptId,                     true);
-        gic::SetSpiTargetCpu  (ActivityMonitorInterruptId,                 (1 << 3));
-        gic::SetSpiMode       (ActivityMonitorInterruptId, gic::InterruptMode_Level);
+        constexpr u8  ActivityMonitorInterruptCoreMask = (1 << 3);
+        gic::SetPriority      (ActivityMonitorInterruptId,            gic::HighestPriority);
+        gic::SetInterruptGroup(ActivityMonitorInterruptId,                               0);
+        gic::SetEnable        (ActivityMonitorInterruptId,                            true);
+        gic::SetSpiTargetCpu  (ActivityMonitorInterruptId, ActivityMonitorInterruptCoreMask);
+        gic::SetSpiMode       (ActivityMonitorInterruptId,        gic::InterruptMode_Level);
+
+        /* Setup the mariko fatal error interrupt. */
+        constexpr u8 MarikoFatalInterruptCoreMask = 0b1111;
+        gic::SetPriority      (MarikoFatalErrorInterruptId,         gic::HighestPriority);
+        gic::SetInterruptGroup(MarikoFatalErrorInterruptId,                            0);
+        gic::SetEnable        (MarikoFatalErrorInterruptId,                         true);
+        gic::SetSpiTargetCpu  (MarikoFatalErrorInterruptId,                            0);
+        gic::SetSpiMode       (MarikoFatalErrorInterruptId,     gic::InterruptMode_Level);
 
         /* If we're coldboot, perform one-time setup. */
         if (g_is_cold_boot) {
-            /* Register both interrupt handlers. */
-            SetInterruptHandler(SecurityEngineInterruptId,      se::HandleInterrupt);
-            SetInterruptHandler(ActivityMonitorInterruptId, actmon::HandleInterrupt);
+            /* Register all interrupt handlers. */
+            SetInterruptHandler(SecurityEngineInterruptId,   SecurityEngineInterruptCoreMask,      se::HandleInterrupt);
+            SetInterruptHandler(ActivityMonitorInterruptId,  ActivityMonitorInterruptCoreMask, actmon::HandleInterrupt);
+            SetInterruptHandler(MarikoFatalErrorInterruptId, MarikoFatalInterruptCoreMask,     secmon::HandleMarikoFatalErrorInterrupt);
 
             /* We're expecting the other cores to come out of reset. */
             for (int i = 1; i < NumCores; ++i) {
@@ -1142,8 +1164,14 @@ namespace ams::secmon {
         /* Setup the GPU carveout. */
         SetupGpuCarveout();
 
+        /* Configure the two kernel carveouts. */
+        SetupKernelCarveouts();
+
         /* Disable the ARC. */
         DisableArc();
+
+        /* Disable untranslated memory accesses by devices. */
+        DisableUntranslatedDeviceMemoryAccess();
 
         /* Further protections aren't applied on <= 1.0.0. */
         if (GetTargetFirmware() <= TargetFirmware_1_0_0) {

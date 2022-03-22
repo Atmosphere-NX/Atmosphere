@@ -35,7 +35,7 @@ typedef struct sdmmc_accessor_vt
     void *dtor;
     void *map_device_addr_space;
     void *unmap_device_addr_space;
-    void *controller_open;
+    uint64_t (*sdmmc_accessor_controller_open)(void *);
     uint64_t (*sdmmc_accessor_controller_close)(void *);
     uint64_t (*read_write)(void *, uint64_t, uint64_t, void *, uint64_t, uint64_t);
     // More not included because we don't use it.

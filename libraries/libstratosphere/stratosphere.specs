@@ -1,0 +1,4 @@
+%rename link                pre_old_link
+
+*link:
+%(pre_old_link) -T %:getenv(ATMOSPHERE_LIBRARIES_DIR /libstratosphere/discard-ehframe.ld)

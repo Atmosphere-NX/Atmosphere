@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,83 +15,93 @@
  */
 #include <stratosphere.hpp>
 #include "ro_nro_utils.hpp"
+#include "ro_map_utils.hpp"
 
 namespace ams::ro::impl {
 
-    namespace {
-
-        constexpr size_t MaxMapRetries = 0x200;
-
-    }
-
-    Result MapNro(u64 *out_base_address, Handle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
-        map::MappedCodeMemory nro_mcm(ResultInternalError{});
-        map::MappedCodeMemory bss_mcm(ResultInternalError{});
+    Result MapNro(u64 *out_base_address, os::NativeHandle process_handle, u64 nro_heap_address, u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
+        /* Re-map the NRO/BSS as code memory in the destination process. */
+        MappedCodeMemory nro_mcm;
+        MappedCodeMemory bss_mcm;
+        ProcessRegionInfo region_info(process_handle);
         u64 base_address;
+        {
+            const u64 memory_size = nro_heap_size + bss_heap_size;
+            int i;
+            for (i = 0; i < RetrySearchCount; ++i) {
+                /* Get a random address for the nro. */
+                base_address = region_info.GetAslrRegion(memory_size);
+                R_UNLESS(base_address != 0, ro::ResultOutOfAddressSpace());
 
-        /* Map the NRO, and map the BSS immediately after it. */
-        size_t i;
-        for (i = 0; i < MaxMapRetries; i++) {
-            map::MappedCodeMemory tmp_nro_mcm(ResultInternalError{});
-            R_TRY(map::MapCodeMemoryInProcess(tmp_nro_mcm, process_handle, nro_heap_address, nro_heap_size));
-            base_address = tmp_nro_mcm.GetDstAddress();
-
-            if (bss_heap_size > 0) {
-                map::MappedCodeMemory tmp_bss_mcm(process_handle, base_address + nro_heap_size, bss_heap_address, bss_heap_size);
-                R_TRY_CATCH(tmp_bss_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemory) {
-                        continue;
-                    }
+                /* Map the NRO, retrying if random address was invalid. */
+                MappedCodeMemory tmp_nro_mcm(process_handle, base_address, nro_heap_address, nro_heap_size);
+                R_TRY_CATCH(tmp_nro_mcm.GetResult()) {
+                    R_CATCH(svc::ResultInvalidCurrentMemory) { continue; }
                 } R_END_TRY_CATCH;
 
-                if (!map::CanAddGuardRegionsInProcess(process_handle, base_address, nro_heap_size + bss_heap_size)) {
-                    continue;
+                /* Handle bss. */
+                if (bss_heap_size > 0) {
+                    /* Map BSS, retrying if random address was invalid. */
+                    MappedCodeMemory tmp_bss_mcm(process_handle, base_address + nro_heap_size, bss_heap_address, bss_heap_size);
+                    R_TRY_CATCH(tmp_bss_mcm.GetResult()) {
+                        R_CATCH(svc::ResultInvalidCurrentMemory) { continue; }
+                    } R_END_TRY_CATCH;
+
+                    /* Check that we can have guard spaces. */
+                    if (!region_info.CanEmplaceGuardSpaces(process_handle, base_address, memory_size)) {
+                        continue;
+                    }
+
+                    /* We succeeded, so save the bss memory. */
+                    bss_mcm = std::move(tmp_bss_mcm);
+                } else {
+                    /* Check that we can have guard spaces. */
+                    if (!region_info.CanEmplaceGuardSpaces(process_handle, base_address, memory_size)) {
+                        continue;
+                    }
                 }
 
-                bss_mcm = std::move(tmp_bss_mcm);
-            } else {
-                if (!map::CanAddGuardRegionsInProcess(process_handle, base_address, nro_heap_size)) {
-                    continue;
-                }
+                /* We succeeded, so save the code memory. */
+                nro_mcm = std::move(tmp_nro_mcm);
+                break;
             }
-            nro_mcm = std::move(tmp_nro_mcm);
-            break;
-        }
-        R_UNLESS(i < MaxMapRetries, ResultOutOfAddressSpace());
 
-        /* Invalidation here actually prevents them from unmapping at scope exit. */
-        nro_mcm.Invalidate();
-        bss_mcm.Invalidate();
+            R_UNLESS(i != RetrySearchCount, ro::ResultOutOfAddressSpace());
+        }
+
+        /* Cancel the automatic closing of our mappings. */
+        nro_mcm.Cancel();
+        bss_mcm.Cancel();
 
         *out_base_address = base_address;
         return ResultSuccess();
     }
 
-    Result SetNroPerms(Handle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
+    Result SetNroPerms(os::NativeHandle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
         const u64 rx_offset = 0;
         const u64 ro_offset = rx_offset + rx_size;
         const u64 rw_offset = ro_offset + ro_size;
 
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, Perm_Rx));
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, Perm_R ));
-        R_TRY(svcSetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, Perm_Rw));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + rx_offset, rx_size, svc::MemoryPermission_ReadExecute));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, svc::MemoryPermission_Read));
+        R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, svc::MemoryPermission_ReadWrite));
 
         return ResultSuccess();
     }
 
-    Result UnmapNro(Handle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
+    Result UnmapNro(os::NativeHandle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
         /* First, unmap bss. */
         if (bss_heap_size > 0) {
-            R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size));
+            R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address + code_size + rw_size, bss_heap_address, bss_heap_size));
         }
 
         /* Next, unmap .rwdata */
         if (rw_size > 0) {
-            R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size));
+            R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address + code_size, nro_heap_address + code_size, rw_size));
         }
 
         /* Finally, unmap .text + .rodata. */
-        R_TRY(svcUnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
+        R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
 
         return ResultSuccess();
     }

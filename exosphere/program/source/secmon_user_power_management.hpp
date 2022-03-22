@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,13 +19,15 @@
 namespace ams::secmon {
 
     enum UserRebootType {
-        UserRebootType_None      = 0,
-        UserRebootType_ToRcm     = 1,
-        UserRebootType_ToPayload = 2,
+        UserRebootType_None         = 0,
+        UserRebootType_ToRcm        = 1,
+        UserRebootType_ToPayload    = 2,
+        UserRebootType_ToFatalError = 3,
     };
 
     void PerformUserRebootToRcm();
     void PerformUserRebootToPayload();
+    void PerformUserRebootToFatalError();
     void PerformUserShutDown();
 
 }

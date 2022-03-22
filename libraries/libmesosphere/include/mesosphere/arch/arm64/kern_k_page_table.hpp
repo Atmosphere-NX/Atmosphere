@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,9 +22,11 @@
 
 namespace ams::kern::arch::arm64 {
 
-    class KPageTable : public KPageTableBase {
+    class KPageTable final : public KPageTableBase {
         NON_COPYABLE(KPageTable);
         NON_MOVEABLE(KPageTable);
+        private:
+            friend class KPageTableBase;
         public:
             using TraversalEntry   = KPageTableImpl::TraversalEntry;
             using TraversalContext = KPageTableImpl::TraversalContext;
@@ -92,15 +94,15 @@ namespace ams::kern::arch::arm64 {
                 return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
         private:
-            KPageTableManager *manager;
-            u64 ttbr;
-            u8 asid;
+            KPageTableManager *m_manager;
+            u64 m_ttbr;
+            u8 m_asid;
         protected:
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
-            virtual void   FinalizeUpdate(PageLinkedList *page_list) override;
+            Result OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            Result OperateImpl(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll);
+            void FinalizeUpdateImpl(PageLinkedList *page_list);
 
-            KPageTableManager &GetPageTableManager() const { return *this->manager; }
+            KPageTableManager &GetPageTableManager() const { return *m_manager; }
         private:
             constexpr PageTableEntry GetEntryTemplate(const KPageProperties properties) const {
                 /* Set basic attributes. */
@@ -134,9 +136,6 @@ namespace ams::kern::arch::arm64 {
                     entry.SetUserExecuteNever(true);
                 }
 
-                /* Set can be contiguous. */
-                entry.SetContiguousAllowed(!properties.non_contiguous);
-
                 /* Set AP[1] based on perm. */
                 switch (properties.perm & KMemoryPermission_UserReadWrite) {
                     case KMemoryPermission_UserReadWrite:
@@ -169,29 +168,30 @@ namespace ams::kern::arch::arm64 {
                 return entry;
             }
         public:
-            constexpr KPageTable() : KPageTableBase(), manager(), ttbr(), asid() { /* ... */ }
+            constexpr explicit KPageTable(util::ConstantInitializeTag) : KPageTableBase(util::ConstantInitialize), m_manager(), m_ttbr(), m_asid() { /* ... */ }
+            explicit KPageTable() { /* ... */ }
 
             static NOINLINE void Initialize(s32 core_id);
 
             ALWAYS_INLINE void Activate(u32 proc_id) {
                 cpu::DataSynchronizationBarrier();
-                cpu::SwitchProcess(this->ttbr, proc_id);
+                cpu::SwitchProcess(m_ttbr, proc_id);
             }
 
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager);
+            NOINLINE Result InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager, KResourceLimit *resource_limit);
             Result Finalize();
         private:
-            Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
-            Result MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
-            Result MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
 
             Result Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll);
 
-            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
+            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
                 switch (page_size) {
                     case L1BlockSize:
-                        return this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                        R_RETURN(this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     case L2ContiguousBlockSize:
                         entry_template.SetContiguous(true);
                         [[fallthrough]];
@@ -199,47 +199,47 @@ namespace ams::kern::arch::arm64 {
                     case L2TegraSmmuBlockSize:
 #endif
                     case L2BlockSize:
-                        return this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                        R_RETURN(this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     case L3ContiguousBlockSize:
                         entry_template.SetContiguous(true);
                         [[fallthrough]];
                     case L3BlockSize:
-                        return this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                        R_RETURN(this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, disable_head_merge, page_list, reuse_ll));
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
             }
 
-            Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
-            Result MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
+            Result MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, bool disable_head_merge, PageLinkedList *page_list, bool reuse_ll);
 
             bool MergePages(KProcessAddress virt_addr, PageLinkedList *page_list);
 
             ALWAYS_INLINE Result SeparatePagesImpl(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
             Result SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
 
-            Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll);
+            Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll);
 
-            static void PteDataSynchronizationBarrier() {
+            static ALWAYS_INLINE void PteDataSynchronizationBarrier() {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }
 
-            static void ClearPageTable(KVirtualAddress table) {
+            static ALWAYS_INLINE void ClearPageTable(KVirtualAddress table) {
                 cpu::ClearPageToZero(GetVoidPointer(table));
             }
 
-            void OnTableUpdated() const {
-                cpu::InvalidateTlbByAsid(this->asid);
+            ALWAYS_INLINE void OnTableUpdated() const {
+                cpu::InvalidateTlbByAsid(m_asid);
             }
 
-            void OnKernelTableUpdated() const {
+            ALWAYS_INLINE void OnKernelTableUpdated() const {
                 cpu::InvalidateEntireTlbDataOnly();
             }
 
-            void OnKernelTableSinglePageUpdated(KProcessAddress virt_addr) const {
+            ALWAYS_INLINE void OnKernelTableSinglePageUpdated(KProcessAddress virt_addr) const {
                 cpu::InvalidateTlbByVaDataOnly(virt_addr);
             }
 
-            void NoteUpdated() const {
+            ALWAYS_INLINE void NoteUpdated() const {
                 cpu::DataSynchronizationBarrier();
 
                 if (this->IsKernel()) {
@@ -249,7 +249,7 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
+            ALWAYS_INLINE void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
                 MESOSPHERE_ASSERT(this->IsKernel());
 
                 cpu::DataSynchronizationBarrier();

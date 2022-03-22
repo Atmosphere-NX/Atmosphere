@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,6 +23,17 @@ namespace ams::hw::arch::arm64 {
 
         for (uintptr_t cur = start; cur < end; cur += hw::DataCacheLineSize) {
             FlushDataCacheLine(reinterpret_cast<void *>(cur));
+        }
+    }
+
+
+
+    void InvalidateDataCache(const void *ptr, size_t size) {
+        const uintptr_t start = reinterpret_cast<uintptr_t>(ptr);
+        const uintptr_t end   = util::AlignUp(start + size, hw::DataCacheLineSize);
+
+        for (uintptr_t cur = start; cur < end; cur += hw::DataCacheLineSize) {
+            InvalidateDataCacheLine(reinterpret_cast<void *>(cur));
         }
     }
 

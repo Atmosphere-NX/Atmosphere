@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,17 +15,17 @@
  */
 
 #pragma once
-#include "../sf_common.hpp"
-#include "../sf_service_object.hpp"
-#include "../sf_out.hpp"
-#include "../sf_buffers.hpp"
-#include "../sf_handles.hpp"
-#include "../cmif/sf_cmif_pointer_and_size.hpp"
-#include "../cmif/sf_cmif_service_dispatch.hpp"
-#include "../cmif/sf_cmif_service_object_holder.hpp"
-#include "../cmif/sf_cmif_domain_api.hpp"
-#include "../hipc/sf_hipc_api.hpp"
-#include "../hipc/sf_hipc_server_session_manager.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/sf_out.hpp>
+#include <stratosphere/sf/sf_buffers.hpp>
+#include <stratosphere/sf/sf_native_handle.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_pointer_and_size.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_dispatch.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_service_object_holder.hpp>
+#include <stratosphere/sf/cmif/sf_cmif_domain_api.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_api.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
 
 /* Serialization classes. */
 namespace ams::sf {
@@ -68,33 +68,77 @@ namespace ams::sf {
 
         struct OutObjectTag{};
 
+        template<size_t, size_t>
+        class InOutObjectHolder;
+
     }
 
-    template<typename T>
-    class IsOutForceEnabled<std::shared_ptr<T>> : public std::true_type{};
-
-    template<typename ServiceImpl>
-    class Out<std::shared_ptr<ServiceImpl>> : public impl::OutObjectTag {
-        static_assert(std::is_base_of<sf::IServiceObject, ServiceImpl>::value, "Out<std::shared_ptr<ServiceImpl>> requires ServiceObject base.");
-
+    template<typename ServiceImpl> requires std::derived_from<ServiceImpl, IServiceObject>
+    class Out<SharedPointer<ServiceImpl>> : public impl::OutObjectTag {
         template<typename>
         friend class Out;
-
         public:
-            using ServiceImplType = ServiceImpl;
+            using Interface = ServiceImpl;
         private:
-            cmif::ServiceObjectHolder *srv;
-            cmif::DomainObjectId *object_id;
+            impl::SharedPointerBase *m_out;
+            cmif::DomainObjectId *m_object_id;
+        private:
+            Out(impl::SharedPointerBase *p, cmif::DomainObjectId *o = nullptr) : m_out(p), m_object_id(o) { /* ... */ }
         public:
-            Out(cmif::ServiceObjectHolder *s) : srv(s), object_id(nullptr) { /* ... */ }
-            Out(cmif::ServiceObjectHolder *s, cmif::DomainObjectId *o) : srv(s), object_id(o) { /* ... */ }
+            Out(const Out &rhs) : m_out(rhs.m_out), m_object_id(rhs.m_object_id) { /* ... */ }
 
-            void SetValue(std::shared_ptr<ServiceImpl> &&s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
-                *this->srv = cmif::ServiceObjectHolder(std::move(s));
+            Out(SharedPointer<ServiceImpl> *out, cmif::DomainObjectId *o = nullptr) : m_out(std::addressof(out->m_base)), m_object_id(o) { /* .... */ }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            Out(Out<SharedPointer<U>> out) : m_out(out.m_out), m_object_id(out.m_object_id) { /* ... */ }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            Out(SharedPointer<U> *out, cmif::DomainObjectId *o = nullptr) : m_out(std::addressof(out->m_base)), m_object_id(o)  { /* .... */ }
+
+            void SetValue(SharedPointer<ServiceImpl> s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
+                *m_out = std::move(s.m_base);
                 if (new_object_id != cmif::InvalidDomainObjectId) {
-                    AMS_ABORT_UNLESS(object_id != nullptr);
-                    *this->object_id = new_object_id;
+                    AMS_ABORT_UNLESS(m_object_id != nullptr);
+                    *m_object_id = new_object_id;
                 }
+            }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            void SetValue(SharedPointer<U> s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
+                *m_out = std::move(s.m_base);
+                if (new_object_id != cmif::InvalidDomainObjectId) {
+                    AMS_ABORT_UNLESS(m_object_id != nullptr);
+                    *m_object_id = new_object_id;
+                }
+            }
+
+            class DerefProxy {
+                template<typename>
+                friend class Out;
+                private:
+                    Out &m_target;
+                private:
+                    explicit DerefProxy(Out &t) : m_target(t) { /* ... */ }
+                public:
+                    DerefProxy &operator=(SharedPointer<ServiceImpl> p) {
+                        m_target.SetValue(std::move(p));
+                        return *this;
+                    }
+
+                    template<typename U> requires std::derived_from<U, ServiceImpl>
+                    DerefProxy &operator=(SharedPointer<U> p) {
+                        m_target.SetValue(std::move(p));
+                        return *this;
+                    }
+            };
+
+            DerefProxy operator *() {
+                return DerefProxy(*this);
+            }
+
+            template<typename U>
+            Out<SharedPointer<U>> DownCast() {
+                return Out<SharedPointer<U>>(m_out, m_object_id);
             }
     };
 
@@ -149,21 +193,24 @@ namespace ams::sf::impl {
     struct IsInObject : public std::false_type{};
 
     template<typename T>
-    struct IsInObject<std::shared_ptr<T>> : public std::true_type {
-        static_assert(std::is_base_of<sf::IServiceObject, T>::value, "Invalid IsInObject<std::shared_ptr<T>>");
+    struct IsInObject<sf::SharedPointer<T>> : public std::true_type {
+        static_assert(std::is_base_of<sf::IServiceObject, T>::value, "Invalid IsInObject<sf::SharedPointer<T>>");
     };
 
     template<typename T>
     constexpr inline ArgumentType GetArgumentType = [] {
+        static_assert(!std::same_as<T, sf::NativeHandle>);
+        static_assert(!std::same_as<T, sf::Out<sf::NativeHandle>>);
+
         if constexpr (sf::IsBuffer<T>) {
             return ArgumentType::Buffer;
         } else if constexpr (IsInObject<T>::value) {
             return ArgumentType::InObject;
         } else if constexpr (std::is_base_of<sf::impl::OutObjectTag, T>::value) {
             return ArgumentType::OutObject;
-        } else if constexpr (std::is_base_of<sf::impl::InHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, sf::CopyHandle> || std::same_as<T, sf::MoveHandle>) {
             return ArgumentType::InHandle;
-        } else if constexpr (std::is_base_of<sf::impl::OutHandleTag, T>::value) {
+        } else if constexpr (std::same_as<T, sf::OutCopyHandle> || std::same_as<T, sf::OutMoveHandle>) {
             return ArgumentType::OutHandle;
         } else if constexpr (std::is_base_of<sf::impl::OutBaseTag, T>::value) {
             return ArgumentType::OutData;
@@ -368,17 +415,14 @@ namespace ams::sf::impl {
         size_t out_object_index;
     };
 
-    template<auto MemberFunction, typename Return, typename Class, typename... Arguments>
+    template<typename T>
+    using DecayForCommandMetaArguments = typename std::conditional<(sf::IsLargeData<typename std::decay<T>::type> && !std::is_base_of<impl::OutBaseTag, typename std::decay<T>::type>::value), T, typename std::conditional<(std::same_as<T, sf::MoveHandle &&> || std::same_as<T, sf::CopyHandle &&>), typename std::decay<T>::type &, typename std::decay<T>::type>::type>::type;
+
+    template<typename... Arguments>
     struct CommandMetaInfo {
         public:
-            using ReturnType        = Return;
-            using ClassType         = Class;
-            using ClassTypePointer  = ClassType *;
+            using ArgsTypeForInvoke = std::tuple<DecayForCommandMetaArguments<Arguments>...>;
             using ArgsType          = std::tuple<typename std::decay<Arguments>::type...>;
-
-            static constexpr bool ReturnsResult = std::is_same<ReturnType, Result>::value;
-            static constexpr bool ReturnsVoid   = std::is_same<ReturnType, void>::value;
-            static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
 
             using InDatas    = TupleFilter<InDataFilter>::FilteredType<ArgsType>;
             using OutDatas   = TupleFilter<OutDataFilter>::FilteredType<ArgsType>;
@@ -432,7 +476,7 @@ namespace ams::sf::impl {
                 if constexpr (std::tuple_size<OutDatas>::value) {
                     return alignof(typename std::tuple_element<0, OutDatas>::type);
                 }
-                return size_t();
+                return static_cast<size_t>(0);
             }();
 
             /* Handle marshalling. */
@@ -564,22 +608,48 @@ namespace ams::sf::impl {
             static constexpr size_t Size = _Size;
             static constexpr size_t Align = _Align ? _Align : alignof(u8);
         private:
-            alignas(Align) u8 data[Size];
+            alignas(Align) u8 m_data[Size];
         public:
-            constexpr OutRawHolder() : data() { /* ... */ }
+            constexpr OutRawHolder() : m_data() { /* ... */ }
 
             template<size_t Offset, size_t TypeSize>
             constexpr inline uintptr_t GetAddress() const {
                 static_assert(Offset <= Size, "Offset <= Size");
                 static_assert(TypeSize <= Size, "TypeSize <= Size");
                 static_assert(Offset + TypeSize <= Size, "Offset + TypeSize <= Size");
-                return reinterpret_cast<uintptr_t>(&data[Offset]);
+                return reinterpret_cast<uintptr_t>(std::addressof(m_data[Offset]));
             }
 
             constexpr inline void CopyTo(void *dst) const {
                 if constexpr (Size > 0) {
-                    std::memcpy(dst, data, Size);
+                    std::memcpy(dst, m_data, Size);
                 }
+            }
+    };
+
+    template<size_t _NumMove, size_t _NumCopy>
+    class InHandleHolder {
+        public:
+            static constexpr size_t NumMove = _NumMove;
+            static constexpr size_t NumCopy = _NumCopy;
+        private:
+            MoveHandle m_move_handles[NumMove];
+            CopyHandle m_copy_handles[NumCopy];
+        public:
+            constexpr InHandleHolder() : m_move_handles(), m_copy_handles() { /* ... */ }
+
+            template<size_t Index>
+            constexpr inline MoveHandle &SetMoveHandle(os::NativeHandle os_handle) {
+                static_assert(Index < NumMove);
+                m_move_handles[Index] = sf::NativeHandle(os_handle, true);
+                return m_move_handles[Index];
+            }
+
+            template<size_t Index>
+            constexpr inline CopyHandle &SetCopyHandle(os::NativeHandle os_handle) {
+                static_assert(Index < NumCopy);
+                m_copy_handles[Index] = sf::NativeHandle(os_handle, true);
+                return m_copy_handles[Index];
             }
     };
 
@@ -589,25 +659,26 @@ namespace ams::sf::impl {
             static constexpr size_t NumMove = _NumMove;
             static constexpr size_t NumCopy = _NumCopy;
         private:
-            MoveHandle move_handles[NumMove];
-            CopyHandle copy_handles[NumCopy];
+            NativeHandle m_move_handles[NumMove];
+            NativeHandle m_copy_handles[NumCopy];
         public:
-            constexpr OutHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+            constexpr OutHandleHolder() : m_move_handles(), m_copy_handles() { /* ... */ }
 
             template<size_t Index>
-            constexpr inline MoveHandle *GetMoveHandlePointer() {
+            constexpr inline NativeHandle *GetMoveHandlePointer() {
                 static_assert(Index < NumMove, "Index < NumMove");
-                return &move_handles[Index];
+                return m_move_handles + Index;
             }
 
             template<size_t Index>
-            constexpr inline CopyHandle *GetCopyHandlePointer() {
+            constexpr inline NativeHandle *GetCopyHandlePointer() {
                 static_assert(Index < NumCopy, "Index < NumCopy");
-                return &copy_handles[Index];
+                return m_copy_handles + Index;
             }
 
-            constexpr inline void CopyTo(const HipcRequest &response, const size_t num_out_object_handles) {
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { response.copy_handles[n] = copy_handles[n].GetValue(); } } while (0)
+            constexpr inline void CopyTo(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, const size_t num_out_object_handles) {
+                ctx.handles_to_close->num_handles = 0;
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = m_copy_handles[n].GetOsHandle(); response.copy_handles[n] = handle; if (m_copy_handles[n].IsManaged()) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } m_copy_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(2);
@@ -617,7 +688,7 @@ namespace ams::sf::impl {
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(6);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(7);
                 #undef _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = move_handles[n].GetValue(); } } while (0)
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(n) do { if constexpr (NumMove > n) { response.move_handles[n + num_out_object_handles] = m_move_handles[n].GetOsHandle(); m_move_handles[n].Detach(); } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_MOVE_HANDLE(2);
@@ -633,12 +704,13 @@ namespace ams::sf::impl {
     template<size_t NumInObjects, size_t NumOutObjects>
     class InOutObjectHolder {
         private:
-            std::array<cmif::ServiceObjectHolder, NumInObjects> in_object_holders;
-            std::array<cmif::ServiceObjectHolder, NumOutObjects> out_object_holders;
-            std::array<cmif::DomainObjectId, NumOutObjects> out_object_ids;
+            std::array<cmif::ServiceObjectHolder, NumInObjects> m_in_object_holders;
+            std::array<cmif::ServiceObjectHolder, NumOutObjects> m_out_object_holders;
+            std::array<util::TypedStorage<SharedPointer<sf::IServiceObject>>, NumOutObjects> m_out_shared_pointers;
+            std::array<cmif::DomainObjectId, NumOutObjects> m_out_object_ids;
         public:
-            constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() {
-                #define _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(n) if constexpr (NumOutObjects > n) { this->out_object_ids[n] = cmif::InvalidDomainObjectId; }
+            constexpr InOutObjectHolder() : m_in_object_holders(), m_out_object_holders() {
+                #define _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(n) if constexpr (NumOutObjects > n) { m_out_object_ids[n] = cmif::InvalidDomainObjectId; }
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(0)
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(1)
                 _SF_IN_OUT_HOLDER_INITIALIZE_OBJECT_ID(2)
@@ -652,7 +724,7 @@ namespace ams::sf::impl {
 
             Result GetInObjects(const sf::cmif::ServerMessageProcessor *processor) {
                 if constexpr (NumInObjects > 0) {
-                    R_TRY(processor->GetInObjects(this->in_object_holders.data()));
+                    R_TRY(processor->GetInObjects(m_in_object_holders.data()));
                 }
                 return ResultSuccess();
             }
@@ -662,9 +734,9 @@ namespace ams::sf::impl {
                 static_assert(std::tuple_size<ServiceImplTuple>::value == NumInObjects);
                 #define _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(n) do { \
                     if constexpr (NumInObjects > n) { \
-                        using SharedPtrToServiceImplType = typename std::tuple_element<n, ServiceImplTuple>::type; \
-                        using ServiceImplType = typename SharedPtrToServiceImplType::element_type; \
-                        R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
+                        using SharedPointerType = typename std::tuple_element<n, ServiceImplTuple>::type; \
+                        using ServiceImplType   = typename SharedPointerType::Interface; \
+                        R_UNLESS((m_in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
                     } \
                 } while (0)
                 _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(0);
@@ -679,20 +751,26 @@ namespace ams::sf::impl {
                 return ResultSuccess();
             }
 
-            template<size_t Index, typename ServiceImpl>
-            std::shared_ptr<ServiceImpl> GetInObject() const {
-                /* We know from ValidateInObjects() that this will succeed always. */
-                return this->in_object_holders[Index].template GetServiceObject<ServiceImpl>();
+            template<size_t Index, typename Interface>
+            SharedPointer<Interface> *GetOutObjectSharedPointer() {
+                static_assert(sizeof(SharedPointer<Interface>) == sizeof(SharedPointer<sf::IServiceObject>));
+                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(GetPointer(m_out_shared_pointers[Index])));
             }
 
-            template<size_t Index, typename ServiceImpl>
-            Out<std::shared_ptr<ServiceImpl>> GetOutObject() {
-                return Out<std::shared_ptr<ServiceImpl>>(&this->out_object_holders[Index], &this->out_object_ids[Index]);
+            template<size_t Index, typename Interface>
+            Out<SharedPointer<Interface>> GetOutObject() {
+                auto sp = std::construct_at(GetOutObjectSharedPointer<Index, Interface>());
+                return Out<SharedPointer<Interface>>(sp, std::addressof(m_out_object_ids[Index]));
+            }
+
+            template<size_t Index, typename Interface>
+            void SetOutObject() {
+                m_out_object_holders[Index] = cmif::ServiceObjectHolder(std::move(*GetOutObjectSharedPointer<Index, Interface>()));
             }
 
             constexpr void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response) {
                 if constexpr (NumOutObjects > 0) {
-                    ctx.processor->SetOutObjects(ctx, response, this->out_object_holders.data(), this->out_object_ids.data());
+                    ctx.processor->SetOutObjects(ctx, response, m_out_object_holders.data(), m_out_object_ids.data());
                 }
             }
     };
@@ -712,6 +790,7 @@ namespace ams::sf::impl {
 
             virtual Result GetInObjects(cmif::ServiceObjectHolder *in_objects) const override final {
                 /* By default, InObjects aren't supported. */
+                AMS_UNUSED(in_objects);
                 return sf::ResultNotSupported();
             }
     };
@@ -757,6 +836,8 @@ namespace ams::sf::impl {
             }
 
             virtual void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, cmif::ServiceObjectHolder *out_objects, cmif::DomainObjectId *ids) override final {
+                AMS_UNUSED(ids);
+
                 #define _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(n) do { if constexpr (CommandMeta::NumOutObjects > n) { SetOutObjectImpl<n>(response, ctx.manager, std::move(out_objects[n])); } } while (0)
                 _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(0);
                 _SF_IMPL_PROCESSOR_SET_OUT_OBJECT_IMPL(1);
@@ -770,9 +851,11 @@ namespace ams::sf::impl {
             }
 
         /* Useful defines. */
-        using ArgsType = typename CommandMeta::ArgsType;
+        using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;
+        using ArgsType          = typename CommandMeta::ArgsType;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
+        using InHandleHolderType = InHandleHolder<CommandMeta::NumInMoveHandles, CommandMeta::NumInCopyHandles>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
 
@@ -780,13 +863,13 @@ namespace ams::sf::impl {
         private:
             template<size_t Index>
             NX_CONSTEXPR void SetOutObjectImpl(const HipcRequest &response, hipc::ServerSessionManager *manager, cmif::ServiceObjectHolder &&object) {
-                /* If no object, write INVALID_HANDLE. This is what official software does. */
+                /* If no object, write os::InvalidNativeHandle. This is what official software does. */
                 if (!object) {
-                    response.move_handles[Index] = INVALID_HANDLE;
+                    response.move_handles[Index] = os::InvalidNativeHandle;
                     return;
                 }
-                Handle server_handle, client_handle;
-                R_ABORT_UNLESS(sf::hipc::CreateSession(&server_handle, &client_handle));
+                os::NativeHandle server_handle, client_handle;
+                R_ABORT_UNLESS(sf::hipc::CreateSession(std::addressof(server_handle), std::addressof(client_handle)));
                 R_ABORT_UNLESS(manager->RegisterSession(server_handle, std::move(object)));
                 response.move_handles[Index] = client_handle;
             }
@@ -824,11 +907,11 @@ namespace ams::sf::impl {
                 if constexpr (Attributes & SfBufferAttr_HipcMapAlias) {
                     is_buffer_map_alias = true;
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcBufferDescriptor *desc = &ctx.request.data.send_buffers[Info.send_map_alias_index];
+                        const HipcBufferDescriptor *desc = std::addressof(ctx.request.data.send_buffers[Info.send_map_alias_index]);
                         buffer = cmif::PointerAndSize(hipcGetBufferAddress(desc), hipcGetBufferSize(desc));
                         if (!IsMapTransferModeValid<Attributes>(static_cast<u32>(desc->mode))) { map_alias_buffers_valid = false; }
                     } else if constexpr (Attributes & SfBufferAttr_Out) {
-                        const HipcBufferDescriptor *desc = &ctx.request.data.recv_buffers[Info.recv_map_alias_index];
+                        const HipcBufferDescriptor *desc = std::addressof(ctx.request.data.recv_buffers[Info.recv_map_alias_index]);
                         buffer = cmif::PointerAndSize(hipcGetBufferAddress(desc), hipcGetBufferSize(desc));
                         if (!IsMapTransferModeValid<Attributes>(static_cast<u32>(desc->mode))) { map_alias_buffers_valid = false; }
                     } else {
@@ -837,7 +920,7 @@ namespace ams::sf::impl {
                 } else if constexpr (Attributes & SfBufferAttr_HipcPointer) {
                     is_buffer_map_alias = false;
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcStaticDescriptor *desc = &ctx.request.data.send_statics[Info.send_pointer_index];
+                        const HipcStaticDescriptor *desc = std::addressof(ctx.request.data.send_statics[Info.send_pointer_index]);
                         buffer = cmif::PointerAndSize(hipcGetStaticAddress(desc), hipcGetStaticSize(desc));
                         const size_t size = buffer.GetSize();
                         if (size) {
@@ -851,7 +934,7 @@ namespace ams::sf::impl {
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         } else {
                             const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
-                            const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
+                            const size_t size = static_cast<size_t>(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                             pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                             buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                         }
@@ -860,8 +943,8 @@ namespace ams::sf::impl {
                     }
                 } else if constexpr (Attributes & SfBufferAttr_HipcAutoSelect) {
                     if constexpr (Attributes & SfBufferAttr_In) {
-                        const HipcBufferDescriptor *map_desc = &ctx.request.data.send_buffers[Info.send_map_alias_index];
-                        const HipcStaticDescriptor *ptr_desc = &ctx.request.data.send_statics[Info.send_pointer_index];
+                        const HipcBufferDescriptor *map_desc = std::addressof(ctx.request.data.send_buffers[Info.send_map_alias_index]);
+                        const HipcStaticDescriptor *ptr_desc = std::addressof(ctx.request.data.send_statics[Info.send_pointer_index]);
                         is_buffer_map_alias = hipcGetBufferAddress(map_desc) != 0;
                         if (is_buffer_map_alias) {
                             buffer = cmif::PointerAndSize(hipcGetBufferAddress(map_desc), hipcGetBufferSize(map_desc));
@@ -874,7 +957,7 @@ namespace ams::sf::impl {
                             }
                         }
                     } else if constexpr (Attributes & SfBufferAttr_Out) {
-                        const HipcBufferDescriptor *map_desc = &ctx.request.data.recv_buffers[Info.recv_map_alias_index];
+                        const HipcBufferDescriptor *map_desc = std::addressof(ctx.request.data.recv_buffers[Info.recv_map_alias_index]);
                         is_buffer_map_alias = hipcGetBufferAddress(map_desc) != 0;
                         if (is_buffer_map_alias) {
                             buffer = cmif::PointerAndSize(hipcGetBufferAddress(map_desc), hipcGetBufferSize(map_desc));
@@ -887,7 +970,7 @@ namespace ams::sf::impl {
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                             } else {
                                 const u16 *recv_pointer_sizes = reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(ctx.request.data.data_words) + runtime_metadata.GetUnfixedOutPointerSizeOffset());
-                                const size_t size = size_t(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
+                                const size_t size = static_cast<size_t>(recv_pointer_sizes[Info.unfixed_recv_pointer_index]);
                                 pointer_buffer_head = util::AlignDown(pointer_buffer_head - size, 0x10);
                                 buffer = cmif::PointerAndSize(pointer_buffer_head, size);
                             }
@@ -957,7 +1040,7 @@ namespace ams::sf::impl {
         /* Argument deserialization. */
         private:
             template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
-            NX_CONSTEXPR T DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+            NX_CONSTEXPR typename std::tuple_element<Index, ArgsTypeForInvoke>::type DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
@@ -974,28 +1057,31 @@ namespace ams::sf::impl {
                     return T(out_raw_holder.template GetAddress<Offset, T::TypeSize>());
                 } else if constexpr (Info.arg_type == ArgumentType::InHandle) {
                     /* New InHandle. */
+                    using InvokeType = typename std::tuple_element<Index, ArgsTypeForInvoke>::type;
                     if constexpr (std::is_same<T, sf::MoveHandle>::value) {
-                        return T(ctx.request.data.move_handles[Info.in_move_handle_index]);
+                        static_assert(std::same_as<InvokeType, sf::MoveHandle &>);
+                        return in_handles_holder.template SetMoveHandle<Info.in_move_handle_index>(ctx.request.data.move_handles[Info.in_move_handle_index]);
                     } else if constexpr (std::is_same<T, sf::CopyHandle>::value) {
-                        return T(ctx.request.data.copy_handles[Info.in_copy_handle_index]);
+                        static_assert(std::same_as<InvokeType, sf::CopyHandle &>);
+                        return in_handles_holder.template SetCopyHandle<Info.in_copy_handle_index>(ctx.request.data.copy_handles[Info.in_copy_handle_index]);
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid InHandle kind");
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::OutHandle) {
                     /* New OutHandle. */
-                    if constexpr (std::is_same<T, sf::Out<sf::MoveHandle>>::value) {
+                    if constexpr (std::is_same<T, sf::OutMoveHandle>::value) {
                         return T(out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>());
-                    } else if constexpr (std::is_same<T, sf::Out<sf::CopyHandle>>::value) {
+                    } else if constexpr (std::is_same<T, sf::OutCopyHandle>::value) {
                         return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>());
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::InObject) {
                     /* New InObject. */
-                    return in_out_objects_holder.template GetInObject<Info.in_object_index, typename T::element_type>();
+                    return in_out_objects_holder.template GetInObject<Info.in_object_index, typename T::Interface>();
                 } else if constexpr (Info.arg_type == ArgumentType::OutObject) {
                     /* New OutObject. */
-                    return in_out_objects_holder.template GetOutObject<Info.out_object_index, typename T::ServiceImplType>();
+                    return in_out_objects_holder.template GetOutObject<Info.out_object_index, typename T::Interface>();
                 } else if constexpr (Info.arg_type == ArgumentType::Buffer) {
                     /* Buffers were already processed earlier. */
                     if constexpr (sf::IsLargeData<T>) {
@@ -1003,6 +1089,8 @@ namespace ams::sf::impl {
                         constexpr auto Attributes = CommandMeta::BufferAttributes[Info.buffer_index];
                         if constexpr (Attributes & SfBufferAttr_In) {
                             /* TODO: AMS_ABORT_UNLESS()? N does not bother. */
+                            using InvokeType = typename std::tuple_element<Index, ArgsTypeForInvoke>::type;
+                            static_assert(std::same_as<InvokeType, const T &>);
                             return *reinterpret_cast<const T *>(buffers[Info.buffer_index].GetAddress());
                         } else if constexpr (Attributes & SfBufferAttr_Out) {
                             return T(buffers[Info.buffer_index]);
@@ -1019,12 +1107,12 @@ namespace ams::sf::impl {
             }
 
             template<size_t... Is>
-            NX_CONSTEXPR ArgsType DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
-                return ArgsType { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder)..., };
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
+                return ArgsTypeForInvoke { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder)..., };
             }
         public:
-            NX_CONSTEXPR ArgsType DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
-                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsType>::value>{});
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, InHandleHolderType &in_handles_holder, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsTypeForInvoke>::value>{});
             }
     };
 
@@ -1036,24 +1124,23 @@ namespace ams::sf::impl {
         return ResultSuccess();
     }
 
-    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
-    constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
-        using CommandMeta = CommandMetaInfo<ServiceCommandImpl, Return, ClassType, Arguments...>;
+    template<typename CommandMeta, typename... Arguments>
+    constexpr Result InvokeServiceCommandImplCommon(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, Result (*invoke_impl)(sf::IServiceObject *, Arguments &&...)) {
         using ImplProcessorType = HipcCommandProcessor<CommandMeta>;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
+        using InHandleHolderType = InHandleHolder<CommandMeta::NumInMoveHandles, CommandMeta::NumInCopyHandles>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
-        static_assert(std::is_base_of<sf::IServiceObject, typename CommandMeta::ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
 
         /* Create a processor for us to work with. */
         ImplProcessorType impl_processor;
         if (ctx.processor == nullptr) {
             /* In the non-domain case, this is our only processor. */
-            ctx.processor = &impl_processor;
+            ctx.processor = std::addressof(impl_processor);
         } else {
             /* In the domain case, we already have a processor, so we should give it a pointer to our template implementation. */
-            ctx.processor->SetImplementationProcessor(&impl_processor);
+            ctx.processor->SetImplementationProcessor(std::addressof(impl_processor));
         }
 
         /* Validate the metadata has the expected counts. */
@@ -1076,43 +1163,48 @@ namespace ams::sf::impl {
 
         /* Decoding/Invocation. */
         {
-            typename CommandMeta::ClassTypePointer this_ptr = static_cast<typename CommandMeta::ClassTypePointer>(ctx.srv_obj);
-            typename CommandMeta::ArgsType args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
+            Result command_result;
+            {
+                InHandleHolderType in_handles_holder;
+                typename CommandMeta::ArgsTypeForInvoke args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, in_handles_holder, out_handles_holder, in_out_objects_holder);
 
-            /* Handle in process ID holder if relevant. */
-            if constexpr (CommandMeta::HasInProcessIdHolder) {
-                /* TODO: More precise value than 32? */
-                static_assert(std::tuple_size<typename CommandMeta::ArgsType>::value <= 32, "Commands must have <= 32 arguments");
-                os::ProcessId process_id{ctx.request.pid};
-                #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
-                    using ArgsType = typename CommandMeta::ArgsType;                                          \
-                    if constexpr (n < std::tuple_size<ArgsType>::value) {                                     \
-                        if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
-                            R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
-                        }                                                                                     \
-                    }                                                                                         \
-                } while (0)
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x00); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x01); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x02); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x03);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x04); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x05); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x06); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x07);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x08); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x09); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0b);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0f);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x10); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x11); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x12); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x13);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x14); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x15); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x16); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x17);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x18); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x19); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1b);
-                _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1f);
-                #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
+                /* Handle in process ID holder if relevant. */
+                if constexpr (CommandMeta::HasInProcessIdHolder) {
+                    /* TODO: More precise value than 32? */
+                    static_assert(std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value <= 32, "Commands must have <= 32 arguments");
+                    const os::ProcessId process_id{ctx.request.pid};
+                    #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
+                        using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;                        \
+                        if constexpr (n < std::tuple_size<ArgsTypeForInvoke>::value) {                            \
+                            if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
+                                R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
+                            }                                                                                     \
+                        }                                                                                         \
+                    } while (0)
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x00); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x01); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x02); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x03);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x04); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x05); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x06); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x07);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x08); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x09); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0b);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x0f);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x10); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x11); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x12); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x13);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x14); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x15); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x16); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x17);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x18); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x19); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1a); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1b);
+                    _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1c); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1d); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1e); _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(0x1f);
+                    #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
+                }
+
+                using TrueArgumentsTuple = std::tuple<Arguments...>;
+
+                sf::IServiceObject * const this_ptr = ctx.srv_obj;
+                command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                    return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+                }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value>());
             }
 
-            if constexpr (CommandMeta::ReturnsResult) {
-                const auto command_result = std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
-                if (R_FAILED(command_result)) {
-                    cmif::PointerAndSize out_raw_data;
-                    ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
-                    R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
-                    return command_result;
-                }
-            } else {
-                std::apply([=](auto&&... args) { (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
+            if (R_FAILED(command_result)) {
+                cmif::PointerAndSize out_raw_data;
+                ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
+                R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
+                return command_result;
             }
         }
 
@@ -1129,12 +1221,47 @@ namespace ams::sf::impl {
         ImplProcessorType::SetOutBuffers(response, buffers, is_buffer_map_alias);
 
         /* Set out handles. */
-        out_handles_holder.CopyTo(response, runtime_metadata.GetOutObjectCount());
+        out_handles_holder.CopyTo(ctx, response, runtime_metadata.GetOutObjectCount());
 
         /* Set output objects. */
+        #define _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(n) do {                                                                                    \
+            if constexpr (n < CommandMeta::NumOutObjects) {                                                                                      \
+                in_out_objects_holder.template SetOutObject<n, typename std::tuple_element_t<n, typename CommandMeta::OutObjects>::Interface>(); \
+            }                                                                                                                                    \
+        } while (0)
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(0);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(1);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(2);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(3);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(4);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(5);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(6);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(7);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(8);
+        #undef _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT
         in_out_objects_holder.SetOutObjects(ctx, response);
 
         return ResultSuccess();
+    }
+
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
+    constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+        using CommandMeta = CommandMetaInfo<Arguments...>;
+        static_assert(std::is_base_of<sf::IServiceObject, ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
+
+        constexpr bool ReturnsResult = std::is_same<Return, Result>::value;
+        constexpr bool ReturnsVoid   = std::is_same<Return, void>::value;
+        static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
+
+
+        return InvokeServiceCommandImplCommon<CommandMeta, Arguments...>(out_header_ptr, ctx, in_raw_data, +[](sf::IServiceObject *srv_obj, Arguments &&... args) -> Result {
+            if constexpr (ReturnsResult) {
+                return (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
+            } else {
+                (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
+                return ResultSuccess();
+            }
+        });
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -33,20 +33,20 @@ namespace ams::crypto {
             static constexpr size_t BlockSize    = Impl::BlockSize;
             static constexpr size_t RoundKeySize = Impl::RoundKeySize;
         private:
-            Impl impl;
+            Impl m_impl;
         public:
             AesEncryptor() { /* ... */ }
 
             void Initialize(const void *key, size_t key_size) {
-                this->impl.Initialize(key, key_size, true);
+                m_impl.Initialize(key, key_size, true);
             }
 
             void EncryptBlock(void *dst, size_t dst_size, const void *src, size_t src_size) const {
-                return this->impl.EncryptBlock(dst, dst_size, src, src_size);
+                return m_impl.EncryptBlock(dst, dst_size, src, src_size);
             }
 
             const u8 *GetRoundKey() const {
-                return this->impl.GetRoundKey();
+                return m_impl.GetRoundKey();
             }
     };
 

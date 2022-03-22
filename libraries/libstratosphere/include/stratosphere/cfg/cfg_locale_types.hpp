@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "cfg_types.hpp"
-#include "../settings/settings_types.hpp"
+#include <stratosphere/cfg/cfg_types.hpp>
+#include <stratosphere/settings/settings_types.hpp>
 
 namespace ams::cfg {
 

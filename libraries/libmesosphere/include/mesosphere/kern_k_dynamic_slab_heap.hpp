@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,104 +22,87 @@
 
 namespace ams::kern {
 
-    template<typename T>
-    class KDynamicSlabHeap {
+    template<typename T, bool ClearNode = false>
+    class KDynamicSlabHeap : protected impl::KSlabHeapImpl {
         NON_COPYABLE(KDynamicSlabHeap);
         NON_MOVEABLE(KDynamicSlabHeap);
         private:
-            using Impl       = impl::KSlabHeapImpl;
             using PageBuffer = KDynamicPageManager::PageBuffer;
         private:
-            Impl impl;
-            KDynamicPageManager *page_allocator;
-            std::atomic<size_t> used;
-            std::atomic<size_t> peak;
-            std::atomic<size_t> count;
-            KVirtualAddress address;
-            size_t size;
-        private:
-            ALWAYS_INLINE Impl *GetImpl() {
-                return std::addressof(this->impl);
-            }
-            ALWAYS_INLINE const Impl *GetImpl() const {
-                return std::addressof(this->impl);
-            }
+            util::Atomic<size_t> m_used{0};
+            util::Atomic<size_t> m_peak{0};
+            util::Atomic<size_t> m_count{0};
+            KVirtualAddress m_address{Null<KVirtualAddress>};
+            size_t m_size{};
         public:
-            constexpr KDynamicSlabHeap() : impl(), page_allocator(), used(), peak(), count(), address(), size() { /* ... */ }
+            constexpr KDynamicSlabHeap() = default;
 
-            constexpr KVirtualAddress GetAddress() const { return this->address; }
-            constexpr size_t GetSize() const { return this->size; }
-            constexpr size_t GetUsed() const { return this->used; }
-            constexpr size_t GetPeak() const { return this->peak; }
-            constexpr size_t GetCount() const { return this->count; }
+            constexpr ALWAYS_INLINE KVirtualAddress GetAddress() const { return m_address; }
+            constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
+            constexpr ALWAYS_INLINE size_t GetUsed() const { return m_used.Load(); }
+            constexpr ALWAYS_INLINE size_t GetPeak() const { return m_peak.Load(); }
+            constexpr ALWAYS_INLINE size_t GetCount() const { return m_count.Load(); }
 
-            constexpr bool IsInRange(KVirtualAddress addr) const {
+            constexpr ALWAYS_INLINE bool IsInRange(KVirtualAddress addr) const {
                 return this->GetAddress() <= addr && addr <= this->GetAddress() + this->GetSize() - 1;
             }
 
-            void Initialize(KVirtualAddress memory, size_t sz) {
-                /* Set tracking fields. */
-                this->address = memory;
-                this->count   = sz / sizeof(T);
-                this->size    = this->count * sizeof(T);
-
-                /* Free blocks to memory. */
-                u8 *cur = GetPointer<u8>(this->address + this->size);
-                for (size_t i = 0; i < this->count; i++) {
-                    cur -= sizeof(T);
-                    this->GetImpl()->Free(cur);
-                }
-            }
-
-            void Initialize(KDynamicPageManager *page_allocator) {
-                this->page_allocator = page_allocator;
-                this->address        = this->page_allocator->GetAddress();
-                this->size           = this->page_allocator->GetSize();
-            }
-
-            void Initialize(KDynamicPageManager *page_allocator, size_t num_objects) {
+            ALWAYS_INLINE void Initialize(KDynamicPageManager *page_allocator, size_t num_objects) {
                 MESOSPHERE_ASSERT(page_allocator != nullptr);
 
                 /* Initialize members. */
-                this->Initialize(page_allocator);
+                m_address = page_allocator->GetAddress();
+                m_size    = page_allocator->GetSize();
+
+                /* Initialize the base allocator. */
+                KSlabHeapImpl::Initialize();
 
                 /* Allocate until we have the correct number of objects. */
-                while (this->count < num_objects) {
-                    auto *allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
+                while (m_count.Load() < num_objects) {
+                    auto *allocated = reinterpret_cast<T *>(page_allocator->Allocate());
                     MESOSPHERE_ABORT_UNLESS(allocated != nullptr);
+
                     for (size_t i = 0; i < sizeof(PageBuffer) / sizeof(T); i++) {
-                        this->GetImpl()->Free(allocated + i);
+                        KSlabHeapImpl::Free(allocated + i);
                     }
-                    this->count += sizeof(PageBuffer) / sizeof(T);
+
+                    m_count += sizeof(PageBuffer) / sizeof(T);
                 }
             }
 
-            T *Allocate() {
-                T *allocated = reinterpret_cast<T *>(this->GetImpl()->Allocate());
+            ALWAYS_INLINE T *Allocate(KDynamicPageManager *page_allocator) {
+                T *allocated = static_cast<T *>(KSlabHeapImpl::Allocate());
+
+                /* If we successfully allocated and we should clear the node, do so. */
+                if constexpr (ClearNode) {
+                    if (AMS_LIKELY(allocated != nullptr)) {
+                        reinterpret_cast<KSlabHeapImpl::Node *>(allocated)->next = nullptr;
+                    }
+                }
 
                 /* If we fail to allocate, try to get a new page from our next allocator. */
-                if (AMS_UNLIKELY(allocated == nullptr)) {
-                    if (this->page_allocator != nullptr) {
-                        allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
+                if (AMS_UNLIKELY(allocated == nullptr) ) {
+                    if (page_allocator != nullptr) {
+                        allocated = reinterpret_cast<T *>(page_allocator->Allocate());
                         if (allocated != nullptr) {
                             /* If we succeeded in getting a page, free the rest to our slab. */
                             for (size_t i = 1; i < sizeof(PageBuffer) / sizeof(T); i++) {
-                                this->GetImpl()->Free(allocated + i);
+                                KSlabHeapImpl::Free(allocated + i);
                             }
-                            this->count += sizeof(PageBuffer) / sizeof(T);
+                            m_count += sizeof(PageBuffer) / sizeof(T);
                         }
                     }
                 }
 
                 if (AMS_LIKELY(allocated != nullptr)) {
                     /* Construct the object. */
-                    new (allocated) T();
+                    std::construct_at(allocated);
 
                     /* Update our tracking. */
-                    size_t used = ++this->used;
-                    size_t peak = this->peak;
+                    const size_t used = ++m_used;
+                    size_t peak = m_peak.Load();
                     while (peak < used) {
-                        if (this->peak.compare_exchange_weak(peak, used, std::memory_order_relaxed)) {
+                        if (m_peak.CompareExchangeWeak<std::memory_order_relaxed>(peak, used)) {
                             break;
                         }
                     }
@@ -128,13 +111,10 @@ namespace ams::kern {
                 return allocated;
             }
 
-            void Free(T *t) {
-                this->GetImpl()->Free(t);
-                --this->used;
+            ALWAYS_INLINE void Free(T *t) {
+                KSlabHeapImpl::Free(t);
+                --m_used;
             }
     };
-
-    class KBlockInfoManager       : public KDynamicSlabHeap<KBlockInfo>{};
-    class KMemoryBlockSlabManager : public KDynamicSlabHeap<KMemoryBlock>{};
 
 }

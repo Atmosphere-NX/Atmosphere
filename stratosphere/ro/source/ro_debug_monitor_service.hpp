@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,9 +18,9 @@
 
 namespace ams::ro {
 
-    class DebugMonitorService final {
+    class DebugMonitorService {
         public:
-            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
+            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<ldr::ModuleInfo> &out_infos, os::ProcessId process_id);
     };
     static_assert(ro::impl::IsIDebugMonitorInterface<DebugMonitorService>);
 

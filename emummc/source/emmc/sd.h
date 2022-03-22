@@ -1,6 +1,4 @@
 /*
- *  include/linux/mmc/sd.h
- *
  *  Copyright (c) 2005-2007 Pierre Ossman, All Rights Reserved.
  *  Copyright (c) 2018 CTCaer
  *
@@ -10,8 +8,8 @@
  * your option) any later version.
  */
 
-#ifndef LINUX_MMC_SD_H
-#define LINUX_MMC_SD_H
+#ifndef MMC_SD_H
+#define MMC_SD_H
 
 /* SD commands                           type  argument     response */
 /* class 0 */

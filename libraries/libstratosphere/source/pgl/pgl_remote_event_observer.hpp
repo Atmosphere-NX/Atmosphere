@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,29 +18,42 @@
 
 namespace ams::pgl {
 
-    class RemoteEventObserver final {
+    class RemoteEventObserver {
         NON_COPYABLE(RemoteEventObserver);
         NON_MOVEABLE(RemoteEventObserver);
         private:
-            ::PglEventObserver observer;
+            ::PglEventObserver m_observer;
         public:
-            constexpr RemoteEventObserver(const ::PglEventObserver &o) : observer(o) { /* ... */ }
+            constexpr RemoteEventObserver(const ::PglEventObserver &o) : m_observer(o) { /* ... */ }
             ~RemoteEventObserver() {
-                ::pglEventObserverClose(std::addressof(this->observer));
+                ::pglEventObserverClose(std::addressof(m_observer));
             }
 
             Result GetProcessEventHandle(ams::sf::OutCopyHandle out) {
                 ::Event ev;
-                R_TRY(::pglEventObserverGetProcessEvent(std::addressof(this->observer), std::addressof(ev)));
-                out.SetValue(ev.revent);
+                R_TRY(::pglEventObserverGetProcessEvent(std::addressof(m_observer), std::addressof(ev)));
+                out.SetValue(ev.revent, true);
                 return ResultSuccess();
             }
 
             Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
                 static_assert(sizeof(*out.GetPointer()) == sizeof(::PmProcessEventInfo));
-                return  ::pglEventObserverGetProcessEventInfo(std::addressof(this->observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
+                return ::pglEventObserverGetProcessEventInfo(std::addressof(m_observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
+            }
+
+            Result GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
+                ::Event ev;
+                R_TRY(::pglEventObserverGetProcessEvent(std::addressof(m_observer), std::addressof(ev)));
+                out.SetValue(ev.revent);
+                return ResultSuccess();
+            }
+
+            Result GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {
+                static_assert(sizeof(*out.GetPointer()) == sizeof(::PmProcessEventInfo));
+                return  ::pglEventObserverGetProcessEventInfo(std::addressof(m_observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
             }
     };
     static_assert(pgl::sf::IsIEventObserver<RemoteEventObserver>);
+    static_assert(pgl::tipc::IsIEventObserver<RemoteEventObserver>);
 
 }

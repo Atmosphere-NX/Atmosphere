@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,8 +29,8 @@ namespace ams::boot {
     }
 
     void ShowSplashScreen() {
-        const u32 boot_reason = GetBootReason();
-        if (boot_reason == 1 || boot_reason == 4) {
+        const auto boot_reason = GetBootReason();
+        if (boot_reason == spl::BootReason_AcOk || boot_reason == spl::BootReason_RtcAlarm2) {
             return;
         }
 
@@ -38,7 +38,7 @@ namespace ams::boot {
         {
             /* Splash screen is shown for 2 seconds. */
             ShowDisplay(SplashScreenX, SplashScreenY, SplashScreenW, SplashScreenH, SplashScreen);
-            svcSleepThread(2'000'000'000ul);
+            os::SleepThread(TimeSpan::FromSeconds(2));
         }
         FinalizeDisplay();
     }

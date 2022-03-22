@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,6 +20,6 @@ namespace ams::secmon {
 
     using InterruptHandler = void (*)();
 
-    void SetInterruptHandler(int interrupt_id, InterruptHandler handler);
+    void SetInterruptHandler(int interrupt_id, u8 core_mask, InterruptHandler handler);
 
 }

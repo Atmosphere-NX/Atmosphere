@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "lmem_common.hpp"
+#include <stratosphere/lmem/lmem_common.hpp>
 
 namespace ams::lmem {
 

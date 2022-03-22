@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,18 +20,16 @@
 
 namespace ams::secmon::loader {
 
-    NORETURN void UncompressAndExecute() {
+    NORETURN void UncompressAndExecute(const void *program, const void *boot_code) {
         /* Uncompress the program image. */
-        Uncompress(secmon::MemoryRegionPhysicalTzramFullProgramImage.GetPointer(), secmon::MemoryRegionPhysicalTzramFullProgramImage.GetSize(), program_lz4, program_lz4_size);
-
+        Uncompress(secmon::MemoryRegionPhysicalTzramFullProgramImage.GetPointer(), secmon::MemoryRegionPhysicalTzramFullProgramImage.GetSize(), program, program_lz4_size);
 
         /* Copy the boot image to the end of IRAM */
         u8 *relocated_boot_code = secmon::MemoryRegionPhysicalIramBootCodeImage.GetEndPointer<u8>() - boot_code_lz4_size;
-        std::memcpy(relocated_boot_code, boot_code_lz4, boot_code_lz4_size);
+        std::memcpy(relocated_boot_code, boot_code, boot_code_lz4_size);
 
         /* Uncompress the boot image. */
         Uncompress(secmon::MemoryRegionPhysicalIramBootCodeImage.GetPointer(), secmon::MemoryRegionPhysicalIramBootCodeImage.GetSize(), relocated_boot_code, boot_code_lz4_size);
-
 
         /* Jump to the boot image. */
         reinterpret_cast<void (*)()>(secmon::MemoryRegionPhysicalIramBootCodeImage.GetAddress())();

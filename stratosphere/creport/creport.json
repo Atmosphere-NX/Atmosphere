@@ -11,6 +11,7 @@
     "pool_partition": 2,
     "is_64_bit": true,
     "address_space_type": 3,
+    "disable_device_address_space_merge":    true,
     "filesystem_access": {
         "permissions": "0xFFFFFFFFFFFFFFFF"
     },
@@ -84,6 +85,7 @@
                 "svcGetInfo": "0x29",
                 "svcWaitForAddress": "0x34",
                 "svcSignalToAddress": "0x35",
+                "svcSynchronizePreemptionState": "0x36",
                 "svcCreateSession": "0x40",
                 "svcAcceptSession": "0x41",
                 "svcReplyAndReceiveLight": "0x42",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,17 +30,17 @@ namespace ams::ro::impl {
     bool ShouldEaseNroRestriction();
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, Handle process_handle, os::ProcessId process_id);
+    Result RegisterProcess(size_t *out_context_id, sf::NativeHandle &&process_handle, os::ProcessId process_id);
     Result ValidateProcess(size_t context_id, os::ProcessId process_id);
     void   UnregisterProcess(size_t context_id);
 
     /* Service implementations. */
-    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind);
+    Result RegisterModuleInfo(size_t context_id, os::NativeHandle process_h, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind);
     Result UnregisterModuleInfo(size_t context_id, u64 nrr_address);
     Result MapManualLoadModuleMemory(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
     Result UnmapManualLoadModuleMemory(size_t context_id, u64 nro_address);
 
     /* Debug service implementations. */
-    Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id);
+    Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id);
 
 }

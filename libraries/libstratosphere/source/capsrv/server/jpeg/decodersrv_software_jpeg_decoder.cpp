@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -121,7 +121,7 @@ namespace ams::capsrv::server::jpeg {
             cinfo.do_block_smoothing    = input.block_smoothing;
 
             /* Start decompression. */
-            R_UNLESS(jpeg_start_decompress(&cinfo) == TRUE, capsrv::ResultAlbumInvalidFileData());
+            R_UNLESS(jpeg_start_decompress(std::addressof(cinfo)) == TRUE, capsrv::ResultAlbumInvalidFileData());
 
             /* Check the parameters. */
             CAPSRV_ASSERT(cinfo.output_width         == input.width);
@@ -169,7 +169,7 @@ namespace ams::capsrv::server::jpeg {
             }
 
             /* Finish the decompression. */
-            R_UNLESS(jpeg_finish_decompress(&cinfo) == TRUE, capsrv::ResultAlbumInvalidFileData());
+            R_UNLESS(jpeg_finish_decompress(std::addressof(cinfo)) == TRUE, capsrv::ResultAlbumInvalidFileData());
         } else {
             /* Some unknown error was caught by our handler. */
             return capsrv::ResultAlbumInvalidFileData();

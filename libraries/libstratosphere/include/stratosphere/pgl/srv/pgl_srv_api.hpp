@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,6 +20,10 @@
 
 namespace ams::pgl::srv {
 
-    void Initialize(ShellInterface *interface, MemoryResource *mr);
+    void InitializeHeap();
+    void *Allocate(size_t size);
+    void Deallocate(void *p, size_t size);
+
+    void StartServer();
 
 }

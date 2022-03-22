@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@
 
 namespace ams::kern::svc {
 
-    static constexpr size_t NumSupervisorCalls = 0x80;
+    static constexpr size_t NumSupervisorCalls = AMS_KERN_NUM_SUPERVISOR_CALLS;
 
     #define AMS_KERN_SVC_DECLARE_ENUM_ID(ID, RETURN_TYPE, NAME, ...) \
         SvcId_##NAME = ID,
@@ -45,5 +45,8 @@ namespace ams::kern::svc {
     #undef AMS_KERN_SVC_DECLARE_PROTOTYPE_64
     #undef AMS_KERN_SVC_DECLARE_PROTOTYPE_64_FROM_32
 
+    struct SvcAccessFlagSetTag{};
+
+    using SvcAccessFlagSet = util::BitFlagSet<NumSupervisorCalls, SvcAccessFlagSetTag>;
 
 }

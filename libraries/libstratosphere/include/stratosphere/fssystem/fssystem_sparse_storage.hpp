@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -31,6 +31,8 @@ namespace ams::fssystem {
                 virtual Result Read(s64 offset, void *buffer, size_t size) override {
                     AMS_ASSERT(offset >= 0);
                     AMS_ASSERT(buffer != nullptr || size == 0);
+                    AMS_UNUSED(offset);
+
                     if (size > 0) {
                         std::memset(buffer, 0, size);
                     }
@@ -38,6 +40,7 @@ namespace ams::fssystem {
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                    AMS_UNUSED(dst, dst_size, op_id, offset, size, src, src_size);
                     return ResultSuccess();
                 }
 
@@ -52,17 +55,19 @@ namespace ams::fssystem {
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                    AMS_UNUSED(offset, buffer, size);
                     return fs::ResultUnsupportedOperationInZeroStorageA();
                 }
 
                 virtual Result SetSize(s64 size) override {
+                    AMS_UNUSED(size);
                     return fs::ResultUnsupportedOperationInZeroStorageB();
                 }
             };
         private:
-            ZeroStorage zero_storage;
+            ZeroStorage m_zero_storage;
         public:
-            SparseStorage() : IndirectStorage(), zero_storage() { /* ... */ }
+            SparseStorage() : IndirectStorage(), m_zero_storage() { /* ... */ }
             virtual ~SparseStorage() { /* ... */ }
 
             using IndirectStorage::Initialize;
@@ -90,7 +95,7 @@ namespace ams::fssystem {
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
         private:
             void SetZeroStorage() {
-                return this->SetStorage(1, std::addressof(this->zero_storage), 0, std::numeric_limits<s64>::max());
+                return this->SetStorage(1, std::addressof(m_zero_storage), 0, std::numeric_limits<s64>::max());
             }
     };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,10 +18,10 @@
 
 namespace ams::erpt::srv {
 
-    class ContextImpl final {
+    class ContextImpl {
         public:
             Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer);
-            Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);
+            Result CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);
             Result SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point);
             Result ClearInitialLaunchSettingsCompletionTime();
             Result UpdatePowerOnTime();
@@ -30,7 +30,13 @@ namespace ams::erpt::srv {
             Result UpdateApplicationLaunchTime();
             Result ClearApplicationLaunchTime();
             Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
-            Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
+            Result CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
+            Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result);
+            Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result);
+            Result RegisterRunningApplet(ncm::ProgramId program_id);
+            Result UnregisterRunningApplet(ncm::ProgramId program_id);
+            Result UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpanType duration);
+            Result InvalidateForcedShutdownDetection();
     };
     static_assert(erpt::sf::IsIContext<ContextImpl>);
 

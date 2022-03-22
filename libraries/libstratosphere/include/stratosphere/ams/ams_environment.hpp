@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "ams_types.hpp"
+#include <stratosphere/ams/ams_types.hpp>
 
 namespace ams {
 
@@ -25,5 +25,12 @@ namespace ams {
     /* API for boot sysmodule. */
     void InitializeForBoot();
     void SetInitialRebootPayload(const void *src, size_t src_size);
+
+    void *Malloc(size_t size);
+    void Free(void *ptr);
+
+    void *MallocForRapidJson(size_t size);
+    void *ReallocForRapidJson(void *ptr, size_t size);
+    void FreeForRapidJson(void *ptr);
 
 }

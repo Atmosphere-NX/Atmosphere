@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,16 +27,17 @@ namespace ams::erpt::srv {
     class Stream {
         private:
             static bool s_can_access_fs;
+            static os::SdkMutex s_fs_commit_mutex;
         private:
-            u32 buffer_size;
-            u32 file_position;
-            u32 buffer_position;
-            u32 buffer_count;
-            u8 *buffer;
-            StreamMode stream_mode;
-            bool initialized;
-            fs::FileHandle file_handle;
-            char file_name[ReportFileNameLength];
+            u32 m_buffer_size;
+            u32 m_file_position;
+            u32 m_buffer_position;
+            u32 m_buffer_count;
+            u8 *m_buffer;
+            StreamMode m_stream_mode;
+            bool m_initialized;
+            fs::FileHandle m_file_handle;
+            char m_file_name[ReportFileNameLength];
         public:
             Stream();
             ~Stream();
@@ -46,7 +47,7 @@ namespace ams::erpt::srv {
             Result WriteStream(const u8 *src, u32 src_size);
             void CloseStream();
 
-            Result GetStreamSize(s64 *out);
+            Result GetStreamSize(s64 *out) const;
         private:
             Result Flush();
         public:

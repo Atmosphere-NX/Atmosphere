@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,13 +27,13 @@ namespace ams::kern::board::nintendo::nx {
         private:
             static constexpr size_t TableCount = 4;
         private:
-            KVirtualAddress tables[TableCount];
-            u8 table_asids[TableCount];
-            u64 attached_device;
-            u32 attached_value;
-            u32 detached_value;
-            u32 hs_attached_value;
-            u32 hs_detached_value;
+            KVirtualAddress m_tables[TableCount];
+            u8 m_table_asids[TableCount];
+            u64 m_attached_device;
+            u32 m_attached_value;
+            u32 m_detached_value;
+            u32 m_hs_attached_value;
+            u32 m_hs_detached_value;
         private:
             static ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress addr) {
                 const KMemoryRegion *hint = nullptr;
@@ -61,7 +61,12 @@ namespace ams::kern::board::nintendo::nx {
                 return KPageTable::GetPageTablePhysicalAddress(addr);
             }
         public:
-            constexpr KDevicePageTable() : tables(), table_asids(), attached_device(), attached_value(), detached_value(), hs_attached_value(), hs_detached_value() { /* ... */ }
+            constexpr KDevicePageTable()
+                : m_tables{Null<KVirtualAddress>, Null<KVirtualAddress>, Null<KVirtualAddress>, Null<KVirtualAddress>},
+                  m_table_asids(), m_attached_device(), m_attached_value(), m_detached_value(), m_hs_attached_value(), m_hs_detached_value()
+            {
+                /* ... */
+            }
 
             Result Initialize(u64 space_address, u64 space_size);
             void Finalize();
@@ -69,17 +74,20 @@ namespace ams::kern::board::nintendo::nx {
             Result Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size);
             Result Detach(ams::svc::DeviceName device_name);
 
-            Result Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings);
-            Result Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address);
-        private:
-            Result MapDevicePage(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
+            Result Map(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
+            Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address);
 
-            Result MapImpl(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm);
+            void Unmap(KDeviceVirtualAddress device_address, size_t size) {
+                return this->UnmapImpl(device_address, size, false);
+            }
+        private:
+            Result MapDevicePage(KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
+
+            Result MapImpl(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool is_aligned);
             void UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force);
 
             bool IsFree(KDeviceVirtualAddress address, u64 size) const;
-            Result MakePageGroup(KPageGroup *out, KDeviceVirtualAddress address, u64 size) const;
-            bool Compare(const KPageGroup &pg, KDeviceVirtualAddress device_address) const;
+            bool Compare(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, KDeviceVirtualAddress device_address) const;
         public:
             static void Initialize();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,8 +30,8 @@ namespace ams::lmem::impl {
 
     void InitializeHeapHead(HeapHead *out, u32 magic, void *start, void *end, u32 option) {
         /* Call member constructors. */
-        new (&out->list_node)  util::IntrusiveListNode;
-        new (&out->child_list) decltype(out->child_list);
+        std::construct_at(std::addressof(out->list_node));
+        std::construct_at(std::addressof(out->child_list));
 
         /* Set fields. */
         out->magic = magic;
@@ -45,6 +45,7 @@ namespace ams::lmem::impl {
 
     void FinalizeHeap(HeapHead *heap) {
         /* Nothing actually needs to be done here. */
+        AMS_UNUSED(heap);
     }
 
     bool ContainsAddress(HeapHandle handle, const void *address) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,6 +30,8 @@ namespace ams::kern::arch::arm64::cpu {
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     constexpr inline size_t NumCores = 4;
+#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+    constexpr inline size_t NumCores = 4;
 #else
     #error "Unknown Board for cpu::NumCores"
 #endif
@@ -50,8 +52,17 @@ namespace ams::kern::arch::arm64::cpu {
         __asm__ __volatile__("dmb sy" ::: "memory");
     }
 
+    ALWAYS_INLINE void DataMemoryBarrierInnerShareable() {
+        __asm__ __volatile__("dmb ish" ::: "memory");
+    }
+
     ALWAYS_INLINE void InstructionMemoryBarrier() {
         __asm__ __volatile__("isb" ::: "memory");
+    }
+
+    ALWAYS_INLINE void EnsureInstructionConsistencyInnerShareable() {
+        DataSynchronizationBarrierInnerShareable();
+        InstructionMemoryBarrier();
     }
 
     ALWAYS_INLINE void EnsureInstructionConsistency() {
@@ -171,11 +182,8 @@ namespace ams::kern::arch::arm64::cpu {
     NOINLINE void SynchronizeAllCores();
 
     /* Cache management helpers. */
-    void ClearPageToZeroImpl(void *);
-    void FlushEntireDataCacheSharedForInit();
-    void FlushEntireDataCacheLocalForInit();
-    void InvalidateEntireInstructionCacheForInit();
     void StoreEntireCacheForInit();
+    void FlushEntireCacheForInit();
 
     void FlushEntireDataCache();
 
@@ -186,10 +194,16 @@ namespace ams::kern::arch::arm64::cpu {
 
     void InvalidateEntireInstructionCache();
 
-    ALWAYS_INLINE void ClearPageToZero(void *page) {
+    ALWAYS_INLINE void ClearPageToZero(void * const page) {
         MESOSPHERE_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(page), PageSize));
         MESOSPHERE_ASSERT(page != nullptr);
-        ClearPageToZeroImpl(page);
+
+        uintptr_t cur = reinterpret_cast<uintptr_t>(__builtin_assume_aligned(page, PageSize));
+        const uintptr_t last = cur + PageSize - DataCacheLineSize;
+
+        for (/* ... */; cur <= last; cur += DataCacheLineSize) {
+            __asm__ __volatile__("dc zva, %[cur]" :: [cur]"r"(cur) : "memory");
+        }
     }
 
     ALWAYS_INLINE void InvalidateTlbByAsid(u32 asid) {
@@ -209,6 +223,11 @@ namespace ams::kern::arch::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    ALWAYS_INLINE void InvalidateEntireTlbInnerShareable() {
+        __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
+        EnsureInstructionConsistencyInnerShareable();
+    }
+
     ALWAYS_INLINE void InvalidateEntireTlbDataOnly() {
         __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
         DataSynchronizationBarrier();
@@ -220,16 +239,19 @@ namespace ams::kern::arch::arm64::cpu {
         DataSynchronizationBarrier();
     }
 
-    ALWAYS_INLINE uintptr_t GetCoreLocalRegionAddress() {
+    ALWAYS_INLINE uintptr_t GetCurrentThreadPointerValue() {
         register uintptr_t x18 asm("x18");
         __asm__ __volatile__("" : [x18]"=r"(x18));
         return x18;
     }
 
-    ALWAYS_INLINE void SetCoreLocalRegionAddress(uintptr_t value) {
+    ALWAYS_INLINE void SetCurrentThreadPointerValue(uintptr_t value) {
         register uintptr_t x18 asm("x18") = value;
         __asm__ __volatile__("":: [x18]"r"(x18));
-        SetTpidrEl1(value);
+    }
+
+    ALWAYS_INLINE void SetExceptionThreadStackTop(uintptr_t top) {
+        cpu::SetCntvCvalEl0(top);
     }
 
     ALWAYS_INLINE void SwitchThreadLocalRegion(uintptr_t tlr) {

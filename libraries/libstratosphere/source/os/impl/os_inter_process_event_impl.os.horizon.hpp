@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,13 +20,13 @@ namespace ams::os::impl {
 
     class InterProcessEventImpl {
         public:
-            static Result Create(Handle *out_write, Handle *out_read);
-            static void Close(Handle handle);
-            static void Signal(Handle handle);
-            static void Clear(Handle handle);
-            static void Wait(Handle handle, bool auto_clear);
-            static bool TryWait(Handle handle, bool auto_clear);
-            static bool TimedWait(Handle handle, bool auto_clear, TimeSpan timeout);
+            static Result Create(NativeHandle *out_write, NativeHandle *out_read);
+            static void Close(NativeHandle handle);
+            static void Signal(NativeHandle handle);
+            static void Clear(NativeHandle handle);
+            static void Wait(NativeHandle handle, bool auto_clear);
+            static bool TryWait(NativeHandle handle, bool auto_clear);
+            static bool TimedWait(NativeHandle handle, bool auto_clear, TimeSpan timeout);
     };
 
 }

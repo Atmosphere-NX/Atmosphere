@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -32,15 +32,15 @@
 #include <stratosphere/fs/fs_read_only_filesystem.hpp>
 #include <stratosphere/fs/fs_shared_filesystem_holder.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fs/fs_i_event_notifier.hpp>
 #include <stratosphere/fs/fs_substorage.hpp>
 #include <stratosphere/fs/fs_memory_storage.hpp>
 #include <stratosphere/fs/fs_remote_storage.hpp>
-#include <stratosphere/fs/fs_file_storage.hpp>
+#include <stratosphere/fs/common/fs_file_storage.hpp>
 #include <stratosphere/fs/fs_query_range.hpp>
 #include <stratosphere/fs/fs_speed_emulation.hpp>
 #include <stratosphere/fs/impl/fs_common_mount_name.hpp>
 #include <stratosphere/fs/fs_mount.hpp>
-#include <stratosphere/fs/fs_path_tool.hpp>
 #include <stratosphere/fs/fs_path_utils.hpp>
 #include <stratosphere/fs/fs_filesystem_utils.hpp>
 #include <stratosphere/fs/fs_romfs_filesystem.hpp>
@@ -60,4 +60,7 @@
 #include <stratosphere/fs/fs_sd_card.hpp>
 #include <stratosphere/fs/fs_signed_system_partition.hpp>
 #include <stratosphere/fs/fs_system_data.hpp>
+#include <stratosphere/fs/fs_program_index_map_info.hpp>
 #include <stratosphere/fs/impl/fs_access_log_impl.hpp>
+#include <stratosphere/fs/impl/fs_hash_generator_factory_selector.hpp>
+#include <stratosphere/fs/fs_api.hpp>

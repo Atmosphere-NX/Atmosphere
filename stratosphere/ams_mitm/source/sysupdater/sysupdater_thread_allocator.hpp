@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,20 +28,20 @@ namespace ams::mitm::sysupdater {
     /* NOTE: Nintendo uses a util::BitArray, but this seems excessive. */
     class ThreadAllocator {
         private:
-            os::ThreadType *thread_list;
-            const int thread_priority;
-            const int thread_count;
-            u8 *stack_heap;
-            const size_t stack_heap_size;
-            const size_t stack_size;
-            u64 bitmap;
-            os::SdkMutex mutex;
+            os::ThreadType *m_thread_list;
+            const int m_thread_priority;
+            const int m_thread_count;
+            u8 *m_stack_heap;
+            const size_t m_stack_heap_size;
+            const size_t m_stack_size;
+            u64 m_bitmap;
+            os::SdkMutex m_mutex;
         public:
             constexpr ThreadAllocator(os::ThreadType *thread_list, int count, int priority, u8 *stack_heap, size_t stack_heap_size, size_t stack_size)
-                : thread_list(thread_list), thread_priority(priority), thread_count(count), stack_heap(stack_heap), stack_heap_size(stack_heap_size), stack_size(stack_size), bitmap()
+                : m_thread_list(thread_list), m_thread_priority(priority), m_thread_count(count), m_stack_heap(stack_heap), m_stack_heap_size(stack_heap_size), m_stack_size(stack_size), m_bitmap()
             {
                 AMS_ASSERT(count <= static_cast<int>(stack_heap_size / stack_size));
-                AMS_ASSERT(count <= static_cast<int>(BITSIZEOF(this->bitmap)));
+                AMS_ASSERT(count <= static_cast<int>(BITSIZEOF(m_bitmap)));
             }
 
             Result Allocate(ThreadInfo *out);

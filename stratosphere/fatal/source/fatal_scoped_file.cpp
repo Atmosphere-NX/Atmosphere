@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,8 +23,8 @@ namespace ams::fatal::srv {
         /* Convenience definitions. */
         constexpr size_t MaximumLineLength = 0x20;
 
-        os::Mutex g_format_lock(false);
-        char g_format_buffer[2 * os::MemoryPageSize];
+        constinit os::SdkMutex g_format_lock;
+        constinit char g_format_buffer[2 * os::MemoryPageSize];
 
     }
 
@@ -40,7 +40,7 @@ namespace ams::fatal::srv {
         {
             std::va_list vl;
             va_start(vl, fmt);
-            std::vsnprintf(g_format_buffer, sizeof(g_format_buffer), fmt, vl);
+            util::VSNPrintf(g_format_buffer, sizeof(g_format_buffer), fmt, vl);
             va_end(vl);
         }
 
@@ -70,7 +70,7 @@ namespace ams::fatal::srv {
             {
                 char hex[MaximumLineLength * 2 + 2] = {};
                 for (size_t i = 0; i < cur_size; i++) {
-                    std::snprintf(hex + i * 2, 3, "%02X", data_u8[data_ofs++]);
+                    util::SNPrintf(hex + i * 2, 3, "%02X", data_u8[data_ofs++]);
                 }
                 hex[cur_size * 2 + 0] = '\n';
                 hex[cur_size * 2 + 1] = '\x00';
@@ -90,8 +90,8 @@ namespace ams::fatal::srv {
         }
 
         /* Advance, if we write successfully. */
-        if (R_SUCCEEDED(fs::WriteFile(this->file, this->offset, data, size, fs::WriteOption::Flush))) {
-            this->offset += size;
+        if (R_SUCCEEDED(fs::WriteFile(m_file, m_offset, data, size, fs::WriteOption::Flush))) {
+            m_offset += size;
         }
     }
 

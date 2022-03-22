@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,39 +27,48 @@ namespace ams::kern {
     class KInterruptEvent final : public KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KInterruptEvent, KReadableEvent);
         private:
-            KInterruptEventTask *task;
-            s32 interrupt_id;
-            bool is_initialized;
+            s32 m_interrupt_id;
+            s32 m_core_id;
+            bool m_is_initialized;
         public:
-            constexpr KInterruptEvent() : task(nullptr), interrupt_id(-1), is_initialized(false) { /* ... */ }
-            virtual ~KInterruptEvent() { /* ... */ }
+            constexpr explicit KInterruptEvent(util::ConstantInitializeTag) : KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>(util::ConstantInitialize), m_interrupt_id(-1), m_core_id(-1), m_is_initialized(false) { /* ... */ }
+
+            explicit KInterruptEvent() : m_interrupt_id(-1), m_is_initialized(false) { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
-            virtual void Finalize() override;
+            void Finalize();
 
-            virtual Result Reset() override;
+            Result Reset();
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            Result Clear() {
+                MESOSPHERE_ASSERT_THIS();
+
+                /* Try to perform a reset, succeeding unconditionally. */
+                this->Reset();
+
+                R_SUCCEED();
+            }
+
+            bool IsInitialized() const { return m_is_initialized; }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr s32 GetInterruptId() const { return this->interrupt_id; }
+            constexpr s32 GetInterruptId() const { return m_interrupt_id; }
     };
 
     class KInterruptEventTask : public KSlabAllocated<KInterruptEventTask>, public KInterruptTask {
         private:
-            KInterruptEvent *event;
-            s32 interrupt_id;
+            KInterruptEvent *m_event;
         public:
-            constexpr KInterruptEventTask() : event(nullptr), interrupt_id(-1) { /* ... */ }
+            constexpr KInterruptEventTask() : m_event(nullptr) { /* ... */ }
             ~KInterruptEventTask() { /* ... */ }
 
             virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
             virtual void DoTask() override;
 
-            void Unregister();
+            void Unregister(s32 interrupt_id, s32 core_id);
         public:
-            static Result Register(KInterruptEventTask **out, s32 interrupt_id, bool level, KInterruptEvent *event);
+            static Result Register(s32 interrupt_id, s32 core_id, bool level, KInterruptEvent *event);
     };
 
 }

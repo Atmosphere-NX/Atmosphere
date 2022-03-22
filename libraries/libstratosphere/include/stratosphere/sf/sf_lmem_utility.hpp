@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,44 +22,61 @@ namespace ams::sf {
 
     class ExpHeapMemoryResource : public MemoryResource {
         private:
-            lmem::HeapHandle handle;
+            lmem::HeapHandle m_handle;
         public:
-            explicit ExpHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+            constexpr ExpHeapMemoryResource() : m_handle() { /* ... */ }
+            constexpr explicit ExpHeapMemoryResource(lmem::HeapHandle h) : m_handle(h) { /* ... */ }
 
-            lmem::HeapHandle GetHandle() const { return this->handle; }
+            void Attach(lmem::HeapHandle h) {
+                AMS_ABORT_UNLESS(m_handle == lmem::HeapHandle());
+                m_handle = h;
+            }
+
+            lmem::HeapHandle GetHandle() const { return m_handle; }
         private:
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
-                return lmem::AllocateFromExpHeap(this->handle, size, static_cast<int>(alignment));
+                return lmem::AllocateFromExpHeap(m_handle, size, static_cast<int>(alignment));
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
-                return lmem::FreeToExpHeap(this->handle, buffer);
+                AMS_UNUSED(size, alignment);
+                return lmem::FreeToExpHeap(m_handle, buffer);
             }
 
-            virtual bool IsEqualImpl(const MemoryResource &resource) const {
+            virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                 return this == std::addressof(resource);
             }
     };
 
     class UnitHeapMemoryResource : public MemoryResource {
         private:
-            lmem::HeapHandle handle;
+            lmem::HeapHandle m_handle;
         public:
-            explicit UnitHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+            constexpr UnitHeapMemoryResource() : m_handle() { /* ... */ }
+            constexpr explicit UnitHeapMemoryResource(lmem::HeapHandle h) : m_handle(h) { /* ... */ }
 
-            lmem::HeapHandle GetHandle() const { return this->handle; }
+            void Attach(lmem::HeapHandle h) {
+                AMS_ABORT_UNLESS(m_handle == lmem::HeapHandle());
+                m_handle = h;
+            }
+
+            lmem::HeapHandle GetHandle() const { return m_handle; }
         private:
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
-                AMS_ASSERT(size <= lmem::GetUnitHeapUnitSize(this->handle));
-                AMS_ASSERT(alignment <= static_cast<size_t>(lmem::GetUnitHeapAlignment(this->handle)));
-                return lmem::AllocateFromUnitHeap(this->handle);
+                AMS_ASSERT(size <= lmem::GetUnitHeapUnitSize(m_handle));
+                AMS_ASSERT(alignment <= static_cast<size_t>(lmem::GetUnitHeapAlignment(m_handle)));
+                AMS_UNUSED(size, alignment);
+
+                return lmem::AllocateFromUnitHeap(m_handle);
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
-                return lmem::FreeToUnitHeap(this->handle, buffer);
+                AMS_UNUSED(size, alignment);
+
+                return lmem::FreeToUnitHeap(m_handle, buffer);
             }
 
-            virtual bool IsEqualImpl(const MemoryResource &resource) const {
+            virtual bool IsEqualImpl(const MemoryResource &resource) const override {
                 return this == std::addressof(resource);
             }
     };

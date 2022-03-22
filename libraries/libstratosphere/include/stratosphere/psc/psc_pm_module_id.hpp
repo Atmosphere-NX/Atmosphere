@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,7 +19,7 @@
 
 namespace ams::psc {
 
-    enum PmModuleId : u16 {
+    enum PmModuleId : u32 {
         PmModuleId_Usb           = 4,
         PmModuleId_Ethernet      = 5,
         PmModuleId_Fgm           = 6,

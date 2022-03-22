@@ -51,21 +51,21 @@ SECTIONS
 		. = ALIGN(8);
 	} :code
 
-	/* .vectors. */
-	. = ALIGN(2K);
-	__vectors_start__ = . ;
-  .vectors :
-	{
-		KEEP( *(.vectors) )
-		. = ALIGN(8);
-	} :code
-
 	/* .sleep. */
 	. = ALIGN(4K);
 	__sleep_start__ = . ;
-  .sleep :
+    .sleep :
 	{
 		KEEP( *(.sleep .sleep.*) )
+		. = ALIGN(8);
+	} :code
+
+	/* .vectors. */
+	. = ALIGN(2K);
+	__vectors_start__ = . ;
+    .vectors :
+	{
+		KEEP( *(.vectors) )
 		. = ALIGN(8);
 	} :code
 
@@ -113,9 +113,6 @@ SECTIONS
 	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } : rodata
 
 	.dynamic           : { *(.dynamic) } :rodata :dyn
-	.dynsym            : { *(.dynsym) } :rodata
-	.dynstr            : { *(.dynstr) } :rodata
-	.rela.dyn          : { *(.rela.*) } :rodata
 	.hash              : { *(.hash) } :rodata
 	.gnu.hash          : { *(.gnu.hash) } :rodata
 	.gnu.version       : { *(.gnu.version) } :rodata
@@ -152,18 +149,19 @@ SECTIONS
 	{
 		*(.data .data.* .gnu.linkonce.d.*)
 		SORT(CONSTRUCTORS)
+        . = ALIGN(8);
 	} :data
 
 	__bss_start__ = .;
-	.bss ALIGN(8) :
-	{
-		*(.dynbss)
-		*(.bss .bss.* .gnu.linkonce.b.*)
-		*(COMMON)
-		. = ALIGN(8);
-	} : data
 
-	. = ALIGN(0x1000);
+    .rela.dyn : { *(.rela.*) } :data
+
+    .bss ADDR(.rela.dyn) (NOLOAD) : {
+        *(.dynbss)
+        *(.bss .bss.* .gnu.linkonce.b.*)
+        *(COMMON)
+        . = ALIGN(0x1000);
+    }
 
 	__bss_end__ = .;
 
@@ -174,7 +172,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note .interp .fini_array .fini_array.*) }
+	/DISCARD/ : { *(.group .comment .note .interp .fini_array .fini_array.* .dynsym .dynstr) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }

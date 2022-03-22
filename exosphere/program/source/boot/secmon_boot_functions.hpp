@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,7 +18,9 @@
 
 namespace ams::secmon::boot {
 
-    void ClearIram();
+    void ClearIramBootCode();
+    void ClearIramBootKeys();
+    void ClearIramDebugCode();
 
     void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
 

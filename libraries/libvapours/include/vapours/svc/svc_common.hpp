@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,10 +22,9 @@
 namespace ams::svc {
 
     /* TODO: C++ style handle? */
-#ifdef ATMOSPHERE_IS_STRATOSPHERE
-    using Handle = ::Handle;
-#else
     using Handle = u32;
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+    static_assert(std::same_as<::ams::svc::Handle, ::Handle>);
 #endif
 
     enum {

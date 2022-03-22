@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -42,15 +42,15 @@ namespace ams::os {
         private:
             friend class SdkConditionVariable;
         private:
-            SdkMutexType mutex;
+            SdkMutexType m_mutex;
         public:
-            constexpr SdkMutex() : mutex{{0}} { /* ... */ }
+            constexpr SdkMutex() : m_mutex{{0}} { /* ... */ }
 
-            ALWAYS_INLINE void Lock()    { return os::LockSdkMutex(std::addressof(this->mutex)); }
-            ALWAYS_INLINE bool TryLock() { return os::TryLockSdkMutex(std::addressof(this->mutex)); }
-            ALWAYS_INLINE void Unlock()  { return os::UnlockSdkMutex(std::addressof(this->mutex)); }
+            ALWAYS_INLINE void Lock()    { return os::LockSdkMutex(std::addressof(m_mutex)); }
+            ALWAYS_INLINE bool TryLock() { return os::TryLockSdkMutex(std::addressof(m_mutex)); }
+            ALWAYS_INLINE void Unlock()  { return os::UnlockSdkMutex(std::addressof(m_mutex)); }
 
-            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return os::IsSdkMutexLockedByCurrentThread(std::addressof(this->mutex)); }
+            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return os::IsSdkMutexLockedByCurrentThread(std::addressof(m_mutex)); }
 
             ALWAYS_INLINE void lock()     { return this->Lock(); }
             ALWAYS_INLINE bool try_lock() { return this->TryLock(); }

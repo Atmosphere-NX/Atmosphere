@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,20 +22,20 @@ namespace ams::ncm {
         private:
             using PackagePath = kvdb::BoundedString<0x100>;
         private:
-            PackagePath context_path;
-            FileInstallTaskData data;
-            ContentMetaDatabase package_db;
-            bool gamecard_content_meta_database_active;
+            PackagePath m_context_path;
+            FileInstallTaskData m_data;
+            ContentMetaDatabase m_package_db;
+            bool m_gamecard_content_meta_database_active;
         public:
             ~PackageSystemUpdateTask();
 
             void Inactivate();
             Result Initialize(const char *package_root, const char *context_path, void *buffer, size_t buffer_size, bool requires_exfat_driver, FirmwareVariationId firmware_variation_id);
-            std::optional<ContentMetaKey> GetSystemUpdateMetaKey();
+            util::optional<ContentMetaKey> GetSystemUpdateMetaKey();
         protected:
             virtual Result PrepareInstallContentMetaData() override;
             virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;
-            InstallTaskDataBase &GetInstallData() { return this->data; } /* Atmosphere extension. */
+            InstallTaskDataBase &GetInstallData() { return m_data; } /* Atmosphere extension. */
         private:
             virtual Result PrepareDependency() override;
 

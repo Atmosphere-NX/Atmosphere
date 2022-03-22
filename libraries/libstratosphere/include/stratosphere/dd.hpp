@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,5 +16,7 @@
 
 #pragma once
 
-#include "dd/dd_io_mappings.hpp"
-#include "dd/dd_process_handle.hpp"
+#include <stratosphere/dd/dd_types.hpp>
+#include <stratosphere/dd/dd_device_address_space.hpp>
+#include <stratosphere/dd/dd_io_mappings.hpp>
+#include <stratosphere/dd/dd_process_handle.hpp>

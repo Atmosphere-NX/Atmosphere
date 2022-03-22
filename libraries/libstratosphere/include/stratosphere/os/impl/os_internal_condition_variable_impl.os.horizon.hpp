@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -25,12 +25,12 @@ namespace ams::os::impl {
 
     class InternalConditionVariableImpl {
         private:
-            u32 value;
+            u32 m_value;
         public:
-            constexpr InternalConditionVariableImpl() : value(0) { /* ... */ }
+            constexpr InternalConditionVariableImpl() : m_value(0) { /* ... */ }
 
             constexpr void Initialize() {
-                this->value = 0;
+                m_value = 0;
             }
 
             void Signal();

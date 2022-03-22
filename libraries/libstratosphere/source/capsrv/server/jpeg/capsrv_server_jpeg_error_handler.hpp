@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -37,6 +37,10 @@ namespace ams::capsrv::server::jpeg {
             }
 
             static Result GetResult(int msg_code, int msg_param) {
+                /* NOTE: Nintendo uses msg_param for error codes that we never trigger. */
+                /* TODO: Fully support all J_MESSAGE_CODEs that Nintendo handles? */
+                AMS_UNUSED(msg_param);
+
                 switch (msg_code) {
                     case JpegLibraryType::J_MESSAGE_CODE::JERR_BUFFER_SIZE:
                     case JpegLibraryType::J_MESSAGE_CODE::JERR_NO_BACKING_STORE:

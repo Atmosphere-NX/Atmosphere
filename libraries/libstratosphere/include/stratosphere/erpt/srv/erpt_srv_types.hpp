@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,8 +22,9 @@ namespace ams::erpt::srv {
 
     constexpr inline const char ReportOnSdStoragePath[] = "ersd";
 
-    constexpr inline const char ReportStoragePath[] = "save";
-    constexpr inline const char JournalFileName[]   = "save:/journal";
+    constexpr inline const char ReportStoragePath[]             = "save";
+    constexpr inline const char JournalFileName[]               = "save:/journal";
+    constexpr inline const char ForcedShutdownContextFileName[] = "save:/forced-shutdown";
 
     constexpr size_t ReportFileNameLength = 64;
     constexpr size_t AttachmentFileNameLength = 64;

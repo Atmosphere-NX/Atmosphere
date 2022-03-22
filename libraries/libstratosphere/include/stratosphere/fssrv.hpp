@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -17,6 +17,9 @@
 #pragma once
 #include <stratosphere/fssrv/sf/fssrv_sf_path.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_ifile.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_i_event_notifier.hpp>
+#include <stratosphere/fssrv/impl/fssrv_impl_program_index_map_info_manager.hpp>
+#include <stratosphere/fssrv/fssrv_access_control.hpp>
 #include <stratosphere/fssrv/fssrv_path_normalizer.hpp>
 #include <stratosphere/fssrv/fssrv_nca_crypto_configuration.hpp>
 #include <stratosphere/fssrv/fssrv_memory_resource_from_standard_allocator.hpp>
@@ -25,4 +28,8 @@
 #include <stratosphere/fssrv/fscreator/fssrv_partition_file_system_creator.hpp>
 #include <stratosphere/fssrv/fscreator/fssrv_rom_file_system_creator.hpp>
 #include <stratosphere/fssrv/fscreator/fssrv_storage_on_nca_creator.hpp>
+#include <stratosphere/fssrv/fssrv_file_system_proxy_server_session_resource_manager.hpp>
+#include <stratosphere/fssrv/impl/fssrv_file_system_proxy_service_object.hpp>
+#include <stratosphere/fssrv/fssrv_program_registry_impl.hpp>
+#include <stratosphere/fssrv/fssrv_program_registry_service.hpp>
 #include <stratosphere/fssrv/fssrv_file_system_proxy_api.hpp>

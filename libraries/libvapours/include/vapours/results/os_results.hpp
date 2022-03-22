@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -36,5 +36,9 @@ namespace ams::os {
     R_DEFINE_ERROR_RESULT(InvalidTransferMemorySize,  504);
     R_DEFINE_ERROR_RESULT(OutOfTransferMemory,        505);
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,          506);
+
+    R_DEFINE_ERROR_RESULT(SessionClosedForReceive,    510);
+    R_DEFINE_ERROR_RESULT(SessionClosedForReply,      511);
+    R_DEFINE_ERROR_RESULT(ReceiveListBroken,          512);
 
 }

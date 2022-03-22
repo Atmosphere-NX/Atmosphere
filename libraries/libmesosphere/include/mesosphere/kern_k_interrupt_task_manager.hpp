@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,31 +24,28 @@ namespace ams::kern {
         private:
             class TaskQueue {
                 private:
-                    KInterruptTask *head;
-                    KInterruptTask *tail;
+                    KInterruptTask *m_head;
+                    KInterruptTask *m_tail;
                 public:
-                    constexpr TaskQueue() : head(nullptr), tail(nullptr) { /* ... */ }
+                    constexpr ALWAYS_INLINE TaskQueue() : m_head(nullptr), m_tail(nullptr) { /* ... */ }
 
-                    constexpr KInterruptTask *GetHead() { return this->head; }
-                    constexpr bool IsEmpty() const { return this->head == nullptr; }
-                    constexpr void Clear() { this->head = nullptr; this->tail = nullptr; }
+                    constexpr ALWAYS_INLINE KInterruptTask *GetHead() { return m_head; }
+                    constexpr ALWAYS_INLINE bool IsEmpty() const { return m_head == nullptr; }
+                    constexpr ALWAYS_INLINE void Clear() { m_head = nullptr; m_tail = nullptr; }
 
                     void Enqueue(KInterruptTask *task);
                     void Dequeue();
             };
         private:
-            TaskQueue task_queue;
-            KThread *thread;
-        private:
-            static void ThreadFunction(uintptr_t arg);
-            void ThreadFunctionImpl();
+            TaskQueue m_task_queue;
+            s64 m_cpu_time;
         public:
-            constexpr KInterruptTaskManager() : task_queue(), thread(nullptr) { /* ... */ }
+            constexpr KInterruptTaskManager() : m_task_queue(), m_cpu_time(0) { /* ... */ }
 
-            constexpr KThread *GetThread() const { return this->thread; }
+            constexpr ALWAYS_INLINE s64 GetCpuTime() const { return m_cpu_time; }
 
-            NOINLINE void Initialize();
             void EnqueueTask(KInterruptTask *task);
+            void DoTasks();
     };
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "impl/fssystem_path_resolution_filesystem.hpp"
+#include <stratosphere/fssystem/impl/fssystem_path_resolution_filesystem.hpp>
 
 namespace ams::fssystem {
 
@@ -24,19 +24,19 @@ namespace ams::fssystem {
             using PathResolutionFileSystem = impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
             friend class impl::IPathResolutionFileSystem<DirectoryRedirectionFileSystem>;
         private:
-            char *before_dir;
-            size_t before_dir_len;
-            char *after_dir;
-            size_t after_dir_len;
+            char *m_before_dir;
+            size_t m_before_dir_len;
+            char *m_after_dir;
+            size_t m_after_dir_len;
         public:
             DirectoryRedirectionFileSystem(std::shared_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
             DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc = false);
 
             virtual ~DirectoryRedirectionFileSystem();
         protected:
-            inline std::optional<std::scoped_lock<os::Mutex>> GetAccessorLock() const {
+            inline util::optional<std::scoped_lock<os::SdkMutex>> GetAccessorLock() const {
                 /* No accessor lock is needed. */
-                return std::nullopt;
+                return util::nullopt;
             }
         private:
             Result GetNormalizedDirectoryPath(char **out, size_t *out_size, const char *dir);

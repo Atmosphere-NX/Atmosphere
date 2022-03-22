@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,12 +22,12 @@ namespace ams::fssystem {
         public:
             class BufferAttribute {
                 private:
-                    s32 level;
+                    s32 m_level;
                 public:
-                    constexpr BufferAttribute() : level(0) { /* ... */ }
-                    constexpr explicit BufferAttribute(s32 l) : level(l) { /* ... */ }
+                    constexpr BufferAttribute() : m_level(0) { /* ... */ }
+                    constexpr explicit BufferAttribute(s32 l) : m_level(l) { /* ... */ }
 
-                    constexpr s32 GetLevel() const { return this->level; }
+                    constexpr s32 GetLevel() const { return m_level; }
             };
 
             using CacheHandle = s64;

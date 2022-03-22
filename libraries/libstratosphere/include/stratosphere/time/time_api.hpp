@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,6 +28,8 @@ namespace ams::time {
     Result Finalize();
 
     bool IsInitialized();
+
+    bool IsValidDate(int year, int month, int day);
 
     Result GetElapsedSecondsBetween(s64 *out, const SteadyClockTimePoint &from, const SteadyClockTimePoint &to);
 

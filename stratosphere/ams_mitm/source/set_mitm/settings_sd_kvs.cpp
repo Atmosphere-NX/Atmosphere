@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "../amsmitm_debug.hpp"
 #include "../amsmitm_fs_utils.hpp"
 #include "settings_sd_kvs.hpp"
 
@@ -123,25 +122,25 @@ namespace ams::settings::fwdbg {
         }
 
         Result ValidateSettingsName(const char *name) {
-            R_UNLESS(name != nullptr, ResultSettingsNameNull());
+            R_UNLESS(name != nullptr, settings::ResultNullSettingsName());
             const size_t len = strnlen(name, SettingsNameLengthMax + 1);
-            R_UNLESS(len > 0,                          ResultSettingsNameEmpty());
-            R_UNLESS(len <= SettingsNameLengthMax,     ResultSettingsNameTooLong());
-            R_UNLESS(IsValidSettingsFormat(name, len), ResultSettingsNameInvalidFormat());
+            R_UNLESS(len > 0,                          settings::ResultEmptySettingsName());
+            R_UNLESS(len <= SettingsNameLengthMax,     settings::ResultTooLongSettingsName());
+            R_UNLESS(IsValidSettingsFormat(name, len), settings::ResultInvalidFormatSettingsName());
             return ResultSuccess();
         }
 
         Result ValidateSettingsItemKey(const char *key) {
-            R_UNLESS(key != nullptr, ResultSettingsNameNull());
+            R_UNLESS(key != nullptr, settings::ResultNullSettingsName());
             const size_t len = strnlen(key, SettingsItemKeyLengthMax + 1);
-            R_UNLESS(len > 0,                         ResultSettingsItemKeyEmpty());
-            R_UNLESS(len <= SettingsNameLengthMax,    ResultSettingsItemKeyTooLong());
-            R_UNLESS(IsValidSettingsFormat(key, len), ResultSettingsItemKeyInvalidFormat());
+            R_UNLESS(len > 0,                         settings::ResultEmptySettingsItemKey());
+            R_UNLESS(len <= SettingsNameLengthMax,    settings::ResultTooLongSettingsItemKey());
+            R_UNLESS(IsValidSettingsFormat(key, len), settings::ResultInvalidFormatSettingsItemKey());
             return ResultSuccess();
         }
 
         Result AllocateValue(void **out, size_t size) {
-            R_UNLESS(g_allocated_value_storage_size + size <= sizeof(g_value_storage), ResultSettingsItemValueAllocationFailed());
+            R_UNLESS(g_allocated_value_storage_size + size <= sizeof(g_value_storage), settings::ResultSettingsItemValueAllocationFailed());
 
             *out = g_value_storage + g_allocated_value_storage_size;
             g_allocated_value_storage_size += size;
@@ -159,7 +158,7 @@ namespace ams::settings::fwdbg {
                     return ResultSuccess();
                 }
             }
-            return ResultSettingsItemKeyAllocationFailed();
+            return settings::ResultSettingsItemKeyAllocationFailed();
         }
 
         Result FindSettingsItemKey(const char **out, const char *key) {
@@ -173,16 +172,16 @@ namespace ams::settings::fwdbg {
                     return ResultSuccess();
                 }
             }
-            return ResultSettingsItemKeyAllocationFailed();
+            return settings::ResultSettingsItemKeyAllocationFailed();
         }
 
         template<typename T>
         Result ParseSettingsItemIntegralValue(SdKeyValueStoreEntry &out, const char *value_str) {
-            R_TRY(AllocateValue(&out.value, sizeof(T)));
+            R_TRY(AllocateValue(std::addressof(out.value), sizeof(T)));
             out.value_size = sizeof(T);
 
             T value = static_cast<T>(strtoul(value_str, nullptr, 0));
-            std::memcpy(out.value, &value, sizeof(T));
+            std::memcpy(out.value, std::addressof(value), sizeof(T));
             return ResultSuccess();
         }
 
@@ -192,15 +191,15 @@ namespace ams::settings::fwdbg {
             R_TRY(ValidateSettingsItemKey(key));
 
             u8 dummy_value = 0;
-            SdKeyValueStoreEntry test_entry { .name = name, .key = key, .value = &dummy_value, .value_size = sizeof(dummy_value) };
+            SdKeyValueStoreEntry test_entry { .name = name, .key = key, .value = std::addressof(dummy_value), .value_size = sizeof(dummy_value) };
 
             auto *begin = g_entries;
             auto *end   = begin + g_num_entries;
             auto it = std::lower_bound(begin, end, test_entry);
-            R_UNLESS(it != end,         ResultSettingsItemNotFound());
-            R_UNLESS(*it == test_entry, ResultSettingsItemNotFound());
+            R_UNLESS(it != end,         settings::ResultSettingsItemNotFound());
+            R_UNLESS(*it == test_entry, settings::ResultSettingsItemNotFound());
 
-            *out = &*it;
+            *out = std::addressof(*it);
             return ResultSuccess();
         }
 
@@ -209,7 +208,7 @@ namespace ams::settings::fwdbg {
             const char *value_str = delimiter + 1;
             const char *type = val_tup;
 
-            R_UNLESS(delimiter != nullptr, ResultSettingsItemValueInvalidFormat());
+            R_UNLESS(delimiter != nullptr, settings::ResultInvalidFormatSettingsItemValue());
 
             while (std::isspace(static_cast<unsigned char>(*type)) && type != delimiter) {
                 type++;
@@ -217,28 +216,28 @@ namespace ams::settings::fwdbg {
 
             const size_t type_len = delimiter - type;
             const size_t value_len = strlen(value_str);
-            R_UNLESS(type_len > 0,  ResultSettingsItemValueInvalidFormat());
-            R_UNLESS(value_len > 0, ResultSettingsItemValueInvalidFormat());
+            R_UNLESS(type_len > 0,  settings::ResultInvalidFormatSettingsItemValue());
+            R_UNLESS(value_len > 0, settings::ResultInvalidFormatSettingsItemValue());
 
             /* Create new value. */
             SdKeyValueStoreEntry new_value = {};
 
             /* Find name and key. */
-            R_TRY(FindSettingsName(&new_value.name, name));
-            R_TRY(FindSettingsItemKey(&new_value.key, key));
+            R_TRY(FindSettingsName(std::addressof(new_value.name), name));
+            R_TRY(FindSettingsItemKey(std::addressof(new_value.key), key));
 
             if (strncasecmp(type, "str", type_len) == 0 || strncasecmp(type, "string", type_len) == 0) {
                 const size_t size = value_len + 1;
-                R_TRY(AllocateValue(&new_value.value, size));
+                R_TRY(AllocateValue(std::addressof(new_value.value), size));
                 std::memcpy(new_value.value, value_str, size);
                 new_value.value_size = size;
             } else if (strncasecmp(type, "hex", type_len) == 0 || strncasecmp(type, "bytes", type_len) == 0) {
-                R_UNLESS(value_len > 0,            ResultSettingsItemValueInvalidFormat());
-                R_UNLESS(value_len % 2 == 0,       ResultSettingsItemValueInvalidFormat());
-                R_UNLESS(IsHexadecimal(value_str), ResultSettingsItemValueInvalidFormat());
+                R_UNLESS(value_len > 0,            settings::ResultInvalidFormatSettingsItemValue());
+                R_UNLESS(value_len % 2 == 0,       settings::ResultInvalidFormatSettingsItemValue());
+                R_UNLESS(IsHexadecimal(value_str), settings::ResultInvalidFormatSettingsItemValue());
 
                 const size_t size = value_len / 2;
-                R_TRY(AllocateValue(&new_value.value, size));
+                R_TRY(AllocateValue(std::addressof(new_value.value), size));
                 new_value.value_size = size;
 
                 u8 *data = reinterpret_cast<u8 *>(new_value.value);
@@ -254,7 +253,7 @@ namespace ams::settings::fwdbg {
             } else if (strncasecmp(type, "u64", type_len) == 0) {
                 R_TRY((ParseSettingsItemIntegralValue<u64>(new_value, value_str)));
             } else {
-                return ResultSettingsItemValueInvalidFormat();
+                return settings::ResultInvalidFormatSettingsItemValue();
             }
 
             /* Insert the entry. */
@@ -267,7 +266,7 @@ namespace ams::settings::fwdbg {
                 }
             }
 
-            R_UNLESS(inserted, ResultSettingsItemValueAllocationFailed());
+            R_UNLESS(inserted, settings::ResultSettingsItemValueAllocationFailed());
             return ResultSuccess();
         }
 
@@ -301,7 +300,7 @@ namespace ams::settings::fwdbg {
             AMS_ABORT_UNLESS(file != nullptr);
 
             Result parse_result = ResultSuccess();
-            util::ini::ParseFile(file.get(), &parse_result, SystemSettingsIniHandler);
+            util::ini::ParseFile(file.get(), std::addressof(parse_result), SystemSettingsIniHandler);
             R_TRY(parse_result);
 
             return ResultSuccess();
@@ -311,9 +310,24 @@ namespace ams::settings::fwdbg {
             /* Disable uploading error reports to Nintendo. */
             R_ABORT_UNLESS(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
 
+            /* Enable USB 3.0 superspeed for homebrew */
+            R_ABORT_UNLESS(ParseSettingsItemValue("usb", "usb30_force_enabled", spl::IsUsb30ForceEnabled() ? "u8!0x1" : "u8!0x0"));
+
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
             R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));
+
+            /* Control whether lm should log to the SD card. */
+            /* Note that this setting does nothing when log manager is not enabled. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("lm", "enable_sd_card_logging", "u8!0x1"));
+
+            /* Control the output directory for SD card logs. */
+            /* Note that this setting does nothing when log manager is not enabled/sd card logging is not enabled. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("lm", "sd_card_log_output_directory", "str!atmosphere/binlogs"));
+
+            /* Control whether erpt reports should always be preserved, instead of automatically cleaning periodically. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("erpt", "disable_automatic_report_cleanup", "u8!0x0"));
 
             /* Atmosphere custom settings. */
 
@@ -345,11 +359,39 @@ namespace ams::settings::fwdbg {
             /* If you do not know what you are doing, do not touch this yet. */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_saves_to_sd", "u8!0x0"));
 
-            /* Controls whether to enable the deprecated hid mitm */
-            /* to fix compatibility with old homebrew. */
-            /* 0 = Do not enable, 1 = Enable. */
-            /* Please note this setting may be removed in a future release of Atmosphere. */
-            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_deprecated_hid_mitm", "u8!0x0"));
+            /* Controls whether am sees system settings "DebugModeFlag" as */
+            /* enabled or disabled. */
+            /* 0 = Disabled (not debug mode), 1 = Enabled (debug mode) */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_am_debug_mode", "u8!0x0"));
+
+            /* Controls whether dns.mitm is enabled. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm", "u8!0x1"));
+
+            /* Controls whether dns.mitm uses the default redirections in addition to */
+            /* whatever is specified in the user's hosts file. */
+            /* 0 = Disabled (use hosts file contents), 1 = Enabled (use defaults and hosts file contents) */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "add_defaults_to_dns_hosts", "u8!0x1"));
+
+            /* Controls whether dns.mitm logs to the sd card for debugging. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm_debug_log", "u8!0x0"));
+
+            /* Controls whether htc is enabled. */
+            /* TODO: Change this to default 1 when tma2 is ready for inclusion in atmosphere releases. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_htc", "u8!0x0"));
+
+            /* Controls whether atmosphere's dmnt.gen2 gdbstub should run as a standalone via sockets. */
+            /* Note that this setting is ignored (and treated as 0) when htc is enabled. */
+            /* Note that this setting may disappear in the future. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_standalone_gdbstub", "u8!0x0"));
+
+            /* Controls whether atmosphere's log manager is enabled. */
+            /* Note that this setting is ignored (and treated as 1) when htc is enabled. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_log_manager", "u8!0x0"));
 
             /* Hbloader custom settings. */
 
@@ -372,10 +414,7 @@ namespace ams::settings::fwdbg {
         LoadDefaultCustomSettings();
 
         /* Parse custom settings off the SD card. */
-        const Result parse_result = LoadSdCardKeyValueStore();
-        if (R_FAILED(parse_result)) {
-            ams::mitm::ThrowResultForDebug(parse_result);
-        }
+        R_ABORT_UNLESS(LoadSdCardKeyValueStore());
 
         /* Determine how many custom settings are present. */
         for (size_t i = 0; i < util::size(g_entries); i++) {
@@ -393,17 +432,17 @@ namespace ams::settings::fwdbg {
 
     Result GetSdCardKeyValueStoreSettingsItemValueSize(size_t *out_size, const char *name, const char *key) {
         SdKeyValueStoreEntry *entry = nullptr;
-        R_TRY(GetEntry(&entry, name, key));
+        R_TRY(GetEntry(std::addressof(entry), name, key));
 
         *out_size = entry->value_size;
         return ResultSuccess();
     }
 
     Result GetSdCardKeyValueStoreSettingsItemValue(size_t *out_size, void *dst, size_t dst_size, const char *name, const char *key) {
-        R_UNLESS(dst != nullptr, ResultSettingsItemValueBufferNull());
+        R_UNLESS(dst != nullptr, settings::ResultNullSettingsItemValueBuffer());
 
         SdKeyValueStoreEntry *entry = nullptr;
-        R_TRY(GetEntry(&entry, name, key));
+        R_TRY(GetEntry(std::addressof(entry), name, key));
 
         const size_t size = std::min(entry->value_size, dst_size);
         if (size > 0) {

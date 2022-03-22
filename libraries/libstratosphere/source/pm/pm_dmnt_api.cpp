@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -32,22 +32,22 @@ namespace ams::pm::dmnt {
         return pmdmntGetApplicationProcessId(reinterpret_cast<u64 *>(out_process_id));
     }
 
-    Result HookToCreateApplicationProcess(Handle *out_handle) {
+    Result HookToCreateApplicationProcess(os::NativeHandle *out_handle) {
         Event evt;
-        R_TRY(pmdmntHookToCreateApplicationProcess(&evt));
+        R_TRY(pmdmntHookToCreateApplicationProcess(std::addressof(evt)));
         *out_handle = evt.revent;
         return ResultSuccess();
     }
 
-    Result AtmosphereGetProcessInfo(Handle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
-        *out_handle = INVALID_HANDLE;
+    Result AtmosphereGetProcessInfo(os::NativeHandle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
+        *out_handle = os::InvalidNativeHandle;
         *out_loc = {};
         *out_status = {};
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));
         return pmdmntAtmosphereGetProcessInfo(out_handle, reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
-    Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, LimitableResource resource) {
+    Result AtmosphereGetCurrentLimitInfo(u64 *out_current_value, u64 *out_limit_value, ResourceLimitGroup group, svc::LimitableResource resource) {
         *out_current_value = 0;
         *out_limit_value   = 0;
         return pmdmntAtmosphereGetCurrentLimitInfo(out_current_value, out_limit_value, group, resource);

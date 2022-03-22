@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,7 +24,7 @@ namespace ams::kern::svc {
         Result CloseHandle(ams::svc::Handle handle) {
             /* Remove the handle. */
             R_UNLESS(GetCurrentProcess().GetHandleTable().Remove(handle), svc::ResultInvalidHandle());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ResetSignal(ams::svc::Handle handle) {
@@ -35,7 +35,11 @@ namespace ams::kern::svc {
             {
                 KScopedAutoObject readable_event = handle_table.GetObject<KReadableEvent>(handle);
                 if (readable_event.IsNotNull()) {
-                    return readable_event->Reset();
+                    if (auto * const interrupt_event = readable_event->DynamicCast<KInterruptEvent *>(); interrupt_event != nullptr) {
+                        R_RETURN(interrupt_event->Reset());
+                    } else {
+                        R_RETURN(readable_event->Reset());
+                    }
                 }
             }
 
@@ -43,11 +47,11 @@ namespace ams::kern::svc {
             {
                 KScopedAutoObject process = handle_table.GetObject<KProcess>(handle);
                 if (process.IsNotNull()) {
-                    return process->Reset();
+                    R_RETURN(process->Reset());
                 }
             }
 
-            return svc::ResultInvalidHandle();
+            R_THROW(svc::ResultInvalidHandle());
         }
 
         Result WaitSynchronizationImpl(int32_t *out_index, KSynchronizationObject **objs, int32_t num_handles, int64_t timeout_ns) {
@@ -63,7 +67,7 @@ namespace ams::kern::svc {
                 timeout = timeout_ns;
             }
 
-            return Kernel::GetSynchronization().Wait(out_index, objs, num_handles, timeout);
+            R_RETURN(KSynchronizationObject::Wait(out_index, objs, num_handles, timeout));
         }
 
         Result WaitSynchronization(int32_t *out_index, KUserPointer<const ams::svc::Handle *> user_handles, int32_t num_handles, int64_t timeout_ns) {
@@ -99,7 +103,7 @@ namespace ams::kern::svc {
                 R_CONVERT(svc::ResultSessionClosed, ResultSuccess())
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CancelSynchronization(ams::svc::Handle handle) {
@@ -109,7 +113,7 @@ namespace ams::kern::svc {
 
             /* Cancel the thread's wait. */
             thread->WaitCancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void SynchronizePreemptionState() {
@@ -132,19 +136,19 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CloseHandle64(ams::svc::Handle handle) {
-        return CloseHandle(handle);
+        R_RETURN(CloseHandle(handle));
     }
 
     Result ResetSignal64(ams::svc::Handle handle) {
-        return ResetSignal(handle);
+        R_RETURN(ResetSignal(handle));
     }
 
     Result WaitSynchronization64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
-        return WaitSynchronization(out_index, handles, num_handles, timeout_ns);
+        R_RETURN(WaitSynchronization(out_index, handles, num_handles, timeout_ns));
     }
 
     Result CancelSynchronization64(ams::svc::Handle handle) {
-        return CancelSynchronization(handle);
+        R_RETURN(CancelSynchronization(handle));
     }
 
     void SynchronizePreemptionState64() {
@@ -154,19 +158,19 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result CloseHandle64From32(ams::svc::Handle handle) {
-        return CloseHandle(handle);
+        R_RETURN(CloseHandle(handle));
     }
 
     Result ResetSignal64From32(ams::svc::Handle handle) {
-        return ResetSignal(handle);
+        R_RETURN(ResetSignal(handle));
     }
 
     Result WaitSynchronization64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
-        return WaitSynchronization(out_index, handles, num_handles, timeout_ns);
+        R_RETURN(WaitSynchronization(out_index, handles, num_handles, timeout_ns));
     }
 
     Result CancelSynchronization64From32(ams::svc::Handle handle) {
-        return CancelSynchronization(handle);
+        R_RETURN(CancelSynchronization(handle));
     }
 
     void SynchronizePreemptionState64From32() {

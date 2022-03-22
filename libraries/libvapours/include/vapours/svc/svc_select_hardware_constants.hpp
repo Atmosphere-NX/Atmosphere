@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,8 +24,15 @@
         using namespace ams::svc::board::nintendo::nx;
     }
 
+#elif defined(ATMOSPHERE_BOARD_QEMU_VIRT)
+
+    #include <vapours/svc/board/qemu/virt/svc_hardware_constants.hpp>
+    namespace ams::svc {
+        using namespace ams::svc::board::qemu::virt;
+    }
+
 #else
 
-    #error "Unknown board for svc::DeviceName"
+    #error "Unknown board for svc Hardware Constants"
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -30,11 +30,17 @@ namespace ams::erpt::srv {
                 return s_record_count;
             }
         private:
-            ContextEntry ctx;
+            ContextEntry m_ctx;
+        private:
+            Result Add(FieldId field_id, const void *arr, u32 size, FieldType type);
         public:
             ContextRecord();
-            explicit ContextRecord(CategoryId category);
+            explicit ContextRecord(CategoryId category, u32 array_buf_size = ArrayBufferSizeDefault);
             ~ContextRecord();
+
+            const ContextEntry *GetContextEntryPtr() const {
+                return std::addressof(m_ctx);
+            }
 
             Result Initialize(const ContextEntry *ctx_ptr, const u8 *data, u32 data_size);
 
@@ -44,6 +50,7 @@ namespace ams::erpt::srv {
             Result Add(FieldId field_id, s32 value_i32);
             Result Add(FieldId field_id, s64 value_i64);
             Result Add(FieldId field_id, const char *str, u32 str_size);
+            Result Add(FieldId field_id, const u8 *data, u32 size);
     };
 
 }

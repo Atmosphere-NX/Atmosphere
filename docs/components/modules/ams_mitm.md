@@ -33,3 +33,8 @@ in settings as `#.#.#|AMS #.#.#|?` with `? = S` when running under system eMMC o
 ### System Settings
 set_mitm intercepts the `GetSettingsItemValueSize` and `GetSettingsItemValue` commands for all requesters.
 It does so in order to enable user configuration of system settings, which are parsed from `/atmosphere/system_settings.ini` on boot. See [here](../../features/configurations.md) for more information on the system settings format.
+
+## dns_mitm
+dns_mitm enables intercepting requests to dns resolution services, to enable redirecting requests for specified hostnames.
+
+For documentation, see [here](../../features/dns_mitm.md).

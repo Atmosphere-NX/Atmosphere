@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,6 +20,7 @@ namespace ams::fssystem {
     u8 NcaHeader::GetProperKeyGeneration() const {
         return std::max(this->key_generation, this->key_generation_2);
     }
+
     bool NcaPatchInfo::HasIndirectTable() const {
         return this->indirect_size != 0;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@
 
 namespace ams::fssrv::sf {
 
-    struct Path : ams::sf::LargeData {
+    struct Path : public ams::sf::LargeData {
         char str[fs::EntryNameLengthMax + 1];
 
         static constexpr Path Encode(const char *p) {

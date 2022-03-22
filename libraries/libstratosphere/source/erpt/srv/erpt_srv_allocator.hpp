@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,13 +22,13 @@ namespace ams::erpt::srv {
 
     class Allocator {
         public:
-            void *operator new(size_t sz) { return lmem::AllocateFromExpHeap(g_heap_handle, sz); }
-            void *operator new(size_t sz, size_t algn) { return lmem::AllocateFromExpHeap(g_heap_handle, sz, static_cast<s32>(algn)); }
-            void *operator new[](size_t sz) { return lmem::AllocateFromExpHeap(g_heap_handle, sz); }
-            void *operator new[](size_t sz, size_t algn) { return lmem::AllocateFromExpHeap(g_heap_handle, sz, static_cast<s32>(algn)); }
+            void *operator new(size_t sz) noexcept { return lmem::AllocateFromExpHeap(g_heap_handle, sz); }
+            void *operator new(size_t sz, size_t algn) noexcept { return lmem::AllocateFromExpHeap(g_heap_handle, sz, static_cast<s32>(algn)); }
+            void *operator new[](size_t sz) noexcept { return lmem::AllocateFromExpHeap(g_heap_handle, sz); }
+            void *operator new[](size_t sz, size_t algn) noexcept { return lmem::AllocateFromExpHeap(g_heap_handle, sz, static_cast<s32>(algn)); }
 
-            void operator delete(void *p) { lmem::FreeToExpHeap(g_heap_handle, p); }
-            void operator delete[](void *p) { lmem::FreeToExpHeap(g_heap_handle, p); }
+            void operator delete(void *p) noexcept { lmem::FreeToExpHeap(g_heap_handle, p); }
+            void operator delete[](void *p) noexcept { lmem::FreeToExpHeap(g_heap_handle, p); }
     };
 
     inline void *Allocate(size_t sz) {
@@ -44,6 +44,8 @@ namespace ams::erpt::srv {
     }
 
     inline void DeallocateWithSize(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         return lmem::FreeToExpHeap(g_heap_handle, p);
     }
 

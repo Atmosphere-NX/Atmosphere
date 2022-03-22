@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -94,7 +94,7 @@ namespace ams::secmon::boot {
         }
 
         /* Check that the key generation is one that we can use. */
-        static_assert(pkg1::KeyGeneration_Count == 11);
+        static_assert(pkg1::KeyGeneration_Count == 13);
         if (key_generation >= pkg1::KeyGeneration_Count) {
             return false;
         }
@@ -154,8 +154,11 @@ namespace ams::secmon::boot {
     bool VerifyPackage2Payloads(const pkg2::Package2Meta &meta, uintptr_t payload_address) {
         /* Verify hashes match for all payloads. */
         for (int i = 0; i < pkg2::PayloadCount; ++i) {
-            if (!VerifyHash(meta.payload_hashes[i], payload_address, meta.payload_sizes[i])) {
-                return false;
+            /* Allow all-zero bytes to match any payload. */
+            if (!(meta.payload_hashes[i][0] == 0 && std::memcmp(meta.payload_hashes[i] + 0, meta.payload_hashes[i] + 1, sizeof(meta.payload_hashes[i]) - 1) == 0)) {
+                if (!VerifyHash(meta.payload_hashes[i], payload_address, meta.payload_sizes[i])) {
+                    return false;
+                }
             }
 
             payload_address += meta.payload_sizes[i];

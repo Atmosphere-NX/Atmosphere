@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -49,9 +49,14 @@ namespace ams::kern {
             /* Initialize the carveout and the system resource limit. */
             KSystemControl::InitializePhase1();
 
+            /* Synchronize all cores before proceeding, to ensure access to the global rng is consistent. */
+            cpu::SynchronizeAllCores();
+
             /* Initialize the memory manager and the KPageBuffer slabheap. */
             {
                 const auto &management_region = KMemoryLayout::GetPoolManagementRegion();
+                MESOSPHERE_ABORT_UNLESS(management_region.GetEndAddress() != 0);
+
                 Kernel::GetMemoryManager().Initialize(management_region.GetAddress(), management_region.GetSize());
                 init::InitializeKPageBufferSlabHeap();
             }
@@ -68,8 +73,13 @@ namespace ams::kern {
             /* Initialize the Dynamic Slab Heaps. */
             {
                 const auto &pt_heap_region = KMemoryLayout::GetPageTableHeapRegion();
+                MESOSPHERE_ABORT_UNLESS(pt_heap_region.GetEndAddress() != 0);
+
                 Kernel::InitializeResourceManagers(pt_heap_region.GetAddress(), pt_heap_region.GetSize());
             }
+        } else {
+            /* Synchronize all cores before proceeding, to ensure access to the global rng is consistent. */
+            cpu::SynchronizeAllCores();
         }
 
         /* Initialize the supervisor page table for each core. */
@@ -89,7 +99,6 @@ namespace ams::kern {
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
             KThread::Register(std::addressof(Kernel::GetMainThread(core_id)));
             KThread::Register(std::addressof(Kernel::GetIdleThread(core_id)));
-            Kernel::GetInterruptTaskManager().Initialize();
         });
 
         /* Activate the scheduler and enable interrupts. */
@@ -108,7 +117,7 @@ namespace ams::kern {
         /* Perform more core-0 specific initialization. */
         if (core_id == 0) {
             /* Initialize the exit worker manager, so that threads and processes may exit cleanly. */
-            Kernel::GetWorkerTaskManager(KWorkerTaskManager::WorkerType_Exit).Initialize(KWorkerTaskManager::WorkerType_Exit, KWorkerTaskManager::ExitWorkerPriority);
+            Kernel::GetWorkerTaskManager(KWorkerTaskManager::WorkerType_Exit).Initialize(KWorkerTaskManager::ExitWorkerPriority);
 
             /* Setup so that we may sleep later, and reserve memory for secure applets. */
             KSystemControl::InitializePhase2();
@@ -124,6 +133,13 @@ namespace ams::kern {
 
             /* Resume all threads suspended while we initialized. */
             KThread::ResumeThreadsSuspendedForInit();
+
+            /* Validate that all reserved dram blocks are valid. */
+            for (const auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
+                if (region.IsDerivedFrom(KMemoryRegionType_DramReservedBase)) {
+                    MESOSPHERE_ABORT_UNLESS(region.GetEndAddress() != 0);
+                }
+            }
         }
         cpu::SynchronizeAllCores();
 

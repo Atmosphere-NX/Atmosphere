@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -23,10 +23,11 @@ namespace ams::ncm {
     }
 
     Result PackageInstallTask::Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
-        return PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, storage_id, std::addressof(this->data), ignore_ticket ? InstallConfig_IgnoreTicket : InstallConfig_None);
+        return PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, storage_id, std::addressof(m_data), ignore_ticket ? InstallConfig_IgnoreTicket : InstallConfig_None);
     }
 
     Result PackageInstallTask::GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) {
+        AMS_UNUSED(out_info, key);
         return ncm::ResultContentNotFound();
     }
 
@@ -41,7 +42,7 @@ namespace ams::ncm {
             s64 count;
             fs::DirectoryEntry entry;
             R_TRY(fs::ReadDirectory(std::addressof(count), std::addressof(entry), dir, 1));
-            
+
             /* No more entries remain, we are done. */
             if (count == 0) {
                 break;
@@ -50,9 +51,9 @@ namespace ams::ncm {
             /* Check if this entry is content meta. */
             if (this->IsContentMetaContentName(entry.name)) {
                 /* Prepare content meta if id is valid. */
-                std::optional<ContentId> id = GetContentIdFromString(entry.name, strnlen(entry.name, fs::EntryNameLengthMax + 1));
+                util::optional<ContentId> id = GetContentIdFromString(entry.name, strnlen(entry.name, fs::EntryNameLengthMax + 1));
                 R_UNLESS(id, ncm::ResultInvalidPackageFormat());
-                R_TRY(this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(*id, entry.file_size), std::nullopt, std::nullopt));
+                R_TRY(this->PrepareContentMeta(InstallContentMetaInfo::MakeUnverifiable(*id, entry.file_size), util::nullopt, util::nullopt));
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
@@ -29,8 +28,8 @@
 .type       _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm, %function
 _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     /* Save arguments. */
-    mov     x17, x0
-    mov     x18, x1
+    mov     x16, x0
+    mov     x17, x1
 
     /* Enable access to FPU registers. */
     mrs     x1, cpacr_el1
@@ -40,12 +39,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     isb
 
     /* Save callee-save registers. */
-    stp     x19, x20, [x0], #0x10
-    stp     x21, x22, [x0], #0x10
-    stp     x23, x24, [x0], #0x10
-    stp     x25, x26, [x0], #0x10
-    stp     x27, x28, [x0], #0x10
-    stp     x29, x30, [x0], #0x10
+    stp     x18, x19, [x0], #0x10
+    stp     x20, x21, [x0], #0x10
+    stp     x22, x23, [x0], #0x10
+    stp     x24, x25, [x0], #0x10
+    stp     x26, x27, [x0], #0x10
+    stp     x28, x29, [x0], #0x10
+    stp     x30, xzr, [x0], #0x10
 
     /* Save stack pointer. */
     mov     x1, sp
@@ -94,9 +94,10 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     mrs     x2, tpidr_el1
     stp     x1, x2, [x0], #0x10
 
-    /* Save the virtual resumption entrypoint. */
+    /* Save the virtual resumption entrypoint and cntv_cval_el0. */
     adr     x1, 77f
-    stp     x1, xzr, [x0], #0x10
+    mrs     x2, cntv_cval_el0
+    stp     x1, x2, [x0], #0x10
 
     /* Get the current core id. */
     mrs     x0, mpidr_el1
@@ -113,8 +114,8 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
 1:  /* Suspend. */
     LOAD_IMMEDIATE_32(x0, 0xC4000001)
     LOAD_IMMEDIATE_32(x1, 0x0201001B)
-    mov     x2, x18
-    mov     x3, x17
+    mov     x2, x17
+    mov     x3, x16
     smc     #1
 0:  b       0b
 
@@ -190,12 +191,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
     isb
 
     /* Restore callee-save registers. */
-    ldp     x19, x20, [x0], #0x10
-    ldp     x21, x22, [x0], #0x10
-    ldp     x23, x24, [x0], #0x10
-    ldp     x25, x26, [x0], #0x10
-    ldp     x27, x28, [x0], #0x10
-    ldp     x29, x30, [x0], #0x10
+    ldp     x18, x19, [x0], #0x10
+    ldp     x20, x21, [x0], #0x10
+    ldp     x22, x23, [x0], #0x10
+    ldp     x24, x25, [x0], #0x10
+    ldp     x26, x27, [x0], #0x10
+    ldp     x28, x29, [x0], #0x10
+    ldp     x30, xzr, [x0], #0x10
 
     /* Restore stack pointer. */
     ldr     x1, [x0], #8
@@ -243,13 +245,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
     msr     tcr_el1, x1
     msr     mair_el1, x2
 
-    /* Get sctlr, tpidr, and the entrypoint. */
-    ldp     x1, x2,  [x0], #0x10
-    ldp     x3, xzr, [x0], #0x10
+    /* Get sctlr, tpidr, the entrypoint, and cntv_cval_el0. */
+    ldp     x1, x2, [x0], #0x10
+    ldp     x3, x4, [x0], #0x10
 
     /* Set the global context back into x18/tpidr. */
     msr     tpidr_el1, x2
-    mov     x18, x2
+    msr     cntv_cval_el0, x4
     dsb     sy
     isb
 

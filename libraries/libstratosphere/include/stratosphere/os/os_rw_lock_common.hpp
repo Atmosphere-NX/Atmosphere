@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,7 +18,7 @@
 
 namespace ams::os {
 
-    constexpr inline s32 ReadWriteLockCountMax       = (1 << (BITSIZEOF(u16) - 1)) - 1;
-    constexpr inline s32 ReadWriteLockWaiterCountMax = (1 << BITSIZEOF(u8)) - 1;
+    constexpr inline s32 ReaderWriterLockCountMax       = (1 << (BITSIZEOF(u16) - 1)) - 1;
+    constexpr inline s32 ReaderWriterLockWaiterCountMax = (1 << BITSIZEOF(u8)) - 1;
 
 }

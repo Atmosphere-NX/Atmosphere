@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,31 +26,33 @@
 #include <stratosphere/ncm/ncm_rights_id_cache.hpp>
 #include <stratosphere/ncm/ncm_content_management_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta_utils.hpp>
+#include <stratosphere/ncm/ncm_registered_host_content.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
 
     class ContentMetaMemoryResource : public MemoryResource {
         private:
-            mem::StandardAllocator allocator;
-            size_t peak_total_alloc_size;
-            size_t peak_alloc_size;
+            mem::StandardAllocator m_allocator;
+            size_t m_peak_total_alloc_size;
+            size_t m_peak_alloc_size;
         public:
-            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : allocator(heap, heap_size) { /* ... */ }
+            explicit ContentMetaMemoryResource(void *heap, size_t heap_size) : m_allocator(heap, heap_size), m_peak_total_alloc_size(0), m_peak_alloc_size(0) { /* ... */ }
 
-            mem::StandardAllocator *GetAllocator() { return std::addressof(this->allocator); }
-            size_t GetPeakTotalAllocationSize() const { return this->peak_total_alloc_size; }
-            size_t GetPeakAllocationSize() const { return this->peak_alloc_size; }
+            mem::StandardAllocator *GetAllocator() { return std::addressof(m_allocator); }
+            size_t GetPeakTotalAllocationSize() const { return m_peak_total_alloc_size; }
+            size_t GetPeakAllocationSize() const { return m_peak_alloc_size; }
         private:
             virtual void *AllocateImpl(size_t size, size_t alignment) override {
-                void *mem = this->allocator.Allocate(size, alignment);
-                this->peak_total_alloc_size = std::max(this->allocator.Hash().allocated_size, this->peak_total_alloc_size);
-                this->peak_alloc_size = std::max(size, this->peak_alloc_size);
+                void *mem = m_allocator.Allocate(size, alignment);
+                m_peak_total_alloc_size = std::max(m_allocator.Hash().allocated_size, m_peak_total_alloc_size);
+                m_peak_alloc_size = std::max(size, m_peak_alloc_size);
                 return mem;
             }
 
             virtual void DeallocateImpl(void *buffer, size_t size, size_t alignment) override {
-                return this->allocator.Free(buffer);
+                AMS_UNUSED(size, alignment);
+                return m_allocator.Free(buffer);
             }
 
             virtual bool IsEqualImpl(const MemoryResource &resource) const override {
@@ -67,7 +69,7 @@ namespace ams::ncm {
     };
     static_assert(util::is_pod<SystemSaveDataInfo>::value);
 
-    class ContentManagerImpl final {
+    class ContentManagerImpl {
         private:
             constexpr static size_t MaxContentStorageRoots         = 8;
             constexpr static size_t MaxContentMetaDatabaseRoots    = 8;
@@ -80,7 +82,7 @@ namespace ams::ncm {
                 char path[128];
                 StorageId storage_id;
                 fs::ContentStorageId content_storage_id;
-                std::shared_ptr<IContentStorage> content_storage;
+                sf::SharedPointer<IContentStorage> content_storage;
 
                 ContentStorageRoot() { /* ... */ }
             };
@@ -93,23 +95,26 @@ namespace ams::ncm {
                 char path[128];
                 StorageId storage_id;
                 SystemSaveDataInfo info;
-                std::shared_ptr<IContentMetaDatabase> content_meta_database;
-                std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
+                sf::SharedPointer<IContentMetaDatabase> content_meta_database;
+                util::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
                 ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
 
                 ContentMetaDatabaseRoot() { /* ... */ }
             };
         private:
-            os::Mutex mutex;
-            bool initialized;
-            ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
-            ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
-            u32 num_content_storage_entries;
-            u32 num_content_meta_entries;
-            RightsIdCache rights_id_cache;
+            os::SdkRecursiveMutex m_mutex;
+            bool m_initialized;
+            ContentStorageRoot m_content_storage_roots[MaxContentStorageRoots];
+            ContentMetaDatabaseRoot m_content_meta_database_roots[MaxContentMetaDatabaseRoots];
+            u32 m_num_content_storage_entries;
+            u32 m_num_content_meta_entries;
+            RightsIdCache m_rights_id_cache;
+            RegisteredHostContent m_registered_host_content;
         public:
-            ContentManagerImpl() : mutex(true), initialized(false) { /* ... */ };
+            ContentManagerImpl() : m_mutex(), m_initialized(false), m_content_storage_roots(), m_content_meta_database_roots(), m_num_content_storage_entries(0), m_num_content_meta_entries(0), m_rights_id_cache(), m_registered_host_content() {
+                /* ... */
+            };
             ~ContentManagerImpl();
         public:
             Result Initialize(const ContentManagerConfig &config);
@@ -135,8 +140,8 @@ namespace ams::ncm {
             Result CreateContentMetaDatabase(StorageId storage_id);
             Result VerifyContentStorage(StorageId storage_id);
             Result VerifyContentMetaDatabase(StorageId storage_id);
-            Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
-            Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
+            Result OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id);
+            Result OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id);
             Result CloseContentStorageForcibly(StorageId storage_id);
             Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
             Result CleanupContentMetaDatabase(StorageId storage_id);

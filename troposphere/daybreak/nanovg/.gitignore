@@ -79,9 +79,8 @@ dkms.conf
 *.nam
 *.til
 
-# KEYS file for sept-secondary.
+# Compiled python files.
 *.pyc
-sept/sept-secondary/KEYS.py
 
 .**/
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,7 +22,6 @@ namespace ams::kern::init {
     #define FOREACH_SLAB_TYPE(HANDLER, ...)                                                                                     \
         HANDLER(KProcess,            (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
         HANDLER(KThread,             (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
-        HANDLER(KLinkedListNode,     (SLAB_COUNT(KThread) * 17),                                                ## __VA_ARGS__) \
         HANDLER(KEvent,              (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
         HANDLER(KInterruptEvent,     (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
         HANDLER(KInterruptEventTask, (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
@@ -39,7 +38,9 @@ namespace ams::kern::init {
         HANDLER(KObjectName,         (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
         HANDLER(KResourceLimit,      (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
         HANDLER(KEventInfo,          (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
-        HANDLER(KDebug,              (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__)
+        HANDLER(KDebug,              (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
+        HANDLER(KIoPool,             (SLAB_COUNT(KIoPool)),                                                     ## __VA_ARGS__) \
+        HANDLER(KIoRegion,           (SLAB_COUNT(KIoRegion)),                                                   ## __VA_ARGS__)
 
     namespace {
 
@@ -56,30 +57,32 @@ namespace ams::kern::init {
         /* Constexpr counts. */
         constexpr size_t SlabCountKProcess              = 80;
         constexpr size_t SlabCountKThread               = 800;
-        constexpr size_t SlabCountKEvent                = 700;
+        constexpr size_t SlabCountKEvent                = 900;
         constexpr size_t SlabCountKInterruptEvent       = 100;
-        constexpr size_t SlabCountKPort                 = 256;
+        constexpr size_t SlabCountKPort                 = 384;
         constexpr size_t SlabCountKSharedMemory         = 80;
         constexpr size_t SlabCountKTransferMemory       = 200;
         constexpr size_t SlabCountKCodeMemory           = 10;
         constexpr size_t SlabCountKDeviceAddressSpace   = 300;
-        constexpr size_t SlabCountKSession              = 933;
+        constexpr size_t SlabCountKSession              = 1133;
         constexpr size_t SlabCountKLightSession         = 100;
         constexpr size_t SlabCountKObjectName           = 7;
         constexpr size_t SlabCountKResourceLimit        = 5;
         constexpr size_t SlabCountKDebug                = cpu::NumCores;
+        constexpr size_t SlabCountKIoPool               = 1;
+        constexpr size_t SlabCountKIoRegion             = 6;
 
         constexpr size_t SlabCountExtraKThread          = 160;
 
         namespace test {
 
-            constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + (sizeof(KLinkedListNode) * 17) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
+            constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
             static_assert(RequiredSizeForExtraThreadCount <= KernelSlabHeapAdditionalSize);
 
         }
 
         /* Global to hold our resource counts. */
-        KSlabResourceCounts g_slab_resource_counts = {
+        constinit KSlabResourceCounts g_slab_resource_counts = {
             .num_KProcess               = SlabCountKProcess,
             .num_KThread                = SlabCountKThread,
             .num_KEvent                 = SlabCountKEvent,
@@ -94,6 +97,8 @@ namespace ams::kern::init {
             .num_KObjectName            = SlabCountKObjectName,
             .num_KResourceLimit         = SlabCountKResourceLimit,
             .num_KDebug                 = SlabCountKDebug,
+            .num_KIoPool                = SlabCountKIoPool,
+            .num_KIoRegion              = SlabCountKIoRegion,
         };
 
         template<typename T>
@@ -126,7 +131,9 @@ namespace ams::kern::init {
     }
 
     size_t CalculateSlabHeapGapSize() {
-        return (kern::GetTargetFirmware() >= TargetFirmware_10_0_0) ? KernelSlabHeapGapsSize : KernelSlabHeapGapsSizeDeprecated;
+        constexpr size_t KernelSlabHeapGapSize = 2_MB - 296_KB;
+        static_assert(KernelSlabHeapGapSize <= KernelSlabHeapGapsSizeMax);
+        return KernelSlabHeapGapSize;
     }
 
     size_t CalculateTotalSlabHeapSize() {
@@ -158,19 +165,17 @@ namespace ams::kern::init {
 
         /* Allocate memory for the slab. */
         constexpr auto AllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-        const KVirtualAddress slab_address = Kernel::GetMemoryManager().AllocateContinuous(num_pages, 1, AllocateOption);
-        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KVirtualAddress>);
-
-        /* Open references to the slab. */
-        Kernel::GetMemoryManager().Open(slab_address, num_pages);
+        const KPhysicalAddress slab_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, 1, AllocateOption);
+        MESOSPHERE_ABORT_UNLESS(slab_address != Null<KPhysicalAddress>);
 
         /* Initialize the slabheap. */
-        KPageBuffer::InitializeSlabHeap(GetVoidPointer(slab_address), slab_size);
+        KPageBuffer::InitializeSlabHeap(GetVoidPointer(KMemoryLayout::GetLinearVirtualAddress(slab_address)), slab_size);
     }
 
     void InitializeSlabHeaps() {
-        /* Get the start of the slab region, since that's where we'll be working. */
-        KVirtualAddress address = KMemoryLayout::GetSlabRegionAddress();
+        /* Get the slab region, since that's where we'll be working. */
+        const KMemoryRegion &slab_region = KMemoryLayout::GetSlabRegion();
+        KVirtualAddress address = slab_region.GetAddress();
 
         /* Initialize slab type array to be in sorted order. */
         KSlabType slab_types[KSlabType_Count];
@@ -198,13 +203,21 @@ namespace ams::kern::init {
             }
         }
 
+        /* Track the gaps, so that we can free them to the unused slab tree. */
+        KVirtualAddress gap_start = address;
+        size_t gap_size = 0;
+
         for (size_t i = 0; i < util::size(slab_types); i++) {
             /* Add the random gap to the address. */
-            address += (i == 0) ? slab_gaps[0] : slab_gaps[i] - slab_gaps[i - 1];
+            const auto cur_gap = (i == 0) ? slab_gaps[0] : slab_gaps[i] - slab_gaps[i - 1];
+            address  += cur_gap;
+            gap_size += cur_gap;
 
-            #define INITIALIZE_SLAB_HEAP(NAME, COUNT, ...)              \
-                case KSlabType_##NAME:                                  \
-                    address = InitializeSlabHeap<NAME>(address, COUNT); \
+            #define INITIALIZE_SLAB_HEAP(NAME, COUNT, ...)                  \
+                case KSlabType_##NAME:                                      \
+                    if (COUNT > 0) {                                        \
+                        address = InitializeSlabHeap<NAME>(address, COUNT); \
+                    }                                                       \
                     break;
 
             /* Initialize the slabheap. */
@@ -214,7 +227,17 @@ namespace ams::kern::init {
                 /* If we somehow get an invalid type, abort. */
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
+
+            /* If we've hit the end of a gap, free it. */
+            if (gap_start + gap_size != address) {
+                FreeUnusedSlabMemory(gap_start, gap_size);
+                gap_start = address;
+                gap_size  = 0;
+            }
         }
+
+        /* Free the end of the slab region. */
+        FreeUnusedSlabMemory(gap_start, gap_size + (slab_region.GetEndAddress() - GetInteger(address)));
     }
 
 }

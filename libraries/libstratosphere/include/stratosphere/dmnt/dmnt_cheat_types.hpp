@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -33,7 +33,7 @@ namespace ams::dmnt::cheat {
         MemoryRegionExtents heap_extents;
         MemoryRegionExtents alias_extents;
         MemoryRegionExtents aslr_extents;
-        u8 main_nso_build_id[0x20];
+        u8 main_nso_module_id[0x20];
     };
 
     static_assert(util::is_pod<CheatProcessMetadata>::value && sizeof(CheatProcessMetadata) == 0x70, "CheatProcessMetadata definition!");

@@ -5,6 +5,8 @@
     "main_thread_priority": 27,
     "default_cpu_id": 3,
     "process_category": 1,
+    "use_secure_memory": true,
+    "immortal": true,
     "kernel_capabilities": [
         {
             "type": "handle_table_size",
@@ -56,6 +58,7 @@
                 "svcGetInfo"                         : "0x29",
                 "svcWaitForAddress"                  : "0x34",
                 "svcSignalToAddress"                 : "0x35",
+                "svcSynchronizePreemptionState"      : "0x36",
                 "svcCreateSession"                   : "0x40",
                 "svcAcceptSession"                   : "0x41",
                 "svcReplyAndReceiveLight"            : "0x42",
@@ -66,7 +69,7 @@
                 "svcCreatePort"                      : "0x70",
                 "svcManageNamedPort"                 : "0x71",
                 "svcConnectToPort"                   : "0x72",
-                "svcCallSecureMonitor": "0x7F"
+                "svcCallSecureMonitor"               : "0x7F"
             }
         }
     ]

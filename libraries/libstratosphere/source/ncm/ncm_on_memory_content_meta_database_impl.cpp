@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -28,7 +28,7 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
+        for (auto entry = m_kvs->begin(); entry != m_kvs->end(); entry++) {
             const ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
@@ -67,10 +67,10 @@ namespace ams::ncm {
     Result OnMemoryContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
         R_TRY(this->EnsureEnabled());
 
-        std::optional<ContentMetaKey> found_key = std::nullopt;
+        util::optional<ContentMetaKey> found_key = util::nullopt;
 
         /* Find the last key with the desired program id. */
-        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
+        for (auto entry = m_kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != m_kvs->end(); entry++) {
             /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != id) {
                 break;
@@ -88,7 +88,8 @@ namespace ams::ncm {
     }
 
     Result OnMemoryContentMetaDatabaseImpl::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
-        return ResultInvalidContentMetaDatabase();
+        AMS_UNUSED(out_orphaned, content_ids);
+        return ncm::ResultInvalidContentMetaDatabase();
     }
 
     Result OnMemoryContentMetaDatabaseImpl::Commit() {

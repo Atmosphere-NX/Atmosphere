@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,58 +19,46 @@ namespace ams::log {
 
     namespace {
 
-        constexpr inline uart::Port UartLogPort = uart::Port_ReservedDebug;
+        constexpr inline uart::Port DefaultLogPort = uart::Port_ReservedDebug;
+        constexpr inline u32 DefaultLogFlags = static_cast<u32>(uart::Flag_None);
+        constexpr inline int DefaultBaudRate = 115200;
+        constinit uart::Port g_log_port   = DefaultLogPort;
         constinit bool g_initialized_uart = false;
-        constinit bool g_logging_enabled  = false;
 
-        constexpr inline u32 UartPortFlags = [] {
-            if constexpr (UartLogPort == uart::Port_ReservedDebug) {
-                /* Logging to the debug port. */
-                /* Don't invert transactions. */
-                return uart::Flag_None;
-            } else if constexpr (UartLogPort == uart::Port_LeftJoyCon) {
-                /* Logging to left joy-con (e.g. with Joyless). */
-                /* Invert transactions. */
-                return uart::Flag_Inverted;
-            } else if constexpr (UartLogPort == uart::Port_RightJoyCon) {
-                /* Logging to right joy-con (e.g. with Joyless). */
-                /* Invert transactions. */
-                return uart::Flag_Inverted;
-            } else {
-                __builtin_unreachable();
-            }
-        }();
+        ALWAYS_INLINE void SetupUartClock(uart::Port port) {
+            /* The debug port must always be set up, for compatibility with official hos. */
+            pinmux::SetupUartA();
+            clkrst::EnableUartAClock();
 
-        ALWAYS_INLINE void SetupUart() {
-            if constexpr (UartLogPort == uart::Port_ReservedDebug) {
-                /* Logging to the debug port. */
-                pinmux::SetupUartA();
-                clkrst::EnableUartAClock();
-            } else if constexpr (UartLogPort == uart::Port_LeftJoyCon) {
+            /* If logging to a joy-con port, configure appropriately. */
+            if (port == uart::Port_LeftJoyCon) {
                 /* Logging to left joy-con (e.g. with Joyless). */
                 static_assert(uart::Port_LeftJoyCon == uart::Port_C);
                 pinmux::SetupUartC();
                 clkrst::EnableUartCClock();
-            } else if constexpr (UartLogPort == uart::Port_RightJoyCon) {
+            } else if (port == uart::Port_RightJoyCon) {
                 /* Logging to right joy-con (e.g. with Joyless). */
                 static_assert(uart::Port_RightJoyCon == uart::Port_B);
                 pinmux::SetupUartB();
                 clkrst::EnableUartBClock();
-            } else {
-                __builtin_unreachable();
             }
         }
 
     }
 
     void Initialize() {
+        return Initialize(DefaultLogPort, DefaultBaudRate, DefaultLogFlags);
+    }
+
+    void Initialize(uart::Port port, u32 baud_rate, u32 flags) {
         /* Initialize pinmux and clock for the target uart port. */
-        SetupUart();
+        SetupUartClock(port);
 
         /* Initialize the target uart port. */
-        uart::Initialize(UartLogPort, 115200, UartPortFlags);
+        uart::Initialize(port, baud_rate, flags);
 
         /* Note that we've initialized. */
+        g_log_port        = port;
         g_initialized_uart = true;
     }
 
@@ -78,19 +66,50 @@ namespace ams::log {
         g_initialized_uart = false;
     }
 
-    void SetDebugLogEnabled(bool en) {
-        g_logging_enabled = en;
+    NOINLINE void VPrintf(const char *fmt, ::std::va_list vl) {
+        /* TODO: What's a good size for the log buffer? Nintendo uses 0x100, but this seems big. */
+        char log_buf[0x80];
+        const auto len = util::TVSNPrintf(log_buf, sizeof(log_buf), fmt, vl);
+
+        if (g_initialized_uart) {
+            uart::SendText(g_log_port, log_buf, len);
+        }
     }
 
+    NOINLINE void Printf(const char *fmt, ...)  {
+        ::std::va_list vl;
+        va_start(vl, fmt);
+        VPrintf(fmt, vl);
+        va_end(vl);
+    }
+
+    NOINLINE void Dump(const void *src, size_t size) {
+        const u8 *src_u8 = static_cast<const u8 *>(src);
+
+        for (size_t i = 0; i < size; ++i) {
+            if ((i % 0x20) == 0x00) {
+                Printf("%03zx| ", i);
+            }
+            Printf("%02x ", src_u8[i]);
+            if ((i % 0x20) == 0x1F) {
+                Printf("\n");
+            }
+        }
+        if ((size % 0x20) != 0) {
+            Printf("\n");
+        }
+     }
+
+
     void SendText(const void *text, size_t size) {
-        if (g_initialized_uart && g_logging_enabled) {
-            uart::SendText(UartLogPort, text, size);
+        if (g_initialized_uart) {
+            uart::SendText(g_log_port, text, size);
         }
     }
 
     void Flush() {
-        if (g_initialized_uart && g_logging_enabled) {
-            uart::WaitFlush(UartLogPort);
+        if (g_initialized_uart) {
+            uart::WaitFlush(g_log_port);
         }
     }
 

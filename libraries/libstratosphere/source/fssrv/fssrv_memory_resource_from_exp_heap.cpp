@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,31 +27,37 @@ namespace ams::fssrv {
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::OnAllocate(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         if (p != nullptr) {
-            this->current_free_size = GetUsedSize(p);
-            this->peak_free_size = std::min(this->peak_free_size, this->current_free_size);
+            m_current_free_size = GetUsedSize(p);
+            m_peak_free_size = std::min(m_peak_free_size, m_current_free_size);
         }
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::OnDeallocate(void *p, size_t size) {
+        AMS_UNUSED(size);
+
         if (p != nullptr) {
-            this->current_free_size += GetUsedSize(p);
+            m_current_free_size += GetUsedSize(p);
         }
     }
 
     void *PeakCheckableMemoryResourceFromExpHeap::AllocateImpl(size_t size, size_t align) {
-        std::scoped_lock lk(this->mutex);
+        std::scoped_lock lk(m_mutex);
 
-        void *p = lmem::AllocateFromExpHeap(this->heap_handle, size, static_cast<s32>(align));
+        void *p = lmem::AllocateFromExpHeap(m_heap_handle, size, static_cast<s32>(align));
         this->OnAllocate(p, size);
         return p;
     }
 
     void PeakCheckableMemoryResourceFromExpHeap::DeallocateImpl(void *p, size_t size, size_t align) {
-        std::scoped_lock lk(this->mutex);
+        AMS_UNUSED(align);
+
+        std::scoped_lock lk(m_mutex);
 
         this->OnDeallocate(p, size);
-        lmem::FreeToExpHeap(this->heap_handle, p);
+        lmem::FreeToExpHeap(m_heap_handle, p);
     }
 
 }

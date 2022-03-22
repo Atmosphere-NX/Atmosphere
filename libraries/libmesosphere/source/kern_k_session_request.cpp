@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,44 +24,44 @@ namespace ams::kern {
         /* Get the mapping. */
         Mapping *mapping;
         if (index < NumStaticMappings) {
-            mapping = std::addressof(this->static_mappings[index]);
+            mapping = std::addressof(m_static_mappings[index]);
         } else {
             /* Allocate a page for the extra mappings. */
-            if (this->mappings == nullptr) {
+            if (m_mappings == nullptr) {
                 KPageBuffer *page_buffer = KPageBuffer::Allocate();
                 R_UNLESS(page_buffer != nullptr, svc::ResultOutOfMemory());
 
-                this->mappings = reinterpret_cast<Mapping *>(page_buffer);
+                m_mappings = reinterpret_cast<Mapping *>(page_buffer);
             }
 
-            mapping = std::addressof(this->mappings[index - NumStaticMappings]);
+            mapping = std::addressof(m_mappings[index - NumStaticMappings]);
         }
 
         /* Set the mapping. */
         mapping->Set(client, server, size, state);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result KSessionRequest::SessionMappings::PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-        MESOSPHERE_ASSERT(this->num_recv == 0);
-        MESOSPHERE_ASSERT(this->num_exch == 0);
-        return this->PushMap(client, server, size, state, this->num_send++);
+        MESOSPHERE_ASSERT(m_num_recv == 0);
+        MESOSPHERE_ASSERT(m_num_exch == 0);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send++));
     }
 
     Result KSessionRequest::SessionMappings::PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-        MESOSPHERE_ASSERT(this->num_exch == 0);
-        return this->PushMap(client, server, size, state, this->num_send + this->num_recv++);
+        MESOSPHERE_ASSERT(m_num_exch == 0);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send + m_num_recv++));
     }
 
     Result KSessionRequest::SessionMappings::PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-        return this->PushMap(client, server, size, state, this->num_send + this->num_recv + this->num_exch++);
+        R_RETURN(this->PushMap(client, server, size, state, m_num_send + m_num_recv + m_num_exch++));
     }
 
     void KSessionRequest::SessionMappings::Finalize() {
-        if (this->mappings) {
-            KPageBuffer::Free(reinterpret_cast<KPageBuffer *>(this->mappings));
-            this->mappings = nullptr;
+        if (m_mappings) {
+            KPageBuffer::Free(reinterpret_cast<KPageBuffer *>(m_mappings));
+            m_mappings = nullptr;
         }
     }
 

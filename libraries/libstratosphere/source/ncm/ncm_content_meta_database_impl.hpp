@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -25,11 +25,11 @@ namespace ams::ncm {
             ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs) : ContentMetaDatabaseImplBase(kvs) { /* ... */ }
         private:
             /* Helpers. */
-            Result GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, std::optional<u8> id_offset) const;
+            Result GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, util::optional<u8> id_offset) const;
         public:
             /* Actual commands. */
-            virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;
-            virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) override;
+            virtual Result Set(const ContentMetaKey &key, const sf::InBuffer &value) override;
+            virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) override;
             virtual Result Remove(const ContentMetaKey &key) override;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) override;
             virtual Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) override;

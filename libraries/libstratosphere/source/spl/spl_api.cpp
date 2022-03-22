@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -29,9 +29,9 @@ namespace ams::spl {
             Manu
         };
 
-        os::Mutex g_mutex(false);
-        s32 g_initialize_count = 0;
-        InitializeMode g_initialize_mode = InitializeMode::None;
+        constinit os::SdkMutex g_mutex;
+        constinit s32 g_initialize_count = 0;
+        constinit InitializeMode g_initialize_mode = InitializeMode::None;
 
         Result AllocateAesKeySlotImpl(s32 *out) {
             return serviceDispatchOut(splCryptoGetServiceSession(), 21, *out);
@@ -41,7 +41,7 @@ namespace ams::spl {
             return serviceDispatchIn(splCryptoGetServiceSession(), 22, slot);
         }
 
-        Result GetAesKeySlotAvailableEventImpl(Handle *out) {
+        Result GetAesKeySlotAvailableEventImpl(os::NativeHandle *out) {
             return serviceDispatch(splCryptoGetServiceSession(), 23,
                 .out_handle_attrs = { SfOutHandleAttr_HipcCopy },
                 .out_handles = out,
@@ -49,8 +49,8 @@ namespace ams::spl {
         }
 
         void GetAesKeySlotAvailableEvent(os::SystemEvent *out) {
-            /* Get libnx event. */
-            Handle handle = svc::InvalidHandle;
+            /* Get event handle. */
+            os::NativeHandle handle;
             R_ABORT_UNLESS(GetAesKeySlotAvailableEventImpl(std::addressof(handle)));
 
             /* Attach to event. */
@@ -63,7 +63,7 @@ namespace ams::spl {
             auto is_event_initialized = false;
             while (true) {
                 R_TRY_CATCH(static_cast<::ams::Result>(f())) {
-                    R_CATCH(spl::ResultOutOfKeySlots) {
+                    R_CATCH(spl::ResultNoAvailableKeySlot) {
                         if (!is_event_initialized) {
                             GetAesKeySlotAvailableEvent(std::addressof(event));
                             is_event_initialized = true;
@@ -164,17 +164,23 @@ namespace ams::spl {
 
     Result GenerateAesKek(AccessKey *access_key, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(key_source_size);
+
         return splCryptoGenerateAesKek(key_source, generation, option, static_cast<void *>(access_key));
     }
 
     Result LoadAesKey(s32 slot, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(key_source_size);
+
         return splCryptoLoadAesKey(std::addressof(access_key), key_source, static_cast<u32>(slot));
     }
 
     Result GenerateAesKey(void *dst, size_t dst_size, const AccessKey &access_key, const void *key_source, size_t key_source_size) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return WaitAvailableKeySlotAndExecute([&]() -> Result {
             return splCryptoGenerateAesKey(std::addressof(access_key), key_source, dst);
         });
@@ -183,12 +189,15 @@ namespace ams::spl {
     Result GenerateSpecificAesKey(void *dst, size_t dst_size, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return splFsGenerateSpecificAesKey(key_source, static_cast<u32>(generation), option, dst);
     }
 
     Result ComputeCtr(void *dst, size_t dst_size, s32 slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
         AMS_ASSERT(iv_size >= 0x10);
         AMS_ASSERT(dst_size >= src_size);
+        AMS_UNUSED(dst_size, iv_size);
 
         return splCryptoCryptAesCtr(src, dst, src_size, static_cast<s32>(slot), iv);
     }
@@ -196,6 +205,8 @@ namespace ams::spl {
     Result DecryptAesKey(void *dst, size_t dst_size, const void *key_source, size_t key_source_size, s32 generation, u32 option) {
         AMS_ASSERT(dst_size >= crypto::AesEncryptor128::KeySize);
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(dst_size, key_source_size);
+
         return WaitAvailableKeySlotAndExecute([&]() -> Result {
             return splCryptoDecryptAesKey(key_source, static_cast<u32>(generation), option, dst);
         });
@@ -203,6 +214,10 @@ namespace ams::spl {
 
     Result GetConfig(u64 *out, ConfigItem item) {
         return splGetConfig(static_cast<::SplConfigItem>(item), out);
+    }
+
+    Result SetConfig(ConfigItem item, u64 v) {
+        return splSetConfig(static_cast<::SplConfigItem>(item), v);
     }
 
     bool IsDevelopment() {
@@ -254,7 +269,7 @@ namespace ams::spl {
                 return SocType_Erista;
             case HardwareType::Hoag:
             case HardwareType::Iowa:
-            case HardwareType::_Five_:
+            case HardwareType::Aula:
                 return SocType_Mariko;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
@@ -262,6 +277,7 @@ namespace ams::spl {
 
     Result GetPackage2Hash(void *dst, size_t dst_size) {
         AMS_ASSERT(dst_size >= crypto::Sha256Generator::HashSize);
+        AMS_UNUSED(dst_size);
         return splFsGetPackage2Hash(dst);
     }
 

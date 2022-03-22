@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,8 +20,6 @@ namespace ams::ncm {
 
     struct ProgramId {
         u64 value;
-
-        static const ProgramId Invalid;
 
         inline explicit operator svc::ProgramId() const {
             static_assert(sizeof(value) == sizeof(svc::ProgramId));
@@ -53,7 +51,6 @@ namespace ams::ncm {
         return lhs.value >= rhs.value;
     }
 
-    inline constexpr const ProgramId ProgramId::Invalid = {};
-    inline constexpr const ProgramId InvalidProgramId = ProgramId::Invalid;
+    inline constexpr const ProgramId InvalidProgramId = {};
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,9 +24,9 @@ namespace ams::fatal::srv {
         public:
             static constexpr size_t NumFatalEvents = 3;
         private:
-            os::Mutex lock;
-            size_t num_events_gotten = 0;
-            os::SystemEventType events[NumFatalEvents];
+            os::SdkMutex m_lock;
+            size_t m_num_events_gotten = 0;
+            os::SystemEventType m_events[NumFatalEvents];
         public:
             FatalEventManager();
             Result GetEvent(const os::SystemEventType **out);

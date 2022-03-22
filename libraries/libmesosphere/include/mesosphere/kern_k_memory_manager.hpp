@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -61,61 +61,76 @@ namespace ams::kern {
                         return (util::AlignUp((region_size / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
                     }
                 private:
-                    KPageHeap heap;
-                    RefCount *page_reference_counts;
-                    KVirtualAddress management_region;
-                    Pool pool;
-                    Impl *next;
-                    Impl *prev;
+                    KPageHeap m_heap;
+                    RefCount *m_page_reference_counts;
+                    KVirtualAddress m_management_region;
+                    Pool m_pool;
+                    Impl *m_next;
+                    Impl *m_prev;
                 public:
-                    Impl() : heap(), page_reference_counts(), management_region(), pool(), next(), prev() { /* ... */ }
+                    Impl() : m_heap(), m_page_reference_counts(), m_management_region(Null<KVirtualAddress>), m_pool(), m_next(), m_prev() { /* ... */ }
 
-                    size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress management_region, KVirtualAddress management_region_end);
+                    size_t Initialize(KPhysicalAddress address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
 
-                    KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
-                    void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
+                    KPhysicalAddress AllocateBlock(s32 index, bool random) { return m_heap.AllocateBlock(index, random); }
+                    void Free(KPhysicalAddress addr, size_t num_pages) { m_heap.Free(addr, num_pages); }
 
-                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->management_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
+                    void SetInitialUsedHeapSize(size_t reserved_size) { m_heap.SetInitialUsedSize(reserved_size); }
 
-                    void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
-                    void TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
+                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(m_management_region), 0, CalculateOptimizedProcessOverheadSize(m_heap.GetSize())); }
 
-                    bool ProcessOptimizedAllocation(KVirtualAddress block, size_t num_pages, u8 fill_pattern);
+                    void TrackUnoptimizedAllocation(KPhysicalAddress block, size_t num_pages);
+                    void TrackOptimizedAllocation(KPhysicalAddress block, size_t num_pages);
 
-                    constexpr Pool GetPool() const { return this->pool; }
-                    constexpr size_t GetSize() const { return this->heap.GetSize(); }
-                    constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
+                    bool ProcessOptimizedAllocation(KPhysicalAddress block, size_t num_pages, u8 fill_pattern);
 
-                    size_t GetFreeSize() const { return this->heap.GetFreeSize(); }
+                    constexpr Pool GetPool() const { return m_pool; }
+                    constexpr size_t GetSize() const { return m_heap.GetSize(); }
+                    constexpr KPhysicalAddress GetEndAddress() const { return m_heap.GetEndAddress(); }
 
-                    constexpr size_t GetPageOffset(KVirtualAddress address)      const { return this->heap.GetPageOffset(address); }
-                    constexpr size_t GetPageOffsetToEnd(KVirtualAddress address) const { return this->heap.GetPageOffsetToEnd(address); }
+                    size_t GetFreeSize() const { return m_heap.GetFreeSize(); }
 
-                    constexpr void SetNext(Impl *n) { this->next = n; }
-                    constexpr void SetPrev(Impl *n) { this->prev = n; }
-                    constexpr Impl *GetNext() const { return this->next; }
-                    constexpr Impl *GetPrev() const { return this->prev; }
+                    void DumpFreeList() const { return m_heap.DumpFreeList(); }
 
-                    void Open(KVirtualAddress address, size_t num_pages) {
+                    constexpr size_t GetPageOffset(KPhysicalAddress address)      const { return m_heap.GetPageOffset(address); }
+                    constexpr size_t GetPageOffsetToEnd(KPhysicalAddress address) const { return m_heap.GetPageOffsetToEnd(address); }
+
+                    constexpr void SetNext(Impl *n) { m_next = n; }
+                    constexpr void SetPrev(Impl *n) { m_prev = n; }
+                    constexpr Impl *GetNext() const { return m_next; }
+                    constexpr Impl *GetPrev() const { return m_prev; }
+
+                    void OpenFirst(KPhysicalAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
-                            const RefCount ref_count = (++this->page_reference_counts[index]);
-                            MESOSPHERE_ABORT_UNLESS(ref_count > 0);
+                            const RefCount ref_count = (++m_page_reference_counts[index]);
+                            MESOSPHERE_ABORT_UNLESS(ref_count == 1);
 
                             index++;
                         }
                     }
 
-                    void Close(KVirtualAddress address, size_t num_pages) {
+                    void Open(KPhysicalAddress address, size_t num_pages) {
+                        size_t index = this->GetPageOffset(address);
+                        const size_t end = index + num_pages;
+                        while (index < end) {
+                            const RefCount ref_count = (++m_page_reference_counts[index]);
+                            MESOSPHERE_ABORT_UNLESS(ref_count > 1);
+
+                            index++;
+                        }
+                    }
+
+                    void Close(KPhysicalAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
 
                         size_t free_start = 0;
                         size_t free_count = 0;
                         while (index < end) {
-                            MESOSPHERE_ABORT_UNLESS(this->page_reference_counts[index] > 0);
-                            const RefCount ref_count = (--this->page_reference_counts[index]);
+                            MESOSPHERE_ABORT_UNLESS(m_page_reference_counts[index] > 0);
+                            const RefCount ref_count = (--m_page_reference_counts[index]);
 
                             /* Keep track of how many zero refcounts we see in a row, to minimize calls to free. */
                             if (ref_count == 0) {
@@ -127,7 +142,7 @@ namespace ams::kern {
                                 }
                             } else {
                                 if (free_count > 0) {
-                                    this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
+                                    this->Free(m_heap.GetAddress() + free_start * PageSize, free_count);
                                     free_count = 0;
                                 }
                             }
@@ -136,25 +151,29 @@ namespace ams::kern {
                         }
 
                         if (free_count > 0) {
-                            this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
+                            this->Free(m_heap.GetAddress() + free_start * PageSize, free_count);
                         }
                     }
             };
         private:
-            KLightLock pool_locks[Pool_Count];
-            Impl *pool_managers_head[Pool_Count];
-            Impl *pool_managers_tail[Pool_Count];
-            Impl managers[MaxManagerCount];
-            size_t num_managers;
-            u64 optimized_process_ids[Pool_Count];
-            bool has_optimized_process[Pool_Count];
+            KLightLock m_pool_locks[Pool_Count];
+            Impl *m_pool_managers_head[Pool_Count];
+            Impl *m_pool_managers_tail[Pool_Count];
+            Impl m_managers[MaxManagerCount];
+            size_t m_num_managers;
+            u64 m_optimized_process_ids[Pool_Count];
+            bool m_has_optimized_process[Pool_Count];
         private:
-            Impl &GetManager(KVirtualAddress address) {
-                return this->managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
+            Impl &GetManager(KPhysicalAddress address) {
+                return m_managers[KMemoryLayout::GetPhysicalLinearRegion(address).GetAttributes()];
+            }
+
+            const Impl &GetManager(KPhysicalAddress address) const {
+                return m_managers[KMemoryLayout::GetPhysicalLinearRegion(address).GetAttributes()];
             }
 
             constexpr Impl *GetFirstManager(Pool pool, Direction dir) {
-                return dir == Direction_FromBack ? this->pool_managers_tail[pool] : this->pool_managers_head[pool];
+                return dir == Direction_FromBack ? m_pool_managers_tail[pool] : m_pool_managers_head[pool];
             }
 
             constexpr Impl *GetNextManager(Impl *cur, Direction dir) {
@@ -168,7 +187,7 @@ namespace ams::kern {
             Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random);
         public:
             KMemoryManager()
-                : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
+                : m_pool_locks(), m_pool_managers_head(), m_pool_managers_tail(), m_managers(), m_num_managers(), m_optimized_process_ids(), m_has_optimized_process()
             {
                 /* ... */
             }
@@ -178,18 +197,22 @@ namespace ams::kern {
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
-            NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
-            NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
-            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
+            NOINLINE KPhysicalAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
-            void Open(KVirtualAddress address, size_t num_pages) {
+            Pool GetPool(KPhysicalAddress address) const {
+                return this->GetManager(address).GetPool();
+            }
+
+            void Open(KPhysicalAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);
                     const size_t cur_pages = std::min(num_pages, manager.GetPageOffsetToEnd(address));
 
                     {
-                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        KScopedLightLock lk(m_pool_locks[manager.GetPool()]);
                         manager.Open(address, cur_pages);
                     }
 
@@ -198,14 +221,14 @@ namespace ams::kern {
                 }
             }
 
-            void Close(KVirtualAddress address, size_t num_pages) {
+            void Close(KPhysicalAddress address, size_t num_pages) {
                 /* Repeatedly close references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);
                     const size_t cur_pages = std::min(num_pages, manager.GetPageOffsetToEnd(address));
 
                     {
-                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        KScopedLightLock lk(m_pool_locks[manager.GetPool()]);
                         manager.Close(address, cur_pages);
                     }
 
@@ -216,8 +239,8 @@ namespace ams::kern {
 
             size_t GetSize() {
                 size_t total = 0;
-                for (size_t i = 0; i < this->num_managers; i++) {
-                    total += this->managers[i].GetSize();
+                for (size_t i = 0; i < m_num_managers; i++) {
+                    total += m_managers[i].GetSize();
                 }
                 return total;
             }
@@ -233,19 +256,31 @@ namespace ams::kern {
 
             size_t GetFreeSize() {
                 size_t total = 0;
-                for (size_t i = 0; i < this->num_managers; i++) {
-                    total += this->managers[i].GetFreeSize();
+                for (size_t i = 0; i < m_num_managers; i++) {
+                    KScopedLightLock lk(m_pool_locks[m_managers[i].GetPool()]);
+                    total += m_managers[i].GetFreeSize();
                 }
                 return total;
             }
 
             size_t GetFreeSize(Pool pool) {
+                KScopedLightLock lk(m_pool_locks[pool]);
+
                 constexpr Direction GetSizeDirection = Direction_FromFront;
                 size_t total = 0;
                 for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
                     total += manager->GetFreeSize();
                 }
                 return total;
+            }
+
+            void DumpFreeList(Pool pool) {
+                KScopedLightLock lk(m_pool_locks[pool]);
+
+                constexpr Direction DumpDirection = Direction_FromFront;
+                for (auto *manager = this->GetFirstManager(pool, DumpDirection); manager != nullptr; manager = this->GetNextManager(manager, DumpDirection)) {
+                    manager->DumpFreeList();
+                }
             }
         public:
             static size_t CalculateManagementOverheadSize(size_t region_size) {

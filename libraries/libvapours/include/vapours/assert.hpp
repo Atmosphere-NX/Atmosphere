@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -27,7 +27,7 @@ namespace ams::diag {
 
 }
 
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
 #define AMS_CALL_ASSERT_FAIL_IMPL(cond, ...) ::ams::diag::AssertionFailureImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #else
@@ -42,8 +42,10 @@ namespace ams::diag {
             AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                                 \
         }                                                                                                     \
     })
-#else
+#elif defined(AMS_PRESERVE_ASSERTION_EXPRESSIONS)
 #define AMS_ASSERT_IMPL(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
+#else
+#define AMS_ASSERT_IMPL(expr, ...) static_cast<void>(0)
 #endif
 
 #define AMS_ASSERT(expr, ...) AMS_ASSERT_IMPL(expr, ## __VA_ARGS__)
@@ -52,8 +54,10 @@ namespace ams::diag {
 
 #ifdef AMS_BUILD_FOR_AUDITING
 #define AMS_AUDIT(expr, ...) AMS_ASSERT(expr, ## __VA_ARGS__)
-#else
+#elif defined(AMS_PRESERVE_AUDIT_EXPRESSIONS)
 #define AMS_AUDIT(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
+#else
+#define AMS_AUDIT(expr, ...) static_cast<void>(0)
 #endif
 
 #define AMS_ABORT(...) AMS_CALL_ABORT_IMPL("", ## __VA_ARGS__)

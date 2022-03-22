@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,25 +16,23 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_SETTINGS_MITM_INTERFACE_INFO(C, H)                                                              \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out), (out)) \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out),   (out))
+
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
+
 namespace ams::mitm::settings {
-
-    namespace {
-
-        #define AMS_SETTINGS_MITM_INTERFACE_INFO(C, H)                                                       \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out)) \
-            AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out))
-
-        AMS_SF_DEFINE_MITM_INTERFACE(ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
-
-    }
 
     class SetMitmService : public sf::MitmServiceImplBase {
         private:
-            os::Mutex lock{false};
-            cfg::OverrideLocale locale;
-            bool got_locale = false;
+            os::SdkMutex m_lock{};
+            cfg::OverrideLocale m_locale;
+            bool m_got_locale = false;
+            bool m_is_valid_language = false;
+            bool m_is_valid_region   = false;
         public:
-            using MitmServiceImplBase::MitmServiceImplBase;
+            SetMitmService(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c);
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
@@ -44,6 +42,7 @@ namespace ams::mitm::settings {
                 return client_info.program_id == ncm::SystemProgramId::Ns || is_game;
             }
         private:
+            void InvalidateLocale();
             Result EnsureLocale();
         public:
             Result GetLanguageCode(sf::Out<ams::settings::LanguageCode> out);

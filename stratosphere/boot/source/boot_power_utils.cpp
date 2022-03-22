@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,7 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
-#include "fusee-primary_bin.h"
+#include "boot_pmic_driver.hpp"
+#include "fusee_bin.h"
 
 namespace ams::boot {
 
@@ -25,7 +26,8 @@ namespace ams::boot {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x2E000;
+        constexpr size_t IramPayloadMaxSize = 0x24000;
+        constexpr size_t IramFatalErrorContextOffset = 0x2E000;
 
         /* Globals. */
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
@@ -41,13 +43,26 @@ namespace ams::boot {
             }
         }
 
-        void DoRebootToPayload(ams::FatalErrorContext *ctx) {
+        void DoRebootToPayload() {
             /* Ensure clean IRAM state. */
             ClearIram();
 
             /* Copy in payload. */
-            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += sizeof(g_work_page)) {
-                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), sizeof(g_work_page)));
+            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
+            }
+
+            exosphere::ForceRebootToIramPayload();
+        }
+
+        void DoRebootToFatalError(const ams::FatalErrorContext *ctx) {
+            /* Ensure clean IRAM state. */
+            ClearIram();
+
+            /* Copy in payload. */
+            for (size_t ofs = 0; ofs < fusee_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, fusee_bin + ofs, std::min(static_cast<size_t>(fusee_bin_size - ofs), sizeof(g_work_page)));
                 exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
             }
 
@@ -56,24 +71,33 @@ namespace ams::boot {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                exosphere::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramPayloadBase + IramFatalErrorContextOffset, g_work_page, sizeof(g_work_page));
             }
 
-            exosphere::ForceRebootToIramPayload();
+            exosphere::ForceRebootToFatalError();
         }
 
     }
 
     void RebootSystem() {
-        DoRebootToPayload(nullptr);
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            DoRebootToPayload();
+        } else {
+            /* On Mariko, we can't reboot to payload, so we should just do a reboot. */
+            PmicDriver().RebootSystem();
+        }
+    }
+
+    void ShutdownSystem() {
+        PmicDriver().ShutdownSystem();
     }
 
     void SetInitialRebootPayload() {
-        ::ams::SetInitialRebootPayload(fusee_primary_bin, fusee_primary_bin_size);
+        ::ams::SetInitialRebootPayload(fusee_bin, fusee_bin_size);
     }
 
     void RebootForFatalError(ams::FatalErrorContext *ctx) {
-        DoRebootToPayload(ctx);
+        DoRebootToFatalError(ctx);
     }
 
 }
