@@ -194,6 +194,10 @@ namespace ams::kern {
                 return m_attached_object != nullptr;
             }
 
+            constexpr bool IsPermittedSvc(svc::SvcId svc_id) const {
+                return m_capabilities.IsPermittedSvc(svc_id);
+            }
+
             constexpr bool IsPermittedInterrupt(int32_t interrupt_id) const {
                 return m_capabilities.IsPermittedInterrupt(interrupt_id);
             }
