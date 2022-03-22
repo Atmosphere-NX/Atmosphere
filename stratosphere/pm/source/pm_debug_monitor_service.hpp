@@ -29,6 +29,7 @@ namespace ams::pm {
             Result GetApplicationProcessId(sf::Out<os::ProcessId> out);
             Result HookToCreateApplicationProcess(sf::OutCopyHandle out_hook);
             Result ClearHook(u32 which);
+            Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
 
             /* Atmosphere extension commands. */
             Result AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id);

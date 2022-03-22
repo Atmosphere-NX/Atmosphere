@@ -132,20 +132,20 @@ namespace ams {
                 switch (port_index) {
                     case PortIndex_Shell:
                         if (hos::GetVersion() >= hos::Version_5_0_0) {
-                            return this->AcceptImpl(server, g_shell_service.GetShared());
+                            R_RETURN(this->AcceptImpl(server, g_shell_service.GetShared()));
                         } else {
-                            return this->AcceptImpl(server, g_deprecated_shell_service.GetShared());
+                            R_RETURN(this->AcceptImpl(server, g_deprecated_shell_service.GetShared()));
                         }
                     case PortIndex_DebugMonitor:
                         if (hos::GetVersion() >= hos::Version_5_0_0) {
-                            return this->AcceptImpl(server, g_dmnt_service.GetShared());
+                            R_RETURN(this->AcceptImpl(server, g_dmnt_service.GetShared()));
                         } else {
-                            return this->AcceptImpl(server, g_deprecated_dmnt_service.GetShared());
+                            R_RETURN(this->AcceptImpl(server, g_deprecated_dmnt_service.GetShared()));
                         }
                     case PortIndex_BootMode:
-                        return this->AcceptImpl(server, g_boot_mode_service.GetShared());
+                        R_RETURN(this->AcceptImpl(server, g_boot_mode_service.GetShared()));
                     case PortIndex_Information:
-                        return this->AcceptImpl(server, g_information_service.GetShared());
+                        R_RETURN(this->AcceptImpl(server, g_information_service.GetShared()));
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }

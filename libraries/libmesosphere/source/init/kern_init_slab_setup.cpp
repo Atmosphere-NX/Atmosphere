@@ -72,7 +72,7 @@ namespace ams::kern::init {
         constexpr size_t SlabCountKIoPool               = 1;
         constexpr size_t SlabCountKIoRegion             = 6;
 
-        constexpr size_t SlabCountExtraKThread          = 160;
+        constexpr size_t SlabCountExtraKThread          = (1024 + 256 + 256) - SlabCountKThread;
 
         namespace test {
 

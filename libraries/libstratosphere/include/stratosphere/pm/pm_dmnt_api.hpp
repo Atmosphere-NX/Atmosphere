@@ -24,6 +24,7 @@ namespace ams::pm::dmnt {
 
     /* Debug Monitor API. */
     Result StartProcess(os::ProcessId process_id);
+    Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id);
     Result GetProcessId(os::ProcessId *out_process_id, const ncm::ProgramId program_id);
     Result GetApplicationProcessId(os::ProcessId *out_process_id);
     Result HookToCreateApplicationProcess(os::NativeHandle *out_handle);

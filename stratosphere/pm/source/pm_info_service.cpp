@@ -23,29 +23,37 @@ namespace ams::pm {
     namespace info {
 
         Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
-            return ldr::pm::HasLaunchedBootProgram(out, program_id);
+            R_RETURN(ldr::pm::HasLaunchedBootProgram(out, program_id));
         }
 
     }
 
     /* Actual command implementations. */
     Result InformationService::GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id) {
-        return impl::GetProgramId(out.GetPointer(), process_id);
+        R_RETURN(impl::GetProgramId(out.GetPointer(), process_id));
+    }
+
+    Result InformationService::GetAppletCurrentResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
+        R_RETURN(impl::GetAppletCurrentResourceLimitValues(out.GetPointer()));
+    }
+
+    Result InformationService::GetAppletPeakResourceLimitValues(sf::Out<pm::ResourceLimitValues> out) {
+        R_RETURN(impl::GetAppletPeakResourceLimitValues(out.GetPointer()));
     }
 
     /* Atmosphere extension commands. */
     Result InformationService::AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id) {
-        return impl::GetProcessId(out.GetPointer(), program_id);
+        R_RETURN(impl::GetProcessId(out.GetPointer(), program_id));
     }
 
     Result InformationService::AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
-        return pm::info::HasLaunchedBootProgram(out.GetPointer(), program_id);
+        R_RETURN(pm::info::HasLaunchedBootProgram(out.GetPointer(), program_id));
     }
 
     Result InformationService::AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {
         /* NOTE: We don't need to worry about closing this handle, because it's an in-process copy, not a newly allocated handle. */
         os::NativeHandle dummy_handle;
-        return impl::AtmosphereGetProcessInfo(&dummy_handle, out_loc.GetPointer(), out_status.GetPointer(), process_id);
+        R_RETURN(impl::AtmosphereGetProcessInfo(&dummy_handle, out_loc.GetPointer(), out_status.GetPointer(), process_id));
     }
 
 }

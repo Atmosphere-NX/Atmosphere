@@ -49,8 +49,8 @@ namespace ams::kern {
     constexpr size_t KernelSlabHeapGapsSizeMax        = 2_MB - 64_KB;
     constexpr size_t KernelSlabHeapSize               = KernelSlabHeapDataSize + KernelSlabHeapGapsSizeMax;
 
-    /* NOTE: This is calculated from KThread slab counts, assuming KThread size <= 0x860. */
-    constexpr size_t KernelSlabHeapAdditionalSize     = 0x68000;
+    /* NOTE: This is calculated from KThread slab counts, assuming KThread size <= 0x800. */
+    constexpr size_t KernelSlabHeapAdditionalSize     = 0x148000;
 
     constexpr size_t KernelResourceSize               = KernelPageTableHeapSize + KernelInitialPageHeapSize + KernelSlabHeapSize;
 

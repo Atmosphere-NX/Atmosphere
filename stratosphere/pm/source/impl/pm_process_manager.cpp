@@ -209,7 +209,7 @@ namespace ams::pm::impl {
         Result StartProcess(ProcessInfo *process_info, const ldr::ProgramInfo *program_info) {
             R_TRY(svc::StartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
             process_info->SetState(svc::ProcessState_Running);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void CleanupProcessInfo(ProcessListAccessor &list, ProcessInfo *process_info) {
@@ -416,7 +416,7 @@ namespace ams::pm::impl {
         /* Start thread. */
         os::StartThread(std::addressof(g_process_track_thread));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Process Management. */
@@ -433,7 +433,7 @@ namespace ams::pm::impl {
         g_process_launch_start_event.Signal();
         g_process_launch_finish_event.Wait();
 
-        return g_process_launch_result;
+        R_RETURN(g_process_launch_result);
     }
 
     Result StartProcess(os::ProcessId process_id) {
@@ -445,7 +445,7 @@ namespace ams::pm::impl {
 
         ldr::ProgramInfo program_info;
         R_TRY(ldr::pm::GetProgramInfo(std::addressof(program_info), process_info->GetProgramLocation()));
-        return StartProcess(process_info, std::addressof(program_info));
+        R_RETURN(StartProcess(process_info, std::addressof(program_info)));
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
@@ -454,7 +454,7 @@ namespace ams::pm::impl {
         auto process_info = list->Find(process_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
-        return svc::TerminateProcess(process_info->GetHandle());
+        R_RETURN(svc::TerminateProcess(process_info->GetHandle()));
     }
 
     Result TerminateProgram(ncm::ProgramId program_id) {
@@ -463,12 +463,12 @@ namespace ams::pm::impl {
         auto process_info = list->Find(program_id);
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
-        return svc::TerminateProcess(process_info->GetHandle());
+        R_RETURN(svc::TerminateProcess(process_info->GetHandle()));
     }
 
     Result GetProcessEventHandle(os::NativeHandle *out) {
         *out = os::GetReadableHandleOfSystemEvent(std::addressof(g_process_event));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProcessEventInfo(ProcessEventInfo *out) {
@@ -482,7 +482,7 @@ namespace ams::pm::impl {
                     process.ClearStartedStateChanged();
                     out->event = GetProcessEventValue(ProcessEvent::Started);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
                 if (process.HasSuspendedStateChanged()) {
                     process.ClearSuspendedStateChanged();
@@ -492,18 +492,18 @@ namespace ams::pm::impl {
                         out->event = GetProcessEventValue(ProcessEvent::DebugRunning);
                     }
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
                 if (process.HasExceptionOccurred()) {
                     process.ClearExceptionOccurred();
                     out->event = GetProcessEventValue(ProcessEvent::Exception);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
                 if (hos::GetVersion() < hos::Version_5_0_0 && process.ShouldSignalOnExit() && process.HasTerminated()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
                     out->process_id = process.GetProcessId();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
@@ -518,13 +518,13 @@ namespace ams::pm::impl {
                 out->process_id = process_info.GetProcessId();
 
                 CleanupProcessInfo(dead_list, std::addressof(process_info));
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         out->process_id = os::ProcessId{};
         out->event = GetProcessEventValue(ProcessEvent::None);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CleanupProcess(os::ProcessId process_id) {
@@ -535,7 +535,7 @@ namespace ams::pm::impl {
         R_UNLESS(process_info->HasTerminated(), pm::ResultNotTerminated());
 
         CleanupProcessInfo(list, process_info);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClearExceptionOccurred(os::ProcessId process_id) {
@@ -545,7 +545,7 @@ namespace ams::pm::impl {
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         process_info->ClearExceptionOccurred();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Information Getters. */
@@ -553,7 +553,7 @@ namespace ams::pm::impl {
         /* This function was always stubbed... */
         AMS_UNUSED(out_buf, max_out_count, unused);
         *out_count = 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetExceptionProcessIdList(u32 *out_count, os::ProcessId *out_process_ids, size_t max_out_count) {
@@ -574,7 +574,7 @@ namespace ams::pm::impl {
         }
 
         *out_count = static_cast<u32>(count);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProcessId(os::ProcessId *out, ncm::ProgramId program_id) {
@@ -584,7 +584,7 @@ namespace ams::pm::impl {
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out = process_info->GetProcessId();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProgramId(ncm::ProgramId *out, os::ProcessId process_id) {
@@ -594,7 +594,7 @@ namespace ams::pm::impl {
         R_UNLESS(process_info != nullptr, pm::ResultProcessNotFound());
 
         *out = process_info->GetProgramLocation().program_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetApplicationProcessId(os::ProcessId *out_process_id) {
@@ -603,11 +603,11 @@ namespace ams::pm::impl {
         for (auto &process : *list) {
             if (process.IsApplication()) {
                 *out_process_id = process.GetProcessId();
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
-        return pm::ResultProcessNotFound();
+        R_THROW(pm::ResultProcessNotFound());
     }
 
     Result AtmosphereGetProcessInfo(os::NativeHandle *out_process_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
@@ -619,7 +619,7 @@ namespace ams::pm::impl {
         *out_process_handle = process_info->GetHandle();
         *out_loc = process_info->GetProgramLocation();
         *out_status = process_info->GetOverrideStatus();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Hook API. */
@@ -632,7 +632,7 @@ namespace ams::pm::impl {
         }
 
         *out_hook = os::GetReadableHandleOfSystemEvent(std::addressof(g_hook_to_create_process_event));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HookToCreateApplicationProcess(os::NativeHandle *out_hook) {
@@ -644,7 +644,7 @@ namespace ams::pm::impl {
         }
 
         *out_hook = os::GetReadableHandleOfSystemEvent(std::addressof(g_hook_to_create_application_process_event));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClearHook(u32 which) {
@@ -654,7 +654,7 @@ namespace ams::pm::impl {
         if (which & HookType_Application) {
             g_application_hook = false;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Boot API. */
@@ -676,7 +676,7 @@ namespace ams::pm::impl {
             s_has_boot_finished = true;
             os::SignalSystemEvent(std::addressof(g_boot_finished_event));
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetBootFinishedEventHandle(os::NativeHandle *out) {
@@ -685,20 +685,32 @@ namespace ams::pm::impl {
         /* We will signal it always, but only allow this function to succeed on safe mode. */
         AMS_ABORT_UNLESS(spl::IsRecoveryBoot());
         *out = os::GetReadableHandleOfSystemEvent(std::addressof(g_boot_finished_event));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Resource Limit API. */
     Result BoostSystemMemoryResourceLimit(u64 boost_size) {
-        return resource::BoostSystemMemoryResourceLimit(boost_size);
+        R_RETURN(resource::BoostSystemMemoryResourceLimit(boost_size));
     }
 
     Result BoostApplicationThreadResourceLimit() {
-        return resource::BoostApplicationThreadResourceLimit();
+        R_RETURN(resource::BoostApplicationThreadResourceLimit());
+    }
+
+    Result BoostSystemThreadResourceLimit() {
+        R_RETURN(resource::BoostSystemThreadResourceLimit());
+    }
+
+    Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out) {
+        R_RETURN(resource::GetCurrentResourceLimitValues(ResourceLimitGroup_Applet, out));
+    }
+
+    Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out) {
+        R_RETURN(resource::GetPeakResourceLimitValues(ResourceLimitGroup_Applet, out));
     }
 
     Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource) {
-        return resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource));
+        R_RETURN(resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource)));
     }
 
 }

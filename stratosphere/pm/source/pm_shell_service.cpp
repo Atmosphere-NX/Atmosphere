@@ -23,22 +23,22 @@ namespace ams::pm {
     namespace shell {
 
         Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
-            return impl::LaunchProgram(out_process_id, loc, launch_flags);
+            R_RETURN(impl::LaunchProgram(out_process_id, loc, launch_flags));
         }
 
     }
 
     /* Service command implementations. */
     Result ShellService::LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
-        return pm::shell::LaunchProgram(out_process_id.GetPointer(), loc, flags);
+        R_RETURN(pm::shell::LaunchProgram(out_process_id.GetPointer(), loc, flags));
     }
 
     Result ShellService::TerminateProcess(os::ProcessId process_id) {
-        return impl::TerminateProcess(process_id);
+        R_RETURN(impl::TerminateProcess(process_id));
     }
 
     Result ShellService::TerminateProgram(ncm::ProgramId program_id) {
-        return impl::TerminateProgram(program_id);
+        R_RETURN(impl::TerminateProgram(program_id));
     }
 
     void ShellService::GetProcessEventHandle(sf::OutCopyHandle out) {
@@ -53,11 +53,11 @@ namespace ams::pm {
     }
 
     Result ShellService::CleanupProcess(os::ProcessId process_id) {
-        return impl::CleanupProcess(process_id);
+        R_RETURN(impl::CleanupProcess(process_id));
     }
 
     Result ShellService::ClearExceptionOccurred(os::ProcessId process_id) {
-        return impl::ClearExceptionOccurred(process_id);
+        R_RETURN(impl::ClearExceptionOccurred(process_id));
     }
 
     void ShellService::NotifyBootFinished() {
@@ -65,15 +65,15 @@ namespace ams::pm {
     }
 
     Result ShellService::GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out) {
-        return impl::GetApplicationProcessId(out.GetPointer());
+        R_RETURN(impl::GetApplicationProcessId(out.GetPointer()));
     }
 
     Result ShellService::BoostSystemMemoryResourceLimit(u64 boost_size) {
-        return impl::BoostSystemMemoryResourceLimit(boost_size);
+        R_RETURN(impl::BoostSystemMemoryResourceLimit(boost_size));
     }
 
     Result ShellService::BoostApplicationThreadResourceLimit() {
-        return impl::BoostApplicationThreadResourceLimit();
+        R_RETURN(impl::BoostApplicationThreadResourceLimit());
     }
 
     void ShellService::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
@@ -81,6 +81,10 @@ namespace ams::pm {
         R_ABORT_UNLESS(impl::GetBootFinishedEventHandle(std::addressof(event_handle)));
 
         out.SetValue(event_handle, false);
+    }
+
+    Result ShellService::BoostSystemThreadResourceLimit() {
+        R_RETURN(impl::BoostSystemThreadResourceLimit());
     }
 
 }

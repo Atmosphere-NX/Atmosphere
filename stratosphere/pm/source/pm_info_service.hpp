@@ -22,6 +22,8 @@ namespace ams::pm {
         public:
             /* Actual command implementations. */
             Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
+            Result GetAppletCurrentResourceLimitValues(sf::Out<pm::ResourceLimitValues> out);
+            Result GetAppletPeakResourceLimitValues(sf::Out<pm::ResourceLimitValues> out);
 
             /* Atmosphere extension commands. */
             Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
