@@ -55,4 +55,9 @@ namespace ams::pm::shell {
     }
     #endif
 
+    Result EnableSystemExtraThread() {
+        /* TODO: return ::pmshellEnableSystemExtraThread(); */
+        AMS_ABORT("TODO");
+    }
+
 }

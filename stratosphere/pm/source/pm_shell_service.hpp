@@ -33,6 +33,7 @@ namespace ams::pm {
             Result BoostSystemMemoryResourceLimit(u64 boost_size);
             Result BoostApplicationThreadResourceLimit();
             void   GetBootFinishedEventHandle(sf::OutCopyHandle out);
+            Result BoostSystemThreadResourceLimit();
     };
     static_assert(pm::impl::IsIShellInterface<ShellService>);
 

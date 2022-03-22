@@ -52,6 +52,14 @@ namespace ams::pm {
         LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
     };
 
+    struct ResourceLimitValues {
+        u64 physical_memory;
+        u32 thread_count;
+        u32 event_count;
+        u32 transfer_memory_count;
+        u32 session_count;
+    };
+
     constexpr inline u32 LaunchFlagsMask = (1 << 6) - 1;
 
     enum class ProcessEvent : u32 {

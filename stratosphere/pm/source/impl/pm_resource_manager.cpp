@@ -35,31 +35,44 @@ namespace ams::pm::resource {
         /* Atmosphere always allocates extra memory for system usage. */
         constexpr size_t ExtraSystemMemorySizeAtmosphere    = 24_MB;
 
+        /* Desired extra threads. */
+        constexpr u64 BaseApplicationThreads  = 96;
+        constexpr u64 BaseAppletThreads       = 96;
+        constexpr u64 BaseSystemThreads       = 800 - BaseAppletThreads - BaseApplicationThreads;
+
+        constexpr s64 ExtraSystemThreads      = 1024 - BaseSystemThreads;
+        constexpr s64 ExtraApplicationThreads = 256 - BaseApplicationThreads;
+        constexpr s64 ExtraAppletThreads      = 256 - BaseAppletThreads;
+
+        static_assert(ExtraSystemThreads >= 0);
+        static_assert(ExtraApplicationThreads >= 0);
+        static_assert(ExtraAppletThreads >= 0);
+
         /* Globals. */
         constinit os::SdkMutex g_resource_limit_lock;
         constinit os::NativeHandle g_resource_limit_handles[ResourceLimitGroup_Count];
         constinit spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
         constinit u64 g_system_memory_boost_size = 0;
-        constinit u64 g_extra_application_threads_available = 0;
+        constinit u64 g_extra_threads_available[ResourceLimitGroup_Count];
 
         constinit u64 g_resource_limits[ResourceLimitGroup_Count][svc::LimitableResource_Count] = {
             [ResourceLimitGroup_System] = {
                 [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
-                [svc::LimitableResource_ThreadCountMax]         = 608,
+                [svc::LimitableResource_ThreadCountMax]         = BaseSystemThreads,
                 [svc::LimitableResource_EventCountMax]          = 0,   /* Initialized dynamically later. */
                 [svc::LimitableResource_TransferMemoryCountMax] = 0,   /* Initialized dynamically later. */
                 [svc::LimitableResource_SessionCountMax]        = 0,   /* Initialized dynamically later. */
             },
             [ResourceLimitGroup_Application] = {
                 [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
-                [svc::LimitableResource_ThreadCountMax]         = 96,
+                [svc::LimitableResource_ThreadCountMax]         = BaseApplicationThreads,
                 [svc::LimitableResource_EventCountMax]          = 0,
                 [svc::LimitableResource_TransferMemoryCountMax] = 32,
                 [svc::LimitableResource_SessionCountMax]        = 1,
             },
             [ResourceLimitGroup_Applet] = {
                 [svc::LimitableResource_PhysicalMemoryMax]      = 0,   /* Initialized dynamically later. */
-                [svc::LimitableResource_ThreadCountMax]         = 96,
+                [svc::LimitableResource_ThreadCountMax]         = BaseAppletThreads,
                 [svc::LimitableResource_EventCountMax]          = 0,
                 [svc::LimitableResource_TransferMemoryCountMax] = 32,
                 [svc::LimitableResource_SessionCountMax]        = 5,
@@ -118,7 +131,8 @@ namespace ams::pm::resource {
                 }
                 R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), resource, g_resource_limits[group][resource]));
             }
-            return ResultSuccess();
+
+            R_SUCCEED();
         }
 
         inline ResourceLimitGroup GetResourceLimitGroup(const ldr::ProgramInfo *info) {
@@ -164,6 +178,46 @@ namespace ams::pm::resource {
             R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_MesosphereMeta, svc::InvalidHandle, svc::MesosphereMetaInfo_IsKTraceEnabled));
 
             return value != 0;
+        }
+
+        ALWAYS_INLINE Result BoostThreadResourceLimitLocked(ResourceLimitGroup group) {
+            AMS_ASSERT(g_resource_limit_lock.IsLockedByCurrentThread());
+
+            /* Set new limit. */
+            const s64 new_thread_count = g_resource_limits[group][svc::LimitableResource_ThreadCountMax] + g_extra_threads_available[group];
+            R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(group), svc::LimitableResource_ThreadCountMax, new_thread_count));
+
+            /* Record that we did so. */
+            g_resource_limits[group][svc::LimitableResource_ThreadCountMax] = new_thread_count;
+            g_extra_threads_available[group] = 0;
+
+            R_SUCCEED();
+        }
+
+        template<auto GetResourceLimitValueImpl>
+        ALWAYS_INLINE Result GetResourceLimitValuesImpl(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+            /* Sanity check group. */
+            AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
+
+            /* Get handle. */
+            const auto handle = GetResourceLimitHandle(group);
+
+            /* Get values. */
+            int64_t values[svc::LimitableResource_Count];
+            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_PhysicalMemoryMax]),      handle, svc::LimitableResource_PhysicalMemoryMax));
+            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_ThreadCountMax]),         handle, svc::LimitableResource_ThreadCountMax));
+            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_EventCountMax]),          handle, svc::LimitableResource_EventCountMax));
+            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_TransferMemoryCountMax]), handle, svc::LimitableResource_TransferMemoryCountMax));
+            R_ABORT_UNLESS(GetResourceLimitValueImpl(std::addressof(values[svc::LimitableResource_SessionCountMax]),        handle, svc::LimitableResource_SessionCountMax));
+
+            /* Set to output. */
+            out->physical_memory       = values[svc::LimitableResource_PhysicalMemoryMax];
+            out->thread_count          = values[svc::LimitableResource_ThreadCountMax];
+            out->event_count           = values[svc::LimitableResource_EventCountMax];
+            out->transfer_memory_count = values[svc::LimitableResource_TransferMemoryCountMax];
+            out->session_count         = values[svc::LimitableResource_SessionCountMax];
+
+            R_SUCCEED();
         }
 
     }
@@ -225,8 +279,20 @@ namespace ams::pm::resource {
             const s64 required_threads = g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] + g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] + g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_ThreadCountMax];
             AMS_ABORT_UNLESS(total_threads >= required_threads);
 
-            /* Set the number of extra application threads. */
-            g_extra_application_threads_available = total_threads - required_threads;
+            /* Set the number of extra threads. */
+            const s64 extra_threads = total_threads - required_threads;
+            if constexpr (true /* TODO: Should we expose the old "all extra threads are application" behavior? Seems pointless. */) {
+                if (extra_threads > 0) {
+                    /* If we have any extra threads at all, require that we have enough. */
+                    AMS_ABORT_UNLESS(extra_threads >= (ExtraSystemThreads + ExtraApplicationThreads + ExtraAppletThreads));
+
+                    g_extra_threads_available[ResourceLimitGroup_System]      += ExtraSystemThreads;
+                    g_extra_threads_available[ResourceLimitGroup_Application] += ExtraApplicationThreads;
+                    g_extra_threads_available[ResourceLimitGroup_Applet]      += ExtraAppletThreads;
+                }
+            } else {
+                g_extra_threads_available[ResourceLimitGroup_Application] = extra_threads;
+            }
         }
 
         /* Choose and initialize memory arrangement. */
@@ -282,7 +348,7 @@ namespace ams::pm::resource {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BoostSystemMemoryResourceLimit(u64 boost_size) {
@@ -316,21 +382,26 @@ namespace ams::pm::resource {
             g_system_memory_boost_size = boost_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BoostApplicationThreadResourceLimit() {
         std::scoped_lock lk(g_resource_limit_lock);
 
-        /* Set new limit. */
-        const s64 new_thread_count = g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] + g_extra_application_threads_available;
-        R_TRY(svc::SetResourceLimitLimitValue(GetResourceLimitHandle(ResourceLimitGroup_Application), svc::LimitableResource_ThreadCountMax, new_thread_count));
+        /* Boost the limit. */
+        R_TRY(BoostThreadResourceLimitLocked(ResourceLimitGroup_Application));
 
-        /* Record that we did so. */
-        g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] = new_thread_count;
-        g_extra_application_threads_available = 0;
+        R_SUCCEED();
+    }
 
-        return ResultSuccess();
+    Result BoostSystemThreadResourceLimit() {
+        std::scoped_lock lk(g_resource_limit_lock);
+
+        /* Boost the limits. */
+        R_TRY(BoostThreadResourceLimitLocked(ResourceLimitGroup_Applet));
+        R_TRY(BoostThreadResourceLimitLocked(ResourceLimitGroup_System));
+
+        R_SUCCEED();
     }
 
     os::NativeHandle GetResourceLimitHandle(ResourceLimitGroup group) {
@@ -350,6 +421,18 @@ namespace ams::pm::resource {
         }
     }
 
+    Result GetCurrentResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitCurrentValue>(group, out));
+    }
+
+    Result GetPeakResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitPeakValue>(group, out));
+    }
+
+    Result GetLimitResourceLimitValues(ResourceLimitGroup group, pm::ResourceLimitValues *out) {
+        R_RETURN(GetResourceLimitValuesImpl<::ams::svc::GetResourceLimitLimitValue>(group, out));
+    }
+
     Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource) {
         /* Do not allow out of bounds access. */
         AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
@@ -359,7 +442,7 @@ namespace ams::pm::resource {
         R_TRY(svc::GetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));
         R_TRY(svc::GetResourceLimitLimitValue(out_lim, reslimit_hnd, resource));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }
