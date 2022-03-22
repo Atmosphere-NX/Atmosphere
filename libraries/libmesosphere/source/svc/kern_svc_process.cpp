@@ -192,6 +192,9 @@ namespace ams::kern::svc {
             const bool is_application  = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
             R_UNLESS(!optimize_allocs || is_application, svc::ResultBusy());
 
+            /* Check that the user-provided capabilities are accessible and refer to valid regions. */
+            R_TRY(KCapabilities::CheckCapabilities(user_caps, num_caps));
+
             /* Get the current handle table. */
             auto &handle_table = GetCurrentProcess().GetHandleTable();
 

@@ -116,7 +116,7 @@ namespace ams::kern {
             };
 
             enum class RegionType : u32 {
-                None              = 0,
+                NoMapping         = 0,
                 KernelTraceBuffer = 1,
                 OnMemoryBootImage = 2,
                 DTB               = 3,
@@ -219,6 +219,10 @@ namespace ams::kern {
             Result SetHandleTableCapability(const util::BitPack32 cap);
             Result SetDebugFlagsCapability(const util::BitPack32 cap);
 
+            template<typename F>
+            static Result ProcessMapRegionCapability(const util::BitPack32 cap, F f);
+            static Result CheckMapRegion(const util::BitPack32 cap);
+
             Result SetCapability(const util::BitPack32 cap, u32 &set_flags, u32 &set_svc, KProcessPageTable *page_table);
             Result SetCapabilities(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
             Result SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
@@ -228,6 +232,8 @@ namespace ams::kern {
 
             Result Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
             Result Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
+
+            static Result CheckCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps);
 
             constexpr u64 GetCoreMask() const { return m_core_mask; }
             constexpr u64 GetPriorityMask() const { return m_priority_mask; }
