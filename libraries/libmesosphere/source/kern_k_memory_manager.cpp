@@ -202,7 +202,7 @@ namespace ams::kern {
         Impl *chosen_manager = nullptr;
         KPhysicalAddress allocated_block = Null<KPhysicalAddress>;
         for (chosen_manager = this->GetFirstManager(pool, dir); chosen_manager != nullptr; chosen_manager = this->GetNextManager(chosen_manager, dir)) {
-            allocated_block = chosen_manager->AllocateBlock(heap_index, true);
+            allocated_block = chosen_manager->AllocateAligned(heap_index, num_pages, align_pages);
             if (allocated_block != Null<KPhysicalAddress>) {
                 break;
             }
@@ -211,12 +211,6 @@ namespace ams::kern {
         /* If we failed to allocate, quit now. */
         if (allocated_block == Null<KPhysicalAddress>) {
             return Null<KPhysicalAddress>;
-        }
-
-        /* If we allocated more than we need, free some. */
-        const size_t allocated_pages = KPageHeap::GetBlockNumPages(heap_index);
-        if (allocated_pages > num_pages) {
-            chosen_manager->Free(allocated_block + num_pages * PageSize, allocated_pages - num_pages);
         }
 
         /* Maintain the optimized memory bitmap, if we should. */

@@ -27,7 +27,7 @@ namespace ams::kern {
             static constexpr s32 GetAlignedBlockIndex(size_t num_pages, size_t align_pages) {
                 const size_t target_pages = std::max(num_pages, align_pages);
                 for (size_t i = 0; i < NumMemoryBlockPageShifts; i++) {
-                    if (target_pages <= (size_t(1) << MemoryBlockPageShifts[i]) / PageSize) {
+                    if (target_pages <= (static_cast<size_t>(1) << MemoryBlockPageShifts[i]) / PageSize) {
                         return static_cast<s32>(i);
                     }
                 }
@@ -36,7 +36,7 @@ namespace ams::kern {
 
             static constexpr s32 GetBlockIndex(size_t num_pages) {
                 for (s32 i = static_cast<s32>(NumMemoryBlockPageShifts) - 1; i >= 0; i--) {
-                    if (num_pages >= (size_t(1) << MemoryBlockPageShifts[i]) / PageSize) {
+                    if (num_pages >= (static_cast<size_t>(1) << MemoryBlockPageShifts[i]) / PageSize) {
                         return i;
                     }
                 }
@@ -44,7 +44,7 @@ namespace ams::kern {
             }
 
             static constexpr size_t GetBlockSize(size_t index) {
-                return size_t(1) << MemoryBlockPageShifts[index];
+                return static_cast<size_t>(1) << MemoryBlockPageShifts[index];
             }
 
             static constexpr size_t GetBlockNumPages(size_t index) {
@@ -128,13 +128,14 @@ namespace ams::kern {
             size_t m_initial_used_size;
             size_t m_num_blocks;
             Block m_blocks[NumMemoryBlockPageShifts];
+            KPageBitmap::RandomBitGenerator m_rng;
         private:
             void Initialize(KPhysicalAddress heap_address, size_t heap_size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts);
             size_t GetNumFreePages() const;
 
             void FreeBlock(KPhysicalAddress block, s32 index);
         public:
-            KPageHeap() : m_heap_address(Null<KPhysicalAddress>), m_heap_size(), m_initial_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
+            KPageHeap() : m_heap_address(Null<KPhysicalAddress>), m_heap_size(), m_initial_used_size(), m_num_blocks(), m_blocks(), m_rng() { /* ... */ }
 
             constexpr KPhysicalAddress GetAddress() const { return m_heap_address; }
             constexpr size_t GetSize() const { return m_heap_size; }
@@ -158,9 +159,25 @@ namespace ams::kern {
                 m_initial_used_size = m_heap_size - free_size - reserved_size;
             }
 
-            KPhysicalAddress AllocateBlock(s32 index, bool random);
+            KPhysicalAddress AllocateBlock(s32 index, bool random) {
+                if (random) {
+                    const size_t block_pages = m_blocks[index].GetNumPages();
+                    return this->AllocateByRandom(index, block_pages, block_pages);
+                } else {
+                    return this->AllocateByLinearSearch(index);
+                }
+            }
+
+            KPhysicalAddress AllocateAligned(s32 index, size_t num_pages, size_t align_pages) {
+                /* TODO: linear search support? */
+                return this->AllocateByRandom(index, num_pages, align_pages);
+            }
+
             void Free(KPhysicalAddress addr, size_t num_pages);
         private:
+            KPhysicalAddress AllocateByLinearSearch(s32 index);
+            KPhysicalAddress AllocateByRandom(s32 index, size_t num_pages, size_t align_pages);
+
             static size_t CalculateManagementOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts);
         public:
             static size_t CalculateManagementOverheadSize(size_t region_size) {
