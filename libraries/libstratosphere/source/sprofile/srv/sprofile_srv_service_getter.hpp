@@ -24,7 +24,7 @@ namespace ams::sprofile::srv {
             sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForBgAgent> m_service_for_bg_agent;
             sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForSystemProcess> m_service_for_system_process;
         public:
-            constexpr ServiceGetter(sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForBgAgent> &&bg, sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForSystemProcess> &&sp) : m_service_for_bg_agent(bg), m_service_for_system_process(sp) { /* ... */ }
+            constexpr ServiceGetter(sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForBgAgent> bg, sf::SharedPointer<::ams::sprofile::srv::ISprofileServiceForSystemProcess> sp) : m_service_for_bg_agent(bg), m_service_for_system_process(sp) { /* ... */ }
         public:
             Result GetServiceForSystemProcess(sf::Out<sf::SharedPointer<sprofile::srv::ISprofileServiceForSystemProcess>> out);
             Result GetServiceForBgAgent(sf::Out<sf::SharedPointer<sprofile::srv::ISprofileServiceForBgAgent>> out);
