@@ -3608,13 +3608,13 @@ namespace ams::kern {
 
         /* Allocate the start page as needed. */
         if (aligned_src_start < mapping_src_start) {
-            start_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, m_allocate_option);
+            start_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 1, m_allocate_option);
             R_UNLESS(start_partial_page != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
         }
 
         /* Allocate the end page as needed. */
         if (mapping_src_end < aligned_src_end && (aligned_src_start < mapping_src_end || aligned_src_start == mapping_src_start)) {
-            end_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, m_allocate_option);
+            end_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 1, m_allocate_option);
             R_UNLESS(end_partial_page != Null<KPhysicalAddress>, svc::ResultOutOfMemory());
         }
 

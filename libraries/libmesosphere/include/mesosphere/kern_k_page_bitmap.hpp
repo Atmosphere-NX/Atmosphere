@@ -20,7 +20,7 @@
 namespace ams::kern {
 
     class KPageBitmap {
-        private:
+        public:
             class RandomBitGenerator {
                 private:
                     util::TinyMT m_rng;
@@ -42,12 +42,43 @@ namespace ams::kern {
                         --m_bits_available;
                         return rnd_bit;
                     }
+
+                    u64 GenerateRandomBits(u32 num_bits) {
+                        u64 result = 0;
+
+                        /* Iteratively add random bits to our result. */
+                        while (num_bits > 0) {
+                            /* Ensure we have random bits to take from. */
+                            if (m_bits_available == 0) {
+                                this->RefreshEntropy();
+                            }
+
+                            /* Determine how many bits to take this round. */
+                            const auto cur_bits = std::min(num_bits, m_bits_available);
+
+                            /* Generate mask for our current bits. */
+                            const u64 mask = (static_cast<u64>(1) << cur_bits) - 1;
+
+                            /* Add bits to output from our entropy. */
+                            result <<= cur_bits;
+                            result |= (m_entropy & mask);
+
+                            /* Remove bits from our entropy. */
+                            m_entropy >>= cur_bits;
+                            m_bits_available -= cur_bits;
+
+                            /* Advance. */
+                            num_bits -= cur_bits;
+                        }
+
+                        return result;
+                    }
                 public:
                     RandomBitGenerator() : m_entropy(), m_bits_available() {
                         m_rng.Initialize(static_cast<u32>(KSystemControl::GenerateRandomU64()));
                     }
 
-                    size_t SelectRandomBit(u64 bitmap) {
+                    u64 SelectRandomBit(u64 bitmap) {
                         u64 selected = 0;
 
                         for (size_t cur_num_bits = BITSIZEOF(bitmap) / 2; cur_num_bits != 0; cur_num_bits /= 2) {
@@ -65,6 +96,17 @@ namespace ams::kern {
                         }
 
                         return selected;
+                    }
+
+                    u64 GenerateRandom(u64 max) {
+                        /* Determine the number of bits we need. */
+                        const u64 bits_needed = 1 + (BITSIZEOF(max) - util::CountLeadingZeros(max));
+
+                        /* Generate a random value of the desired bitwidth. */
+                        const u64 rnd = this->GenerateRandomBits(bits_needed);
+
+                        /* Adjust the value to be in range. */
+                        return rnd - ((rnd / max) * max);
                     }
             };
         public:
