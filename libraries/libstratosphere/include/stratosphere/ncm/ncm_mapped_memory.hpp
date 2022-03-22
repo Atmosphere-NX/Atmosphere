@@ -31,6 +31,7 @@ namespace ams::ncm {
         u8 *GetBuffer(size_t o, size_t sz) const {
             AMS_ASSERT(this->buffer != nullptr);
             AMS_ASSERT(this->IsIncluded(o, sz));
+            AMS_UNUSED(sz);
 
             return this->buffer + (o - this->offset);
         }

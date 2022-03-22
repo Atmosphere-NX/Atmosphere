@@ -48,6 +48,7 @@ namespace ams::gc::impl {
             static void SetLibraryTitleKeyKek(size_t kek_index, const void *kek, size_t kek_size) {
                 AMS_ASSERT(kek_index < GcCrypto::GcTitleKeyKekIndexMax);
                 AMS_ASSERT(kek_size == GcCrypto::GcAesKeyLength);
+                AMS_UNUSED(kek_size);
 
                 std::memcpy(s_titlekey_keks[kek_index], kek, sizeof(s_titlekey_keks[kek_index]));
             }
