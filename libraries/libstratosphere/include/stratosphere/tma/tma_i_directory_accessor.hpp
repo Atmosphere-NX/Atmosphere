@@ -25,4 +25,4 @@
     AMS_SF_METHOD_INFO(C, H, 2, Result, SetPriorityForDirectory, (s32 priority),                                                                            (priority))         \
     AMS_SF_METHOD_INFO(C, H, 3, Result, GetPriorityForDirectory, (ams::sf::Out<s32> out),                                                                   (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, IDirectoryAccessor, AMS_TMA_I_DIRECTORY_ACCESSOR_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, IDirectoryAccessor, AMS_TMA_I_DIRECTORY_ACCESSOR_INTERFACE_INFO, 0x070BADB5)

@@ -14,15 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-
-#define AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO(C, H)                                                                                                   \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, ConvertCurrentObjectToDomain, (ams::sf::Out<ams::sf::cmif::DomainObjectId> out),                     (out))            \
-    AMS_SF_METHOD_INFO(C, H, 1, Result, CopyFromCurrentDomain,        (ams::sf::OutMoveHandle out, ams::sf::cmif::DomainObjectId object_id), (out, object_id)) \
-    AMS_SF_METHOD_INFO(C, H, 2, Result, CloneCurrentObject,           (ams::sf::OutMoveHandle out),                                          (out))            \
-    AMS_SF_METHOD_INFO(C, H, 3, void,   QueryPointerBufferSize,       (ams::sf::Out<u16> out),                                               (out))            \
-    AMS_SF_METHOD_INFO(C, H, 4, Result, CloneCurrentObjectEx,         (ams::sf::OutMoveHandle out, u32 tag),                                 (out, tag))
-
-AMS_SF_DEFINE_INTERFACE(ams::sf::hipc::impl, IHipcManager, AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO)
+#include "sf_i_hipc_manager.hpp"
 
 namespace ams::sf::hipc {
 

@@ -1254,7 +1254,6 @@ namespace ams::sf::impl {
         constexpr bool ReturnsVoid   = std::is_same<Return, void>::value;
         static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
 
-
         return InvokeServiceCommandImplCommon<CommandMeta, Arguments...>(out_header_ptr, ctx, in_raw_data, +[](sf::IServiceObject *srv_obj, Arguments &&... args) -> Result {
             if constexpr (ReturnsResult) {
                 return (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);

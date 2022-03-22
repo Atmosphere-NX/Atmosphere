@@ -31,7 +31,7 @@
     AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereGetProcessInfo,       (sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id), (out_process_handle, out_loc, out_status, process_id))                     \
     AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereGetCurrentLimitInfo,  (sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource),                                                                    (out_cur_val, out_lim_val, group, resource))
 
-AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDebugMonitorInterface, AMS_PM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDebugMonitorInterface, AMS_PM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO, 0x9391F0EE)
 
 #define AMS_PM_I_DEPRECATED_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                                             \
     AMS_SF_METHOD_INFO(C, H,     0, Result, GetModuleIdList,                (sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused),                                                                               (out_count, out_buf, unused))                          \
@@ -45,4 +45,4 @@ AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDebugMonitorInterface, AMS_PM_I_DEBUG_MO
     AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereGetProcessInfo,       (sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id), (out_process_handle, out_loc, out_status, process_id)) \
     AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereGetCurrentLimitInfo,  (sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource),                                                                    (out_cur_val, out_lim_val, group, resource))
 
-AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDeprecatedDebugMonitorInterface, AMS_PM_I_DEPRECATED_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IDeprecatedDebugMonitorInterface, AMS_PM_I_DEPRECATED_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO, 0x9391F0EE)

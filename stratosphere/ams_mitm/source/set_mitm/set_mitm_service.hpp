@@ -20,7 +20,7 @@
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out), (out)) \
     AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out),   (out))
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO, 0x7F7BAF0A)
 
 namespace ams::mitm::settings {
 

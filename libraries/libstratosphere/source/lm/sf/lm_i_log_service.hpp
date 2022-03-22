@@ -20,9 +20,9 @@
     AMS_SF_METHOD_INFO(C, H, 0, Result, Log,            (const sf::InAutoSelectBuffer &message), (message))     \
     AMS_SF_METHOD_INFO(C, H, 1, Result, SetDestination, (u32 destination),                       (destination))
 
-AMS_SF_DEFINE_INTERFACE(ams::lm, ILogger, AMS_LM_I_LOGGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lm, ILogger, AMS_LM_I_LOGGER_INTERFACE_INFO, 0x3E81DAD2)
 
 #define AMS_LM_I_LOG_SERVICE_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 0, Result, OpenLogger, (sf::Out<sf::SharedPointer<::ams::lm::ILogger>> out, const sf::ClientProcessId &client_process_id), (out, client_process_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::lm, ILogService, AMS_LM_I_LOG_SERVICE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lm, ILogService, AMS_LM_I_LOG_SERVICE_INTERFACE_INFO, 0xE1D7F748)

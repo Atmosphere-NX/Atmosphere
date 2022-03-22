@@ -17,16 +17,16 @@
 #include <stratosphere.hpp>
 
 #define AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO(C, H) \
-    AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option), (out, in, width, height, option))
+    AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option), (out, in, width, height, option))
 
-AMS_SF_DEFINE_INTERFACE(ams::capsrv::server, IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::capsrv::sf, IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO, 0xD168E90B)
 
 namespace ams::capsrv::server {
 
     class DecoderControlService final {
         public:
-            Result DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
+            Result DecodeJpeg(const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
     };
-    static_assert(IsIDecoderControlService<DecoderControlService>);
+    static_assert(capsrv::sf::IsIDecoderControlService<DecoderControlService>);
 
 }

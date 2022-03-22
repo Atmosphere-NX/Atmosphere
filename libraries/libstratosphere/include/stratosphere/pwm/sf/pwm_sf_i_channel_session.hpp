@@ -28,4 +28,4 @@
     AMS_SF_METHOD_INFO(C, H,  6, Result, SetScale,   (double scale),                   (scale),   hos::Version_6_0_0) \
     AMS_SF_METHOD_INFO(C, H,  7, Result, GetScale,   (ams::sf::Out<double> out),       (out),     hos::Version_6_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::pwm::sf, IChannelSession, AMS_PWM_I_CHANNEL_SESSION_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::pwm::sf, IChannelSession, AMS_PWM_I_CHANNEL_SESSION_INTERFACE_INFO, 0xAC0A18F9)

@@ -26,10 +26,10 @@ namespace ams::capsrv::server {
             static constexpr inline size_t MaxSessions          = 2;
             static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("caps:dc");
 
-            using ServiceHolderType = sf::UnmanagedServiceObject<IDecoderControlService, DecoderControlService>;
+            using ServiceHolderType = ams::sf::UnmanagedServiceObject<capsrv::sf::IDecoderControlService, DecoderControlService>;
 
-            using ServerOptions = sf::hipc::DefaultServerManagerOptions;
-            using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
+            using ServerOptions = ams::sf::hipc::DefaultServerManagerOptions;
+            using ServerManager = ams::sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
         private:
             util::optional<ServiceHolderType> m_service_holder;
             util::optional<ServerManager> m_server_manager_holder;

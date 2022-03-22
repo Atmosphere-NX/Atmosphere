@@ -25,4 +25,4 @@
     AMS_SF_METHOD_INFO(C, H, 3, Result, RefreshApplicationAddOnContent,        (const sf::InArray<ncm::ApplicationId> &ids),                                       (ids),                            hos::Version_9_0_0)                     \
     AMS_SF_METHOD_INFO(C, H, 4, Result, UnregisterApplicationAddOnContent,     (ncm::ApplicationId id),                                                            (id),                             hos::Version_9_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::lr, IAddOnContentLocationResolver, AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lr, IAddOnContentLocationResolver, AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO, 0x77617E39)

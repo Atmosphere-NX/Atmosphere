@@ -23,4 +23,4 @@
     AMS_SF_METHOD_INFO(C, H, 200, Result, IsGameCardInserted, (ams::sf::Out<bool> out), (out)) \
     AMS_SF_METHOD_INFO(C, H, 202, Result, GetGameCardHandle,  (ams::sf::Out<u32> out),  (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IDeviceOperator, AMS_FSSRV_I_DEVICE_OPERATOR_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IDeviceOperator, AMS_FSSRV_I_DEVICE_OPERATOR_INTERFACE_INFO, 0x1484E21C)

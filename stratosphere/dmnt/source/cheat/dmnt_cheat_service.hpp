@@ -46,7 +46,7 @@
     AMS_SF_METHOD_INFO(C, H, 65303, Result, EnableFrozenAddress,         (sf::Out<u64> out_value, u64 address, u64 width),                                                     (out_value, address, width))    \
     AMS_SF_METHOD_INFO(C, H, 65304, Result, DisableFrozenAddress,        (u64 address),                                                                                        (address))
 
-AMS_SF_DEFINE_INTERFACE(ams::dmnt::cheat::impl, ICheatInterface, AMS_DMNT_I_CHEAT_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::dmnt::cheat::impl, ICheatInterface, AMS_DMNT_I_CHEAT_INTERFACE_INTERFACE_INFO, 0x00000000)
 
 namespace ams::dmnt::cheat {
 

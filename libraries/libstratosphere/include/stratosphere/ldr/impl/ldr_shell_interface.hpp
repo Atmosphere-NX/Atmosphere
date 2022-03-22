@@ -26,4 +26,4 @@
     AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereRegisterExternalCode,   (sf::OutMoveHandle out, ncm::ProgramId program_id),                          (out, program_id))                                                       \
     AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereUnregisterExternalCode, (ncm::ProgramId program_id),                                                 (program_id))
 
-AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IShellInterface, AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IShellInterface, AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO, 0x3EE5B554)

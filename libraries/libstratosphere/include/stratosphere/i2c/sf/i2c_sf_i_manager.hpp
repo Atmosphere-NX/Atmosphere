@@ -27,4 +27,4 @@
     AMS_SF_METHOD_INFO(C, H,  3, Result, HasDeviceForDev,                    (ams::sf::Out<bool> out, i2c::I2cDevice device),                                                                                                               (out, device),                                              hos::Version_Min,   hos::Version_5_1_0) \
     AMS_SF_METHOD_INFO(C, H,  4, Result, OpenSession2,                       (ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, DeviceCode device_code),                                                                         (out, device_code),                                         hos::Version_6_0_0                    )
 
-AMS_SF_DEFINE_INTERFACE(ams::i2c::sf, IManager, AMS_I2C_I_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::i2c::sf, IManager, AMS_I2C_I_MANAGER_INTERFACE_INFO, 0xE4C9D8F0)

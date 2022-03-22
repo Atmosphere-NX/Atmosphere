@@ -85,10 +85,11 @@ namespace ams::sf::cmif {
 
     namespace impl {
 
+
         class ServiceDispatchTableBase {
             protected:
-                Result ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const;
-                Result ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const;
+                Result ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count, u32 interface_id_for_debug) const;
+                Result ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count, u32 interface_id_for_debug) const;
             public:
                 /* CRTP. */
                 template<typename T>
@@ -104,7 +105,7 @@ namespace ams::sf::cmif {
                 }
         };
 
-        template<size_t N>
+        template<u32 InterfaceIdForDebug, size_t N>
         class ServiceDispatchTableImpl : public ServiceDispatchTableBase {
             public:
                 static constexpr size_t NumEntries = N;
@@ -114,11 +115,11 @@ namespace ams::sf::cmif {
                 explicit constexpr ServiceDispatchTableImpl(const std::array<ServiceCommandMeta, N> &e) : m_entries{e} { /* ... */ }
 
                 Result ProcessMessage(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-                    return this->ProcessMessageImpl(ctx, in_raw_data, m_entries.data(), m_entries.size());
+                    return this->ProcessMessageImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug);
                 }
 
                 Result ProcessMessageForMitm(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) const {
-                    return this->ProcessMessageForMitmImpl(ctx, in_raw_data, m_entries.data(), m_entries.size());
+                    return this->ProcessMessageForMitmImpl(ctx, in_raw_data, m_entries.data(), m_entries.size(), InterfaceIdForDebug);
                 }
 
                 constexpr const std::array<ServiceCommandMeta, N> &GetEntries() const {
@@ -128,10 +129,10 @@ namespace ams::sf::cmif {
 
     }
 
-    template<size_t N>
-    class ServiceDispatchTable : public impl::ServiceDispatchTableImpl<N> {
+    template<u32 InterfaceIdForDebug, size_t N>
+    class ServiceDispatchTable : public impl::ServiceDispatchTableImpl<InterfaceIdForDebug, N> {
         public:
-            explicit constexpr ServiceDispatchTable(const std::array<ServiceCommandMeta, N> &e) : impl::ServiceDispatchTableImpl<N>(e) { /* ... */ }
+            explicit constexpr ServiceDispatchTable(const std::array<ServiceCommandMeta, N> &e) : impl::ServiceDispatchTableImpl<InterfaceIdForDebug, N>(e) { /* ... */ }
     };
 
     struct ServiceDispatchMeta {
@@ -158,13 +159,13 @@ namespace ams::sf::cmif {
 
     template<>
     struct ServiceDispatchTraits<sf::IServiceObject> {
-        static constexpr inline auto DispatchTable = ServiceDispatchTable<0>(std::array<ServiceCommandMeta, 0>{});
+        static constexpr inline auto DispatchTable = ServiceDispatchTable<0, 0>(std::array<ServiceCommandMeta, 0>{});
     };
 
     #if AMS_SF_MITM_SUPPORTED
     template<>
     struct ServiceDispatchTraits<sf::IMitmServiceObject> {
-        static constexpr inline auto DispatchTable = ServiceDispatchTable<0>(std::array<ServiceCommandMeta, 0>{});
+        static constexpr inline auto DispatchTable = ServiceDispatchTable<0, 0>(std::array<ServiceCommandMeta, 0>{});
     };
     #endif
 

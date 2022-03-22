@@ -21,4 +21,4 @@
     AMS_SF_METHOD_INFO(C, H, 2001, Result, GetRaw, (sf::Out<u8> out_type, sf::Out<u64> out_value, sprofile::Identifier profile, sprofile::Identifier key), (out_type, out_value, profile, key))
 
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileControllerForDebug, AMS_SPROFILE_I_PROFILE_CONTROLLER_FOR_DEBUG_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileControllerForDebug, AMS_SPROFILE_I_PROFILE_CONTROLLER_FOR_DEBUG_INTERFACE_INFO, 0xA8C14F64)

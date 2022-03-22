@@ -21,4 +21,4 @@
     AMS_SF_METHOD_INFO(C, H, 1, Result, StopLogging,  (),                                                                                           ())                                  \
     AMS_SF_METHOD_INFO(C, H, 2, Result, GetLog,       (const sf::OutAutoSelectBuffer &message, sf::Out<s64> out_size, sf::Out<u32> out_drop_count), (message, out_size, out_drop_count))
 
-AMS_SF_DEFINE_INTERFACE(ams::lm, ILogGetter, AMS_LM_I_LOG_GETTER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lm, ILogGetter, AMS_LM_I_LOG_GETTER_INTERFACE_INFO, 0x565EA15C)

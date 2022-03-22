@@ -65,8 +65,10 @@ namespace ams::sf::impl {
     template<typename...>
     struct Print;
 
-    #define AMS_SF_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO)                                                                                                        \
+    #define AMS_SF_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO, INTF_ID)                                                                                               \
         class CLASSNAME : public BASECLASS {                                                                                                                                     \
+            public:                                                                                                                                                              \
+                static constexpr u32 InterfaceIdForDebug = INTF_ID;                                                                                                              \
             private:                                                                                                                                                             \
                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_SYNC_METHOD)                                                                                                   \
             public:                                                                                                                                                              \
@@ -118,7 +120,7 @@ namespace ams::sf::impl {
                             }                                                                                                                                                    \
                         }                                                                                                                                                        \
                                                                                                                                                                                  \
-                        return ::ams::sf::cmif::ServiceDispatchTable { combined_entries };                                                                                       \
+                        return ::ams::sf::cmif::ServiceDispatchTable<Interface::InterfaceIdForDebug, CombinedSize> { combined_entries };                                         \
                     }()                                                                                                                                                          \
                 };                                                                                                                                                               \
         };
@@ -147,9 +149,9 @@ namespace ams::sf::impl {
         template<typename T>                                                                 \
         concept Is##CLASSNAME = CMD_MACRO(CLASSNAME, AMS_SF_IMPL_CHECK_CONCEPT_HELPER) true;
 
-    #define AMS_SF_DEFINE_INTERFACE_IMPL(BASECLASS, CLASSNAME, CMD_MACRO) \
-        AMS_SF_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO)     \
-        AMS_SF_IMPL_DEFINE_CONCEPT(CLASSNAME, CMD_MACRO)                  \
+    #define AMS_SF_DEFINE_INTERFACE_IMPL(BASECLASS, CLASSNAME, CMD_MACRO, INTF_ID) \
+        AMS_SF_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO, INTF_ID)     \
+        AMS_SF_IMPL_DEFINE_CONCEPT(CLASSNAME, CMD_MACRO)                           \
         static_assert(Is##CLASSNAME<CLASSNAME>);
 
     #define AMS_SF_METHOD_INFO_7(CLASSNAME, HANDLER, CMD_ID, RETURN, NAME, ARGS, ARGNAMES) \

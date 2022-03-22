@@ -24,4 +24,4 @@
     AMS_SF_METHOD_INFO(C, H, 26, Result, DecryptAndStoreSslClientCertKey,         (const sf::InPointerBuffer &src, spl::AccessKey access_key, spl::KeySource key_source),             (src, access_key, key_source), hos::Version_5_0_0) \
     AMS_SF_METHOD_INFO(C, H, 27, Result, ModularExponentiateWithSslClientCertKey, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod), (out, base, mod),              hos::Version_5_0_0)
 
-AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, ISslInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, ISslInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO, 0x0E1D71B7)

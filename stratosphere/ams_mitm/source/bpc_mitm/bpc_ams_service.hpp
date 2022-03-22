@@ -20,7 +20,7 @@
     AMS_SF_METHOD_INFO(C, H, 65000, void, RebootToFatalError, (const ams::FatalErrorContext &ctx), (ctx))     \
     AMS_SF_METHOD_INFO(C, H, 65001, void, SetRebootPayload,   (const ams::sf::InBuffer &payload),  (payload))
 
-AMS_SF_DEFINE_INTERFACE(ams::mitm::bpc::impl, IAtmosphereInterface, AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::mitm::bpc::impl, IAtmosphereInterface, AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO, 0x00000000)
 
 namespace ams::mitm::bpc {
 

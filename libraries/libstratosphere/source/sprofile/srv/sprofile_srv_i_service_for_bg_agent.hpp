@@ -23,4 +23,4 @@
     AMS_SF_METHOD_INFO(C, H, 201,  Result, IsUpdateNeeded,           (sf::Out<bool> out, sprofile::Identifier revision_key),                                                                                   (out, revision_key))   \
     AMS_SF_METHOD_INFO(C, H, 2000, Result, Reset,                    (),                                                                                                                                       ())
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForBgAgent, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForBgAgent, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_BG_AGENT_INTERFACE_INFO, 0xCCD828EC)

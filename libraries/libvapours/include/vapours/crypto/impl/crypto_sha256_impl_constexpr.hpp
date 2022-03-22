@@ -277,6 +277,19 @@ namespace ams::crypto::impl {
                         m_buffer[i] = 0;
                     }
                 }
+
+                /* Store the size field. */
+                m_buffer[BlockSizeWithoutSizeField + 0] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 7)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 1] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 6)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 2] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 5)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 3] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 4)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 4] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 3)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 5] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 2)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 6] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 1)) & 0xFF);
+                m_buffer[BlockSizeWithoutSizeField + 7] = static_cast<u8>((m_bits_consumed >> (BITSIZEOF(u8) * 0)) & 0xFF);
+
+                /* Process the final block. */
+                this->ProcessBlock(m_buffer);
             }
     };
 

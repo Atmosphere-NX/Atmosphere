@@ -26,4 +26,4 @@
     AMS_SF_METHOD_INFO(C, H, 2, Result, RefreshLocationResolver,          (ncm::StorageId storage_id),                                                             (storage_id))                          \
     AMS_SF_METHOD_INFO(C, H, 3, Result, OpenAddOnContentLocationResolver, (sf::Out<ams::sf::SharedPointer<lr::IAddOnContentLocationResolver>> out),                (out),             hos::Version_2_0_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::lr, ILocationResolverManager, AMS_LR_I_LOCATION_RESOLVER_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lr, ILocationResolverManager, AMS_LR_I_LOCATION_RESOLVER_MANAGER_INTERFACE_INFO, 0xB2950191)

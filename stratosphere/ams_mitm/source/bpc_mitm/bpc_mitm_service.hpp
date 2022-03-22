@@ -20,7 +20,7 @@
     AMS_SF_METHOD_INFO(C, H, 0, Result, ShutdownSystem, (), ()) \
     AMS_SF_METHOD_INFO(C, H, 1, Result, RebootSystem,   (), ())
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::bpc::impl, IBpcMitmInterface, AMS_BPC_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::bpc::impl, IBpcMitmInterface, AMS_BPC_MITM_INTERFACE_INFO, 0xF6C277FD)
 
 namespace ams::mitm::bpc {
 

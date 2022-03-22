@@ -36,7 +36,7 @@
     AMS_SF_METHOD_INFO(C, H, 12, Result, GetCaseSensitivePath, (const tma::Path &path, const sf::OutBuffer &out),                                                                       (path, out))                                                \
     AMS_SF_METHOD_INFO(C, H, 13, Result, GetDiskFreeSpaceExW,  (sf::Out<s64> out_free, sf::Out<s64> out_total, sf::Out<s64> out_total_free, const tma::Path &path),                     (out_free, out_total, out_total_free, path))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, IFileManager, AMS_TMA_I_FILE_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, IFileManager, AMS_TMA_I_FILE_MANAGER_INTERFACE_INFO, 0xA15AF3E1)
 
 /* Prior to system version 6.0.0, case sensitivity was not parameterized. */
 #define AMS_TMA_I_DEPRECATED_FILE_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                                   \
@@ -55,4 +55,4 @@ AMS_SF_DEFINE_INTERFACE(ams::tma, IFileManager, AMS_TMA_I_FILE_MANAGER_INTERFACE
     AMS_SF_METHOD_INFO(C, H, 12, Result, GetCaseSensitivePath, (const tma::Path &path, const sf::OutBuffer &out),                                                   (path, out))                                 \
     AMS_SF_METHOD_INFO(C, H, 13, Result, GetDiskFreeSpaceExW,  (sf::Out<s64> out_free, sf::Out<s64> out_total, sf::Out<s64> out_total_free, const tma::Path &path), (out_free, out_total, out_total_free, path))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, IDeprecatedFileManager, AMS_TMA_I_DEPRECATED_FILE_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, IDeprecatedFileManager, AMS_TMA_I_DEPRECATED_FILE_MANAGER_INTERFACE_INFO, 0xA15AF3E1)

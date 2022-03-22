@@ -24,4 +24,4 @@
     AMS_SF_METHOD_INFO(C, H, 101,  Result, OpenProfileUpdateObserver,     (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out),     (out)) \
     AMS_SF_METHOD_INFO(C, H, 900,  Result, OpenProfileControllerForDebug, (sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileControllerForDebug>> out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForSystemProcess, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_SYSTEM_PROCESS_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, ISprofileServiceForSystemProcess, AMS_SPROFILE_I_SPROFILE_SERVICE_FOR_SYSTEM_PROCESS_INTERFACE_INFO, 0x919612FB)

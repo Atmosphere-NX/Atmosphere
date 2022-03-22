@@ -46,4 +46,4 @@
     AMS_SF_METHOD_INFO(C, H, 19, Result, EraseProgramRedirectionForDebug,                   (ncm::ProgramId id),                                                (id),                 hos::Version_7_0_0)
 
 
-AMS_SF_DEFINE_INTERFACE(ams::lr, ILocationResolver, AMS_LR_I_LOCATION_RESOLVER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::lr, ILocationResolver, AMS_LR_I_LOCATION_RESOLVER_INTERFACE_INFO, 0xB36C8B0E)

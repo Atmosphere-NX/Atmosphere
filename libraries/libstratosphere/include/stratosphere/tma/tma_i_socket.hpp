@@ -47,4 +47,4 @@
     AMS_SF_METHOD_INFO(C, H,  23, Result, ContinueSend,    (sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InNonSecureAutoSelectBuffer &buffer, u32 task_id),                                                                                             (out_size, out_wait, buffer, task_id))                                                                          \
     AMS_SF_METHOD_INFO(C, H, 130, Result, GetPrimitive,    (sf::Out<s32> out),                                                                                                                                                                                      (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::tma, ISocket, AMS_TMA_I_SOCKET_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::tma, ISocket, AMS_TMA_I_SOCKET_INTERFACE_INFO, 0x34CFC7C1)

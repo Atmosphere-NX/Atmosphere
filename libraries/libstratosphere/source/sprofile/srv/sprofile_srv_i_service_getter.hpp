@@ -22,4 +22,4 @@
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetServiceForSystemProcess, (sf::Out<sf::SharedPointer<sprofile::srv::ISprofileServiceForSystemProcess>> out), (out)) \
     AMS_SF_METHOD_INFO(C, H, 1, Result, GetServiceForBgAgent,       (sf::Out<sf::SharedPointer<sprofile::srv::ISprofileServiceForBgAgent>> out), (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IServiceGetter, AMS_SPROFILE_I_SERVICE_GETTER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IServiceGetter, AMS_SPROFILE_I_SERVICE_GETTER_INTERFACE_INFO, 0x2CFB8417)

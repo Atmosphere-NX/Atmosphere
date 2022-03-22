@@ -50,7 +50,7 @@ namespace ams::mitm::sysupdater {
     AMS_SF_METHOD_INFO(C, H, 6, Result, HasPreparedUpdate,        (sf::Out<bool> out),                                                                                                                                                        (out))                                                                                  \
     AMS_SF_METHOD_INFO(C, H, 7, Result, ApplyPreparedUpdate,      (),                                                                                                                                                                         ())
 
-AMS_SF_DEFINE_INTERFACE(ams::mitm::sysupdater::impl, ISystemUpdateInterface, AMS_SYSUPDATER_SYSTEM_UPDATE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::mitm::sysupdater::impl, ISystemUpdateInterface, AMS_SYSUPDATER_SYSTEM_UPDATE_INTERFACE_INFO, 0x00000000)
 
 namespace ams::mitm::sysupdater {
 

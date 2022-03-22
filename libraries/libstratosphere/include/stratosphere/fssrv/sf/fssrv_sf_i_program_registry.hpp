@@ -25,5 +25,5 @@
     AMS_SF_METHOD_INFO(C, H,   2, Result, SetCurrentProcess,             (const ams::sf::ClientProcessId &client_pid),                                                                                                (client_pid))                                                           \
     AMS_SF_METHOD_INFO(C, H, 256, Result, SetEnabledProgramVerification, (bool en),                                                                                                                                   (en))
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IProgramRegistry, AMS_FSSRV_I_PROGRAM_REGISTRY_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IProgramRegistry, AMS_FSSRV_I_PROGRAM_REGISTRY_INTERFACE_INFO, 0xDA73738C)
 

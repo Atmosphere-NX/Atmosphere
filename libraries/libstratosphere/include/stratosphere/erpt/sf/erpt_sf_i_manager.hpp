@@ -26,4 +26,4 @@
     AMS_SF_METHOD_INFO(C, H,  5, Result, GetAttachmentList,         (const ams::sf::OutBuffer &out_buf, const erpt::ReportId &report_id), (out_buf, report_id),    hos::Version_8_0_0)
 
 
-AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IManager, AMS_ERPT_I_MANAGER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IManager, AMS_ERPT_I_MANAGER_INTERFACE_INFO, 0x5CFCC43F)

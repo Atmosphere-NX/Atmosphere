@@ -23,7 +23,7 @@
     AMS_SF_METHOD_INFO(C, H,    12, Result, GetAddrInfoRequestWithOptions,   (const sf::ClientProcessId &client_pid, const sf::InBuffer &node, const sf::InBuffer &srv, const sf::InBuffer &serialized_hint, const sf::OutAutoSelectBuffer &out_addrinfo, sf::Out<u32> out_size, sf::Out<s32> out_retval, u32 options_version, const sf::InAutoSelectBuffer &options, u32 num_options, sf::Out<s32> out_host_error, sf::Out<s32> out_errno), (client_pid, node, srv, serialized_hint, out_addrinfo, out_size, out_retval, options_version, options, num_options, out_host_error, out_errno), hos::Version_5_0_0) \
     AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereReloadHostsFile,       (),                                                                                                                                                                                                                                                                                                                                                             ())
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::socket::resolver, IResolver, AMS_DNS_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::socket::resolver, IResolver, AMS_DNS_MITM_INTERFACE_INFO, 0x5935F91A)
 
 namespace ams::mitm::socket::resolver {
 

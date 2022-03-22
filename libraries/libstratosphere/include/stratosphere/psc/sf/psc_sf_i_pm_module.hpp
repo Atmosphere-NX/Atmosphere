@@ -26,4 +26,4 @@
     AMS_SF_METHOD_INFO(C, H, 3, Result, Finalize,      (),                                                                                           ())                                               \
     AMS_SF_METHOD_INFO(C, H, 4, Result, AcknowledgeEx, (psc::PmState state),                                                                         (state),                      hos::Version_5_1_0)
 
-AMS_SF_DEFINE_INTERFACE(ams::psc::sf, IPmModule, AMS_PSC_I_PM_MODULE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::psc::sf, IPmModule, AMS_PSC_I_PM_MODULE_INTERFACE_INFO, 0x4275F38F)

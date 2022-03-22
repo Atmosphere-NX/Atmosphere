@@ -146,4 +146,4 @@
  /* AMS_SF_METHOD_INFO(C, H, 1200, Result, OpenMultiCommitManager,                                      (),                                                                                                                                                       (),                                                     hos::Version_6_0_0) */                      \
  /* AMS_SF_METHOD_INFO(C, H, 1300, Result, OpenBisWiper,                                                (),                                                                                                                                                       (),                                                     hos::Version_10_0_0) */
 
-AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystemProxy, AMS_FSSRV_I_FILE_SYSTEM_PROXY_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IFileSystemProxy, AMS_FSSRV_I_FILE_SYSTEM_PROXY_INTERFACE_INFO, 0x7DF34ED2)

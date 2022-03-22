@@ -21,7 +21,7 @@
 #define AMS_SF_HIPC_IMPL_I_MITM_QUERY_SERVICE_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 65000, void, ShouldMitm, (sf::Out<bool> out, const sm::MitmProcessInfo &client_info), (out, client_info))
 
-AMS_SF_DEFINE_INTERFACE(ams::sf::hipc::impl, IMitmQueryService, AMS_SF_HIPC_IMPL_I_MITM_QUERY_SERVICE_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sf::hipc::impl, IMitmQueryService, AMS_SF_HIPC_IMPL_I_MITM_QUERY_SERVICE_INTERFACE_INFO, 0xEC6BE3FF)
 
 namespace ams::sf::hipc::impl {
 

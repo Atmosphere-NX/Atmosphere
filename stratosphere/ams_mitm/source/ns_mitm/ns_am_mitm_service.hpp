@@ -21,7 +21,7 @@
     AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type),                                (application_id, content_type))                               \
     AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                    (out, application_id),                    hos::Version_6_0_0)
 
-AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::ns::impl, IAmMitmInterface, AMS_NS_AM_MITM_INTERFACE_INFO)
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::ns::impl, IAmMitmInterface, AMS_NS_AM_MITM_INTERFACE_INFO, 0x059D2C39)
 
 namespace ams::mitm::ns {
 

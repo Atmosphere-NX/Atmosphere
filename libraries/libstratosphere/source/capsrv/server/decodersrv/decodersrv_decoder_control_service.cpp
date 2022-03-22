@@ -69,7 +69,7 @@ namespace ams::capsrv::server {
 
     }
 
-    Result DecoderControlService::DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option) {
+    Result DecoderControlService::DecodeJpeg(const ams::sf::OutNonSecureBuffer &out, const ams::sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option) {
         /* Get the work buffer. */
         void *work       = g_work_memory.jpeg_decoder_memory;
         size_t work_size = sizeof(g_work_memory.jpeg_decoder_memory);
