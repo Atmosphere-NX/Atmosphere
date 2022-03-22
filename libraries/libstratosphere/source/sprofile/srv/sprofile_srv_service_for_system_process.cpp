@@ -21,7 +21,7 @@
 
 namespace ams::sprofile::srv {
 
-    Result ServiceForSystemProcess::OpenProfileReader(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileReader>> out) {
+    Result ServiceForSystemProcess::OpenProfileReader(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileReader>> out) {
         /* Allocate an object. */
         auto obj = sf::ObjectFactory<sf::MemoryResourceAllocationPolicy>::CreateSharedEmplaced<IProfileReader, ProfileReaderImpl>(m_memory_resource, m_profile_manager);
         R_UNLESS(obj != nullptr, sprofile::ResultAllocationFailed());
@@ -31,11 +31,11 @@ namespace ams::sprofile::srv {
         return ResultSuccess();
     }
 
-    Result ServiceForSystemProcess::OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> out) {
+    Result ServiceForSystemProcess::OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out) {
         return m_profile_manager->GetUpdateObserverManager().OpenObserver(out, m_memory_resource);
     }
 
-    Result ServiceForSystemProcess::OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileControllerForDebug>> out) {
+    Result ServiceForSystemProcess::OpenProfileControllerForDebug(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileControllerForDebug>> out) {
         /* Require debug mode in order to open a debug controller. */
         R_UNLESS(settings::fwdbg::IsDebugModeEnabled(), sprofile::ResultNotPermitted());
 

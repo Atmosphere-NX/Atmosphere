@@ -78,7 +78,7 @@ namespace ams::sprofile::srv {
                 }
             }
     };
-    static_assert(sprofile::IsIProfileUpdateObserver<ProfileUpdateObserverImpl>);
+    static_assert(sprofile::srv::IsIProfileUpdateObserver<ProfileUpdateObserverImpl>);
 
     class ProfileUpdateObserverManager {
         public:
@@ -90,7 +90,7 @@ namespace ams::sprofile::srv {
         public:
             ProfileUpdateObserverManager() : m_observer_count(0), m_mutex() { /* ... */ }
         public:
-            Result OpenObserver(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileUpdateObserver>> &out, MemoryResource *memory_resource);
+            Result OpenObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> &out, MemoryResource *memory_resource);
             void CloseObserver(ProfileUpdateObserverImpl *observer);
 
             void OnUpdate(Identifier profile) {

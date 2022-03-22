@@ -33,7 +33,7 @@ namespace ams::sprofile::srv {
         /* Check the size was correct. */
         AMS_ABORT_UNLESS(size == read_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result WriteFile(const char *path, const void *src, size_t size) {
@@ -51,7 +51,7 @@ namespace ams::sprofile::srv {
         R_ABORT_UNLESS(fs::SetFileSize(file, size));
 
         /* Write the file. */
-        return fs::WriteFile(file, 0, src, size, fs::WriteOption::Flush);
+        R_RETURN(fs::WriteFile(file, 0, src, size, fs::WriteOption::Flush));
     }
 
     Result MoveFile(const char *src_path, const char *dst_path) {
@@ -70,7 +70,15 @@ namespace ams::sprofile::srv {
         /* Move the source file to the destination file. */
         R_TRY(fs::RenameFile(src_path, dst_path));
 
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result DeleteFile(const char *path) {
+        R_TRY_CATCH(fs::DeleteFile(path)) {
+            R_CATCH(fs::ResultPathNotFound) { /* It's okay if the file doesn't exist. */ }
+        } R_END_TRY_CATCH;
+
+        R_SUCCEED();
     }
 
     Result EnsureDirectory(const char *path) {
@@ -78,7 +86,7 @@ namespace ams::sprofile::srv {
             R_CATCH(fs::ResultPathAlreadyExists) { /* It's okay if the directory already exists. */ }
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

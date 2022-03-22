@@ -28,11 +28,11 @@ namespace ams::sprofile::srv {
         public:
             constexpr ServiceForBgAgent(MemoryResource *mr, ProfileManager *pm) : m_memory_resource(mr), m_profile_manager(pm) { /* ... */ }
         public:
-            Result OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::IProfileImporter>> out);
+            Result OpenProfileImporter(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileImporter>> out);
             Result GetImportableProfileUrls(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg);
             Result IsUpdateNeeded(sf::Out<bool> out, Identifier revision_key);
             Result Reset();
     };
-    static_assert(sprofile::IsISprofileServiceForBgAgent<ServiceForBgAgent>);
+    static_assert(sprofile::srv::IsISprofileServiceForBgAgent<ServiceForBgAgent>);
 
 }

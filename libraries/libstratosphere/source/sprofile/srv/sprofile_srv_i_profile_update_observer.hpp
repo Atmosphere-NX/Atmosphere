@@ -21,4 +21,4 @@
     AMS_SF_METHOD_INFO(C, H, 1, Result, Unlisten,       (sprofile::Identifier profile), (profile)) \
     AMS_SF_METHOD_INFO(C, H, 2, Result, GetEventHandle, (ams::sf::OutCopyHandle out),   (out))
 
-AMS_SF_DEFINE_INTERFACE(ams::sprofile, IProfileUpdateObserver, AMS_SPROFILE_I_PROFILE_UPDATE_OBSERVER_INTERFACE_INFO)
+AMS_SF_DEFINE_INTERFACE(ams::sprofile::srv, IProfileUpdateObserver, AMS_SPROFILE_I_PROFILE_UPDATE_OBSERVER_INTERFACE_INFO)

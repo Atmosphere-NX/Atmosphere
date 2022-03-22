@@ -21,6 +21,7 @@ namespace ams::sprofile::srv {
     Result ReadFile(const char *path, void *dst, size_t size, s64 offset);
     Result WriteFile(const char *path, const void *src, size_t size);
     Result MoveFile(const char *src_path, const char *dst_path);
+    Result DeleteFile(const char *path);
 
     Result EnsureDirectory(const char *path);
 

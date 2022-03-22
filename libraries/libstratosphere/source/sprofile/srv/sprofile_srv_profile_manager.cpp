@@ -28,7 +28,7 @@ namespace ams::sprofile::srv {
             R_TRY_CATCH(fs::CreateSystemSaveData(save_data_info.id, save_data_info.size, save_data_info.journal_size, save_data_info.flags)) {
                 R_CATCH(fs::ResultPathAlreadyExists) { /* Nintendo accepts already-existing savedata here. */ }
             } R_END_TRY_CATCH;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void SafePrint(char *dst, size_t dst_size, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
@@ -135,20 +135,44 @@ namespace ams::sprofile::srv {
         const auto result = fs::MountSystemSaveData(m_save_data_info.mount_name, m_save_data_info.id);
         m_save_file_mounted = R_SUCCEEDED(result);
 
-        return result;
+        R_RETURN(result);
     }
 
     Result ProfileManager::OpenProfileImporter() {
         /* Acquire locks. */
         std::scoped_lock lk1(m_profile_metadata_mutex);
         std::scoped_lock lk2(m_profile_importer_mutex);
+        std::scoped_lock lk3(m_general_mutex);
 
         /* Check that we don't already have an importer. */
         R_UNLESS(!m_profile_importer.has_value(), sprofile::ResultInvalidState());
 
+        /* Try to load profile metadata. NOTE: result is not checked, it is okay if this fails. */
+        this->LoadPrimaryMetadataImpl();
+
         /* Create importer. */
         m_profile_importer.emplace(m_profile_metadata);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    void ProfileManager::CloseProfileImporterImpl() {
+        /* Check pre-conditions. */
+        AMS_ASSERT(m_profile_importer_mutex.IsLockedByCurrentThread());
+        AMS_ASSERT(m_general_mutex.IsLockedByCurrentThread());
+        AMS_ASSERT(m_fs_mutex.IsLockedByCurrentThread());
+
+        if (m_profile_importer.has_value()) {
+            /* Unmount save file. */
+            fs::Unmount(m_save_data_info.mount_name);
+            m_save_file_mounted = false;
+
+            /* Re-mount save file. */
+            R_ABORT_UNLESS(fs::MountSystemSaveData(m_save_data_info.mount_name, m_save_data_info.id));
+            m_save_file_mounted = true;
+
+            /* Reset our importer. */
+            m_profile_importer = util::nullopt;
+        }
     }
 
     void ProfileManager::CloseProfileImporter() {
@@ -158,7 +182,7 @@ namespace ams::sprofile::srv {
         std::scoped_lock lk3(m_fs_mutex);
 
         /* Close our importer. */
-        m_profile_importer = util::nullopt;
+        this->CloseProfileImporterImpl();
     }
 
     Result ProfileManager::ImportProfile(const sprofile::srv::ProfileDataForImportData &import) {
@@ -202,7 +226,7 @@ namespace ams::sprofile::srv {
 
         /* Set profile imported. */
         m_profile_importer->OnImportProfile(import.header.identifier_0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::Commit() {
@@ -218,33 +242,20 @@ namespace ams::sprofile::srv {
 
         /* Commit, and if we fail remount our save. */
         {
-            /* Setup guard in case we fail. */
-            auto remount_guard = SCOPE_GUARD {
-                if (m_profile_importer.has_value()) {
-                    /* Unmount save file. */
-                    fs::Unmount(m_save_data_info.mount_name);
-                    m_save_file_mounted = false;
-
-                    /* Re-mount save file. */
-                    R_ABORT_UNLESS(fs::MountSystemSaveData(m_save_data_info.mount_name, m_save_data_info.id));
-                    m_save_file_mounted = true;
-
-                    /* Reset our importer. */
-                    m_profile_importer = util::nullopt;
-                }
-            };
+            /* If we fail, close our importer. */
+            ON_RESULT_FAILURE { this->CloseProfileImporterImpl(); };
 
             /* Check that we can commit the importer. */
             R_UNLESS(m_profile_importer->CanCommit(), sprofile::ResultInvalidState());
 
-            /* Commit. */
-            R_TRY(this->CommitImpl());
+            /* Commit newly imported profiles. */
+            R_TRY(this->CommitImportedProfiles());
+
+            /* Cleanup orphaned profiles. */
+            R_TRY(this->CleanupOrphanedProfiles());
 
             /* Commit the save file. */
             R_TRY(fs::CommitSaveData(m_save_data_info.mount_name));
-
-            /* We successfully committed. */
-            remount_guard.Cancel();
         }
 
         /* NOTE: Here nintendo generates an "sprofile_update_profile" sreport with the new and old revision keys. */
@@ -252,7 +263,7 @@ namespace ams::sprofile::srv {
         /* Handle tasks for when we've committed (including notifying update observers). */
         this->OnCommitted();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::ImportMetadata(const sprofile::srv::ProfileMetadataForImportMetadata &import) {
@@ -292,7 +303,28 @@ namespace ams::sprofile::srv {
 
         /* Import the metadata. */
         m_profile_importer->ImportMetadata(import.metadata);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result ProfileManager::LoadPrimaryMetadataImpl() {
+        /* Check pre-conditions. */
+        AMS_ASSERT(m_profile_metadata_mutex.IsLockedByCurrentThread());
+        AMS_ASSERT(m_general_mutex.IsLockedByCurrentThread());
+
+        /* If we don't have metadata, load it. */
+        if (!m_profile_metadata.has_value()) {
+            /* Emplace our metadata. */
+            m_profile_metadata.emplace();
+            ON_RESULT_FAILURE { m_profile_metadata = util::nullopt; };
+
+            /* Read profile metadata. */
+            char path[0x30];
+            CreatePrimaryMetadataPath(path, sizeof(path), m_save_data_info.mount_name);
+            R_TRY(ReadFile(path, std::addressof(*m_profile_metadata), sizeof(*m_profile_metadata), 0));
+        }
+
+        /* We now have loaded metadata. */
+        R_SUCCEED();
     }
 
     Result ProfileManager::LoadPrimaryMetadata(ProfileMetadata *out) {
@@ -300,24 +332,12 @@ namespace ams::sprofile::srv {
         std::scoped_lock lk1(m_profile_metadata_mutex);
         std::scoped_lock lk2(m_general_mutex);
 
-        /* If we don't have metadata, load it. */
-        if (!m_profile_metadata.has_value()) {
-            /* Emplace our metadata. */
-            m_profile_metadata.emplace();
-            auto meta_guard = SCOPE_GUARD { m_profile_metadata = util::nullopt; };
-
-            /* Read profile metadata. */
-            char path[0x30];
-            CreatePrimaryMetadataPath(path, sizeof(path), m_save_data_info.mount_name);
-            R_TRY(ReadFile(path, std::addressof(*m_profile_metadata), sizeof(*m_profile_metadata), 0));
-
-            /* We read the metadata successfully. */
-            meta_guard.Cancel();
-        }
+        /* Load our metadata. */
+        R_TRY(this->LoadPrimaryMetadataImpl());
 
         /* Set the output. */
         *out = *m_profile_metadata;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::LoadProfile(Identifier profile) {
@@ -339,7 +359,7 @@ namespace ams::sprofile::srv {
 
         /* We succeeded. */
         prof_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetDataEntry(ProfileDataEntry *out, Identifier profile, Identifier key) {
@@ -353,12 +373,12 @@ namespace ams::sprofile::srv {
             for (auto i = 0u; i < std::min<size_t>(m_service_profile->data.num_entries, util::size(m_service_profile->data.entries)); ++i) {
                 if (m_service_profile->data.entries[i].key == key) {
                     *out = m_service_profile->data.entries[i];
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
 
-        return sprofile::ResultKeyNotFound();
+        R_THROW(sprofile::ResultKeyNotFound());
     }
 
     Result ProfileManager::GetSigned64(s64 *out, Identifier profile, Identifier key) {
@@ -371,7 +391,7 @@ namespace ams::sprofile::srv {
 
         /* Set the output value. */
         *out = entry.value_s64;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetUnsigned64(u64 *out, Identifier profile, Identifier key) {
@@ -384,7 +404,7 @@ namespace ams::sprofile::srv {
 
         /* Set the output value. */
         *out = entry.value_u64;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetSigned32(s32 *out, Identifier profile, Identifier key) {
@@ -397,7 +417,7 @@ namespace ams::sprofile::srv {
 
         /* Set the output value. */
         *out = entry.value_s32;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetUnsigned32(u32 *out, Identifier profile, Identifier key) {
@@ -410,7 +430,7 @@ namespace ams::sprofile::srv {
 
         /* Set the output value. */
         *out = entry.value_u32;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetByte(u8 *out, Identifier profile, Identifier key) {
@@ -423,7 +443,7 @@ namespace ams::sprofile::srv {
 
         /* Set the output value. */
         *out = entry.value_u8;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::GetRaw(u8 *out_type, u64 *out_value, Identifier profile, Identifier key) {
@@ -434,10 +454,10 @@ namespace ams::sprofile::srv {
         /* Set the output type and value. */
         *out_type  = entry.type;
         *out_value = entry.value_u64;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result ProfileManager::CommitImpl() {
+    Result ProfileManager::CommitImportedProfiles() {
         /* Ensure primary directories. */
         R_TRY(this->EnsurePrimaryDirectories());
 
@@ -452,16 +472,32 @@ namespace ams::sprofile::srv {
             R_TRY(MoveFile(tmp_path, pri_path));
         }
 
-        /* Move all profiles. */
+        /* Move all newly imported profiles. */
         for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
-            const auto id = m_profile_importer->GetImportingProfile(i);
+            const auto &profile = m_profile_importer->GetImportingProfile(i);
 
-            CreateTemporaryProfilePath(tmp_path, sizeof(tmp_path), m_save_data_info.mount_name, id);
-            CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, id);
-            R_TRY(MoveFile(tmp_path, pri_path));
+            if (profile.is_new_import) {
+                CreateTemporaryProfilePath(tmp_path, sizeof(tmp_path), m_save_data_info.mount_name, profile.identifier_0);
+                CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, profile.identifier_0);
+                R_TRY(MoveFile(tmp_path, pri_path));
+            }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result ProfileManager::CleanupOrphanedProfiles() {
+        /* Check pre-conditions. */
+        AMS_ASSERT(m_profile_importer.has_value());
+
+        /* Declare re-usable path. */
+        char pri_path[0x30];
+
+        /* Cleanup the profiles. */
+        R_RETURN(m_profile_importer->CleanupOrphanedProfiles([&](Identifier profile) ALWAYS_INLINE_LAMBDA -> Result {
+            CreatePrimaryProfilePath(pri_path, sizeof(pri_path), m_save_data_info.mount_name, profile);
+            R_RETURN(DeleteFile(pri_path));
+        }));
     }
 
     void ProfileManager::OnCommitted() {
@@ -470,7 +506,7 @@ namespace ams::sprofile::srv {
         /* If we need to, invalidate the loaded service profile. */
         if (m_service_profile.has_value()) {
             for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
-                if (m_service_profile->name == m_profile_importer->GetImportingProfile(i)) {
+                if (m_service_profile->name == m_profile_importer->GetImportingProfile(i).identifier_0) {
                     m_service_profile = util::nullopt;
                     break;
                 }
@@ -482,7 +518,11 @@ namespace ams::sprofile::srv {
 
         /* Invoke any listeners. */
         for (auto i = 0; i < m_profile_importer->GetImportingCount(); ++i) {
-            m_update_observer_manager.OnUpdate(m_profile_importer->GetImportingProfile(i));
+            const auto &profile = m_profile_importer->GetImportingProfile(i);
+
+            if (profile.is_new_import) {
+                m_update_observer_manager.OnUpdate(profile.identifier_0);
+            }
         }
 
         /* Reset profile importer. */
@@ -499,7 +539,7 @@ namespace ams::sprofile::srv {
         CreatePrimaryProfileDirectoryPath(path, sizeof(path), m_save_data_info.mount_name);
         R_TRY(EnsureDirectory(path));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProfileManager::EnsureTemporaryDirectories() {
@@ -512,7 +552,7 @@ namespace ams::sprofile::srv {
         CreateTemporaryProfileDirectoryPath(path, sizeof(path), m_save_data_info.mount_name);
         R_TRY(EnsureDirectory(path));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

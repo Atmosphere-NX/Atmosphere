@@ -17,6 +17,7 @@
 #include "sprofile_srv_profile_manager.hpp"
 #include "sprofile_srv_service_for_bg_agent.hpp"
 #include "sprofile_srv_service_for_system_process.hpp"
+#include "sprofile_srv_service_getter.hpp"
 
 namespace ams::sprofile::srv {
 
@@ -54,6 +55,9 @@ namespace ams::sprofile::srv {
 
         constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForBgAgent, ServiceForBgAgent>> g_bg_service_object = {};
         constinit util::TypedStorage<sf::UnmanagedServiceObject<ISprofileServiceForSystemProcess, ServiceForSystemProcess>> g_sp_service_object = {};
+
+        constinit util::TypedStorage<sf::UnmanagedServiceObject<IServiceGetter, ServiceGetter>> g_bg_service_getter = {};
+        constinit util::TypedStorage<sf::UnmanagedServiceObject<IServiceGetter, ServiceGetter>> g_sp_service_getter = {};
 
         constinit util::TypedStorage<ServerManager> g_server_manager = {};
 
@@ -95,12 +99,21 @@ namespace ams::sprofile::srv {
         util::ConstructAt(g_bg_service_object, std::addressof(g_sf_memory_resource), util::GetPointer(g_profile_manager));
         util::ConstructAt(g_sp_service_object, std::addressof(g_sf_memory_resource), util::GetPointer(g_profile_manager));
 
+        /* Create the service getters. */
+        util::ConstructAt(g_bg_service_getter, util::GetReference(g_bg_service_object).GetShared(), util::GetReference(g_sp_service_object).GetShared());
+        util::ConstructAt(g_sp_service_getter, nullptr, util::GetReference(g_sp_service_object).GetShared());
+
         /* Create the server manager. */
         util::ConstructAt(g_server_manager);
 
         /* Create services. */
-        R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_bg_service_object).GetShared(), ServiceNameForBgAgent, BgAgentSessionCountMax));
-        R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_sp_service_object).GetShared(), ServiceNameForSystemProcess, SystemProcessSessionCountMax));
+        if (hos::GetVersion() >= hos::Version_14_0_0) {
+            R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_bg_service_getter).GetShared(), ServiceNameForBgAgent, BgAgentSessionCountMax));
+            R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_sp_service_getter).GetShared(), ServiceNameForSystemProcess, SystemProcessSessionCountMax));
+        } else {
+            R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_bg_service_object).GetShared(), ServiceNameForBgAgent, BgAgentSessionCountMax));
+            R_ABORT_UNLESS(util::GetReference(g_server_manager).RegisterObjectForServer(util::GetReference(g_sp_service_object).GetShared(), ServiceNameForSystemProcess, SystemProcessSessionCountMax));
+        }
     }
 
     void StartIpcServer() {
