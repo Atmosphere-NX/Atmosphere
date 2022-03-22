@@ -28,7 +28,7 @@ namespace ams::ncm {
         private:
             sf::SharedPointer<IContentMetaDatabase> m_interface;
         public:
-            ContentMetaDatabase() { /* ... */ }
+            ContentMetaDatabase() : m_interface(nullptr) { /* ... */ }
             explicit ContentMetaDatabase(sf::SharedPointer<IContentMetaDatabase> intf) : m_interface(intf) { /* ... */ }
 
             ContentMetaDatabase(ContentMetaDatabase &&rhs) {

@@ -23,7 +23,7 @@ namespace ams::ncm {
         private:
             sf::SharedPointer<IContentStorage> m_interface;
         public:
-            ContentStorage() { /* ... */ }
+            ContentStorage() : m_interface(nullptr) { /* ... */ }
             explicit ContentStorage(sf::SharedPointer<IContentStorage> intf) : m_interface(intf) { /* ... */ }
 
             ContentStorage(ContentStorage &&rhs) {

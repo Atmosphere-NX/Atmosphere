@@ -84,7 +84,7 @@ namespace ams::ncm {
                 fs::ContentStorageId content_storage_id;
                 sf::SharedPointer<IContentStorage> content_storage;
 
-                ContentStorageRoot() { /* ... */ }
+                ContentStorageRoot() : mount_name(), path(), storage_id(), content_storage_id(), content_storage() { /* ... */ }
             };
 
             struct ContentMetaDatabaseRoot {
@@ -100,7 +100,7 @@ namespace ams::ncm {
                 ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
 
-                ContentMetaDatabaseRoot() { /* ... */ }
+                ContentMetaDatabaseRoot() : mount_name(), path(), storage_id(), info(), content_meta_database(), kvs(util::nullopt), memory_resource(), max_content_metas() { /* ... */ }
             };
         private:
             os::SdkRecursiveMutex m_mutex;

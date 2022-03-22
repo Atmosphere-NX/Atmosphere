@@ -28,7 +28,7 @@ namespace ams::ncm {
             char m_mount_name[fs::MountNameLengthMax + 1];
             bool m_disabled;
         protected:
-            ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs) : m_kvs(kvs), m_disabled(false) { /* ... */ }
+            ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs) : m_kvs(kvs), m_mount_name(), m_disabled(false) { /* ... */ }
 
             ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs) {
                 std::strcpy(m_mount_name, mount_name);

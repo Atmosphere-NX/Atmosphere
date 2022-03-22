@@ -42,7 +42,7 @@ namespace ams::ncm {
             CacheEntry *FindInCache(PlaceHolderId placeholder_id);
             CacheEntry *GetFreeEntry();;
         public:
-            PlaceHolderAccessor() : m_cur_counter(0), m_cache_mutex(), m_delay_flush(false) {
+            PlaceHolderAccessor() : m_root_path(nullptr), m_cur_counter(0), m_cache_mutex(), m_make_placeholder_path_func(nullptr), m_delay_flush(false) {
                 for (size_t i = 0; i < MaxCacheEntries; i++) {
                     m_caches[i].id = InvalidPlaceHolderId;
                 }

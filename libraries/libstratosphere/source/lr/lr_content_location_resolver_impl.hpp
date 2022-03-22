@@ -27,7 +27,7 @@ namespace ams::lr {
             ncm::ContentMetaDatabase m_content_meta_database;
             ncm::ContentStorage m_content_storage;
         public:
-            ContentLocationResolverImpl(ncm::StorageId storage_id) : m_storage_id(storage_id) { /* ... */ }
+            ContentLocationResolverImpl(ncm::StorageId storage_id) : m_storage_id(storage_id), m_content_meta_database(), m_content_storage() { /* ... */ }
 
             ~ContentLocationResolverImpl();
         private:

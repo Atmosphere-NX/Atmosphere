@@ -25,7 +25,7 @@ namespace ams::lr {
         private:
             sf::SharedPointer<IAddOnContentLocationResolver> m_interface;
         public:
-            AddOnContentLocationResolver() { /* ... */ }
+            AddOnContentLocationResolver() : m_interface(nullptr) { /* ... */ }
             explicit AddOnContentLocationResolver(sf::SharedPointer<IAddOnContentLocationResolver> intf) : m_interface(intf) { /* ... */ }
 
             AddOnContentLocationResolver(AddOnContentLocationResolver &&rhs) {

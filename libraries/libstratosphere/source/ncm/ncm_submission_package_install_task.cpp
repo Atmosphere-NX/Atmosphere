@@ -55,7 +55,7 @@ namespace ams::ncm {
             }
     };
 
-    SubmissionPackageInstallTask::SubmissionPackageInstallTask()  { /* ... */ }
+    SubmissionPackageInstallTask::SubmissionPackageInstallTask() : m_impl(nullptr) { /* ... */ }
     SubmissionPackageInstallTask::~SubmissionPackageInstallTask() { /* ... */ }
 
     Result SubmissionPackageInstallTask::Initialize(fs::FileHandle file, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
