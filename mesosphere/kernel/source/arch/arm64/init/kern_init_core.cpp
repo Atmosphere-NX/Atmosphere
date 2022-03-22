@@ -513,6 +513,13 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr), init_page_table_region_size, KMemoryRegionType_DramKernelInitPt));
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualDramKernelInitPt));
 
+        /* Insert a physical region for the kernel trace buffer */
+        if constexpr (IsKTraceEnabled) {
+            const KPhysicalAddress ktrace_buffer_phys_addr = GetInteger(resource_end_phys_addr) + init_page_table_region_size;
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr) + linear_region_phys_to_virt_diff, KTraceBufferSize, GetTypeForVirtualLinearMapping(KMemoryRegionType_KernelTraceBuffer)));
+        }
+
         /* All linear-mapped DRAM regions that we haven't tagged by this point will be allocated to some pool partition. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             constexpr auto UntaggedLinearDram = util::FromUnderlying<KMemoryRegionType>(util::ToUnderlying<KMemoryRegionType>(KMemoryRegionType_Dram) | util::ToUnderlying(KMemoryRegionAttr_LinearMapped));
