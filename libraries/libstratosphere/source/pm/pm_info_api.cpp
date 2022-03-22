@@ -29,15 +29,13 @@ namespace ams::pm::info {
     }
 
     Result GetAppletCurrentResourceLimitValues(pm::ResourceLimitValues *out) {
-        /* TODO: return pminfoGetAppletCurrentResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)); */
-        AMS_UNUSED(out);
-        AMS_ABORT("TODO");
+        static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
+        return pminfoGetAppletCurrentResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out));
     }
 
     Result GetAppletPeakResourceLimitValues(pm::ResourceLimitValues *out) {
-        /* TODO: return pminfoGetAppletPeakResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out)); */
-        AMS_UNUSED(out);
-        AMS_ABORT("TODO");
+        static_assert(sizeof(pm::ResourceLimitValues) == sizeof(::PmResourceLimitValues));
+        return pminfoGetAppletPeakResourceLimitValues(reinterpret_cast<PmResourceLimitValues *>(out));
     }
 
     Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
