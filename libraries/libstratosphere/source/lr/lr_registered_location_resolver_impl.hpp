@@ -45,7 +45,7 @@ namespace ams::lr {
             void ClearRedirections(u32 flags = RedirectionFlags_None);
             Result RefreshImpl(const ncm::ProgramId *excluding_ids, size_t num_ids);
         public:
-            RegisteredLocationResolverImpl() : m_registered_program_locations(GetMaxRegisteredLocations()), m_registered_html_docs_locations(GetMaxRegisteredLocations()) { /* ... */ }
+            RegisteredLocationResolverImpl() : m_program_redirector(), m_registered_program_locations(GetMaxRegisteredLocations()), m_html_docs_redirector(), m_registered_html_docs_locations(GetMaxRegisteredLocations()) { /* ... */ }
             ~RegisteredLocationResolverImpl();
         public:
             /* Actual commands. */

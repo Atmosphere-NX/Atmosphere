@@ -24,8 +24,8 @@ namespace ams::ncm {
             using PackagePath = kvdb::BoundedString<256>;
         private:
             PackagePath m_package_root;
-            void *m_buffer;
-            size_t m_buffer_size;
+            void *m_buffer{};
+            size_t m_buffer_size{};
         public:
             PackageInstallTaskBase() : m_package_root() { /* ... */ }
 

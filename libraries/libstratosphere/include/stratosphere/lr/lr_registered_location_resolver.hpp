@@ -25,7 +25,7 @@ namespace ams::lr {
         private:
             sf::SharedPointer<IRegisteredLocationResolver> m_interface;
         public:
-            RegisteredLocationResolver() { /* ... */ }
+            RegisteredLocationResolver() : m_interface(nullptr) { /* ... */ }
             explicit RegisteredLocationResolver(sf::SharedPointer<IRegisteredLocationResolver> intf) : m_interface(intf) { /* ... */ }
 
             RegisteredLocationResolver(RegisteredLocationResolver &&rhs) {

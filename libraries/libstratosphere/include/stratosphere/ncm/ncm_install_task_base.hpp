@@ -82,18 +82,18 @@ namespace ams::ncm {
         NON_COPYABLE(InstallTaskBase);
         NON_MOVEABLE(InstallTaskBase);
         private:
-            crypto::Sha256Generator m_sha256_generator;
-            StorageId m_install_storage;
-            InstallTaskDataBase *m_data;
-            InstallProgress m_progress;
-            os::SdkMutex m_progress_mutex;
-            u32 m_config;
-            os::SdkMutex m_cancel_mutex;
-            bool m_cancel_requested;
-            InstallThroughput m_throughput;
-            TimeSpan m_throughput_start_time;
-            os::SdkMutex m_throughput_mutex;
-            FirmwareVariationId m_firmware_variation_id;
+            crypto::Sha256Generator m_sha256_generator{};
+            StorageId m_install_storage{};
+            InstallTaskDataBase *m_data{};
+            InstallProgress m_progress{};
+            os::SdkMutex m_progress_mutex{};
+            u32 m_config{};
+            os::SdkMutex m_cancel_mutex{};
+            bool m_cancel_requested{};
+            InstallThroughput m_throughput{};
+            TimeSpan m_throughput_start_time{};
+            os::SdkMutex m_throughput_mutex{};
+            FirmwareVariationId m_firmware_variation_id{};
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
                 if (R_FAILED(result)) {

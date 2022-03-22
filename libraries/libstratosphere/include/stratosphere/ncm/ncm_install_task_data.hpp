@@ -64,7 +64,7 @@ namespace ams::ncm {
             Result m_last_result;
             SystemUpdateTaskApplyInfo m_system_update_task_apply_info;
         public:
-            MemoryInstallTaskData() : m_state(InstallProgressState::NotPrepared), m_last_result(ResultSuccess()) { /* ... */ };
+            MemoryInstallTaskData() : m_data_list(), m_state(InstallProgressState::NotPrepared), m_last_result(ResultSuccess()), m_system_update_task_apply_info() { /* ... */ };
             ~MemoryInstallTaskData() {
                 this->Cleanup();
             }
@@ -104,8 +104,8 @@ namespace ams::ncm {
 
             static_assert(sizeof(EntryInfo) == 0x10);
         private:
-            Header m_header;
-            char m_path[64];
+            Header m_header{};
+            char m_path[64]{};
         private:
             static constexpr Header MakeInitialHeader(s32 max_entries) {
                 return {

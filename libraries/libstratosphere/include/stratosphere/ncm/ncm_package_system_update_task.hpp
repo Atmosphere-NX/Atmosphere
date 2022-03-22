@@ -22,10 +22,10 @@ namespace ams::ncm {
         private:
             using PackagePath = kvdb::BoundedString<0x100>;
         private:
-            PackagePath m_context_path;
-            FileInstallTaskData m_data;
-            ContentMetaDatabase m_package_db;
-            bool m_gamecard_content_meta_database_active;
+            PackagePath m_context_path{};
+            FileInstallTaskData m_data{};
+            ContentMetaDatabase m_package_db{};
+            bool m_gamecard_content_meta_database_active{};
         public:
             ~PackageSystemUpdateTask();
 

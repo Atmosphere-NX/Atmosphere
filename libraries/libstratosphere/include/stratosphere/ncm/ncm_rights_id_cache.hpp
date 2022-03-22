@@ -37,7 +37,7 @@ namespace ams::ncm {
             u64 m_counter;
             os::SdkMutex m_mutex;
         public:
-            RightsIdCache() : m_mutex() {
+            RightsIdCache() : m_entries(), m_counter(2), m_mutex() {
                 this->Invalidate();
             }
 
