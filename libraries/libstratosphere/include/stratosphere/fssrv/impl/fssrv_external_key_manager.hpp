@@ -37,6 +37,8 @@ namespace ams::fssrv::impl {
 
             bool Contains(const void *key, size_t key_size) const {
                 AMS_ASSERT(key_size == sizeof(spl::AccessKey));
+                AMS_UNUSED(key_size);
+
                 return crypto::IsSameBytes(std::addressof(m_access_key), key, sizeof(m_access_key));
             }
 
