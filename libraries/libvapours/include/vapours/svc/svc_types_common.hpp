@@ -165,6 +165,7 @@ namespace ams::svc {
         InfoType_IsApplication                  = 23,
         InfoType_FreeThreadCount                = 24,
         InfoType_ThreadTickCount                = 25,
+        InfoType_IsSvcPermitted                 = 26,
 
         InfoType_MesosphereMeta                 = 65000,
         InfoType_MesosphereCurrentProcess       = 65001,

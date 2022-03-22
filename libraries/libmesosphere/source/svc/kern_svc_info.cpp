@@ -285,6 +285,18 @@ namespace ams::kern::svc {
                         *out = tick_count;
                     }
                     break;
+                case ams::svc::InfoType_IsSvcPermitted:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == svc::SvcId_SynchronizePreemptionState, svc::ResultInvalidCombination());
+
+                        /* Get whether the svc is permitted. */
+                        *out = GetCurrentProcess().IsPermittedSvc(static_cast<svc::SvcId>(info_subtype));
+                    }
+                    break;
                 case ams::svc::InfoType_MesosphereMeta:
                     {
                         /* Verify the handle is invalid. */

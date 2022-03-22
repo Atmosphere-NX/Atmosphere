@@ -306,6 +306,10 @@ namespace ams::kern {
                 }
             }
 
+            constexpr bool IsPermittedSvc(svc::SvcId id) const {
+                return (id < m_svc_access_flags.GetCount()) && m_svc_access_flags[id];
+            }
+
             constexpr bool IsPermittedInterrupt(u32 id) const {
                 return (id < m_irq_access_flags.GetCount()) && m_irq_access_flags[id];
             }

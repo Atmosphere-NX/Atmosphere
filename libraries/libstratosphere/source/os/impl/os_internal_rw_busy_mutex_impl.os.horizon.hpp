@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "os_disable_counter.os.horizon.hpp"
 
 namespace ams::os::impl {
 
@@ -79,6 +80,9 @@ namespace ams::os::impl {
         const auto cur_dc = tlr->disable_count;
         AMS_ABORT_UNLESS(cur_dc < std::numeric_limits<decltype(cur_dc)>::max());
         const auto next_dc = cur_dc + 1;
+
+        /* Check that we're allowed to use busy mutexes. */
+        CallCheckBusyMutexPermission();
 
         /* Get pointer to our value. */
         u32 * const p = std::addressof(m_value);
@@ -161,6 +165,9 @@ namespace ams::os::impl {
         const auto cur_dc = tlr->disable_count;
         AMS_ABORT_UNLESS(cur_dc < std::numeric_limits<decltype(cur_dc)>::max());
         const auto next_dc = cur_dc + 1;
+
+        /* Check that we're allowed to use busy mutexes. */
+        CallCheckBusyMutexPermission();
 
         /* Get pointer to our value. */
         u32 * const p = std::addressof(m_value);
