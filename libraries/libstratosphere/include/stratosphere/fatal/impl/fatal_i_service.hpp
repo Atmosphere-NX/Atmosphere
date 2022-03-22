@@ -19,7 +19,7 @@
 #include <stratosphere/fatal/fatal_types.hpp>
 #include <stratosphere/sf.hpp>
 
-#define AMS_FATAL_I_SERVICE_INTERFACE_INFO(C, H)                                                                                                                                                                     \
+#define AMS_FATAL_I_SERVICE_INTERFACE_INFO(C, H)                                                                                                                                                                            \
     AMS_SF_METHOD_INFO(C, H, 0, Result, ThrowFatal,               (Result error, const sf::ClientProcessId &client_pid),                                                              (error, client_pid))                  \
     AMS_SF_METHOD_INFO(C, H, 1, Result, ThrowFatalWithPolicy,     (Result error, const sf::ClientProcessId &client_pid, fatal::FatalPolicy policy),                                   (error, client_pid, policy))          \
     AMS_SF_METHOD_INFO(C, H, 2, Result, ThrowFatalWithCpuContext, (Result error, const sf::ClientProcessId &client_pid, fatal::FatalPolicy policy, const fatal::CpuContext &cpu_ctx), (error, client_pid, policy, cpu_ctx))

@@ -24,6 +24,7 @@ namespace ams::fatal::srv {
             Result ThrowFatalWithPolicy(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy);
             Result ThrowFatalWithCpuContext(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx);
             Result GetFatalEvent(sf::OutCopyHandle out_h);
+            Result GetFatalContext(sf::Out<Result> out_error, sf::Out<ncm::ProgramId> out_program_id, sf::Out<fatal::FatalPolicy> out_policy, sf::Out<fatal::CpuContext> out_ctx);
     };
     static_assert(fatal::impl::IsIService<Service>);
     static_assert(fatal::impl::IsIPrivateService<Service>);
