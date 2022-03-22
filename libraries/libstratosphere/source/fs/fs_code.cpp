@@ -134,7 +134,7 @@ namespace ams::fs {
             }
 
             /* Create a file storage for the program's package. */
-            auto package_storage = std::make_shared<FileStorage>(std::move(package_file));
+            auto package_storage = fs::AllocateShared<FileStorage>(std::move(package_file));
             R_UNLESS(package_storage != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             /* Create a partition filesystem. */
@@ -177,7 +177,7 @@ namespace ams::fs {
             R_TRY(fsp->OpenSdCardFileSystem(std::addressof(fs)));
 
             /* Allocate a new filesystem wrapper. */
-            auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+            auto fsa = fs::AllocateShared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
             R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInCodeA());
 
             *out = std::move(fsa);

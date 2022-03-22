@@ -75,33 +75,33 @@ dist-no-debug: package3 $(CURRENT_DIRECTORY)/$(ATMOSPHERE_OUT_DIR)
 	cp -r config_templates/kip_patches $(DIST_DIR)/atmosphere/kip_patches
 	cp -r config_templates/hbl_html $(DIST_DIR)/atmosphere/hbl_html
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000008
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000000D
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000000d
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000017
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000002B
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000002b
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000032
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000034
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000036
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000037
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003C
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000042
 	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000420
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000B240
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000D609
-	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000D623
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d609
+	mkdir -p $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623
 	cp stratosphere/boot2/$(ATMOSPHERE_OUT_DIR)/boot2.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000008/exefs.nsp
-	cp stratosphere/dmnt/$(ATMOSPHERE_OUT_DIR)/dmnt.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000000D/exefs.nsp
+	cp stratosphere/dmnt/$(ATMOSPHERE_OUT_DIR)/dmnt.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000000d/exefs.nsp
 	cp stratosphere/cs/$(ATMOSPHERE_OUT_DIR)/cs.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000017/exefs.nsp
-	cp stratosphere/erpt/$(ATMOSPHERE_OUT_DIR)/erpt.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000002B/exefs.nsp
+	cp stratosphere/erpt/$(ATMOSPHERE_OUT_DIR)/erpt.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000002b/exefs.nsp
 	cp stratosphere/eclct.stub/$(ATMOSPHERE_OUT_DIR)/eclct.stub.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000032/exefs.nsp
 	cp stratosphere/fatal/$(ATMOSPHERE_OUT_DIR)/fatal.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000034/exefs.nsp
 	cp stratosphere/creport/$(ATMOSPHERE_OUT_DIR)/creport.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000036/exefs.nsp
 	cp stratosphere/ro/$(ATMOSPHERE_OUT_DIR)/ro.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000037/exefs.nsp
-	cp stratosphere/jpegdec/$(ATMOSPHERE_OUT_DIR)/jpegdec.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003C/exefs.nsp
+	cp stratosphere/jpegdec/$(ATMOSPHERE_OUT_DIR)/jpegdec.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000003c/exefs.nsp
 	cp stratosphere/pgl/$(ATMOSPHERE_OUT_DIR)/pgl.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000042/exefs.nsp
 	cp stratosphere/LogManager/$(ATMOSPHERE_OUT_DIR)/LogManager.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/0100000000000420/exefs.nsp
-	cp stratosphere/htc/$(ATMOSPHERE_OUT_DIR)/htc.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000B240/exefs.nsp
-	cp stratosphere/dmnt.gen2/$(ATMOSPHERE_OUT_DIR)/dmnt.gen2.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000D609/exefs.nsp
-	cp stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000D623/exefs.nsp
+	cp stratosphere/htc/$(ATMOSPHERE_OUT_DIR)/htc.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000b240/exefs.nsp
+	cp stratosphere/dmnt.gen2/$(ATMOSPHERE_OUT_DIR)/dmnt.gen2.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d609/exefs.nsp
+	cp stratosphere/TioServer/$(ATMOSPHERE_OUT_DIR)/TioServer.nsp $(DIST_DIR)/stratosphere_romfs/atmosphere/contents/010000000000d623/exefs.nsp
 	@build_romfs $(DIST_DIR)/stratosphere_romfs $(DIST_DIR)/atmosphere/stratosphere.romfs
 	rm -r $(DIST_DIR)/stratosphere_romfs
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro $(DIST_DIR)/switch/reboot_to_payload.nro

@@ -79,7 +79,7 @@ namespace ams::fs {
         R_TRY(fsp->OpenSdCardFileSystem(std::addressof(fs)));
 
         /* Allocate a new filesystem wrapper. */
-        auto fsa = std::make_shared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
+        auto fsa = fs::AllocateShared<impl::FileSystemServiceObjectAdapter>(std::move(fs));
         R_UNLESS(fsa != nullptr, fs::ResultAllocationMemoryFailedInSdCardA());
 
         /* Ensure that the error report directory exists. */
