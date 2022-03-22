@@ -96,6 +96,7 @@ namespace ams::ncm {
         static const SystemProgramId Nd;
         static const SystemProgramId Ngct;
         static const SystemProgramId Pgl;
+        static const SystemProgramId Omm;
 
         static const SystemProgramId End;
 
@@ -201,6 +202,7 @@ namespace ams::ncm {
     inline constexpr const SystemProgramId SystemProgramId::Nd          = { 0x0100000000000040ul };
     inline constexpr const SystemProgramId SystemProgramId::Ngct        = { 0x0100000000000041ul };
     inline constexpr const SystemProgramId SystemProgramId::Pgl         = { 0x0100000000000042ul };
+    inline constexpr const SystemProgramId SystemProgramId::Omm         = { 0x0100000000000045ul };
 
     inline constexpr const SystemProgramId SystemProgramId::End   = { 0x01000000000007FFul };
 
