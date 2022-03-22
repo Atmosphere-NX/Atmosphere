@@ -68,13 +68,16 @@ namespace ams::sprofile::srv {
                 /* Import the service revision key. */
                 m_revision_key = meta.revision_key;
 
+                /* Set importing count. */
+                m_importing_count = static_cast<int>(std::min<size_t>(meta.num_entries, util::size(meta.entries)));
+
                 /* Set all profiles as importable. */
-                for (auto i = 0u; i < std::min<size_t>(meta.num_entries, util::size(meta.entries)); ++i) {
+                for (auto i = 0; i < m_importing_count; ++i) {
                     m_is_profile_importable[i] = true;
                 }
 
                 /* Determine import status for all profiles. */
-                for (auto i = 0u; i < std::min<size_t>(meta.num_entries, util::size(meta.entries)); ++i) {
+                for (auto i = 0; i < m_importing_count; ++i) {
                     const auto &import_entry = meta.entries[i];
 
                     const bool is_new_import = !this->HasProfile(import_entry.identifier_0, import_entry.identifier_1);
