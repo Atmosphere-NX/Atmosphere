@@ -37,7 +37,7 @@ namespace ams::fatal::srv {
                 Result TrySetHasThrown() {
                     R_UNLESS(!m_has_thrown, fatal::ResultAlreadyThrown());
                     m_has_thrown = true;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             public:
                 ServiceContext()
@@ -48,15 +48,25 @@ namespace ams::fatal::srv {
                 }
 
                 Result GetEvent(const os::SystemEventType **out) {
-                    return m_event_manager.GetEvent(out);
+                    R_RETURN(m_event_manager.GetEvent(out));
+                }
+
+                Result GetThrowContext(Result *out_error, ncm::ProgramId *out_program_id, FatalPolicy *out_policy, CpuContext *out_ctx) {
+                    /* Set the output. */
+                    *out_error      = m_context.result;
+                    *out_program_id = m_context.throw_program_id;
+                    *out_policy     = m_context.policy;
+                    *out_ctx        = m_context.cpu_ctx;
+
+                    R_SUCCEED();
                 }
 
                 Result ThrowFatal(Result result, os::ProcessId process_id) {
-                    return this->ThrowFatalWithCpuContext(result, process_id, FatalPolicy_ErrorReportAndErrorScreen, {});
+                    R_RETURN(this->ThrowFatalWithCpuContext(result, process_id, FatalPolicy_ErrorReportAndErrorScreen, {}));
                 }
 
                 Result ThrowFatalWithPolicy(Result result, os::ProcessId process_id, FatalPolicy policy) {
-                    return this->ThrowFatalWithCpuContext(result, process_id, policy, {});
+                    R_RETURN(this->ThrowFatalWithCpuContext(result, process_id, policy, {}));
                 }
 
                 Result ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx);
@@ -74,8 +84,9 @@ namespace ams::fatal::srv {
             R_TRY(this->TrySetHasThrown());
 
             /* At this point we have exclusive access to m_context. */
-            m_context.result = result;
+            m_context.result  = result;
             m_context.cpu_ctx = cpu_ctx;
+            m_context.policy  = policy;
 
             /* Cap the stack trace to a sane limit. */
             if (cpu_ctx.architecture == CpuContext::Architecture_Aarch64) {
@@ -85,10 +96,13 @@ namespace ams::fatal::srv {
             }
 
             /* Get program id. */
-            pm::info::GetProgramId(std::addressof(m_context.program_id), process_id);
-            m_context.is_creport = (m_context.program_id == ncm::SystemProgramId::Creport);
+            pm::info::GetProgramId(std::addressof(m_context.throw_program_id), process_id);
+            m_context.is_creport = (m_context.throw_program_id == ncm::SystemProgramId::Creport);
+
 
             if (!m_context.is_creport) {
+                m_context.program_id = m_context.throw_program_id;
+
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
                 if (hos::GetVersion() >= hos::Version_2_0_0) {
                     fatal::srv::TryCollectDebugInformation(std::addressof(m_context), process_id);
@@ -124,32 +138,36 @@ namespace ams::fatal::srv {
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
 
     Result ThrowFatalForSelf(Result result) {
-        return g_context.ThrowFatalWithPolicy(result, os::GetCurrentProcessId(), FatalPolicy_ErrorScreen);
+        R_RETURN(g_context.ThrowFatalWithPolicy(result, os::GetCurrentProcessId(), FatalPolicy_ErrorScreen));
     }
 
     Result Service::ThrowFatal(Result result, const sf::ClientProcessId &client_pid) {
-        return g_context.ThrowFatal(result, client_pid.GetValue());
+        R_RETURN(g_context.ThrowFatal(result, client_pid.GetValue()));
     }
 
     Result Service::ThrowFatalWithPolicy(Result result, const sf::ClientProcessId &client_pid, FatalPolicy policy) {
-        return g_context.ThrowFatalWithPolicy(result, client_pid.GetValue(), policy);
+        R_RETURN(g_context.ThrowFatalWithPolicy(result, client_pid.GetValue(), policy));
     }
 
     Result Service::ThrowFatalWithCpuContext(Result result, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx) {
-        return g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx);
+        R_RETURN(g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx));
     }
 
     Result Service::GetFatalEvent(sf::OutCopyHandle out_h) {
         const os::SystemEventType *event;
         R_TRY(g_context.GetEvent(std::addressof(event)));
         out_h.SetValue(os::GetReadableHandleOfSystemEvent(event), false);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result Service::GetFatalContext(sf::Out<Result> out_error, sf::Out<ncm::ProgramId> out_program_id, sf::Out<fatal::FatalPolicy> out_policy, sf::Out<fatal::CpuContext> out_ctx) {
+        R_RETURN(g_context.GetThrowContext(out_error.GetPointer(), out_program_id.GetPointer(), out_policy.GetPointer(), out_ctx.GetPointer()));
     }
 
 }

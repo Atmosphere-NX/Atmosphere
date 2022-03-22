@@ -19,7 +19,8 @@
 #include <stratosphere/fatal/fatal_types.hpp>
 #include <stratosphere/sf.hpp>
 
-#define AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H)                                   \
-    AMS_SF_METHOD_INFO(C, H, 0, Result, GetFatalEvent, (sf::OutCopyHandle out_h), (out_h))
+#define AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H)                                                                                                                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, GetFatalEvent,   (sf::OutCopyHandle out_h),                                                                                                                       (out_h))                                          \
+    AMS_SF_METHOD_INFO(C, H, 10, Result, GetFatalContext, (sf::Out<Result> out_error, sf::Out<ncm::ProgramId> out_program_id, sf::Out<fatal::FatalPolicy> out_policy, sf::Out<fatal::CpuContext> out_ctx), (out_error, out_program_id, out_policy, out_ctx))
 
 AMS_SF_DEFINE_INTERFACE(ams::fatal::impl, IPrivateService, AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO)

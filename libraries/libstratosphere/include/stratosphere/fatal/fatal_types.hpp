@@ -21,7 +21,7 @@
 
 namespace ams::fatal {
 
-    enum FatalPolicy {
+    enum FatalPolicy : u32 {
         FatalPolicy_ErrorReportAndErrorScreen = 0,
         FatalPolicy_ErrorReport               = 1,
         FatalPolicy_ErrorScreen               = 2
@@ -474,7 +474,9 @@ namespace ams::fatal {
 
         struct ThrowContext {
             Result result;
+            FatalPolicy policy;
             ncm::ProgramId program_id;
+            ncm::ProgramId throw_program_id;
             char proc_name[0xD];
             bool is_creport;
             CpuContext cpu_ctx;
@@ -488,7 +490,7 @@ namespace ams::fatal {
             u8 tls_dump[0x100];
 
             ThrowContext(os::Event *erpt, os::Event *bat)
-                : result(ResultSuccess()), program_id(), proc_name(), is_creport(), cpu_ctx(), generate_error_report(),
+                : result(ResultSuccess()), policy(), program_id(), throw_program_id(), proc_name(), is_creport(), cpu_ctx(), generate_error_report(),
                   erpt_event(erpt), battery_event(bat),
                   stack_dump_size(), stack_dump_base(), stack_dump(), tls_address(), tls_dump()
             {
