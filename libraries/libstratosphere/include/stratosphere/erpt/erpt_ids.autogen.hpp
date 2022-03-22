@@ -819,11 +819,17 @@
     HANDLER(EdidExtensionBlock3,                                      640, EdidInfo,                            FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(LumenRequestId,                                           641, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
     HANDLER(LlnwLlid,                                                 642, ErrorInfo,                           FieldType_String,     FieldFlag_None   ) \
-    HANDLER(SupportingLimitedLicenses,                                643, RunningApplicationInfo,              FieldType_NumericU32, FieldFlag_None   ) \
-    HANDLER(RuntimeLimitedLicenseUpgrade,                             644, RunningApplicationInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(SupportingLimitedApplicationLicenses,                     643, RunningApplicationInfo,              FieldType_NumericU32, FieldFlag_None   ) \
+    HANDLER(RuntimeLimitedApplicationLicenseUpgrade,                  644, RunningApplicationInfo,              FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ServiceProfileRevisionKey,                                645, ServiceProfileInfo,                  FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(BluetoothAudioConnectionCount,                            646, BluetoothAudioInfo,                  FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothHidPairingInfoCount,                             647, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothAudioPairingInfoCount,                           648, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(BluetoothLePairingInfoCount,                              649, BluetoothPairingCountInfo,           FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(FatFsBisSystemFilePeakOpenCount,                          650, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisSystemDirectoryPeakOpenCount,                     651, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisUserFilePeakOpenCount,                            652, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsBisUserDirectoryPeakOpenCount,                       653, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsSdCardFilePeakOpenCount,                             654, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
+    HANDLER(FatFsSdCardDirectoryPeakOpenCount,                        655, FsProxyErrorInfo,                    FieldType_NumericU16, FieldFlag_None   ) \
 
