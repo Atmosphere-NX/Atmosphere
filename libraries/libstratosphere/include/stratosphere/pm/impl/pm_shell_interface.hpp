@@ -28,7 +28,7 @@
     AMS_SF_METHOD_INFO(C, H,  5, void,   NotifyBootFinished,                  (),                                                                                  ())                                               \
     AMS_SF_METHOD_INFO(C, H,  6, Result, GetApplicationProcessIdForShell,     (sf::Out<os::ProcessId> out),                                                        (out))                                            \
     AMS_SF_METHOD_INFO(C, H,  7, Result, BoostSystemMemoryResourceLimit,      (u64 boost_size),                                                                    (boost_size))                                     \
-    AMS_SF_METHOD_INFO(C, H,  8, Result, BoostApplicationThreadResourceLimit, (),                                                                                  (),                           hos::Version_7_0_0) \
+    AMS_SF_METHOD_INFO(C, H,  8, Result, BoostApplicationThreadResourceLimit, (),                                                                                  ())                                               \
     AMS_SF_METHOD_INFO(C, H,  9, void,   GetBootFinishedEventHandle,          (sf::OutCopyHandle out),                                                             (out),                        hos::Version_8_0_0) \
     AMS_SF_METHOD_INFO(C, H, 10, Result, BoostSystemThreadResourceLimit,      (),                                                                                  ())
 
