@@ -74,7 +74,7 @@ namespace ams::kern {
 
             explicit KHandleTable() : m_lock(), m_free_head_index(-1), m_count() { MESOSPHERE_ASSERT_THIS(); }
 
-            constexpr NOINLINE Result Initialize(s32 size) {
+            constexpr MESOSPHERE_NOINLINE_IF_DEBUG Result Initialize(s32 size) {
                 MESOSPHERE_ASSERT_THIS();
 
                 R_UNLESS(size <= static_cast<s32>(MaxTableSize), svc::ResultOutOfMemory());
@@ -100,8 +100,8 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE size_t GetCount() const { return m_count; }
             constexpr ALWAYS_INLINE size_t GetMaxCount() const { return m_max_count; }
 
-            NOINLINE Result Finalize();
-            NOINLINE bool Remove(ams::svc::Handle handle);
+            MESOSPHERE_NOINLINE_IF_DEBUG Result Finalize();
+            MESOSPHERE_NOINLINE_IF_DEBUG bool Remove(ams::svc::Handle handle);
 
             template<typename T = KAutoObject>
             ALWAYS_INLINE KScopedAutoObject<T> GetObjectWithoutPseudoHandle(ams::svc::Handle handle) const {
@@ -180,11 +180,11 @@ namespace ams::kern {
                 return this->GetObjectByIndexImpl(out_handle, index);
             }
 
-            NOINLINE Result Reserve(ams::svc::Handle *out_handle);
-            NOINLINE void Unreserve(ams::svc::Handle handle);
+            MESOSPHERE_NOINLINE_IF_DEBUG Result Reserve(ams::svc::Handle *out_handle);
+            MESOSPHERE_NOINLINE_IF_DEBUG void Unreserve(ams::svc::Handle handle);
 
-            NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj);
-            NOINLINE void Register(ams::svc::Handle handle, KAutoObject *obj);
+            MESOSPHERE_NOINLINE_IF_DEBUG Result Add(ams::svc::Handle *out_handle, KAutoObject *obj);
+            MESOSPHERE_NOINLINE_IF_DEBUG void Register(ams::svc::Handle handle, KAutoObject *obj);
 
             template<typename T>
             ALWAYS_INLINE bool GetMultipleObjects(T **out, const ams::svc::Handle *handles, size_t num_handles) const {
@@ -297,7 +297,7 @@ namespace ams::kern {
                 return true;
             }
 
-            constexpr NOINLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
+            constexpr MESOSPHERE_NOINLINE_IF_DEBUG KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Handles must not have reserved bits set. */

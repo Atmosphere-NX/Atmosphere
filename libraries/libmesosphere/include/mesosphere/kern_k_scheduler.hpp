@@ -126,7 +126,7 @@ namespace ams::kern {
                 GetCurrentThread().DisableDispatch();
             }
 
-            static ALWAYS_INLINE void EnableScheduling(u64 cores_needing_scheduling) {
+            static NOINLINE void EnableScheduling(u64 cores_needing_scheduling) {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 1);
 
                 GetCurrentScheduler().RescheduleOtherCores(cores_needing_scheduling);

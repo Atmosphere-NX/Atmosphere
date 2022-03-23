@@ -687,7 +687,7 @@ namespace ams::kern {
                 GetCurrentThread().DisableDispatch();
             }
 
-            ~KScopedDisableDispatch();
+            NOINLINE ~KScopedDisableDispatch();
     };
 
     ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {

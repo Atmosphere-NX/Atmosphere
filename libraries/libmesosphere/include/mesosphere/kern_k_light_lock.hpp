@@ -56,8 +56,8 @@ namespace ams::kern {
                 }
             }
 
-            bool LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
-            void UnlockSlowPath(uintptr_t cur_thread);
+            NOINLINE bool LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
+            NOINLINE void UnlockSlowPath(uintptr_t cur_thread);
 
             ALWAYS_INLINE bool IsLocked() const { return m_tag.Load() != 0; }
             ALWAYS_INLINE bool IsLockedByCurrentThread() const { return (m_tag.Load() | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
