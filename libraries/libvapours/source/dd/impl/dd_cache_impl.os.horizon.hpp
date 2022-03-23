@@ -37,7 +37,7 @@ namespace ams::dd::impl {
 
             /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
             tlr->cache_maintenance_flag = 1;
-            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; };
             #endif
 
             /* Invalidate the cache. */
@@ -77,7 +77,7 @@ namespace ams::dd::impl {
 
             /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
             tlr->cache_maintenance_flag = 1;
-            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; };
             #endif
 
             /* Invalidate the cache. */
