@@ -15,9 +15,10 @@
     + If you are a developer interested in adding support for another target, please reach out to `SciresM#0524` on discord.
   + This is intended to finally allow sanely testing Atmosphère's code, by allowing most of it to run on a PC (with access to a debugger) instead of on game console hardware.
   + In addition, this will allow making PC tools which reuse code written for Atmosphère directly..
-  + **Please Note**: This has no relation to interacting with official software on PC whatsoever. This does not and is not intended to enable anything with official software, it only really allows for making tests and self-contained atmosphère-based tools.
-  + In the course of adding this support (and working on tooling using it), a number of major revisions were added to stratosphere:
-    +
+  + **Please Note**: This has no relation to interacting with official software on PC whatsoever. This really allows for making tests and self-contained atmosphère-based command-line tools; the Atmosphère project continues to have zero interest in attempting to run official software of any kind.
+  + In the course of adding this support (and working on tooling using it), a number of fairly major revisions were made to stratosphere (particularly surrounding filesystem code).
+    + **Please Note**: A number of changes made for this (and ones necessary in the process of adding support for 14.0.0) are api-breaking.
+      + If you're a developer and any of this caused your code to break, please feel free to contact `SciresM#0524` for help updating your program.
 + General system stability improvements to enhance the user's experience.
 ## 1.2.6
 + Support was added for 13.2.1.
