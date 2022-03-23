@@ -41,8 +41,8 @@ namespace ams::fssystem {
         private:
             Result ResolveFullPath(fs::Path *out, const fs::Path &path) {
                 if (path.IsMatchHead(m_before_dir.GetString(), m_before_dir.GetLength())) {
-                    R_TRY(out->InitializeWithFormat("%s%s", m_after_dir.GetString(), path.GetString() + m_before_dir.GetLength()));
-                    R_TRY(out->Normalize(fs::PathFlags{}));
+                    R_TRY(out->Initialize(m_after_dir));
+                    R_TRY(out->AppendChild(path));
                 } else {
                     R_TRY(out->Initialize(path));
                 }

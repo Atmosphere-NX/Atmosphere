@@ -101,10 +101,9 @@ namespace ams::fs {
                 s32 i;
                 for (i = m_position; m_buffer[i] != StringTraits::DirectorySeparator; ++i) {
                     if (m_buffer[i] == StringTraits::NullTerminator) {
-                        if (i == m_position) {
-                            m_position = -1;
-                            return nullptr;
-                        }
+                        char * const ret = (i != m_position) ? m_buffer + m_position : nullptr;
+                        m_position = -1;
+                        return ret;
                     }
                 }
 
