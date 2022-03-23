@@ -88,17 +88,17 @@ namespace ams::kern::init::loader {
             cpu::MemoryAccessIndirectionRegisterAccessor(MairValue).Store();
             cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
+            /* Ensure that our configuration takes before proceeding. */
+            cpu::EnsureInstructionConsistency();
+
             /* Perform board-specific setup. */
             PerformBoardSpecificSetup();
-
-            /* Ensure that the entire cache is flushed. */
-            cpu::FlushEntireCacheForInit();
 
             /* Setup SCTLR_EL1. */
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
             constexpr u64 SctlrValue = 0x0000000034D5D925ul;
             cpu::SetSctlrEl1(SctlrValue);
-            cpu::EnsureInstructionConsistency();
+            cpu::InstructionMemoryBarrier();
         }
 
         KVirtualAddress GetRandomKernelBaseAddress(KInitialPageTable &page_table, KPhysicalAddress phys_base_address, size_t kernel_size) {

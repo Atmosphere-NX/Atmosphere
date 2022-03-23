@@ -570,13 +570,13 @@ namespace ams::kern::init {
         cpu::DebugFeatureRegisterAccessor aa64dfr0;
         const auto num_watchpoints = aa64dfr0.GetNumWatchpoints();
         const auto num_breakpoints = aa64dfr0.GetNumBreakpoints();
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
 
         /* Clear the debug monitor register and the os lock access register. */
         cpu::MonitorDebugSystemControlRegisterAccessor(0).Store();
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
         cpu::OsLockAccessRegisterAccessor(0).Store();
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
 
         /* Clear all debug watchpoints/breakpoints. */
         #define FOR_I_IN_15_TO_1(HANDLER, ...)                                                                              \
@@ -620,22 +620,22 @@ namespace ams::kern::init {
         #undef MESOSPHERE_INITIALIZE_BREAKPOINT_CASE
         #undef FOR_I_IN_15_TO_1
 
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
 
         /* Initialize the context id register to all 1s. */
         cpu::ContextIdRegisterAccessor(0).SetProcId(std::numeric_limits<u32>::max()).Store();
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
 
         /* Configure the debug monitor register. */
         cpu::MonitorDebugSystemControlRegisterAccessor(0).SetMde(true).SetTdcc(true).Store();
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
     }
 
     void InitializeExceptionVectors() {
         cpu::SetVbarEl1(reinterpret_cast<uintptr_t>(::ams::kern::ExceptionVectors));
         cpu::SetTpidrEl1(0);
         cpu::SetExceptionThreadStackTop(0);
-        cpu::EnsureInstructionConsistency();
+        cpu::EnsureInstructionConsistencyFullSystem();
     }
 
     size_t GetMiscUnknownDebugRegionSize() {

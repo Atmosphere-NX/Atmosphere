@@ -48,6 +48,10 @@ namespace ams::kern::arch::arm64::cpu {
         __asm__ __volatile__("dsb ish" ::: "memory");
     }
 
+    ALWAYS_INLINE void DataSynchronizationBarrierInnerShareableStore() {
+        __asm__ __volatile__("dsb ishst" ::: "memory");
+    }
+
     ALWAYS_INLINE void DataMemoryBarrier() {
         __asm__ __volatile__("dmb sy" ::: "memory");
     }
@@ -56,16 +60,20 @@ namespace ams::kern::arch::arm64::cpu {
         __asm__ __volatile__("dmb ish" ::: "memory");
     }
 
+    ALWAYS_INLINE void DataMemoryBarrierInnerShareableStore() {
+        __asm__ __volatile__("dmb ishst" ::: "memory");
+    }
+
     ALWAYS_INLINE void InstructionMemoryBarrier() {
         __asm__ __volatile__("isb" ::: "memory");
     }
 
-    ALWAYS_INLINE void EnsureInstructionConsistencyInnerShareable() {
+    ALWAYS_INLINE void EnsureInstructionConsistency() {
         DataSynchronizationBarrierInnerShareable();
         InstructionMemoryBarrier();
     }
 
-    ALWAYS_INLINE void EnsureInstructionConsistency() {
+    ALWAYS_INLINE void EnsureInstructionConsistencyFullSystem() {
         DataSynchronizationBarrier();
         InstructionMemoryBarrier();
     }
@@ -182,28 +190,23 @@ namespace ams::kern::arch::arm64::cpu {
     NOINLINE void SynchronizeAllCores();
 
     /* Cache management helpers. */
-    void StoreEntireCacheForInit();
-    void FlushEntireCacheForInit();
+    void StoreCacheForInit(void *addr, size_t size);
 
     void FlushEntireDataCache();
 
     Result InvalidateDataCache(void *addr, size_t size);
     Result StoreDataCache(const void *addr, size_t size);
     Result FlushDataCache(const void *addr, size_t size);
-    Result InvalidateInstructionCache(void *addr, size_t size);
 
     void InvalidateEntireInstructionCache();
+
+    void ClearPageToZeroImpl(void *);
 
     ALWAYS_INLINE void ClearPageToZero(void * const page) {
         MESOSPHERE_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(page), PageSize));
         MESOSPHERE_ASSERT(page != nullptr);
 
-        uintptr_t cur = reinterpret_cast<uintptr_t>(__builtin_assume_aligned(page, PageSize));
-        const uintptr_t last = cur + PageSize - DataCacheLineSize;
-
-        for (/* ... */; cur <= last; cur += DataCacheLineSize) {
-            __asm__ __volatile__("dc zva, %[cur]" :: [cur]"r"(cur) : "memory");
-        }
+        ClearPageToZeroImpl(page);
     }
 
     ALWAYS_INLINE void InvalidateTlbByAsid(u32 asid) {
@@ -223,20 +226,15 @@ namespace ams::kern::arch::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
-    ALWAYS_INLINE void InvalidateEntireTlbInnerShareable() {
-        __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
-        EnsureInstructionConsistencyInnerShareable();
-    }
-
     ALWAYS_INLINE void InvalidateEntireTlbDataOnly() {
         __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
-        DataSynchronizationBarrier();
+        DataSynchronizationBarrierInnerShareable();
     }
 
     ALWAYS_INLINE void InvalidateTlbByVaDataOnly(KProcessAddress virt_addr) {
         const u64 value = ((GetInteger(virt_addr) >> 12) & 0xFFFFFFFFFFFul);
         __asm__ __volatile__("tlbi vaae1is, %[value]" :: [value]"r"(value) : "memory");
-        DataSynchronizationBarrier();
+        DataSynchronizationBarrierInnerShareable();
     }
 
     ALWAYS_INLINE uintptr_t GetCurrentThreadPointerValue() {

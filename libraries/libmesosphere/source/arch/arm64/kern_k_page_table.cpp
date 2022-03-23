@@ -158,6 +158,32 @@ namespace ams::kern::arch::arm64 {
 
     }
 
+    ALWAYS_INLINE void KPageTable::NoteUpdated() const {
+        cpu::DataSynchronizationBarrierInnerShareableStore();
+
+        /* Mark ourselves as in a tlb maintenance operation. */
+        GetCurrentThread().SetInTlbMaintenanceOperation();
+        ON_SCOPE_EXIT { GetCurrentThread().ClearInTlbMaintenanceOperation(); __asm__ __volatile__("" ::: "memory"); };
+
+        if (this->IsKernel()) {
+            this->OnKernelTableUpdated();
+        } else {
+            this->OnTableUpdated();
+        }
+    }
+
+    ALWAYS_INLINE void KPageTable::NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
+        MESOSPHERE_ASSERT(this->IsKernel());
+
+        cpu::DataSynchronizationBarrierInnerShareableStore();
+
+        /* Mark ourselves as in a tlb maintenance operation. */
+        GetCurrentThread().SetInTlbMaintenanceOperation();
+        ON_SCOPE_EXIT { GetCurrentThread().ClearInTlbMaintenanceOperation(); __asm__ __volatile__("" ::: "memory"); };
+
+        this->OnKernelTableSinglePageUpdated(virt_addr);
+    }
+
     void KPageTable::Initialize(s32 core_id) {
         /* Nothing actually needed here. */
         MESOSPHERE_UNUSED(core_id);
@@ -412,9 +438,8 @@ namespace ams::kern::arch::arm64 {
 
                     /* Set the entry. */
                     l2_phys = GetPageTablePhysicalAddress(l2_virt);
-                    PteDataSynchronizationBarrier();
+                    PteDataMemoryBarrier();
                     *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
-                    PteDataSynchronizationBarrier();
                 } else {
                     l2_virt = GetPageTableVirtualAddress(l2_phys);
                 }
@@ -477,9 +502,8 @@ namespace ams::kern::arch::arm64 {
 
                         /* Set the entry. */
                         l2_phys = GetPageTablePhysicalAddress(l2_virt);
-                        PteDataSynchronizationBarrier();
+                        PteDataMemoryBarrier();
                         *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
-                        PteDataSynchronizationBarrier();
                         l2_allocated = true;
                     } else {
                         l2_virt = GetPageTableVirtualAddress(l2_phys);
@@ -505,9 +529,8 @@ namespace ams::kern::arch::arm64 {
 
                         /* Set the entry. */
                         l3_phys = GetPageTablePhysicalAddress(l3_virt);
-                        PteDataSynchronizationBarrier();
+                        PteDataMemoryBarrier();
                         *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, l3_phys, this->IsKernel(), true);
-                        PteDataSynchronizationBarrier();
                         l2_open_count++;
                 } else {
                     l3_virt = GetPageTableVirtualAddress(l3_phys);
@@ -631,7 +654,7 @@ namespace ams::kern::arch::arm64 {
                         for (size_t i = 0; i < num_l2_blocks; i++) {
                             *impl.GetL2EntryFromTable(l2_virt, virt_addr + L2BlockSize * i) = InvalidL2PageTableEntry;
                         }
-                        PteDataSynchronizationBarrier();
+                        PteDataMemoryBarrier();
 
                         /* Close references to the L2 table. */
                         if (this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
@@ -665,7 +688,7 @@ namespace ams::kern::arch::arm64 {
                         for (size_t i = 0; i < num_l3_blocks; i++) {
                             *impl.GetL3EntryFromTable(l3_virt, virt_addr + L3BlockSize * i) = InvalidL3PageTableEntry;
                         }
-                        PteDataSynchronizationBarrier();
+                        PteDataMemoryBarrier();
 
                         /* Close references to the L3 table. */
                         if (this->GetPageTableManager().IsInPageTableHeap(l3_virt)) {
@@ -783,6 +806,9 @@ namespace ams::kern::arch::arm64 {
             this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
         }
 
+        /* Wait for pending stores to complete. */
+        cpu::DataSynchronizationBarrierInnerShareableStore();
+
         /* Open references to the pages, if we should. */
         if (IsHeapPhysicalAddress(orig_phys_addr)) {
             Kernel::GetMemoryManager().Open(orig_phys_addr, num_pages);
@@ -878,6 +904,9 @@ namespace ams::kern::arch::arm64 {
             this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
         }
 
+        /* Wait for pending stores to complete. */
+        cpu::DataSynchronizationBarrierInnerShareableStore();
+
         /* We succeeded! We want to persist the reference to the pages. */
         spg.CancelClose();
         R_SUCCEED();
@@ -967,7 +996,6 @@ namespace ams::kern::arch::arm64 {
             auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
 
             /* Merge! */
-            PteDataSynchronizationBarrier();
             *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
 
             /* Note that we updated. */
@@ -1049,7 +1077,6 @@ namespace ams::kern::arch::arm64 {
         auto sw_reserved_bits = PageTableEntry::EncodeSoftwareReservedBits(head_entry->IsHeadMergeDisabled(), head_entry->IsHeadAndBodyMergeDisabled(), tail_entry->IsTailMergeDisabled());
 
         /* Merge! */
-        /* NOTE: As of 13.1.0, Nintendo does not do: PteDataSynchronizationBarrier(); */
         *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), sw_reserved_bits, false);
 
         /* Note that we updated. */
@@ -1097,7 +1124,7 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l2_table, L1BlockSize / L2BlockSize);
 
             /* Replace the L1 entry with one to the new table. */
-            PteDataSynchronizationBarrier();
+            PteDataMemoryBarrier();
             *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
             this->NoteUpdated();
         }
@@ -1147,7 +1174,7 @@ namespace ams::kern::arch::arm64 {
             this->GetPageTableManager().Open(l3_table, L2BlockSize / L3BlockSize);
 
             /* Replace the L2 entry with one to the new table. */
-            PteDataSynchronizationBarrier();
+            PteDataMemoryBarrier();
             *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, l3_phys, this->IsKernel(), true);
             this->NoteUpdated();
         }

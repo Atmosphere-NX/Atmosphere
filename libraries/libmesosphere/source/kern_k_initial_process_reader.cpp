@@ -179,13 +179,7 @@ namespace ams::kern {
             }
         }
 
-        /* Flush caches. */
-        /* NOTE: This seems incorrect according to arm spec, which says not to flush via set/way after boot. */
-        /* However, Nintendo flushes the entire cache here and not doing so has caused reports of abort with ESR_EL1 */
-        /* as 0x02000000 (unknown abort) to occur. */
         MESOSPHERE_UNUSED(params);
-        cpu::FlushEntireDataCache();
-        cpu::InvalidateEntireInstructionCache();
 
         R_SUCCEED();
     }

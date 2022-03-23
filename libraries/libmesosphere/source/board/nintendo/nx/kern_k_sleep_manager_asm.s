@@ -278,6 +278,9 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
 .global     _ZN3ams4kern5board8nintendo2nx13KSleepManager33InvalidateDataCacheForResumeEntryEm
 .type       _ZN3ams4kern5board8nintendo2nx13KSleepManager33InvalidateDataCacheForResumeEntryEm, %function
 _ZN3ams4kern5board8nintendo2nx13KSleepManager33InvalidateDataCacheForResumeEntryEm:
+    /* cpu::DataSynchronizationBarrier(); */
+    dsb     sy
+
     /* const u64 level_sel_value = level << 1; */
     lsl     x8, x0, #1
 
