@@ -19,6 +19,6 @@
 
 namespace ams::mitm::sysupdater {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_sysupdater, IpcServer));
+    DEFINE_MITM_MODULE_CLASS(0xC000, AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_sysupdater, IpcServer));
 
 }
