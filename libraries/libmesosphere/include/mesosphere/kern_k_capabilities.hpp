@@ -239,78 +239,7 @@ namespace ams::kern {
             constexpr u64 GetPriorityMask() const { return m_priority_mask; }
             constexpr s32 GetHandleTableSize() const { return m_handle_table_size; }
 
-            ALWAYS_INLINE void CopySvcPermissionsTo(KThread::StackParameters &sp) const {
-                /* Copy permissions. */
-                sp.svc_access_flags = m_svc_access_flags;
-
-                /* Clear specific SVCs based on our state. */
-                sp.svc_access_flags[svc::SvcId_ReturnFromException]        = false;
-                sp.svc_access_flags[svc::SvcId_SynchronizePreemptionState] = false;
-                if (sp.is_pinned) {
-                    sp.svc_access_flags[svc::SvcId_GetInfo] = false;
-                }
-            }
-
-            ALWAYS_INLINE void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
-                /* Get whether we have access to return from exception. */
-                const bool return_from_exception = sp.svc_access_flags[svc::SvcId_ReturnFromException];
-
-                /* Clear all permissions. */
-                sp.svc_access_flags.Reset();
-
-                /* Set SynchronizePreemptionState if allowed. */
-                if (m_svc_access_flags[svc::SvcId_SynchronizePreemptionState]) {
-                    sp.svc_access_flags[svc::SvcId_SynchronizePreemptionState] = true;
-                }
-
-                /* If we previously had ReturnFromException, potentially grant it and GetInfo. */
-                if (return_from_exception) {
-                    /* Set ReturnFromException (guaranteed allowed, if we're here). */
-                    sp.svc_access_flags[svc::SvcId_ReturnFromException] = true;
-
-                    /* Set GetInfo if allowed. */
-                    if (m_svc_access_flags[svc::SvcId_GetInfo]) {
-                        sp.svc_access_flags[svc::SvcId_GetInfo] = true;
-                    }
-                }
-            }
-
-            ALWAYS_INLINE void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
-                /* Get whether we have access to return from exception. */
-                const bool return_from_exception = sp.svc_access_flags[svc::SvcId_ReturnFromException];
-
-                /* Copy permissions. */
-                sp.svc_access_flags = m_svc_access_flags;
-
-                /* Clear specific SVCs based on our state. */
-                sp.svc_access_flags[svc::SvcId_SynchronizePreemptionState] = false;
-
-                if (!return_from_exception) {
-                    sp.svc_access_flags[svc::SvcId_ReturnFromException] = false;
-                }
-            }
-
-            ALWAYS_INLINE void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) const {
-                /* Set ReturnFromException if allowed. */
-                if (m_svc_access_flags[svc::SvcId_ReturnFromException]) {
-                    sp.svc_access_flags[svc::SvcId_ReturnFromException] = true;
-                }
-
-                /* Set GetInfo if allowed. */
-                if (m_svc_access_flags[svc::SvcId_GetInfo]) {
-                    sp.svc_access_flags[svc::SvcId_GetInfo] = true;
-                }
-            }
-
-            ALWAYS_INLINE void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) const {
-                /* Clear ReturnFromException. */
-                sp.svc_access_flags[svc::SvcId_ReturnFromException] = false;
-
-                /* If pinned, clear GetInfo. */
-                if (sp.is_pinned) {
-                    sp.svc_access_flags[svc::SvcId_GetInfo] = false;
-                }
-            }
+            constexpr const svc::SvcAccessFlagSet &GetSvcPermissions() const { return m_svc_access_flags; }
 
             constexpr bool IsPermittedSvc(svc::SvcId id) const {
                 return (id < m_svc_access_flags.GetCount()) && m_svc_access_flags[id];

@@ -68,6 +68,91 @@ namespace ams::kern {
 
     }
 
+    ALWAYS_INLINE void KThread::SetPinnedSvcPermissions() {
+        /* Get our stack parameters. */
+        auto &sp = this->GetStackParameters();
+
+        /* Get our parent's svc permissions. */
+        MESOSPHERE_ASSERT(m_parent != nullptr);
+        const auto &svc_permissions = m_parent->GetSvcPermissions();
+
+        /* Get whether we have access to return from exception. */
+        const bool return_from_exception = sp.svc_access_flags[svc::SvcId_ReturnFromException];
+
+        /* Clear all permissions. */
+        sp.svc_access_flags.Reset();
+
+        /* Set SynchronizePreemptionState if allowed. */
+        if (svc_permissions[svc::SvcId_SynchronizePreemptionState]) {
+            sp.svc_access_flags[svc::SvcId_SynchronizePreemptionState] = true;
+        }
+
+        /* If we previously had ReturnFromException, potentially grant it and GetInfo. */
+        if (return_from_exception) {
+            /* Set ReturnFromException (guaranteed allowed, if we're here). */
+            sp.svc_access_flags[svc::SvcId_ReturnFromException] = true;
+
+            /* Set GetInfo if allowed. */
+            if (svc_permissions[svc::SvcId_GetInfo]) {
+                sp.svc_access_flags[svc::SvcId_GetInfo] = true;
+            }
+        }
+    }
+
+    ALWAYS_INLINE void KThread::SetUnpinnedSvcPermissions() {
+        /* Get our stack parameters. */
+        auto &sp = this->GetStackParameters();
+
+        /* Get our parent's svc permissions. */
+        MESOSPHERE_ASSERT(m_parent != nullptr);
+        const auto &svc_permissions = m_parent->GetSvcPermissions();
+
+        /* Get whether we have access to return from exception. */
+        const bool return_from_exception = sp.svc_access_flags[svc::SvcId_ReturnFromException];
+
+        /* Copy permissions. */
+        sp.svc_access_flags = svc_permissions;
+
+        /* Clear specific SVCs based on our state. */
+        sp.svc_access_flags[svc::SvcId_SynchronizePreemptionState] = false;
+
+        if (!return_from_exception) {
+            sp.svc_access_flags[svc::SvcId_ReturnFromException] = false;
+        }
+    }
+
+    ALWAYS_INLINE void KThread::SetUsermodeExceptionSvcPermissions() {
+        /* Get our stack parameters. */
+        auto &sp = this->GetStackParameters();
+
+        /* Get our parent's svc permissions. */
+        MESOSPHERE_ASSERT(m_parent != nullptr);
+        const auto &svc_permissions = m_parent->GetSvcPermissions();
+
+        /* Set ReturnFromException if allowed. */
+        if (svc_permissions[svc::SvcId_ReturnFromException]) {
+            sp.svc_access_flags[svc::SvcId_ReturnFromException] = true;
+        }
+
+        /* Set GetInfo if allowed. */
+        if (svc_permissions[svc::SvcId_GetInfo]) {
+            sp.svc_access_flags[svc::SvcId_GetInfo] = true;
+        }
+    }
+
+    ALWAYS_INLINE void KThread::ClearUsermodeExceptionSvcPermissions() {
+        /* Get our stack parameters. */
+        auto &sp = this->GetStackParameters();
+
+        /* Clear ReturnFromException. */
+        sp.svc_access_flags[svc::SvcId_ReturnFromException] = false;
+
+        /* If pinned, clear GetInfo. */
+        if (sp.is_pinned) {
+            sp.svc_access_flags[svc::SvcId_GetInfo] = false;
+        }
+    }
+
     Result KThread::Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type) {
         /* Assert parameters are valid. */
         MESOSPHERE_ASSERT_THIS();
@@ -209,17 +294,22 @@ namespace ams::kern {
         const bool is_64_bit = m_parent ? m_parent->Is64Bit() : IsDefault64Bit;
         const bool is_user = (type == ThreadType_User);
         const bool is_main = (type == ThreadType_Main);
-        m_thread_context.Initialize(reinterpret_cast<uintptr_t>(func), reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
+        this->GetContext().Initialize(reinterpret_cast<uintptr_t>(func), reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
 
         /* Setup the stack parameters. */
         StackParameters &sp = this->GetStackParameters();
         if (m_parent != nullptr) {
-            m_parent->CopySvcPermissionsTo(sp);
+            this->SetUnpinnedSvcPermissions();
+            this->ClearUsermodeExceptionSvcPermissions();
         }
-        sp.context = std::addressof(m_thread_context);
-        sp.cur_thread = this;
-        sp.disable_count = 1;
+        sp.caller_save_fpu_registers = std::addressof(m_caller_save_fpu_registers);
+        sp.cur_thread                = this;
+        sp.disable_count             = 1;
         this->SetInExceptionHandler();
+
+        if (m_parent != nullptr && is_64_bit) {
+            this->SetFpu64Bit();
+        }
 
         /* Set thread ID. */
         m_thread_id = g_thread_id++;
@@ -329,9 +419,6 @@ namespace ams::kern {
             }
         }
 
-        /* Finalize the thread context. */
-        m_thread_context.Finalize();
-
         /* Cleanup the kernel stack. */
         if (m_kernel_stack_top != nullptr) {
             CleanupKernelStack(reinterpret_cast<uintptr_t>(m_kernel_stack_top));
@@ -411,6 +498,16 @@ namespace ams::kern {
         this->FinishTermination();
     }
 
+    void KThread::OnEnterUsermodeException() {
+        this->SetUsermodeExceptionSvcPermissions();
+        this->SetInUsermodeExceptionHandler();
+    }
+
+    void KThread::OnLeaveUsermodeException() {
+        this->ClearUsermodeExceptionSvcPermissions();
+        this->ClearInUsermodeExceptionHandler();
+    }
+
     void KThread::Pin() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
@@ -458,8 +555,7 @@ namespace ams::kern {
         }
 
         /* Update our SVC access permissions. */
-        MESOSPHERE_ASSERT(m_parent != nullptr);
-        m_parent->CopyPinnedSvcPermissionsTo(this->GetStackParameters());
+        this->SetPinnedSvcPermissions();
     }
 
     void KThread::Unpin() {
@@ -507,7 +603,7 @@ namespace ams::kern {
 
             /* Update our SVC access permissions. */
             MESOSPHERE_ASSERT(m_parent != nullptr);
-            m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+            this->SetUnpinnedSvcPermissions();
         }
 
         /* Resume any threads that began waiting on us while we were pinned. */

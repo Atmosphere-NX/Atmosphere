@@ -447,7 +447,7 @@ namespace ams::kern {
                 {
                     auto end = target->GetThreadList().end();
                     for (auto it = target->GetThreadList().begin(); it != end; ++it) {
-                        it->ClearSingleStep();
+                        it->ClearHardwareSingleStep();
                     }
                 }
                 #endif
@@ -595,13 +595,13 @@ namespace ams::kern {
             {
                 if ((context_flags & ams::svc::ThreadContextFlag_SetSingleStep) != 0) {
                     /* Set single step. */
-                    thread->SetSingleStep();
+                    thread->SetHardwareSingleStep();
 
                     /* If no other thread flags are present, we're done. */
                     R_SUCCEED_IF((context_flags & ~ams::svc::ThreadContextFlag_SetSingleStep) == 0);
                 } else if ((context_flags & ams::svc::ThreadContextFlag_ClearSingleStep) != 0) {
                     /* Clear single step. */
-                    thread->ClearSingleStep();
+                    thread->ClearHardwareSingleStep();
 
                     /* If no other thread flags are present, we're done. */
                     R_SUCCEED_IF((context_flags & ~ams::svc::ThreadContextFlag_ClearSingleStep) == 0);
@@ -1022,7 +1022,7 @@ namespace ams::kern {
                     for (auto it = process->GetThreadList().begin(); it != end; ++it) {
                         #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
                         /* Clear the thread's single-step state. */
-                        it->ClearSingleStep();
+                        it->ClearHardwareSingleStep();
                         #endif
 
                         if (resume) {

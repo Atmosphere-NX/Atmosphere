@@ -178,19 +178,37 @@ namespace ams::kern::arch::arm64 {
 
         /* If we need scheduling, */
         if (needs_scheduling) {
-            /* If the user disable count is set, we may need to pin the current thread. */
-            if (user_mode && GetCurrentThread().GetUserDisableCount() != 0 && GetCurrentProcess().GetPinnedThread(GetCurrentCoreId()) == nullptr) {
-                KScopedSchedulerLock sl;
+            if (user_mode) {
+                /* If the interrupt occurred in the middle of a userland cache maintenance operation, ensure memory consistency before rescheduling. */
+                if (GetCurrentThread().IsInUserCacheMaintenanceOperation()) {
+                    cpu::DataSynchronizationBarrier();
+                }
 
-                /* Pin the current thread. */
-                GetCurrentProcess().PinCurrentThread();
+                /* If the user disable count is set, we may need to pin the current thread. */
+                if (GetCurrentThread().GetUserDisableCount() != 0 && GetCurrentProcess().GetPinnedThread(GetCurrentCoreId()) == nullptr) {
+                    KScopedSchedulerLock sl;
 
-                /* Set the interrupt flag for the thread. */
-                GetCurrentThread().SetInterruptFlag();
+                    /* Pin the current thread. */
+                    GetCurrentProcess().PinCurrentThread();
 
-                /* Request interrupt scheduling. */
-                Kernel::GetScheduler().RequestScheduleOnInterrupt();
+                    /* Set the interrupt flag for the thread. */
+                    GetCurrentThread().SetInterruptFlag();
+
+                    /* Request interrupt scheduling. */
+                    Kernel::GetScheduler().RequestScheduleOnInterrupt();
+                } else {
+                    /* Request interrupt scheduling. */
+                    Kernel::GetScheduler().RequestScheduleOnInterrupt();
+                }
             } else {
+                /* If the interrupt occurred in the middle of a cache maintenance operation, ensure memory consistency before rescheduling. */
+                if (GetCurrentThread().IsInCacheMaintenanceOperation()) {
+                    cpu::DataSynchronizationBarrier();
+                } else if (GetCurrentThread().IsInTlbMaintenanceOperation()) {
+                    /* Otherwise, if we're in the middle of a tlb maintenance operation, ensure inner shareable memory consistency before rescheduling. */
+                    cpu::DataSynchronizationBarrierInnerShareable();
+                }
+
                 /* Request interrupt scheduling. */
                 Kernel::GetScheduler().RequestScheduleOnInterrupt();
             }

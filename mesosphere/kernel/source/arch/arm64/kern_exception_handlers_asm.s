@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere/kern_select_assembly_offsets.h>
+#include <mesosphere/kern_select_assembly_macros.h>
 
 /* ams::kern::arch::arm64::EL1IrqExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv, "ax", %progbits
@@ -66,11 +66,11 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
     /* Return from the exception. */
     eret
 
-/* ams::kern::arch::arm64::EL0IrqExceptionHandler() */
-.section    .text._ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv
-.type       _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv, %function
-_ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
+/* ams::kern::arch::arm64::EL0A64IrqExceptionHandler() */
+.section    .text._ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv
+.type       _ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv, %function
+_ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv:
     /* Save registers that need saving. */
     sub     sp,  sp, #(EXCEPTION_CONTEXT_SIZE)
 
@@ -105,7 +105,18 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     mov     x0, #1
     bl      _ZN3ams4kern4arch5arm6417KInterruptManager15HandleInterruptEb
 
-    /* Restore state from the context. */
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w1, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 1f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w1, w1,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Perform a full fpu restore. */
+    ENABLE_AND_RESTORE_FPU64(x2, x0, x1, w0, w1)
+
+1:  /* Restore state from the context. */
     ldp     x30, x20, [sp, #(EXCEPTION_CONTEXT_X30_SP)]
     ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
@@ -141,6 +152,74 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     /* Return from the exception. */
     eret
 
+/* ams::kern::arch::arm64::EL0A32IrqExceptionHandler() */
+.section    .text._ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv
+.type       _ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv, %function
+_ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv:
+    /* Save registers that need saving. */
+    sub     sp,  sp, #(EXCEPTION_CONTEXT_SIZE)
+
+    stp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
+    stp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
+    stp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
+    stp     x6,  x7,  [sp, #(EXCEPTION_CONTEXT_X6_X7)]
+    stp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
+    stp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
+    stp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
+    stp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
+
+    mrs     x21, elr_el1
+    mrs     x22, spsr_el1
+    mrs     x23, tpidr_el0
+    mov     w22, w22
+
+    stp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
+    str     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
+
+    /* Invoke KInterruptManager::HandleInterrupt(bool user_mode). */
+    ldr     x18, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CUR_THREAD)]
+    mov     x0, #1
+    bl      _ZN3ams4kern4arch5arm6417KInterruptManager15HandleInterruptEb
+
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w1, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 1f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w1, w1,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Perform a full fpu restore. */
+    ENABLE_AND_RESTORE_FPU32(x2, x0, x1, w0, w1)
+
+1:  /* Restore state from the context. */
+    ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
+    ldr     x23,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
+
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an exception, set SPSR.SS so that we advance an instruction if single-stepping. */
+    orr x22, x22, #(1 << 21)
+    #endif
+
+    msr     elr_el1, x21
+    msr     spsr_el1, x22
+    msr     tpidr_el0, x23
+
+    ldp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
+    ldp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
+    ldp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
+    ldp     x6,  x7,  [sp, #(EXCEPTION_CONTEXT_X6_X7)]
+    ldp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
+    ldp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
+    ldp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
+    ldp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
+
+    add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
+
+    /* Return from the exception. */
+    eret
+
 /* ams::kern::arch::arm64::EL0SynchronousExceptionHandler() */
 .section    .text._ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv
@@ -155,23 +234,23 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
 
     /* Is this an aarch32 SVC? */
     cmp     x17, #0x11
-    b.eq    2f
+    b.eq    4f
 
     /* Is this an aarch64 SVC? */
     cmp     x17, #0x15
-    b.eq    3f
+    b.eq    5f
 
     /* Is this an FPU error? */
     cmp     x17, #0x7
-    b.eq    4f
+    b.eq    6f
 
     /* Is this a data abort? */
     cmp     x17, #0x24
-    b.eq    5f
+    b.eq    7f
 
     /* Is this an instruction abort? */
     cmp     x17, #0x20
-    b.eq    5f
+    b.eq    7f
 
 1:  /* The exception is not a data abort or instruction abort caused by a TLB conflict. */
     /* It is also not an SVC or an FPU exception. Handle it generically! */
@@ -212,6 +291,17 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w1, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 3f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w1, w1,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Enable and restore the fpu. */
+    ENABLE_AND_RESTORE_FPU(x2, x0, x1, w0, w1, 2, 3)
+
     /* Restore state from the context. */
     ldp     x30, x20, [sp, #(EXCEPTION_CONTEXT_X30_SP)]
     ldp     x21, x22, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
@@ -243,19 +333,19 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     /* Return from the exception. */
     eret
 
-2:  /* SVC from aarch32. */
+4:  /* SVC from aarch32. */
     ldp x16, x17, [sp], 16
     b _ZN3ams4kern4arch5arm6412SvcHandler32Ev
 
-3:  /* SVC from aarch64. */
+5:  /* SVC from aarch64. */
     ldp x16, x17, [sp], 16
     b _ZN3ams4kern4arch5arm6412SvcHandler64Ev
 
-4:  /* FPU exception. */
+6:  /* FPU exception. */
     ldp x16, x17, [sp], 16
     b _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv
 
-5:  /* Check if there's a TLB conflict that caused the abort. */
+7:  /* Check if there's a TLB conflict that caused the abort. */
     and     x17, x16, #0x3F
     cmp     x17, #0x30
     b.ne    1b
@@ -265,20 +355,20 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     and     x17, x17, #(0xFFFF << 48)
 
     /* Check if FAR is valid by examining the FnV bit. */
-    tbnz    x16, #10, 6f
+    tbnz    x16, #10, 8f
 
     /* FAR is valid, so we can invalidate the address it holds. */
     mrs     x16, far_el1
     lsr     x16, x16, #12
     orr     x17, x16, x17
     tlbi    vae1, x17
-    b       7f
+    b       9f
 
-6:  /* There's a TLB conflict and FAR isn't valid. */
+8:  /* There's a TLB conflict and FAR isn't valid. */
     /* Invalidate the entire TLB. */
     tlbi    aside1, x17
 
-7:  /* Return from a TLB conflict. */
+9:  /* Return from a TLB conflict. */
     /* Ensure instruction consistency. */
     dsb     ish
     isb
@@ -304,11 +394,11 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
 
     /* Is this an instruction abort? */
     cmp     x0, #0x21
-    b.eq    5f
+    b.eq    4f
 
     /* Is this a data abort? */
     cmp     x0, #0x25
-    b.eq    5f
+    b.eq    4f
 
 1:  /* The exception is not a data abort or instruction abort caused by a TLB conflict. */
     /* Load the exception stack top from otherwise "unused" virtual timer compare value. */
@@ -331,16 +421,16 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     mrs     x0, esr_el1
     lsr     x1, x0, #0x1a
     cmp     x1, #0x25
-    b.ne    3f
+    b.ne    2f
 
     /* Data abort. Check if it was from trying to access userspace memory. */
     mrs     x1, elr_el1
     adr     x0, _ZN3ams4kern4arch5arm6432UserspaceAccessFunctionAreaBeginEv
     cmp     x1, x0
-    b.lo    3f
+    b.lo    2f
     adr     x0, _ZN3ams4kern4arch5arm6430UserspaceAccessFunctionAreaEndEv
     cmp     x1, x0
-    b.hs    3f
+    b.hs    2f
 
     /* We aborted trying to access userspace memory. */
     /* All functions that access user memory return a boolean for whether they succeeded. */
@@ -353,7 +443,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     msr     elr_el1, x30
     eret
 
-3:  /* The exception wasn't an triggered by copying memory from userspace. */
+2:  /* The exception wasn't an triggered by copying memory from userspace. */
     ldr     x0, [sp, #8]
     ldr     x1, [sp, #16]
 
@@ -390,10 +480,10 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
-4:  /* HandleException should never return. The best we can do is infinite loop. */
-    b       4b
+3:  /* HandleException should never return. The best we can do is infinite loop. */
+    b       3b
 
-5:  /* Check if there's a TLB conflict that caused the abort. */
+4:  /* Check if there's a TLB conflict that caused the abort. */
     /* NOTE: There is a Nintendo bug in this code that we correct. */
     /* Nintendo compares the low 6 bits of x0 without restoring the value. */
     /* They intend to check the DFSC/IFSC bits of esr_el1, but because they */
@@ -408,19 +498,19 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     /* They do not refresh the value of x0, and again compare with */
     /* the relevant bit already masked out of x0. */
     mrs     x0, esr_el1
-    tbnz    x0, #10, 6f
+    tbnz    x0, #10, 5f
 
     /* FAR is valid, so we can invalidate the address it holds. */
     mrs     x0, far_el1
     lsr     x0, x0, #12
     tlbi    vaae1, x0
-    b       7f
+    b       6f
 
-6:  /* There's a TLB conflict and FAR isn't valid. */
+5:  /* There's a TLB conflict and FAR isn't valid. */
     /* Invalidate the entire TLB. */
     tlbi    vmalle1
 
-7:  /* Return from a TLB conflict. */
+6:  /* Return from a TLB conflict. */
     /* Ensure instruction consistency. */
     dsb     ish
     isb
@@ -437,52 +527,17 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
 .global     _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv
 .type       _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv, %function
 _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
-    /* Save registers that need saving. */
+    /* Save registers. */
     sub     sp,  sp, #(EXCEPTION_CONTEXT_SIZE)
 
     stp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
     stp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
-    stp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
-    stp     x6,  x7,  [sp, #(EXCEPTION_CONTEXT_X6_X7)]
-    stp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
-    stp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
-    stp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
-    stp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
-    stp     x16, x17, [sp, #(EXCEPTION_CONTEXT_X16_X17)]
-    stp     x18, x19, [sp, #(EXCEPTION_CONTEXT_X18_X19)]
-    stp     x20, x21, [sp, #(EXCEPTION_CONTEXT_X20_X21)]
 
-    mrs     x19, sp_el0
-    mrs     x20, elr_el1
-    mrs     x21, spsr_el1
-    mov     w21, w21
+    ENABLE_AND_RESTORE_FPU(x2, x0, x1, w0, w1, 1, 2)
 
-    stp     x30, x19, [sp, #(EXCEPTION_CONTEXT_X30_SP)]
-    stp     x20, x21, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
-
-    /* Invoke the FPU context switch handler. */
-    ldr     x18, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CUR_THREAD)]
-    bl      _ZN3ams4kern4arch5arm6423FpuContextSwitchHandlerEv
-
-    /* Restore registers that we saved. */
-    ldp     x30, x19, [sp, #(EXCEPTION_CONTEXT_X30_SP)]
-    ldp     x20, x21, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
-
-    msr     sp_el0, x19
-    msr     elr_el1, x20
-    msr     spsr_el1, x21
-
+    /* Restore registers. */
     ldp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
     ldp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
-    ldp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
-    ldp     x6,  x7,  [sp, #(EXCEPTION_CONTEXT_X6_X7)]
-    ldp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
-    ldp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
-    ldp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
-    ldp     x14, x15, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
-    ldp     x16, x17, [sp, #(EXCEPTION_CONTEXT_X16_X17)]
-    ldp     x18, x19, [sp, #(EXCEPTION_CONTEXT_X18_X19)]
-    ldp     x20, x21, [sp, #(EXCEPTION_CONTEXT_X20_X21)]
 
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
 
@@ -584,6 +639,17 @@ _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv:
     ldr     x18, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CUR_THREAD)]
     mov     x0, sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
+
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w1, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 2f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w1, w1,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w1, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Enable and restore the fpu. */
+    ENABLE_AND_RESTORE_FPU(x2, x0, x1, w0, w1, 1, 2)
 
     /* Restore state from the context. */
     ldp     x30, x20, [sp, #(EXCEPTION_CONTEXT_X30_SP)]

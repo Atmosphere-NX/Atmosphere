@@ -84,35 +84,56 @@ namespace ams::kern {
                 DpcFlag_PerformDestruction = (1 << 2),
             };
 
+            enum ExceptionFlag : u32 {
+                ExceptionFlag_IsCallingSvc                  = (1 << 0),
+                ExceptionFlag_IsInExceptionHandler          = (1 << 1),
+                ExceptionFlag_IsFpuContextRestoreNeeded     = (1 << 2),
+                ExceptionFlag_IsFpu64Bit                    = (1 << 3),
+                ExceptionFlag_IsInUsermodeExceptionHandler  = (1 << 4),
+                ExceptionFlag_IsInCacheMaintenanceOperation = (1 << 5),
+                ExceptionFlag_IsInTlbMaintenanceOperation   = (1 << 6),
+                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+                ExceptionFlag_IsHardwareSingleStep          = (1 << 7),
+                #endif
+            };
+
             struct StackParameters {
-                alignas(0x10) svc::SvcAccessFlagSet svc_access_flags;
-                KThreadContext *context;
+                svc::SvcAccessFlagSet svc_access_flags;
+                KThreadContext::CallerSaveFpuRegisters *caller_save_fpu_registers;
                 KThread *cur_thread;
                 s16 disable_count;
                 util::Atomic<u8> dpc_flags;
                 u8 current_svc_id;
-                bool is_calling_svc;
-                bool is_in_exception_handler;
+                u8 reserved_2c;
+                u8 exception_flags;
                 bool is_pinned;
-                #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-                bool is_single_step;
-                #endif
+                u8 reserved_2f;
+                KThreadContext context;
             };
-            static_assert(alignof(StackParameters) == 0x10);
-            static_assert(sizeof(StackParameters) == THREAD_STACK_PARAMETERS_SIZE);
 
-            static_assert(AMS_OFFSETOF(StackParameters, svc_access_flags)        == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
-            static_assert(AMS_OFFSETOF(StackParameters, context)                 == THREAD_STACK_PARAMETERS_CONTEXT);
-            static_assert(AMS_OFFSETOF(StackParameters, cur_thread)              == THREAD_STACK_PARAMETERS_CUR_THREAD);
-            static_assert(AMS_OFFSETOF(StackParameters, disable_count)           == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
-            static_assert(AMS_OFFSETOF(StackParameters, dpc_flags)               == THREAD_STACK_PARAMETERS_DPC_FLAGS);
-            static_assert(AMS_OFFSETOF(StackParameters, current_svc_id)          == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
-            static_assert(AMS_OFFSETOF(StackParameters, is_calling_svc)          == THREAD_STACK_PARAMETERS_IS_CALLING_SVC);
-            static_assert(AMS_OFFSETOF(StackParameters, is_in_exception_handler) == THREAD_STACK_PARAMETERS_IS_IN_EXCEPTION_HANDLER);
-            static_assert(AMS_OFFSETOF(StackParameters, is_pinned)               == THREAD_STACK_PARAMETERS_IS_PINNED);
+            static_assert(util::IsAligned(AMS_OFFSETOF(StackParameters, context), 0x10));
 
+            static_assert(AMS_OFFSETOF(StackParameters, svc_access_flags)          == THREAD_STACK_PARAMETERS_SVC_PERMISSION);
+            static_assert(AMS_OFFSETOF(StackParameters, caller_save_fpu_registers) == THREAD_STACK_PARAMETERS_CALLER_SAVE_FPU_REGISTERS);
+            static_assert(AMS_OFFSETOF(StackParameters, cur_thread)                == THREAD_STACK_PARAMETERS_CUR_THREAD);
+            static_assert(AMS_OFFSETOF(StackParameters, disable_count)             == THREAD_STACK_PARAMETERS_DISABLE_COUNT);
+            static_assert(AMS_OFFSETOF(StackParameters, dpc_flags)                 == THREAD_STACK_PARAMETERS_DPC_FLAGS);
+            static_assert(AMS_OFFSETOF(StackParameters, current_svc_id)            == THREAD_STACK_PARAMETERS_CURRENT_SVC_ID);
+            static_assert(AMS_OFFSETOF(StackParameters, reserved_2c)               == THREAD_STACK_PARAMETERS_RESERVED_2C);
+            static_assert(AMS_OFFSETOF(StackParameters, exception_flags)           == THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS);
+            static_assert(AMS_OFFSETOF(StackParameters, is_pinned)                 == THREAD_STACK_PARAMETERS_IS_PINNED);
+            static_assert(AMS_OFFSETOF(StackParameters, reserved_2f)               == THREAD_STACK_PARAMETERS_RESERVED_2F);
+            static_assert(AMS_OFFSETOF(StackParameters, context)                   == THREAD_STACK_PARAMETERS_THREAD_CONTEXT);
+
+            static_assert(ExceptionFlag_IsCallingSvc                  == THREAD_EXCEPTION_FLAG_IS_CALLING_SVC);
+            static_assert(ExceptionFlag_IsInExceptionHandler          == THREAD_EXCEPTION_FLAG_IS_IN_EXCEPTION_HANDLER);
+            static_assert(ExceptionFlag_IsFpuContextRestoreNeeded     == THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED);
+            static_assert(ExceptionFlag_IsFpu64Bit                    == THREAD_EXCEPTION_FLAG_IS_FPU_64_BIT);
+            static_assert(ExceptionFlag_IsInUsermodeExceptionHandler  == THREAD_EXCEPTION_FLAG_IS_IN_USERMODE_EXCEPTION_HANDLER);
+            static_assert(ExceptionFlag_IsInCacheMaintenanceOperation == THREAD_EXCEPTION_FLAG_IS_IN_CACHE_MAINTENANCE_OPERATION);
+            static_assert(ExceptionFlag_IsInTlbMaintenanceOperation   == THREAD_EXCEPTION_FLAG_IS_IN_TLB_MAINTENANCE_OPERATION);
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-            static_assert(AMS_OFFSETOF(StackParameters, is_single_step)          == THREAD_STACK_PARAMETERS_IS_SINGLE_STEP);
+            static_assert(ExceptionFlag_IsHardwareSingleStep          == THREAD_EXCEPTION_FLAG_IS_HARDWARE_SINGLE_STEP);
             #endif
 
             struct QueueEntry {
@@ -184,60 +205,60 @@ namespace ams::kern {
             using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::m_condvar_arbiter_tree_node>;
             using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
 
-            ConditionVariableThreadTree    *m_condvar_tree;
-            uintptr_t                       m_condvar_key;
-            alignas(16) KThreadContext      m_thread_context;
-            u64                             m_virtual_affinity_mask;
-            KAffinityMask                   m_physical_affinity_mask;
-            u64                             m_thread_id;
-            util::Atomic<s64>               m_cpu_time;
-            KProcessAddress                 m_address_key;
-            KProcess                       *m_parent;
-            void                           *m_kernel_stack_top;
-            u32                            *m_light_ipc_data;
-            KProcessAddress                 m_tls_address;
-            void                           *m_tls_heap_address;
-            KLightLock                      m_activity_pause_lock;
-            SyncObjectBuffer                m_sync_object_buffer;
-            s64                             m_schedule_count;
-            s64                             m_last_scheduled_tick;
-            QueueEntry                      m_per_core_priority_queue_entry[cpu::NumCores];
-            KThreadQueue                   *m_wait_queue;
-            WaiterList                      m_waiter_list;
-            WaiterList                      m_pinned_waiter_list;
-            KThread                        *m_lock_owner;
-            uintptr_t                       m_debug_params[3];
-            KAutoObject                    *m_closed_object;
-            u32                             m_address_key_value;
-            u32                             m_suspend_request_flags;
-            u32                             m_suspend_allowed_flags;
-            s32                             m_synced_index;
-            Result                          m_wait_result;
-            Result                          m_debug_exception_result;
-            s32                             m_base_priority;
-            s32                             m_base_priority_on_unpin;
-            s32                             m_physical_ideal_core_id;
-            s32                             m_virtual_ideal_core_id;
-            s32                             m_num_kernel_waiters;
-            s32                             m_current_core_id;
-            s32                             m_core_id;
-            KAffinityMask                   m_original_physical_affinity_mask;
-            s32                             m_original_physical_ideal_core_id;
-            s32                             m_num_core_migration_disables;
-            ThreadState                     m_thread_state;
-            util::Atomic<bool>              m_termination_requested;
-            bool                            m_wait_cancelled;
-            bool                            m_cancellable;
-            bool                            m_signaled;
-            bool                            m_initialized;
-            bool                            m_debug_attached;
-            s8                              m_priority_inheritance_count;
-            bool                            m_resource_limit_release_hint;
+            ConditionVariableThreadTree                        *m_condvar_tree;
+            uintptr_t                                           m_condvar_key;
+            alignas(16) KThreadContext::CallerSaveFpuRegisters  m_caller_save_fpu_registers;
+            u64                                                 m_virtual_affinity_mask;
+            KAffinityMask                                       m_physical_affinity_mask;
+            u64                                                 m_thread_id;
+            util::Atomic<s64>                                   m_cpu_time;
+            KProcessAddress                                     m_address_key;
+            KProcess                                           *m_parent;
+            void                                               *m_kernel_stack_top;
+            u32                                                *m_light_ipc_data;
+            KProcessAddress                                     m_tls_address;
+            void                                               *m_tls_heap_address;
+            KLightLock                                          m_activity_pause_lock;
+            SyncObjectBuffer                                    m_sync_object_buffer;
+            s64                                                 m_schedule_count;
+            s64                                                 m_last_scheduled_tick;
+            QueueEntry                                          m_per_core_priority_queue_entry[cpu::NumCores];
+            KThreadQueue                                       *m_wait_queue;
+            WaiterList                                          m_waiter_list;
+            WaiterList                                          m_pinned_waiter_list;
+            KThread                                            *m_lock_owner;
+            uintptr_t                                           m_debug_params[3];
+            KAutoObject                                        *m_closed_object;
+            u32                                                 m_address_key_value;
+            u32                                                 m_suspend_request_flags;
+            u32                                                 m_suspend_allowed_flags;
+            s32                                                 m_synced_index;
+            Result                                              m_wait_result;
+            Result                                              m_debug_exception_result;
+            s32                                                 m_base_priority;
+            s32                                                 m_base_priority_on_unpin;
+            s32                                                 m_physical_ideal_core_id;
+            s32                                                 m_virtual_ideal_core_id;
+            s32                                                 m_num_kernel_waiters;
+            s32                                                 m_current_core_id;
+            s32                                                 m_core_id;
+            KAffinityMask                                       m_original_physical_affinity_mask;
+            s32                                                 m_original_physical_ideal_core_id;
+            s32                                                 m_num_core_migration_disables;
+            ThreadState                                         m_thread_state;
+            util::Atomic<bool>                                  m_termination_requested;
+            bool                                                m_wait_cancelled;
+            bool                                                m_cancellable;
+            bool                                                m_signaled;
+            bool                                                m_initialized;
+            bool                                                m_debug_attached;
+            s8                                                  m_priority_inheritance_count;
+            bool                                                m_resource_limit_release_hint;
         public:
             constexpr explicit KThread(util::ConstantInitializeTag)
                 : KAutoObjectWithSlabHeapAndContainer<KThread, KWorkerTask>(util::ConstantInitialize), KTimerTask(util::ConstantInitialize),
                   m_process_list_node{}, m_condvar_arbiter_tree_node{util::ConstantInitialize}, m_priority{-1}, m_condvar_tree{}, m_condvar_key{},
-                  m_thread_context{util::ConstantInitialize}, m_virtual_affinity_mask{}, m_physical_affinity_mask{}, m_thread_id{}, m_cpu_time{0}, m_address_key{Null<KProcessAddress>}, m_parent{},
+                  m_caller_save_fpu_registers{}, m_virtual_affinity_mask{}, m_physical_affinity_mask{}, m_thread_id{}, m_cpu_time{0}, m_address_key{Null<KProcessAddress>}, m_parent{},
                   m_kernel_stack_top{}, m_light_ipc_data{}, m_tls_address{Null<KProcessAddress>}, m_tls_heap_address{}, m_activity_pause_lock{}, m_sync_object_buffer{util::ConstantInitialize},
                   m_schedule_count{}, m_last_scheduled_tick{}, m_per_core_priority_queue_entry{}, m_wait_queue{}, m_waiter_list{}, m_pinned_waiter_list{},
                   m_lock_owner{}, m_debug_params{}, m_closed_object{}, m_address_key_value{}, m_suspend_request_flags{}, m_suspend_allowed_flags{}, m_synced_index{},
@@ -269,17 +290,8 @@ namespace ams::kern {
 
             static void ResumeThreadsSuspendedForInit();
         private:
-            StackParameters &GetStackParameters() {
-                return *(reinterpret_cast<StackParameters *>(m_kernel_stack_top) - 1);
-            }
-
-            const StackParameters &GetStackParameters() const {
-                return *(reinterpret_cast<const StackParameters *>(m_kernel_stack_top) - 1);
-            }
-        public:
-            StackParameters &GetStackParametersForExceptionSvcPermission() {
-                return *(reinterpret_cast<StackParameters *>(m_kernel_stack_top) - 1);
-            }
+            ALWAYS_INLINE       StackParameters &GetStackParameters()       { return *(reinterpret_cast<      StackParameters *>(m_kernel_stack_top) - 1); }
+            ALWAYS_INLINE const StackParameters &GetStackParameters() const { return *(reinterpret_cast<const StackParameters *>(m_kernel_stack_top) - 1); }
         public:
             ALWAYS_INLINE s16 GetDisableDispatchCount() const {
                 MESOSPHERE_ASSERT_THIS();
@@ -315,50 +327,60 @@ namespace ams::kern {
 
             NOINLINE void DisableCoreMigration();
             NOINLINE void EnableCoreMigration();
-
-            ALWAYS_INLINE void SetInExceptionHandler() {
+        private:
+            ALWAYS_INLINE void SetExceptionFlag(ExceptionFlag flag) {
                 MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().is_in_exception_handler = true;
+                this->GetStackParameters().exception_flags |= flag;
             }
 
-            ALWAYS_INLINE void ClearInExceptionHandler() {
+            ALWAYS_INLINE void ClearExceptionFlag(ExceptionFlag flag) {
                 MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().is_in_exception_handler = false;
+                this->GetStackParameters().exception_flags &= ~flag;
             }
 
-            ALWAYS_INLINE bool IsInExceptionHandler() const {
+            ALWAYS_INLINE bool IsExceptionFlagSet(ExceptionFlag flag) const {
                 MESOSPHERE_ASSERT_THIS();
-                return this->GetStackParameters().is_in_exception_handler;
+                return this->GetStackParameters().exception_flags & flag;
             }
+        public:
+            /* ALWAYS_INLINE void SetCallingSvc()      { return this->SetExceptionFlag(ExceptionFlag_IsCallingSvc); }    */
+            /* ALWAYS_INLINE void ClearCallingSvc()    { return this->ClearExceptionFlag(ExceptionFlag_IsCallingSvc); } */
+            ALWAYS_INLINE bool IsCallingSvc() const { return this->IsExceptionFlagSet(ExceptionFlag_IsCallingSvc); }
 
-            ALWAYS_INLINE bool IsCallingSvc() const {
-                MESOSPHERE_ASSERT_THIS();
-                return this->GetStackParameters().is_calling_svc;
-            }
+            ALWAYS_INLINE void SetInExceptionHandler()      { return this->SetExceptionFlag(ExceptionFlag_IsInExceptionHandler); }
+            ALWAYS_INLINE void ClearInExceptionHandler()    { return this->ClearExceptionFlag(ExceptionFlag_IsInExceptionHandler); }
+            ALWAYS_INLINE bool IsInExceptionHandler() const { return this->IsExceptionFlagSet(ExceptionFlag_IsInExceptionHandler); }
+
+            /* ALWAYS_INLINE void SetFpuContextRestoreNeeded()      { return this->SetExceptionFlag(ExceptionFlag_IsFpuContextRestoreNeeded); }    */
+            /* ALWAYS_INLINE void ClearFpuContextRestoreNeeded()    { return this->ClearExceptionFlag(ExceptionFlag_IsFpuContextRestoreNeeded); } */
+            /* ALWAYS_INLINE bool IsFpuContextRestoreNeeded() const { return this->IsExceptionFlagSet(ExceptionFlag_IsFpuContextRestoreNeeded); } */
+
+            ALWAYS_INLINE void SetFpu64Bit()      { return this->SetExceptionFlag(ExceptionFlag_IsFpu64Bit); }
+            /* ALWAYS_INLINE void ClearFpu64Bit()    { return this->ClearExceptionFlag(ExceptionFlag_IsFpu64Bit); } */
+            /* ALWAYS_INLINE bool IsFpu64Bit() const { return this->IsExceptionFlagSet(ExceptionFlag_IsFpu64Bit); } */
+
+            ALWAYS_INLINE void SetInUsermodeExceptionHandler()      { return this->SetExceptionFlag(ExceptionFlag_IsInUsermodeExceptionHandler); }
+            ALWAYS_INLINE void ClearInUsermodeExceptionHandler()    { return this->ClearExceptionFlag(ExceptionFlag_IsInUsermodeExceptionHandler); }
+            ALWAYS_INLINE bool IsInUsermodeExceptionHandler() const { return this->IsExceptionFlagSet(ExceptionFlag_IsInUsermodeExceptionHandler); }
+
+            ALWAYS_INLINE void SetInCacheMaintenanceOperation()     { return this->SetExceptionFlag(ExceptionFlag_IsInCacheMaintenanceOperation); }
+            ALWAYS_INLINE void ClearInCacheMaintenanceOperation()    { return this->ClearExceptionFlag(ExceptionFlag_IsInCacheMaintenanceOperation); }
+            ALWAYS_INLINE bool IsInCacheMaintenanceOperation() const { return this->IsExceptionFlagSet(ExceptionFlag_IsInCacheMaintenanceOperation); }
+
+            ALWAYS_INLINE void SetInTlbMaintenanceOperation()     { return this->SetExceptionFlag(ExceptionFlag_IsInTlbMaintenanceOperation); }
+            ALWAYS_INLINE void ClearInTlbMaintenanceOperation()    { return this->ClearExceptionFlag(ExceptionFlag_IsInTlbMaintenanceOperation); }
+            ALWAYS_INLINE bool IsInTlbMaintenanceOperation() const { return this->IsExceptionFlagSet(ExceptionFlag_IsInTlbMaintenanceOperation); }
+
+            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+            ALWAYS_INLINE void SetHardwareSingleStep()      { return this->SetExceptionFlag(ExceptionFlag_IsHardwareSingleStep); }
+            ALWAYS_INLINE void ClearHardwareSingleStep()    { return this->ClearExceptionFlag(ExceptionFlag_IsHardwareSingleStep); }
+            ALWAYS_INLINE bool IsHardwareSingleStep() const { return this->IsExceptionFlagSet(ExceptionFlag_IsHardwareSingleStep); }
+            #endif
 
             ALWAYS_INLINE u8 GetSvcId() const {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetStackParameters().current_svc_id;
             }
-
-            #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-
-            ALWAYS_INLINE void SetSingleStep() {
-                MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().is_single_step = true;
-            }
-
-            ALWAYS_INLINE void ClearSingleStep() {
-                MESOSPHERE_ASSERT_THIS();
-                this->GetStackParameters().is_single_step = false;
-            }
-
-            ALWAYS_INLINE bool IsSingleStep() const {
-                MESOSPHERE_ASSERT_THIS();
-                return this->GetStackParameters().is_single_step;
-            }
-
-            #endif
 
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
                 this->GetStackParameters().dpc_flags |= flag;
@@ -376,6 +398,13 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetDpc() != 0;
             }
+
+        private:
+            void SetPinnedSvcPermissions();
+            void SetUnpinnedSvcPermissions();
+
+            void SetUsermodeExceptionSvcPermissions();
+            void ClearUsermodeExceptionSvcPermissions();
         private:
             void UpdateState();
             ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
@@ -391,8 +420,11 @@ namespace ams::kern {
         public:
             constexpr u64 GetThreadId() const { return m_thread_id; }
 
-            constexpr KThreadContext &GetContext() { return m_thread_context; }
-            constexpr const KThreadContext &GetContext() const { return m_thread_context; }
+            const KThreadContext &GetContext() const { return this->GetStackParameters().context; }
+                  KThreadContext &GetContext()       { return this->GetStackParameters().context; }
+
+            const auto &GetCallerSaveFpuRegisters() const { return m_caller_save_fpu_registers; }
+                  auto &GetCallerSaveFpuRegisters()       { return m_caller_save_fpu_registers; }
 
             constexpr u64 GetVirtualAffinityMask() const { return m_virtual_affinity_mask; }
             constexpr const KAffinityMask &GetAffinityMask() const { return m_physical_affinity_mask; }
@@ -518,6 +550,8 @@ namespace ams::kern {
             void SetInterruptFlag()   const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 1; }
             void ClearInterruptFlag() const { static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->interrupt_flag = 0; }
 
+            bool IsInUserCacheMaintenanceOperation() const { return static_cast<ams::svc::ThreadLocalRegion *>(m_tls_heap_address)->cache_maintenance_flag != 0; }
+
             ALWAYS_INLINE KAutoObject *GetClosedObject() { return m_closed_object; }
 
             ALWAYS_INLINE void SetClosedObject(KAutoObject *object) {
@@ -606,6 +640,9 @@ namespace ams::kern {
             }
 
             size_t GetKernelStackUsage() const;
+
+            void OnEnterUsermodeException();
+            void OnLeaveUsermodeException();
         public:
             /* Overridden parent functions. */
             ALWAYS_INLINE u64 GetIdImpl() const { return this->GetThreadId(); }
@@ -628,6 +665,7 @@ namespace ams::kern {
             static Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
 
             using ConditionVariableThreadTreeType = ConditionVariableThreadTree;
+
     };
     static_assert(alignof(KThread) == 0x10);
 
@@ -636,7 +674,7 @@ namespace ams::kern {
         static_assert(ConditionVariableThreadTreeTraits::IsValid());
 
         /* Check that the assembly offsets are valid. */
-        static_assert(AMS_OFFSETOF(KThread, m_thread_context) == THREAD_THREAD_CONTEXT);
+        static_assert(AMS_OFFSETOF(KThread, m_kernel_stack_top) == THREAD_KERNEL_STACK_TOP);
 
         return true;
     }
