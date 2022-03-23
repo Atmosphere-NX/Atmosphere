@@ -32,6 +32,13 @@ namespace ams::os::impl {
             /* Calculate cache line size. */
             cache_line_size = 4 << ((cache_type_register >> 16) & 0xF);
 
+            /* Get the thread local region. */
+            auto * const tlr = svc::GetThreadLocalRegion();
+
+            /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
+            tlr->cache_maintenance_flag = 1;
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+
             /* Iterate, flushing cache lines. */
             for (uintptr_t cur = reinterpret_cast<uintptr_t>(addr) & ~(cache_line_size - 1); cur < end_addr; cur += cache_line_size) {
                 __asm__ __volatile__ ("dc civac, %[cur]" :: [cur]"r"(cur));

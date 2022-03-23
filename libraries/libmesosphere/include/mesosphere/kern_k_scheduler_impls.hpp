@@ -35,7 +35,7 @@ namespace ams::kern {
 
     ALWAYS_INLINE void KScheduler::RescheduleOtherCores(u64 cores_needing_scheduling) {
         if (const u64 core_mask = cores_needing_scheduling & ~(1ul << m_core_id); core_mask != 0) {
-            cpu::DataSynchronizationBarrier();
+            cpu::DataSynchronizationBarrierInnerShareable();
             Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_Scheduler, core_mask);
         }
     }

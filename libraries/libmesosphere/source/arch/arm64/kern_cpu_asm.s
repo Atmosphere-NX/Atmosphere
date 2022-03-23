@@ -61,3 +61,138 @@ _ZN3ams4kern4arch5arm643cpu23SynchronizeAllCoresImplEPii:
 5:
     stlr wzr, [x0]
     ret
+
+/* ams::kern::arch::arm64::cpu::ClearPageToZeroImpl(void *) */
+.section    .text._ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv
+.type       _ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv, %function
+_ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv:
+    /* Efficiently clear the page using dc zva. */
+    dc      zva, x0
+    add     x8, x0, #0x040
+    dc      zva, x8
+    add     x8, x0, #0x080
+    dc      zva, x8
+    add     x8, x0, #0x0c0
+    dc      zva, x8
+    add     x8, x0, #0x100
+    dc      zva, x8
+    add     x8, x0, #0x140
+    dc      zva, x8
+    add     x8, x0, #0x180
+    dc      zva, x8
+    add     x8, x0, #0x1c0
+    dc      zva, x8
+    add     x8, x0, #0x200
+    dc      zva, x8
+    add     x8, x0, #0x240
+    dc      zva, x8
+    add     x8, x0, #0x280
+    dc      zva, x8
+    add     x8, x0, #0x2c0
+    dc      zva, x8
+    add     x8, x0, #0x300
+    dc      zva, x8
+    add     x8, x0, #0x340
+    dc      zva, x8
+    add     x8, x0, #0x380
+    dc      zva, x8
+    add     x8, x0, #0x3c0
+    dc      zva, x8
+    add     x8, x0, #0x400
+    dc      zva, x8
+    add     x8, x0, #0x440
+    dc      zva, x8
+    add     x8, x0, #0x480
+    dc      zva, x8
+    add     x8, x0, #0x4c0
+    dc      zva, x8
+    add     x8, x0, #0x500
+    dc      zva, x8
+    add     x8, x0, #0x540
+    dc      zva, x8
+    add     x8, x0, #0x580
+    dc      zva, x8
+    add     x8, x0, #0x5c0
+    dc      zva, x8
+    add     x8, x0, #0x600
+    dc      zva, x8
+    add     x8, x0, #0x640
+    dc      zva, x8
+    add     x8, x0, #0x680
+    dc      zva, x8
+    add     x8, x0, #0x6c0
+    dc      zva, x8
+    add     x8, x0, #0x700
+    dc      zva, x8
+    add     x8, x0, #0x740
+    dc      zva, x8
+    add     x8, x0, #0x780
+    dc      zva, x8
+    add     x8, x0, #0x7c0
+    dc      zva, x8
+    add     x8, x0, #0x800
+    dc      zva, x8
+    add     x8, x0, #0x840
+    dc      zva, x8
+    add     x8, x0, #0x880
+    dc      zva, x8
+    add     x8, x0, #0x8c0
+    dc      zva, x8
+    add     x8, x0, #0x900
+    dc      zva, x8
+    add     x8, x0, #0x940
+    dc      zva, x8
+    add     x8, x0, #0x980
+    dc      zva, x8
+    add     x8, x0, #0x9c0
+    dc      zva, x8
+    add     x8, x0, #0xa00
+    dc      zva, x8
+    add     x8, x0, #0xa40
+    dc      zva, x8
+    add     x8, x0, #0xa80
+    dc      zva, x8
+    add     x8, x0, #0xac0
+    dc      zva, x8
+    add     x8, x0, #0xb00
+    dc      zva, x8
+    add     x8, x0, #0xb40
+    dc      zva, x8
+    add     x8, x0, #0xb80
+    dc      zva, x8
+    add     x8, x0, #0xbc0
+    dc      zva, x8
+    add     x8, x0, #0xc00
+    dc      zva, x8
+    add     x8, x0, #0xc40
+    dc      zva, x8
+    add     x8, x0, #0xc80
+    dc      zva, x8
+    add     x8, x0, #0xcc0
+    dc      zva, x8
+    add     x8, x0, #0xd00
+    dc      zva, x8
+    add     x8, x0, #0xd40
+    dc      zva, x8
+    add     x8, x0, #0xd80
+    dc      zva, x8
+    add     x8, x0, #0xdc0
+    dc      zva, x8
+    add     x8, x0, #0xe00
+    dc      zva, x8
+    add     x8, x0, #0xe40
+    dc      zva, x8
+    add     x8, x0, #0xe80
+    dc      zva, x8
+    add     x8, x0, #0xec0
+    dc      zva, x8
+    add     x8, x0, #0xf00
+    dc      zva, x8
+    add     x8, x0, #0xf40
+    dc      zva, x8
+    add     x8, x0, #0xf80
+    dc      zva, x8
+    add     x8, x0, #0xfc0
+    dc      zva, x8
+    ret

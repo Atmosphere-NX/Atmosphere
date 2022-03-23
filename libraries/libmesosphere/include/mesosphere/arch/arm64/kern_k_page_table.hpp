@@ -174,7 +174,6 @@ namespace ams::kern::arch::arm64 {
             static NOINLINE void Initialize(s32 core_id);
 
             ALWAYS_INLINE void Activate(u32 proc_id) {
-                cpu::DataSynchronizationBarrier();
                 cpu::SwitchProcess(m_ttbr, proc_id);
             }
 
@@ -219,12 +218,13 @@ namespace ams::kern::arch::arm64 {
 
             Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, DisableMergeAttribute disable_merge_attr, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll);
 
-            static ALWAYS_INLINE void PteDataSynchronizationBarrier() {
-                cpu::DataSynchronizationBarrierInnerShareable();
+            static ALWAYS_INLINE void PteDataMemoryBarrier() {
+                cpu::DataMemoryBarrierInnerShareableStore();
             }
 
             static ALWAYS_INLINE void ClearPageTable(KVirtualAddress table) {
                 cpu::ClearPageToZero(GetVoidPointer(table));
+                cpu::DataSynchronizationBarrierInnerShareable();
             }
 
             ALWAYS_INLINE void OnTableUpdated() const {
@@ -239,22 +239,8 @@ namespace ams::kern::arch::arm64 {
                 cpu::InvalidateTlbByVaDataOnly(virt_addr);
             }
 
-            ALWAYS_INLINE void NoteUpdated() const {
-                cpu::DataSynchronizationBarrier();
-
-                if (this->IsKernel()) {
-                    this->OnKernelTableUpdated();
-                } else {
-                    this->OnTableUpdated();
-                }
-            }
-
-            ALWAYS_INLINE void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
-                MESOSPHERE_ASSERT(this->IsKernel());
-
-                cpu::DataSynchronizationBarrier();
-                this->OnKernelTableSinglePageUpdated(virt_addr);
-            }
+            void NoteUpdated() const;
+            void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const;
 
             KVirtualAddress AllocatePageTable(PageLinkedList *page_list, bool reuse_ll) const {
                 KVirtualAddress table = this->GetPageTableManager().Allocate();

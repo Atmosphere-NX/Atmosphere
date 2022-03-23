@@ -31,6 +31,15 @@ namespace ams::dd::impl {
             __asm__ __volatile__("mrs %[ctr_el0], ctr_el0" : [ctr_el0]"=r"(ctr_el0));
             const uintptr_t cache_line_size = 4 << ((ctr_el0 >> 16) & 0xF);
 
+            #if defined(ATMOSPHERE_IS_STRATOSPHERE)
+            /* Get the thread local region. */
+            auto * const tlr = svc::GetThreadLocalRegion();
+
+            /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
+            tlr->cache_maintenance_flag = 1;
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+            #endif
+
             /* Invalidate the cache. */
             const uintptr_t start_addr = reinterpret_cast<uintptr_t>(addr) & ~(cache_line_size - 1);
             const uintptr_t end_addr   = reinterpret_cast<uintptr_t>(addr) + size;
@@ -61,6 +70,15 @@ namespace ams::dd::impl {
             uintptr_t ctr_el0 = 0;
             __asm__ __volatile__("mrs %[ctr_el0], ctr_el0" : [ctr_el0]"=r"(ctr_el0));
             const uintptr_t cache_line_size = 4 << ((ctr_el0 >> 16) & 0xF);
+
+            #if defined(ATMOSPHERE_IS_STRATOSPHERE)
+            /* Get the thread local region. */
+            auto * const tlr = svc::GetThreadLocalRegion();
+
+            /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
+            tlr->cache_maintenance_flag = 1;
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+            #endif
 
             /* Invalidate the cache. */
             const uintptr_t start_addr = reinterpret_cast<uintptr_t>(addr) & ~(cache_line_size - 1);

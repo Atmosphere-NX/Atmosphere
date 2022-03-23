@@ -46,7 +46,6 @@ namespace ams::kern::arch::arm64 {
             static bool StoreDataCache(uintptr_t start, uintptr_t end);
             static bool FlushDataCache(uintptr_t start, uintptr_t end);
             static bool InvalidateDataCache(uintptr_t start, uintptr_t end);
-            static bool InvalidateInstructionCache(uintptr_t start, uintptr_t end);
 
             static bool ReadIoMemory32Bit(void *dst, const void *src, size_t size);
             static bool ReadIoMemory16Bit(void *dst, const void *src, size_t size);

@@ -96,8 +96,6 @@ namespace ams::kern::arch::arm64 {
             }
 
             static void HandleInterrupt(bool user_mode);
-
-            /* Implement more KInterruptManager functionality. */
         private:
             Result BindGlobal(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);
             Result BindLocal(KInterruptHandler *handler, s32 irq, s32 priority, bool manual_clear);

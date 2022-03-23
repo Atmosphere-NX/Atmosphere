@@ -279,20 +279,21 @@ namespace ams::kern::arch::arm64::init {
 
                 /* Invalidate the entire tlb. */
                 cpu::DataSynchronizationBarrierInnerShareable();
-                cpu::InvalidateEntireTlbInnerShareable();
+                cpu::InvalidateEntireTlb();
 
                 /* Copy data, if we should. */
                 const u64 negative_block_size_for_mask = static_cast<u64>(-static_cast<s64>(block_size));
                 const u64 offset_mask                  = negative_block_size_for_mask & ((1ul << 48) - 1);
                 const KVirtualAddress copy_src_addr = KVirtualAddress(src_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
                 const KVirtualAddress copy_dst_addr = KVirtualAddress(dst_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
-                if (block_size && do_copy) {
+                if (do_copy) {
                     u8 tmp[0x100];
                     for (size_t ofs = 0; ofs < block_size; ofs += sizeof(tmp)) {
                         std::memcpy(tmp, GetVoidPointer(copy_src_addr + ofs), sizeof(tmp));
                         std::memcpy(GetVoidPointer(copy_src_addr + ofs), GetVoidPointer(copy_dst_addr + ofs), sizeof(tmp));
                         std::memcpy(GetVoidPointer(copy_dst_addr + ofs), tmp, sizeof(tmp));
                     }
+                    cpu::DataSynchronizationBarrierInnerShareable();
                 }
 
                 /* Swap the mappings. */
@@ -339,7 +340,6 @@ namespace ams::kern::arch::arm64::init {
                     /* Can we make an L1 block? */
                     if (util::IsAligned(GetInteger(virt_addr), L1BlockSize) && util::IsAligned(GetInteger(phys_addr), L1BlockSize) && size >= L1BlockSize) {
                         *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, attr, PageTableEntry::SoftwareReservedBit_None, false);
-                        cpu::DataSynchronizationBarrierInnerShareable();
 
                         virt_addr += L1BlockSize;
                         phys_addr += L1BlockSize;
@@ -350,8 +350,8 @@ namespace ams::kern::arch::arm64::init {
                     /* If we don't already have an L2 table, we need to make a new one. */
                     if (!l1_entry->IsTable()) {
                         KPhysicalAddress new_table = AllocateNewPageTable(allocator);
-                        *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
+                        *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                     }
 
                     L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
@@ -365,14 +365,12 @@ namespace ams::kern::arch::arm64::init {
                             phys_addr += L2BlockSize;
                             size      -= L2BlockSize;
                         }
-                        cpu::DataSynchronizationBarrierInnerShareable();
                         continue;
                     }
 
                     /* Can we make an L2 block? */
                     if (util::IsAligned(GetInteger(virt_addr), L2BlockSize) && util::IsAligned(GetInteger(phys_addr), L2BlockSize) && size >= L2BlockSize) {
                         *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, attr, PageTableEntry::SoftwareReservedBit_None, false);
-                        cpu::DataSynchronizationBarrierInnerShareable();
 
                         virt_addr += L2BlockSize;
                         phys_addr += L2BlockSize;
@@ -383,8 +381,8 @@ namespace ams::kern::arch::arm64::init {
                     /* If we don't already have an L3 table, we need to make a new one. */
                     if (!l2_entry->IsTable()) {
                         KPhysicalAddress new_table = AllocateNewPageTable(allocator);
-                        *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                         cpu::DataSynchronizationBarrierInnerShareable();
+                        *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, new_table, attr.IsPrivilegedExecuteNever());
                     }
 
                     L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
@@ -398,17 +396,18 @@ namespace ams::kern::arch::arm64::init {
                             phys_addr += L3BlockSize;
                             size      -= L3BlockSize;
                         }
-                        cpu::DataSynchronizationBarrierInnerShareable();
                         continue;
                     }
 
                     /* Make an L3 block. */
                     *l3_entry = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, attr, PageTableEntry::SoftwareReservedBit_None, false);
-                    cpu::DataSynchronizationBarrierInnerShareable();
                     virt_addr += L3BlockSize;
                     phys_addr += L3BlockSize;
                     size      -= L3BlockSize;
                 }
+
+                /* Ensure data consistency after our mapping is added. */
+                cpu::DataSynchronizationBarrierInnerShareable();
             }
 
             KPhysicalAddress GetPhysicalAddress(KVirtualAddress virt_addr) const {
@@ -556,9 +555,6 @@ namespace ams::kern::arch::arm64::init {
             }
 
             void Reprotect(KVirtualAddress virt_addr, size_t size, const PageTableEntry &attr_before, const PageTableEntry &attr_after) {
-                /* Ensure data consistency before we begin reprotection. */
-                cpu::DataSynchronizationBarrierInnerShareable();
-
                 /* Ensure that addresses and sizes are page aligned. */
                 MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
                 MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
@@ -699,7 +695,7 @@ namespace ams::kern::arch::arm64::init {
                 this->PhysicallyRandomize(virt_addr, size, L2BlockSize, do_copy);
                 this->PhysicallyRandomize(virt_addr, size, L3ContiguousBlockSize, do_copy);
                 this->PhysicallyRandomize(virt_addr, size, L3BlockSize, do_copy);
-                cpu::StoreEntireCacheForInit();
+                cpu::StoreCacheForInit(GetVoidPointer(virt_addr), size);
             }
     };
 

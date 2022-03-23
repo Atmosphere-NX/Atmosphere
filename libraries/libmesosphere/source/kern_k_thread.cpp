@@ -1315,7 +1315,7 @@ namespace ams::kern {
             /* If the thread is runnable, send a termination interrupt to other cores. */
             if (this->GetState() == ThreadState_Runnable) {
                 if (const u64 core_mask = m_physical_affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
-                    cpu::DataSynchronizationBarrier();
+                    cpu::DataSynchronizationBarrierInnerShareable();
                     Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_ThreadTerminate, core_mask);
                 }
             }

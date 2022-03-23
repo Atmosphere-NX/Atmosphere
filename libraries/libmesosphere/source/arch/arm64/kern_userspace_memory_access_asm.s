@@ -577,26 +577,6 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess19InvalidateDataCacheEmm:
     mov     x0, #1
     ret
 
-/* ams::kern::arch::arm64::UserspaceAccess::InvalidateInstructionCache(uintptr_t start, uintptr_t end) */
-.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess26InvalidateInstructionCacheEmm, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6415UserspaceAccess26InvalidateInstructionCacheEmm
-.type       _ZN3ams4kern4arch5arm6415UserspaceAccess26InvalidateInstructionCacheEmm, %function
-.balign 0x10
-_ZN3ams4kern4arch5arm6415UserspaceAccess26InvalidateInstructionCacheEmm:
-    /* Check if we have any work to do. */
-    cmp     x1, x0
-    b.eq    2f
-
-1:  /* Loop, invalidating each cache line. */
-    ic      ivau, x0
-    add     x0, x0, #0x40
-    cmp     x1, x0
-    b.ne    1b
-
-2:  /* We're done! */
-    mov     x0, #1
-    ret
-
 /* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory32Bit(void *dst, const void *src, size_t size) */
 .section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm

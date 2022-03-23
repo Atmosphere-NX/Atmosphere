@@ -84,17 +84,31 @@ _ZN3ams4kern4init10StartCore0Emm:
     mov x20, x1
 
     /* Check our current EL. We want to be executing out of EL1. */
-    /* If we're in EL2, we'll need to deprivilege ourselves. */
     mrs x1, currentel
+
+    /* Check if we're EL1. */
     cmp x1, #0x4
-    b.eq core0_el1
+    b.eq 2f
+
+    /* Check if we're EL2. */
     cmp x1, #0x8
-    b.eq core0_el2
-core0_el3:
-    b core0_el3
-core0_el2:
+    b.eq 1f
+
+0:  /* We're EL3. This is a panic condition. */
+    b 0b
+
+1:  /* We're EL2. */
+    #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+    /* On NX board, this is a panic condition. */
+    b 1b
+    #else
+    /* Otherwise, deprivilege to EL2. */
+    /* TODO: Does N still have this? We need it for qemu emulation/unit testing, we should come up with a better solution maybe. */
     bl _ZN3ams4kern4init16JumpFromEL2ToEL1Ev
-core0_el1:
+    #endif
+
+2:  /* We're EL1. */
+    /* Disable the MMU/Caches. */
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
 #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
@@ -103,13 +117,17 @@ core0_el1:
     mov w1, #65000
     smc #1
     cmp x0, #0
-0:
-    b.ne 0b
+3:
+    b.ne 3b
 
     /* Store the target firmware. */
     adr x0, __metadata_target_firmware
     str w1, [x0]
 #endif
+
+    /* Get the unknown debug region. */
+    /* TODO: This is always zero in release kernels -- what is this? Is it the device tree buffer? */
+    mov x21, #0
 
     /* We want to invoke kernel loader. */
     adr x0, _start
@@ -126,7 +144,7 @@ core0_el1:
     /* Next thing to do is to set up our memory management and slabheaps -- all the other core initialization. */
     /* Call ams::kern::init::InitializeCore(uintptr_t, void **) */
     mov x1, x0  /* Kernelldr returns a state object for the kernel to re-use. */
-    mov x0, xzr /* Official kernel always passes zero, when this is non-zero the address is mapped. */
+    mov x0, x21 /* Use the address we determined earlier. */
     bl _ZN3ams4kern4init14InitializeCoreEmPPv
 
     /* Get the init arguments for core 0. */
@@ -144,17 +162,31 @@ _ZN3ams4kern4init14StartOtherCoreEPKNS1_14KInitArgumentsE:
     mov x20, x0
 
     /* Check our current EL. We want to be executing out of EL1. */
-    /* If we're in EL2, we'll need to deprivilege ourselves. */
     mrs x1, currentel
+
+    /* Check if we're EL1. */
     cmp x1, #0x4
-    b.eq othercore_el1
+    b.eq 2f
+
+    /* Check if we're EL2. */
     cmp x1, #0x8
-    b.eq othercore_el2
-othercore_el3:
-    b othercore_el3
-othercore_el2:
+    b.eq 1f
+
+0:  /* We're EL3. This is a panic condition. */
+    b 0b
+
+1:  /* We're EL2. */
+    #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+    /* On NX board, this is a panic condition. */
+    b 1b
+    #else
+    /* Otherwise, deprivilege to EL2. */
+    /* TODO: Does N still have this? We need it for qemu emulation/unit testing, we should come up with a better solution maybe. */
     bl _ZN3ams4kern4init16JumpFromEL2ToEL1Ev
-othercore_el1:
+    #endif
+
+2:  /* We're EL1. */
+    /* Disable the MMU/Caches. */
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
     /* Setup system registers using values from our KInitArguments. */
@@ -171,21 +203,20 @@ othercore_el1:
     mrs x1, midr_el1
     ubfx x2, x1, #0x18, #0x8 /* Extract implementer bits. */
     cmp x2, #0x41            /* Implementer::ArmLimited */
-    b.ne othercore_cpu_specific_setup_end
+    b.ne 4f
     ubfx x2, x1, #0x4, #0xC  /* Extract primary part number. */
     cmp x2, #0xD07           /* PrimaryPartNumber::CortexA57 */
-    b.eq othercore_cpu_specific_setup_cortex_a57
+    b.eq 3f
     cmp x2, #0xD03           /* PrimaryPartNumber::CortexA53 */
-    b.eq othercore_cpu_specific_setup_cortex_a53
-    b othercore_cpu_specific_setup_end
-othercore_cpu_specific_setup_cortex_a57:
-othercore_cpu_specific_setup_cortex_a53:
+    b.eq 3f
+    b 4f
+3:  /* We're running on a Cortex-A53/Cortex-A57. */
     ldr x1, [x20, #(INIT_ARGUMENTS_CPUACTLR)]
     msr cpuactlr_el1, x1
     ldr x1, [x20, #(INIT_ARGUMENTS_CPUECTLR)]
     msr cpuectlr_el1, x1
 
-othercore_cpu_specific_setup_end:
+4:
     /* Ensure instruction consistency. */
     dsb sy
     isb
@@ -237,7 +268,8 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     ldr x0, [x20, #(INIT_ARGUMENTS_ARGUMENT)]
     br x1
 
-
+/* TODO: Can we remove this while retaining QEMU support? */
+#ifndef ATMOSPHERE_BOARD_NINTENDO_NX
 /* ams::kern::init::JumpFromEL2ToEL1() */
 .section    .crt0.text._ZN3ams4kern4init16JumpFromEL2ToEL1Ev, "ax", %progbits
 .global     _ZN3ams4kern4init16JumpFromEL2ToEL1Ev
@@ -314,6 +346,7 @@ _ZN3ams4kern4init16JumpFromEL2ToEL1Ev:
     msr spsr_el2, x0
 
     eret
+#endif
 
 /* ams::kern::init::DisableMmuAndCaches() */
 .section    .crt0.text._ZN3ams4kern4init19DisableMmuAndCachesEv, "ax", %progbits
@@ -341,6 +374,10 @@ _ZN3ams4kern4init19DisableMmuAndCachesEv:
     and x0, x0, x1
     msr sctlr_el1, x0
 
+    /* Ensure instruction consistency. */
+    dsb sy
+    isb
+
     mov x30, x22
     ret
 
@@ -354,13 +391,10 @@ _ZN3ams4kern4arch5arm643cpu32FlushEntireDataCacheWithoutStackEv:
 
     /* Ensure that the cache is coherent. */
     bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
 
     bl _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv
-    dsb sy
 
     bl _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv
-    dsb sy
 
     /* Invalidate the entire TLB, and ensure instruction consistency. */
     tlbi vmalle1is
@@ -387,10 +421,10 @@ _ZN3ams4kern4arch5arm643cpu37FlushEntireDataCacheLocalWithoutStackEv:
     mov x9, xzr
 
     /* while (level <= levels_of_unification) { */
-begin_flush_cache_local_loop:
     cmp x9, x10
-    b.eq done_flush_cache_local_loop
+    b.eq 1f
 
+0:
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
@@ -399,9 +433,13 @@ begin_flush_cache_local_loop:
     add w9, w9, #1
 
     /* } */
-    b begin_flush_cache_local_loop
+    cmp x9, x10
+    b.ne 0b
 
-done_flush_cache_local_loop:
+    /* cpu::DataSynchronizationBarrier(); */
+    dsb sy
+
+1:
     mov x30, x24
     ret
 
@@ -423,21 +461,25 @@ _ZN3ams4kern4arch5arm643cpu38FlushEntireDataCacheSharedWithoutStackEv:
     /* int level = levels_of_unification */
 
     /* while (level <= levels_of_coherency) { */
-begin_flush_cache_shared_loop:
     cmp w9, w10
-    b.hi done_flush_cache_shared_loop
+    b.hi 1f
 
+0:
     /*     FlushEntireDataCacheImplWithoutStack(level); */
     mov w0, w9
     bl _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv
 
     /*     level++; */
+    cmp w9, w10
     add w9, w9, #1
 
     /* } */
-    b begin_flush_cache_shared_loop
+    b.cc 0b
 
-done_flush_cache_shared_loop:
+    /* cpu::DataSynchronizationBarrier(); */
+    dsb sy
+
+1:
     mov x30, x24
     ret
 
@@ -449,6 +491,9 @@ _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv:
     /* const u64 level_sel_value = static_cast<u64>(level << 1); */
     lsl w6, w0, #1
     sxtw x6, w6
+
+    /* cpu::DataSynchronizationBarrier(); */
+    dsb sy
 
     /* cpu::SetCsselrEl1(level_sel_value); */
     msr csselr_el1, x6
@@ -479,17 +524,17 @@ _ZN3ams4kern4arch5arm643cpu36FlushEntireDataCacheImplWithoutStackEv:
     mov x5, #0
 
     /* while (way <= num_ways) { */
-begin_flush_cache_impl_way_loop:
+0:
     cmp w8, w5
-    b.lt done_flush_cache_impl_way_loop
+    b.lt 3f
 
     /*     int set = 0; */
     mov x0, #0
 
     /*     while (set <= num_sets) { */
-begin_flush_cache_impl_set_loop:
+1:
     cmp w3, w0
-    b.lt done_flush_cache_impl_set_loop
+    b.lt 2f
 
     /*         const u64 cisw_value = (static_cast<u64>(way) << way_shift) | (static_cast<u64>(set) << set_shift) | level_sel_value; */
     lsl x2, x5, x7
@@ -504,13 +549,13 @@ begin_flush_cache_impl_set_loop:
     add x0, x0, #1
 
     /*     } */
-    b begin_flush_cache_impl_set_loop
-done_flush_cache_impl_set_loop:
+    b 1b
+2:
 
     /*     way++; */
     add x5, x5, 1
 
     /* } */
-    b begin_flush_cache_impl_way_loop
-done_flush_cache_impl_way_loop:
+    b 0b
+3:
     ret

@@ -257,21 +257,21 @@ namespace ams::kern::arch::arm64 {
     #define MESOSPHERE_SET_HW_BREAK_POINT(ID, FLAGS, VALUE) \
         ({                                                  \
             cpu::SetDbgBcr##ID##El1(0);                     \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
             cpu::SetDbgBvr##ID##El1(VALUE);                 \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
             cpu::SetDbgBcr##ID##El1(FLAGS);                 \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
         })
 
     #define MESOSPHERE_SET_HW_WATCH_POINT(ID, FLAGS, VALUE) \
         ({                                                  \
             cpu::SetDbgWcr##ID##El1(0);                     \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
             cpu::SetDbgWvr##ID##El1(VALUE);                 \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
             cpu::SetDbgWcr##ID##El1(FLAGS);                 \
-            cpu::EnsureInstructionConsistency();            \
+            cpu::EnsureInstructionConsistencyFullSystem();  \
         })
 
     Result KDebug::SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value) {
