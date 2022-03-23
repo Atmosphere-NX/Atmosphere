@@ -69,6 +69,7 @@ namespace ams::ncm {
                 /* Set as dirty/not mapped. */
                 m_is_dirty  = false;
                 m_is_mapped = false;
+                R_SUCCEED();
             }
 
             Result GetMappedMemoryImpl(MappedMemory *out, size_t offset, size_t size) {

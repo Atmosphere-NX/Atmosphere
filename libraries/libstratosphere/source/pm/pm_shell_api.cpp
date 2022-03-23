@@ -53,10 +53,10 @@ namespace ams::pm::shell {
     Result BoostApplicationThreadResourceLimit() {
         return ::pmshellBoostApplicationThreadResourceLimit();
     }
-    #endif
 
     Result BoostSystemThreadResourceLimit() {
         return ::pmshellBoostSystemThreadResourceLimit();
     }
+    #endif
 
 }
