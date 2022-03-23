@@ -365,9 +365,9 @@ namespace ams::secmon {
             reg::Write(MC + MC_SECURITY_CARVEOUT4_CFG0,                                                                                                carveout_config);
 
             /* Configure carveout 5. */
-            reg::Write(MC + MC_SECURITY_CARVEOUT5_BOM,                           g_kernel_carveouts[0].address >>  0);
-            reg::Write(MC + MC_SECURITY_CARVEOUT5_BOM_HI,                        g_kernel_carveouts[0].address >> 32);
-            reg::Write(MC + MC_SECURITY_CARVEOUT5_SIZE_128KB,                    g_kernel_carveouts[0].size / 128_KB);
+            reg::Write(MC + MC_SECURITY_CARVEOUT5_BOM,                           g_kernel_carveouts[1].address >>  0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT5_BOM_HI,                        g_kernel_carveouts[1].address >> 32);
+            reg::Write(MC + MC_SECURITY_CARVEOUT5_SIZE_128KB,                    g_kernel_carveouts[1].size / 128_KB);
             reg::Write(MC + MC_SECURITY_CARVEOUT5_CLIENT_ACCESS0,                                      ClientAccess0);
             reg::Write(MC + MC_SECURITY_CARVEOUT5_CLIENT_ACCESS1,                                      ClientAccess1);
             reg::Write(MC + MC_SECURITY_CARVEOUT5_CLIENT_ACCESS2,                                    client_access_2);
