@@ -23,6 +23,14 @@ namespace ams::kern::arch::arm64::cpu {
 
     namespace {
 
+        ALWAYS_INLINE void SetEventLocally() {
+            __asm__ __volatile__("sevl" ::: "memory");
+        }
+
+        ALWAYS_INLINE void WaitForEvent() {
+            __asm__ __volatile__("wfe" ::: "memory");
+        }
+
         class KScopedCoreMigrationDisable {
             public:
                 ALWAYS_INLINE KScopedCoreMigrationDisable() { GetCurrentThread().DisableCoreMigration(); }
@@ -79,6 +87,51 @@ namespace ams::kern::arch::arm64::cpu {
                     DataMemoryBarrierInnerShareable();
                     m_done = true;
                     return nullptr;
+                }
+        };
+
+        class KCoreBarrierInterruptHandler : public KInterruptHandler {
+            private:
+                util::Atomic<u64> m_target_cores;
+                KSpinLock m_lock;
+            public:
+                constexpr KCoreBarrierInterruptHandler() : KInterruptHandler(), m_target_cores(0), m_lock() { /* ... */ }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
+                    m_target_cores &= ~(1ul << GetCurrentCoreId());
+                    return nullptr;
+                }
+
+                void SynchronizeCores(u64 core_mask) {
+                    /* Disable dispatch while we synchronize. */
+                    KScopedDisableDispatch dd;
+
+                    /* Acquire exclusive access to ourselves. */
+                    KScopedSpinLock lk(m_lock);
+
+                    /* If necessary, force synchronization with other cores. */
+                    if (const u64 other_cores_mask = core_mask & ~(1ul << GetCurrentCoreId()); other_cores_mask != 0) {
+                        /* Send an interrupt to the other cores. */
+                        m_target_cores = other_cores_mask;
+                        cpu::DataSynchronizationBarrierInnerShareable();
+                        Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CoreBarrier, other_cores_mask);
+
+                        /* Wait for all cores to acknowledge. */
+                        {
+                            u64 v;
+                            __asm__ __volatile__("ldaxr %[v], %[p]\n"
+                                                 "cbz %[v], 1f\n"
+                                                 "0:\n"
+                                                 "wfe\n"
+                                                 "ldaxr %[v], %[p]\n"
+                                                 "cbnz %[v], 0b\n"
+                                                 "1:\n"
+                                                 : [v]"=&r"(v)
+                                                 : [p]"Q"(*reinterpret_cast<u64 *>(std::addressof(m_target_cores)))
+                                                 : "memory");
+                        }
+                    }
                 }
         };
 
@@ -215,7 +268,11 @@ namespace ams::kern::arch::arm64::cpu {
         /* Instances of the interrupt handlers. */
         constinit KThreadTerminationInterruptHandler  g_thread_termination_handler;
         constinit KCacheHelperInterruptHandler        g_cache_operation_handler;
+        constinit KCoreBarrierInterruptHandler        g_core_barrier_handler;
+
+        #if defined(MESOSPHERE_ENABLE_PERFORMANCE_COUNTER)
         constinit KPerformanceCounterInterruptHandler g_performance_counter_handler[cpu::NumCores];
+        #endif
 
         /* Expose this as a global, for asm to use. */
         constinit s32 g_all_core_sync_count;
@@ -296,14 +353,6 @@ namespace ams::kern::arch::arm64::cpu {
             }
         }
 
-        ALWAYS_INLINE void SetEventLocally() {
-            __asm__ __volatile__("sevl" ::: "memory");
-        }
-
-        ALWAYS_INLINE void WaitForEvent() {
-            __asm__ __volatile__("wfe" ::: "memory");
-        }
-
         ALWAYS_INLINE Result InvalidateDataCacheRange(uintptr_t start, uintptr_t end) {
             MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
@@ -336,6 +385,11 @@ namespace ams::kern::arch::arm64::cpu {
             __asm__ __volatile__("ic ialluis" ::: "memory");
         }
 
+    }
+
+    void SynchronizeCores(u64 core_mask) {
+        /* Request a core barrier interrupt. */
+        g_core_barrier_handler.SynchronizeCores(core_mask);
     }
 
     void StoreCacheForInit(void *addr, size_t size) {
@@ -446,9 +500,15 @@ namespace ams::kern::arch::arm64::cpu {
         /* Bind all handlers to the relevant interrupts. */
         Kernel::GetInterruptManager().BindHandler(std::addressof(g_cache_operation_handler),              KInterruptName_CacheOperation,     core_id, KInterruptController::PriorityLevel_High,      false, false);
         Kernel::GetInterruptManager().BindHandler(std::addressof(g_thread_termination_handler),           KInterruptName_ThreadTerminate,    core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+        Kernel::GetInterruptManager().BindHandler(std::addressof(g_core_barrier_handler),                 KInterruptName_CoreBarrier,        core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
 
+        /* If we should, enable user access to the performance counter registers. */
         if (KTargetSystem::IsUserPmuAccessEnabled()) { SetPmUserEnrEl0(1ul); }
+
+        /* If we should, enable the kernel performance counter interrupt handler. */
+        #if defined(MESOSPHERE_ENABLE_PERFORMANCE_COUNTER)
         Kernel::GetInterruptManager().BindHandler(std::addressof(g_performance_counter_handler[core_id]), KInterruptName_PerformanceCounter, core_id, KInterruptController::PriorityLevel_Timer,     false, false);
+        #endif
     }
 
     void SynchronizeAllCores() {

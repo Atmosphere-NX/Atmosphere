@@ -67,6 +67,16 @@ namespace ams::kern {
             return mask;
         }();
 
+        static constexpr inline u64 ConvertVirtualCoreMaskToPhysical(u64 v_core_mask) {
+            u64 p_core_mask = 0;
+            while (v_core_mask != 0) {
+                const u64 next = __builtin_ctzll(v_core_mask);
+                v_core_mask &= ~(static_cast<u64>(1) << next);
+                p_core_mask |=  (static_cast<u64>(1) << cpu::VirtualToPhysicalCoreMap[next]);
+            }
+            return p_core_mask;
+        }
+
     }
 
     static_assert(cpu::NumCores <= cpu::NumVirtualCores);

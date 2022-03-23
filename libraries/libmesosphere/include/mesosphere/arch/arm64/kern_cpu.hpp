@@ -188,6 +188,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     /* Synchronization helpers. */
     NOINLINE void SynchronizeAllCores();
+    void SynchronizeCores(u64 core_mask);
 
     /* Cache management helpers. */
     void StoreCacheForInit(void *addr, size_t size);

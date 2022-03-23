@@ -27,7 +27,11 @@ namespace ams::kern {
         m_program_type            = 0;
 
         /* Initial processes may run on all cores. */
-        m_core_mask = cpu::VirtualCoreMask;
+        constexpr u64 VirtMask = cpu::VirtualCoreMask;
+        constexpr u64 PhysMask = cpu::ConvertVirtualCoreMaskToPhysical(VirtMask);
+
+        m_core_mask      = VirtMask;
+        m_phys_core_mask = PhysMask;
 
         /* Initial processes may use any user priority they like. */
         m_priority_mask = ~0xFul;
@@ -60,7 +64,7 @@ namespace ams::kern {
 
     Result KCapabilities::SetCorePriorityCapability(const util::BitPack32 cap) {
         /* We can't set core/priority if we've already set them. */
-        R_UNLESS(m_core_mask    == 0,  svc::ResultInvalidArgument());
+        R_UNLESS(m_core_mask     == 0, svc::ResultInvalidArgument());
         R_UNLESS(m_priority_mask == 0, svc::ResultInvalidArgument());
 
         /* Validate the core/priority. */
@@ -80,6 +84,9 @@ namespace ams::kern {
             m_core_mask |= (1ul << core_id);
         }
         MESOSPHERE_ASSERT((m_core_mask & cpu::VirtualCoreMask) == m_core_mask);
+
+        /* Set physical core mask. */
+        m_phys_core_mask = cpu::ConvertVirtualCoreMaskToPhysical(m_core_mask);
 
         /* Set priority mask. */
         for (auto prio = min_prio; prio <= max_prio; prio++) {

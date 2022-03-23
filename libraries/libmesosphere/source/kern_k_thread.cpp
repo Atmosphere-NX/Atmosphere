@@ -481,12 +481,16 @@ namespace ams::kern {
 
         /* Ensure that the thread is not executing on any core. */
         if (m_parent != nullptr) {
+            /* Wait for the thread to not be current on any core. */
             for (size_t i = 0; i < cpu::NumCores; ++i) {
                 KThread *core_thread;
                 do {
                     core_thread = Kernel::GetScheduler(i).GetSchedulerCurrentThread();
                 } while (core_thread == this);
             }
+
+            /* Ensure that all cores are synchronized at this point. */
+            cpu::SynchronizeCores(m_parent->GetPhysicalCoreMask());
         }
 
         /* Close the thread. */
@@ -724,11 +728,7 @@ namespace ams::kern {
             }
 
             /* Translate the virtual affinity mask to a physical one. */
-            while (v_affinity_mask != 0) {
-                const u64 next = __builtin_ctzll(v_affinity_mask);
-                v_affinity_mask &= ~(1ul << next);
-                p_affinity_mask |=  (1ul << cpu::VirtualToPhysicalCoreMap[next]);
-            }
+            p_affinity_mask = cpu::ConvertVirtualCoreMaskToPhysical(v_affinity_mask);
 
             /* If we haven't disabled migration, perform an affinity change. */
             if (m_num_core_migration_disables == 0) {
