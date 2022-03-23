@@ -39,6 +39,11 @@ constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_13_0_0[] = {
     { 0x84B4, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
 };
 
+constexpr inline const EmbeddedPatchEntry Usb30ForceEnablePatches_14_0_0[] = {
+    { 0x7414, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+    { 0x74A4, "\x20\x00\x80\x52\xC0\x03\x5F\xD6", 8 },
+};
+
 constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("C0D3F4E87E8B0FE9BBE9F1968A20767F3DC08E03"), util::size(Usb30ForceEnablePatches_9_0_0),  Usb30ForceEnablePatches_9_0_0 },
     { ParseModuleId("B9C700CA8335F8BAA0D2041D8D09F772890BA988"), util::size(Usb30ForceEnablePatches_10_0_0), Usb30ForceEnablePatches_10_0_0 },
@@ -46,4 +51,5 @@ constexpr inline const EmbeddedPatch Usb30ForceEnablePatches[] = {
     { ParseModuleId("F3F88D90EF6B3B6358EDEBAF87D56FA88D3A081C"), util::size(Usb30ForceEnablePatches_12_0_0), Usb30ForceEnablePatches_12_0_0 }, /* 12.0.0 - 12.0.3 */
     { ParseModuleId("A109046278AA99353C20EC38B57C495B74A06D91"), util::size(Usb30ForceEnablePatches_12_0_0), Usb30ForceEnablePatches_12_0_0 }, /* 12.1.0 */
     { ParseModuleId("69384BF4A543C62C4342C94E5E2CED3C5A675251"), util::size(Usb30ForceEnablePatches_13_0_0), Usb30ForceEnablePatches_13_0_0 }, /* 13.0.0 - 13.1.0 */
+    { ParseModuleId("1C97AFF30D48AFFEB74B28A530D30ABA0ABB9FFF"), util::size(Usb30ForceEnablePatches_14_0_0), Usb30ForceEnablePatches_14_0_0 }, /* 14.0.0 */
 };
