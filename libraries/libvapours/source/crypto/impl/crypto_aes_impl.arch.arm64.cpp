@@ -205,7 +205,7 @@ namespace ams::crypto::impl {
         AMS_UNUSED(src_size, dst_size);
 
         /* Get the key. */
-        const u8 *key8 = reinterpret_cast<const u8 *>(m_round_keys) + (RoundCount + BlockSize);
+        const u8 *key8 = reinterpret_cast<const u8 *>(m_round_keys) + (RoundCount * BlockSize);
 
         /* Read the block. */
         uint8x16_t block = vld1q_u8(static_cast<const u8 *>(src));
@@ -232,7 +232,7 @@ namespace ams::crypto::impl {
     }
 
     /* Specializations when building specifically for cortex-a57 (or for apple M* processors). */
-    #if defined(ATMOSPHERE_CPU_CORTEX_A57) || defined(ATMOSPHERE_OS_MACOS)
+    #if defined(ATMOSPHERE_CPU_ARM_CORTEX_A57) || defined(ATMOSPHERE_OS_MACOS)
 
     namespace {
 
