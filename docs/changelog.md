@@ -1,4 +1,24 @@
 # Changelog
+## 1.3.0
++ Support was added for 14.0.0.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+  + `erpt` was  updated to reflect the latest official behaviors.
+  + `pm` was  updated to reflect the latest official behaviors.
+  + `fatal` was  updated to reflect the latest official behaviors.
++ A mechanism for automatically cleaning up `erpt_reports` was added.
+  + When booting, if the console has more than 1000 reports inside `/atmosphere/erpt_reports`, the folder will be cleaned to empty.
+  + This behavior can be disabled by setting `erpt!disable_automatic_report_cleanup` = u8!0x1 in system_settings.ini.
++ Atmosphère's build system was re-written, and now allows globally building for various builds/configs.
+  + All boards now automatically support release/debugging/auditing targets; it is now possible to build a full debugging/auditing build of atmosphère for the first time.
++ Support was added for compiling libstratosphère to run on PC.
+  + The currently implemented/tested targets are Windows (x64), Linux (x64, arm64), macOS (x64, arm64).
+    + If you are a developer interested in adding support for another target, please reach out to `SciresM#0524` on discord.
+  + This is intended to finally allow sanely testing Atmosphère's code, by allowing most of it to run on a PC (with access to a debugger) instead of on game console hardware.
+  + In addition, this will allow making PC tools which reuse code written for Atmosphère directly..
+  + **Please Note**: This has no relation to interacting with official software on PC whatsoever. This does not and is not intended to enable anything with official software, it only really allows for making tests and self-contained atmosphère-based tools.
+  + In the course of adding this support (and working on tooling using it), a number of major revisions were added to stratosphere:
+    +
++ General system stability improvements to enhance the user's experience.
 ## 1.2.6
 + Support was added for 13.2.1.
 + A number of minor issues were fixed and improvements were made, including:
@@ -139,7 +159,7 @@
   + Many, many other minor changes, please talk to SciresM#0524 or read the relevant commits if you want to know more.
 + A number of minor issues were fixed, including:
   + Mesosphere's handling of SVC permissions on thread pin/unpin was updated to reflect official kernel behavior.
-  + util::CountTrailingZeroes() was fixed to calculate the correct value when used at compile-time.
+  + util::CountTrailingZeros() was fixed to calculate the correct value when used at compile-time.
 + General system stability improvements to enhance the user's experience.
 ## 1.1.1
 + A bug was fixed which caused some memory to leak when launching a game with mods enabled, eventually causing a crash after enough game launches without rebooting.
