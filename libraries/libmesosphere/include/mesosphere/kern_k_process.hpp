@@ -160,6 +160,7 @@ namespace ams::kern {
             constexpr State GetState() const { return m_state; }
 
             constexpr u64 GetCoreMask() const { return m_capabilities.GetCoreMask(); }
+            constexpr u64 GetPhysicalCoreMask() const { return m_capabilities.GetPhysicalCoreMask(); }
             constexpr u64 GetPriorityMask() const { return m_capabilities.GetPriorityMask(); }
 
             constexpr s32 GetIdealCoreId() const { return m_ideal_core_id; }

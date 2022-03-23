@@ -21,11 +21,12 @@ namespace ams::kern::arch::arm64 {
 
         enum KInterruptName : s32 {
             /* SGIs */
-            KInterruptName_ThreadTerminate        = 4,
-            KInterruptName_CacheOperation         = 5,
-            KInterruptName_Scheduler              = 6,
+            KInterruptName_ThreadTerminate        = 0,
+            KInterruptName_CacheOperation         = 1,
+            KInterruptName_Scheduler              = 2,
+            KInterruptName_CoreBarrier            = 3,
 
-            KInterruptName_PerformanceCounter     = 8,
+            KInterruptName_PerformanceCounter     = 4,
 
             /* PPIs */
     #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)

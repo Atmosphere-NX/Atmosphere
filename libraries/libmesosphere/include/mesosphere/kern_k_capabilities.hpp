@@ -184,6 +184,7 @@ namespace ams::kern {
             svc::SvcAccessFlagSet m_svc_access_flags;
             InterruptFlagSet m_irq_access_flags;
             u64 m_core_mask;
+            u64 m_phys_core_mask;
             u64 m_priority_mask;
             util::BitPack32 m_debug_capabilities;
             s32 m_handle_table_size;
@@ -227,7 +228,7 @@ namespace ams::kern {
             Result SetCapabilities(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
             Result SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
         public:
-            constexpr explicit KCapabilities(util::ConstantInitializeTag) : m_svc_access_flags{}, m_irq_access_flags{}, m_core_mask{}, m_priority_mask{}, m_debug_capabilities{0}, m_handle_table_size{}, m_intended_kernel_version{}, m_program_type{} { /* ... */ }
+            constexpr explicit KCapabilities(util::ConstantInitializeTag) : m_svc_access_flags{}, m_irq_access_flags{}, m_core_mask{}, m_phys_core_mask{}, m_priority_mask{}, m_debug_capabilities{0}, m_handle_table_size{}, m_intended_kernel_version{}, m_program_type{} { /* ... */ }
             KCapabilities() { /* ... */ }
 
             Result Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
@@ -236,6 +237,7 @@ namespace ams::kern {
             static Result CheckCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps);
 
             constexpr u64 GetCoreMask() const { return m_core_mask; }
+            constexpr u64 GetPhysicalCoreMask() const { return m_phys_core_mask; }
             constexpr u64 GetPriorityMask() const { return m_priority_mask; }
             constexpr s32 GetHandleTableSize() const { return m_handle_table_size; }
 
