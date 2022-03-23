@@ -1,0 +1,137 @@
+{
+    "name": "FS",
+    "title_id": "0x0100000000000000",
+    "main_thread_stack_size": "0x00008000",
+    "main_thread_priority": 45,
+    "default_cpu_id": 3,
+    "process_category": 1,
+    "kernel_capabilities": [
+        {
+            "type": "map_page",
+            "value": "0x60006000"
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x6000D000",
+                "size": "0x1000",
+                "is_ro": false,
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x700b0000",
+                "is_ro": false,
+                "size": "0x00005000",
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x7000C000",
+                "is_ro": false,
+                "size": "0x00002000",
+                "is_io": true
+            }
+        },
+        {
+            "type": "map",
+            "value": {
+                "address": "0x70000000",
+                "is_ro": false,
+                "size": "0x00004000",
+                "is_io": true
+            }
+        },
+        {
+            "type": "handle_table_size",
+            "value": 256
+        },
+        {
+            "type": "irq_pair",
+            "value": [
+                46,
+                47
+            ]
+        },
+        {
+            "type": "irq_pair",
+            "value": [
+                51,
+                63
+            ]
+        },
+        {
+            "type": "syscalls",
+            "value": {
+                "svcSetHeapSize": "0x01",
+                "svcSetMemoryPermission": "0x02",
+                "svcSetMemoryAttribute": "0x03",
+                "svcMapMemory": "0x04",
+                "svcUnmapMemory": "0x05",
+                "svcQueryMemory": "0x06",
+                "svcExitProcess": "0x07",
+                "svcCreateThread": "0x08",
+                "svcStartThread": "0x09",
+                "svcExitThread": "0x0a",
+                "svcSleepThread": "0x0b",
+                "svcGetThreadPriority": "0x0c",
+                "svcSetThreadPriority": "0x0d",
+                "svcGetThreadCoreMask": "0x0e",
+                "svcSetThreadCoreMask": "0x0f",
+                "svcGetCurrentProcessorNumber": "0x10",
+                "svcSignalEvent": "0x11",
+                "svcClearEvent": "0x12",
+                "svcMapSharedMemory": "0x13",
+                "svcUnmapSharedMemory": "0x14",
+                "svcCreateTransferMemory": "0x15",
+                "svcCloseHandle": "0x16",
+                "svcResetSignal": "0x17",
+                "svcWaitSynchronization": "0x18",
+                "svcCancelSynchronization": "0x19",
+                "svcArbitrateLock": "0x1a",
+                "svcArbitrateUnlock": "0x1b",
+                "svcWaitProcessWideKeyAtomic": "0x1c",
+                "svcSignalProcessWideKey": "0x1d",
+                "svcGetSystemTick": "0x1e",
+                "svcConnectToNamedPort": "0x1f",
+                "svcSendSyncRequestLight": "0x20",
+                "svcSendSyncRequest": "0x21",
+                "svcSendSyncRequestWithUserBuffer": "0x22",
+                "svcSendAsyncRequestWithUserBuffer": "0x23",
+                "svcGetProcessId": "0x24",
+                "svcGetThreadId": "0x25",
+                "svcBreak": "0x26",
+                "svcOutputDebugString": "0x27",
+                "svcReturnFromException": "0x28",
+                "svcGetInfo": "0x29",
+                "svcWaitForAddress": "0x34",
+                "svcSignalToAddress": "0x35",
+                "svcCreateSession": "0x40",
+                "svcAcceptSession": "0x41",
+                "svcReplyAndReceiveLight": "0x42",
+                "svcReplyAndReceive": "0x43",
+                "svcReplyAndReceiveWithUserBuffer": "0x44",
+                "svcCreateEvent": "0x45",
+                "svcReadWriteRegister": "0x4E",
+                "svcMapTransferMemory": "0x51",
+                "svcUnmapTransferMemory": "0x52",
+                "svcCreateInterruptEvent": "0x53",
+                "svcQueryIoMapping": "0x55",
+                "svcCreateDeviceAddressSpace": "0x56",
+                "svcAttachDeviceAddressSpace": "0x57",
+                "svcDetachDeviceAddressSpace": "0x58",
+                "svcMapDeviceAddressSpaceAligned": "0x5a",
+                "svcUnmapDeviceAddressSpace": "0x5c",
+                "svcGetSystemInfo": "0x6f",
+                "svcSetProcessMemoryPermission": "0x73",
+                "svcMapProcessMemory": "0x74",
+                "svcUnmapProcessMemory": "0x75",
+                "svcCallSecureMonitor": "0x7f"
+            }
+        }
+    ]
+}

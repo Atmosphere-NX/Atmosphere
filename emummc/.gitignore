@@ -1,0 +1,9 @@
+*.kip
+*.data
+*.elf
+build
+.vscode/ipch
+.vscode/settings.json
+*.exe
+*.kip*
+emummc.caps

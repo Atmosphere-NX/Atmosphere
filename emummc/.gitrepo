@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/m4xw/emummc
+	branch = develop
+	commit = a9d56959460fc794ce2cb6405402c25a3e89c47f
+	parent = e3cb5e74b98b704afdee3762dd13f92154a89abc
+	method = merge
+	cmdver = 0.4.1
