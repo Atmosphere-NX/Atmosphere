@@ -100,7 +100,7 @@ namespace ams::kern {
 
     }
 
-    ALWAYS_INLINE void KAutoObject::ScheduleDestruction() {
+    inline NOINLINE void KAutoObject::ScheduleDestruction() {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set our object to destroy. */

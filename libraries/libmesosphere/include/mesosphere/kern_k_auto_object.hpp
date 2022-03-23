@@ -190,13 +190,13 @@ namespace ams::kern {
                 }
             }
 
-            NOINLINE bool Open() {
+            MESOSPHERE_ALWAYS_INLINE_IF_RELEASE bool Open() {
                 MESOSPHERE_ASSERT_THIS();
 
                 return m_ref_count.Open();
             }
 
-            NOINLINE void Close() {
+            MESOSPHERE_ALWAYS_INLINE_IF_RELEASE void Close() {
                 MESOSPHERE_ASSERT_THIS();
 
                 if (m_ref_count.Close()) {
