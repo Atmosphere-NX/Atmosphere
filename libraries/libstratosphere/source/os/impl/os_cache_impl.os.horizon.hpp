@@ -37,7 +37,7 @@ namespace ams::os::impl {
 
             /* Note to the kernel that we're performing cache maintenance, in case we get interrupted while touching cache lines. */
             tlr->cache_maintenance_flag = 1;
-            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; }
+            ON_SCOPE_EXIT { tlr->cache_maintenance_flag = 0; };
 
             /* Iterate, flushing cache lines. */
             for (uintptr_t cur = reinterpret_cast<uintptr_t>(addr) & ~(cache_line_size - 1); cur < end_addr; cur += cache_line_size) {
