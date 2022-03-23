@@ -30,11 +30,12 @@ namespace ams::mitm::bpc {
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
-                 * - am, to intercept the Reboot/Power buttons in the overlay menu.
+                 * - am (omm on 14.0.0+), to intercept the Reboot/Power buttons in the overlay menu.
                  * - fatal, to simplify payload reboot logic significantly
                  * - hbl, to allow homebrew to take advantage of the feature.
                  */
                 return client_info.program_id == ncm::SystemProgramId::Am ||
+                       client_info.program_id == ncm::SystemProgramId::Omm ||
                        client_info.program_id == ncm::SystemProgramId::Fatal ||
                        client_info.override_status.IsHbl();
             }
