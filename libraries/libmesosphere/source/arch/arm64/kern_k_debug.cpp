@@ -202,16 +202,13 @@ namespace ams::kern::arch::arm64 {
         /* Get the FPU registers, if required. */
         if ((context_flags & ams::svc::ThreadContextFlag_Fpu) != 0) {
             static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
-            const u128 *f = t_ctx->GetFpuRegisters();
+            const auto &caller_save = thread->GetCallerSaveFpuRegisters();
+            const auto &callee_save = t_ctx->GetCalleeSaveFpuRegisters();
 
             if (this->Is64Bit()) {
-                for (size_t i = 0; i < KThreadContext::NumFpuRegisters; ++i) {
-                    out->v[i] = f[i];
-                }
+                KThreadContext::GetFpuRegisters(out->v, caller_save.fpu64, callee_save.fpu64);
             } else {
-                for (size_t i = 0; i < KThreadContext::NumFpuRegisters / 2; ++i) {
-                    out->v[i] = f[i];
-                }
+                KThreadContext::GetFpuRegisters(out->v, caller_save.fpu32, callee_save.fpu32);
                 for (size_t i = KThreadContext::NumFpuRegisters / 2; i < KThreadContext::NumFpuRegisters; ++i) {
                     out->v[i] = 0;
                 }
@@ -240,7 +237,14 @@ namespace ams::kern::arch::arm64 {
         /* Set the FPU registers, if required. */
         if ((context_flags & ams::svc::ThreadContextFlag_Fpu) != 0) {
             static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
-            t_ctx->SetFpuRegisters(ctx.v, this->Is64Bit());
+            auto &caller_save = thread->GetCallerSaveFpuRegisters();
+            auto &callee_save = t_ctx->GetCalleeSaveFpuRegisters();
+
+            if (this->Is64Bit()) {
+                KThreadContext::SetFpuRegisters(caller_save.fpu64, callee_save.fpu64, ctx.v);
+            } else {
+                KThreadContext::SetFpuRegisters(caller_save.fpu32, callee_save.fpu32, ctx.v);
+            }
         }
 
         R_SUCCEED();

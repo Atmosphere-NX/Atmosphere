@@ -255,7 +255,7 @@ namespace ams::kern {
         /* in EL0...which implies a return-from-exception has occurred since we set the bit. Thus, forcing */
         /* an ISB is unnecessary, and we can modify the register safely and be confident it will affect the next */
         /* userland instruction executed. */
-        cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(next_thread->IsSingleStep()).Store();
+        cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(next_thread->IsHardwareSingleStep()).Store();
         #endif
 
         /* Switch the current process, if we're switching processes. */

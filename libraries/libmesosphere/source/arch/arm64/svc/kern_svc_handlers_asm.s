@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere/kern_build_config.hpp>
-#include <mesosphere/kern_select_assembly_offsets.h>
+#include <mesosphere/kern_select_assembly_macros.h>
 
 /* ams::kern::arch::arm64::SvcHandler64() */
 .section    .text._ZN3ams4kern4arch5arm6412SvcHandler64Ev, "ax", %progbits
@@ -81,9 +81,10 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     cbz     x11, 3f
 
     /* Note that we're calling the SVC. */
-    mov     w10, #1
-    strb    w10, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
-    strb    w8,  [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    orr     w9, w9, #(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC)
+    strb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    strb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -111,7 +112,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 2:  /* We completed the SVC, and we should handle DPC. */
     /* Check the dpc flags. */
     ldrb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
-    cbz     w8, 4f
+    cbz     w8, 5f
 
     /* We have DPC to do! */
     /* Save registers and call ams::kern::KDpcManager::HandleDpc(). */
@@ -150,7 +151,18 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
-    /* Restore registers. */
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 4f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w9, w9,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Enable and restore the fpu. */
+    ENABLE_AND_RESTORE_FPU64(x10, x8, x9, w8, w9)
+
+4:  /* Restore registers. */
     ldp     x30, x8,  [sp, #(EXCEPTION_CONTEXT_X30_SP)]
     ldp     x9,  x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
@@ -184,9 +196,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
     eret
 
-4:  /* Return from SVC. */
-    /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+5:  /* Return from SVC. */
 
     /* If we should, trace the svc exit. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -204,7 +214,60 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     add     sp, sp, #0x40
 #endif
 
-    /* Restore registers. */
+    /* Get our exception flags. */
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Clear in-svc and needs-fpu-restore flags. */
+    and     w8, w9, #(~(THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED))
+    and     w8, w8, #(~(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC))
+    strb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* If we don't need to restore the fpu, skip restoring it. */
+    tbz     w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 7f
+
+    /* If we need to restore the fpu, check if we need to do a full restore. */
+    tbnz    w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 6f
+
+    /* Enable the fpu. */
+    ENABLE_FPU(x8)
+
+    /* Get the thread context and restore fpsr/fpcr. */
+    GET_THREAD_CONTEXT_AND_RESTORE_FPCR_FPSR(x10, x8, x9, w8, w9)
+
+    /* Restore callee-saved registers to 64-bit fpu. */
+    RESTORE_FPU64_CALLEE_SAVE_REGISTERS(x10)
+
+    /* Clear caller-saved registers to 64-bit fpu. */
+    movi    v0.2d, #0
+    movi    v1.2d, #0
+    movi    v2.2d, #0
+    movi    v3.2d, #0
+    movi    v4.2d, #0
+    movi    v5.2d, #0
+    movi    v6.2d, #0
+    movi    v7.2d, #0
+    movi    v16.2d, #0
+    movi    v17.2d, #0
+    movi    v18.2d, #0
+    movi    v19.2d, #0
+    movi    v20.2d, #0
+    movi    v21.2d, #0
+    movi    v22.2d, #0
+    movi    v23.2d, #0
+    movi    v24.2d, #0
+    movi    v25.2d, #0
+    movi    v26.2d, #0
+    movi    v27.2d, #0
+    movi    v28.2d, #0
+    movi    v29.2d, #0
+    movi    v30.2d, #0
+    movi    v31.2d, #0
+    b       7f
+
+6:  /* We need to do a full fpu restore. */
+    ENABLE_AND_RESTORE_FPU64(x10, x8, x9, w8, w9)
+
+7:  /* Restore registers. */
     ldp     x30, x8,  [sp, #(EXCEPTION_CONTEXT_X30_SP)]
     ldp     x9,  x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
     ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
@@ -273,38 +336,40 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     stp     x14, xzr, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
 
     /* Check if the SVC index is out of range. */
-    mrs     x16, esr_el1
-    and     x16, x16, #0xFF
-    cmp     x16, #(AMS_KERN_NUM_SUPERVISOR_CALLS)
+    mrs     x8, esr_el1
+    and     x8, x8, #0xFF
+    cmp     x8, #(AMS_KERN_NUM_SUPERVISOR_CALLS)
     b.ge    3f
 
     /* Check the specific SVC permission bit for allowal. */
-    mov     x20, sp
-    add     x20, x20, x16, lsr#3
-    ldrb    w20, [x20, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_SVC_PERMISSION)]
-    and     x17, x16, #0x7
-    lsr     x17, x20, x17
-    tst     x17, #1
+    mov     x9, sp
+    add     x9, x9, x8, lsr#3
+    ldrb    w9, [x9, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_SVC_PERMISSION)]
+    and     x10, x8, #0x7
+    lsr     x10, x9, x10
+    tst     x10, #1
     b.eq    3f
 
     /* Check if our disable count allows us to call SVCs. */
-    mrs     x15, tpidrro_el0
-    ldrh    w15, [x15, #(THREAD_LOCAL_REGION_DISABLE_COUNT)]
-    cbz     w15, 1f
+    mrs     x10, tpidrro_el0
+    ldrh    w10, [x10, #(THREAD_LOCAL_REGION_DISABLE_COUNT)]
+    cbz     w10, 1f
 
     /* It might not, so check the stack params to see if we must not allow the SVC. */
-    ldrb    w15, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_PINNED)]
-    cbz     w15, 3f
+    ldrb    w10, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_PINNED)]
+    cbz     w10, 3f
 
 1:  /* We can call the SVC. */
-    adr     x15, _ZN3ams4kern3svc16SvcTable64From32E
-    ldr     x19, [x15, x16, lsl#3]
-    cbz     x19, 3f
+    adr     x10, _ZN3ams4kern3svc16SvcTable64From32E
+    ldr     x11, [x10, x8, lsl#3]
+    cbz     x11, 3f
+
 
     /* Note that we're calling the SVC. */
-    mov     w15, #1
-    strb    w15, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
-    strb    w16, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    orr     w9, w9, #(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC)
+    strb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    strb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_CURRENT_SVC_ID)]
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -313,26 +378,26 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     stp     x2,  x3,  [sp, #(8 *  2)]
     stp     x4,  x5,  [sp, #(8 *  4)]
     stp     x6,  x7,  [sp, #(8 *  6)]
-    str     x19,      [sp, #(8 *  8)]
+    str     x11,      [sp, #(8 *  8)]
     mov     x0, sp
     bl      _ZN3ams4kern3svc13TraceSvcEntryEPKm
     ldp     x0,  x1,  [sp, #(8 *  0)]
     ldp     x2,  x3,  [sp, #(8 *  2)]
     ldp     x4,  x5,  [sp, #(8 *  4)]
     ldp     x6,  x7,  [sp, #(8 *  6)]
-    ldr     x19,      [sp, #(8 *  8)]
+    ldr     x11,      [sp, #(8 *  8)]
     add     sp, sp, #0x50
 #endif
 
     /* Invoke the SVC handler. */
     msr     daifclr, #2
-    blr     x19
+    blr     x11
     msr     daifset, #2
 
 2:  /* We completed the SVC, and we should handle DPC. */
     /* Check the dpc flags. */
-    ldrb    w16, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
-    cbz     w16, 4f
+    ldrb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_DPC_FLAGS)]
+    cbz     w8, 5f
 
     /* We have DPC to do! */
     /* Save registers and call ams::kern::KDpcManager::HandleDpc(). */
@@ -368,18 +433,29 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
-    /* Restore registers. */
-    ldp     x17, x20, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
-    ldr     x19,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
+    /* If we don't need to restore the fpu, skip restoring it. */
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+    tbz     w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 4f
+
+    /* Clear the needs-fpu-restore flag. */
+    and     w9, w9,  #(~THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED)
+    strb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Enable and restore the fpu. */
+    ENABLE_AND_RESTORE_FPU32(x10, x8, x9, w8, w9)
+
+4:  /* Restore registers. */
+    ldp     x9, x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
+    ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
 
     #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
     /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
-    bic     x20, x20, #(1 << 21)
+    bic     x10, x10, #(1 << 21)
     #endif
 
-    msr     elr_el1, x17
-    msr     spsr_el1, x20
-    msr     tpidr_el0, x19
+    msr     elr_el1, x9
+    msr     spsr_el1, x10
+    msr     tpidr_el0, x11
     ldp     x0,  x1,  [sp, #(EXCEPTION_CONTEXT_X0_X1)]
     ldp     x2,  x3,  [sp, #(EXCEPTION_CONTEXT_X2_X3)]
     ldp     x4,  x5,  [sp, #(EXCEPTION_CONTEXT_X4_X5)]
@@ -393,9 +469,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)
     eret
 
-4:  /* Return from SVC. */
-    /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+5:  /* Return from SVC. */
 
     /* If we should, trace the svc exit. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
@@ -413,22 +487,63 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     add     sp, sp, #0x40
 #endif
 
-    /* Restore registers. */
+    /* Get our exception flags. */
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Clear in-svc and needs-fpu-restore flags. */
+    and     w8, w9, #(~(THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED))
+    and     w8, w8, #(~(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC))
+    strb    w8, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* If we don't need to restore the fpu, skip restoring it. */
+    tbz     w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 7f
+
+    /* If we need to restore the fpu, check if we need to do a full restore. */
+    tbnz    w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_IN_USERMODE_EXCEPTION_HANDLER), 6f
+
+    /* Enable the fpu. */
+    ENABLE_FPU(x8)
+
+    /* Get the thread context and restore fpsr/fpcr. */
+    GET_THREAD_CONTEXT_AND_RESTORE_FPCR_FPSR(x10, x8, x9, w8, w9)
+
+    /* Restore callee-saved registers to 32-bit fpu. */
+    RESTORE_FPU32_CALLEE_SAVE_REGISTERS(x10)
+
+    /* Clear caller-saved registers to 32-bit fpu. */
+    movi    v0.2d, #0
+    movi    v1.2d, #0
+    movi    v2.2d, #0
+    movi    v3.2d, #0
+    movi    v8.2d, #0
+    movi    v9.2d, #0
+    movi    v10.2d, #0
+    movi    v11.2d, #0
+    movi    v12.2d, #0
+    movi    v13.2d, #0
+    movi    v14.2d, #0
+    movi    v15.2d, #0
+    b       7f
+
+6:  /* We need to do a full fpu restore. */
+    ENABLE_AND_RESTORE_FPU32(x10, x8, x9, w8, w9)
+
+7:  /* Restore registers. */
+    ldp     x9, x10, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
+    ldr     x11,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
+
+    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
+    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
+    bic     x10, x10, #(1 << 21)
+    #endif
+
+    msr     elr_el1, x9
+    msr     spsr_el1, x10
+    msr     tpidr_el0, x11
     ldp     x8,  x9,  [sp, #(EXCEPTION_CONTEXT_X8_X9)]
     ldp     x10, x11, [sp, #(EXCEPTION_CONTEXT_X10_X11)]
     ldp     x12, x13, [sp, #(EXCEPTION_CONTEXT_X12_X13)]
     ldp     x14, xzr, [sp, #(EXCEPTION_CONTEXT_X14_X15)]
-    ldp     x17, x20, [sp, #(EXCEPTION_CONTEXT_PC_PSR)]
-    ldr     x19,      [sp, #(EXCEPTION_CONTEXT_TPIDR)]
-
-    #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-    /* Since we're returning from an SVC, make sure SPSR.SS is cleared so that if we're single-stepping we break instantly on the instruction after the SVC. */
-    bic     x20, x20, #(1 << 21)
-    #endif
-
-    msr     elr_el1, x17
-    msr     spsr_el1, x20
-    msr     tpidr_el0, x19
 
     /* Return. */
     add     sp, sp, #(EXCEPTION_CONTEXT_SIZE)

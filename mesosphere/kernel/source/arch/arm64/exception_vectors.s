@@ -125,7 +125,7 @@ vector_entry synch_a64
 
 vector_entry irq_a64
     clrex
-    b _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6425EL0A64IrqExceptionHandlerEv
     check_vector_size irq_a64
 
 vector_entry fiq_a64
@@ -148,7 +148,7 @@ vector_entry synch_a32
 
 vector_entry irq_a32
     clrex
-    b _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6425EL0A32IrqExceptionHandlerEv
     check_vector_size irq_a32
 
 vector_entry fiq_a32

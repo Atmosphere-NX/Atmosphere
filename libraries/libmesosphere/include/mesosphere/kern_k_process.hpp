@@ -233,25 +233,7 @@ namespace ams::kern {
                 return m_pinned_threads[core_id];
             }
 
-            void CopySvcPermissionsTo(KThread::StackParameters &sp) {
-                m_capabilities.CopySvcPermissionsTo(sp);
-            }
-
-            void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) {
-                m_capabilities.CopyPinnedSvcPermissionsTo(sp);
-            }
-
-            void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) {
-                m_capabilities.CopyUnpinnedSvcPermissionsTo(sp);
-            }
-
-            void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
-                m_capabilities.CopyEnterExceptionSvcPermissionsTo(sp);
-            }
-
-            void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
-                m_capabilities.CopyLeaveExceptionSvcPermissionsTo(sp);
-            }
+            const svc::SvcAccessFlagSet &GetSvcPermissions() const { return m_capabilities.GetSvcPermissions(); }
 
             constexpr KResourceLimit *GetResourceLimit() const { return m_resource_limit; }
 

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere/kern_select_assembly_offsets.h>
+#include <mesosphere/kern_select_assembly_macros.h>
 
 /* ams::kern::svc::CallReturnFromException64(Result result) */
 .section    .text._ZN3ams4kern3svc25CallReturnFromException64Ev, "ax", %progbits
@@ -82,8 +82,20 @@ _ZN3ams4kern3svc14RestoreContextEm:
     b 0b
 
 1:  /* We're done with DPC, and should return from the svc. */
-    /* Clear our in-SVC note. */
-    strb    wzr, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_IS_CALLING_SVC)]
+
+    /* Get our exception flags. */
+    ldrb    w9, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* Clear in-svc and needs-fpu-restore flags. */
+    and     w10, w9,  #(~(THREAD_EXCEPTION_FLAG_IS_FPU_CONTEXT_RESTORE_NEEDED))
+    and     w10, w10, #(~(THREAD_EXCEPTION_FLAG_IS_CALLING_SVC))
+    strb    w10, [sp, #(EXCEPTION_CONTEXT_SIZE + THREAD_STACK_PARAMETERS_EXCEPTION_FLAGS)]
+
+    /* If we don't need to restore the fpu, skip restoring it. */
+    tbz     w9, #(THREAD_EXCEPTION_FLAG_BIT_INDEX_IS_FPU_CONTEXT_RESTORE_NEEDED), 3f
+
+    /* Enable and restore the fpu. */
+    ENABLE_AND_RESTORE_FPU(x10, x8, x9, w8, w9, 2, 3)
 
     /* Restore registers. */
     ldp     x30, x8,  [sp, #(EXCEPTION_CONTEXT_X30_SP)]

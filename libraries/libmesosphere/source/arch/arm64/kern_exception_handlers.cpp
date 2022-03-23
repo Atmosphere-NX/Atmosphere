@@ -214,16 +214,16 @@ namespace ams::kern::arch::arm64 {
                         context->psr    = 0x10;
                     }
 
-                    /* Set exception SVC permissions. */
-                    cur_process.CopyEnterExceptionSvcPermissionsTo(GetCurrentThread().GetStackParametersForExceptionSvcPermission());
+                    /* Process that we're entering a usermode exception on the current thread. */
+                    GetCurrentThread().OnEnterUsermodeException();
                     return;
                 }
             }
 
             /* If we should, clear the thread's state as single-step. */
             #if defined(MESOSPHERE_ENABLE_HARDWARE_SINGLE_STEP)
-            if (AMS_UNLIKELY(GetCurrentThread().IsSingleStep())) {
-                GetCurrentThread().ClearSingleStep();
+            if (AMS_UNLIKELY(GetCurrentThread().IsHardwareSingleStep())) {
+                GetCurrentThread().ClearHardwareSingleStep();
                 cpu::MonitorDebugSystemControlRegisterAccessor().SetSoftwareStep(false).Store();
                 cpu::InstructionMemoryBarrier();
             }
@@ -388,8 +388,8 @@ namespace ams::kern::arch::arm64 {
 
         /* Try to leave the user exception. */
         if (cur_process.LeaveUserException()) {
-            /* We left user exception. Alter our SVC permissions accordingly. */
-            cur_process.CopyLeaveExceptionSvcPermissionsTo(cur_thread->GetStackParametersForExceptionSvcPermission());
+            /* Process that we're leaving a usermode exception on the current thread. */
+            GetCurrentThread().OnLeaveUsermodeException();
 
             /* Copy the user context to the thread context. */
             if (is_aarch64) {
