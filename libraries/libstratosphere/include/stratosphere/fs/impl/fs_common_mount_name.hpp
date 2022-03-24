@@ -17,6 +17,8 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     /* Delimiting of mount names. */
     constexpr inline const char ReservedMountNamePrefixCharacter                = '@';
 

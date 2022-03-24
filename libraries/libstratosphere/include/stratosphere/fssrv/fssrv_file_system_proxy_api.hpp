@@ -35,6 +35,7 @@ namespace ams::fssrv {
     class AccessLogServiceImpl;
     class DebugConfigurationServiceImpl;
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct FileSystemProxyConfiguration {
         fscreator::FileSystemCreatorInterfaces *m_fs_creator_interfaces;
         BaseStorageServiceImpl *m_base_storage_service_impl;

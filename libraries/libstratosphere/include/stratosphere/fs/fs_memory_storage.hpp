@@ -20,6 +20,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class MemoryStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
             u8 * const m_buf;

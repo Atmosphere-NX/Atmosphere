@@ -22,6 +22,7 @@
 
 namespace ams::fs::fsa {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IFile;
     class IDirectory;
 

@@ -19,6 +19,8 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
    enum class BisPartitionId {
        /* Boot0 */
        BootPartition1Root =  0,

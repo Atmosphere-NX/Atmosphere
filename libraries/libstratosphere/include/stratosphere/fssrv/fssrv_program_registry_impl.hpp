@@ -27,6 +27,7 @@ namespace ams::fssrv {
 
     }
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class ProgramRegistryImpl {
         NON_COPYABLE(ProgramRegistryImpl);
         NON_MOVEABLE(ProgramRegistryImpl);
@@ -45,26 +46,27 @@ namespace ams::fssrv {
     };
     static_assert(sf::IsIProgramRegistry<ProgramRegistryImpl>);
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class InvalidProgramRegistryImpl {
         public:
             Result RegisterProgram(u64 process_id, u64 program_id, u8 storage_id, const ams::sf::InBuffer &data, s64 data_size, const ams::sf::InBuffer &desc, s64 desc_size) {
                 AMS_UNUSED(process_id, program_id, storage_id, data, data_size, desc, desc_size);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result UnregisterProgram(u64 process_id) {
                 AMS_UNUSED(process_id);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result SetCurrentProcess(const ams::sf::ClientProcessId &client_pid) {
                 AMS_UNUSED(client_pid);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result SetEnabledProgramVerification(bool en) {
                 AMS_UNUSED(en);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
     };
     static_assert(sf::IsIProgramRegistry<InvalidProgramRegistryImpl>);

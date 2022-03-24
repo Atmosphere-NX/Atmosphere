@@ -22,6 +22,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class FileSystemBufferManager : public fs::IBufferManager {
         NON_COPYABLE(FileSystemBufferManager);
         NON_MOVEABLE(FileSystemBufferManager);

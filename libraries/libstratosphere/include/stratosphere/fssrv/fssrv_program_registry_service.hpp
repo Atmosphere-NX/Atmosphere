@@ -27,6 +27,7 @@ namespace ams::fssrv {
 
     }
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class ProgramRegistryServiceImpl {
         public:
             struct Configuration {

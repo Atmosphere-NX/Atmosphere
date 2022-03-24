@@ -19,6 +19,7 @@
 #include <stratosphere/fssrv/sf/fssrv_sf_ifilesystem.hpp>
 #include <stratosphere/fs/fs_code_verification_data.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_FILE_SYSTEM_PROXY_FOR_LOADER_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                                        \
     AMS_SF_METHOD_INFO(C, H, 0, Result, OpenCodeFileSystemDeprecated, (ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const fssrv::sf::Path &path, ncm::ProgramId program_id),                                                   (out_fs, path, program_id),            hos::Version_Min,    hos::Version_9_2_0) \
     AMS_SF_METHOD_INFO(C, H, 0, Result, OpenCodeFileSystem,           (ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, ncm::ProgramId program_id), (out_fs, out_verif, path, program_id), hos::Version_10_0_0)                     \

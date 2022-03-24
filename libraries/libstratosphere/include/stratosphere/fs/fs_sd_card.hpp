@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IEventNotifier;
 
     struct EncryptionSeed {

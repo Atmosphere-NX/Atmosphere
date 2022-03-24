@@ -19,6 +19,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class AlignmentMatchingStorageImpl {
         public:
             static Result Read(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, char *buffer, size_t size);

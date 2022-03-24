@@ -20,6 +20,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class AesCtrCounterExtendedStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AesCtrCounterExtendedStorage);
         NON_MOVEABLE(AesCtrCounterExtendedStorage);

@@ -24,6 +24,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     struct HierarchicalIntegrityVerificationLevelInformation {
         fs::Int64 offset;
         fs::Int64 size;
@@ -66,7 +68,7 @@ namespace ams::fssystem {
     struct HierarchicalIntegrityVerificationSizeSet {
         s64 control_size;
         s64 master_hash_size;
-        s64 layered_hash_sizes[IntegrityMaxLayerCount - 1];
+        s64 layered_hash_sizes[IntegrityMaxLayerCount - 2];
     };
     static_assert(util::is_pod<HierarchicalIntegrityVerificationSizeSet>::value);
 

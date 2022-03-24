@@ -23,6 +23,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ForwardingFile final : public ::ams::fs::fsa::IFile, public ::ams::fs::impl::Newable {
         NON_COPYABLE(ForwardingFile);
         NON_MOVEABLE(ForwardingFile);
@@ -62,6 +63,7 @@ namespace ams::fssystem {
             }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ForwardingDirectory final : public ::ams::fs::fsa::IDirectory, public ::ams::fs::impl::Newable {
         NON_COPYABLE(ForwardingDirectory);
         NON_MOVEABLE(ForwardingDirectory);
@@ -85,6 +87,7 @@ namespace ams::fssystem {
             }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ForwardingFileSystem final : public ::ams::fs::fsa::IFileSystem, public ::ams::fs::impl::Newable {
         NON_COPYABLE(ForwardingFileSystem);
         NON_MOVEABLE(ForwardingFileSystem);

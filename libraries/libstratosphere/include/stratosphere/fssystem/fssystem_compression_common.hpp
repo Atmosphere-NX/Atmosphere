@@ -18,6 +18,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     enum CompressionType : u8 {
         CompressionType_None    = 0,
         CompressionType_Zeros   = 1,

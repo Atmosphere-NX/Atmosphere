@@ -18,6 +18,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     fssystem::IHash256GeneratorFactorySelector *GetNcaHashGeneratorFactorySelector();
     fssystem::IHash256GeneratorFactorySelector *GetSaveDataHashGeneratorFactorySelector();
 

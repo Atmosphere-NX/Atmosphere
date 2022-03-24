@@ -21,6 +21,7 @@
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     #define AMS_FSSRV_FOR_EACH_ACCESS_CONTROL_CAPABILITY(HANDLER, _NS_)                                                                                    \
         HANDLER(CanAbandonAccessFailure,                             _NS_::AccessFailureResolution)                                                        \
         HANDLER(CanChallengeCardExistence,                           _NS_::GameCard)                                                                       \
@@ -179,6 +180,7 @@ namespace ams::fssrv::impl {
         HANDLER(CanWriteSaveDataFileSystemExtraDataFlags,            _NS_::SaveDataTransferVersion2, _NS_::SystemSaveDataManagement, _NS_::SaveDataBackUp) \
         HANDLER(CanWriteSaveDataFileSystemExtraDataTimeStamp,        _NS_::SaveDataBackUp)
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class AccessControlBits {
         public:
             enum class Bits : u64 {

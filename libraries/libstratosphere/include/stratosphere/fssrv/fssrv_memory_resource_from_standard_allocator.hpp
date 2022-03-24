@@ -25,6 +25,7 @@ namespace ams::mem {
 
 namespace ams::fssrv {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class MemoryResourceFromStandardAllocator : public ams::MemoryResource {
         private:
             mem::StandardAllocator *m_allocator;

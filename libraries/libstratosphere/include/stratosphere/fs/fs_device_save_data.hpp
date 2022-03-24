@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     Result MountDeviceSaveData(const char *name);
     Result MountDeviceSaveData(const char *name, const ncm::ApplicationId application_id);
 

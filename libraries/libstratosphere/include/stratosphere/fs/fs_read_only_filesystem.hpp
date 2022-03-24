@@ -22,6 +22,8 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     namespace {
 
         class ReadOnlyFile : public fsa::IFile, public impl::Newable {

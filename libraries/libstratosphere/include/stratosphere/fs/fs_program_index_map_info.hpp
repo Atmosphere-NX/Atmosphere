@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct ProgramIndexMapInfo {
         ncm::ProgramId program_id;
         ncm::ProgramId base_program_id;

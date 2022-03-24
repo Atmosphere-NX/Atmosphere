@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum class SpeedEmulationMode {
         None    = 0,
         Faster  = 1,

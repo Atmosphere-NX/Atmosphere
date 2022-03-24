@@ -22,6 +22,7 @@
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     ams::sf::EmplacedRef<fssrv::sf::IFileSystemProxy, fssrv::FileSystemProxyImpl> GetFileSystemProxyServiceObject();
 
     ams::sf::SharedPointer<fssrv::sf::IProgramRegistry> GetProgramRegistryServiceObject();

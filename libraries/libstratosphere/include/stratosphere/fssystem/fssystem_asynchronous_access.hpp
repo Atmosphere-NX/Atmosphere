@@ -18,6 +18,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class IAsynchronousAccessSplitter {
         public:
             static IAsynchronousAccessSplitter *GetDefaultAsynchronousAccessSplitter();
@@ -31,6 +32,7 @@ namespace ams::fssystem {
             virtual Result QueryInvocationCount(s64 *out, s64 start_offset, s64 end_offset, s64 access_size, s64 alignment_size) { AMS_UNUSED(out, start_offset, end_offset, access_size, alignment_size); AMS_ABORT("TODO"); }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class DefaultAsynchronousAccessSplitter final : public IAsynchronousAccessSplitter {
         public:
             constexpr DefaultAsynchronousAccessSplitter() = default;
@@ -48,6 +50,7 @@ namespace ams::fssystem {
             }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     inline IAsynchronousAccessSplitter *IAsynchronousAccessSplitter::GetDefaultAsynchronousAccessSplitter() {
         static constinit DefaultAsynchronousAccessSplitter s_default_access_splitter;
         return std::addressof(s_default_access_splitter);

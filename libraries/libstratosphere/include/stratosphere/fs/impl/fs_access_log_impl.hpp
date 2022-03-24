@@ -23,6 +23,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum AccessLogTarget : u32 {
         AccessLogTarget_None        = (0 << 0),
         AccessLogTarget_Application = (1 << 0),

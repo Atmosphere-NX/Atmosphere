@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     constexpr inline size_t EntryNameLengthMax = 0x300;
 
     struct DirectoryEntry {

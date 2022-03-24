@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     using RomPathChar    = char;
     using RomFileId      = s32;
     using RomDirectoryId = s32;

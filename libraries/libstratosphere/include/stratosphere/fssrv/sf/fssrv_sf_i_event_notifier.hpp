@@ -17,6 +17,7 @@
 #include <vapours.hpp>
 #include <stratosphere/sf.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_EVENT_NOTIFIER_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H, 0, Result, GetEventHandle, (ams::sf::OutCopyHandle out), (out))
 

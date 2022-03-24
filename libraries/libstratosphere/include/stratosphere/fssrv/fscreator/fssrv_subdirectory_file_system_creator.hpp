@@ -19,6 +19,7 @@
 
 namespace ams::fssrv::fscreator {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class SubDirectoryFileSystemCreator final : public ISubDirectoryFileSystemCreator {
         NON_COPYABLE(SubDirectoryFileSystemCreator);
         NON_MOVEABLE(SubDirectoryFileSystemCreator);

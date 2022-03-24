@@ -22,6 +22,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<size_t _DataAlign, size_t _BufferAlign>
     class AlignmentMatchingStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AlignmentMatchingStorage);
@@ -131,6 +132,7 @@ namespace ams::fssystem {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<typename BaseStorageType, size_t _BufferAlign>
     class AlignmentMatchingStoragePooledBuffer : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AlignmentMatchingStoragePooledBuffer);
@@ -232,6 +234,7 @@ namespace ams::fssystem {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<size_t _BufferAlign>
     class AlignmentMatchingStorageInBulkRead : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AlignmentMatchingStorageInBulkRead);

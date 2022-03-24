@@ -20,6 +20,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class HierarchicalRomFileTable {
         public:
             using Position = u32;

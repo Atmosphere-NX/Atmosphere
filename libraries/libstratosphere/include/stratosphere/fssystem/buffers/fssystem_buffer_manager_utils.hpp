@@ -26,6 +26,7 @@ namespace ams::fssystem::buffers {
 
     }
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<typename F, typename OnFailure>
     Result DoContinuouslyUntilBufferIsAllocated(F f, OnFailure on_failure, const char *function_name) {
         constexpr auto BufferAllocationRetryLogCountMax = 10;
@@ -55,6 +56,7 @@ namespace ams::fssystem::buffers {
         return ResultSuccess();
     }
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class BufferManagerContext {
         private:
             bool m_needs_blocking;
@@ -70,6 +72,7 @@ namespace ams::fssystem::buffers {
     BufferManagerContext *GetBufferManagerContext();
     void EnableBlockingBufferManagerAllocation();
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class ScopedBufferManagerContextRegistration {
         private:
             BufferManagerContext m_cur_context;
@@ -88,6 +91,7 @@ namespace ams::fssystem::buffers {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<typename IsValidBufferFunction>
     Result AllocateBufferUsingBufferManagerContext(fs::IBufferManager::MemoryRange *out, fs::IBufferManager *buffer_manager, size_t size, const fs::IBufferManager::BufferAttribute attribute, IsValidBufferFunction is_valid_buffer, const char *func_name) {
         AMS_ASSERT(out != nullptr);

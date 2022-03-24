@@ -21,6 +21,7 @@
 #include <stratosphere/fssrv/sf/fssrv_sf_i_device_operator.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_i_event_notifier.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_FILE_SYSTEM_PROXY_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H,    0, Result, OpenFileSystem,                                              (ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out, const fssrv::sf::FspPath &path, u32 type),                                             (out, path, type),                                      hos::Version_Min,    hos::Version_1_0_0)    \
     AMS_SF_METHOD_INFO(C, H,    1, Result, SetCurrentProcess,                                           (const ams::sf::ClientProcessId &client_pid),                                                                                                             (client_pid))                                                                                       \

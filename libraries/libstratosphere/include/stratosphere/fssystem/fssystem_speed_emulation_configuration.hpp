@@ -19,6 +19,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     class SpeedEmulationConfiguration {
         public:
             static void SetSpeedEmulationMode(::ams::fs::SpeedEmulationMode mode);

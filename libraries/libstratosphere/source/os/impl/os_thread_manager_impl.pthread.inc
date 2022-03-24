@@ -155,6 +155,7 @@ namespace ams::os::impl {
         pthread_t pthread;
         const auto res = pthread_create(std::addressof(pthread), nullptr, &InvokeThread, thread);
         AMS_ASSERT(res == 0);
+        AMS_UNUSED(res);
 
         /* Set the thread's pthread handle information. */
         thread->pthread       = pthread;

@@ -19,6 +19,7 @@
 
 namespace ams::fssystem::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     template<typename CacheEntryType, typename AllocatorType>
     class BlockCacheManager {
         NON_COPYABLE(BlockCacheManager);

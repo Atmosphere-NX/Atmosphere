@@ -19,6 +19,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     constexpr inline size_t BufferPoolAlignment = 4_KB;
     constexpr inline size_t BufferPoolWorkSize  = 320;
 

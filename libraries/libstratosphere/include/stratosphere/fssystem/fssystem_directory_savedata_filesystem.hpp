@@ -22,6 +22,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class DirectorySaveDataFileSystem : public fs::fsa::IFileSystem, public fs::impl::Newable {
         NON_COPYABLE(DirectorySaveDataFileSystem);
         private:

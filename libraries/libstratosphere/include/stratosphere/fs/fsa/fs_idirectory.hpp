@@ -20,6 +20,7 @@
 
 namespace ams::fs::fsa {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IDirectory {
         public:
             virtual ~IDirectory() { /* ... */ }

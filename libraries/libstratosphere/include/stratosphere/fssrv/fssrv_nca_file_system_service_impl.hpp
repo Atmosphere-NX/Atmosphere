@@ -47,6 +47,7 @@ namespace ams::fssrv {
 
     }
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class NcaFileSystemServiceImpl {
         public:
             struct Configuration {

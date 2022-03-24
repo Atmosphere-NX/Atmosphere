@@ -22,6 +22,7 @@
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ExternalKeyEntry : public util::IntrusiveListBaseNode<ExternalKeyEntry>, public ::ams::fs::impl::Newable {
         private:
             fs::RightsId m_rights_id;
@@ -48,6 +49,7 @@ namespace ams::fssrv::impl {
             }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ExternalKeyManager {
         NON_COPYABLE(ExternalKeyManager);
         NON_MOVEABLE(ExternalKeyManager);

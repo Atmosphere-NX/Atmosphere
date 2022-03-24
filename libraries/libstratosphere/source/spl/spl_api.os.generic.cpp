@@ -127,6 +127,7 @@ namespace ams::spl {
         EnsureInitialized();
 
         AMS_ASSERT(key_source_size == sizeof(KeySource));
+        AMS_UNUSED(key_source_size);
 
         R_RETURN(impl::PrepareCommonEsTitleKey(out, *static_cast<const KeySource *>(key_source), generation));
     }

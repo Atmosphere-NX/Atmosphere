@@ -22,6 +22,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class FileStorage : public IStorage, public impl::Newable {
         NON_COPYABLE(FileStorage);
         NON_MOVEABLE(FileStorage);
@@ -74,6 +75,7 @@ namespace ams::fs {
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class FileStorageBasedFileSystem : public FileStorage {
         NON_COPYABLE(FileStorageBasedFileSystem);
         NON_MOVEABLE(FileStorageBasedFileSystem);

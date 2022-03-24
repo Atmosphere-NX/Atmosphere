@@ -19,6 +19,7 @@
 #include <stratosphere/fs/fs_code.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_ifilesystem.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_PROGRAM_REGISTRY_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                     \
     AMS_SF_METHOD_INFO(C, H,   0, Result, RegisterProgram,               (u64 process_id, u64 program_id, u8 storage_id, const ams::sf::InBuffer &data, s64 data_size, const ams::sf::InBuffer &desc, s64 desc_size), (process_id, program_id, storage_id, data, data_size, desc, desc_size)) \
     AMS_SF_METHOD_INFO(C, H,   1, Result, UnregisterProgram,             (u64 process_id),                                                                                                                            (process_id))                                                           \

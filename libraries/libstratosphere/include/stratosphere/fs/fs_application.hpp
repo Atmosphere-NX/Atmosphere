@@ -18,6 +18,8 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     Result MountApplicationPackage(const char *name, const char *common_path);
 
 }

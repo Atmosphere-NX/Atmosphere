@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<typename KeyType, typename ValueType, size_t MaxAuxiliarySize>
     class KeyValueRomStorageTemplate {
         public:

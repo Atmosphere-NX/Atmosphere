@@ -18,6 +18,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     template<bool ContinuousCheck, bool RangeCheck, typename F>
     Result IndirectStorage::OperatePerEntry(s64 offset, s64 size, F func) {
         /* Validate preconditions. */

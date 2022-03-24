@@ -23,6 +23,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class CompressedStorage : public ::ams::fs::IStorage, public ::ams::fssystem::IAsynchronousAccessSplitter, public ::ams::fs::impl::Newable {
         NON_COPYABLE(CompressedStorage);
         NON_MOVEABLE(CompressedStorage);
@@ -366,7 +367,7 @@ namespace ams::fssystem {
                         /* Operate on the range. */
                         s64 required_access_physical_offset = 0;
                         s64 required_access_physical_size   = 0;
-                        s64 required_access_physical_end;
+                        s64 required_access_physical_end    = 0;
 
                         s64 appropriate_virtual_offset      = offset;
                         R_TRY(this->OperatePerEntry(offset, table_offsets.end_offset - offset, [&] (bool *out_continuous, const Entry &entry, s64 virtual_data_size, s64 data_offset, s64 read_size) -> Result {

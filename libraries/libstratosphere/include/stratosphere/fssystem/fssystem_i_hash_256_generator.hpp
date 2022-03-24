@@ -18,6 +18,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class IHash256Generator {
         public:
             static constexpr size_t HashSize = 256 / BITSIZEOF(u8);
@@ -48,6 +49,7 @@ namespace ams::fssystem {
             virtual void DoGetHash(void *dst, size_t dst_size) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class IHash256GeneratorFactory {
         public:
             constexpr IHash256GeneratorFactory() = default;
@@ -70,6 +72,7 @@ namespace ams::fssystem {
             virtual void DoGenerateHash(void *dst, size_t dst_size, const void *src, size_t src_size) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class IHash256GeneratorFactorySelector {
         public:
             constexpr IHash256GeneratorFactorySelector() = default;

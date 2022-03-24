@@ -20,6 +20,7 @@
 
 namespace ams::fssrv::sf {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     struct Path : public ams::sf::LargeData {
         char str[fs::EntryNameLengthMax + 1];
 

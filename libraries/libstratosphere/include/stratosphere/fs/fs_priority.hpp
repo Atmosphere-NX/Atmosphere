@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum Priority {
         Priority_Realtime = 0,
         Priority_Normal   = 1,

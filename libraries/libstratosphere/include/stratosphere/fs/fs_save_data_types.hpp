@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     using SaveDataId           = u64;
     using SystemSaveDataId     = u64;
     using SystemBcatSaveDataId = SystemSaveDataId;

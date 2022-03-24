@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct QueryRangeInfo {
         s32 aes_ctr_key_type;
         s32 speed_emulation_type;

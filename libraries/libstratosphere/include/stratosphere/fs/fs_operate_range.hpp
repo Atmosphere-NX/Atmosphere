@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum class OperationId : s64 {
         FillZero                         = 0,
         DestroySignature                 = 1,

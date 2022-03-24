@@ -18,6 +18,8 @@
 
 namespace ams::fs::RomPathTool {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     constexpr inline u32 MaxPathLength = 0x300;
 
     struct RomEntryName {

@@ -18,6 +18,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+
     struct Hash {
         static constexpr size_t Size = crypto::Sha256Generator::HashSize;
         u8 value[Size];

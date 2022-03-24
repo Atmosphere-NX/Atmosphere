@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class DirectoryPathParser {
         NON_COPYABLE(DirectoryPathParser);
         NON_MOVEABLE(DirectoryPathParser);

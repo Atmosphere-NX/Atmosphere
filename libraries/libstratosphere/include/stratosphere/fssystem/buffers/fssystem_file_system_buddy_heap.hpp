@@ -20,6 +20,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class FileSystemBuddyHeap {
         NON_COPYABLE(FileSystemBuddyHeap);
         NON_MOVEABLE(FileSystemBuddyHeap);

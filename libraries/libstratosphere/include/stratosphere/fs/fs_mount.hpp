@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     constexpr inline size_t MountNameLengthMax = 15;
 
     Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *src);

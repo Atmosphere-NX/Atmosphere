@@ -18,6 +18,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     bool IsAbortNeeded(Result result);
     void LogErrorMessage(Result result, const char *function);
 

@@ -23,6 +23,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     class IntegrityVerificationStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(IntegrityVerificationStorage);
         NON_MOVEABLE(IntegrityVerificationStorage);

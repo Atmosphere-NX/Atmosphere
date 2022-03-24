@@ -19,6 +19,7 @@
 #include <stratosphere/fs/fs_file.hpp>
 #include <stratosphere/fs/fs_query_range.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_FILE_INTERFACE_INFO(C, H)                                                                                                                                                                                                        \
     AMS_SF_METHOD_INFO(C, H, 0, Result, Read,                   (ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size, ams::fs::ReadOption option),    (out, offset, buffer, size, option))                        \
     AMS_SF_METHOD_INFO(C, H, 1, Result, Write,                  (s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size, ams::fs::WriteOption option),                           (offset, buffer, size, option))                             \

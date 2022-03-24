@@ -20,6 +20,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum TlsIoPriority : u8 {
         TlsIoPriority_Normal     = 0,
         TlsIoPriority_Realtime   = 1,

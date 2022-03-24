@@ -27,7 +27,7 @@ namespace ams::fssystem {
         PathCaseSensitiveMode_CaseSensitive   = 1,
     };
 
-
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class LocalFileSystem : public fs::fsa::IFileSystem, public fs::impl::Newable {
         NON_COPYABLE(LocalFileSystem);
         NON_MOVEABLE(LocalFileSystem);

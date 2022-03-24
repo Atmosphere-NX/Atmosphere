@@ -20,6 +20,7 @@
 
 namespace ams::fssrv {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class MemoryResourceFromExpHeap : public ams::MemoryResource {
         private:
             lmem::HeapHandle m_heap_handle;
@@ -41,6 +42,7 @@ namespace ams::fssrv {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class PeakCheckableMemoryResourceFromExpHeap : public ams::MemoryResource {
         private:
             lmem::HeapHandle m_heap_handle;

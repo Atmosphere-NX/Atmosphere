@@ -28,6 +28,7 @@ namespace ams::fssrv {
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     struct Accessibility {
         u8 value;
 
@@ -60,6 +61,7 @@ namespace ams::fssrv::impl {
             Accessibility GetAccessibility() const { return m_accessibility; }
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class AccessControl {
         public:
             enum class AccessibilityType : u32 {

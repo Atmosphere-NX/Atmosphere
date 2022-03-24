@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum ContentType {
         ContentType_Meta    = 0,
         ContentType_Control = 1,

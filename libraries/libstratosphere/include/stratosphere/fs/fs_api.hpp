@@ -18,6 +18,8 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     void InitializeForSystem();
     void InitializeWithMultiSessionForSystem();
 

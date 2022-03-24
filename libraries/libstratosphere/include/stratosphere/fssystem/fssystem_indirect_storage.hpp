@@ -19,6 +19,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IndirectStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(IndirectStorage);
         NON_MOVEABLE(IndirectStorage);

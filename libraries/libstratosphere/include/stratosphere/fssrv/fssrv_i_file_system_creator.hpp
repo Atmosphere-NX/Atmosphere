@@ -49,18 +49,21 @@ namespace ams::fssystem {
 
 namespace ams::fssrv::fscreator {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IRomFileSystemCreator {
         public:
             virtual ~IRomFileSystemCreator() { /* ... */ }
             virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IPartitionFileSystemCreator {
         public:
             virtual ~IPartitionFileSystemCreator() { /* ... */ }
             virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::IStorage> storage) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class IStorageOnNcaCreator {
         public:
             virtual ~IStorageOnNcaCreator() { /* ... */ }
@@ -69,6 +72,7 @@ namespace ams::fssrv::fscreator {
             virtual Result CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class ILocalFileSystemCreator {
         public:
             virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, const fs::Path &path, bool case_sensitive, bool ensure_root, Result on_path_not_found) = 0;
@@ -78,11 +82,13 @@ namespace ams::fssrv::fscreator {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class ISubDirectoryFileSystemCreator {
         public:
             virtual Result Create(std::shared_ptr<fs::fsa::IFileSystem> *out, std::shared_ptr<fs::fsa::IFileSystem> base_fs, const fs::Path &path) = 0;
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct FileSystemCreatorInterfaces {
         ILocalFileSystemCreator *local_fs_creator;
         ISubDirectoryFileSystemCreator *subdir_fs_creator;

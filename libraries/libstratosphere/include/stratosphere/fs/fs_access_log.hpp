@@ -18,6 +18,8 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     enum AccessLogMode : u32 {
         AccessLogMode_None   = 0,
         AccessLogMode_Log    = 1,

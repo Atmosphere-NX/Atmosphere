@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum class ImageDirectoryId {
         Nand   = 0,
         SdCard = 1,

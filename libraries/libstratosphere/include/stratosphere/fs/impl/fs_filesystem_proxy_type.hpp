@@ -18,6 +18,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum FileSystemProxyType {
         FileSystemProxyType_Code            = 0,
         FileSystemProxyType_Rom             = 1,

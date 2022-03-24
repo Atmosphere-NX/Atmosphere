@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     union RightsId {
         u8 data[0x10];
         u64 data64[2];

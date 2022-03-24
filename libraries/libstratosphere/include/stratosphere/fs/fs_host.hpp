@@ -20,6 +20,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum MountHostOptionFlag : u32 {
         MountHostOptionFlag_None                = (0 << 0),
         MountHostOptionFlag_PseudoCaseSensitive = (1 << 0),

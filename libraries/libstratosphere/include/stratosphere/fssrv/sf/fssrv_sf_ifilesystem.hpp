@@ -22,6 +22,7 @@
 #include <stratosphere/fssrv/sf/fssrv_sf_ifile.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_idirectory.hpp>
 
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_FILESYSTEM_INTERFACE_INFO(C, H)                                                                                                                                                                                               \
     AMS_SF_METHOD_INFO(C, H,  0, Result, CreateFile,                 (const ams::fssrv::sf::Path &path, s64 size, s32 option),                                                             (path, size, option))                                  \
     AMS_SF_METHOD_INFO(C, H,  1, Result, DeleteFile,                 (const ams::fssrv::sf::Path &path),                                                                                   (path))                                                \

@@ -22,6 +22,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+
     class SubDirectoryFileSystem : public fs::fsa::IFileSystem, public fs::impl::Newable {
         NON_COPYABLE(SubDirectoryFileSystem);
         private:

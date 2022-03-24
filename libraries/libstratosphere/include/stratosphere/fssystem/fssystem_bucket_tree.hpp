@@ -19,6 +19,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class BucketTree {
         NON_COPYABLE(BucketTree);
         NON_MOVEABLE(BucketTree);
@@ -286,6 +287,7 @@ namespace ams::fssystem {
             Result EnsureOffsetCache();
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class BucketTree::Visitor {
         NON_COPYABLE(Visitor);
         NON_MOVEABLE(Visitor);

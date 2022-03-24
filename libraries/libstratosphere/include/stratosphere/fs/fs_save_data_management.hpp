@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     Result DeleteSaveData(SaveDataId id);
     Result DeleteSaveData(SaveDataSpaceId space_id, SaveDataId id);
 

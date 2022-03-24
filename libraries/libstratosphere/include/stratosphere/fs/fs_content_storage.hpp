@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum class ContentStorageId : u32 {
         System = 0,
         User   = 1,

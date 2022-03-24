@@ -18,6 +18,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class Newable {
         public:
             static ALWAYS_INLINE void *operator new(size_t size) noexcept {

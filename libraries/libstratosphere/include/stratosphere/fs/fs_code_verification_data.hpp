@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     struct CodeVerificationData : public ams::sf::LargeData {
         u8 signature[crypto::Rsa2048PssSha256Verifier::SignatureSize];
         u8 target_hash[crypto::Rsa2048PssSha256Verifier::HashSize];

@@ -18,6 +18,7 @@
 #include <stratosphere/sf.hpp>
 
 /* TODO */
+/* ACCURATE_TO_VERSION: 13.4.0.0 */
 #define AMS_FSSRV_I_DEVICE_OPERATOR_INTERFACE_INFO(C, H) \
     AMS_SF_METHOD_INFO(C, H,   0, Result, IsSdCardInserted,   (ams::sf::Out<bool> out), (out)) \
     AMS_SF_METHOD_INFO(C, H, 200, Result, IsGameCardInserted, (ams::sf::Out<bool> out), (out)) \

@@ -21,6 +21,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     template<typename MetaType>
     class PartitionFileSystemCore : public fs::impl::Newable, public fs::fsa::IFileSystem {
         NON_COPYABLE(PartitionFileSystemCore);

@@ -19,6 +19,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+
     class Sha256HashGenerator final : public ::ams::fssystem::IHash256Generator, public ::ams::fs::impl::Newable {
         NON_COPYABLE(Sha256HashGenerator);
         NON_MOVEABLE(Sha256HashGenerator);

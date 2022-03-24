@@ -27,6 +27,7 @@ namespace ams::fs {
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class StorageInterfaceAdapter {
         NON_COPYABLE(StorageInterfaceAdapter);
         private:

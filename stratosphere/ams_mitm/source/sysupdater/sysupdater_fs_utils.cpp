@@ -244,7 +244,7 @@ namespace ams::mitm::sysupdater {
         R_TRY(OpenContentMetaFileSystem(std::addressof(fs), normalized_path));
 
         /* Create a holder for the fs. */
-        std::unique_ptr unique_fs = std::make_unique<ams::fs::SharedFileSystemHolder>(std::move(fs));
+        std::unique_ptr unique_fs = std::make_unique<fssystem::ForwardingFileSystem>(std::move(fs));
         R_UNLESS(unique_fs != nullptr, fs::ResultAllocationMemoryFailedNew());
 
         /* Register the fs. */

@@ -30,6 +30,7 @@ namespace ams::fssrv {
     class NcaFileSystemService;
     class SaveDataFileSystemService;
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class FileSystemProxyImpl {
         NON_COPYABLE(FileSystemProxyImpl);
         NON_MOVEABLE(FileSystemProxyImpl);
@@ -147,26 +148,27 @@ namespace ams::fssrv {
     static_assert(sf::IsIFileSystemProxy<FileSystemProxyImpl>);
     static_assert(sf::IsIFileSystemProxyForLoader<FileSystemProxyImpl>);
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class InvalidFileSystemProxyImplForLoader {
         public:
             Result OpenCodeFileSystemDeprecated(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, const fssrv::sf::Path &path, ncm::ProgramId program_id) {
                 AMS_UNUSED(out_fs, path, program_id);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result OpenCodeFileSystem(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFileSystem>> out_fs, ams::sf::Out<fs::CodeVerificationData> out_verif, const fssrv::sf::Path &path, ncm::ProgramId program_id) {
                 AMS_UNUSED(out_fs, out_verif, path, program_id);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result IsArchivedProgram(ams::sf::Out<bool> out, u64 process_id) {
                 AMS_UNUSED(out, process_id);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
 
             Result SetCurrentProcess(const ams::sf::ClientProcessId &client_pid) {
                 AMS_UNUSED(client_pid);
-                return fs::ResultPortAcceptableCountLimited();
+                R_THROW(fs::ResultPortAcceptableCountLimited());
             }
     };
     static_assert(sf::IsIFileSystemProxyForLoader<FileSystemProxyImpl>);

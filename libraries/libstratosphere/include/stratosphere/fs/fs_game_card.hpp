@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum class GameCardPartition {
         Update = 0,
         Normal = 1,

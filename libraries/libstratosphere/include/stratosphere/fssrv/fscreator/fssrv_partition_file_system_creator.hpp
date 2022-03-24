@@ -19,6 +19,7 @@
 
 namespace ams::fssrv::fscreator {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class PartitionFileSystemCreator : public IPartitionFileSystemCreator {
         NON_COPYABLE(PartitionFileSystemCreator);
         NON_MOVEABLE(PartitionFileSystemCreator);

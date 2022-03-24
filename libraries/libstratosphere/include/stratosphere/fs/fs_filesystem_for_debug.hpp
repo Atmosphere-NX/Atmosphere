@@ -20,6 +20,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct FileTimeStamp {
         time::PosixTime create;
         time::PosixTime modify;

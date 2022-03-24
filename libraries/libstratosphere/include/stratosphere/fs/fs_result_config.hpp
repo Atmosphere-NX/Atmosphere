@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     void SetEnabledAutoAbort(bool enabled);
     void SetResultHandledByApplication(bool application);
 

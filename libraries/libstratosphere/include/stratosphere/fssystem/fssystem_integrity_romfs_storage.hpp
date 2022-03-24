@@ -23,6 +23,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     constexpr inline size_t IntegrityLayerCountRomFs    = 7;
     constexpr inline size_t IntegrityHashLayerBlockSize = 16_KB;
 

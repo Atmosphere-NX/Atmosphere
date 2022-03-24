@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class SubStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         private:
             std::shared_ptr<IStorage> m_shared_base_storage;

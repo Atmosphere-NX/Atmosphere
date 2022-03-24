@@ -19,6 +19,7 @@
 
 namespace ams::fssrv::fscreator {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class RomFileSystemCreator : public IRomFileSystemCreator {
         NON_COPYABLE(RomFileSystemCreator);
         NON_MOVEABLE(RomFileSystemCreator);

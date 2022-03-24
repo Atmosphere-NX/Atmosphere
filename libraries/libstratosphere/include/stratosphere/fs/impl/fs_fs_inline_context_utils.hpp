@@ -19,6 +19,7 @@
 
 namespace ams::fs::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     constexpr inline u8 TlsIoPriorityMask      = 0x7;
     constexpr inline u8 TlsIoRecursiveCallMask = 0x8;
 

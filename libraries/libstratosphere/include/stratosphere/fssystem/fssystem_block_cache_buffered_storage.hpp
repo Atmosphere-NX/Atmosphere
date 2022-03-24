@@ -34,6 +34,7 @@ namespace ams::fssystem {
     };
     static_assert(util::is_pod<FileSystemBufferManagerSet>::value);
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class BlockCacheBufferedStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(BlockCacheBufferedStorage);
         NON_MOVEABLE(BlockCacheBufferedStorage);

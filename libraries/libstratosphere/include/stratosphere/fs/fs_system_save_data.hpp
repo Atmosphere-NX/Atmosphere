@@ -19,6 +19,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     void DisableAutoSaveDataCreation();
 
     Result CreateSystemSaveData(SystemSaveDataId save_id, s64 size, s64 journal_size, u32 flags);

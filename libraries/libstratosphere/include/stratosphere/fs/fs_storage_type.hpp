@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     enum StorageType : s32 {
         StorageType_SaveData  = 0,
         StorageType_RomFs     = 1,

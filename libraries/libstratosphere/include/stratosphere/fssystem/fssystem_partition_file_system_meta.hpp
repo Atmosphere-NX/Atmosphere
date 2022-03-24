@@ -19,6 +19,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     namespace impl {
 
         struct PartitionFileSystemFormat {

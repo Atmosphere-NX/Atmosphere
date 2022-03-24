@@ -20,6 +20,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     template<typename EntryType>
     Result BucketTree::ScanContinuousReading(ContinuousReadingInfo *out_info, const ContinuousReadingParam<EntryType> &param) const {
         static_assert(util::is_pod<ContinuousReadingParam<EntryType>>::value);

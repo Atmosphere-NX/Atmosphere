@@ -22,12 +22,14 @@
 
 namespace ams::fssrv::impl {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     struct ProgramIndexMapInfoEntry : public ::ams::util::IntrusiveListBaseNode<ProgramIndexMapInfoEntry>, public ::ams::fs::impl::Newable {
         ncm::ProgramId program_id;
         ncm::ProgramId base_program_id;
         u8 program_index;
     };
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class ProgramIndexMapInfoManager {
         NON_COPYABLE(ProgramIndexMapInfoManager);
         NON_MOVEABLE(ProgramIndexMapInfoManager);

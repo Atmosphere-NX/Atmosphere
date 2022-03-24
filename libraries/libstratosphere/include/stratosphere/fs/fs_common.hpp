@@ -21,6 +21,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     struct Int64 {
         u32 low;
         u32 high;

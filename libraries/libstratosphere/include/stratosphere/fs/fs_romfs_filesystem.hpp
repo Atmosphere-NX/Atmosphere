@@ -23,6 +23,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class RomFsFileSystem : public fsa::IFileSystem, public impl::Newable {
         NON_COPYABLE(RomFsFileSystem);
         public:

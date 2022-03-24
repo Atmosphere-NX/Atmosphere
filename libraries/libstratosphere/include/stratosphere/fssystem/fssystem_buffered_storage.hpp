@@ -22,6 +22,7 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class BufferedStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(BufferedStorage);
         NON_MOVEABLE(BufferedStorage);

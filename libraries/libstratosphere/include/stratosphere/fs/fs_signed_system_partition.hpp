@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     bool IsSignedSystemPartitionOnSdCardValid(const char *system_root_path);
     bool IsSignedSystemPartitionOnSdCardValidDeprecated();
 

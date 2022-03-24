@@ -18,6 +18,7 @@
 
 namespace ams::fssystem::impl {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     class SafeValue {
         public:
             static ALWAYS_INLINE s64 GetInt64(const void *ptr) {
@@ -47,6 +48,7 @@ namespace ams::fssystem::impl {
             }
     };
 
+    /* ACCURATE_TO_VERSION: Unknown */
     template<typename IteratorType>
     struct BucketTreeNode {
         using Header = BucketTree::NodeHeader;

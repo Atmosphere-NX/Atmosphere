@@ -37,6 +37,7 @@ namespace ams::fssrv::impl {
 
     class FileSystemInterfaceAdapter;
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class FileInterfaceAdapter {
         NON_COPYABLE(FileInterfaceAdapter);
         NON_MOVEABLE(FileInterfaceAdapter);
@@ -60,6 +61,7 @@ namespace ams::fssrv::impl {
     };
     static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class DirectoryInterfaceAdapter {
         NON_COPYABLE(DirectoryInterfaceAdapter);
         NON_MOVEABLE(DirectoryInterfaceAdapter);
@@ -76,6 +78,7 @@ namespace ams::fssrv::impl {
     };
     static_assert(fssrv::sf::IsIDirectory<DirectoryInterfaceAdapter>);
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class FileSystemInterfaceAdapter : public ams::sf::ISharedObject {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         NON_MOVEABLE(FileSystemInterfaceAdapter);

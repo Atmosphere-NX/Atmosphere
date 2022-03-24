@@ -22,6 +22,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+
     namespace impl {
 
         template<typename F>

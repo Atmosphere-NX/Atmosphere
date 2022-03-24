@@ -18,6 +18,7 @@
 
 namespace ams::fs {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     using AllocateFunction   = void *(*)(size_t);
     using DeallocateFunction = void (*)(void *, size_t);
 

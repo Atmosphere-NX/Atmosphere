@@ -19,6 +19,7 @@
 
 namespace ams::fssrv::fscreator {
 
+    /* ACCURATE_TO_VERSION: 13.4.0.0 */
     class LocalFileSystemCreator final : public ILocalFileSystemCreator {
         NON_COPYABLE(LocalFileSystemCreator);
         NON_MOVEABLE(LocalFileSystemCreator);

@@ -19,6 +19,8 @@
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
+
     class SparseStorage : public IndirectStorage {
         NON_COPYABLE(SparseStorage);
         NON_MOVEABLE(SparseStorage);

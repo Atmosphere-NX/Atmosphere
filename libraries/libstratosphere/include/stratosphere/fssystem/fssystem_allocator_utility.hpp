@@ -26,6 +26,7 @@ namespace ams::fs::impl {
 
 namespace ams::fssystem {
 
+    /* ACCURATE_TO_VERSION: Unknown */
     using AllocateFunction   = void *(*)(size_t size);
     using DeallocateFunction = void (*)(void *ptr, size_t size);
 
