@@ -146,6 +146,18 @@ namespace ams::fatal::srv {
             }
         }
 
+        bool IsPowerButtonHeld() {
+            if (hos::GetVersion() >= hos::Version_14_0_0) {
+                bool held = false;
+                return R_SUCCEEDED(bpcGetPowerButton(std::addressof(held))) && held;
+            } else if (hos::GetVersion() >= hos::Version_2_0_0) {
+                BpcSleepButtonState state;
+                return R_SUCCEEDED(bpcGetSleepButtonState(std::addressof(state))) && state == BpcSleepButtonState_Held;
+            } else {
+                return false;
+            }
+        }
+
         void PowerButtonObserveTask::WaitForPowerButton() {
             /* Wait up to a second for error report generation to finish. */
             m_context->erpt_event->TimedWait(TimeSpan::FromSeconds(1));
@@ -176,12 +188,11 @@ namespace ams::fatal::srv {
                 gpio::SetDirection(std::addressof(vol_down_btn), gpio::Direction_Input);
             }
 
-            BpcSleepButtonState state;
             while (true) {
                 if (fatal_reboot_helper.IsRebootTiming() || (quest_reboot_helper.IsRebootTiming()) ||
                     (check_vol_up && gpio::GetValue(std::addressof(vol_up_btn)) == gpio::GpioValue_Low) ||
                     (check_vol_down && gpio::GetValue(std::addressof(vol_down_btn)) == gpio::GpioValue_Low) ||
-                    (R_SUCCEEDED(bpcGetSleepButtonState(std::addressof(state))) && state == BpcSleepButtonState_Held))
+                    IsPowerButtonHeld())
                 {
                     /* If any of the above conditions succeeded, we should reboot. */
                     bpcRebootSystem();
