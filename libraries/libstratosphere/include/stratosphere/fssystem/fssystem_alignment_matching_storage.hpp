@@ -133,7 +133,7 @@ namespace ams::fssystem {
     };
 
     /* ACCURATE_TO_VERSION: Unknown */
-    template<typename BaseStorageType, size_t _BufferAlign>
+    template<fs::PointerToStorage BasePointer, size_t _BufferAlign>
     class AlignmentMatchingStoragePooledBuffer : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
         NON_COPYABLE(AlignmentMatchingStoragePooledBuffer);
         NON_MOVEABLE(AlignmentMatchingStoragePooledBuffer);
@@ -142,12 +142,12 @@ namespace ams::fssystem {
 
             static_assert(util::IsPowerOfTwo(BufferAlign));
         private:
-            BaseStorageType m_base_storage;
+            BasePointer m_base_storage;
             s64 m_base_storage_size;
             size_t m_data_align;
             bool m_is_base_storage_size_dirty;
         public:
-            explicit AlignmentMatchingStoragePooledBuffer(BaseStorageType bs, size_t da) : m_base_storage(std::move(bs)), m_data_align(da), m_is_base_storage_size_dirty(true) {
+            explicit AlignmentMatchingStoragePooledBuffer(BasePointer bs, size_t da) : m_base_storage(std::move(bs)), m_data_align(da), m_is_base_storage_size_dirty(true) {
                 AMS_ASSERT(util::IsPowerOfTwo(da));
             }
 

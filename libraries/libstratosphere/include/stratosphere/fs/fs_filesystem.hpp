@@ -20,7 +20,7 @@ namespace ams::fs {
 
     namespace fsa {
 
-        class IFile;
+        class IFileSystem;
 
     }
 

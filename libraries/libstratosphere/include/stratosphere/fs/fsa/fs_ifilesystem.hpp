@@ -181,4 +181,7 @@ namespace ams::fs::fsa {
             }
     };
 
+    template<typename T>
+    concept PointerToFileSystem = ::ams::util::RawOrSmartPointerTo<T, ::ams::fs::fsa::IFileSystem>;
+
 }

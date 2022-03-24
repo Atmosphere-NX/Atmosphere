@@ -22,6 +22,7 @@
 #include <vapours/util/util_alignment.hpp>
 #include <vapours/util/util_size.hpp>
 #include <vapours/util/util_int_util.hpp>
+#include <vapours/util/util_pointer_util.hpp>
 #include <vapours/util/util_aligned_buffer.hpp>
 #include <vapours/util/util_enum.hpp>
 #include <vapours/util/util_endian.hpp>

@@ -110,4 +110,7 @@ namespace ams::fs {
             }
     };
 
+    template<typename T>
+    concept PointerToStorage = ::ams::util::RawOrSmartPointerTo<T, ::ams::fs::IStorage>;
+
 }
