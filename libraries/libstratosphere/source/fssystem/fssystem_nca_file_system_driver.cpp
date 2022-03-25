@@ -450,10 +450,10 @@ namespace ams::fssystem {
         /* Process hash/integrity layer. */
         switch (header_reader->GetHashType()) {
             case NcaFsHeader::HashType::HierarchicalSha256Hash:
-                R_TRY(this->CreateSha256Storage(std::addressof(storage), std::move(storage), header_reader->GetHashData().hierarchical_sha256_data));
+                R_TRY(this->CreateSha256Storage(std::addressof(storage), std::move(storage), header_reader->GetHashData().hierarchical_sha256_data, m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)));
                 break;
             case NcaFsHeader::HashType::HierarchicalIntegrityHash:
-                R_TRY(this->CreateIntegrityVerificationStorage(std::addressof(storage), std::move(storage), header_reader->GetHashData().integrity_meta_info));
+                R_TRY(this->CreateIntegrityVerificationStorage(std::addressof(storage), std::move(storage), header_reader->GetHashData().integrity_meta_info, m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)));
                 break;
             default:
                 return fs::ResultInvalidNcaFsHeaderHashType();
@@ -988,7 +988,7 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result NcaFileSystemDriver::CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &hash_data) {
+    Result NcaFileSystemDriver::CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &hash_data, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(base_storage != nullptr);
@@ -1040,7 +1040,7 @@ namespace ams::fssystem {
         };
 
         /* Initialize the verification storage. */
-        R_TRY(verification_storage->Initialize(layer_storages, util::size(layer_storages), hash_data.hash_block_size, buffer_hold_storage->GetBuffer(), hash_buffer_size, m_hash_generator_factory_selector->GetFactory()));
+        R_TRY(verification_storage->Initialize(layer_storages, util::size(layer_storages), hash_data.hash_block_size, buffer_hold_storage->GetBuffer(), hash_buffer_size, hgf));
 
         /* Make the cache storage. */
         auto cache_storage = fssystem::AllocateShared<CacheStorage>(std::move(verification_storage), hash_data.hash_block_size, static_cast<char *>(buffer_hold_storage->GetBuffer()) + hash_buffer_size, cache_buffer_size, CacheBlockCount);
@@ -1055,7 +1055,7 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result NcaFileSystemDriver::CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info) {
+    Result NcaFileSystemDriver::CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(base_storage != nullptr);
@@ -1094,7 +1094,7 @@ namespace ams::fssystem {
         R_UNLESS(integrity_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
 
         /* Initialize the integrity storage. */
-        R_TRY(integrity_storage->Initialize(level_hash_info, meta_info.master_hash, storage_info, m_buffer_manager, m_hash_generator_factory_selector->GetFactory()));
+        R_TRY(integrity_storage->Initialize(level_hash_info, meta_info.master_hash, storage_info, m_buffer_manager, hgf));
 
         /* Set the output. */
         *out = std::move(integrity_storage);

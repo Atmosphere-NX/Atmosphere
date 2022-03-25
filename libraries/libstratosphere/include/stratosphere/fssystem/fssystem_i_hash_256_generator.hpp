@@ -18,7 +18,12 @@
 
 namespace ams::fssystem {
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    enum HashAlgorithmType : u8 {
+        HashAlgorithmType_Sha2 = 0,
+        HashAlgorithmType_Sha3 = 1,
+    };
+
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     class IHash256Generator {
         public:
             static constexpr size_t HashSize = 256 / BITSIZEOF(u8);
@@ -49,7 +54,7 @@ namespace ams::fssystem {
             virtual void DoGetHash(void *dst, size_t dst_size) = 0;
     };
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
     class IHash256GeneratorFactory {
         public:
             constexpr IHash256GeneratorFactory() = default;
@@ -78,9 +83,9 @@ namespace ams::fssystem {
             constexpr IHash256GeneratorFactorySelector() = default;
             virtual constexpr ~IHash256GeneratorFactorySelector() { /* ... */ }
 
-            IHash256GeneratorFactory *GetFactory() { return this->DoGetFactory(); }
+            IHash256GeneratorFactory *GetFactory(HashAlgorithmType alg) { return this->DoGetFactory(alg); }
         protected:
-            virtual IHash256GeneratorFactory *DoGetFactory() = 0;
+            virtual IHash256GeneratorFactory *DoGetFactory(HashAlgorithmType alg) = 0;
     };
 
 }

@@ -49,6 +49,6 @@
 #include <stratosphere/fssystem/fssystem_buffered_storage.hpp>
 #include <stratosphere/fssystem/fssystem_hierarchical_integrity_verification_storage.hpp>
 #include <stratosphere/fssystem/fssystem_integrity_romfs_storage.hpp>
-#include <stratosphere/fssystem/fssystem_sha256_hash_generator.hpp>
+#include <stratosphere/fssystem/fssystem_sha_hash_generator.hpp>
 #include <stratosphere/fssystem/fssystem_local_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_file_system_proxy_api.hpp>

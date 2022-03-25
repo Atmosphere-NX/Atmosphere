@@ -35,7 +35,7 @@ namespace ams::fssystem {
 
     }
 
-    NcaReader::NcaReader() : m_body_storage(), m_header_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto), m_get_decompressor(), m_hash_generator_factory() {
+    NcaReader::NcaReader() : m_body_storage(), m_header_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto), m_get_decompressor(), m_hash_generator_factory_selector() {
         std::memset(std::addressof(m_header), 0, sizeof(m_header));
         std::memset(std::addressof(m_decryption_keys), 0, sizeof(m_decryption_keys));
         std::memset(std::addressof(m_external_decryption_key), 0, sizeof(m_external_decryption_key));
@@ -118,6 +118,9 @@ namespace ams::fssystem {
         /* Validate the key index. */
         R_UNLESS(m_header.key_index < NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount, fs::ResultInvalidNcaKeyIndex());
 
+        /* Set our hash generator factory selector. */
+        m_hash_generator_factory_selector = hgf_selector;
+
         /* Check if we have a rights id. */
         constexpr const u8 ZeroRightsId[NcaHeader::RightsIdSize] = {};
         if (crypto::IsSameBytes(ZeroRightsId, m_header.rights_id, NcaHeader::RightsIdSize)) {
@@ -144,10 +147,6 @@ namespace ams::fssystem {
 
         /* Set our decompressor function getter. */
         m_get_decompressor = compression_cfg.get_decompressor;
-
-        /* Set our hash generator factory. */
-        m_hash_generator_factory = hgf_selector->GetFactory();
-        AMS_ASSERT(m_hash_generator_factory != nullptr);
 
         /* Set our storages. */
         m_header_storage = std::move(work_header_storage);
@@ -351,9 +350,9 @@ namespace ams::fssystem {
         return m_get_decompressor;
     }
 
-    IHash256GeneratorFactory *NcaReader::GetHashGeneratorFactory() const {
-        AMS_ASSERT(m_hash_generator_factory != nullptr);
-        return m_hash_generator_factory;
+    IHash256GeneratorFactorySelector *NcaReader::GetHashGeneratorFactorySelector() const {
+        AMS_ASSERT(m_hash_generator_factory_selector != nullptr);
+        return m_hash_generator_factory_selector;
     }
 
     NcaHeader::EncryptionType NcaReader::GetEncryptionType() const {
@@ -384,11 +383,12 @@ namespace ams::fssystem {
     }
 
     void NcaReader::GetHeaderSign2TargetHash(void *dst, size_t size) const {
-        AMS_ASSERT(m_hash_generator_factory != nullptr);
+        AMS_ASSERT(m_hash_generator_factory_selector!= nullptr);
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(size == IHash256Generator::HashSize);
 
-        return m_hash_generator_factory->GenerateHash(dst, size, static_cast<const void *>(std::addressof(m_header.magic)), NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount);
+        auto * const factory = m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2);
+        return factory->GenerateHash(dst, size, static_cast<const void *>(std::addressof(m_header.magic)), NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount);
     }
 
     Result NcaFsHeaderReader::Initialize(const NcaReader &reader, s32 index) {

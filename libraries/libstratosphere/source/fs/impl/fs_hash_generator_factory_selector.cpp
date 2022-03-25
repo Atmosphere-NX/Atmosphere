@@ -19,16 +19,16 @@ namespace ams::fs::impl {
 
     namespace {
 
-        constinit fssystem::Sha256HashGeneratorFactorySelector g_sha256_hash_generator_factory_selector;
+        constinit fssystem::ShaHashGeneratorFactorySelector g_sha_hash_generator_factory_selector;
 
     }
 
     fssystem::IHash256GeneratorFactorySelector *GetNcaHashGeneratorFactorySelector() {
-        return std::addressof(g_sha256_hash_generator_factory_selector);
+        return std::addressof(g_sha_hash_generator_factory_selector);
     }
 
     fssystem::IHash256GeneratorFactorySelector *GetSaveDataHashGeneratorFactorySelector() {
-        return std::addressof(g_sha256_hash_generator_factory_selector);
+        return std::addressof(g_sha_hash_generator_factory_selector);
     }
 
 }

@@ -111,7 +111,7 @@ namespace ams::fssystem {
             NcaHeader::EncryptionType m_header_encryption_type;
             bool m_is_header_sign1_signature_valid;
             GetDecompressorFunction m_get_decompressor;
-            IHash256GeneratorFactory *m_hash_generator_factory;
+            IHash256GeneratorFactorySelector *m_hash_generator_factory_selector;
         public:
             NcaReader();
             ~NcaReader();
@@ -154,7 +154,7 @@ namespace ams::fssystem {
             Result ReadHeader(NcaFsHeader *dst, s32 index) const;
 
             GetDecompressorFunction GetDecompressor() const;
-            IHash256GeneratorFactory *GetHashGeneratorFactory() const;
+            IHash256GeneratorFactorySelector *GetHashGeneratorFactorySelector() const;
 
             bool GetHeaderSign1Valid() const;
 
@@ -288,9 +288,9 @@ namespace ams::fssystem {
             Result CreateIndirectStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaPatchInfo &patch_info);
             Result CreateIndirectStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IndirectStorage> *out_ind, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> original_data_storage, std::shared_ptr<fs::IStorage> meta_storage, const NcaPatchInfo &patch_info);
 
-            Result CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &sha256_data);
+            Result CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &sha256_data, IHash256GeneratorFactory *hgf);
 
-            Result CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info);
+            Result CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, IHash256GeneratorFactory *hgf);
 
             Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info);
         public:
