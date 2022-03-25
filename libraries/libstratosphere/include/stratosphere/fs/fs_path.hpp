@@ -62,6 +62,12 @@ namespace ams::fs {
                         return *this;
                     }
 
+                    std::unique_ptr<char[], ::ams::fs::impl::Deleter> ReleaseBuffer() {
+                        auto released = std::unique_ptr<char[], ::ams::fs::impl::Deleter>(m_buffer, ::ams::fs::impl::Deleter(this->GetLength()));
+                        this->ResetBuffer();
+                        return released;
+                    }
+
                     constexpr ALWAYS_INLINE void ResetBuffer() {
                         m_buffer = nullptr;
                         this->SetLength(0);
@@ -118,15 +124,15 @@ namespace ams::fs {
 
             constexpr ~Path() { /* ... */ }
 
-            WriteBuffer ReleaseBuffer() {
+            std::unique_ptr<char[], ::ams::fs::impl::Deleter> ReleaseBuffer() {
                 /* Check pre-conditions. */
                 AMS_ASSERT(m_write_buffer.Get() != nullptr);
 
                 /* Reset. */
                 m_str = EmptyPath;
 
-                /* Return our write buffer. */
-                return std::move(m_write_buffer);
+                /* Release our write buffer. */
+                return m_write_buffer.ReleaseBuffer();
             }
 
             constexpr Result SetShallowBuffer(const char *buffer) {
