@@ -26,6 +26,8 @@ namespace ams::fs {
 
     namespace impl {
 
+        class Newable;
+
         void *Allocate(size_t size);
         void Deallocate(void *ptr, size_t size);
 
@@ -130,20 +132,27 @@ namespace ams::fs {
         };
 
         template<typename T>
-        std::unique_ptr<T, Deleter> MakeUnique() {
-            static_assert(util::is_pod<T>::value);
+        auto MakeUnique() {
+            /* Check that we're not using MakeUnique unnecessarily. */
+            static_assert(!std::derived_from<T, ::ams::fs::impl::Newable>);
+
             return std::unique_ptr<T, Deleter>(static_cast<T *>(::ams::fs::impl::Allocate(sizeof(T))), Deleter(sizeof(T)));
         }
 
         template<typename ArrayT>
-        std::unique_ptr<ArrayT, Deleter> MakeUnique(size_t size) {
+        auto MakeUnique(size_t size) {
             using T = typename std::remove_extent<ArrayT>::type;
 
             static_assert(util::is_pod<ArrayT>::value);
             static_assert(std::is_array<ArrayT>::value);
 
+            /* Check that we're not using MakeUnique unnecessarily. */
+            static_assert(!std::derived_from<T, ::ams::fs::impl::Newable>);
+
+            using ReturnType = std::unique_ptr<ArrayT, Deleter>;
+
             const size_t alloc_size = sizeof(T) * size;
-            return std::unique_ptr<ArrayT, Deleter>(static_cast<T *>(::ams::fs::impl::Allocate(alloc_size)), Deleter(alloc_size));
+            return ReturnType(static_cast<T *>(::ams::fs::impl::Allocate(alloc_size)), Deleter(alloc_size));
         }
 
     }

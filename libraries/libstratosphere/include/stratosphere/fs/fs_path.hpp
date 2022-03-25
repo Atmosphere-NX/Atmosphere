@@ -24,6 +24,7 @@ namespace ams::fs {
     class DirectoryPathParser;
 
     /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    /* NOTE: Intentional inaccuracy in custom WriteBuffer class, to save 0x10 bytes (0x28 -> 0x18) over Nintendo's implementation. */
     class Path {
         NON_COPYABLE(Path);
         NON_MOVEABLE(Path);
@@ -32,43 +33,111 @@ namespace ams::fs {
             static constexpr size_t WriteBufferAlignmentLength = 8;
         private:
             friend class DirectoryPathParser;
-        private:
-            using WriteBuffer = std::unique_ptr<char[], ::ams::fs::impl::Deleter>;
+        public:
+            class WriteBuffer {
+                NON_COPYABLE(WriteBuffer);
+                private:
+                    char *m_buffer;
+                    size_t m_length_and_is_normalized;
+                public:
+                    constexpr WriteBuffer() : m_buffer(nullptr), m_length_and_is_normalized(0) { /* ... */ }
+
+                    constexpr ~WriteBuffer() {
+                        if (m_buffer != nullptr) {
+                            ::ams::fs::impl::Deallocate(m_buffer, this->GetLength());
+                            this->ResetBuffer();
+                        }
+                    }
+
+                    constexpr WriteBuffer(WriteBuffer &&rhs) : m_buffer(rhs.m_buffer), m_length_and_is_normalized(rhs.m_length_and_is_normalized) {
+                        rhs.ResetBuffer();
+                    }
+
+                    constexpr WriteBuffer &operator=(WriteBuffer &&rhs) {
+                        m_buffer                   = rhs.m_buffer;
+                        m_length_and_is_normalized = rhs.m_length_and_is_normalized;
+
+                        rhs.ResetBuffer();
+
+                        return *this;
+                    }
+
+                    std::unique_ptr<char[], ::ams::fs::impl::Deleter> ReleaseBuffer() {
+                        auto released = std::unique_ptr<char[], ::ams::fs::impl::Deleter>(m_buffer, ::ams::fs::impl::Deleter(this->GetLength()));
+                        this->ResetBuffer();
+                        return released;
+                    }
+
+                    constexpr ALWAYS_INLINE void ResetBuffer() {
+                        m_buffer = nullptr;
+                        this->SetLength(0);
+                    }
+
+                    constexpr ALWAYS_INLINE char *Get() const {
+                        return m_buffer;
+                    }
+
+                    constexpr ALWAYS_INLINE size_t GetLength() const {
+                        return m_length_and_is_normalized >> 1;
+                    }
+
+                    constexpr ALWAYS_INLINE bool IsNormalized() const {
+                        return static_cast<bool>(m_length_and_is_normalized & 1);
+                    }
+
+                    constexpr ALWAYS_INLINE void SetNormalized() {
+                        m_length_and_is_normalized |= static_cast<size_t>(1);
+                    }
+
+                    constexpr ALWAYS_INLINE void SetNotNormalized() {
+                        m_length_and_is_normalized &= ~static_cast<size_t>(1);
+                    }
+                private:
+                    constexpr ALWAYS_INLINE WriteBuffer(char *buffer, size_t length) : m_buffer(buffer), m_length_and_is_normalized(0) {
+                        this->SetLength(length);
+                    }
+                public:
+                    static WriteBuffer Make(size_t length) {
+                        if (void *alloc = ::ams::fs::impl::Allocate(length); alloc != nullptr) {
+                            return WriteBuffer(static_cast<char *>(alloc), length);
+                        } else {
+                            return WriteBuffer();
+                        }
+                    }
+                private:
+
+                    constexpr ALWAYS_INLINE void SetLength(size_t size) {
+                        m_length_and_is_normalized = (m_length_and_is_normalized & 1) | (size << 1);
+                    }
+            };
         private:
             const char *m_str;
-            util::TypedStorage<WriteBuffer> m_write_buffer;
-            size_t m_write_buffer_length;
-            bool m_is_normalized;
+            WriteBuffer m_write_buffer;
         public:
-            Path() : m_str(EmptyPath), m_write_buffer_length(0), m_is_normalized(false) {
-                util::ConstructAt(m_write_buffer, nullptr);
-            }
-
-            constexpr Path(const char *s, util::ConstantInitializeTag) : m_str(s), m_write_buffer(), m_write_buffer_length(0), m_is_normalized(true) {
+            constexpr Path() : m_str(EmptyPath), m_write_buffer() {
                 /* ... */
             }
 
-            constexpr ~Path() {
-                if (!std::is_constant_evaluated()) {
-                    util::DestroyAt(m_write_buffer);
-                }
+            constexpr Path(const char *s, util::ConstantInitializeTag) : m_str(s), m_write_buffer() {
+                m_write_buffer.SetNormalized();
             }
 
-            WriteBuffer ReleaseBuffer() {
+            constexpr ~Path() { /* ... */ }
+
+            std::unique_ptr<char[], ::ams::fs::impl::Deleter> ReleaseBuffer() {
                 /* Check pre-conditions. */
-                AMS_ASSERT(util::GetReference(m_write_buffer) != nullptr);
+                AMS_ASSERT(m_write_buffer.Get() != nullptr);
 
                 /* Reset. */
-                m_str                 = EmptyPath;
-                m_write_buffer_length = 0;
+                m_str = EmptyPath;
 
-                /* Return our write buffer. */
-                return std::move(util::GetReference(m_write_buffer));
+                /* Release our write buffer. */
+                return m_write_buffer.ReleaseBuffer();
             }
 
             constexpr Result SetShallowBuffer(const char *buffer) {
                 /* Check pre-conditions. */
-                AMS_ASSERT(m_write_buffer_length == 0);
+                AMS_ASSERT(m_write_buffer.GetLength() == 0);
 
                 /* Check the buffer is valid. */
                 R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
@@ -77,14 +146,14 @@ namespace ams::fs {
                 this->SetReadOnlyBuffer(buffer);
 
                 /* Note that we're normalized. */
-                m_is_normalized = true;
+                this->SetNormalized();
 
                 R_SUCCEED();
             }
 
             const char *GetString() const {
                 /* Check pre-conditions. */
-                AMS_ASSERT(m_is_normalized);
+                AMS_ASSERT(this->IsNormalized());
 
                 return m_str;
             }
@@ -103,18 +172,19 @@ namespace ams::fs {
 
             Result Initialize(const Path &rhs) {
                 /* Check the other path is normalized. */
-                R_UNLESS(rhs.m_is_normalized, fs::ResultNotNormalized());
+                const bool normalized = rhs.IsNormalized();
+                R_UNLESS(normalized, fs::ResultNotNormalized());
 
                 /* Allocate buffer for our path. */
                 const auto len = rhs.GetLength();
                 R_TRY(this->Preallocate(len + 1));
 
                 /* Copy the path. */
-                const size_t copied = util::Strlcpy<char>(util::GetReference(m_write_buffer).get(), rhs.GetString(), len + 1);
+                const size_t copied = util::Strlcpy<char>(m_write_buffer.Get(), rhs.GetString(), len + 1);
                 R_UNLESS(copied == len, fs::ResultUnexpectedInPathA());
 
                 /* Set normalized. */
-                m_is_normalized = rhs.m_is_normalized;
+                this->SetNormalized();
                 R_SUCCEED();
             }
 
@@ -126,7 +196,7 @@ namespace ams::fs {
                 R_TRY(this->InitializeImpl(path, len));
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 R_SUCCEED();
             }
@@ -154,7 +224,7 @@ namespace ams::fs {
                 R_TRY(this->Preallocate(len + 1));
 
                 /* Format our path into our new buffer. */
-                const auto real_len = util::VSNPrintf(util::GetReference(m_write_buffer).get(), m_write_buffer_length, fmt, vl);
+                const auto real_len = util::VSNPrintf(m_write_buffer.Get(), m_write_buffer.GetLength(), fmt, vl);
                 AMS_ASSERT(real_len == len);
                 AMS_UNUSED(real_len);
 
@@ -162,7 +232,7 @@ namespace ams::fs {
                 va_end(vl);
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 R_SUCCEED();
             }
@@ -175,12 +245,12 @@ namespace ams::fs {
                 R_TRY(this->InitializeImpl(path, std::strlen(path)));
 
                 /* Replace slashes as desired. */
-                if (m_write_buffer_length > 1) {
-                    fs::Replace(this->GetWriteBuffer(), m_write_buffer_length - 1, '\\', '/');
+                if (const auto write_buffer_length = m_write_buffer.GetLength(); write_buffer_length > 1) {
+                    fs::Replace(m_write_buffer.Get(), write_buffer_length - 1, '\\', '/');
                 }
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 R_SUCCEED();
             }
@@ -193,15 +263,15 @@ namespace ams::fs {
                 R_TRY(this->InitializeImpl(path, std::strlen(path)));
 
                 /* Replace slashes as desired. */
-                if (m_write_buffer_length > 1) {
-                    if (auto *p = this->GetWriteBuffer(); p[0] == '/' && p[1] == '/') {
+                if (m_write_buffer.GetLength() > 1) {
+                    if (auto *p = m_write_buffer.Get(); p[0] == '/' && p[1] == '/') {
                         p[0] = '\\';
                         p[1] = '\\';
                     }
                 }
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 R_SUCCEED();
             }
@@ -214,11 +284,11 @@ namespace ams::fs {
                 R_TRY(this->InitializeImpl(path, std::strlen(path)));
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 /* Replace unc as desired. */
                 if (m_str[0]) {
-                    auto *p = this->GetWriteBuffer();
+                    auto *p = m_write_buffer.Get();
 
                     /* Replace :/// -> \\ as needed. */
                     if (auto *sep = std::strstr(p, ":///"); sep != nullptr) {
@@ -251,7 +321,7 @@ namespace ams::fs {
                 R_TRY(this->InitializeImpl(path, size));
 
                 /* Set not normalized. */
-                m_is_normalized = false;
+                this->SetNotNormalized();
 
                 /* Perform normalization. */
                 fs::PathFlags path_flags;
@@ -263,16 +333,17 @@ namespace ams::fs {
                     /* NOTE: In this case, Nintendo checks is normalized, then sets is normalized, then returns success. */
                     /* This seems like a bug. */
                     size_t dummy;
-                    R_TRY(PathFormatter::IsNormalized(std::addressof(m_is_normalized), std::addressof(dummy), m_str));
+                    bool normalized;
+                    R_TRY(PathFormatter::IsNormalized(std::addressof(normalized), std::addressof(dummy), m_str));
 
-                    m_is_normalized = true;
+                    this->SetNormalized();
                     R_SUCCEED();
                 }
 
                 /* Normalize. */
                 R_TRY(this->Normalize(path_flags));
 
-                m_is_normalized = true;
+                this->SetNormalized();
                 R_SUCCEED();
             }
 
@@ -288,7 +359,7 @@ namespace ams::fs {
                 this->ClearBuffer();
 
                 /* Set normalized. */
-                m_is_normalized = true;
+                this->SetNormalized();
 
                 R_SUCCEED();
             }
@@ -324,8 +395,8 @@ namespace ams::fs {
 
                 /* Reset our write buffer. */
                 WriteBuffer old_write_buffer;
-                if (util::GetReference(m_write_buffer) != nullptr) {
-                    old_write_buffer = std::move(util::GetReference(m_write_buffer));
+                if (m_write_buffer.Get() != nullptr) {
+                    old_write_buffer = std::move(m_write_buffer);
                     this->ClearBuffer();
                 }
 
@@ -333,9 +404,9 @@ namespace ams::fs {
                 R_TRY(this->Preallocate(cur_len + 1 + child_len + 1));
 
                 /* Get our write buffer. */
-                auto *dst = this->GetWriteBuffer();
-                if (old_write_buffer != nullptr && cur_len > 0) {
-                    util::Strlcpy<char>(dst, old_write_buffer.get(), cur_len + 1);
+                auto *dst = m_write_buffer.Get();
+                if (old_write_buffer.Get() != nullptr && cur_len > 0) {
+                    util::Strlcpy<char>(dst, old_write_buffer.Get(), cur_len + 1);
                 }
 
                 /* Add separator. */
@@ -376,15 +447,15 @@ namespace ams::fs {
 
             Result RemoveChild() {
                 /* If we don't have a write-buffer, ensure that we have one. */
-                if (util::GetReference(m_write_buffer) == nullptr) {
+                if (m_write_buffer.Get() == nullptr) {
                     if (const auto len = std::strlen(m_str); len > 0) {
                         R_TRY(this->Preallocate(len));
-                        util::Strlcpy<char>(util::GetReference(m_write_buffer).get(), m_str, len + 1);
+                        util::Strlcpy<char>(m_write_buffer.Get(), m_str, len + 1);
                     }
                 }
 
                 /* Check that it's possible for us to remove a child. */
-                auto *p = this->GetWriteBuffer();
+                auto *p = m_write_buffer.Get();
                 s32 len = std::strlen(p);
                 R_UNLESS(len != 1 || (p[0] != '/' && p[0] != '.'), fs::ResultNotImplemented());
 
@@ -414,7 +485,7 @@ namespace ams::fs {
 
             Result Normalize(const PathFlags &flags) {
                 /* If we're already normalized, nothing to do. */
-                R_SUCCEED_IF(m_is_normalized);
+                R_SUCCEED_IF(this->IsNormalized());
 
                 /* Check if we're normalized. */
                 bool normalized;
@@ -424,7 +495,7 @@ namespace ams::fs {
                 /* If we're not normalized, normalize. */
                 if (!normalized) {
                     /* Determine necessary buffer length. */
-                    auto len = m_write_buffer_length;
+                    auto len = m_write_buffer.GetLength();
                     if (flags.IsRelativePathAllowed() && fs::IsPathRelative(m_str)) {
                         len += 2;
                     }
@@ -434,57 +505,59 @@ namespace ams::fs {
 
                     /* Allocate a new buffer. */
                     const size_t size = util::AlignUp(len, WriteBufferAlignmentLength);
-                    auto buf = fs::impl::MakeUnique<char[]>(size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
+                    auto buf = WriteBuffer::Make(size);
+                    R_UNLESS(buf.Get() != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                     /* Normalize into it. */
-                    R_TRY(PathFormatter::Normalize(buf.get(), size, util::GetReference(m_write_buffer).get(), m_write_buffer_length, flags));
+                    R_TRY(PathFormatter::Normalize(buf.Get(), size, m_write_buffer.Get(), m_write_buffer.GetLength(), flags));
 
                     /* Set the normalized buffer as our buffer. */
-                    this->SetModifiableBuffer(std::move(buf), size);
+                    this->SetModifiableBuffer(std::move(buf));
                 }
 
                 /* Set normalized. */
-                m_is_normalized = true;
+                this->SetNormalized();
                 R_SUCCEED();
             }
         private:
             void ClearBuffer() {
-                util::GetReference(m_write_buffer).reset();
-                m_write_buffer_length = 0;
+                m_write_buffer.ResetBuffer();
                 m_str = EmptyPath;
             }
 
-            void SetModifiableBuffer(WriteBuffer &&buffer, size_t size) {
+            void SetModifiableBuffer(WriteBuffer &&buffer) {
                 /* Check pre-conditions. */
-                AMS_ASSERT(buffer.get() != nullptr);
-                AMS_ASSERT(size > 0);
-                AMS_ASSERT(util::IsAligned(size, WriteBufferAlignmentLength));
+                AMS_ASSERT(buffer.Get() != nullptr);
+                AMS_ASSERT(buffer.GetLength() > 0);
+                AMS_ASSERT(util::IsAligned(buffer.GetLength(), WriteBufferAlignmentLength));
+
+                /* Get whether we're normalized. */
+                if (m_write_buffer.IsNormalized()) {
+                    buffer.SetNormalized();
+                } else {
+                    buffer.SetNotNormalized();
+                }
 
                 /* Set write buffer. */
-                util::GetReference(m_write_buffer) = std::move(buffer);
-                m_write_buffer_length              = size;
-                m_str                              = util::GetReference(m_write_buffer).get();
+                m_write_buffer = std::move(buffer);
+                m_str          = m_write_buffer.Get();
             }
 
             constexpr void SetReadOnlyBuffer(const char *buffer) {
                 m_str = buffer;
-                if (!std::is_constant_evaluated()) {
-                    util::GetReference(m_write_buffer) = nullptr;
-                    m_write_buffer_length              = 0;
-                }
+                m_write_buffer.ResetBuffer();
             }
 
             Result Preallocate(size_t length) {
                 /* Allocate additional space, if needed. */
-                if (length > m_write_buffer_length) {
+                if (length > m_write_buffer.GetLength()) {
                     /* Allocate buffer. */
                     const size_t size = util::AlignUp(length, WriteBufferAlignmentLength);
-                    auto buf = fs::impl::MakeUnique<char[]>(size);
-                    R_UNLESS(buf != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
+                    auto buf = WriteBuffer::Make(size);
+                    R_UNLESS(buf.Get() != nullptr, fs::ResultAllocationMemoryFailedMakeUnique());
 
                     /* Set write buffer. */
-                    this->SetModifiableBuffer(std::move(buf), size);
+                    this->SetModifiableBuffer(std::move(buf));
                 }
 
                 R_SUCCEED();
@@ -496,7 +569,7 @@ namespace ams::fs {
                     R_TRY(this->Preallocate(size + 1));
 
                     /* Copy the path. */
-                    const size_t copied = util::Strlcpy<char>(this->GetWriteBuffer(), path, size + 1);
+                    const size_t copied = util::Strlcpy<char>(m_write_buffer.Get(), path, size + 1);
                     R_UNLESS(copied >= size, fs::ResultUnexpectedInPathA());
                 } else {
                     /* We can just clear the buffer. */
@@ -506,14 +579,20 @@ namespace ams::fs {
                 R_SUCCEED();
             }
 
-            char *GetWriteBuffer() {
-                AMS_ASSERT(util::GetReference(m_write_buffer) != nullptr);
-                return util::GetReference(m_write_buffer).get();
+            constexpr char *GetWriteBuffer() {
+                AMS_ASSERT(m_write_buffer.Get() != nullptr);
+                return m_write_buffer.Get();
             }
 
-            size_t GetWriteBufferLength() const {
-                return m_write_buffer_length;
+            constexpr ALWAYS_INLINE size_t GetWriteBufferLength() const {
+                return m_write_buffer.GetLength();
             }
+
+            constexpr ALWAYS_INLINE bool IsNormalized() const { return m_write_buffer.IsNormalized(); }
+
+            constexpr ALWAYS_INLINE void SetNormalized() { m_write_buffer.SetNormalized(); }
+
+            constexpr ALWAYS_INLINE void SetNotNormalized() { m_write_buffer.SetNotNormalized(); }
         public:
             ALWAYS_INLINE bool operator==(const fs::Path &rhs) const { return std::strcmp(this->GetString(), rhs.GetString()) == 0; }
             ALWAYS_INLINE bool operator!=(const fs::Path &rhs) const { return !(*this == rhs); }
