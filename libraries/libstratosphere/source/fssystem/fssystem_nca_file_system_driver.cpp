@@ -939,7 +939,7 @@ namespace ams::fssystem {
         /* Determine the storage sizes. */
         const auto node_size  = IndirectStorage::QueryNodeStorageSize(header.entry_count);
         const auto entry_size = IndirectStorage::QueryEntryStorageSize(header.entry_count);
-        R_UNLESS(node_size + entry_size <= patch_info.indirect_size, fs::ResultInvalidIndirectStorageSize());
+        R_UNLESS(node_size + entry_size <= patch_info.indirect_size, fs::ResultInvalidNcaIndirectStorageOutOfRange());
 
         /* Get the indirect data size. */
         const s64 indirect_data_size = patch_info.indirect_offset;
@@ -1154,8 +1154,8 @@ namespace ams::fssystem {
         HierarchicalIntegrityVerificationInformation level_hash_info;
         std::memcpy(std::addressof(level_hash_info), std::addressof(meta_info.level_hash_info), sizeof(level_hash_info));
 
-        R_UNLESS(IntegrityMinLayerCount <= level_hash_info.max_layers,   fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
-        R_UNLESS(level_hash_info.max_layers   <= IntegrityMaxLayerCount, fs::ResultInvalidHierarchicalIntegrityVerificationLayerCount());
+        R_UNLESS(IntegrityMinLayerCount <= level_hash_info.max_layers,   fs::ResultInvalidNcaHierarchicalIntegrityVerificationLayerCount());
+        R_UNLESS(level_hash_info.max_layers   <= IntegrityMaxLayerCount, fs::ResultInvalidNcaHierarchicalIntegrityVerificationLayerCount());
 
         /* Get the base storage size. */
         s64 base_storage_size;

@@ -279,16 +279,18 @@ namespace ams::fs {
                         R_DEFINE_ERROR_RESULT(RomHierarchicalSha256BaseStorageTooLarge,    4074);
                         R_DEFINE_ERROR_RESULT(RomHierarchicalSha256HashVerificationFailed, 4075);
 
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidCompressionInfo,              4083);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashType,        4084);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidIntegrityLayerInfoOffset,     4085);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataSize,    4086);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataOffset,  4087);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataHash,    4088);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashType,       4089);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataSize,   4090);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataOffset, 4091);
-                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataHash,   4092);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidHierarchicalIntegrityVerificationLayerCount, 4081);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidNcaIndirectStorageOutOfRange,                4082);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidCompressionInfo,                             4083);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashType,                       4084);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidIntegrityLayerInfoOffset,                    4085);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataSize,                   4086);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataOffset,                 4087);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataHash,                   4088);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashType,                      4089);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataSize,                  4090);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataOffset,                4091);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataHash,                  4092);
 
                 R_DEFINE_ERROR_RANGE(RomIntegrityVerificationStorageCorrupted, 4141, 4179);
                      R_DEFINE_ERROR_RESULT(IncorrectRomIntegrityVerificationMagic,                4142);
@@ -357,7 +359,9 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(HierarchicalSha256HashVerificationFailed, 4535);
 
                 /* TODO: Range? */
-                R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration, 4543);
+                R_DEFINE_ERROR_RESULT(InvalidNcaHierarchicalIntegrityVerificationLayerCount, 4541);
+                R_DEFINE_ERROR_RESULT(InvalidNcaIndirectStorageOutOfRange,                   4542);
+                R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration,               4543);
 
                 /* TODO: Range? */
                 R_DEFINE_ERROR_RESULT(InvalidCompressedStorageSize,   4547);
