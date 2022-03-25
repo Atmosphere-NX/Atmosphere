@@ -305,4 +305,5 @@ ATMOSPHERE_GCH_IDENTIFIER := $(ATMOSPHERE_FULL_NAME)
 	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
 %.hpp.gch: %.hpp
+	@[ -f $@ ] && rm -f $@
 	@[ -d $@ ] || mkdir -p $@
