@@ -120,23 +120,23 @@ namespace ams::fssystem {
             AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(spl::AccessKey, s_nca_header_kek_access_key);
             AMS_FUNCTION_LOCAL_STATIC_CONSTINIT(spl::AccessKey, s_invalid_nca_kek_access_key);
 
-            if (key_type > static_cast<s32>(KeyType::NcaHeaderKey) || IsInvalidKeyTypeValue(key_type)) {
+            if (key_type > static_cast<s32>(KeyType::NcaHeaderKey2) || IsInvalidKeyTypeValue(key_type)) {
                 return s_invalid_nca_kek_access_key;
-            } else if (key_type == static_cast<s32>(KeyType::NcaHeaderKey)) {
+            } else if (key_type == static_cast<s32>(KeyType::NcaHeaderKey1) || key_type == static_cast<s32>(KeyType::NcaHeaderKey2)) {
                 return s_nca_header_kek_access_key;
             } else {
                 return s_nca_kek_access_key_array[key_type];
             }
         }
 
-        void GenerateNcaKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 key_type, const NcaCryptoConfiguration &cfg) {
-            AMS_UNUSED(cfg);
-
+        void GenerateNcaKey(void *dst, size_t dst_size, const void *src, size_t src_size, s32 key_type) {
             R_ABORT_UNLESS(spl::GenerateAesKey(dst, dst_size, GetNcaKekAccessKey(key_type), src, src_size));
         }
 
-        void DecryptAesCtr(void *dst, size_t dst_size, s32 key_type, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
+        void DecryptAesCtr(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
             std::unique_ptr<KeySlotCacheAccessor> accessor;
+
+            const s32 key_type = GetKeyTypeValue(key_index, key_generation);
 
             R_TRY_CATCH(g_key_slot_cache.Find(std::addressof(accessor), enc_key, enc_key_size, key_type)) {
                 R_CATCH(fs::ResultTargetNotFound) {
@@ -148,10 +148,11 @@ namespace ams::fssystem {
             R_ABORT_UNLESS(spl::ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size));
         }
 
-        void DecryptAesCtrForPreparedKey(void *dst, size_t dst_size, s32 key_type, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
+        void DecryptAesCtrForPreparedKey(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size) {
             std::unique_ptr<KeySlotCacheAccessor> accessor;
 
-            key_type = static_cast<s32>(KeyType::NcaExternalKey);
+            AMS_UNUSED(key_index, key_generation);
+            const s32 key_type = static_cast<s32>(KeyType::NcaExternalKey);
 
             R_TRY_CATCH(g_key_slot_cache.Find(std::addressof(accessor), enc_key, enc_key_size, key_type)) {
                 R_CATCH(fs::ResultTargetNotFound) {
@@ -167,6 +168,15 @@ namespace ams::fssystem {
             R_ABORT_UNLESS(spl::ComputeCtr(dst, dst_size, accessor->GetKeySlotIndex(), src, src_size, iv, iv_size));
         }
 
+        bool VerifySign1(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation, const NcaCryptoConfiguration &cfg) {
+            const u8 *mod         = cfg.header_1_sign_key_moduli[generation];
+            const size_t mod_size = NcaCryptoConfiguration::Rsa2048KeyModulusSize;
+            const u8 *exp         = cfg.header_1_sign_key_public_exponent;
+            const size_t exp_size = NcaCryptoConfiguration::Rsa2048KeyPublicExponentSize;
+
+            return crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, data, data_size);
+        }
+
     }
 
     const ::ams::fssystem::NcaCryptoConfiguration *GetNcaCryptoConfiguration(bool prod) {
@@ -176,9 +186,13 @@ namespace ams::fssystem {
 
         /* Set the key generation functions. */
         cfg->generate_key                  = GenerateNcaKey;
+        cfg->decrypt_aes_xts_external      = nullptr;
+        cfg->encrypt_aes_xts_external      = nullptr;
         cfg->decrypt_aes_ctr               = DecryptAesCtr;
         cfg->decrypt_aes_ctr_external      = DecryptAesCtrForPreparedKey;
+        cfg->verify_sign1                  = VerifySign1;
         cfg->is_plaintext_header_available = !prod;
+        cfg->is_available_sw_key           = true;
 
         /* TODO: Should this default to false for host tools with api to set explicitly? */
         #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
@@ -204,7 +218,7 @@ namespace ams::fssystem {
             }
 
             /* Setup the header encryption key. */
-            R_ABORT_UNLESS(spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(static_cast<s32>(KeyType::NcaHeaderKey))), nca_crypto_cfg->header_encryption_key_source, KeySize, 0, Option));
+            R_ABORT_UNLESS(spl::GenerateAesKek(std::addressof(GetNcaKekAccessKey(static_cast<s32>(KeyType::NcaHeaderKey1))), nca_crypto_cfg->header_encryption_key_source, KeySize, 0, Option));
         }
 
         /* TODO FS-REIMPL: Save stuff. */

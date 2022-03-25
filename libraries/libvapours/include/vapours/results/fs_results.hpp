@@ -279,6 +279,17 @@ namespace ams::fs {
                         R_DEFINE_ERROR_RESULT(RomHierarchicalSha256BaseStorageTooLarge,    4074);
                         R_DEFINE_ERROR_RESULT(RomHierarchicalSha256HashVerificationFailed, 4075);
 
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidCompressionInfo,              4083);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashType,        4084);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidIntegrityLayerInfoOffset,     4085);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataSize,    4086);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataOffset,  4087);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidPatchMetaDataHashDataHash,    4088);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashType,       4089);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataSize,   4090);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataOffset, 4091);
+                    R_DEFINE_ERROR_RESULT(RomNcaInvalidSparseMetaDataHashDataHash,   4092);
+
                 R_DEFINE_ERROR_RANGE(RomIntegrityVerificationStorageCorrupted, 4141, 4179);
                      R_DEFINE_ERROR_RESULT(IncorrectRomIntegrityVerificationMagic,                4142);
                      R_DEFINE_ERROR_RESULT(InvalidRomZeroHash,                                    4143);
@@ -349,7 +360,9 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration, 4543);
 
                 /* TODO: Range? */
-                R_DEFINE_ERROR_RESULT(InvalidCompressedStorageSize, 4547);
+                R_DEFINE_ERROR_RESULT(InvalidCompressedStorageSize,   4547);
+                R_DEFINE_ERROR_RESULT(InvalidNcaMetaDataHashDataSize, 4548);
+                R_DEFINE_ERROR_RESULT(InvalidNcaMetaDataHashDataHash, 4549);
 
             R_DEFINE_ERROR_RANGE(IntegrityVerificationStorageCorrupted, 4601, 4639);
                  R_DEFINE_ERROR_RESULT(IncorrectIntegrityVerificationMagic,                4602);
@@ -463,10 +476,10 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(UnsupportedSetSizeForHierarchicalIntegrityVerificationStorage,      6316);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForHierarchicalIntegrityVerificationStorage, 6317);
                     R_DEFINE_ERROR_RESULT(UnsupportedSetSizeForIntegrityVerificationStorage,                  6318);
-                    R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForNonSaveDataIntegrityVerificationStorage,  6319);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForWritableIntegrityVerificationStorage,     6319);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForIntegrityVerificationStorage,             6320);
                     R_DEFINE_ERROR_RESULT(UnsupportedSetSizeForBlockCacheBufferedStorage,                     6321);
-                    R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForNonSaveDataBlockCacheBufferedStorage,     6322);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForWritableBlockCacheBufferedStorage,        6322);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForBlockCacheBufferedStorage,                6323);
                     R_DEFINE_ERROR_RESULT(UnsupportedWriteForIndirectStorage,                                 6324);
                     R_DEFINE_ERROR_RESULT(UnsupportedSetSizeForIndirectStorage,                               6325);
@@ -531,6 +544,7 @@ namespace ams::fs {
                     R_DEFINE_ERROR_RESULT(UnsupportedSetSizeForZeroBitmapHashStorageFile,                     6386);
                     R_DEFINE_ERROR_RESULT(UnsupportedWriteForCompressedStorage,                               6387);
                     R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForCompressedStorage,                        6388);
+                    R_DEFINE_ERROR_RESULT(UnsupportedOperateRangeForRegionSwitchStorage,                      6397);
 
 
                 R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);

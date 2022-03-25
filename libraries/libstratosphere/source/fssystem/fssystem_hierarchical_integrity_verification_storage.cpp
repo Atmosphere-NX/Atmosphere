@@ -23,11 +23,6 @@ namespace ams::fssystem {
         constexpr inline u32 IntegrityVerificationStorageVersion     = 0x00020000;
         constexpr inline u32 IntegrityVerificationStorageVersionMask = 0xFFFF0000;
 
-        constexpr inline auto MaxSaveDataFsDataCacheEntryCount = 32;
-        constexpr inline auto MaxSaveDataFsHashCacheEntryCount = 4;
-        constexpr inline auto MaxRomFsDataCacheEntryCount      = 24;
-        constexpr inline auto MaxRomFsHashCacheEntryCount      = 8;
-
         constexpr inline auto AccessCountMax = 5;
         constexpr inline auto AccessTimeout  = TimeSpan::FromMilliSeconds(10);
 
@@ -92,7 +87,7 @@ namespace ams::fssystem {
             out->layered_hash_sizes[level - 1] = level_size[level];
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalIntegrityVerificationStorageControlArea::Expand(fs::SubStorage meta_storage, const HierarchicalIntegrityVerificationMetaInformation &meta) {
@@ -122,7 +117,7 @@ namespace ams::fssystem {
         R_TRY(meta_storage.Write(0, std::addressof(meta), sizeof(meta)));
         R_TRY(meta_storage.Flush());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalIntegrityVerificationStorageControlArea::Initialize(fs::SubStorage meta_storage) {
@@ -143,36 +138,37 @@ namespace ams::fssystem {
         /* Validate the meta version. */
         R_UNLESS((m_meta.version & IntegrityVerificationStorageVersionMask) == (IntegrityVerificationStorageVersion & IntegrityVerificationStorageVersionMask), fs::ResultUnsupportedVersion());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HierarchicalIntegrityVerificationStorageControlArea::Finalize() {
         m_storage = fs::SubStorage();
     }
 
-    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type) {
+    Result HierarchicalIntegrityVerificationStorage::Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, bool hash_salt_enabled, os::SdkRecursiveMutex *mtx, os::Semaphore *read_sema, os::Semaphore *write_sema, int max_data_cache_entries, int max_hash_cache_entries, s8 buffer_level, bool is_writable, bool allow_cleared_blocks) {
         /* Validate preconditions. */
         AMS_ASSERT(bufs != nullptr);
         AMS_ASSERT(IntegrityMinLayerCount <= info.max_layers && info.max_layers <= IntegrityMaxLayerCount);
 
         /* Set member variables. */
-        m_max_layers = info.max_layers;
-        m_buffers    = bufs;
-        m_mutex      = mtx;
+        m_max_layers      = info.max_layers;
+        m_buffers         = bufs;
+        m_mutex           = mtx;
+        m_read_semaphore  = read_sema;
+        m_write_semaphore = write_sema;
 
-        /* Determine our cache counts. */
-        const auto max_data_cache_entry_count = (storage_type == fs::StorageType_SaveData) ? MaxSaveDataFsDataCacheEntryCount : MaxRomFsDataCacheEntryCount;
-        const auto max_hash_cache_entry_count = (storage_type == fs::StorageType_SaveData) ? MaxSaveDataFsHashCacheEntryCount : MaxRomFsHashCacheEntryCount;
-
-        /* Initialize the top level verification storage. */
-        {
-            fs::HashSalt mac;
-            crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[0].key, KeyArray[0].size);
-            m_verify_storages[0].Initialize(storage[HierarchicalStorageInformation::MasterStorage], storage[HierarchicalStorageInformation::Layer1Storage], static_cast<s64>(1) << info.info[0].block_order, HashSize, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
+        /* If hash salt is enabled, generate it. */
+        util::optional<fs::HashSalt> hash_salt = util::nullopt;
+        if (hash_salt_enabled) {
+            hash_salt.emplace();
+            crypto::GenerateHmacSha256(hash_salt->value, sizeof(hash_salt->value), info.seed.value, sizeof(info.seed), KeyArray[0].key, KeyArray[0].size);
         }
 
+        /* Initialize the top level verification storage. */
+        m_verify_storages[0].Initialize(storage[HierarchicalStorageInformation::MasterStorage], storage[HierarchicalStorageInformation::Layer1Storage], static_cast<s64>(1) << info.info[0].block_order, HashSize, m_buffers->buffers[m_max_layers - 2], hgf, hash_salt, false, is_writable, allow_cleared_blocks);
+
         /* Ensure we don't leak state if further initialization goes wrong. */
-        auto top_verif_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE {
             m_verify_storages[0].Finalize();
 
             m_data_size = -1;
@@ -181,14 +177,14 @@ namespace ams::fssystem {
         };
 
         /* Initialize the top level buffer storage. */
-        R_TRY(m_buffer_storages[0].Initialize(m_buffers->buffers[0], m_mutex, std::addressof(m_verify_storages[0]), info.info[0].size, static_cast<s64>(1) << info.info[0].block_order, max_hash_cache_entry_count, false, 0x10, false, storage_type));
-        auto top_buffer_guard = SCOPE_GUARD { m_buffer_storages[0].Finalize(); };
+        R_TRY(m_buffer_storages[0].Initialize(m_buffers->buffers[0], m_mutex, std::addressof(m_verify_storages[0]), info.info[0].size, static_cast<s64>(1) << info.info[0].block_order, max_hash_cache_entries, false, 0x10, false, is_writable));
+        ON_RESULT_FAILURE_2 { m_buffer_storages[0].Finalize(); };
 
         /* Prepare to initialize the level storages. */
         s32 level = 0;
 
         /* Ensure we don't leak state if further initialization goes wrong. */
-        auto level_guard = SCOPE_GUARD {
+        ON_RESULT_FAILURE_2 {
             m_verify_storages[level + 1].Finalize();
             for (/* ... */; level > 0; --level) {
                 m_buffer_storages[level].Finalize();
@@ -198,40 +194,43 @@ namespace ams::fssystem {
 
         /* Initialize the level storages. */
         for (/* ... */; level < m_max_layers - 3; ++level) {
-            /* Initialize the verification storage. */
-            {
-                fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
-                fs::HashSalt mac;
-                crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
-                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, false, storage_type);
+            /* If hash salt is enabled, generate it. */
+            util::optional<fs::HashSalt> hash_salt = util::nullopt;
+            if (hash_salt_enabled) {
+                hash_salt.emplace();
+                crypto::GenerateHmacSha256(hash_salt->value, sizeof(hash_salt->value), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
             }
 
+            /* Initialize the verification storage. */
+            fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
+            m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, hash_salt, false, is_writable, allow_cleared_blocks);
+
             /* Initialize the buffer storage. */
-            R_TRY(m_buffer_storages[level + 1].Initialize(m_buffers->buffers[level + 1], m_mutex, std::addressof(m_verify_storages[level + 1]), info.info[level + 1].size, static_cast<s64>(1) << info.info[level + 1].block_order, max_hash_cache_entry_count, false, 0x11 + static_cast<s8>(level), false, storage_type));
+            R_TRY(m_buffer_storages[level + 1].Initialize(m_buffers->buffers[level + 1], m_mutex, std::addressof(m_verify_storages[level + 1]), info.info[level + 1].size, static_cast<s64>(1) << info.info[level + 1].block_order, max_hash_cache_entries, false, 0x11 + static_cast<s8>(level), false, is_writable));
         }
 
         /* Initialize the final level storage. */
         {
-            /* Initialize the verification storage. */
-            {
-                fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
-                fs::HashSalt mac;
-                crypto::GenerateHmacSha256(mac.value, sizeof(mac), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
-                m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, mac, true, storage_type);
+            /* If hash salt is enabled, generate it. */
+            util::optional<fs::HashSalt> hash_salt = util::nullopt;
+            if (hash_salt_enabled) {
+                hash_salt.emplace();
+                crypto::GenerateHmacSha256(hash_salt->value, sizeof(hash_salt->value), info.seed.value, sizeof(info.seed), KeyArray[level + 1].key, KeyArray[level + 1].size);
             }
 
+            /* Initialize the verification storage. */
+            fs::SubStorage buffer_storage(std::addressof(m_buffer_storages[level]), 0, info.info[level].size);
+            m_verify_storages[level + 1].Initialize(buffer_storage, storage[level + 2], static_cast<s64>(1) << info.info[level + 1].block_order, static_cast<s64>(1) << info.info[level].block_order, m_buffers->buffers[m_max_layers - 2], hgf, hash_salt, true, is_writable, allow_cleared_blocks);
+
             /* Initialize the buffer storage. */
-            R_TRY(m_buffer_storages[level + 1].Initialize(m_buffers->buffers[level + 1], m_mutex, std::addressof(m_verify_storages[level + 1]), info.info[level + 1].size, static_cast<s64>(1) << info.info[level + 1].block_order, max_data_cache_entry_count, true, 0x11 + static_cast<s8>(level), true, storage_type));
+            R_TRY(m_buffer_storages[level + 1].Initialize(m_buffers->buffers[level + 1], m_mutex, std::addressof(m_verify_storages[level + 1]), info.info[level + 1].size, static_cast<s64>(1) << info.info[level + 1].block_order, max_data_cache_entries, true, buffer_level, true, is_writable));
         }
 
         /* Set the data size. */
         m_data_size = info.info[level + 1].size;
 
         /* We succeeded. */
-        level_guard.Cancel();
-        top_buffer_guard.Cancel();
-        top_verif_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HierarchicalIntegrityVerificationStorage::Finalize() {
@@ -260,7 +259,11 @@ namespace ams::fssystem {
         /* Validate arguments. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
 
-        /* Acquire access to the read semaphore. */
+        /* If we have a read semaphore, acquire it. */
+        if (m_read_semaphore != nullptr) { m_read_semaphore->Acquire(); }
+        ON_SCOPE_EXIT { if (m_read_semaphore != nullptr) { m_read_semaphore->Release(); } };
+
+        /* Acquire access to the global read semaphore. */
         if (!g_read_semaphore.TimedAcquire(AccessTimeout)) {
             for (auto level = m_max_layers - 2; level >= 0; --level) {
                 R_TRY(m_buffer_storages[level].Flush());
@@ -272,8 +275,7 @@ namespace ams::fssystem {
         ON_SCOPE_EXIT { g_read_semaphore.Release(); };
 
         /* Read the data. */
-        R_TRY(m_buffer_storages[m_max_layers - 2].Read(offset, buffer, size));
-        return ResultSuccess();
+        R_RETURN(m_buffer_storages[m_max_layers - 2].Read(offset, buffer, size));
     }
 
     Result HierarchicalIntegrityVerificationStorage::Write(s64 offset, const void *buffer, size_t size) {
@@ -285,6 +287,10 @@ namespace ams::fssystem {
 
         /* Validate arguments. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
+
+        /* If we have a write semaphore, acquire it. */
+        if (m_write_semaphore != nullptr) { m_write_semaphore->Acquire(); }
+        ON_SCOPE_EXIT { if (m_write_semaphore != nullptr) { m_write_semaphore->Release(); } };
 
         /* Acquire access to the write semaphore. */
         if (!g_write_semaphore.TimedAcquire(AccessTimeout)) {
@@ -298,20 +304,18 @@ namespace ams::fssystem {
         ON_SCOPE_EXIT { g_write_semaphore.Release(); };
 
         /* Write the data. */
-        R_TRY(m_buffer_storages[m_max_layers - 2].Write(offset, buffer, size));
-        m_is_written_for_rollback = true;
-        return ResultSuccess();
+        R_RETURN(m_buffer_storages[m_max_layers - 2].Write(offset, buffer, size));
     }
 
     Result HierarchicalIntegrityVerificationStorage::GetSize(s64 *out) {
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(m_data_size >= 0);
         *out = m_data_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalIntegrityVerificationStorage::Flush() {
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalIntegrityVerificationStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -320,17 +324,16 @@ namespace ams::fssystem {
             case fs::OperationId::DestroySignature:
                 {
                     R_TRY(m_buffer_storages[m_max_layers - 2].OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                    m_is_written_for_rollback = true;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             case fs::OperationId::Invalidate:
             case fs::OperationId::QueryRange:
                 {
                     R_TRY(m_buffer_storages[m_max_layers - 2].OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             default:
-                return fs::ResultUnsupportedOperateRangeForHierarchicalIntegrityVerificationStorage();
+                R_THROW(fs::ResultUnsupportedOperateRangeForHierarchicalIntegrityVerificationStorage());
         }
     }
 
@@ -338,15 +341,14 @@ namespace ams::fssystem {
         for (s32 level = m_max_layers - 2; level >= 0; --level) {
             R_TRY(m_buffer_storages[level].Commit());
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalIntegrityVerificationStorage::OnRollback() {
         for (s32 level = m_max_layers - 2; level >= 0; --level) {
             R_TRY(m_buffer_storages[level].OnRollback());
         }
-        m_is_written_for_rollback = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

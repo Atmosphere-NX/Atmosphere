@@ -25,7 +25,7 @@
 
 namespace ams::fssystem {
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
 
     class CompressedStorage;
     class AesCtrCounterExtendedStorage;
@@ -34,8 +34,11 @@ namespace ams::fssystem {
 
     struct NcaCryptoConfiguration;
 
-    using KeyGenerationFunction = void (*)(void *dst_key, size_t dst_key_size, const void *src_key, size_t src_key_size, s32 key_type, const NcaCryptoConfiguration &cfg);
-    using DecryptAesCtrFunction = void (*)(void *dst, size_t dst_size, s32 key_type, const void *src_key, size_t src_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
+    using KeyGenerationFunction = void (*)(void *dst_key, size_t dst_key_size, const void *src_key, size_t src_key_size, s32 key_type);
+    using DecryptAesCtrFunction = void (*)(void *dst, size_t dst_size, u8 key_index, u8 key_generation, const void *src_key, size_t src_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
+
+    using CryptAesXtsFunction   = Result (*)(void *dst, size_t dst_size, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
+    using VerifySign1Function   = bool (*)(const void *sig, size_t sig_size, const void *data, size_t data_size, u8 generation, const NcaCryptoConfiguration &cfg);
 
     struct NcaCryptoConfiguration {
         static constexpr size_t Rsa2048KeyModulusSize         = crypto::Rsa2048PssSha256Verifier::ModulusSize;
@@ -49,6 +52,8 @@ namespace ams::fssystem {
         static constexpr s32 KeyAreaEncryptionKeyIndexCount = 3;
         static constexpr s32 HeaderEncryptionKeyCount       = 2;
 
+        static constexpr u8 KeyAreaEncryptionKeyIndexZeroKey = 0xFF;
+
         static constexpr size_t KeyGenerationMax = 32;
 
         const u8 *header_1_sign_key_moduli[Header1SignatureKeyGenerationMax + 1];
@@ -57,9 +62,13 @@ namespace ams::fssystem {
         u8 header_encryption_key_source[Aes128KeySize];
         u8 header_encrypted_encryption_keys[HeaderEncryptionKeyCount][Aes128KeySize];
         KeyGenerationFunction generate_key;
+        CryptAesXtsFunction decrypt_aes_xts_external;
+        CryptAesXtsFunction encrypt_aes_xts_external;
         DecryptAesCtrFunction decrypt_aes_ctr;
         DecryptAesCtrFunction decrypt_aes_ctr_external;
+        VerifySign1Function verify_sign1;
         bool is_plaintext_header_available;
+        bool is_available_sw_key;
 
         #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
         bool is_unsigned_header_available_for_host_tool;
@@ -72,29 +81,34 @@ namespace ams::fssystem {
     };
     static_assert(util::is_pod<NcaCompressionConfiguration>::value);
 
+    constexpr inline s32 KeyAreaEncryptionKeyCount = NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount * NcaCryptoConfiguration::KeyGenerationMax;
+
+    enum class KeyType : s32 {
+        ZeroKey                 = -2,
+        InvalidKey              = -1,
+        NcaHeaderKey1           = KeyAreaEncryptionKeyCount + 0,
+        NcaHeaderKey2           = KeyAreaEncryptionKeyCount + 1,
+        NcaExternalKey          = KeyAreaEncryptionKeyCount + 2,
+        SaveDataDeviceUniqueMac = KeyAreaEncryptionKeyCount + 3,
+        SaveDataSeedUniqueMac   = KeyAreaEncryptionKeyCount + 4,
+        SaveDataTransferMac     = KeyAreaEncryptionKeyCount + 5,
+    };
+
     constexpr inline bool IsInvalidKeyTypeValue(s32 key_type) {
         return key_type < 0;
     }
 
     constexpr inline s32 GetKeyTypeValue(u8 key_index, u8 key_generation) {
-        constexpr s32 InvalidKeyTypeValue = -1;
-        static_assert(IsInvalidKeyTypeValue(InvalidKeyTypeValue));
+        if (key_index == NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexZeroKey) {
+            return util::ToUnderlying(KeyType::ZeroKey);
+        }
 
         if (key_index >= NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount) {
-            return InvalidKeyTypeValue;
+            return util::ToUnderlying(KeyType::InvalidKey);
         }
 
         return NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount * key_generation + key_index;
     }
-
-    constexpr inline s32 KeyAreaEncryptionKeyCount = NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount * NcaCryptoConfiguration::KeyGenerationMax;
-
-    enum class KeyType : s32 {
-        NcaHeaderKey            = KeyAreaEncryptionKeyCount + 0,
-        NcaExternalKey          = KeyAreaEncryptionKeyCount + 1,
-        SaveDataDeviceUniqueMac = KeyAreaEncryptionKeyCount + 2,
-        SaveDataSeedUniqueMac   = KeyAreaEncryptionKeyCount + 3,
-    };
 
     class NcaReader : public ::ams::fs::impl::Newable {
         NON_COPYABLE(NcaReader);
@@ -108,6 +122,7 @@ namespace ams::fssystem {
             DecryptAesCtrFunction m_decrypt_aes_ctr;
             DecryptAesCtrFunction m_decrypt_aes_ctr_external;
             bool m_is_software_aes_prioritized;
+            bool m_is_available_sw_key;
             NcaHeader::EncryptionType m_header_encryption_type;
             bool m_is_header_sign1_signature_valid;
             GetDecompressorFunction m_get_decompressor;
@@ -144,6 +159,7 @@ namespace ams::fssystem {
             bool HasInternalDecryptionKeyForAesHw() const;
             bool IsSoftwareAesPrioritized() const;
             void PrioritizeSoftwareAes();
+            bool IsAvailableSwKey() const;
             bool HasExternalDecryptionKey() const;
             const void *GetExternalDecryptionKey() const;
             void SetExternalDecryptionKey(const void *src, size_t size);
@@ -191,12 +207,27 @@ namespace ams::fssystem {
             NcaPatchInfo &GetPatchInfo();
             const NcaPatchInfo &GetPatchInfo() const;
             const NcaAesCtrUpperIv GetAesCtrUpperIv() const;
+
+            bool IsSkipLayerHashEncryption() const;
+            Result GetHashTargetOffset(s64 *out) const;
+
             bool ExistsSparseLayer() const;
             NcaSparseInfo &GetSparseInfo();
             const NcaSparseInfo &GetSparseInfo() const;
+
             bool ExistsCompressionLayer() const;
             NcaCompressionInfo &GetCompressionInfo();
             const NcaCompressionInfo &GetCompressionInfo() const;
+
+            bool ExistsPatchMetaHashLayer() const;
+            NcaMetaDataHashDataInfo &GetPatchMetaDataHashDataInfo();
+            const NcaMetaDataHashDataInfo &GetPatchMetaDataHashDataInfo() const;
+            NcaFsHeader::MetaDataHashType GetPatchMetaHashType() const;
+
+            bool ExistsSparseMetaHashLayer() const;
+            NcaMetaDataHashDataInfo &GetSparseMetaDataHashDataInfo();
+            const NcaMetaDataHashDataInfo &GetSparseMetaDataHashDataInfo() const;
+            NcaFsHeader::MetaDataHashType GetSparseMetaHashType() const;
     };
 
     class NcaFileSystemDriver : public ::ams::fs::impl::Newable {
@@ -223,6 +254,9 @@ namespace ams::fssystem {
                 std::shared_ptr<fs::IStorage> fs_data_storage;
                 std::shared_ptr<fs::IStorage> compressed_storage_meta_storage;
                 std::shared_ptr<fssystem::CompressedStorage> compressed_storage;
+
+                std::shared_ptr<fs::IStorage> patch_layer_info_storage;
+                std::shared_ptr<fs::IStorage> sparse_layer_info_storage;
 
                 /* For tools. */
                 std::shared_ptr<fs::IStorage> external_original_storage;
@@ -282,15 +316,24 @@ namespace ams::fssystem {
             Result CreateSparseStorageCore(std::shared_ptr<fssystem::SparseStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 base_size, std::shared_ptr<fs::IStorage> meta_storage, const NcaSparseInfo &sparse_info, bool external_info);
             Result CreateSparseStorage(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info);
 
-            Result CreateAesCtrExMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info);
+            Result CreateSparseStorageMetaStorageWithVerification(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> *out_verification, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf);
+            Result CreateSparseStorageWithVerification(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, std::shared_ptr<fs::IStorage> *out_verification, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, NcaFsHeader::MetaDataHashType meta_data_hash_type);
+
+            Result CreateAesCtrExStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, NcaFsHeader::EncryptionType encryption_type, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info);
             Result CreateAesCtrExStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::AesCtrCounterExtendedStorage> *out_ext, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> meta_storage, s64 counter_offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info);
 
             Result CreateIndirectStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaPatchInfo &patch_info);
             Result CreateIndirectStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IndirectStorage> *out_ind, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> original_data_storage, std::shared_ptr<fs::IStorage> meta_storage, const NcaPatchInfo &patch_info);
 
+            Result CreatePatchMetaStorage(std::shared_ptr<fs::IStorage> *out_aes_ctr_ex_meta, std::shared_ptr<fs::IStorage> *out_indirect_meta, std::shared_ptr<fs::IStorage> *out_verification, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf);
+
             Result CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &sha256_data, IHash256GeneratorFactory *hgf);
 
             Result CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, IHash256GeneratorFactory *hgf);
+            Result CreateIntegrityVerificationStorageForMeta(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> *out_verification, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf);
+            Result CreateIntegrityVerificationStorageImpl(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, s64 layer_info_offset, int max_data_cache_entries, int max_hash_cache_entries, s8 buffer_level, IHash256GeneratorFactory *hgf);
+
+            Result CreateRegionSwitchStorage(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> inside_storage, std::shared_ptr<fs::IStorage> outside_storage);
 
             Result CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info);
         public:

@@ -35,7 +35,7 @@ namespace ams::fssystem {
 
     }
 
-    NcaReader::NcaReader() : m_body_storage(), m_header_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto), m_get_decompressor(), m_hash_generator_factory_selector() {
+    NcaReader::NcaReader() : m_body_storage(), m_header_storage(), m_decrypt_aes_ctr(), m_decrypt_aes_ctr_external(), m_is_software_aes_prioritized(false), m_is_available_sw_key(false), m_header_encryption_type(NcaHeader::EncryptionType::Auto), m_get_decompressor(), m_hash_generator_factory_selector() {
         std::memset(std::addressof(m_header), 0, sizeof(m_header));
         std::memset(std::addressof(m_decryption_keys), 0, sizeof(m_decryption_keys));
         std::memset(std::addressof(m_external_decryption_key), 0, sizeof(m_external_decryption_key));
@@ -52,19 +52,42 @@ namespace ams::fssystem {
         AMS_ASSERT(m_body_storage == nullptr);
 
         /* Check that the crypto config is valid. */
-        R_UNLESS(crypto_cfg.generate_key != nullptr, fs::ResultInvalidArgument());
+        R_UNLESS(crypto_cfg.verify_sign1 != nullptr, fs::ResultInvalidArgument());
 
-        /* Generate keys for header. */
-        using AesXtsStorageForNcaHeader = AesXtsStorageBySharedPointer;
+        /* Create the work header storage storage. */
+        std::unique_ptr<fs::IStorage> work_header_storage;
+        if (crypto_cfg.is_available_sw_key) {
+            /* If software key is available, we need to be able to generate keys. */
+            R_UNLESS(crypto_cfg.generate_key != nullptr, fs::ResultInvalidArgument());
 
-        u8 header_decryption_keys[NcaCryptoConfiguration::HeaderEncryptionKeyCount][NcaCryptoConfiguration::Aes128KeySize];
-        for (size_t i = 0; i < NcaCryptoConfiguration::HeaderEncryptionKeyCount; i++) {
-            crypto_cfg.generate_key(header_decryption_keys[i], AesXtsStorageForNcaHeader::KeySize, crypto_cfg.header_encrypted_encryption_keys[i], AesXtsStorageForNcaHeader::KeySize, static_cast<s32>(KeyType::NcaHeaderKey), crypto_cfg);
+            /* Generate keys for header. */
+            using AesXtsStorageForNcaHeader = AesXtsStorageBySharedPointer;
+
+            constexpr const s32 HeaderKeyTypeValues[NcaCryptoConfiguration::HeaderEncryptionKeyCount] = {
+                static_cast<s32>(KeyType::NcaHeaderKey1),
+                static_cast<s32>(KeyType::NcaHeaderKey2),
+            };
+
+            u8 header_decryption_keys[NcaCryptoConfiguration::HeaderEncryptionKeyCount][NcaCryptoConfiguration::Aes128KeySize];
+            for (size_t i = 0; i < NcaCryptoConfiguration::HeaderEncryptionKeyCount; i++) {
+                crypto_cfg.generate_key(header_decryption_keys[i], AesXtsStorageForNcaHeader::KeySize, crypto_cfg.header_encrypted_encryption_keys[i], AesXtsStorageForNcaHeader::KeySize, HeaderKeyTypeValues[i]);
+            }
+
+            /* Create the header storage. */
+            const u8 header_iv[AesXtsStorageForNcaHeader::IvSize] = {};
+            work_header_storage = std::make_unique<AesXtsStorageForNcaHeader>(base_storage, header_decryption_keys[0], header_decryption_keys[1], AesXtsStorageForNcaHeader::KeySize, header_iv, AesXtsStorageForNcaHeader::IvSize, NcaHeader::XtsBlockSize);
+        } else {
+            /* Software key isn't available, so we need to be able to decrypt externally. */
+            R_UNLESS(crypto_cfg.decrypt_aes_xts_external, fs::ResultInvalidArgument());
+
+            /* Create the header storage. */
+            using AesXtsStorageExternalForNcaHeader = AesXtsStorageExternalByPointer;
+
+            const u8 header_iv[AesXtsStorageExternalForNcaHeader::IvSize] = {};
+            work_header_storage = std::make_unique<AesXtsStorageExternalForNcaHeader>(base_storage.get(), nullptr, nullptr, AesXtsStorageExternalForNcaHeader::KeySize, header_iv, AesXtsStorageExternalForNcaHeader::IvSize, NcaHeader::XtsBlockSize, crypto_cfg.encrypt_aes_xts_external, crypto_cfg.decrypt_aes_xts_external);
         }
 
-        /* Create the header storage. */
-        const u8 header_iv[AesXtsStorageForNcaHeader::IvSize] = {};
-        std::unique_ptr<fs::IStorage> work_header_storage = std::make_unique<AesXtsStorageForNcaHeader>(base_storage, header_decryption_keys[0], header_decryption_keys[1], AesXtsStorageForNcaHeader::KeySize, header_iv, AesXtsStorageForNcaHeader::IvSize, NcaHeader::XtsBlockSize);
+        /* Check that we successfully created the storage. */
         R_UNLESS(work_header_storage != nullptr, fs::ResultAllocationMemoryFailedInNcaReaderA());
 
         /* Read the header. */
@@ -91,19 +114,15 @@ namespace ams::fssystem {
 
         /* Validate the fixed key signature. */
         R_UNLESS(m_header.header1_signature_key_generation <= NcaCryptoConfiguration::Header1SignatureKeyGenerationMax, fs::ResultInvalidNcaHeader1SignatureKeyGeneration());
-        const u8 *header_1_sign_key_modulus = crypto_cfg.header_1_sign_key_moduli[m_header.header1_signature_key_generation];
-        AMS_ABORT_UNLESS(header_1_sign_key_modulus != nullptr);
+
+        /* Verify the header sign1. */
         {
             const u8 *sig         = m_header.header_sign_1;
             const size_t sig_size = NcaHeader::HeaderSignSize;
-            const u8 *mod         = header_1_sign_key_modulus;
-            const size_t mod_size = NcaCryptoConfiguration::Rsa2048KeyModulusSize;
-            const u8 *exp         = crypto_cfg.header_1_sign_key_public_exponent;
-            const size_t exp_size = NcaCryptoConfiguration::Rsa2048KeyPublicExponentSize;
             const u8 *msg         = static_cast<const u8 *>(static_cast<const void *>(std::addressof(m_header.magic)));
             const size_t msg_size = NcaHeader::Size - NcaHeader::HeaderSignSize * NcaHeader::HeaderSignCount;
 
-            m_is_header_sign1_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
+            m_is_header_sign1_signature_valid = crypto_cfg.verify_sign1(sig, sig_size, msg, msg_size, m_header.header1_signature_key_generation, crypto_cfg);
 
             #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
             R_UNLESS(m_is_header_sign1_signature_valid, fs::ResultNcaHeaderSignature1VerificationFailed());
@@ -116,7 +135,7 @@ namespace ams::fssystem {
         R_UNLESS(m_header.sdk_addon_version >= SdkAddonVersionMin, fs::ResultUnsupportedSdkVersion());
 
         /* Validate the key index. */
-        R_UNLESS(m_header.key_index < NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount, fs::ResultInvalidNcaKeyIndex());
+        R_UNLESS(m_header.key_index < NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount || m_header.key_index == NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexZeroKey, fs::ResultInvalidNcaKeyIndex());
 
         /* Set our hash generator factory selector. */
         m_hash_generator_factory_selector = hgf_selector;
@@ -124,15 +143,17 @@ namespace ams::fssystem {
         /* Check if we have a rights id. */
         constexpr const u8 ZeroRightsId[NcaHeader::RightsIdSize] = {};
         if (crypto::IsSameBytes(ZeroRightsId, m_header.rights_id, NcaHeader::RightsIdSize)) {
-            /* If we do, then we don't have an external key, so we need to generate decryption keys. */
-            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtr], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtr * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
+            /* If we do, then we don't have an external key, so we need to generate decryption keys if software keys are available. */
+            if (crypto_cfg.is_available_sw_key) {
+                crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtr], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtr * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()));
 
-            /* If we're building for non-nx board (i.e., a host tool), generate all keys for debug. */
-            #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
-            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts1], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts1 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
-            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts2], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts2 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
-            crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtrEx], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtrEx * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()), crypto_cfg);
-            #endif
+                /* If we're building for non-nx board (i.e., a host tool), generate all keys for debug. */
+                #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+                crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts1], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts1 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()));
+                crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesXts2], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesXts2 * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()));
+                crypto_cfg.generate_key(m_decryption_keys[NcaHeader::DecryptionKey_AesCtrEx], crypto::AesDecryptor128::KeySize, m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtrEx * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize, GetKeyTypeValue(m_header.key_index, m_header.GetProperKeyGeneration()));
+                #endif
+            }
 
             /* Copy the hardware speed emulation key. */
             std::memcpy(m_decryption_keys[NcaHeader::DecryptionKey_AesCtrHw], m_header.encrypted_key_area + NcaHeader::DecryptionKey_AesCtrHw * crypto::AesDecryptor128::KeySize, crypto::AesDecryptor128::KeySize);
@@ -140,6 +161,9 @@ namespace ams::fssystem {
 
         /* Clear the external decryption key. */
         std::memset(m_external_decryption_key, 0, sizeof(m_external_decryption_key));
+
+        /* Set software key availability. */
+        m_is_available_sw_key = crypto_cfg.is_available_sw_key;
 
         /* Set our decryptor functions. */
         m_decrypt_aes_ctr          = crypto_cfg.decrypt_aes_ctr;
@@ -309,6 +333,10 @@ namespace ams::fssystem {
         m_is_software_aes_prioritized = true;
     }
 
+    bool NcaReader::IsAvailableSwKey() const {
+        return m_is_available_sw_key;
+    }
+
     bool NcaReader::HasExternalDecryptionKey() const {
         constexpr const u8 ZeroKey[crypto::AesDecryptor128::KeySize] = {};
         return !crypto::IsSameBytes(ZeroKey, this->GetExternalDecryptionKey(), crypto::AesDecryptor128::KeySize);
@@ -469,6 +497,18 @@ namespace ams::fssystem {
         return m_data.aes_ctr_upper_iv;
     }
 
+    bool NcaFsHeaderReader::IsSkipLayerHashEncryption() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.IsSkipLayerHashEncryption();
+    }
+
+    Result NcaFsHeaderReader::GetHashTargetOffset(s64 *out) const {
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(this->IsInitialized());
+
+        return m_data.GetHashTargetOffset(out);
+    }
+
     bool NcaFsHeaderReader::ExistsSparseLayer() const {
         AMS_ASSERT(this->IsInitialized());
         return m_data.sparse_info.generation != 0;
@@ -497,6 +537,46 @@ namespace ams::fssystem {
     const NcaCompressionInfo &NcaFsHeaderReader::GetCompressionInfo() const {
         AMS_ASSERT(this->IsInitialized());
         return m_data.compression_info;
+    }
+
+    bool NcaFsHeaderReader::ExistsPatchMetaHashLayer() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info.size != 0 && this->GetPatchInfo().HasIndirectTable();
+    }
+
+    NcaMetaDataHashDataInfo &NcaFsHeaderReader::GetPatchMetaDataHashDataInfo() {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info;
+    }
+
+    const NcaMetaDataHashDataInfo &NcaFsHeaderReader::GetPatchMetaDataHashDataInfo() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info;
+    }
+
+    NcaFsHeader::MetaDataHashType NcaFsHeaderReader::GetPatchMetaHashType() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_type;
+    }
+
+    bool NcaFsHeaderReader::ExistsSparseMetaHashLayer() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info.size != 0 && this->ExistsSparseLayer();
+    }
+
+    NcaMetaDataHashDataInfo &NcaFsHeaderReader::GetSparseMetaDataHashDataInfo() {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info;
+    }
+
+    const NcaMetaDataHashDataInfo &NcaFsHeaderReader::GetSparseMetaDataHashDataInfo() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_data_info;
+    }
+
+    NcaFsHeader::MetaDataHashType NcaFsHeaderReader::GetSparseMetaHashType() const {
+        AMS_ASSERT(this->IsInitialized());
+        return m_data.meta_data_hash_type;
     }
 
 }

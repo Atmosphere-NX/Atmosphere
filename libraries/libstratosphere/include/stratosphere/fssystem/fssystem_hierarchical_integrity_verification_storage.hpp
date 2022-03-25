@@ -24,7 +24,7 @@
 
 namespace ams::fssystem {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
 
     struct HierarchicalIntegrityVerificationLevelInformation {
         fs::Int64 offset;
@@ -151,20 +151,25 @@ namespace ams::fssystem {
             os::SdkRecursiveMutex *m_mutex;
             IntegrityVerificationStorage m_verify_storages[MaxLayers - 1];
             BlockCacheBufferedStorage    m_buffer_storages[MaxLayers - 1];
+            os::Semaphore *m_read_semaphore;
+            os::Semaphore *m_write_semaphore;
             s64 m_data_size;
             s32 m_max_layers;
-            bool m_is_written_for_rollback;
         public:
-            HierarchicalIntegrityVerificationStorage() : m_buffers(nullptr), m_mutex(nullptr), m_data_size(-1), m_is_written_for_rollback(false) { /* ... */ }
+            HierarchicalIntegrityVerificationStorage() : m_buffers(nullptr), m_mutex(nullptr), m_data_size(-1) { /* ... */ }
             virtual ~HierarchicalIntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, os::SdkRecursiveMutex *mtx, fs::StorageType storage_type);
+            Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, bool hash_salt_enabled, os::SdkRecursiveMutex *mtx, os::Semaphore *read_sema, os::Semaphore *write_sema, int max_data_cache_entries, int max_hash_cache_entries, s8 buffer_level, bool is_writable, bool allow_cleared_blocks);
+            Result Initialize(const HierarchicalIntegrityVerificationInformation &info, HierarchicalStorageInformation storage, FileSystemBufferManagerSet *bufs, IHash256GeneratorFactory *hgf, bool hash_salt_enabled, os::SdkRecursiveMutex *mtx, int max_data_cache_entries, int max_hash_cache_entries, s8 buffer_level, bool is_writable, bool allow_cleared_blocks) {
+                R_RETURN(this->Initialize(info, storage, bufs, hgf, hash_salt_enabled, mtx, nullptr, nullptr, max_data_cache_entries, max_hash_cache_entries, buffer_level, is_writable, allow_cleared_blocks));
+            }
+
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
 
-            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); return fs::ResultUnsupportedSetSizeForHierarchicalIntegrityVerificationStorage(); }
+            virtual Result SetSize(s64 size) override { AMS_UNUSED(size); R_THROW(fs::ResultUnsupportedSetSizeForHierarchicalIntegrityVerificationStorage()); }
             virtual Result GetSize(s64 *out) override;
 
             virtual Result Flush() override;
@@ -177,10 +182,6 @@ namespace ams::fssystem {
 
             bool IsInitialized() const {
                 return m_data_size >= 0;
-            }
-
-            bool IsWrittenForRollback() const {
-                return m_is_written_for_rollback;
             }
 
             FileSystemBufferManagerSet *GetBuffers() {
@@ -200,6 +201,10 @@ namespace ams::fssystem {
 
             fs::SubStorage GetL1HashStorage() {
                 return fs::SubStorage(std::addressof(m_buffer_storages[m_max_layers - 3]), 0, util::DivideUp(m_data_size, this->GetL1HashVerificationBlockSize()));
+            }
+        public:
+            static constexpr s8 GetDefaultDataCacheBufferLevel(u32 max_layers) {
+                return 16 + max_layers - 2;
             }
     };
 

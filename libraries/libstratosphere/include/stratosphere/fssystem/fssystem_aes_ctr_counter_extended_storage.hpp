@@ -32,7 +32,7 @@ namespace ams::fssystem {
 
             using IAllocator = BucketTree::IAllocator;
 
-            using DecryptFunction = void(*)(void *dst, size_t dst_size, s32 index, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
+            using DecryptFunction = void(*)(void *dst, size_t dst_size, u8 index, u8 gen, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, const void *src, size_t src_size);
 
             class IDecryptor {
                 public:
@@ -72,7 +72,7 @@ namespace ams::fssystem {
                 return BucketTree::QueryEntryStorageSize(NodeSize, sizeof(Entry), entry_count);
             }
 
-            static Result CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index);
+            static Result CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index, s32 key_generation);
             static Result CreateSoftwareDecryptor(std::unique_ptr<IDecryptor> *out);
         private:
             BucketTree m_table;

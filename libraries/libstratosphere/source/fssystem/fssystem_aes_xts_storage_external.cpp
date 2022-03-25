@@ -18,40 +18,32 @@
 namespace ams::fssystem {
 
     template<typename BasePointer>
-    void AesXtsStorage<BasePointer>::MakeAesXtsIv(void *dst, size_t dst_size, s64 offset, size_t block_size) {
-        AMS_ASSERT(dst != nullptr);
-        AMS_ASSERT(dst_size == IvSize);
-        AMS_ASSERT(offset >= 0);
-        AMS_UNUSED(dst_size);
-
-        const uintptr_t out_addr = reinterpret_cast<uintptr_t>(dst);
-
-        util::StoreBigEndian<s64>(reinterpret_cast<s64 *>(out_addr + sizeof(s64)), offset / block_size);
-    }
-
-    template<typename BasePointer>
-    AesXtsStorage<BasePointer>::AesXtsStorage(BasePointer base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size) : m_base_storage(std::move(base)), m_block_size(block_size), m_mutex() {
-        AMS_ASSERT(m_base_storage != nullptr);
-        AMS_ASSERT(key1 != nullptr);
-        AMS_ASSERT(key2 != nullptr);
-        AMS_ASSERT(iv   != nullptr);
+    AesXtsStorageExternal<BasePointer>::AesXtsStorageExternal(BasePointer bs, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size, CryptAesXtsFunction ef, CryptAesXtsFunction df) : m_base_storage(std::move(bs)), m_block_size(block_size), m_encrypt_function(ef), m_decrypt_function(df) {
         AMS_ASSERT(key_size == KeySize);
-        AMS_ASSERT(iv_size  == IvSize);
-        AMS_ASSERT(util::IsAligned(m_block_size, AesBlockSize));
+        AMS_ASSERT(iv_size == IvSize);
         AMS_UNUSED(key_size, iv_size);
 
-        std::memcpy(m_key[0], key1, KeySize);
-        std::memcpy(m_key[1], key2, KeySize);
+        if (key1 != nullptr) {
+            std::memcpy(m_key[0], key1, KeySize);
+        }
+
+        if (key2 != nullptr) {
+            std::memcpy(m_key[1], key2, KeySize);
+        }
+
         std::memcpy(m_iv, iv, IvSize);
     }
 
     template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::Read(s64 offset, void *buffer, size_t size) {
-        /* Allow zero-size reads. */
+    Result AesXtsStorageExternal<BasePointer>::Read(s64 offset, void *buffer, size_t size) {
+        /* Allow zero size. */
         R_SUCCEED_IF(size == 0);
 
         /* Ensure buffer is valid. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
+
+        /* Ensure we can decrypt. */
+        R_UNLESS(m_decrypt_function != nullptr, fs::ResultNullptrArgument());
 
         /* We can only read at block aligned offsets. */
         R_UNLESS(util::IsAligned(offset, AesBlockSize), fs::ResultInvalidArgument());
@@ -60,7 +52,7 @@ namespace ams::fssystem {
         /* Read the data. */
         R_TRY(m_base_storage->Read(offset, buffer, size));
 
-        /* Prepare to decrypt the data, with temporarily increased priority. */
+        /* Temporarily increase our thread priority. */
         ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
         /* Setup the counter. */
@@ -83,8 +75,8 @@ namespace ams::fssystem {
                 std::memset(tmp_buf.GetBuffer(), 0, skip_size);
                 std::memcpy(tmp_buf.GetBuffer() + skip_size, buffer, data_size);
 
-                const size_t dec_size = crypto::DecryptAes128Xts(tmp_buf.GetBuffer(), m_block_size, m_key[0], m_key[1], KeySize, ctr, IvSize, tmp_buf.GetBuffer(), m_block_size);
-                R_UNLESS(dec_size == m_block_size, fs::ResultUnexpectedInAesXtsStorageA());
+                /* Decrypt. */
+                R_TRY(m_decrypt_function(tmp_buf.GetBuffer(), m_block_size, m_key[0], m_key[1], KeySize, ctr, IvSize, tmp_buf.GetBuffer(), m_block_size));
 
                 std::memcpy(buffer, tmp_buf.GetBuffer() + skip_size, data_size);
             }
@@ -99,8 +91,7 @@ namespace ams::fssystem {
         size_t remaining = size - processed_size;
         while (remaining > 0) {
             const size_t cur_size = std::min(m_block_size, remaining);
-            const size_t dec_size = crypto::DecryptAes128Xts(cur, cur_size, m_key[0], m_key[1], KeySize, ctr, IvSize, cur, cur_size);
-            R_UNLESS(cur_size == dec_size, fs::ResultUnexpectedInAesXtsStorageA());
+            R_TRY(m_decrypt_function(cur, cur_size, m_key[0], m_key[1], KeySize, ctr, IvSize, cur, cur_size));
 
             remaining -= cur_size;
             cur       += cur_size;
@@ -112,14 +103,17 @@ namespace ams::fssystem {
     }
 
     template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::Write(s64 offset, const void *buffer, size_t size) {
+    Result AesXtsStorageExternal<BasePointer>::Write(s64 offset, const void *buffer, size_t size) {
         /* Allow zero-size writes. */
         R_SUCCEED_IF(size == 0);
 
         /* Ensure buffer is valid. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
 
-        /* We can only read at block aligned offsets. */
+        /* Ensure we can encrypt. */
+        R_UNLESS(m_decrypt_function != nullptr, fs::ResultNullptrArgument());
+
+        /* We can only write at block aligned offsets. */
         R_UNLESS(util::IsAligned(offset, AesBlockSize), fs::ResultInvalidArgument());
         R_UNLESS(util::IsAligned(size,   AesBlockSize), fs::ResultInvalidArgument());
 
@@ -142,12 +136,6 @@ namespace ams::fssystem {
             const size_t skip_size = static_cast<size_t>(offset - util::AlignDown(offset, m_block_size));
             const size_t data_size = std::min(size, m_block_size - skip_size);
 
-            /* Create an encryptor. */
-            /* NOTE: This is completely unnecessary, because crypto::EncryptAes128Xts is used below. */
-            /* However, Nintendo does it, so we will too. */
-            crypto::Aes128XtsEncryptor xts;
-            xts.Initialize(m_key[0], m_key[1], KeySize, ctr, IvSize);
-
             /* Encrypt into a pooled buffer. */
             {
                 /* NOTE: Nintendo allocates a second pooled buffer here despite having one already allocated above. */
@@ -157,8 +145,7 @@ namespace ams::fssystem {
                 std::memset(tmp_buf.GetBuffer(), 0, skip_size);
                 std::memcpy(tmp_buf.GetBuffer() + skip_size, buffer, data_size);
 
-                const size_t enc_size = crypto::EncryptAes128Xts(tmp_buf.GetBuffer(), m_block_size, m_key[0], m_key[1], KeySize, ctr, IvSize, tmp_buf.GetBuffer(), m_block_size);
-                R_UNLESS(enc_size == m_block_size, fs::ResultUnexpectedInAesXtsStorageA());
+                R_TRY(m_encrypt_function(tmp_buf.GetBuffer(), m_block_size, m_key[0], m_key[1], KeySize, ctr, IvSize, tmp_buf.GetBuffer(), m_block_size));
 
                 R_TRY(m_base_storage->Write(offset, tmp_buf.GetBuffer() + skip_size, data_size));
             }
@@ -186,8 +173,7 @@ namespace ams::fssystem {
                     const void *src = static_cast<const char *>(buffer) + processed_size + encrypt_offset;
                     void *dst = use_work_buffer ? pooled_buffer.GetBuffer() + encrypt_offset : const_cast<void *>(src);
 
-                    const size_t enc_size = crypto::EncryptAes128Xts(dst, cur_size, m_key[0], m_key[1], KeySize, ctr, IvSize, src, cur_size);
-                    R_UNLESS(enc_size == cur_size, fs::ResultUnexpectedInAesXtsStorageA());
+                    R_TRY(m_encrypt_function(dst, cur_size, m_key[0], m_key[1], KeySize, ctr, IvSize, src, cur_size));
 
                     AddCounter(ctr, IvSize, 1);
 
@@ -210,24 +196,7 @@ namespace ams::fssystem {
     }
 
     template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::Flush() {
-        R_RETURN(m_base_storage->Flush());
-    }
-
-    template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::SetSize(s64 size) {
-        R_UNLESS(util::IsAligned(size, AesBlockSize), fs::ResultUnexpectedInAesXtsStorageA());
-
-        R_RETURN(m_base_storage->SetSize(size));
-    }
-
-    template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::GetSize(s64 *out) {
-        R_RETURN(m_base_storage->GetSize(out));
-    }
-
-    template<typename BasePointer>
-    Result AesXtsStorage<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+    Result AesXtsStorageExternal<BasePointer>::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Unless invalidating cache, check the arguments. */
         if (op_id != fs::OperationId::Invalidate) {
             /* Handle the zero size case. */
@@ -241,7 +210,24 @@ namespace ams::fssystem {
         R_RETURN(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
     }
 
-    template class AesXtsStorage<fs::IStorage *>;
-    template class AesXtsStorage<std::shared_ptr<fs::IStorage>>;
+    template<typename BasePointer>
+    Result AesXtsStorageExternal<BasePointer>::GetSize(s64 *out) {
+        R_RETURN(m_base_storage->GetSize(out));
+    }
+
+    template<typename BasePointer>
+    Result AesXtsStorageExternal<BasePointer>::Flush() {
+        R_RETURN(m_base_storage->Flush());
+    }
+
+    template<typename BasePointer>
+    Result AesXtsStorageExternal<BasePointer>::SetSize(s64 size) {
+        R_UNLESS(util::IsAligned(size, AesBlockSize), fs::ResultUnexpectedInAesXtsStorageA());
+
+        R_RETURN(m_base_storage->SetSize(size));
+    }
+
+    template class AesXtsStorageExternal<fs::IStorage *>;
+    template class AesXtsStorageExternal<std::shared_ptr<fs::IStorage>>;
 
 }

@@ -15,13 +15,14 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/fssystem/fssystem_i_hash_256_generator.hpp>
 
 namespace ams::fssystem {
 
-    /* ACCURATE_TO_VERSION: 13.4.0.0 */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
 
     struct Hash {
-        static constexpr size_t Size = crypto::Sha256Generator::HashSize;
+        static constexpr size_t Size = IHash256Generator::HashSize;
         u8 value[Size];
     };
     static_assert(sizeof(Hash) == Hash::Size);
@@ -185,8 +186,16 @@ namespace ams::fssystem {
 
     struct NcaCompressionInfo {
         NcaBucketInfo bucket;
+        u8 reserved[8];
     };
     static_assert(util::is_pod<NcaCompressionInfo>::value);
+
+    struct NcaMetaDataHashDataInfo {
+        fs::Int64 offset;
+        fs::Int64 size;
+        Hash hash;
+    };
+    static_assert(util::is_pod<NcaMetaDataHashDataInfo>::value);
 
     struct NcaFsHeader {
         static constexpr size_t Size           = 0x200;
@@ -204,18 +213,28 @@ namespace ams::fssystem {
         };
 
         enum class EncryptionType : u8 {
-            Auto     = 0,
-            None     = 1,
-            AesXts   = 2,
-            AesCtr   = 3,
-            AesCtrEx = 4,
+            Auto                  = 0,
+            None                  = 1,
+            AesXts                = 2,
+            AesCtr                = 3,
+            AesCtrEx              = 4,
+            AesCtrSkipLayerHash   = 5,
+            AesCtrExSkipLayerHash = 6,
         };
 
         enum class HashType : u8 {
-            Auto                      = 0,
-            None                      = 1,
-            HierarchicalSha256Hash    = 2,
-            HierarchicalIntegrityHash = 3,
+            Auto                          = 0,
+            None                          = 1,
+            HierarchicalSha256Hash        = 2,
+            HierarchicalIntegrityHash     = 3,
+            AutoSha3                      = 4,
+            HierarchicalSha3256Hash       = 5,
+            HierarchicalIntegritySha3Hash = 6,
+        };
+
+        enum class MetaDataHashType : u8 {
+            None                  = 0,
+            HierarchicalIntegrity = 1,
         };
 
         union HashData {
@@ -265,13 +284,34 @@ namespace ams::fssystem {
         FsType fs_type;
         HashType hash_type;
         EncryptionType encryption_type;
-        u8 reserved[3];
+        MetaDataHashType meta_data_hash_type;
+        u8 reserved[2];
         HashData hash_data;
         NcaPatchInfo patch_info;
         NcaAesCtrUpperIv aes_ctr_upper_iv;
         NcaSparseInfo sparse_info;
         NcaCompressionInfo compression_info;
-        u8 pad[0x68];
+        NcaMetaDataHashDataInfo meta_data_hash_data_info;
+        u8 pad[0x30];
+
+        bool IsSkipLayerHashEncryption() const {
+            return this->encryption_type == EncryptionType::AesCtrSkipLayerHash || this->encryption_type == EncryptionType::AesCtrExSkipLayerHash;
+        }
+
+        Result GetHashTargetOffset(s64 *out) const {
+            switch (this->hash_type) {
+                case HashType::HierarchicalIntegrityHash:
+                case HashType::HierarchicalIntegritySha3Hash:
+                    *out = this->hash_data.integrity_meta_info.level_hash_info.info[this->hash_data.integrity_meta_info.level_hash_info.max_layers - 2].offset;
+                    R_SUCCEED();
+                case HashType::HierarchicalSha256Hash:
+                case HashType::HierarchicalSha3256Hash:
+                    *out = this->hash_data.hierarchical_sha256_data.hash_layer_region[this->hash_data.hierarchical_sha256_data.hash_layer_count - 1].offset;
+                    R_SUCCEED();
+                default:
+                    R_THROW(fs::ResultInvalidNcaFsHeader());
+            }
+        }
     };
     static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
     static_assert(util::is_pod<NcaFsHeader>::value);
@@ -279,5 +319,12 @@ namespace ams::fssystem {
 
     inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = AMS_OFFSETOF(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);
     inline constexpr const size_t NcaFsHeader::HashData::IntegrityMetaInfo::MasterHashOffset      = AMS_OFFSETOF(NcaFsHeader, hash_data.integrity_meta_info.master_hash);
+
+    struct NcaMetaDataHashData {
+        s64 layer_info_offset;
+        NcaFsHeader::HashData::IntegrityMetaInfo integrity_meta_info;
+    };
+    static_assert(sizeof(NcaMetaDataHashData) == sizeof(NcaFsHeader::HashData::IntegrityMetaInfo) + sizeof(s64));
+    static_assert(util::is_pod<NcaMetaDataHashData>::value);
 
 }

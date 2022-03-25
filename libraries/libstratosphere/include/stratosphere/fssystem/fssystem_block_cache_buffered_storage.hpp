@@ -99,13 +99,13 @@ namespace ams::fssystem {
             size_t m_verification_block_shift;
             s32 m_flags;
             s32 m_buffer_level;
-            fs::StorageType m_storage_type;
             BlockCacheManager m_block_cache_manager;
+            bool m_is_writable;
         public:
             BlockCacheBufferedStorage();
             virtual ~BlockCacheBufferedStorage() override;
 
-            Result Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type);
+            Result Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, bool is_writable);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;

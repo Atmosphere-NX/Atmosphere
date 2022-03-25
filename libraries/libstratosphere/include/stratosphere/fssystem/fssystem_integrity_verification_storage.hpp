@@ -23,7 +23,7 @@
 
 namespace ams::fssystem {
 
-    /* ACCURATE_TO_VERSION: Unknown */
+    /* ACCURATE_TO_VERSION: 14.3.0.0 */
 
     class IntegrityVerificationStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(IntegrityVerificationStorage);
@@ -43,15 +43,16 @@ namespace ams::fssystem {
             s64 m_upper_layer_verification_block_size;
             s64 m_upper_layer_verification_block_order;
             fs::IBufferManager *m_buffer_manager;
-            fs::HashSalt m_salt;
+            util::optional<fs::HashSalt> m_salt;
             bool m_is_real_data;
-            fs::StorageType m_storage_type;
             fssystem::IHash256GeneratorFactory *m_hash_generator_factory;
+            bool m_is_writable;
+            bool m_allow_cleared_blocks;
         public:
-            IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr) { /* ... */ }
+            IntegrityVerificationStorage() : m_verification_block_size(0), m_verification_block_order(0), m_upper_layer_verification_block_size(0), m_upper_layer_verification_block_order(0), m_buffer_manager(nullptr), m_salt(util::nullopt) { /* ... */ }
             virtual ~IntegrityVerificationStorage() override { this->Finalize(); }
 
-            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type);
+            Result Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks);
             void Finalize();
 
             virtual Result Read(s64 offset, void *buffer, size_t size) override;

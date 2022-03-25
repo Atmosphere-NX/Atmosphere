@@ -17,8 +17,7 @@
 
 namespace ams::fssystem {
 
-    BlockCacheBufferedStorage::BlockCacheBufferedStorage() : m_mutex(), m_data_storage(), m_last_result(ResultSuccess()), m_data_size(), m_verification_block_size(), m_verification_block_shift(), m_flags(), m_buffer_level(-1), m_block_cache_manager()
-    {
+    BlockCacheBufferedStorage::BlockCacheBufferedStorage() : m_mutex(), m_data_storage(), m_last_result(ResultSuccess()), m_data_size(), m_verification_block_size(), m_verification_block_shift(), m_flags(), m_buffer_level(-1), m_block_cache_manager() {
         /* ... */
     }
 
@@ -26,7 +25,7 @@ namespace ams::fssystem {
         this->Finalize();
     }
 
-    Result BlockCacheBufferedStorage::Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, fs::StorageType storage_type) {
+    Result BlockCacheBufferedStorage::Initialize(fs::IBufferManager *bm, os::SdkRecursiveMutex *mtx, IStorage *data, s64 data_size, size_t verif_block_size, s32 max_cache_entries, bool is_real_data, s8 buffer_level, bool is_keep_burst_mode, bool is_writable) {
         /* Validate preconditions. */
         AMS_ASSERT(data != nullptr);
         AMS_ASSERT(bm   != nullptr);
@@ -46,7 +45,7 @@ namespace ams::fssystem {
         m_last_result              = ResultSuccess();
         m_flags                    = 0;
         m_buffer_level             = buffer_level;
-        m_storage_type             = storage_type;
+        m_is_writable              = is_writable;
 
         /* Calculate block shift. */
         m_verification_block_shift = ILog2(static_cast<u32>(verif_block_size));
@@ -385,24 +384,20 @@ namespace ams::fssystem {
         switch (op_id) {
             case fs::OperationId::FillZero:
                 {
-                    R_TRY(this->FillZeroImpl(offset, size));
-                    R_SUCCEED();
+                    R_RETURN(this->FillZeroImpl(offset, size));
                 }
             case fs::OperationId::DestroySignature:
                 {
-                    R_TRY(this->DestroySignatureImpl(offset, size));
-                    R_SUCCEED();
+                    R_RETURN(this->DestroySignatureImpl(offset, size));
                 }
             case fs::OperationId::Invalidate:
                 {
-                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperateRangeForNonSaveDataBlockCacheBufferedStorage());
-                    R_TRY(this->InvalidateImpl());
-                    R_SUCCEED();
+                    R_UNLESS(!m_is_writable, fs::ResultUnsupportedOperateRangeForWritableBlockCacheBufferedStorage());
+                    R_RETURN(this->InvalidateImpl());
                 }
             case fs::OperationId::QueryRange:
                 {
-                    R_TRY(this->QueryRangeImpl(dst, dst_size, offset, size));
-                    R_SUCCEED();
+                    R_RETURN(this->QueryRangeImpl(dst, dst_size, offset, size));
                 }
             default:
                 R_THROW(fs::ResultUnsupportedOperateRangeForBlockCacheBufferedStorage());

@@ -39,6 +39,9 @@
 #include <stratosphere/fssystem/fssystem_crypto_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_compression_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_aes_ctr_counter_extended_storage.hpp>
+#include <stratosphere/fssystem/fssystem_aes_ctr_storage_external.hpp>
+#include <stratosphere/fssystem/fssystem_aes_xts_storage_external.hpp>
+#include <stratosphere/fssystem/fssystem_switch_storage.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
 #include <stratosphere/fssystem/fssystem_pooled_buffer.hpp>

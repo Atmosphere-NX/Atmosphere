@@ -33,8 +33,9 @@ namespace ams::fssystem {
             private:
                 AesCtrCounterExtendedStorage::DecryptFunction m_decrypt_function;
                 s32 m_key_index;
+                s32 m_key_generation;
             public:
-                ExternalDecryptor(AesCtrCounterExtendedStorage::DecryptFunction df, s32 key_idx) : m_decrypt_function(df), m_key_index(key_idx) {
+                ExternalDecryptor(AesCtrCounterExtendedStorage::DecryptFunction df, s32 key_idx, s32 key_gen) : m_decrypt_function(df), m_key_index(key_idx), m_key_generation(key_gen) {
                     AMS_ASSERT(m_decrypt_function != nullptr);
                 }
             public:
@@ -44,8 +45,8 @@ namespace ams::fssystem {
 
     }
 
-    Result AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index) {
-        std::unique_ptr<IDecryptor> decryptor = std::make_unique<ExternalDecryptor>(func, key_index);
+    Result AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::unique_ptr<IDecryptor> *out, DecryptFunction func, s32 key_index, s32 key_generation) {
+        std::unique_ptr<IDecryptor> decryptor = std::make_unique<ExternalDecryptor>(func, key_index, key_generation);
         R_UNLESS(decryptor != nullptr, fs::ResultAllocationMemoryFailedInAesCtrCounterExtendedStorageA());
         *out = std::move(decryptor);
         return ResultSuccess();
@@ -280,7 +281,7 @@ namespace ams::fssystem {
             size_t cur_size = std::min(pooled_buffer.GetSize(), remaining_size);
             u8 *dst = static_cast<u8 *>(buf) + cur_offset;
 
-            m_decrypt_function(pooled_buffer.GetBuffer(), cur_size, m_key_index, enc_key, enc_key_size, ctr, IvSize, dst, cur_size);
+            m_decrypt_function(pooled_buffer.GetBuffer(), cur_size, m_key_index, m_key_generation, enc_key, enc_key_size, ctr, IvSize, dst, cur_size);
 
             std::memcpy(dst, pooled_buffer.GetBuffer(), cur_size);
 

@@ -31,6 +31,12 @@ namespace ams::fssystem {
         constexpr inline s32 SparseTableCacheBlockSize   = SparseStorage::NodeSize;
         constexpr inline s32 SparseTableCacheCount       = 4;
 
+        constexpr inline s32 IntegrityDataCacheCount = 24;
+        constexpr inline s32 IntegrityHashCacheCount = 8;
+
+        constexpr inline s32 IntegrityDataCacheCountForMeta = 16;
+        constexpr inline s32 IntegrityHashCacheCountForMeta = 2;
+
         //TODO: Better names for these?
         //constexpr inline s32 CompressedDataBlockSize            = 64_KB;
         //constexpr inline s32 CompressedContinuousReadingSizeMax = 640_KB;
@@ -56,21 +62,21 @@ namespace ams::fssystem {
                     AMS_ASSERT(m_storage != nullptr);
 
                     /* Read from the base storage. */
-                    return m_storage->Read(offset, buffer, size);
+                    R_RETURN(m_storage->Read(offset, buffer, size));
                 }
 
                 virtual Result GetSize(s64 *out) override {
                     /* Validate pre-conditions. */
                     AMS_ASSERT(m_storage != nullptr);
 
-                    return m_storage->GetSize(out);
+                    R_RETURN(m_storage->GetSize(out));
                 }
 
                 virtual Result Flush() override {
                     /* Validate pre-conditions. */
                     AMS_ASSERT(m_storage != nullptr);
 
-                    return m_storage->Flush();
+                    R_RETURN(m_storage->Flush());
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
@@ -78,200 +84,21 @@ namespace ams::fssystem {
                     AMS_ASSERT(m_storage != nullptr);
 
                     /* Read from the base storage. */
-                    return m_storage->Write(offset, buffer, size);
+                    R_RETURN(m_storage->Write(offset, buffer, size));
                 }
 
                 virtual Result SetSize(s64 size) override {
                     /* Validate pre-conditions. */
                     AMS_ASSERT(m_storage != nullptr);
 
-                    return m_storage->SetSize(size);
+                    R_RETURN(m_storage->SetSize(size));
                 }
 
                 virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     /* Validate pre-conditions. */
                     AMS_ASSERT(m_storage != nullptr);
 
-                    return m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
-                }
-        };
-
-        class AesCtrStorageExternal : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
-            NON_COPYABLE(AesCtrStorageExternal);
-            NON_MOVEABLE(AesCtrStorageExternal);
-            public:
-                static constexpr size_t BlockSize = crypto::Aes128CtrEncryptor::BlockSize;
-                static constexpr size_t KeySize   = crypto::Aes128CtrEncryptor::KeySize;
-                static constexpr size_t IvSize    = crypto::Aes128CtrEncryptor::IvSize;
-            private:
-                std::shared_ptr<fs::IStorage> m_base_storage;
-                u8 m_iv[IvSize];
-                DecryptAesCtrFunction m_decrypt_function;
-                s32 m_key_index;
-                u8 m_encrypted_key[KeySize];
-            public:
-                AesCtrStorageExternal(std::shared_ptr<fs::IStorage> bs, const void *enc_key, size_t enc_key_size, const void *iv, size_t iv_size, DecryptAesCtrFunction df, s32 kidx) : m_base_storage(std::move(bs)), m_decrypt_function(df), m_key_index(kidx) {
-                    AMS_ASSERT(m_base_storage != nullptr);
-                    AMS_ASSERT(enc_key_size == KeySize);
-                    AMS_ASSERT(iv != nullptr);
-                    AMS_ASSERT(iv_size == IvSize);
-                    AMS_UNUSED(iv_size);
-
-                    std::memcpy(m_iv, iv, IvSize);
-                    std::memcpy(m_encrypted_key, enc_key, enc_key_size);
-                }
-
-                virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                    /* Allow zero size. */
-                    R_SUCCEED_IF(size == 0);
-
-                    /* Validate arguments. */
-                    /* NOTE: For some reason, Nintendo uses InvalidArgument instead of InvalidOffset/InvalidSize here. */
-                    R_UNLESS(buffer != nullptr,                  fs::ResultNullptrArgument());
-                    R_UNLESS(util::IsAligned(offset, BlockSize), fs::ResultInvalidArgument());
-                    R_UNLESS(util::IsAligned(size,   BlockSize), fs::ResultInvalidArgument());
-
-                    /* Read the data. */
-                    R_TRY(m_base_storage->Read(offset, buffer, size));
-
-                    /* Temporarily increase our thread priority. */
-                    ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
-
-                    /* Allocate a pooled buffer for decryption. */
-                    PooledBuffer pooled_buffer;
-                    pooled_buffer.AllocateParticularlyLarge(size, BlockSize);
-                    AMS_ASSERT(pooled_buffer.GetSize() >= BlockSize);
-
-                    /* Setup the counter. */
-                    u8 ctr[IvSize];
-                    std::memcpy(ctr, m_iv, IvSize);
-                    AddCounter(ctr, IvSize, offset / BlockSize);
-
-                    /* Setup tracking. */
-                    size_t remaining_size = size;
-                    s64 cur_offset = 0;
-
-                    while (remaining_size > 0) {
-                        /* Get the current size to process. */
-                        size_t cur_size = std::min(pooled_buffer.GetSize(), remaining_size);
-                        char *dst = static_cast<char *>(buffer) + cur_offset;
-
-                        /* Decrypt into the temporary buffer */
-                        m_decrypt_function(pooled_buffer.GetBuffer(), cur_size, m_key_index, m_encrypted_key, KeySize, ctr, IvSize, dst, cur_size);
-
-                        /* Copy to the destination. */
-                        std::memcpy(dst, pooled_buffer.GetBuffer(), cur_size);
-
-                        /* Update tracking. */
-                        cur_offset     += cur_size;
-                        remaining_size -= cur_size;
-
-                        if (remaining_size > 0) {
-                            AddCounter(ctr, IvSize, cur_size / BlockSize);
-                        }
-                    }
-
-                    return ResultSuccess();
-                }
-                virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                    switch (op_id) {
-                        case fs::OperationId::QueryRange:
-                            {
-                                /* Validate that we have an output range info. */
-                                R_UNLESS(dst != nullptr,                         fs::ResultNullptrArgument());
-                                R_UNLESS(dst_size == sizeof(fs::QueryRangeInfo), fs::ResultInvalidSize());
-
-                                /* Operate on our base storage. */
-                                R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-
-                                /* Add in new flags. */
-                                fs::QueryRangeInfo new_info;
-                                new_info.Clear();
-                                new_info.aes_ctr_key_type = static_cast<s32>(m_key_index >= 0 ? fs::AesCtrKeyTypeFlag::InternalKeyForHardwareAes : fs::AesCtrKeyTypeFlag::ExternalKeyForHardwareAes);
-
-                                /* Merge the new info in. */
-                                reinterpret_cast<fs::QueryRangeInfo *>(dst)->Merge(new_info);
-                                return ResultSuccess();
-                            }
-                        default:
-                            {
-                                /* Operate on our base storage. */
-                                R_TRY(m_base_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                                return ResultSuccess();
-                            }
-                    }
-                }
-
-                virtual Result GetSize(s64 *out) override {
-                    return m_base_storage->GetSize(out);
-                }
-
-                virtual Result Flush() override {
-                    return ResultSuccess();
-                }
-
-                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    AMS_UNUSED(offset, buffer, size);
-                    return fs::ResultUnsupportedWriteForAesCtrStorageExternal();
-                }
-
-                virtual Result SetSize(s64 size) override {
-                    AMS_UNUSED(size);
-                    return fs::ResultUnsupportedSetSizeForAesCtrStorageExternal();
-                }
-        };
-
-        template<typename F>
-        class SwitchStorage : public ::ams::fs::IStorage, public ::ams::fs::impl::Newable {
-            NON_COPYABLE(SwitchStorage);
-            NON_MOVEABLE(SwitchStorage);
-            private:
-                std::shared_ptr<fs::IStorage> m_true_storage;
-                std::shared_ptr<fs::IStorage> m_false_storage;
-                F m_truth_function;
-            private:
-                ALWAYS_INLINE std::shared_ptr<fs::IStorage> &SelectStorage() {
-                    return m_truth_function() ? m_true_storage : m_false_storage;
-                }
-            public:
-                SwitchStorage(std::shared_ptr<fs::IStorage> t, std::shared_ptr<fs::IStorage> f, F func) : m_true_storage(std::move(t)), m_false_storage(std::move(f)), m_truth_function(func) { /* ... */ }
-
-                virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                    return this->SelectStorage()->Read(offset, buffer, size);
-                }
-
-                virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
-                    switch (op_id) {
-                        case fs::OperationId::Invalidate:
-                            {
-                                R_TRY(m_true_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                                R_TRY(m_false_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                                return ResultSuccess();
-                            }
-                        case fs::OperationId::QueryRange:
-                            {
-                                R_TRY(this->SelectStorage()->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
-                                return ResultSuccess();
-                            }
-                        default:
-                            return fs::ResultUnsupportedOperateRangeForSwitchStorage();
-                    }
-                }
-
-                virtual Result GetSize(s64 *out) override {
-                    return this->SelectStorage()->GetSize(out);
-                }
-
-                virtual Result Flush() override {
-                    return this->SelectStorage()->Flush();
-                }
-
-                virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    return this->SelectStorage()->Write(offset, buffer, size);
-                }
-
-                virtual Result SetSize(s64 size) override {
-                    return this->SelectStorage()->SetSize(size);
+                    R_RETURN(m_storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
                 }
         };
 
@@ -307,7 +134,7 @@ namespace ams::fssystem {
             R_UNLESS(*out_splitter != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::OpenStorageImpl(std::shared_ptr<fs::IStorage> *out, NcaFsHeaderReader *out_header_reader, s32 fs_index, StorageContext *ctx) {
@@ -328,8 +155,17 @@ namespace ams::fssystem {
         /* Process sparse layer. */
         s64 fs_data_offset = 0;
         if (out_header_reader->ExistsSparseLayer()) {
-            /* Create the sparse storage. */
-            R_TRY(this->CreateSparseStorage(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->current_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, fs_index, out_header_reader->GetAesCtrUpperIv(), out_header_reader->GetSparseInfo()));
+            /* Get the sparse info. */
+            const auto &sparse_info = out_header_reader->GetSparseInfo();
+
+            /* Create based on whether we have a meta hash layer. */
+            if (out_header_reader->ExistsSparseMetaHashLayer()) {
+                /* Create the sparse storage with verification. */
+                R_TRY(this->CreateSparseStorageWithVerification(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->current_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_layer_info_storage) : nullptr, fs_index, out_header_reader->GetAesCtrUpperIv(), sparse_info, out_header_reader->GetSparseMetaDataHashDataInfo(), out_header_reader->GetSparseMetaHashType()));
+            } else {
+                /* Create the sparse storage. */
+                R_TRY(this->CreateSparseStorage(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->current_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, fs_index, out_header_reader->GetAesCtrUpperIv(), sparse_info));
+            }
         } else {
             /* Get the data offsets. */
             fs_data_offset           = GetFsOffset(*m_reader, fs_index);
@@ -350,13 +186,28 @@ namespace ams::fssystem {
 
         /* Process patch layer. */
         const auto &patch_info = out_header_reader->GetPatchInfo();
+        std::shared_ptr<fs::IStorage> patch_meta_aes_ctr_ex_meta_storage;
+        std::shared_ptr<fs::IStorage> patch_meta_indirect_meta_storage;
+        if (out_header_reader->ExistsPatchMetaHashLayer()) {
+            /* Check the meta hash type. */
+            R_UNLESS(out_header_reader->GetPatchMetaHashType() == NcaFsHeader::MetaDataHashType::HierarchicalIntegrity, fs::ResultRomNcaInvalidPatchMetaDataHashType());
+
+            /* Create the patch meta storage. */
+            R_TRY(this->CreatePatchMetaStorage(std::addressof(patch_meta_aes_ctr_ex_meta_storage), std::addressof(patch_meta_indirect_meta_storage), ctx != nullptr ? std::addressof(ctx->patch_layer_info_storage) : nullptr, storage, fs_data_offset, out_header_reader->GetAesCtrUpperIv(), patch_info, out_header_reader->GetPatchMetaDataHashDataInfo(), m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)));
+        }
+
         if (patch_info.HasAesCtrExTable()) {
             /* Check the encryption type. */
-            AMS_ASSERT(out_header_reader->GetEncryptionType() == NcaFsHeader::EncryptionType::AesCtrEx);
+            AMS_ASSERT(out_header_reader->GetEncryptionType() == NcaFsHeader::EncryptionType::None || out_header_reader->GetEncryptionType() == NcaFsHeader::EncryptionType::AesCtrEx || out_header_reader->GetEncryptionType() == NcaFsHeader::EncryptionType::AesCtrExSkipLayerHash);
 
             /* Create the ex meta storage. */
-            std::shared_ptr<fs::IStorage> aes_ctr_ex_storage_meta_storage;
-            R_TRY(this->CreateAesCtrExMetaStorage(std::addressof(aes_ctr_ex_storage_meta_storage), storage, fs_data_offset, out_header_reader->GetAesCtrUpperIv(), patch_info));
+            std::shared_ptr<fs::IStorage> aes_ctr_ex_storage_meta_storage = patch_meta_aes_ctr_ex_meta_storage;
+            if (aes_ctr_ex_storage_meta_storage == nullptr) {
+                /* If we don't have a meta storage, we must not have a patch meta hash layer. */
+                AMS_ASSERT(!out_header_reader->ExistsPatchMetaHashLayer());
+
+                R_TRY(this->CreateAesCtrExStorageMetaStorage(std::addressof(aes_ctr_ex_storage_meta_storage), storage, fs_data_offset, out_header_reader->GetEncryptionType(), out_header_reader->GetAesCtrUpperIv(), patch_info));
+            }
 
             /* Create the ex storage. */
             std::shared_ptr<fs::IStorage> aes_ctr_ex_storage;
@@ -383,8 +234,18 @@ namespace ams::fssystem {
                 case NcaFsHeader::EncryptionType::AesCtr:
                     R_TRY(this->CreateAesCtrStorage(std::addressof(storage), std::move(storage), fs_data_offset, out_header_reader->GetAesCtrUpperIv(), AlignmentStorageRequirement_None));
                     break;
+                case NcaFsHeader::EncryptionType::AesCtrSkipLayerHash:
+                    {
+                        /* Create the aes ctr storage. */
+                        std::shared_ptr<fs::IStorage> aes_ctr_storage;
+                        R_TRY(this->CreateAesCtrStorage(std::addressof(aes_ctr_storage), storage, fs_data_offset, out_header_reader->GetAesCtrUpperIv(), AlignmentStorageRequirement_None));
+
+                        /* Create region switch storage. */
+                        R_TRY(this->CreateRegionSwitchStorage(std::addressof(storage), out_header_reader, std::move(storage), std::move(aes_ctr_storage)));
+                    }
+                    break;
                 default:
-                    return fs::ResultInvalidNcaFsHeaderEncryptionType();
+                    R_THROW(fs::ResultInvalidNcaFsHeaderEncryptionType());
             }
 
             /* Potentially save storages to our context. */
@@ -396,8 +257,13 @@ namespace ams::fssystem {
         /* Process indirect layer. */
         if (patch_info.HasIndirectTable()) {
             /* Create the indirect meta storage */
-            std::shared_ptr<fs::IStorage> indirect_storage_meta_storage;
-            R_TRY(this->CreateIndirectStorageMetaStorage(std::addressof(indirect_storage_meta_storage), storage, patch_info));
+            std::shared_ptr<fs::IStorage> indirect_storage_meta_storage = patch_meta_indirect_meta_storage;
+            if (indirect_storage_meta_storage == nullptr) {
+                /* If we don't have a meta storage, we must not have a patch meta hash layer. */
+                AMS_ASSERT(!out_header_reader->ExistsPatchMetaHashLayer());
+
+                R_TRY(this->CreateIndirectStorageMetaStorage(std::addressof(indirect_storage_meta_storage), storage, patch_info));
+            }
 
             /* Potentially save the indirect meta storage to our context. */
             if (ctx != nullptr) {
@@ -436,7 +302,7 @@ namespace ams::fssystem {
         /* Check if we're sparse or requested to skip the integrity layer. */
         if (out_header_reader->ExistsSparseLayer() || (ctx != nullptr && ctx->open_raw_storage)) {
             *out = std::move(storage);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Create the non-raw storage. */
@@ -456,7 +322,7 @@ namespace ams::fssystem {
                 R_TRY(this->CreateIntegrityVerificationStorage(std::addressof(storage), std::move(storage), header_reader->GetHashData().integrity_meta_info, m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)));
                 break;
             default:
-                return fs::ResultInvalidNcaFsHeaderHashType();
+                R_THROW(fs::ResultInvalidNcaFsHeaderHashType());
         }
 
         /* Process compression layer. */
@@ -466,7 +332,7 @@ namespace ams::fssystem {
 
         /* Set output storage. */
         *out = std::move(storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::OpenIndirectableStorageAsOriginal(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, StorageContext *ctx) {
@@ -479,8 +345,17 @@ namespace ams::fssystem {
         /* Process sparse layer. */
         s64 fs_data_offset = 0;
         if (header_reader->ExistsSparseLayer()) {
-            /* Create the sparse storage. */
-            R_TRY(this->CreateSparseStorage(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->original_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, fs_index, header_reader->GetAesCtrUpperIv(), header_reader->GetSparseInfo()));
+            /* Get the sparse info. */
+            const auto &sparse_info = header_reader->GetSparseInfo();
+
+            /* Create based on whether we have a meta hash layer. */
+            if (header_reader->ExistsSparseMetaHashLayer()) {
+                /* Create the sparse storage with verification. */
+                R_TRY(this->CreateSparseStorageWithVerification(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->original_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_layer_info_storage) : nullptr, fs_index, header_reader->GetAesCtrUpperIv(), sparse_info, header_reader->GetSparseMetaDataHashDataInfo(), header_reader->GetSparseMetaHashType()));
+            } else {
+                /* Create the sparse storage. */
+                R_TRY(this->CreateSparseStorage(std::addressof(storage), std::addressof(fs_data_offset), ctx != nullptr ? std::addressof(ctx->original_sparse_storage) : nullptr, ctx != nullptr ? std::addressof(ctx->sparse_storage_meta_storage) : nullptr, fs_index, header_reader->GetAesCtrUpperIv(), sparse_info));
+            }
         } else {
             /* Get the data offsets. */
             fs_data_offset           = GetFsOffset(*m_reader, fs_index);
@@ -506,12 +381,12 @@ namespace ams::fssystem {
                 R_TRY(this->CreateAesCtrStorage(std::addressof(storage), std::move(storage), fs_data_offset, header_reader->GetAesCtrUpperIv(), AlignmentStorageRequirement_CacheBlockSize));
                 break;
             default:
-                return fs::ResultInvalidNcaFsHeaderEncryptionType();
+                R_THROW(fs::ResultInvalidNcaFsHeaderEncryptionType());
         }
 
         /* Set output storage. */
         *out = std::move(storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateBodySubStorage(std::shared_ptr<fs::IStorage> *out, s64 offset, s64 size) {
@@ -532,7 +407,7 @@ namespace ams::fssystem {
 
         /* Set the output storage. */
         *out = std::move(body_substorage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateAesCtrStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, AlignmentStorageRequirement alignment_storage_requirement) {
@@ -575,7 +450,7 @@ namespace ams::fssystem {
         /* Create the ctr storage. */
         std::shared_ptr<fs::IStorage> aes_ctr_storage;
         if (m_reader->HasExternalDecryptionKey()) {
-            aes_ctr_storage = fssystem::AllocateShared<AesCtrStorageExternal>(std::move(base_storage), m_reader->GetExternalDecryptionKey(), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1);
+            aes_ctr_storage = fssystem::AllocateShared<AesCtrStorageExternal>(std::move(base_storage), m_reader->GetExternalDecryptionKey(), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1, -1);
             R_UNLESS(aes_ctr_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
         } else {
             /* Create software decryption storage. */
@@ -584,7 +459,7 @@ namespace ams::fssystem {
 
             /* If we have a hardware key and should use it, make the hardware decryption storage. */
             if (m_reader->HasInternalDecryptionKeyForAesHw() && !m_reader->IsSoftwareAesPrioritized()) {
-                auto hw_storage = fssystem::AllocateShared<AesCtrStorageExternal>(base_storage, m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(m_reader->GetKeyIndex(), m_reader->GetKeyGeneration()));
+                auto hw_storage = fssystem::AllocateShared<AesCtrStorageExternal>(base_storage, m_reader->GetDecryptionKey(NcaHeader::DecryptionKey_AesCtrHw), AesCtrStorageExternal::KeySize, iv, AesCtrStorageExternal::IvSize, m_reader->GetExternalDecryptAesCtrFunction(), m_reader->GetKeyIndex(), m_reader->GetKeyGeneration());
                 R_UNLESS(hw_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
 
                 /* Create the selection storage. */
@@ -605,7 +480,7 @@ namespace ams::fssystem {
 
         /* Set the out storage. */
         *out = std::move(aligned_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateAesXtsStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset) {
@@ -629,7 +504,7 @@ namespace ams::fssystem {
 
         /* Set the out storage. */
         *out = std::move(aligned_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateSparseStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info) {
@@ -663,7 +538,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(meta_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateSparseStorageCore(std::shared_ptr<fssystem::SparseStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 base_size, std::shared_ptr<fs::IStorage> meta_storage, const NcaSparseInfo &sparse_info, bool external_info) {
@@ -700,7 +575,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(sparse_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateSparseStorage(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info) {
@@ -757,13 +632,125 @@ namespace ams::fssystem {
 
         /* Set the output storage. */
         *out = std::move(sparse_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
-    Result NcaFileSystemDriver::CreateAesCtrExMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info) {
+    Result NcaFileSystemDriver::CreateSparseStorageMetaStorageWithVerification(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> *out_layer_info_storage, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(hgf != nullptr);
+
+        /* Get the base storage size. */
+        s64 base_size = 0;
+        R_TRY(base_storage->GetSize(std::addressof(base_size)));
+
+        /* Get the meta extents. */
+        const auto meta_offset = sparse_info.bucket.offset;
+        const auto meta_size   = sparse_info.bucket.size;
+        R_UNLESS(meta_offset + meta_size - offset <= base_size, fs::ResultNcaBaseStorageOutOfRangeB());
+
+        /* Get the meta data hash data extents. */
+        const s64 meta_data_hash_data_offset = meta_data_hash_data_info.offset;
+        const s64 meta_data_hash_data_size   = util::AlignUp<s64>(meta_data_hash_data_info.size, NcaHeader::CtrBlockSize);
+        R_UNLESS(meta_data_hash_data_offset + meta_data_hash_data_size <= base_size, fs::ResultNcaBaseStorageOutOfRangeB());
+
+        /* Check that the meta is before the hash data. */
+        R_UNLESS(meta_offset + meta_size <= meta_data_hash_data_offset, fs::ResultRomNcaInvalidSparseMetaDataHashDataOffset());
+
+        /* Check that offsets are appropriately aligned. */
+        R_UNLESS(util::IsAligned<s64>(meta_data_hash_data_offset, NcaHeader::CtrBlockSize), fs::ResultRomNcaInvalidSparseMetaDataHashDataOffset());
+        R_UNLESS(util::IsAligned<s64>(meta_offset, NcaHeader::CtrBlockSize),                fs::ResultInvalidNcaFsHeader());
+
+        /* Create the meta storage. */
+        auto enc_storage = fssystem::AllocateShared<fs::SubStorage>(std::move(base_storage), meta_offset, meta_data_hash_data_offset + meta_data_hash_data_size - meta_offset);
+        R_UNLESS(enc_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Create the decrypted storage. */
+        std::shared_ptr<fs::IStorage> decrypted_storage;
+        R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + meta_offset, sparse_info.MakeAesCtrUpperIv(upper_iv), AlignmentStorageRequirement_None));
+
+        /* Create the verification storage. */
+        std::shared_ptr<fs::IStorage> integrity_storage;
+        R_TRY_CATCH(this->CreateIntegrityVerificationStorageForMeta(std::addressof(integrity_storage), out_layer_info_storage, std::move(decrypted_storage), meta_offset, meta_data_hash_data_info, hgf)) {
+            R_CONVERT(fs::ResultInvalidNcaMetaDataHashDataSize, fs::ResultRomNcaInvalidSparseMetaDataHashDataSize())
+            R_CONVERT(fs::ResultInvalidNcaMetaDataHashDataHash, fs::ResultRomNcaInvalidSparseMetaDataHashDataHash())
+        } R_END_TRY_CATCH;
+
+        /* Create the meta storage. */
+        auto meta_storage = fssystem::AllocateShared<fs::SubStorage>(std::move(integrity_storage), 0, meta_size);
+        R_UNLESS(meta_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Set the output. */
+        *out = std::move(meta_storage);
+        R_SUCCEED();
+    }
+
+    Result NcaFileSystemDriver::CreateSparseStorageWithVerification(std::shared_ptr<fs::IStorage> *out, s64 *out_fs_data_offset, std::shared_ptr<fssystem::SparseStorage> *out_sparse_storage, std::shared_ptr<fs::IStorage> *out_meta_storage, std::shared_ptr<fs::IStorage> *out_layer_info_storage, s32 index, const NcaAesCtrUpperIv &upper_iv, const NcaSparseInfo &sparse_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, NcaFsHeader::MetaDataHashType meta_data_hash_type) {
+        /* Validate preconditions. */
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(out_fs_data_offset != nullptr);
+
+        /* Check the sparse info generation. */
+        R_UNLESS(sparse_info.generation != 0, fs::ResultInvalidNcaHeader());
+
+        /* Read and verify the bucket tree header. */
+        BucketTree::Header header;
+        std::memcpy(std::addressof(header), sparse_info.bucket.header, sizeof(header));
+        R_TRY(header.Verify());
+
+        /* Determine the storage extents. */
+        const auto fs_offset     = GetFsOffset(*m_reader, index);
+        const auto fs_end_offset = GetFsEndOffset(*m_reader, index);
+        const auto fs_size       = fs_end_offset - fs_offset;
+
+        /* Create the sparse storage. */
+        std::shared_ptr<fssystem::SparseStorage> sparse_storage;
+        if (header.entry_count != 0) {
+            /* Create the body substorage. */
+            std::shared_ptr<fs::IStorage> body_substorage;
+            R_TRY(this->CreateBodySubStorage(std::addressof(body_substorage), sparse_info.physical_offset, util::AlignUp<s64>(static_cast<s64>(meta_data_hash_data_info.offset) + static_cast<s64>(meta_data_hash_data_info.size), NcaHeader::CtrBlockSize)));
+
+            /* Check the meta data hash type. */
+            R_UNLESS(meta_data_hash_type == NcaFsHeader::MetaDataHashType::HierarchicalIntegrity, fs::ResultRomNcaInvalidSparseMetaDataHashType());
+
+            /* Create the meta storage. */
+            std::shared_ptr<fs::IStorage> meta_storage;
+            R_TRY(this->CreateSparseStorageMetaStorageWithVerification(std::addressof(meta_storage), out_layer_info_storage, body_substorage, sparse_info.physical_offset, upper_iv, sparse_info, meta_data_hash_data_info, m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)));
+
+            /* Potentially set the output meta storage. */
+            if (out_meta_storage != nullptr) {
+                *out_meta_storage = meta_storage;
+            }
+
+            /* Create the sparse storage. */
+            R_TRY(this->CreateSparseStorageCore(std::addressof(sparse_storage), body_substorage, sparse_info.GetPhysicalSize(), std::move(meta_storage), sparse_info, false));
+        } else {
+            /* If there are no entries, there's nothing to actually do. */
+            sparse_storage = fssystem::AllocateShared<fssystem::SparseStorage>();
+            R_UNLESS(sparse_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+            sparse_storage->Initialize(fs_size);
+        }
+
+        /* Potentially set the output sparse storage. */
+        if (out_sparse_storage != nullptr) {
+            *out_sparse_storage = sparse_storage;
+        }
+
+        /* Set the output fs data offset. */
+        *out_fs_data_offset = fs_offset;
+
+        /* Set the output storage. */
+        *out = std::move(sparse_storage);
+        R_SUCCEED();
+    }
+
+    Result NcaFileSystemDriver::CreateAesCtrExStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, s64 offset, NcaFsHeader::EncryptionType encryption_type, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info) {
+        /* Validate preconditions. */
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(encryption_type == NcaFsHeader::EncryptionType::None || encryption_type == NcaFsHeader::EncryptionType::AesCtrEx || encryption_type == NcaFsHeader::EncryptionType::AesCtrExSkipLayerHash);
         AMS_ASSERT(patch_info.HasAesCtrExTable());
 
         /* Validate patch info extents. */
@@ -786,7 +773,12 @@ namespace ams::fssystem {
 
         /* Create the decrypted storage. */
         std::shared_ptr<fs::IStorage> decrypted_storage;
-        R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + meta_offset, upper_iv, AlignmentStorageRequirement_None));
+        if (encryption_type != NcaFsHeader::EncryptionType::None) {
+            R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + meta_offset, upper_iv, AlignmentStorageRequirement_None));
+        } else {
+            /* If encryption type is none, don't do any decryption. */
+            decrypted_storage = std::move(enc_storage);
+        }
 
         /* Create meta storage. */
         auto meta_storage = fssystem::AllocateShared<BufferedStorage>();
@@ -802,7 +794,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(aligned_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateAesCtrExStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::AesCtrCounterExtendedStorage> *out_ext, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> meta_storage, s64 counter_offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info) {
@@ -839,7 +831,7 @@ namespace ams::fssystem {
         if (m_reader->HasExternalDecryptionKey()) {
             /* Create the decryptor. */
             std::unique_ptr<AesCtrCounterExtendedStorage::IDecryptor> decryptor;
-            R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(decryptor), m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1));
+            R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(decryptor), m_reader->GetExternalDecryptAesCtrFunctionForExternalKey(), -1, -1));
 
             /* Create the aes ctr ex storage. */
             auto impl_storage = fssystem::AllocateShared<AesCtrCounterExtendedStorage>();
@@ -876,7 +868,7 @@ namespace ams::fssystem {
             if (m_reader->HasInternalDecryptionKeyForAesHw() && !m_reader->IsSoftwareAesPrioritized()) {
                 /* Create the hardware decryptor. */
                 std::unique_ptr<AesCtrCounterExtendedStorage::IDecryptor> hw_decryptor;
-                R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(hw_decryptor), m_reader->GetExternalDecryptAesCtrFunction(), GetKeyTypeValue(m_reader->GetKeyIndex(), m_reader->GetKeyGeneration())));
+                R_TRY(AesCtrCounterExtendedStorage::CreateExternalDecryptor(std::addressof(hw_decryptor), m_reader->GetExternalDecryptAesCtrFunction(), m_reader->GetKeyIndex(), m_reader->GetKeyGeneration()));
 
                 /* Create the hardware storage. */
                 auto hw_storage = fssystem::AllocateShared<AesCtrCounterExtendedStorage>();
@@ -904,7 +896,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(aligned_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateIndirectStorageMetaStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaPatchInfo &patch_info) {
@@ -929,7 +921,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(meta_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateIndirectStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IndirectStorage> *out_ind, std::shared_ptr<fs::IStorage> base_storage, std::shared_ptr<fs::IStorage> original_data_storage, std::shared_ptr<fs::IStorage> meta_storage, const NcaPatchInfo &patch_info) {
@@ -985,7 +977,64 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(indirect_storage);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+    Result NcaFileSystemDriver::CreatePatchMetaStorage(std::shared_ptr<fs::IStorage> *out_aes_ctr_ex_meta, std::shared_ptr<fs::IStorage> *out_indirect_meta, std::shared_ptr<fs::IStorage> *out_layer_info_storage, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaAesCtrUpperIv &upper_iv, const NcaPatchInfo &patch_info, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf) {
+        /* Validate preconditions. */
+        AMS_ASSERT(out_aes_ctr_ex_meta != nullptr);
+        AMS_ASSERT(out_indirect_meta != nullptr);
+        AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(patch_info.HasAesCtrExTable());
+        AMS_ASSERT(patch_info.HasIndirectTable());
+        AMS_ASSERT(util::IsAligned<s64>(patch_info.aes_ctr_ex_size, NcaHeader::XtsBlockSize));
+
+        /* Validate patch info extents. */
+        R_UNLESS(patch_info.indirect_size > 0,                                                                 fs::ResultInvalidNcaPatchInfoIndirectSize());
+        R_UNLESS(patch_info.aes_ctr_ex_size >= 0,                                                              fs::ResultInvalidNcaPatchInfoAesCtrExSize());
+        R_UNLESS(patch_info.indirect_size + patch_info.indirect_offset <= patch_info.aes_ctr_ex_offset,        fs::ResultInvalidNcaPatchInfoAesCtrExOffset());
+        R_UNLESS(patch_info.aes_ctr_ex_offset + patch_info.aes_ctr_ex_size <= meta_data_hash_data_info.offset, fs::ResultRomNcaInvalidPatchMetaDataHashDataOffset());
+
+        /* Get the base storage size. */
+        s64 base_size;
+        R_TRY(base_storage->GetSize(std::addressof(base_size)));
+
+        /* Check that extents remain within range. */
+        R_UNLESS(patch_info.indirect_offset + patch_info.indirect_size <= base_size,     fs::ResultNcaBaseStorageOutOfRangeE());
+        R_UNLESS(patch_info.aes_ctr_ex_offset + patch_info.aes_ctr_ex_size <= base_size, fs::ResultNcaBaseStorageOutOfRangeB());
+
+        /* Check that metadata hash data extents remain within range. */
+        const s64 meta_data_hash_data_offset = meta_data_hash_data_info.offset;
+        const s64 meta_data_hash_data_size   = util::AlignUp<s64>(meta_data_hash_data_info.size, NcaHeader::CtrBlockSize);
+        R_UNLESS(meta_data_hash_data_offset + meta_data_hash_data_size <= base_size, fs::ResultNcaBaseStorageOutOfRangeB());
+
+        /* Create the encrypted storage. */
+        auto enc_storage = fssystem::AllocateShared<fs::SubStorage>(std::move(base_storage), patch_info.indirect_offset, meta_data_hash_data_offset + meta_data_hash_data_size - patch_info.indirect_offset);
+        R_UNLESS(enc_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Create the decrypted storage. */
+        std::shared_ptr<fs::IStorage> decrypted_storage;
+        R_TRY(this->CreateAesCtrStorage(std::addressof(decrypted_storage), std::move(enc_storage), offset + patch_info.indirect_offset, upper_iv, AlignmentStorageRequirement_None));
+
+        /* Create the verification storage. */
+        std::shared_ptr<fs::IStorage> integrity_storage;
+        R_TRY_CATCH(this->CreateIntegrityVerificationStorageForMeta(std::addressof(integrity_storage), out_layer_info_storage, std::move(decrypted_storage), patch_info.indirect_offset, meta_data_hash_data_info, hgf)) {
+            R_CONVERT(fs::ResultInvalidNcaMetaDataHashDataSize, fs::ResultRomNcaInvalidPatchMetaDataHashDataSize())
+            R_CONVERT(fs::ResultInvalidNcaMetaDataHashDataHash, fs::ResultRomNcaInvalidPatchMetaDataHashDataHash())
+        } R_END_TRY_CATCH;
+
+        /* Create the indirect meta storage. */
+        auto indirect_meta_storage = fssystem::AllocateShared<fs::SubStorage>(integrity_storage, patch_info.indirect_offset - patch_info.indirect_offset, patch_info.indirect_size);
+        R_UNLESS(indirect_meta_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Create the aes ctr ex meta storage. */
+        auto aes_ctr_ex_meta_storage = fssystem::AllocateShared<fs::SubStorage>(integrity_storage, patch_info.aes_ctr_ex_offset - patch_info.indirect_offset, patch_info.aes_ctr_ex_size);
+        R_UNLESS(aes_ctr_ex_meta_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Set the output. */
+        *out_aes_ctr_ex_meta = std::move(aes_ctr_ex_meta_storage);
+        *out_indirect_meta   = std::move(indirect_meta_storage);
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateSha256Storage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::HierarchicalSha256Data &hash_data, IHash256GeneratorFactory *hgf) {
@@ -1052,13 +1101,50 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(aligned_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateIntegrityVerificationStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, IHash256GeneratorFactory *hgf) {
+        R_RETURN(this->CreateIntegrityVerificationStorageImpl(out, base_storage, meta_info, 0, IntegrityDataCacheCount, IntegrityHashCacheCount, fssystem::HierarchicalIntegrityVerificationStorage::GetDefaultDataCacheBufferLevel(meta_info.level_hash_info.max_layers), hgf));
+    }
+
+    Result NcaFileSystemDriver::CreateIntegrityVerificationStorageForMeta(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> *out_layer_info_storage, std::shared_ptr<fs::IStorage> base_storage, s64 offset, const NcaMetaDataHashDataInfo &meta_data_hash_data_info, IHash256GeneratorFactory *hgf) {
+        /* Validate preconditions. */
+        AMS_ASSERT(out != nullptr);
+
+        /* Check the meta data hash data size. */
+        R_UNLESS(meta_data_hash_data_info.size == sizeof(NcaMetaDataHashData), fs::ResultInvalidNcaMetaDataHashDataSize());
+
+        /* Read the meta data hash data. */
+        NcaMetaDataHashData meta_data_hash_data;
+        R_TRY(base_storage->Read(meta_data_hash_data_info.offset - offset, std::addressof(meta_data_hash_data), sizeof(meta_data_hash_data)));
+
+        /* Check the meta data hash data hash. */
+        u8 meta_data_hash_data_hash[IHash256Generator::HashSize];
+        m_hash_generator_factory_selector->GetFactory(fssystem::HashAlgorithmType_Sha2)->GenerateHash(meta_data_hash_data_hash, sizeof(meta_data_hash_data_hash), std::addressof(meta_data_hash_data), sizeof(meta_data_hash_data));
+        R_UNLESS(crypto::IsSameBytes(meta_data_hash_data_hash, std::addressof(meta_data_hash_data_info.hash), sizeof(meta_data_hash_data_hash)), fs::ResultInvalidNcaMetaDataHashDataHash());
+
+        /* Set the out layer info storage, if necessary. */
+        if (out_layer_info_storage != nullptr) {
+            auto layer_info_storage = fssystem::AllocateShared<fs::SubStorage>(base_storage, meta_data_hash_data.layer_info_offset - offset, meta_data_hash_data_info.offset + meta_data_hash_data_info.size - meta_data_hash_data.layer_info_offset);
+            R_UNLESS(layer_info_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+            *out_layer_info_storage = std::move(layer_info_storage);
+        }
+
+        /* Create the meta storage. */
+        auto meta_storage = fssystem::AllocateShared<fs::SubStorage>(std::move(base_storage), 0, meta_data_hash_data_info.offset - offset);
+        R_UNLESS(meta_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Create the integrity verification storage. */
+        R_RETURN(this->CreateIntegrityVerificationStorageImpl(out, std::move(meta_storage), meta_data_hash_data.integrity_meta_info, meta_data_hash_data.layer_info_offset - offset, IntegrityDataCacheCountForMeta, IntegrityHashCacheCountForMeta, 0, hgf));
+    }
+
+    Result NcaFileSystemDriver::CreateIntegrityVerificationStorageImpl(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fs::IStorage> base_storage, const NcaFsHeader::HashData::IntegrityMetaInfo &meta_info, s64 layer_info_offset, int max_data_cache_entries, int max_hash_cache_entries, s8 buffer_level, IHash256GeneratorFactory *hgf) {
         /* Validate preconditions. */
         AMS_ASSERT(out != nullptr);
         AMS_ASSERT(base_storage != nullptr);
+        AMS_ASSERT(layer_info_offset >= 0);
 
         /* Define storage types. */
         using VerificationStorage = HierarchicalIntegrityVerificationStorage;
@@ -1079,30 +1165,52 @@ namespace ams::fssystem {
         StorageInfo storage_info;
         for (s32 i = 0; i < static_cast<s32>(level_hash_info.max_layers - 2); ++i) {
             const auto &layer_info = level_hash_info.info[i];
-            R_UNLESS(layer_info.offset + layer_info.size <= base_storage_size, fs::ResultNcaBaseStorageOutOfRangeD());
+            R_UNLESS(layer_info_offset + layer_info.offset + layer_info.size <= base_storage_size, fs::ResultNcaBaseStorageOutOfRangeD());
 
-            storage_info[i + 1] = fs::SubStorage(base_storage, layer_info.offset, layer_info.size);
+            storage_info[i + 1] = fs::SubStorage(base_storage, layer_info_offset + layer_info.offset, layer_info.size);
         }
 
         /* Set the last layer info. */
         const auto &layer_info = level_hash_info.info[level_hash_info.max_layers - 2];
-        R_UNLESS(layer_info.offset + layer_info.size <= base_storage_size, fs::ResultNcaBaseStorageOutOfRangeD());
-        storage_info.SetDataStorage(fs::SubStorage(std::move(base_storage), layer_info.offset, layer_info.size));
+        const s64 last_layer_info_offset = layer_info_offset > 0 ? 0 : layer_info.offset;
+        R_UNLESS(last_layer_info_offset + layer_info.size <= base_storage_size, fs::ResultNcaBaseStorageOutOfRangeD());
+        if (layer_info_offset > 0) {
+            R_UNLESS(last_layer_info_offset + layer_info.size <= layer_info_offset, fs::ResultRomNcaInvalidIntegrityLayerInfoOffset());
+        }
+        storage_info.SetDataStorage(fs::SubStorage(std::move(base_storage), last_layer_info_offset, layer_info.size));
 
         /* Make the integrity romfs storage. */
         auto integrity_storage = fssystem::AllocateShared<fssystem::IntegrityRomFsStorage>();
         R_UNLESS(integrity_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
 
         /* Initialize the integrity storage. */
-        R_TRY(integrity_storage->Initialize(level_hash_info, meta_info.master_hash, storage_info, m_buffer_manager, hgf));
+        R_TRY(integrity_storage->Initialize(level_hash_info, meta_info.master_hash, storage_info, m_buffer_manager, max_data_cache_entries, max_hash_cache_entries, buffer_level, hgf));
 
         /* Set the output. */
         *out = std::move(integrity_storage);
-        return ResultSuccess();
+        R_SUCCEED();
+    }
+
+
+    Result NcaFileSystemDriver::CreateRegionSwitchStorage(std::shared_ptr<fs::IStorage> *out, const NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> inside_storage, std::shared_ptr<fs::IStorage> outside_storage) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(header_reader->GetHashType() == NcaFsHeader::HashType::HierarchicalIntegrityHash);
+
+        /* Create the region. */
+        fssystem::RegionSwitchStorage::Region region = {};
+        R_TRY(header_reader->GetHashTargetOffset(std::addressof(region.size)));
+
+        /* Create the region switch storage. */
+        auto region_switch_storage = fssystem::AllocateShared<fssystem::RegionSwitchStorage>(std::move(inside_storage), std::move(outside_storage), region);
+        R_UNLESS(region_switch_storage != nullptr, fs::ResultAllocationMemoryFailedAllocateShared());
+
+        /* Set the output. */
+        *out = std::move(region_switch_storage);
+        R_SUCCEED();
     }
 
     Result NcaFileSystemDriver::CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info) {
-        return this->CreateCompressedStorage(out, out_cmp, out_meta, std::move(base_storage), compression_info, m_reader->GetDecompressor(), m_allocator, m_buffer_manager);
+        R_RETURN(this->CreateCompressedStorage(out, out_cmp, out_meta, std::move(base_storage), compression_info, m_reader->GetDecompressor(), m_allocator, m_buffer_manager));
     }
 
     Result NcaFileSystemDriver::CreateCompressedStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::CompressedStorage> *out_cmp, std::shared_ptr<fs::IStorage> *out_meta, std::shared_ptr<fs::IStorage> base_storage, const NcaCompressionInfo &compression_info, GetDecompressorFunction get_decompressor, MemoryResource *allocator, fs::IBufferManager *buffer_manager) {
@@ -1145,7 +1253,7 @@ namespace ams::fssystem {
 
         /* Set the output. */
         *out = std::move(compressed_storage);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

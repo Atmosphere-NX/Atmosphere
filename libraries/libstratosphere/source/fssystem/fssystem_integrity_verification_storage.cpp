@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const fs::HashSalt &salt, bool is_real_data, fs::StorageType storage_type) {
+    Result IntegrityVerificationStorage::Initialize(fs::SubStorage hs, fs::SubStorage ds, s64 verif_block_size, s64 upper_layer_verif_block_size, fs::IBufferManager *bm, fssystem::IHash256GeneratorFactory *hgf, const util::optional<fs::HashSalt> &salt, bool is_real_data, bool is_writable, bool allow_cleared_blocks) {
         /* Validate preconditions. */
         AMS_ASSERT(verif_block_size >= HashSize);
         AMS_ASSERT(bm != nullptr);
@@ -49,18 +49,19 @@ namespace ams::fssystem {
             s64 hash_size = 0;
             s64 data_size = 0;
             AMS_ASSERT(R_SUCCEEDED(m_hash_storage.GetSize(std::addressof(hash_size))));
-            AMS_ASSERT(R_SUCCEEDED(m_data_storage.GetSize(std::addressof(hash_size))));
+            AMS_ASSERT(R_SUCCEEDED(m_data_storage.GetSize(std::addressof(data_size))));
             AMS_ASSERT(((hash_size / HashSize) * m_verification_block_size) >= data_size);
             AMS_UNUSED(hash_size, data_size);
         }
 
         /* Set salt. */
-        std::memcpy(m_salt.value, salt.value, fs::HashSalt::Size);
+        m_salt = salt;
 
-        /* Set data and storage type. */
-        m_is_real_data = is_real_data;
-        m_storage_type = storage_type;
-        return ResultSuccess();
+        /* Set data, writable, and allow cleared. */
+        m_is_real_data         = is_real_data;
+        m_is_writable          = is_writable;
+        m_allow_cleared_blocks = allow_cleared_blocks;
+        R_SUCCEED();
     }
 
     void IntegrityVerificationStorage::Finalize() {
@@ -146,7 +147,7 @@ namespace ams::fssystem {
                     std::memset(cur_buf, 0, m_verification_block_size);
 
                     /* Set the result if we should. */
-                    if (!fs::ResultClearedRealDataVerificationFailed::Includes(cur_result) && m_storage_type != fs::StorageType_Authoring) {
+                    if (!fs::ResultClearedRealDataVerificationFailed::Includes(cur_result) && !m_allow_cleared_blocks) {
                         verify_hash_result = cur_result;
                     }
 
@@ -157,14 +158,14 @@ namespace ams::fssystem {
             /* If we failed, clear and return. */
             if (R_FAILED(cur_result)) {
                 std::memset(buffer, 0, size);
-                return cur_result;
+                R_THROW(cur_result);
             }
 
             /* Advance. */
             verified_count += cur_count;
         }
 
-        return verify_hash_result;
+        R_RETURN(verify_hash_result);
     }
 
     Result IntegrityVerificationStorage::Write(s64 offset, const void *buffer, size_t size) {
@@ -246,30 +247,32 @@ namespace ams::fssystem {
         /* Write the data. */
         R_TRY(m_data_storage.Write(offset, buffer, std::min(write_size, updated_count << m_verification_block_order)));
 
-        return update_result;
+        R_RETURN(update_result);
     }
 
     Result IntegrityVerificationStorage::GetSize(s64 *out) {
-        return m_data_storage.GetSize(out);
+        R_RETURN(m_data_storage.GetSize(out));
     }
 
     Result IntegrityVerificationStorage::Flush() {
         /* Flush both storages. */
         R_TRY(m_hash_storage.Flush());
         R_TRY(m_data_storage.Flush());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IntegrityVerificationStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
         /* Validate preconditions. */
-        AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
-        AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(m_verification_block_size)));
+        if (op_id != fs::OperationId::Invalidate) {
+            AMS_ASSERT(util::IsAligned(offset, static_cast<size_t>(m_verification_block_size)));
+            AMS_ASSERT(util::IsAligned(size,   static_cast<size_t>(m_verification_block_size)));
+        }
 
         switch (op_id) {
             case fs::OperationId::FillZero:
                 {
-                    /* Clear should only be called for save data. */
-                    AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
+                    /* FillZero should only be called for writable storages. */
+                    AMS_ASSERT(m_is_writable);
 
                     /* Validate the range. */
                     s64 data_size = 0;
@@ -297,12 +300,12 @@ namespace ams::fssystem {
                         remaining_size -= cur_size;
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             case fs::OperationId::DestroySignature:
                 {
-                    /* Clear Signature should only be called for save data. */
-                    AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
+                    /* DestroySignature should only be called for save data. */
+                    AMS_ASSERT(m_is_writable);
 
                     /* Validate the range. */
                     s64 data_size = 0;
@@ -327,19 +330,19 @@ namespace ams::fssystem {
                     }
 
                     /* Write the cleared signature. */
-                    return m_hash_storage.Write(sign_offset, buf.get(), sign_size);
+                    R_RETURN(m_hash_storage.Write(sign_offset, buf.get(), sign_size));
                 }
             case fs::OperationId::Invalidate:
                 {
-                    /* Only allow cache invalidation for RomFs. */
-                    R_UNLESS(m_storage_type != fs::StorageType_SaveData, fs::ResultUnsupportedOperateRangeForNonSaveDataIntegrityVerificationStorage());
+                    /* Only allow cache invalidation read-only storages. */
+                    R_UNLESS(!m_is_writable, fs::ResultUnsupportedOperateRangeForWritableIntegrityVerificationStorage());
 
 
                     /* Operate on our storages. */
-                    R_TRY(m_hash_storage.OperateRange(dst, dst_size, op_id, 0, std::numeric_limits<s64>::max(), src, src_size));
-                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, size, src, src_size));
+                    R_TRY(m_hash_storage.OperateRange(op_id, 0, std::numeric_limits<s64>::max()));
+                    R_TRY(m_data_storage.OperateRange(op_id, offset, size));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             case fs::OperationId::QueryRange:
                 {
@@ -352,31 +355,37 @@ namespace ams::fssystem {
                     const auto actual_size = std::min(size, data_size - offset);
 
                     /* Query the data storage. */
-                    R_TRY(m_data_storage.OperateRange(dst, dst_size, op_id, offset, actual_size, src, src_size));
-
-                    return ResultSuccess();
+                    R_RETURN(m_data_storage.OperateRange(dst, dst_size, op_id, offset, actual_size, src, src_size));
                 }
             default:
-                return fs::ResultUnsupportedOperateRangeForIntegrityVerificationStorage();
+                R_THROW(fs::ResultUnsupportedOperateRangeForIntegrityVerificationStorage());
         }
     }
 
     void IntegrityVerificationStorage::CalcBlockHash(BlockHash *out, const void *buffer, size_t block_size, std::unique_ptr<fssystem::IHash256Generator> &generator) const {
-        /* Initialize the generator. */
-        generator->Initialize();
+        /* Hash procedure depends on whether or not we're writable. */
+        if (m_is_writable) {
+            /* Compute the hash with or without the hash salt, if we have one. */
+            if (m_salt.has_value()) {
+                /* Initialize the generator. */
+                generator->Initialize();
 
-        /* If calculating for save data, hash the salt. */
-        if (m_storage_type == fs::StorageType_SaveData) {
-            generator->Update(m_salt.value, sizeof(m_salt));
-        }
+                /* Hash the salt. */
+                generator->Update(m_salt->value, sizeof(m_salt->value));
 
-        /* Update with the buffer and get the hash. */
-        generator->Update(buffer, block_size);
-        generator->GetHash(out, sizeof(*out));
+                /* Update with the buffer and get the hash. */
+                generator->Update(buffer, block_size);
+                generator->GetHash(out, sizeof(*out));
+            } else {
+                /* If we have no hash salt, just calculate the hash. */
+                m_hash_generator_factory->GenerateHash(out, sizeof(*out), buffer, block_size);
+            }
 
-        /* Set the validation bit, if the hash is for save data. */
-        if (m_storage_type == fs::StorageType_SaveData) {
+            /* Set the validation bit. */
             SetValidationBit(out);
+        } else {
+            /* If we're not writable, just calculate the hash. */
+            m_hash_generator_factory->GenerateHash(out, sizeof(*out), buffer, block_size);
         }
     }
 
@@ -407,7 +416,7 @@ namespace ams::fssystem {
 
         /* We succeeded. */
         clear_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IntegrityVerificationStorage::WriteBlockSignature(const void *src, size_t src_size, s64 offset, size_t size) {
@@ -425,7 +434,7 @@ namespace ams::fssystem {
         R_TRY(m_hash_storage.Write(sign_offset, src, sign_size));
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IntegrityVerificationStorage::VerifyHash(const void *buf, BlockHash *hash, std::unique_ptr<fssystem::IHash256Generator> &generator) {
@@ -436,8 +445,8 @@ namespace ams::fssystem {
         /* Get the comparison hash. */
         auto &cmp_hash = *hash;
 
-        /* If save data, check if the data is uninitialized. */
-        if (m_storage_type == fs::StorageType_SaveData) {
+        /* If writable, check if the data is uninitialized. */
+        if (m_is_writable) {
             bool is_cleared = false;
             R_TRY(this->IsCleared(std::addressof(is_cleared), cmp_hash));
             R_UNLESS(!is_cleared, fs::ResultClearedRealDataVerificationFailed());
@@ -454,19 +463,19 @@ namespace ams::fssystem {
 
             /* Return the appropriate result. */
             if (m_is_real_data) {
-                return fs::ResultUnclearedRealDataVerificationFailed();
+                R_THROW(fs::ResultUnclearedRealDataVerificationFailed());
             } else {
-                return fs::ResultNonRealDataVerificationFailed();
+                R_THROW(fs::ResultNonRealDataVerificationFailed());
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IntegrityVerificationStorage::IsCleared(bool *is_cleared, const BlockHash &hash) {
         /* Validate preconditions. */
         AMS_ASSERT(is_cleared != nullptr);
-        AMS_ASSERT(m_storage_type == fs::StorageType_SaveData);
+        AMS_ASSERT(m_is_writable);
 
         /* Default to uncleared. */
         *is_cleared = false;
@@ -481,7 +490,7 @@ namespace ams::fssystem {
 
         /* Set cleared. */
         *is_cleared = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }
