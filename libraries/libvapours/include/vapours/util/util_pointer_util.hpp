@@ -17,6 +17,7 @@
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
 namespace ams::util {
 
     namespace impl {
@@ -60,3 +61,4 @@ namespace ams::util {
     concept RawOrSmartPointerTo = IsRawOrSmartPointer<T> && impl::PointerToImpl<T, U>;
 
 }
+#endif
