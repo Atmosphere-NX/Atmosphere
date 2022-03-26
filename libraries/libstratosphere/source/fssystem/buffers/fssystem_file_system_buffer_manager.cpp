@@ -40,7 +40,7 @@ namespace ams::fssystem {
         m_cache_count_min = max_cache_count / 16;
         m_cache_size_min  = m_cache_count_min * 0x100;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FileSystemBufferManager::CacheHandleTable::Finalize() {

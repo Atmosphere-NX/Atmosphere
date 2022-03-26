@@ -82,7 +82,7 @@ namespace ams::fatal::srv {
 
         Result StopSoundTask::Run() {
             StopSound();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

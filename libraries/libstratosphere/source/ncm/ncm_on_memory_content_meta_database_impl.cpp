@@ -61,7 +61,7 @@ namespace ams::ncm {
 
         out_entries_total.SetValue(entries_total);
         out_entries_written.SetValue(entries_written);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OnMemoryContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
@@ -84,17 +84,17 @@ namespace ams::ncm {
         R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
 
         out_key.SetValue(*found_key);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OnMemoryContentMetaDatabaseImpl::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
         AMS_UNUSED(out_orphaned, content_ids);
-        return ncm::ResultInvalidContentMetaDatabase();
+        R_THROW(ncm::ResultInvalidContentMetaDatabase());
     }
 
     Result OnMemoryContentMetaDatabaseImpl::Commit() {
         R_TRY(this->EnsureEnabled());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

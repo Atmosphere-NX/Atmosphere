@@ -32,7 +32,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->CreateFile(sub_path, size, option), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH_AND_SIZE, path, size));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeleteFile(const char *path) {
@@ -41,7 +41,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->DeleteFile(sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CreateDirectory(const char *path) {
@@ -50,7 +50,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->CreateDirectory(sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeleteDirectory(const char *path) {
@@ -59,7 +59,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->DeleteDirectory(sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeleteDirectoryRecursively(const char *path) {
@@ -68,7 +68,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->DeleteDirectoryRecursively(sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RenameFile(const char *old_path, const char *new_path) {
@@ -82,11 +82,11 @@ namespace ams::fs {
         auto rename_impl = [=]() -> Result {
             R_UNLESS(old_accessor == new_accessor, fs::ResultRenameToOtherFileSystem());
             R_TRY(old_accessor->RenameFile(old_sub_path, new_sub_path));
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(rename_impl(), nullptr, old_accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_RENAME, old_path, new_path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RenameDirectory(const char *old_path, const char *new_path) {
@@ -100,11 +100,11 @@ namespace ams::fs {
         auto rename_impl = [=]() -> Result {
             R_UNLESS(old_accessor == new_accessor, fs::ResultRenameToOtherFileSystem());
             R_TRY(old_accessor->RenameDirectory(old_sub_path, new_sub_path));
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(rename_impl(), nullptr, old_accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_RENAME, old_path, new_path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEntryType(DirectoryEntryType *out, const char *path) {
@@ -113,7 +113,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->GetEntryType(out, sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_ENTRY_TYPE(out, path)));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OpenFile(FileHandle *out_file, const char *path, int mode) {
@@ -126,13 +126,13 @@ namespace ams::fs {
         auto open_impl = [&]() -> Result {
             R_UNLESS(out_file != nullptr, fs::ResultNullptrArgument());
             R_TRY(accessor->OpenFile(std::addressof(file_accessor), sub_path, static_cast<OpenMode>(mode)));
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(open_impl(), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH_AND_OPEN_MODE, path, static_cast<u32>(mode)));
 
         out_file->handle = file_accessor.release();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OpenDirectory(DirectoryHandle *out_dir, const char *path, int mode) {
@@ -145,13 +145,13 @@ namespace ams::fs {
         auto open_impl = [&]() -> Result {
             R_UNLESS(out_dir != nullptr, fs::ResultNullptrArgument());
             R_TRY(accessor->OpenDirectory(std::addressof(dir_accessor), sub_path, static_cast<OpenDirectoryMode>(mode)));
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(open_impl(), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH_AND_OPEN_MODE, path, static_cast<u32>(mode)));
 
         out_dir->handle = dir_accessor.release();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CleanDirectoryRecursively(const char *path) {
@@ -160,7 +160,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_UNLESS_R_SUCCEEDED(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path), AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
 
         AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG_FILESYSTEM(accessor->CleanDirectoryRecursively(sub_path), nullptr, accessor, AMS_FS_IMPL_ACCESS_LOG_FORMAT_PATH, path));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetFreeSpaceSize(s64 *out, const char *path) {

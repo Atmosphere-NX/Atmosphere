@@ -44,7 +44,7 @@ namespace ams::sf::cmif {
             AMS_ABORT_UNLESS(entry->owner == nullptr);
             out_ids[i] = m_manager->m_entry_manager.GetId(entry);
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ServerDomainManager::Domain::ReserveSpecificIds(const DomainObjectId *ids, size_t count) {

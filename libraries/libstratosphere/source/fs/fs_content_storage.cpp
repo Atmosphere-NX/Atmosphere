@@ -38,7 +38,7 @@ namespace ams::fs {
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
                     AMS_UNUSED(size);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 

@@ -301,7 +301,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_size = size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HtcsManager::EndSend(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
@@ -362,7 +362,7 @@ namespace ams::htcs::impl {
             R_CONVERT(htc::ResultTaskCancelled, tma::ResultUnknown())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsManager::EndSelect(s32 *out_err, s32 *out_count, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
@@ -392,7 +392,7 @@ namespace ams::htcs::impl {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

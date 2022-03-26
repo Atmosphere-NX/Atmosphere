@@ -78,7 +78,7 @@ namespace ams::mitm::fs {
             }
 
             virtual Result DoCommit() override final {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result DoGetFreeSpaceSize(s64 *out, const ams::fs::Path &path) {

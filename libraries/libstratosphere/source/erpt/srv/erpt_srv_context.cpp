@@ -62,12 +62,12 @@ namespace ams::erpt::srv {
                     case FieldType_I8Array:    R_TRY(Cipher::AddField(report, field->id, reinterpret_cast<  s8 *>(arr_buf + field->value_array.start_idx), field->value_array.size / sizeof(s8)));   break;
                     case FieldType_I32Array:   R_TRY(Cipher::AddField(report, field->id, reinterpret_cast< s32 *>(arr_buf + field->value_array.start_idx), field->value_array.size / sizeof(s32)));  break;
                     case FieldType_I64Array:   R_TRY(Cipher::AddField(report, field->id, reinterpret_cast< s64 *>(arr_buf + field->value_array.start_idx), field->value_array.size / sizeof(s64)));  break;
-                    default:                   return erpt::ResultInvalidArgument();
+                    default:                   R_THROW(erpt::ResultInvalidArgument());
                 }
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Context::AddContextToCategory(const ContextEntry *entry, const u8 *data, u32 data_size) {
@@ -77,7 +77,7 @@ namespace ams::erpt::srv {
         R_TRY(record->Initialize(entry, data, data_size));
 
         this->AddContextRecordToCategory(std::move(record));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Context::AddContextRecordToCategory(std::unique_ptr<ContextRecord> record) {
@@ -91,7 +91,7 @@ namespace ams::erpt::srv {
             delete back;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Context::SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size) {
@@ -123,7 +123,7 @@ namespace ams::erpt::srv {
         Cipher::End(report);
         report->Close();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Context::ClearContext(CategoryId cat) {

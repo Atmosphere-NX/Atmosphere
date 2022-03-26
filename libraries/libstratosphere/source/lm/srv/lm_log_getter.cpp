@@ -23,12 +23,12 @@ namespace ams::lm::srv {
 
     Result LogGetter::StartLogging() {
         g_is_logging_to_custom_sink = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LogGetter::StopLogging() {
         g_is_logging_to_custom_sink = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LogGetter::GetLog(const sf::OutAutoSelectBuffer &message, sf::Out<s64> out_size, sf::Out<u32> out_drop_count) {
@@ -40,7 +40,7 @@ namespace ams::lm::srv {
             *out_size = 0;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

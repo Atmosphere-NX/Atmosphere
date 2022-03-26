@@ -82,7 +82,7 @@ namespace ams::fs::impl {
 
         setter.Set(option.HasFlushFlag() ? WriteState::None : WriteState::NeedsFlush);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileAccessor::Flush() {
@@ -93,7 +93,7 @@ namespace ams::fs::impl {
         R_TRY(this->UpdateLastResult(m_impl->Flush()));
         setter.Set(WriteState::None);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileAccessor::SetSize(s64 size) {
@@ -110,7 +110,7 @@ namespace ams::fs::impl {
         }
 
         setter.Set(old_write_state);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileAccessor::GetSize(s64 *out) {

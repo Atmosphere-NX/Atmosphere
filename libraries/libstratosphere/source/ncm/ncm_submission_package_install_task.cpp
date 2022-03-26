@@ -47,7 +47,7 @@ namespace ams::ncm {
 
                 /* Initialize members. */
                 m_mount_name = mount_name;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             const impl::MountName &GetMountName() const {
@@ -70,7 +70,7 @@ namespace ams::ncm {
 
         /* Initialize parent. N doesn't check the result. */
         PackageInstallTask::Initialize(impl::GetRootDirectoryPath(m_impl->GetMountName()).str, storage_id, buffer, buffer_size, ignore_ticket);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

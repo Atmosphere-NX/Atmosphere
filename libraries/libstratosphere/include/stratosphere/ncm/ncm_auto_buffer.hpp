@@ -72,7 +72,7 @@ namespace ams::ncm {
                 R_UNLESS(m_buffer != nullptr, ncm::ResultAllocationFailed());
 
                 m_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(const void *buf, size_t size) {
@@ -82,7 +82,7 @@ namespace ams::ncm {
                 /* Copy the input data in. */
                 std::memcpy(m_buffer, buf, size);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

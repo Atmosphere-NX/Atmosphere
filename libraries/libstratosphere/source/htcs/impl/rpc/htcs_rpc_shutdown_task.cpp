@@ -23,7 +23,7 @@ namespace ams::htcs::impl::rpc {
         m_handle = handle;
         m_how    = how;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ShutdownTask::Complete(htcs::SocketError err) {
@@ -41,7 +41,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output. */
         *out_err  = m_err;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShutdownTask::ProcessResponse(const char *data, size_t size) {
@@ -53,7 +53,7 @@ namespace ams::htcs::impl::rpc {
         /* Complete the task. */
         this->Complete(static_cast<htcs::SocketError>(packet->params[0]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShutdownTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -77,7 +77,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

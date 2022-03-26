@@ -93,7 +93,7 @@ namespace ams::gpio::driver::impl {
     Result RegisterDeviceCode(DeviceCode device_code, Pad *pad) {
         AMS_ASSERT(pad != nullptr);
         R_TRY(GetDeviceCodeEntryManager().Add(device_code, pad));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {
@@ -120,7 +120,7 @@ namespace ams::gpio::driver::impl {
 
         /* Set output. */
         *out = device->SafeCastToPointer<Pad>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FindPadByNumber(Pad **out, int pad_number) {
@@ -145,7 +145,7 @@ namespace ams::gpio::driver::impl {
         /* Check that we found the pad. */
         R_UNLESS(found, ddsf::ResultDeviceCodeNotFound());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

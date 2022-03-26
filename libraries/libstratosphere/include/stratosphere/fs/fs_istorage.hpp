@@ -113,13 +113,13 @@ namespace ams::fs {
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 /* TODO: Better result? Is it possible to get a more specific one? */
                 AMS_UNUSED(offset, buffer, size);
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             }
 
             virtual Result SetSize(s64 size) override {
                 /* TODO: Better result? Is it possible to get a more specific one? */
                 AMS_UNUSED(size);
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             }
     };
 

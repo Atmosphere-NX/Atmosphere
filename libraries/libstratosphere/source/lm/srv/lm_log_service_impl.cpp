@@ -37,7 +37,7 @@ namespace ams::lm::srv {
     Result LogServiceImpl::OpenLogger(sf::Out<sf::SharedPointer<::ams::lm::ILogger>> out, const sf::ClientProcessId &client_process_id) {
         /*  Open logger. */
         out.SetValue(LoggerObjectFactory::CreateSharedEmplaced<::ams::lm::ILogger, LoggerImpl>(this, client_process_id.GetValue()));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

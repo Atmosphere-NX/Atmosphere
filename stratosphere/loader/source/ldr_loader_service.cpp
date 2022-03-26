@@ -76,7 +76,7 @@ namespace ams::ldr {
             *out_status = status;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LoaderService::PinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
@@ -116,7 +116,7 @@ namespace ams::ldr {
 
     Result LoaderService::SetEnabledProgramVerification(bool enabled) {
         ldr::SetEnabledProgramVerification(enabled);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

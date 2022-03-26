@@ -41,7 +41,7 @@ namespace ams::pm::dmnt {
         Event evt;
         R_TRY(pmdmntHookToCreateApplicationProcess(std::addressof(evt)));
         *out_handle = evt.revent;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AtmosphereGetProcessInfo(os::NativeHandle *out_handle, ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {

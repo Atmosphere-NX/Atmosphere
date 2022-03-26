@@ -133,7 +133,7 @@ namespace ams::pgl {
             *out = pgl::EventObserver(std::move(observer_holder));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #else
     Result Initialize() {

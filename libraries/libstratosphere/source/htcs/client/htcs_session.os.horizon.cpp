@@ -124,19 +124,19 @@ namespace ams::htcs::client {
             R_SUCCEED_IF(*out_err != 0);
 
             *out = ObjectFactory::CreateSharedEmplaced<tma::ISocket, RemoteSocket>(libnx_socket);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteManager::RegisterProcessId(const sf::ClientProcessId &client_pid) {
             /* Handled by libnx init. */
             AMS_UNUSED(client_pid);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteManager::MonitorManager(const sf::ClientProcessId &client_pid) {
             /* Handled by libnx init. */
             AMS_UNUSED(client_pid);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteManager::StartSelect(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InMapAliasArray<s32> &read_handles, const sf::InMapAliasArray<s32> &write_handles, const sf::InMapAliasArray<s32> &exception_handles, s64 tv_sec, s64 tv_usec) {
@@ -144,7 +144,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsStartSelect(out_task_id.GetPointer(), std::addressof(event_handle), read_handles.GetPointer(), read_handles.GetSize(), write_handles.GetPointer(), write_handles.GetSize(), exception_handles.GetPointer(), exception_handles.GetSize(), tv_sec, tv_usec));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteManager::EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_count, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id) {
@@ -182,7 +182,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsSocketAcceptStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle)));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::AcceptResults(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address, u32 task_id) {
@@ -193,7 +193,7 @@ namespace ams::htcs::client {
             R_SUCCEED_IF(*out_err != 0);
 
             *out = ObjectFactory::CreateSharedEmplaced<tma::ISocket, RemoteSocket>(libnx_socket);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::RecvStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 mem_size, s32 flags) {
@@ -201,7 +201,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsSocketRecvStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), mem_size, flags));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::RecvResults(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -213,7 +213,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsSocketSendStart(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), buffer.GetPointer(), buffer.GetSize(), flags));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::SendResults(sf::Out<s32> out_err, sf::Out<s64> out_size, u32 task_id) {
@@ -225,7 +225,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsSocketStartSend(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), out_max_size.GetPointer(), size, flags));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::ContinueSend(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InNonSecureAutoSelectBuffer &buffer, u32 task_id) {
@@ -241,7 +241,7 @@ namespace ams::htcs::client {
             R_TRY(::htcsSocketStartRecv(std::addressof(m_s), out_task_id.GetPointer(), std::addressof(event_handle), size, flags));
 
             out_event.SetValue(event_handle, true);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result RemoteSocket::EndRecv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {

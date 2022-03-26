@@ -92,7 +92,7 @@ namespace ams::gpio {
         out_session->_event   = nullptr;
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(GpioPadSession *session) {
@@ -115,7 +115,7 @@ namespace ams::gpio {
             R_TRY(g_manager->IsWakeEventActive(out_is_active, ConvertToGpioPadName(device_code)));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Direction GetDirection(GpioPadSession *session) {
@@ -198,7 +198,7 @@ namespace ams::gpio {
         handle.Detach();
 
         session->_event = event;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UnbindInterrupt(GpioPadSession *session) {

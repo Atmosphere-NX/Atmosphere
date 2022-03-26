@@ -89,22 +89,22 @@ namespace ams::htc::server::rpc {
 
             virtual Result ProcessResponse(const char *data, size_t size) {
                 AMS_UNUSED(data, size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
                 AMS_UNUSED(out, data, size, task_id);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result ProcessNotification(const char *data, size_t size) {
                 AMS_UNUSED(data, size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result CreateNotification(size_t *out, char *data, size_t size, u32 task_id) {
                 AMS_UNUSED(out, data, size, task_id);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual bool IsReceiveBufferRequired() {

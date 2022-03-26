@@ -36,7 +36,7 @@ namespace ams::pwm::driver::impl {
 
         /* We're opened. */
         guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ChannelSessionImpl::Close() {

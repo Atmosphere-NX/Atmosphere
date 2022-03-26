@@ -37,7 +37,7 @@ namespace ams::i2c {
 
         R_TRY(i2c::ExecuteCommandList(out, sizeof(*out), session, cmd_list, formatter.GetCurrentLength()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename RegType> requires std::unsigned_integral<RegType>
@@ -50,7 +50,7 @@ namespace ams::i2c {
         constexpr i2c::TransactionOption StopOption  = static_cast<i2c::TransactionOption>(i2c::TransactionOption_StartCondition | i2c::TransactionOption_StopCondition);
         R_TRY(i2c::Send(session, buf, sizeof(buf), StopOption));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -42,7 +42,7 @@ namespace ams::pgl::srv {
         /* Free the received info. */
         lmem::FreeToUnitHeap(m_heap_handle, info);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ShellEventObserverImpl::Notify(const pm::ProcessEventInfo &info) {
@@ -67,7 +67,7 @@ namespace ams::pgl::srv {
 
     Result ShellEventObserverCmif::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
         out.SetValue(this->GetEvent().GetReadableHandle(), false);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellEventObserverCmif::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
@@ -76,7 +76,7 @@ namespace ams::pgl::srv {
 
     Result ShellEventObserverTipc::GetProcessEventHandle(ams::tipc::OutCopyHandle out) {
         out.SetValue(this->GetEvent().GetReadableHandle());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellEventObserverTipc::GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {

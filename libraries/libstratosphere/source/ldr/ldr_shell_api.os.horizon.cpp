@@ -23,7 +23,7 @@ namespace ams::ldr {
 
     Result FinalizeForShell() {
         ::ldrShellExit();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetProgramArgument(ncm::ProgramId program_id, const void *arg, size_t size) {

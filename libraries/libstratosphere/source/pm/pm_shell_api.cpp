@@ -33,7 +33,7 @@ namespace ams::pm::shell {
         ::Event evt;
         R_TRY(::pmshellGetProcessEventHandle(std::addressof(evt)));
         out->Attach(evt.revent, true, svc::InvalidHandle, false, os::EventClearMode_ManualClear);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProcessEventInfo(ProcessEventInfo *out) {

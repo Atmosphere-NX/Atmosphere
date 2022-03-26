@@ -56,7 +56,7 @@ namespace ams::sf::hipc {
 
                     /* Set output client handle. */
                     out_client_handle.SetValue(client_handle, false);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             public:
                 #if AMS_SF_MITM_SUPPORTED
@@ -113,7 +113,7 @@ namespace ams::sf::hipc {
                     /* Return the allocated id. */
                     AMS_ABORT_UNLESS(object_id != cmif::InvalidDomainObjectId);
                     *out = object_id;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result CopyFromCurrentDomain(sf::OutMoveHandle out, cmif::DomainObjectId object_id) {
@@ -134,7 +134,7 @@ namespace ams::sf::hipc {
                         R_TRY(cmifCopyFromCurrentDomain(util::GetReference(m_session->m_forward_service)->session, object_id.value, std::addressof(handle)));
 
                         out.SetValue(handle, false);
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                     #else
                     R_UNLESS(!!(object), sf::hipc::ResultDomainObjectNotFound());
@@ -177,7 +177,7 @@ namespace ams::sf::hipc {
                     #endif
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result CloneCurrentObject(sf::OutMoveHandle out) {

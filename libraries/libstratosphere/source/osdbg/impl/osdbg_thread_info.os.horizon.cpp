@@ -91,7 +91,7 @@ namespace ams::osdbg::impl {
                             FillWithCurrentInfoImpl(info, thread_type.lp64);
                             break;
                         default:
-                            return osdbg::ResultUnsupportedThreadVersion();
+                            R_THROW(osdbg::ResultUnsupportedThreadVersion());
                     }
                 } else {
                     /* Read in the thread type. */
@@ -107,7 +107,7 @@ namespace ams::osdbg::impl {
                             FillWithCurrentInfoImpl(info, thread_type.ilp32);
                             break;
                         default:
-                            return osdbg::ResultUnsupportedThreadVersion();
+                            R_THROW(osdbg::ResultUnsupportedThreadVersion());
                     }
                 }
                 break;
@@ -167,10 +167,10 @@ namespace ams::osdbg::impl {
                 }
                 break;
             default:
-                return osdbg::ResultUnsupportedThreadVersion();
+                R_THROW(osdbg::ResultUnsupportedThreadVersion());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

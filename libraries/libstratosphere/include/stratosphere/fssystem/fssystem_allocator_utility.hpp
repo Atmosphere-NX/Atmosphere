@@ -110,7 +110,7 @@ namespace ams::fssystem {
 
         /* Return the allocated object. */
         *out = std::move(p);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

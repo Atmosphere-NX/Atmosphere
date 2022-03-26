@@ -42,7 +42,7 @@ namespace ams::boot {
                 R_TRY(powctl::IsBatteryPresent(std::addressof(present), s_battery_session));
 
                 *out = !present;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetChargePercentage(float *out) {

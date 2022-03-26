@@ -44,7 +44,7 @@ namespace ams::erpt::srv {
         stream.CloseStream();
         stream.CommitStream();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Journal::Delete(ReportId report_id) {
@@ -97,7 +97,7 @@ namespace ams::erpt::srv {
         /* Restore the attachments. */
         R_TRY(JournalForAttachments::RestoreJournal(std::addressof(stream)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     JournalRecord<ReportInfo> *Journal::Retrieve(ReportId report_id) {

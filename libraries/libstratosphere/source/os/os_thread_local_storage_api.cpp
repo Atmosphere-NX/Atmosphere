@@ -31,7 +31,7 @@ namespace ams::os {
         R_UNLESS(slot >= 0, os::ResultOutOfResource());
 
         *out = { static_cast<u32>(slot) };
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FreeTlsSlot(TlsSlot slot) {

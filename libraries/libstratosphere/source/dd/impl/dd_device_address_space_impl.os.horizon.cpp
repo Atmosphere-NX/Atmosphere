@@ -32,7 +32,7 @@ namespace ams::dd::impl {
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out = static_cast<DeviceAddressSpaceHandle>(handle);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DeviceAddressSpaceImplByHorizon::Close(DeviceAddressSpaceHandle handle) {
@@ -55,7 +55,7 @@ namespace ams::dd::impl {
             R_CONVERT(svc::ResultInvalidCurrentMemory, dd::ResultInvalidMemoryState())
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeviceAddressSpaceImplByHorizon::MapNotAligned(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address, dd::MemoryPermission device_perm) {
@@ -66,7 +66,7 @@ namespace ams::dd::impl {
             R_CONVERT(svc::ResultInvalidCurrentMemory, dd::ResultInvalidMemoryState())
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DeviceAddressSpaceImplByHorizon::Unmap(DeviceAddressSpaceHandle handle, ProcessHandle process_handle, u64 process_address, size_t process_size, DeviceVirtualAddress device_address) {
@@ -78,7 +78,7 @@ namespace ams::dd::impl {
             R_CONVERT(svc::ResultOutOfMemory,          dd::ResultOutOfMemory())
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DeviceAddressSpaceImplByHorizon::Detach(DeviceAddressSpaceType *das, DeviceName device_name) {

@@ -34,7 +34,7 @@ namespace ams::pgl {
                 ::Event ev;
                 R_TRY(::pglEventObserverGetProcessEvent(std::addressof(m_observer), std::addressof(ev)));
                 out.SetValue(ev.revent, true);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
@@ -46,7 +46,7 @@ namespace ams::pgl {
                 ::Event ev;
                 R_TRY(::pglEventObserverGetProcessEvent(std::addressof(m_observer), std::addressof(ev)));
                 out.SetValue(ev.revent);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetProcessEventInfo(ams::tipc::Out<pm::ProcessEventInfo> out) {

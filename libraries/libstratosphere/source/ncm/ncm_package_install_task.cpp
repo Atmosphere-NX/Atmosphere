@@ -28,7 +28,7 @@ namespace ams::ncm {
 
     Result PackageInstallTask::GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) {
         AMS_UNUSED(out_info, key);
-        return ncm::ResultContentNotFound();
+        R_THROW(ncm::ResultContentNotFound());
     }
 
     Result PackageInstallTask::PrepareInstallContentMetaData() {
@@ -57,7 +57,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -37,7 +37,7 @@ namespace ams::ncm {
             /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!m_disabled, ncm::ResultInvalidContentMetaDatabase());
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetContentMetaSize(size_t *out, const ContentMetaKey &key) const {
@@ -45,7 +45,7 @@ namespace ams::ncm {
                     R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
                 } R_END_TRY_CATCH;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetContentMetaPointer(const void **out_value_ptr, size_t *out_size, const ContentMetaKey &key) const {

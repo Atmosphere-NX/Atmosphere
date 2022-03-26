@@ -52,7 +52,7 @@ namespace ams::pgl {
                     os::AttachReadableHandleToSystemEvent(out, handle.GetOsHandle(), handle.IsManaged(), os::EventClearMode_AutoClear);
                     handle.Detach();
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {
@@ -74,7 +74,7 @@ namespace ams::pgl {
                     os::NativeHandle handle;
                     R_TRY(m_tipc_interface.GetProcessEventHandle(std::addressof(handle)));
                     os::AttachReadableHandleToSystemEvent(out, handle, true, os::EventClearMode_AutoClear);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result GetProcessEventInfo(pm::ProcessEventInfo *out) override {

@@ -28,7 +28,7 @@ namespace ams::mitm::ns {
         bool is_hbl;
         if (R_SUCCEEDED(pm::info::IsHblProgramId(std::addressof(is_hbl), application_id)) && is_hbl) {
             nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
-            return ResultSuccess();
+            R_SUCCEED();
         }
         return nswebResolveApplicationContentPath(m_srv.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
     }
@@ -44,7 +44,7 @@ namespace ams::mitm::ns {
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(std::addressof(doc.s))};
 
         out.SetValue(sf::CreateSharedObjectEmplaced<impl::IDocumentInterface, NsDocumentService>(m_client_info, std::make_unique<NsDocumentInterface>(doc)), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

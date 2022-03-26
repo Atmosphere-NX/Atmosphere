@@ -67,7 +67,7 @@ namespace ams::scs {
                         .socket = socket,
                     };
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 void Unregister(s32 socket) {
@@ -339,7 +339,7 @@ namespace ams::scs {
                 }
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void FlushProgramArgument(ncm::ProgramId program_id) {
@@ -390,7 +390,7 @@ namespace ams::scs {
         /* Launch the program. */
         R_TRY(pgl::LaunchProgram(out, loc, process_flags | pm::LaunchFlags_SignalOnExit, 0));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SubscribeProcessEvent(s32 socket, bool is_register, u64 id);

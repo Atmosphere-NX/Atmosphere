@@ -111,7 +111,7 @@ namespace ams::htclow {
         AMS_ASSERT(received <= size);
         *out = received;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Channel::Send(s64 *out, const void *src, s64 size) {
@@ -149,7 +149,7 @@ namespace ams::htclow {
         AMS_ASSERT(total_sent <= size);
         *out = total_sent;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Channel::SetConfig(const ChannelConfig &config) {
@@ -207,7 +207,7 @@ namespace ams::htclow {
         AMS_ASSERT(util::IsIntValueRepresentable<s64>(received));
         *out = static_cast<s64>(received);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Channel::WaitReceiveInternal(s64 size, os::EventType *event) {
@@ -222,7 +222,7 @@ namespace ams::htclow {
         if (event != nullptr) {
             if (os::WaitAny(event, m_manager->GetTaskEvent(task_id)) == 0) {
                 m_manager->WaitReceiveEnd(task_id);
-                return htclow::ResultChannelWaitCancelled();
+                R_THROW(htclow::ResultChannelWaitCancelled());
             }
         } else {
             this->WaitEvent(m_manager->GetTaskEvent(task_id), false);

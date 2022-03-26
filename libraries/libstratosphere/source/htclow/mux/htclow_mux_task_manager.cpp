@@ -56,7 +56,7 @@ namespace ams::htclow::mux {
 
         /* Return the task id. */
         *out_task_id = task_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void TaskManager::FreeTask(u32 task_id) {

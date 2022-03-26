@@ -1915,7 +1915,7 @@ namespace ams::dmnt {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GdbServerImpl::q() {

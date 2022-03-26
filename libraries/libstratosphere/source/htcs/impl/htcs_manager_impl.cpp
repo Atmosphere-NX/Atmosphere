@@ -123,7 +123,7 @@ namespace ams::htcs::impl {
             return result;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsManagerImpl::SendLargeStart(u32 *out_task_id, os::NativeHandle *out_handle, const char **buffers, const s64 *sizes, s32 count, s32 desc, s32 flags) {

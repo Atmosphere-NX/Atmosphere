@@ -40,7 +40,7 @@ namespace ams::erpt::srv {
         R_TRY(m_report->Open(ReportOpenType_Read));
         report_guard.Cancel();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReportImpl::Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)  {
@@ -67,7 +67,7 @@ namespace ams::erpt::srv {
             delete m_report;
             m_report = nullptr;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReportImpl::GetSize(ams::sf::Out<s64> out)  {

@@ -62,7 +62,7 @@ namespace ams::fs {
     Result FileHandleStorage::GetSize(s64 *out_size) {
         R_TRY(this->UpdateSize());
         *out_size = m_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileHandleStorage::SetSize(s64 size) {

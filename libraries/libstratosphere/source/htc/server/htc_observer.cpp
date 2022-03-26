@@ -56,7 +56,7 @@ namespace ams::htc::server {
         /* Start our thread. */
         os::StartThread(std::addressof(m_observer_thread));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Observer::UpdateEvent() {

@@ -38,11 +38,11 @@ namespace ams::fssystem {
         } else {
             R_TRY((this->OperatePerEntry<false, true>(offset, size, [=](fs::IStorage *storage, s64 data_offset, s64 cur_offset, s64 cur_size) -> Result {
                 R_TRY(storage->Read(data_offset, reinterpret_cast<u8 *>(buffer) + (cur_offset - offset), static_cast<size_t>(cur_size)));
-                return ResultSuccess();
+                R_SUCCEED();
             })));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

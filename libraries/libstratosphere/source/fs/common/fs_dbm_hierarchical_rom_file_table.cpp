@@ -42,7 +42,7 @@ namespace ams::fs {
         R_TRY(file_bucket.GetSize(std::addressof(file_bucket_size)));
         R_TRY(FileEntryMapTable::Format(file_bucket, FileEntryMapTable::QueryBucketCount(file_bucket_size)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     HierarchicalRomFileTable::HierarchicalRomFileTable() { /* ... */ }
@@ -56,7 +56,7 @@ namespace ams::fs {
         R_TRY(file_bucket.GetSize(std::addressof(file_bucket_size)));
         R_TRY(m_file_table.Initialize(file_bucket, FileEntryMapTable::QueryBucketCount(file_bucket_size), file_entry));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HierarchicalRomFileTable::Finalize() {
@@ -123,7 +123,7 @@ namespace ams::fs {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::CreateFile(RomFileId *out, const RomPathChar *path, const FileInfo &info) {
@@ -170,7 +170,7 @@ namespace ams::fs {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::ConvertPathToDirectoryId(RomDirectoryId *out, const RomPathChar *path) {
@@ -186,7 +186,7 @@ namespace ams::fs {
         R_TRY(this->GetDirectoryEntry(std::addressof(pos), std::addressof(entry), key));
 
         *out = PositionToDirectoryId(pos);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::ConvertPathToFileId(RomFileId *out, const RomPathChar *path) {
@@ -202,7 +202,7 @@ namespace ams::fs {
         R_TRY(this->GetFileEntry(std::addressof(pos), std::addressof(entry), key));
 
         *out = PositionToFileId(pos);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::GetDirectoryInformation(DirectoryInfo *out, const RomPathChar *path) {
@@ -224,7 +224,7 @@ namespace ams::fs {
 
         AMS_UNUSED(out);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::OpenFile(FileInfo *out, const RomPathChar *path) {
@@ -245,7 +245,7 @@ namespace ams::fs {
         R_TRY(this->GetFileEntry(std::addressof(entry), id));
 
         *out = entry.info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindOpen(FindPosition *out, const RomPathChar *path) {
@@ -271,7 +271,7 @@ namespace ams::fs {
         out->next_dir  = entry.dir;
         out->next_file = entry.file;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindNextDirectory(RomPathChar *out, FindPosition *find, size_t length) {
@@ -291,7 +291,7 @@ namespace ams::fs {
         out[aux_size / sizeof(RomPathChar)] = RomStringTraits::NullTerminator;
 
         find->next_dir = entry.next;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindNextFile(RomPathChar *out, FindPosition *find, size_t length) {
@@ -311,7 +311,7 @@ namespace ams::fs {
         out[aux_size / sizeof(RomPathChar)] = RomStringTraits::NullTerminator;
 
         find->next_file = entry.next;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::QueryRomFileSystemSize(s64 *out_dir_entry_size, s64 *out_file_entry_size) {
@@ -320,7 +320,7 @@ namespace ams::fs {
 
         *out_dir_entry_size = m_dir_table.GetTotalEntrySize();
         *out_file_entry_size = m_file_table.GetTotalEntrySize();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::GetGrandParent(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, Position pos, RomPathTool::RomEntryName name, const RomPathChar *path) {
@@ -338,7 +338,7 @@ namespace ams::fs {
 
         R_TRY(this->GetDirectoryEntry(out_pos, out_dir_entry, *out_dir_key));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindParentDirectoryRecursive(Position *out_pos, EntryKey *out_dir_key, RomDirectoryEntry *out_dir_entry, RomPathTool::PathParser *parser, const RomPathChar *path) {
@@ -382,7 +382,7 @@ namespace ams::fs {
         *out_pos = parent_pos;
         *out_dir_key = dir_key;
         *out_dir_entry = dir_entry;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindPathRecursive(EntryKey *out_key, RomDirectoryEntry *out_dir_entry, bool is_dir, const RomPathChar *path) {
@@ -434,7 +434,7 @@ namespace ams::fs {
             R_TRY(parser.GetAsFileName(std::addressof(out_key->name)));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindDirectoryRecursive(EntryKey *out_key, RomDirectoryEntry *out_dir_entry, const RomPathChar *path) {
@@ -475,7 +475,7 @@ namespace ams::fs {
                 return if_exists;
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::GetDirectoryEntry(Position *out_pos, RomDirectoryEntry *out_entry, const EntryKey &key) {
@@ -551,7 +551,7 @@ namespace ams::fs {
 
         AMS_UNUSED(out);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::OpenFile(FileInfo *out, const EntryKey &key) {
@@ -562,7 +562,7 @@ namespace ams::fs {
         R_TRY(this->GetFileEntry(std::addressof(pos), std::addressof(entry), key));
 
         *out = entry.info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HierarchicalRomFileTable::FindOpen(FindPosition *out, const EntryKey &key) {
@@ -578,7 +578,7 @@ namespace ams::fs {
         out->next_dir  = entry.dir;
         out->next_file = entry.file;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

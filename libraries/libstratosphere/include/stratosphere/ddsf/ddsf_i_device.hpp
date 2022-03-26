@@ -55,7 +55,7 @@ namespace ams::ddsf {
 
                 /* Attach the session. */
                 m_session_list.push_back(*session);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void DetachSession(ISession *session) {

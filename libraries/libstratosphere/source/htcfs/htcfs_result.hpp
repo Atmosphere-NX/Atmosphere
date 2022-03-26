@@ -32,19 +32,19 @@ namespace ams::htcfs {
     inline Result ConvertHtcfsResult(HtcfsResult result) {
         switch (result) {
             case HtcfsResult::Success:
-                return ResultSuccess();
+                R_SUCCEED();
             case HtcfsResult::UnknownError:
-                return htcfs::ResultUnknownError();
+                R_THROW(htcfs::ResultUnknownError());
             case HtcfsResult::UnsupportedProtocolVersion:
-                return htcfs::ResultUnsupportedProtocolVersion();
+                R_THROW(htcfs::ResultUnsupportedProtocolVersion());
             case HtcfsResult::InvalidRequest:
-                return htcfs::ResultInvalidRequest();
+                R_THROW(htcfs::ResultInvalidRequest());
             case HtcfsResult::InvalidHandle:
-                return htcfs::ResultInvalidHandle();
+                R_THROW(htcfs::ResultInvalidHandle());
             case HtcfsResult::OutOfHandle:
-                return htcfs::ResultOutOfHandle();
+                R_THROW(htcfs::ResultOutOfHandle());
             default:
-                return htcfs::ResultUnknownError();
+                R_THROW(htcfs::ResultUnknownError());
         }
     }
 

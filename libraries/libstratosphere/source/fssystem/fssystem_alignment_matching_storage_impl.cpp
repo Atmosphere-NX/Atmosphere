@@ -115,7 +115,7 @@ namespace ams::fssystem {
             tail_offset         += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AlignmentMatchingStorageImpl::Write(fs::IStorage *base_storage, char *work_buf, size_t work_buf_size, size_t data_alignment, size_t buffer_alignment, s64 offset, const char *buffer, size_t size) {
@@ -186,7 +186,7 @@ namespace ams::fssystem {
             tail_offset         += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<>
@@ -216,7 +216,7 @@ namespace ams::fssystem {
                 if (aligned_size <= pooled_buffer.GetSize()) {
                     R_TRY(m_base_storage->Read(aligned_offset, pooled_buffer.GetBuffer(), aligned_size));
                     std::memcpy(buffer, pooled_buffer.GetBuffer() + (offset - aligned_offset), size);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } else {
                     pooled_buffer.Shrink(m_data_align);
                 }
@@ -255,7 +255,7 @@ namespace ams::fssystem {
             std::memcpy(tail_buffer, pooled_buffer.GetBuffer(), tail_size);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

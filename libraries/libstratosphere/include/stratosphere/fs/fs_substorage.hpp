@@ -121,7 +121,7 @@ namespace ams::fs {
                 R_TRY(m_base_storage->SetSize(m_offset + size));
 
                 m_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result GetSize(s64 *out) override {
@@ -129,7 +129,7 @@ namespace ams::fs {
                 R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
 
                 *out = m_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {

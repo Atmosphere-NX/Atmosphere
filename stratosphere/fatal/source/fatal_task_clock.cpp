@@ -53,7 +53,7 @@ namespace ams::fatal::srv {
                 R_TRY(pcvSetClockRate(module, hz));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result AdjustClockTask::AdjustClock() {
@@ -66,7 +66,7 @@ namespace ams::fatal::srv {
             R_TRY(AdjustClockForModule(PcvModule_GPU,    GPU_CLOCK_307MHZ));
             R_TRY(AdjustClockForModule(PcvModule_EMC,    EMC_CLOCK_1331MHZ));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result AdjustClockTask::Run() {

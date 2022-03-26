@@ -36,7 +36,7 @@ namespace ams::updater {
 
         R_TRY(m_accessor.Initialize());
         m_save_buffer = work_buffer;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void BisSave::Finalize() {

@@ -40,13 +40,13 @@ namespace ams::fssystem {
             virtual Result QueryAppropriateOffset(s64 *out, s64 offset, s64 access_size, s64 alignment_size) override {
                 /* Align the access. */
                 *out = util::AlignDown(offset + access_size, alignment_size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result QueryInvocationCount(s64 *out, s64 start_offset, s64 end_offset, s64 access_size, s64 alignment_size) override {
                 /* Determine aligned access count. */
                 *out = util::DivideUp(end_offset - util::AlignDown(start_offset, alignment_size), access_size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

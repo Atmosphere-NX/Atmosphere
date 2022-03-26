@@ -39,7 +39,7 @@ namespace ams::htclow::mux {
         /* We don't, so push back a new one. */
         m_packet_list.push_back(*(ptr.release()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GlobalSendBuffer::RemovePacket() {

@@ -48,7 +48,7 @@ namespace ams::fs {
             /* Set allocators. */
             g_allocate_func   = allocator;
             g_deallocate_func = deallocator;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

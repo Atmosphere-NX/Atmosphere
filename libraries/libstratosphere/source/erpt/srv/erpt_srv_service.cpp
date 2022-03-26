@@ -71,7 +71,7 @@ namespace ams::erpt::srv {
                         case PortIndex_Context:
                             return AcceptImpl(server, m_context_session_object.GetShared());
                         default:
-                            return erpt::ResultNotSupported();
+                            R_THROW(erpt::ResultNotSupported());
                     }
                 }
             public:
@@ -86,7 +86,7 @@ namespace ams::erpt::srv {
 
                     os::StartThread(std::addressof(m_thread));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 void Wait() {

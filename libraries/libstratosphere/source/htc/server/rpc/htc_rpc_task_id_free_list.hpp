@@ -43,7 +43,7 @@ namespace ams::htc::server::rpc {
 
                 /* Get the task id. */
                 *out = m_task_ids[index];
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void Free(u32 task_id) {

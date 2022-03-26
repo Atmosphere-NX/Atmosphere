@@ -27,7 +27,7 @@ namespace ams::fssrv::fscreator {
 
         /* Set the output. */
         *out = std::move(fs);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

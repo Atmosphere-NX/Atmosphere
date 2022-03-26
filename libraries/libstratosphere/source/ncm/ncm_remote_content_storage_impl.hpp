@@ -141,7 +141,7 @@ namespace ams::ncm {
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
@@ -150,7 +150,7 @@ namespace ams::ncm {
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
@@ -159,7 +159,7 @@ namespace ams::ncm {
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
@@ -168,7 +168,7 @@ namespace ams::ncm {
 
                 static_assert(sizeof(*out_rights_id.GetPointer()) <= sizeof(rights_id));
                 std::memcpy(out_rights_id.GetPointer(), std::addressof(rights_id), sizeof(*out_rights_id.GetPointer()));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {

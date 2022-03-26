@@ -66,7 +66,7 @@ namespace ams::fssrv {
                                 R_TRY(this->AcceptImpl(server, impl::GetInvalidProgramRegistryServiceObject()));
                             }
 
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                         break;
                         case PortIndex_FileSystemProxyForLoader:
@@ -81,7 +81,7 @@ namespace ams::fssrv {
                                 R_TRY(this->AcceptImpl(server, impl::GetInvalidFileSystemProxyForLoaderServiceObject()));
                             }
 
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                         break;
                         AMS_UNREACHABLE_DEFAULT_CASE();

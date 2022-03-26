@@ -47,7 +47,7 @@ namespace ams::time {
             if (g_initialize_count > 0) {
                 AMS_ABORT_UNLESS(mode == g_initialize_mode);
                 g_initialize_count++;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             #if defined(ATMOSPHERE_OS_HORIZON)
@@ -67,7 +67,7 @@ namespace ams::time {
 
             g_initialize_count++;
             g_initialize_mode = mode;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -102,7 +102,7 @@ namespace ams::time {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool IsInitialized() {

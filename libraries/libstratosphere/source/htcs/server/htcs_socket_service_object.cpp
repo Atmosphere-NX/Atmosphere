@@ -40,7 +40,7 @@ namespace ams::htcs::server {
         /* Close the underlying socket. */
         manager->Close(out_err.GetPointer(), out_res.GetPointer(), m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Connect(sf::Out<s32> out_err, sf::Out<s32> out_res, const htcs::SockAddrHtcs &address) {
@@ -50,7 +50,7 @@ namespace ams::htcs::server {
         /* Perform the connect. */
         manager->Connect(out_err.GetPointer(), out_res.GetPointer(), address, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Bind(sf::Out<s32> out_err, sf::Out<s32> out_res, const htcs::SockAddrHtcs &address) {
@@ -60,7 +60,7 @@ namespace ams::htcs::server {
         /* Perform the bind. */
         manager->Bind(out_err.GetPointer(), out_res.GetPointer(), address, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Listen(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 backlog_count) {
@@ -70,7 +70,7 @@ namespace ams::htcs::server {
         /* Perform the listen. */
         manager->Listen(out_err.GetPointer(), out_res.GetPointer(), backlog_count, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Recv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, s32 flags) {
@@ -80,7 +80,7 @@ namespace ams::htcs::server {
         /* Perform the recv. */
         manager->Recv(out_err.GetPointer(), out_size.GetPointer(), reinterpret_cast<char *>(buffer.GetPointer()), buffer.GetSize(), flags, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Send(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::InAutoSelectBuffer &buffer, s32 flags) {
@@ -90,7 +90,7 @@ namespace ams::htcs::server {
         /* Perform the send. */
         manager->Send(out_err.GetPointer(), out_size.GetPointer(), reinterpret_cast<const char *>(buffer.GetPointer()), buffer.GetSize(), flags, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Shutdown(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 how) {
@@ -100,7 +100,7 @@ namespace ams::htcs::server {
         /* Perform the shutdown. */
         manager->Shutdown(out_err.GetPointer(), out_res.GetPointer(), how, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::Fcntl(sf::Out<s32> out_err, sf::Out<s32> out_res, s32 command, s32 value) {
@@ -110,7 +110,7 @@ namespace ams::htcs::server {
         /* Perform the fcntl. */
         manager->Fcntl(out_err.GetPointer(), out_res.GetPointer(), command, value, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::AcceptStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event) {
@@ -123,7 +123,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::AcceptResults(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address, u32 task_id) {
@@ -140,7 +140,7 @@ namespace ams::htcs::server {
         /* Create a new socket object. */
         *out = ServiceObjectFactory::CreateSharedEmplaced<tma::ISocket, SocketServiceObject>(m_manager.Get(), desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::RecvStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 mem_size, s32 flags) {
@@ -153,7 +153,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::RecvResults(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -163,7 +163,7 @@ namespace ams::htcs::server {
         /* Get the recv results. */
         manager->RecvResults(out_err.GetPointer(), out_size.GetPointer(), reinterpret_cast<char *>(buffer.GetPointer()), buffer.GetSize(), task_id, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::RecvLargeStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s32 unaligned_size_start, s32 unaligned_size_end, s64 aligned_size, sf::CopyHandle &&mem_handle, s32 flags) {
@@ -190,7 +190,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) {
@@ -227,7 +227,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::SendResults(sf::Out<s32> out_err, sf::Out<s64> out_size, u32 task_id) {
@@ -237,7 +237,7 @@ namespace ams::htcs::server {
         /* Get the send results. */
         manager->SendResults(out_err.GetPointer(), out_size.GetPointer(), task_id, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::StartSend(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, sf::Out<s64> out_max_size, s64 size, s32 flags) {
@@ -253,7 +253,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::ContinueSendOld(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InAutoSelectBuffer &buffer, u32 task_id) {
@@ -267,7 +267,7 @@ namespace ams::htcs::server {
         /* End the send. */
         manager->EndSend(out_err.GetPointer(), out_size.GetPointer(), task_id, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::StartRecv(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, s64 size, s32 flags) {
@@ -280,7 +280,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::EndRecv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -290,7 +290,7 @@ namespace ams::htcs::server {
         /* End the recv. */
         manager->EndRecv(out_err.GetPointer(), out_size.GetPointer(), reinterpret_cast<char *>(buffer.GetPointer()), buffer.GetSize(), task_id, m_desc);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::SendStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InNonSecureAutoSelectBuffer &buffer, s32 flags) {
@@ -306,7 +306,7 @@ namespace ams::htcs::server {
 
         /* Set the output event handle. */
         out_event.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::ContinueSend(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InNonSecureAutoSelectBuffer &buffer, u32 task_id) {
@@ -321,13 +321,13 @@ namespace ams::htcs::server {
 
         /* We aren't doing a waiting send. */
         *out_wait = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketServiceObject::GetPrimitive(sf::Out<s32> out) {
         /* Get our descriptor. */
         *out = m_desc;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

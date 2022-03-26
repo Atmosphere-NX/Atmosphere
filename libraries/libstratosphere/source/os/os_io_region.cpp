@@ -56,7 +56,7 @@ namespace ams::os {
         InitializeIoRegion(io_region, handle, size, true);
 
         state_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void AttachIoRegionHandle(IoRegionType *io_region, size_t size, NativeHandle handle, bool managed) {
@@ -135,7 +135,7 @@ namespace ams::os {
         /* Set the output address. */
         *out = mapped_address;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UnmapIoRegion(IoRegionType *io_region) {

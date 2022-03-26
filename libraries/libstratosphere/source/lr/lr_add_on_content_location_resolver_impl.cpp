@@ -39,24 +39,24 @@ namespace ams::lr {
         static_assert(sizeof(lr::Path) == sizeof(ncm::Path));
         content_storage.GetPath(reinterpret_cast<ncm::Path *>(out.GetPointer()), data_content_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AddOnContentLocationResolverImpl::RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id) {
         /* Register storage for the given program id. 2.0.0-8.1.0 did not require an owner application id. */
         R_UNLESS(m_registered_storages.Register(id, storage_id, ncm::InvalidApplicationId), lr::ResultTooManyRegisteredPaths());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AddOnContentLocationResolverImpl::RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
         /* Register storage for the given program id and owner application. */
         R_UNLESS(m_registered_storages.Register(id, storage_id, application_id), lr::ResultTooManyRegisteredPaths());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AddOnContentLocationResolverImpl::UnregisterAllAddOnContentPath() {
         m_registered_storages.Clear();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AddOnContentLocationResolverImpl::RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids) {
@@ -68,13 +68,13 @@ namespace ams::lr {
             m_registered_storages.ClearExcluding(reinterpret_cast<const ncm::ProgramId *>(ids.GetPointer()), ids.GetSize());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AddOnContentLocationResolverImpl::UnregisterApplicationAddOnContent(ncm::ApplicationId id) {
         /* Remove entries belonging to the provided application. */
         m_registered_storages.UnregisterOwnerProgram(id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -38,7 +38,7 @@ namespace ams::fs {
 
                 /* Copy from memory. */
                 std::memcpy(buffer, m_buf + offset, size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
@@ -51,21 +51,21 @@ namespace ams::fs {
 
                 /* Copy to memory. */
                 std::memcpy(m_buf + offset, buffer, size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Flush() override {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result GetSize(s64 *out) override {
                 *out = m_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                return fs::ResultUnsupportedSetSizeForMemoryStorage();
+                R_THROW(fs::ResultUnsupportedSetSizeForMemoryStorage());
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -73,14 +73,14 @@ namespace ams::fs {
 
                 switch (op_id) {
                     case OperationId::Invalidate:
-                        return ResultSuccess();
+                        R_SUCCEED();
                     case OperationId::QueryRange:
                         R_UNLESS(dst != nullptr,                     fs::ResultNullptrArgument());
                         R_UNLESS(dst_size == sizeof(QueryRangeInfo), fs::ResultInvalidSize());
                         reinterpret_cast<QueryRangeInfo *>(dst)->Clear();
-                        return ResultSuccess();
+                        R_SUCCEED();
                     default:
-                        return fs::ResultUnsupportedOperateRangeForMemoryStorage();
+                        R_THROW(fs::ResultUnsupportedOperateRangeForMemoryStorage());
                 }
             }
     };

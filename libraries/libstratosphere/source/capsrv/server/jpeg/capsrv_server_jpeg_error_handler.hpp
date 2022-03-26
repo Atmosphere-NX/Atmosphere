@@ -49,9 +49,9 @@ namespace ams::capsrv::server::jpeg {
                     case JpegLibraryType::J_MESSAGE_CODE::JERR_TFILE_READ:
                     case JpegLibraryType::J_MESSAGE_CODE::JERR_TFILE_SEEK:
                     case JpegLibraryType::J_MESSAGE_CODE::JERR_TFILE_WRITE:
-                        return capsrv::ResultInternalJpegWorkMemoryShortage();
+                        R_THROW(capsrv::ResultInternalJpegWorkMemoryShortage());
                     default:
-                        return capsrv::ResultInternalJpegEncoderError();
+                        R_THROW(capsrv::ResultInternalJpegEncoderError());
                 }
             }
     };

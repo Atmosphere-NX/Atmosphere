@@ -24,7 +24,7 @@ namespace ams::htcs::impl::rpc {
         m_peer_name = peer_name;
         m_port_name = port_name;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void BindTask::Complete(htcs::SocketError err) {
@@ -42,7 +42,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output. */
         *out_err  = m_err;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BindTask::ProcessResponse(const char *data, size_t size) {
@@ -54,7 +54,7 @@ namespace ams::htcs::impl::rpc {
         /* Complete the task. */
         this->Complete(static_cast<htcs::SocketError>(packet->params[0]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BindTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -79,7 +79,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet) + sizeof(m_peer_name) + sizeof(m_port_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

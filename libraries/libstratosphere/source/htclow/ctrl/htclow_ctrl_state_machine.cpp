@@ -54,7 +54,7 @@ namespace ams::htclow::ctrl {
 
         /* Note whether we transitioned. */
         *out_transitioned = state != old_state;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool HtcctrlStateMachine::IsInformationNeeded() {

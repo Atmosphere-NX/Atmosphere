@@ -45,10 +45,10 @@ namespace ams::ncm {
 
             /* Output the storage id. */
             *out_storage_id = storage_id;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
-        return ncm::ResultNotEnoughInstallSpace();
+        R_THROW(ncm::ResultNotEnoughInstallSpace());
     }
 
     Result SelectPatchStorage(StorageId *out_storage_id, StorageId storage_id, PatchId patch_id) {
@@ -77,7 +77,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     const char *GetStorageIdString(StorageId storage_id) {

@@ -122,7 +122,7 @@ namespace ams::tipc {
 
                     return result;
                 } else {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
 

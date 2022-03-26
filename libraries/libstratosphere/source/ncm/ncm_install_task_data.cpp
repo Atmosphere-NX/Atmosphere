@@ -45,7 +45,7 @@ namespace ams::ncm {
         /* Output the buffer and size. */
         out->data = std::move(buffer);
         out->size = data_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskDataBase::Update(const InstallContentMeta &content_meta, s32 index) {
@@ -64,13 +64,13 @@ namespace ams::ncm {
             /* If the id matches we are successful. */
             if (content_meta.GetReader().GetKey().id == id) {
                 *out = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* We didn't find the value. */
         *out = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::GetProgress(InstallProgress *out_progress) {
@@ -95,27 +95,27 @@ namespace ams::ncm {
         }
 
         *out_progress = install_progress;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
         *out_info = m_system_update_task_apply_info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::SetState(InstallProgressState state) {
         m_state = state;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::SetLastResult(Result result) {
         m_last_result = result;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::SetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo info) {
         m_system_update_task_apply_info = info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::Push(const void *data, size_t size) {
@@ -137,12 +137,12 @@ namespace ams::ncm {
         /* Relinquish control over the memory allocated to the data holder. */
         holder.release();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::Count(s32 *out) {
         *out = m_data_list.size();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::GetSize(size_t *out_size, s32 index) {
@@ -151,7 +151,7 @@ namespace ams::ncm {
         for (auto &data_holder : m_data_list) {
             if (index == count++) {
                 *out_size = data_holder.size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
         /* Out of bounds indexing is an unrecoverable error. */
@@ -165,7 +165,7 @@ namespace ams::ncm {
             if (index == count++) {
                 R_UNLESS(out_size >= data_holder.size, ncm::ResultBufferInsufficient());
                 std::memcpy(out, data_holder.data.get(), data_holder.size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
         /* Out of bounds indexing is an unrecoverable error. */
@@ -179,7 +179,7 @@ namespace ams::ncm {
             if (index == count++) {
                 R_UNLESS(data_size == data_holder.size, ncm::ResultBufferInsufficient());
                 std::memcpy(data_holder.data.get(), data, data_size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
         /* Out of bounds indexing is an unrecoverable error. */
@@ -200,7 +200,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MemoryInstallTaskData::Cleanup() {
@@ -209,7 +209,7 @@ namespace ams::ncm {
             m_data_list.pop_front();
             delete data_holder;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileInstallTaskData::Create(const char *path, s32 max_entries) {
@@ -257,12 +257,12 @@ namespace ams::ncm {
         }
 
         *out_progress = install_progress;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
         *out_info = m_header.system_update_task_apply_info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileInstallTaskData::SetState(InstallProgressState state) {
@@ -302,14 +302,14 @@ namespace ams::ncm {
 
     Result FileInstallTaskData::Count(s32 *out) {
         *out = m_header.count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileInstallTaskData::GetSize(size_t *out_size, s32 index) {
         EntryInfo entry_info;
         R_TRY(this->GetEntryInfo(std::addressof(entry_info), index));
         *out_size = entry_info.size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileInstallTaskData::Get(s32 index, void *out, size_t out_size) {

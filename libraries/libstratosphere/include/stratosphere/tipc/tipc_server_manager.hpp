@@ -319,7 +319,7 @@ namespace ams::tipc {
                                 const Result method_result = message_buffer.GetRaw<u32>(raw_data_offset);
 
                                 /* Check that the result is the special deferral result. */
-                                return tipc::ResultRequestDeferred::Includes(method_result);
+                                R_THROW(tipc::ResultRequestDeferred::Includes(method_result));
                             } else {
                                 /* If deferral isn't supported, requests are never deferred. */
                                 return false;
@@ -501,7 +501,7 @@ namespace ams::tipc {
                     /* Add the session to the least burdened manager. */
                     best_manager->AddSession(session_handle, object);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             private:
                 template<size_t Ix> requires (Ix < NumPorts)
@@ -795,7 +795,7 @@ namespace ams::tipc {
                     /* Add the session to our manager. */
                     m_port_manager.AddSession(session_handle, object);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             private:
                 void LoopProcess(PortManagerBase &port_manager) {

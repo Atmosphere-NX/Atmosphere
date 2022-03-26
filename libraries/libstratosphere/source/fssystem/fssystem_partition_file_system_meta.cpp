@@ -75,7 +75,7 @@ namespace ams::fssystem {
 
         /* Mark as initialized. */
         m_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template <typename Format>
@@ -156,7 +156,7 @@ namespace ams::fssystem {
 
         /* Output size. */
         *out_size = sizeof(PartitionFileSystemHeader) + header.entry_count * sizeof(typename Format::PartitionEntry) + header.name_table_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template class PartitionFileSystemMetaCore<impl::PartitionFileSystemFormat>;
@@ -213,7 +213,7 @@ namespace ams::fssystem {
 
         /* We initialized. */
         m_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -28,7 +28,7 @@ namespace ams::usb {
 
         *out = ObjectFactory::CreateSharedEmplaced<ds::IDsService, RemoteDsService>(m_allocator, srv, m_allocator);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 

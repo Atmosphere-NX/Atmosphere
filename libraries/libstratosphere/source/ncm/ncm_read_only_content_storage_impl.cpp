@@ -48,7 +48,7 @@ namespace ams::ncm {
                 }
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -57,42 +57,42 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         m_root_path.Assign(path);
         m_make_content_path_func = content_path_func;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         AMS_UNUSED(out);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
         AMS_UNUSED(placeholder_id, content_id, size);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::DeletePlaceHolder(PlaceHolderId placeholder_id) {
         AMS_UNUSED(placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out, placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) {
         AMS_UNUSED(placeholder_id, offset, data);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::Register(PlaceHolderId placeholder_id, ContentId content_id) {
         AMS_UNUSED(placeholder_id, content_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::Delete(ContentId content_id) {
         AMS_UNUSED(content_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::Has(sf::Out<bool> out, ContentId content_id) {
@@ -113,7 +113,7 @@ namespace ams::ncm {
         }
 
         out.SetValue(has);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
@@ -137,31 +137,31 @@ namespace ams::ncm {
         R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), content_path));
 
         out.SetValue(common_path);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out, placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::CleanupAllPlaceHolder() {
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
         AMS_UNUSED(out_count, out_buf);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetContentCount(sf::Out<s32> out_count) {
         AMS_UNUSED(out_count);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
         AMS_UNUSED(out_count, out_buf, offset);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
@@ -177,22 +177,22 @@ namespace ams::ncm {
         R_TRY(fs::GetFileSize(std::addressof(file_size), file));
 
         out_size.SetValue(file_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::DisableForcibly() {
         m_disabled = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
         AMS_UNUSED(placeholder_id, old_content_id, new_content_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
         AMS_UNUSED(placeholder_id, size);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) {
@@ -208,17 +208,17 @@ namespace ams::ncm {
         /* Read from the given offset up to the given size. */
         R_TRY(fs::ReadFile(file, offset, buf.GetPointer(), buf.GetSize()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out_rights_id, placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out_rights_id, placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
@@ -228,7 +228,7 @@ namespace ams::ncm {
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
@@ -243,49 +243,49 @@ namespace ams::ncm {
         R_TRY(GetRightsId(std::addressof(rights_id), path));
         out_rights_id.SetValue(rights_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {
         AMS_UNUSED(content_id, offset, data);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetFreeSpaceSize(sf::Out<s64> out_size) {
         out_size.SetValue(0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::GetTotalSpaceSize(sf::Out<s64> out_size) {
         out_size.SetValue(0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReadOnlyContentStorageImpl::FlushPlaceHolder() {
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) {
         AMS_UNUSED(out, placeholder_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::RepairInvalidFileAttribute() {
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         AMS_UNUSED(out_rights_id, placeholder_id, cache_content_id);
-        return ncm::ResultNotSupported();
+        R_THROW(ncm::ResultNotSupported());
     }
 
     Result ReadOnlyContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
         AMS_UNUSED(content_id, path);
-        return ncm::ResultInvalidOperation();
+        R_THROW(ncm::ResultInvalidOperation());
     }
 
     Result ReadOnlyContentStorageImpl::ClearRegisteredPath() {
-        return ncm::ResultInvalidOperation();
+        R_THROW(ncm::ResultInvalidOperation());
     }
 
 }

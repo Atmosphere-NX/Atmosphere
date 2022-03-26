@@ -254,7 +254,7 @@ namespace ams::fatal::srv::font {
         stbtt_InitFont(std::addressof(g_stb_font), font_buffer, stbtt_GetFontOffsetForIndex(font_buffer, 0));
 
         SetFontSize(16.0f);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

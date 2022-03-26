@@ -84,7 +84,7 @@ namespace ams::ncm::impl {
         /* Flush the destination file. */
         R_TRY(fs::FlushFile(dst_file));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

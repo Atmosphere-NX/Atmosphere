@@ -36,7 +36,7 @@ namespace ams::os::impl {
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out_index = index;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MultiWaitHorizonImpl::ReplyAndReceiveN(s32 *out_index, s32 num, NativeHandle arr[], s32 array_size, s64 ns, NativeHandle reply_target) {
@@ -52,20 +52,20 @@ namespace ams::os::impl {
             R_CATCH(svc::ResultSessionClosed)   {
                 if (index == -1) {
                     *out_index = MultiWaitImpl::WaitInvalid;
-                    return os::ResultSessionClosedForReply();
+                    R_THROW(os::ResultSessionClosedForReply());
                 } else {
                     *out_index = index;
-                    return os::ResultSessionClosedForReceive();
+                    R_THROW(os::ResultSessionClosedForReceive());
                 }
             }
             R_CATCH(svc::ResultReceiveListBroken) {
                 *out_index = index;
-                return os::ResultReceiveListBroken();
+                R_THROW(os::ResultReceiveListBroken());
             }
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out_index = index;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void MultiWaitHorizonImpl::CancelWait() {

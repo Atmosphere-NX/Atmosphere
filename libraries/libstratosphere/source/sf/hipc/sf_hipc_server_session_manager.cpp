@@ -73,7 +73,7 @@ namespace ams::sf::hipc {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 
@@ -102,7 +102,7 @@ namespace ams::sf::hipc {
 
         /* Register to wait list. */
         this->RegisterServerSessionToWait(session_memory);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServerSessionManager::AcceptSessionImpl(ServerSession *session_memory, os::NativeHandle port_handle, cmif::ServiceObjectHolder &&obj) {
@@ -121,7 +121,7 @@ namespace ams::sf::hipc {
         R_TRY(this->RegisterSessionImpl(session_memory, session_handle, std::forward<cmif::ServiceObjectHolder>(obj)));
 
         session_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     #if AMS_SF_MITM_SUPPORTED
@@ -141,7 +141,7 @@ namespace ams::sf::hipc {
 
         /* Register to wait list. */
         this->RegisterServerSessionToWait(session_memory);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServerSessionManager::AcceptMitmSessionImpl(ServerSession *session_memory, os::NativeHandle mitm_port_handle, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) {
@@ -157,7 +157,7 @@ namespace ams::sf::hipc {
         R_TRY(this->RegisterMitmSessionImpl(session_memory, mitm_session_handle, std::forward<cmif::ServiceObjectHolder>(obj), std::forward<std::shared_ptr<::Service>>(fsrv)));
 
         session_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 
@@ -207,10 +207,10 @@ namespace ams::sf::hipc {
             switch (recv_result) {
                 case hipc::ReceiveResult::Success:
                     session->m_is_closed = false;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 case hipc::ReceiveResult::Closed:
                     session->m_is_closed = true;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 case hipc::ReceiveResult::NeedsRetry:
                     continue;
                 AMS_UNREACHABLE_DEFAULT_CASE();
@@ -231,14 +231,14 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::ProcessRequest(ServerSession *session, const cmif::PointerAndSize &message) {
         if (session->m_is_closed) {
             this->CloseSessionImpl(session);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         switch (GetCmifCommandType(message)) {
             case CmifCommandType_Close:
             {
                 this->CloseSessionImpl(session);
-                return ResultSuccess();
+                R_SUCCEED();
             }
             default:
             {
@@ -250,13 +250,13 @@ namespace ams::sf::hipc {
                     R_CATCH_ALL() {
                         /* All other results indicate something went very wrong. */
                         this->CloseSessionImpl(session);
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                 } R_END_TRY_CATCH;
 
                 /* We succeeded, so we can process future messages on this session. */
                 this->RegisterServerSessionToWait(session);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
     }
@@ -297,7 +297,7 @@ namespace ams::sf::hipc {
     Result ServerSessionManager::DispatchManagerRequest(ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) {
         /* This will get overridden by ... WithDomain class. */
         AMS_UNUSED(session, in_message, out_message);
-        return sf::ResultNotSupported();
+        R_THROW(sf::ResultNotSupported());
     }
 
     Result ServerSessionManager::DispatchRequest(cmif::ServiceObjectHolder &&obj_holder, ServerSession *session, const cmif::PointerAndSize &in_message, const cmif::PointerAndSize &out_message) {
@@ -342,7 +342,7 @@ namespace ams::sf::hipc {
             R_TRY(hipc::Reply(session->m_session_handle, out_message));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 

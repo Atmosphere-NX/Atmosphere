@@ -33,7 +33,7 @@ namespace ams::mitm::sysupdater {
             R_TRY(updater::MarkVerifyingRequired(updater::BootModeType::Safe, g_boot_image_update_buffer, sizeof(g_boot_image_update_buffer)));
 
             /* Pre-commit is now marked. */
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UpdateBootImages() {
@@ -59,7 +59,7 @@ namespace ams::mitm::sysupdater {
                 R_TRY(updater::MarkVerified(boot_mode, g_boot_image_update_buffer, sizeof(g_boot_image_update_buffer)));
 
                 /* The boot images are updated. */
-                return ResultSuccess();
+                R_SUCCEED();
             };
 
             /* Get the boot image update type. */
@@ -72,7 +72,7 @@ namespace ams::mitm::sysupdater {
             R_TRY(UpdateBootImageImpl(updater::BootModeType::Normal, boot_image_update_type));
 
             /* Both sets of images are updated. */
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -92,7 +92,7 @@ namespace ams::mitm::sysupdater {
         /* Update the boot images. */
         R_TRY(UpdateBootImages());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

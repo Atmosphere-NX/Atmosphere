@@ -49,22 +49,22 @@ namespace ams::pgl::srv {
 
     Result ShellInterfaceCommon::IsProcessTrackedImpl(bool *out, os::ProcessId process_id) {
         *out = pgl::srv::IsProcessTracked(process_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCommon::EnableApplicationCrashReportImpl(bool enabled) {
         pgl::srv::EnableApplicationCrashReport(enabled);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCommon::IsApplicationCrashReportEnabledImpl(bool *out) {
         *out = pgl::srv::IsApplicationCrashReportEnabled();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCommon::EnableApplicationAllThreadDumpOnCrashImpl(bool enabled) {
         pgl::srv::EnableApplicationAllThreadDumpOnCrash(enabled);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCommon::TriggerApplicationSnapShotDumperImpl(SnapShotDumpType dump_type, const void *arg, size_t arg_size) {
@@ -122,12 +122,12 @@ namespace ams::pgl::srv {
         R_UNLESS(session != nullptr, pgl::ResultOutOfMemory());
 
         *out = std::move(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ShellInterfaceCmif::Command21NotImplemented(ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2) {
         AMS_UNUSED(out, in, buf1, buf2);
-        return pgl::ResultNotImplemented();
+        R_THROW(pgl::ResultNotImplemented());
     }
 
     Result ShellInterfaceTipc::LaunchProgram(ams::tipc::Out<os::ProcessId> out, const ncm::ProgramLocation loc, u32 pm_flags, u8 pgl_flags) {

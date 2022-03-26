@@ -79,7 +79,7 @@ namespace ams::pwm::driver::impl {
     Result RegisterDeviceCode(DeviceCode device_code, IPwmDevice *device) {
         AMS_ASSERT(device != nullptr);
         R_TRY(GetDeviceCodeEntryManager().Add(device_code, device));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {
@@ -96,7 +96,7 @@ namespace ams::pwm::driver::impl {
 
         /* Set output. */
         *out = device->SafeCastToPointer<IPwmDevice>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FindDeviceByChannelIndex(IPwmDevice **out, int channel) {
@@ -121,7 +121,7 @@ namespace ams::pwm::driver::impl {
         /* Check that we found the pad. */
         R_UNLESS(found, ddsf::ResultDeviceCodeNotFound());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

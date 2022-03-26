@@ -306,7 +306,7 @@ namespace ams::sdmmc::impl {
                 R_UNLESS(!this->IsRemoved(), sdmmc::ResultDeviceRemoved());
                 #endif
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result CheckAccessible() const {
@@ -319,7 +319,7 @@ namespace ams::sdmmc::impl {
                 /* Check removed. */
                 R_TRY(this->CheckRemoved());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void SetHighCapacity(bool en) {

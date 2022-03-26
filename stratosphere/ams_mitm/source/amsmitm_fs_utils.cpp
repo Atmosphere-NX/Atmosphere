@@ -29,7 +29,7 @@ namespace ams::mitm::fs {
         /* Helpers. */
         Result EnsureSdInitialized() {
             R_UNLESS(serviceIsActive(std::addressof(g_sd_filesystem.s)), ams::fs::ResultSdCardNotPresent());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void FormatAtmosphereRomfsPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path) {
@@ -230,7 +230,7 @@ namespace ams::mitm::fs {
         /* Set output. */
         file_guard.Cancel();
         *out = f;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CreateAndOpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, size_t size) {
@@ -254,7 +254,7 @@ namespace ams::mitm::fs {
         /* Set output. */
         file_guard.Cancel();
         *out = f;
-        return ResultSuccess();
+        R_SUCCEED();
 
     }
 

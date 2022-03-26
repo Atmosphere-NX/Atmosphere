@@ -126,7 +126,7 @@ namespace ams::ldr {
 #else
             AMS_UNUSED(program_id, version);
 #endif
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Helpers. */
@@ -157,7 +157,7 @@ namespace ams::ldr {
 
             /* Copy flags. */
             out->flags = MakeProgramInfoFlag(static_cast<const util::BitPack32 *>(meta->aci_kac), meta->aci->kac_size / sizeof(util::BitPack32));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool IsApplet(const Meta *meta) {
@@ -195,7 +195,7 @@ namespace ams::ldr {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateNsoHeaders(const NsoHeader *nso_headers, const bool *has_nso) {
@@ -214,7 +214,7 @@ namespace ams::ldr {
                 R_UNLESS(nso_headers[i].text_dst_offset == 0, ldr::ResultInvalidNso());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeVerificationData &code_verification_data) {
@@ -244,7 +244,7 @@ namespace ams::ldr {
             }
 
             /* All good. */
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetCreateProcessFlags(u32 *out, const Meta *meta, const u32 ldr_flags) {
@@ -272,7 +272,7 @@ namespace ams::ldr {
                     flags |= svc::CreateProcessFlag_AddressSpace64Bit;
                     break;
                 default:
-                    return ldr::ResultInvalidMeta();
+                    R_THROW(ldr::ResultInvalidMeta());
             }
 
             /* Set Enable Debug. */
@@ -317,7 +317,7 @@ namespace ams::ldr {
                         flags |= svc::CreateProcessFlag_PoolPartitionSystemNonSecure;
                         break;
                     default:
-                        return ldr::ResultInvalidMeta();
+                        R_THROW(ldr::ResultInvalidMeta());
                 }
             } else if (hos::GetVersion() >= hos::Version_4_0_0) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
@@ -332,7 +332,7 @@ namespace ams::ldr {
             }
 
             *out = flags;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetCreateProcessParameter(svc::CreateProcessParameter *out, const Meta *meta, u32 flags, os::NativeHandle resource_limit) {
@@ -367,7 +367,7 @@ namespace ams::ldr {
                 out->system_resource_num_pages = meta->npdm->system_resource_size >> 12;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE u64 GetCurrentProcessInfo(svc::InfoType info_type) {
@@ -415,7 +415,7 @@ namespace ams::ldr {
                 /* If the memory range is free and big enough, use it. */
                 if (mem_info.state == svc::MemoryState_Free && mapping_size <= ((mem_info.base_address + mem_info.size) - address)) {
                     *out = address;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Check that we can advance. */
@@ -514,7 +514,7 @@ namespace ams::ldr {
             out_param->code_address   = aslr_start;
             out_param->code_num_pages = total_size >> 12;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateProcessImpl(ProcessInfo *out, const Meta *meta, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
@@ -532,7 +532,7 @@ namespace ams::ldr {
             /* Set the output handle. */
             out->process_handle = process_handle;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LoadNsoSegment(fs::FileHandle file, const NsoHeader::SegmentInfo *segment, size_t file_size, const u8 *file_hash, bool is_compressed, bool check_hash, uintptr_t map_base, uintptr_t map_end) {
@@ -565,7 +565,7 @@ namespace ams::ldr {
                 R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ldr::ResultInvalidNso());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, uintptr_t map_address, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size) {
@@ -612,7 +612,7 @@ namespace ams::ldr {
                 R_TRY(svc::SetProcessMemoryPermission(process_handle, nso_address + nso_header->rw_dst_offset,   rw_size,   svc::MemoryPermission_ReadWrite));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LoadAutoLoadModules(const ProcessInfo *process_info, const NsoHeader *nso_headers, const bool *has_nso, const ArgumentStore::Entry *argument) {
@@ -651,7 +651,7 @@ namespace ams::ldr {
                 R_TRY(svc::SetProcessMemoryPermission(process_info->process_handle, process_info->args_address, process_info->args_size, svc::MemoryPermission_ReadWrite));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -742,22 +742,22 @@ namespace ams::ldr {
 
     Result PinProgram(PinId *out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status) {
         R_UNLESS(RoManager::GetInstance().Allocate(out_id, loc, override_status), ldr::ResultMaxProcess());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnpinProgram(PinId id) {
         R_UNLESS(RoManager::GetInstance().Free(id), ldr::ResultNotPinned());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProcessModuleInfo(u32 *out_count, ldr::ModuleInfo *out, size_t max_out_count, os::ProcessId process_id) {
         R_UNLESS(RoManager::GetInstance().GetProcessModuleInfo(out_count, out, max_out_count, process_id), ldr::ResultNotPinned());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProgramLocationAndOverrideStatusFromPinId(ncm::ProgramLocation *out, cfg::OverrideStatus *out_status, PinId pin_id) {
         R_UNLESS(RoManager::GetInstance().GetProgramLocationAndStatus(out, out_status, pin_id), ldr::ResultNotPinned());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

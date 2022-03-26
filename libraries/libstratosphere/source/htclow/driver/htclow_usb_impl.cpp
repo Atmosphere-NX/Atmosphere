@@ -207,11 +207,11 @@ namespace ams::htclow::driver {
         Result ConvertUsbDriverResult(Result result) {
             if (result.GetModule() == R_NAMESPACE_MODULE_ID(usb)) {
                 if (usb::ResultResourceBusy::Includes(result)) {
-                    return htclow::ResultUsbDriverBusyError();
+                    R_THROW(htclow::ResultUsbDriverBusyError());
                 } else if (usb::ResultMemAllocFailure::Includes(result)) {
-                    return htclow::ResultOutOfMemory();
+                    R_THROW(htclow::ResultOutOfMemory());
                 } else {
-                    return htclow::ResultUsbDriverUnknownError();
+                    R_THROW(htclow::ResultUsbDriverUnknownError());
                 }
             } else {
                 return result;
@@ -241,7 +241,7 @@ namespace ams::htclow::driver {
             /* Set binary object store. */
             R_TRY(g_ds_client.SetBinaryObjectStore(BinaryObjectStore, sizeof(BinaryObjectStore)));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result InitializeDsInterface() {
@@ -263,13 +263,13 @@ namespace ams::htclow::driver {
             R_TRY(g_ds_interface.AppendConfigurationData(usb::UsbDeviceSpeed_Super, std::addressof(UsbEndpointDescriptorsSuperSpeed[1]), sizeof(usb::UsbEndpointDescriptor)));
             R_TRY(g_ds_interface.AppendConfigurationData(usb::UsbDeviceSpeed_Super, std::addressof(UsbEndpointCompanionDescriptor),      sizeof(usb::UsbEndpointCompanionDescriptor)));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result InitializeDsEndpoints() {
             R_TRY(g_ds_endpoints[0].Initialize(std::addressof(g_ds_interface), 0x81));
             R_TRY(g_ds_endpoints[1].Initialize(std::addressof(g_ds_interface), 0x01));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void UsbIndicationThreadFunction(void *) {
@@ -400,7 +400,7 @@ namespace ams::htclow::driver {
 
         /* We succeeded! */
         init_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FinalizeUsbInterface() {
@@ -432,7 +432,7 @@ namespace ams::htclow::driver {
 
         /* Set output transferred size. */
         *out_transferred = src_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReceiveUsb(int *out_transferred, void *dst, int dst_size) {
@@ -449,7 +449,7 @@ namespace ams::htclow::driver {
 
         /* Set output transferred size. */
         *out_transferred = dst_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CancelUsbSendReceive() {

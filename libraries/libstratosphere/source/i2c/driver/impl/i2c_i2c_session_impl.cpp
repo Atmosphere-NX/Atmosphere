@@ -44,7 +44,7 @@ namespace ams::i2c::driver::impl {
 
         /* We're opened. */
         guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void I2cSessionImpl::Close() {
@@ -83,7 +83,7 @@ namespace ams::i2c::driver::impl {
         /* Advance. */
         *cur_cmd += size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cSessionImpl::ReceiveHandler(const u8 **cur_cmd, u8 **cur_dst) {
@@ -102,7 +102,7 @@ namespace ams::i2c::driver::impl {
         /* Advance. */
         *cur_dst += size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cSessionImpl::ExtensionHandler(const u8 **cur_cmd, u8 **cur_dst) {
@@ -123,7 +123,7 @@ namespace ams::i2c::driver::impl {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cSessionImpl::ExecuteTransactionWithRetry(void *dst, Command command, const void *src, size_t size, TransactionOption option) {
@@ -152,7 +152,7 @@ namespace ams::i2c::driver::impl {
                 }
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -193,13 +193,13 @@ namespace ams::i2c::driver::impl {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cSessionImpl::SetRetryPolicy(int mr, int interval_us) {
         m_max_retry_count = mr;
         m_retry_interval  = TimeSpan::FromMicroSeconds(interval_us);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

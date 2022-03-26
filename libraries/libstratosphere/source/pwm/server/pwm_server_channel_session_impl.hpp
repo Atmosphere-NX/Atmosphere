@@ -39,48 +39,48 @@ namespace ams::pwm::server {
 
                 R_TRY(pwm::driver::OpenSession(std::addressof(m_internal_session), device_code));
                 m_has_session = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             /* Actual commands. */
             Result SetPeriod(TimeSpanType period) {
                 pwm::driver::SetPeriod(m_internal_session, period);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetPeriod(ams::sf::Out<TimeSpanType> out) {
                 out.SetValue(pwm::driver::GetPeriod(m_internal_session));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result SetDuty(int duty) {
                 pwm::driver::SetDuty(m_internal_session, duty);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetDuty(ams::sf::Out<int> out) {
                 out.SetValue(pwm::driver::GetDuty(m_internal_session));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result SetEnabled(bool enabled) {
                 pwm::driver::SetEnabled(m_internal_session, enabled);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetEnabled(ams::sf::Out<bool> out) {
                 out.SetValue(pwm::driver::GetEnabled(m_internal_session));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result SetScale(double scale) {
                 pwm::driver::SetScale(m_internal_session, scale);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetScale(ams::sf::Out<double> out) {
                 out.SetValue(pwm::driver::GetScale(m_internal_session));
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
     static_assert(pwm::sf::IsIChannelSession<ChannelSessionImpl>);

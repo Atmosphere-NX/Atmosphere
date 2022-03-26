@@ -33,7 +33,7 @@ namespace ams::erpt::srv {
 
             /* Return it. */
             out.SetValue(intf);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

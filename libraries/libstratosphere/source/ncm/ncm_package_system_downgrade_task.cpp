@@ -58,7 +58,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PackageSystemDowngradeTask::Commit() {

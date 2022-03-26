@@ -93,7 +93,7 @@ namespace ams::kvdb {
                 size_t size = 0;
                 R_TRY(this->Get(std::addressof(size), out_value, sizeof(Value), key));
                 AMS_ABORT_UNLESS(size >= sizeof(Value));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename Key>

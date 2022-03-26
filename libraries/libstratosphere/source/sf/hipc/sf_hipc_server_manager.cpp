@@ -30,7 +30,7 @@ namespace ams::sf::hipc {
         /* Clear future declarations if any, now that our query handler is present. */
         R_ABORT_UNLESS(sm::mitm::ClearFutureMitm(service_name));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 
@@ -158,7 +158,7 @@ namespace ams::sf::hipc {
             } R_END_TRY_CATCH;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServerManagerBase::Process(os::MultiWaitHolderType *holder) {

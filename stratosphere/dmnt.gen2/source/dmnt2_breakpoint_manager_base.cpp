@@ -48,7 +48,7 @@ namespace ams::dmnt {
                 return bp->Clear(m_debug_process);
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     BreakPointBase *BreakPointManagerBase::GetFreeBreakPoint() {

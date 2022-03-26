@@ -31,7 +31,7 @@ namespace ams::boot {
         u8 power_status;
         R_TRY(this->GetPowerStatus(std::addressof(power_status)));
         *out = (power_status & 0x02) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PmicDriver::GetOnOffIrq(u8 *out) {
@@ -53,7 +53,7 @@ namespace ams::boot {
         u8 on_off_irq;
         R_TRY(this->GetOnOffIrq(std::addressof(on_off_irq)));
         *out = (on_off_irq & 0x08) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PmicDriver::ShutdownSystem(bool reboot) {

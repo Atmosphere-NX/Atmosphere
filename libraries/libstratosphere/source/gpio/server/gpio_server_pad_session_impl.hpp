@@ -40,7 +40,7 @@ namespace ams::gpio::server {
 
                 R_TRY(gpio::driver::OpenSession(std::addressof(m_internal_pad_session), device_code, access_mode));
                 m_has_session = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             /* Actual commands. */
@@ -54,7 +54,7 @@ namespace ams::gpio::server {
                 /* Invoke the driver library. */
                 R_TRY(gpio::driver::SetDirection(std::addressof(m_internal_pad_session), direction));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetDirection(ams::sf::Out<gpio::Direction> out) {
@@ -64,7 +64,7 @@ namespace ams::gpio::server {
                 /* Invoke the driver library. */
                 R_TRY(gpio::driver::GetDirection(out.GetPointer(), std::addressof(m_internal_pad_session)));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result SetInterruptMode(gpio::InterruptMode mode) {
@@ -130,7 +130,7 @@ namespace ams::gpio::server {
                 /* Invoke the driver library. */
                 R_TRY(gpio::driver::SetValue(std::addressof(m_internal_pad_session), value));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetValue(ams::sf::Out<gpio::GpioValue> out) {
@@ -140,7 +140,7 @@ namespace ams::gpio::server {
                 /* Invoke the driver library. */
                 R_TRY(gpio::driver::GetValue(out.GetPointer(), std::addressof(m_internal_pad_session)));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result BindInterrupt(ams::sf::OutCopyHandle out) {

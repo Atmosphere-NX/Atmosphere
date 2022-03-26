@@ -145,7 +145,7 @@ namespace ams::htclow::driver {
 
         /* This can never happen, as the above loop should be infinite, but completion logic is here for posterity. */
         socket_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

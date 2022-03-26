@@ -51,7 +51,7 @@ namespace ams::capsrv {
         *out_width     = static_cast<s32>(width);
         *out_height    = static_cast<s32>(height);
 
-        return ResultSuccess();
+        R_SUCCEED();
         #else
         AMS_UNUSED(out_data_size, out_width, out_height, layer_stack, timeout);
         AMS_ABORT("TODO");
@@ -64,7 +64,7 @@ namespace ams::capsrv {
         R_TRY(::capsscReadRawScreenShotReadStream(std::addressof(read_size), dst, dst_size, static_cast<u64>(offset)));
 
         *out_read_size = static_cast<size_t>(read_size);
-        return ResultSuccess();
+        R_SUCCEED();
         #else
         AMS_UNUSED(out_read_size, dst, dst_size, offset);
         AMS_ABORT("TODO");

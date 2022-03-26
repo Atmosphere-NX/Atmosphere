@@ -27,7 +27,7 @@ namespace ams::htc::server::rpc {
 
         R_UNLESS(size == copied || size == copied + 1, htc::ResultUnknown());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GetEnvironmentVariableTask::Complete(HtcmiscResult result, const char *data, size_t size) {
@@ -78,7 +78,7 @@ namespace ams::htc::server::rpc {
         /* Set the output size. */
         *out = m_value_size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEnvironmentVariableTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -106,7 +106,7 @@ namespace ams::htc::server::rpc {
         /* Set the output size. */
         *out = sizeof(*packet) + this->GetNameSize();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEnvironmentVariableTask::ProcessResponse(const char *data, size_t size) {
@@ -119,7 +119,7 @@ namespace ams::htc::server::rpc {
         /* Complete the task. */
         Task::Complete();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEnvironmentVariableLengthTask::SetArguments(const char *args, size_t size) {
@@ -131,7 +131,7 @@ namespace ams::htc::server::rpc {
 
         R_UNLESS(size == copied || size == copied + 1, htc::ResultUnknown());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GetEnvironmentVariableLengthTask::Complete(HtcmiscResult result, const char *data, size_t size) {
@@ -177,7 +177,7 @@ namespace ams::htc::server::rpc {
         /* Set the output size. */
         *out = m_value_size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEnvironmentVariableLengthTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -205,7 +205,7 @@ namespace ams::htc::server::rpc {
         /* Set the output size. */
         *out = sizeof(*packet) + this->GetNameSize();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetEnvironmentVariableLengthTask::ProcessResponse(const char *data, size_t size) {
@@ -218,7 +218,7 @@ namespace ams::htc::server::rpc {
         /* Complete the task. */
         Task::Complete();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RunOnHostTask::SetArguments(const char *args, size_t size) {
@@ -229,7 +229,7 @@ namespace ams::htc::server::rpc {
         std::memcpy(m_command, args, size);
         m_command_size = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void RunOnHostTask::Complete(int host_result) {
@@ -245,7 +245,7 @@ namespace ams::htc::server::rpc {
 
     Result RunOnHostTask::GetResult(int *out) const {
         *out = m_host_result;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void RunOnHostTask::Cancel(RpcTaskCancelReason reason) {
@@ -281,7 +281,7 @@ namespace ams::htc::server::rpc {
         /* Set the output size. */
         *out = sizeof(*packet) + this->GetCommandSize();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RunOnHostTask::ProcessResponse(const char *data, size_t size) {
@@ -290,7 +290,7 @@ namespace ams::htc::server::rpc {
         AMS_UNUSED(size);
 
         this->Complete(reinterpret_cast<const HtcmiscRpcPacket *>(data)->params[0]);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     os::SystemEventType *RunOnHostTask::GetSystemEvent() {

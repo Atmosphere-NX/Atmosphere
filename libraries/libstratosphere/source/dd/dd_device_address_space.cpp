@@ -38,7 +38,7 @@ namespace ams::dd {
 
         /* We succeeded. */
         state_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CreateDeviceAddressSpace(DeviceAddressSpaceType *das, u64 size) {

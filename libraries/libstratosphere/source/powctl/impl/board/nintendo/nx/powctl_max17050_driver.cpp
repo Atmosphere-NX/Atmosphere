@@ -171,7 +171,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             const u16 new_val = (cur_val & ~mask) | (value & mask);
             R_TRY(i2c::WriteSingleRegister(session, address, new_val));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result ReadRegister(const i2c::I2cSession &session, u8 address, u16 *out) {
@@ -205,7 +205,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             const u16 new_val = (cur_val & ~mask) | (value & mask);
             while (!WriteValidateRegister(session, address, new_val)) { /* ... */ }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         double CoerceToDouble(u64 value) {
@@ -360,7 +360,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Set cgain. */
         R_TRY(WriteRegister(m_i2c_session, max17050::CGain, 0x7FFF));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetMaximumShutdownTimerThreshold() {
@@ -395,13 +395,13 @@ namespace ams::powctl::impl::board::nintendo::nx {
     Result Max17050Driver::LockModelTable() {
         R_TRY(WriteRegister(m_i2c_session, max17050::ModelAccess0, 0x0000));
         R_TRY(WriteRegister(m_i2c_session, max17050::ModelAccess1, 0x0000));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::UnlockModelTable() {
         R_TRY(WriteRegister(m_i2c_session, max17050::ModelAccess0, 0x0059));
         R_TRY(WriteRegister(m_i2c_session, max17050::ModelAccess1, 0x00C4));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool Max17050Driver::IsModelTableLocked() {
@@ -422,7 +422,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             R_TRY(WriteRegister(m_i2c_session, max17050::ModelChrTblStart + i, model_table[i]));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool Max17050Driver::IsModelTableSet(const u16 *model_table) {
@@ -449,7 +449,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_TRY(ReadRegister(m_i2c_session, max17050::QResidual10, std::addressof(m_internal_state.qresidual10)));
         R_TRY(ReadRegister(m_i2c_session, max17050::QResidual20, std::addressof(m_internal_state.qresidual20)));
         R_TRY(ReadRegister(m_i2c_session, max17050::QResidual30, std::addressof(m_internal_state.qresidual30)));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::WriteInternalState() {
@@ -480,7 +480,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             while (!WriteValidateRegister(m_i2c_session, max17050::LearnCfg, 0x2673)) { /* ... */ }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetChargePercentage(double *out) {
@@ -493,7 +493,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = static_cast<double>(val) * 0.00390625;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetVoltageFuelGaugePercentage(double *out) {
@@ -506,7 +506,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = static_cast<double>(val) * 0.00390625;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetFullCapacity(double *out, double sense_resistor) {
@@ -521,7 +521,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = ((static_cast<double>(fullcap) * 0.005) / sense_resistor) / (static_cast<double>(cgain) * 0.0000610351562);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetRemainingCapacity(double *out, double sense_resistor) {
@@ -536,7 +536,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = ((static_cast<double>(remcap) * 0.005) / sense_resistor) / (static_cast<double>(cgain) * 0.0000610351562);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetChargePercentageMinimumAlertThreshold(int percentage) {
@@ -580,7 +580,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (((static_cast<double>(avg_current) - (static_cast<double>(coff) + static_cast<double>(coff))) / (static_cast<double>(cgain) * 0.0000610351562)) * 1.5625) / (sense_resistor * 1000.0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetCurrent(double *out, double sense_resistor) {
@@ -596,7 +596,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (((static_cast<double>(current) - (static_cast<double>(coff) + static_cast<double>(coff))) / (static_cast<double>(cgain) * 0.0000610351562)) * 1.5625) / (sense_resistor * 1000.0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetNeedToRestoreParameters(bool *out) {
@@ -606,7 +606,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = (val & 0x8000) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetNeedToRestoreParameters(bool en) {
@@ -620,7 +620,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = (val & 0x0040) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetI2cShutdownEnabled(bool en) {
@@ -641,7 +641,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = std::max<u16>(val, 0x60) - 0x60;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::ResetCycles() {
@@ -658,7 +658,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = static_cast<double>(val) * 0.00390625;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetTemperature(double *out) {
@@ -671,7 +671,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = static_cast<double>(val) * 0.00390625;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetMaximumTemperature(u8 *out) {
@@ -684,7 +684,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = static_cast<u8>(val >> 8);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetTemperatureMinimumAlertThreshold(int c) {
@@ -705,7 +705,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (625 * (val >> 3)) / 1000;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetAverageVCell(int *out) {
@@ -718,7 +718,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (625 * (val >> 3)) / 1000;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetAverageVCellTime(double *out) {
@@ -731,7 +731,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = 175.8 * ExponentiateTwoToPower(6 + ((val >> 4) & 7), 1.0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::GetOpenCircuitVoltage(int *out) {
@@ -744,7 +744,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (1250 * (val >> 4)) / 1000;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Max17050Driver::SetVoltageMinimumAlertThreshold(int mv) {

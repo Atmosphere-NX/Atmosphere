@@ -63,7 +63,7 @@ namespace ams::spl {
 
             Result GetAesKeySlotAvailableEvent(sf::OutCopyHandle out_hnd) {
                 out_hnd.SetValue(m_manager.GetAesKeySlotAvailableEvent()->GetReadableHandle(), false);
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
     static_assert(spl::impl::IsICryptoInterface<CryptoService>);

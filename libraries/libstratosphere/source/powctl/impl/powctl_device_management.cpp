@@ -119,7 +119,7 @@ namespace ams::powctl::impl {
     Result RegisterDeviceCode(DeviceCode device_code, IDevice *device) {
         AMS_ASSERT(device != nullptr);
         R_TRY(GetDeviceCodeEntryManager().Add(device_code, device));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {
@@ -146,7 +146,7 @@ namespace ams::powctl::impl {
 
         /* Set output. */
         *out = device->SafeCastToPointer<powctl::impl::IDevice>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -124,7 +124,7 @@ namespace ams::fs {
         R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), id));
 
         *out = extra_data.flags;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetSaveDataFlags(u32 *out, SaveDataSpaceId space_id, SaveDataId id) {
@@ -132,7 +132,7 @@ namespace ams::fs {
         R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), space_id, id));
 
         *out = extra_data.flags;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetSaveDataFlags(SaveDataId id, SaveDataSpaceId space_id, u32 flags) {
@@ -147,7 +147,7 @@ namespace ams::fs {
         R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), id));
 
         *out = extra_data.available_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetSaveDataJournalSize(s64 *out, SaveDataId id) {
@@ -155,7 +155,7 @@ namespace ams::fs {
         R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), id));
 
         *out = extra_data.journal_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ExtendSaveData(SaveDataSpaceId space_id, SaveDataId id, s64 available_size, s64 journal_size) {

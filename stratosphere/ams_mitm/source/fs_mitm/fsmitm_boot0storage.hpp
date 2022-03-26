@@ -36,7 +36,7 @@ namespace ams::mitm::fs {
 
                 /* Check if we have nothing to do. */
                 if (size == 0) {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Fast case. */
@@ -69,7 +69,7 @@ namespace ams::mitm::fs {
                     }
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Write(s64 offset, const void *_buffer, size_t size) override {
@@ -80,7 +80,7 @@ namespace ams::mitm::fs {
 
                 /* Check if we have nothing to do. */
                 if (size == 0) {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Fast case. */
@@ -117,7 +117,7 @@ namespace ams::mitm::fs {
                     }
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

@@ -54,7 +54,7 @@ namespace ams::erpt::srv {
 
         ManagerImpl::NotifyAll();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
@@ -63,22 +63,22 @@ namespace ams::erpt::srv {
 
     Result ContextImpl::SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) {
         Reporter::SetInitialLaunchSettingsCompletionTime(time_point);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::ClearInitialLaunchSettingsCompletionTime() {
         Reporter::ClearInitialLaunchSettingsCompletionTime();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::UpdatePowerOnTime() {
         /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::UpdateAwakeTime() {
         /* NOTE: Prior to 12.0.0, this set the power on time, but now erpt does it during initialization. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) {
@@ -107,17 +107,17 @@ namespace ams::erpt::srv {
             total_arr_count   += ctx_entry.array_buf_counts[i];
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::UpdateApplicationLaunchTime() {
         Reporter::UpdateApplicationLaunchTime();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::ClearApplicationLaunchTime() {
         Reporter::ClearApplicationLaunchTime();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) {
@@ -154,7 +154,7 @@ namespace ams::erpt::srv {
 
         ManagerImpl::NotifyAll();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
@@ -176,7 +176,7 @@ namespace ams::erpt::srv {
     Result ContextImpl::InvalidateForcedShutdownDetection() {
         /* NOTE: Nintendo does not check the result here. */
         erpt::srv::InvalidateForcedShutdownDetection();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

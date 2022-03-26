@@ -31,7 +31,7 @@ namespace ams::sprofile::srv {
 
         /* Return the object. */
         *out = std::move(obj);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServiceForBgAgent::GetImportableProfileUrls(sf::Out<u32> out_count, const sf::OutArray<sprofile::srv::ProfileUrl> &out, const sprofile::srv::ProfileMetadataForImportMetadata &arg) {
@@ -71,7 +71,7 @@ namespace ams::sprofile::srv {
 
         /* Set output count. */
         *out_count = count;
-        return ResultSuccess();
+        R_SUCCEED();
 
     }
 
@@ -88,7 +88,7 @@ namespace ams::sprofile::srv {
 
         /* Determine if update is needed. */
         *out = !(loaded_metadata && revision_key == primary_metadata.revision_key);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServiceForBgAgent::Reset() {

@@ -234,7 +234,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             const u8 new_val = (cur_val & ~mask) | (value & mask);
             R_TRY(i2c::WriteSingleRegister(session, address, new_val));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -264,7 +264,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Reset the watchdog timer. */
         R_TRY(this->ResetWatchdogTimer());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetPreChargeCurrentLimit(int ma) {
@@ -290,7 +290,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = (val & 0x01) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetForce20PercentChargeCurrent(bool en) {
@@ -304,7 +304,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out_ma = bq24193::DecodeFastChargeCurrentLimit(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetFastChargeCurrentLimit(int ma) {
@@ -318,7 +318,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out_mv = bq24193::DecodeChargeVoltageLimit(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetChargeVoltageLimit(int mv) {
@@ -336,7 +336,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = (val & 0x80) != 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetHiZEnabled(bool en) {
@@ -350,7 +350,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out_ma = bq24193::DecodeInputCurrentLimit(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetInputCurrentLimit(int ma) {
@@ -372,7 +372,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out = bq24193::DecodeChargerStatus(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::ResetWatchdogTimer() {
@@ -390,7 +390,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out_mo = bq24193::DecodeBatteryCompensation(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetBatteryCompensation(int mo) {
@@ -404,7 +404,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Extract the value. */
         *out_mv = bq24193::DecodeVoltageClamp(val);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Bq24193Driver::SetVoltageClamp(int mv) {

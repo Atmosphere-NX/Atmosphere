@@ -43,7 +43,7 @@ namespace ams::ddsf {
         /* Link the new holder. */
         holder->AddTo(m_entry_list);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool DeviceCodeEntryManager::Remove(DeviceCode device_code) {
@@ -90,7 +90,7 @@ namespace ams::ddsf {
         /* Check that we found the device. */
         R_UNLESS(found, ddsf::ResultDeviceCodeNotFound());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeviceCodeEntryManager::FindDeviceCodeEntry(const DeviceCodeEntry **out, DeviceCode device_code) const {
@@ -112,7 +112,7 @@ namespace ams::ddsf {
         /* Check that we found the device. */
         R_UNLESS(found, ddsf::ResultDeviceCodeNotFound());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeviceCodeEntryManager::FindDevice(IDevice **out, DeviceCode device_code) {
@@ -128,7 +128,7 @@ namespace ams::ddsf {
             *out = std::addressof(entry->GetDevice());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DeviceCodeEntryManager::FindDevice(const IDevice **out, DeviceCode device_code) const {
@@ -144,7 +144,7 @@ namespace ams::ddsf {
             *out = std::addressof(entry->GetDevice());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

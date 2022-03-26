@@ -138,7 +138,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void I2cBusAccessor::FinalizeDevice(I2cDeviceProperty *device) {
@@ -320,7 +320,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
         /* We opened (or not). */
         s_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void I2cBusAccessor::ExecuteInitialConfig() {
@@ -438,7 +438,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
 
         /* We're done. */
         this->DisableInterruptMask();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cBusAccessor::Receive(u8 *dst, size_t dst_size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
@@ -504,7 +504,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         }
 
         /* We're done. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void I2cBusAccessor::WriteHeader(Xfer xfer, size_t size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
@@ -728,7 +728,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
             os::SleepThread(TimeSpan::FromMilliSeconds(1));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result I2cBusAccessor::GetTransactionResult() const {
@@ -749,7 +749,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
         R_UNLESS(reg::HasValue(interrupt_status, I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_ARB_LOST, UNSET)), i2c::ResultBusBusy());
 
         clear_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void I2cBusAccessor::HandleTransactionError(Result result) {

@@ -189,7 +189,7 @@ namespace ams::spl::impl {
                 Result Allocate() {
                     R_TRY(AllocateAesKeySlot(std::addressof(m_slot_index)));
                     m_allocated = true;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -394,7 +394,7 @@ namespace ams::spl::impl {
                 util::GetReference(g_drbg).Generate(out, size, nullptr, 0);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result DecryptAndStoreDeviceUniqueKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
@@ -458,7 +458,7 @@ namespace ams::spl::impl {
                 std::memcpy(out, g_work_buffer, out_size);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result PrepareEsDeviceUniqueKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, smc::EsDeviceUniqueKeyType type, u32 generation) {
@@ -500,7 +500,7 @@ namespace ams::spl::impl {
             }
 
             std::memcpy(out_access_key, g_work_buffer, sizeof(*out_access_key));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -583,7 +583,7 @@ namespace ams::spl::impl {
         }
 
         std::memcpy(out, g_work_buffer, out_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetConfig(ConfigItem key, u64 value) {
@@ -593,7 +593,7 @@ namespace ams::spl::impl {
         if (key == ConfigItem::ExosphereApiVersion) {
             hos::InitializeVersionInternal(false);
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GenerateRandomBytes(void *out, size_t size) {
@@ -601,7 +601,7 @@ namespace ams::spl::impl {
             R_TRY(GenerateRandomBytesImpl(static_cast<u8 *>(out) + offset, std::min(size - offset, Drbg::RequestSizeMax)));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IsDevelopment(bool *out) {
@@ -609,7 +609,7 @@ namespace ams::spl::impl {
         R_TRY(impl::GetConfig(std::addressof(hardware_state), ConfigItem::HardwareState));
 
         *out = (hardware_state == HardwareState_Development);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetBootReason(BootReasonValue boot_reason) {
@@ -617,14 +617,14 @@ namespace ams::spl::impl {
 
         g_boot_reason                = boot_reason;
         g_is_boot_reason_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetBootReason(BootReasonValue *out) {
         R_UNLESS(g_is_boot_reason_initialized, spl::ResultBootReasonNotInitialized());
 
         *out = g_boot_reason;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Crypto. */
@@ -644,7 +644,7 @@ namespace ams::spl::impl {
         g_aes_keyslot_contents[index].aes_key.access_key = access_key;
         g_aes_keyslot_contents[index].aes_key.key_source = key_source;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source) {
@@ -747,7 +747,7 @@ namespace ams::spl::impl {
         }
         #endif
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ComputeCmac(Cmac *out_cmac, s32 keyslot, const void *data, size_t size) {
@@ -764,12 +764,12 @@ namespace ams::spl::impl {
                 g_is_aes_keyslot_allocated[i]  = true;
                 g_aes_keyslot_contents[i].type = AesKeySlotContentType::None;
                 *out_keyslot = MakeVirtualAesKeySlot(i);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         util::GetReference(g_aes_keyslot_available_event).Clear();
-        return spl::ResultNoAvailableKeySlot();
+        R_THROW(spl::ResultNoAvailableKeySlot());
     }
 
     Result DeallocateAesKeySlot(s32 keyslot) {
@@ -791,14 +791,14 @@ namespace ams::spl::impl {
         g_is_aes_keyslot_allocated[index]  = false;
 
         util::GetReference(g_aes_keyslot_available_event).Signal();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result TestAesKeySlot(s32 *out_index, bool *out_virtual, s32 keyslot) {
         if (g_is_physical_keyslot_allowed && IsPhysicalAesKeySlot(keyslot)) {
             *out_index   = keyslot;
             *out_virtual = false;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         R_UNLESS(IsVirtualAesKeySlot(keyslot), spl::ResultInvalidKeySlot());
@@ -808,7 +808,7 @@ namespace ams::spl::impl {
 
         *out_index   = index;
         *out_virtual = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     os::SystemEvent *GetAesKeySlotAvailableEvent() {
@@ -910,7 +910,7 @@ namespace ams::spl::impl {
         R_UNLESS(data_size > 0, spl::ResultDecryptionFailed());
 
         *out_size = static_cast<u32>(data_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which) {
@@ -928,7 +928,7 @@ namespace ams::spl::impl {
         g_aes_keyslot_contents[index].type                    = AesKeySlotContentType::PreparedKey;
         g_aes_keyslot_contents[index].prepared_key.access_key = access_key;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetPackage2Hash(void *dst, const size_t size) {
@@ -941,7 +941,7 @@ namespace ams::spl::impl {
         }
 
         std::memcpy(dst, hash, sizeof(hash));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Manu. */

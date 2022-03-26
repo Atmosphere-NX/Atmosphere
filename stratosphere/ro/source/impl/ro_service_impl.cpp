@@ -148,10 +148,10 @@ namespace ams::ro::impl {
                             if (out != nullptr) {
                                 *out = m_nrr_infos + i;
                             }
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
-                    return ro::ResultNotRegistered();
+                    R_THROW(ro::ResultNotRegistered());
                 }
 
                 Result GetFreeNrrInfo(NrrInfo **out) {
@@ -160,10 +160,10 @@ namespace ams::ro::impl {
                             if (out != nullptr) {
                                 *out = m_nrr_infos + i;
                             }
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
-                    return ro::ResultTooManyNrr();
+                    R_THROW(ro::ResultTooManyNrr());
                 }
 
                 Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
@@ -172,10 +172,10 @@ namespace ams::ro::impl {
                             if (out != nullptr) {
                                 *out = m_nro_infos + i;
                             }
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
-                    return ro::ResultNotLoaded();
+                    R_THROW(ro::ResultNotLoaded());
                 }
 
                 Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
@@ -184,10 +184,10 @@ namespace ams::ro::impl {
                             if (out != nullptr) {
                                 *out = m_nro_infos + i;
                             }
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
-                    return ro::ResultNotLoaded();
+                    R_THROW(ro::ResultNotLoaded());
                 }
 
                 Result GetFreeNroInfo(NroInfo **out) {
@@ -196,10 +196,10 @@ namespace ams::ro::impl {
                             if (out != nullptr) {
                                 *out = m_nro_infos + i;
                             }
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
-                    return ro::ResultTooManyNro();
+                    R_THROW(ro::ResultTooManyNro());
                 }
 
                 Result ValidateHasNroHash(const NroHeader *nro_header) const {
@@ -241,10 +241,10 @@ namespace ams::ro::impl {
                         }
 
                         /* The hash is valid! */
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
-                    return ro::ResultNotAuthorized();
+                    R_THROW(ro::ResultNotAuthorized());
                 }
 
                 Result ValidateNro(ModuleId *out_module_id, u64 *out_rx_size, u64 *out_ro_size, u64 *out_rw_size, u64 base_address, u64 expected_nro_size, u64 expected_bss_size) {
@@ -305,7 +305,7 @@ namespace ams::ro::impl {
                     *out_rx_size = text_size;
                     *out_ro_size = ro_size;
                     *out_rw_size = rw_size;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 void SetNrrInfoInUse(const NrrInfo *info, bool in_use) {
@@ -391,14 +391,14 @@ namespace ams::ro::impl {
             R_UNLESS(size != 0,                                    ro::ResultInvalidSize());
             R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ro::ResultInvalidSize());
             R_UNLESS(address < address + size,                     ro::ResultInvalidSize());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr inline Result ValidateAddressAndSize(u64 address, u64 size) {
             R_UNLESS(util::IsAligned(address, os::MemoryPageSize), ro::ResultInvalidAddress());
             R_UNLESS(util::IsAligned(size, os::MemoryPageSize),    ro::ResultInvalidSize());
             R_UNLESS(size == 0 || address < address + size,        ro::ResultInvalidSize());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -451,14 +451,14 @@ namespace ams::ro::impl {
         *out_context_id = AllocateContext(process_handle.GetOsHandle(), process_id);
         process_handle.Detach();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ValidateProcess(size_t context_id, os::ProcessId process_id) {
         const ProcessContext *ctx = GetContextById(context_id);
         R_UNLESS(ctx != nullptr,                    ro::ResultInvalidProcess());
         R_UNLESS(ctx->GetProcessId() == process_id, ro::ResultInvalidProcess());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UnregisterProcess(size_t context_id) {
@@ -504,7 +504,7 @@ namespace ams::ro::impl {
         std::memcpy(nrr_info->cached_signed_area, header->GetSignedArea(), std::min(sizeof(nrr_info->cached_signed_area), header->GetHashesOffset() - header->GetSignedAreaOffset()));
         std::memcpy(std::addressof(nrr_info->signed_area_hash), std::addressof(signed_area_hash), sizeof(signed_area_hash));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnregisterModuleInfo(size_t context_id, u64 nrr_address) {
@@ -603,7 +603,7 @@ namespace ams::ro::impl {
             context->GetProcessModuleInfo(out_count, out_infos, max_out_count);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

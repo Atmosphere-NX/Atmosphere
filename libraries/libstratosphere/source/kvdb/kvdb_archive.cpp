@@ -31,7 +31,7 @@ namespace ams::kvdb {
 
             Result Validate() const {
                 R_UNLESS(std::memcmp(this->magic, ArchiveHeaderMagic, sizeof(ArchiveHeaderMagic)) == 0, kvdb::ResultInvalidKeyValue());
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static ArchiveHeader Make(size_t entry_count) {
@@ -50,7 +50,7 @@ namespace ams::kvdb {
 
             Result Validate() const {
                 R_UNLESS(std::memcmp(this->magic, ArchiveEntryMagic, sizeof(ArchiveEntryMagic)) == 0, kvdb::ResultInvalidKeyValue());
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static ArchiveEntryHeader Make(size_t ksz, size_t vsz) {
@@ -72,13 +72,13 @@ namespace ams::kvdb {
         R_UNLESS(m_offset < m_offset + size,            kvdb::ResultInvalidKeyValue());
 
         std::memcpy(dst, m_buffer.Get() + m_offset, size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ArchiveReader::Read(void *dst, size_t size) {
         R_TRY(this->Peek(dst, size));
         m_offset += size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ArchiveReader::ReadEntryCount(size_t *out) {
@@ -91,7 +91,7 @@ namespace ams::kvdb {
         R_TRY(header.Validate());
 
         *out = header.entry_count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ArchiveReader::GetEntrySize(size_t *out_key_size, size_t *out_value_size) {
@@ -105,7 +105,7 @@ namespace ams::kvdb {
 
         *out_key_size = header.key_size;
         *out_value_size = header.value_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ArchiveReader::ReadEntry(void *out_key, size_t key_size, void *out_value, size_t value_size) {
@@ -123,7 +123,7 @@ namespace ams::kvdb {
 
         R_ABORT_UNLESS(this->Read(out_key, key_size));
         R_ABORT_UNLESS(this->Read(out_value, value_size));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Writer functionality. */
@@ -134,7 +134,7 @@ namespace ams::kvdb {
 
         std::memcpy(m_buffer.Get() + m_offset, src, size);
         m_offset += size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ArchiveWriter::WriteHeader(size_t entry_count) {

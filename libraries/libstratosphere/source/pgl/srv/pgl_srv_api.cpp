@@ -201,7 +201,7 @@ namespace ams::pgl::srv {
         /* TODO: Should we avoid leaking the object? Nintendo does not. */
         R_TRY(GetGlobalsForTipc().server_manager.AddSession(out, object));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

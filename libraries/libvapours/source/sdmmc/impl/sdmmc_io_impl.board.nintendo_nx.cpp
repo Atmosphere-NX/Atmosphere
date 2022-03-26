@@ -339,14 +339,14 @@ namespace ams::sdmmc::impl {
         /* TODO: A way for this to be non-fatal? */
         AMS_ABORT_UNLESS(max7762x::SetVoltageEnabled(en));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetSdCardVoltageValue(u32 micro_volts) {
         /* TODO: A way for this to be non-fatal? */
         AMS_ABORT_UNLESS(max7762x::SetVoltageValue(micro_volts));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     namespace gpio_impl {

@@ -150,7 +150,7 @@ namespace ams::fssystem {
         }
         out_info->SetSkipCount(entry_index - param.entry_index);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename EntryType>

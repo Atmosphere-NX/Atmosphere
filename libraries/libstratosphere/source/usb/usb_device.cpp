@@ -73,7 +73,7 @@ namespace ams::usb {
         /* Mark ourselves as initialized. */
         m_is_initialized = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsClient::Finalize() {
@@ -104,7 +104,7 @@ namespace ams::usb {
         m_ds_service   = nullptr;
         m_root_session = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool DsClient::IsInitialized() {
@@ -132,7 +132,7 @@ namespace ams::usb {
 
         /* Mark disabled. */
         m_is_enabled = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsClient::DisableDevice() {
@@ -156,7 +156,7 @@ namespace ams::usb {
 
         /* Mark disabled. */
         m_is_enabled = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     os::SystemEventType *DsClient::GetStateChangeEvent() {
@@ -215,7 +215,7 @@ namespace ams::usb {
         /* Set interface. */
         m_interfaces[bInterfaceNumber] = intf;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsClient::DeleteInterface(uint8_t bInterfaceNumber) {
@@ -231,7 +231,7 @@ namespace ams::usb {
         /* Clear the interface. */
         m_interfaces[bInterfaceNumber] = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::Initialize(DsClient *client, u8 bInterfaceNumber) {
@@ -280,7 +280,7 @@ namespace ams::usb {
         m_is_initialized = true;
 
         intf_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::Finalize() {
@@ -322,7 +322,7 @@ namespace ams::usb {
         --m_client->m_reference_count;
         m_client = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::AppendConfigurationData(UsbDeviceSpeed speed, void *data, u32 size) {
@@ -369,7 +369,7 @@ namespace ams::usb {
         /* Perform the enable. */
         R_TRY(m_interface->Enable());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::Disable() {
@@ -388,7 +388,7 @@ namespace ams::usb {
         /* Perform the disable. */
         R_TRY(m_interface->Disable());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::AddEndpoint(DsEndpoint *ep, u8 bEndpointAddress, sf::SharedPointer<ds::IDsEndpoint> *out) {
@@ -410,7 +410,7 @@ namespace ams::usb {
         /* Set the endpoint. */
         m_endpoints[impl::GetEndpointIndex(bEndpointAddress)] = ep;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::DeleteEndpoint(u8 bEndpointAddress) {
@@ -428,7 +428,7 @@ namespace ams::usb {
         /* Clear the endpoint. */
         m_endpoints[index] = nullptr;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsInterface::CtrlIn(u32 *out_transferred, void *dst, u32 size) {
@@ -475,13 +475,13 @@ namespace ams::usb {
         /* Handle the report. */
         switch (m_report.reports[0].status) {
             case UrbStatus_Cancelled:
-                return usb::ResultInterrupted();
+                R_THROW(usb::ResultInterrupted());
             case UrbStatus_Failed:
-                return usb::ResultTransactionError();
+                R_THROW(usb::ResultTransactionError());
             case UrbStatus_Finished:
-                return ResultSuccess();
+                R_SUCCEED();
             default:
-                return usb::ResultInternalStateError();
+                R_THROW(usb::ResultInternalStateError());
         }
     }
 
@@ -536,13 +536,13 @@ namespace ams::usb {
         /* Handle the report. */
         switch (m_report.reports[0].status) {
             case UrbStatus_Cancelled:
-                return usb::ResultInterrupted();
+                R_THROW(usb::ResultInterrupted());
             case UrbStatus_Failed:
-                return usb::ResultTransactionError();
+                R_THROW(usb::ResultTransactionError());
             case UrbStatus_Finished:
-                return ResultSuccess();
+                R_SUCCEED();
             default:
-                return usb::ResultInternalStateError();
+                R_THROW(usb::ResultInternalStateError());
         }
     }
 
@@ -661,7 +661,7 @@ namespace ams::usb {
         m_is_initialized = true;
 
         ep_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DsEndpoint::Finalize() {
@@ -696,7 +696,7 @@ namespace ams::usb {
         /* Mark uninitialized. */
         m_is_initialized = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool DsEndpoint::IsInitialized() {
@@ -735,13 +735,13 @@ namespace ams::usb {
         /* Handle the report. */
         switch (report.reports[0].status) {
             case UrbStatus_Cancelled:
-                return usb::ResultInterrupted();
+                R_THROW(usb::ResultInterrupted());
             case UrbStatus_Failed:
-                return usb::ResultTransactionError();
+                R_THROW(usb::ResultTransactionError());
             case UrbStatus_Finished:
-                return ResultSuccess();
+                R_SUCCEED();
             default:
-                return usb::ResultInternalStateError();
+                R_THROW(usb::ResultInternalStateError());
         }
     }
 
@@ -763,7 +763,7 @@ namespace ams::usb {
         R_TRY(m_endpoint->PostBufferAsync(std::addressof(urb_id), reinterpret_cast<u64>(buf), size));
 
         *out_urb_id = urb_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     os::SystemEventType *DsEndpoint::GetCompletionEvent() {

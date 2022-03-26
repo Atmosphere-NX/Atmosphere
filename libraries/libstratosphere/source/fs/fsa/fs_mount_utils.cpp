@@ -106,13 +106,13 @@ namespace ams::fs::impl {
     Result CheckMountName(const char *name) {
         R_TRY(CheckMountNameAllowingReserved(name));
         R_UNLESS(!impl::IsReservedMountName(name), fs::ResultInvalidMountName());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CheckMountNameAllowingReserved(const char *name) {
         R_UNLESS(name != nullptr,              fs::ResultInvalidMountName());
         R_UNLESS(impl::IsValidMountName(name), fs::ResultInvalidMountName());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FindFileSystem(FileSystemAccessor **out_accessor, const char **out_sub_path, const char *path) {
@@ -137,7 +137,7 @@ namespace ams::fs::impl {
         }
 
         impl::Unregister(name);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }
@@ -162,7 +162,7 @@ namespace ams::fs {
         const auto common_path_len = util::SNPrintf(dst + mount_name_len, dst_size - mount_name_len, "%s", sub_path);
 
         AMS_FS_R_UNLESS(static_cast<size_t>(common_path_len) < dst_size - mount_name_len, fs::ResultTooLongPath());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Unmount(const char *mount_name) {

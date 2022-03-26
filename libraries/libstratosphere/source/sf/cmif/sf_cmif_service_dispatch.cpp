@@ -117,7 +117,7 @@ namespace ams::sf::cmif {
         /* Write output header to raw data. */
         *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), interface_id_for_debug};
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     #if AMS_SF_MITM_SUPPORTED
@@ -164,7 +164,7 @@ namespace ams::sf::cmif {
         /* Write output header to raw data. */
         *out_header = CmifOutHeader{OutHeaderMagic, 0, command_result.GetValue(), interface_id_for_debug};
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 

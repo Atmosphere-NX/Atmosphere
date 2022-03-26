@@ -62,7 +62,7 @@ namespace ams::ncm {
                 offset += count;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -80,11 +80,11 @@ namespace ams::ncm {
         R_TRY(ForEachContentInfo(key, db, [&size](bool *out_done, const ContentInfo &info) -> Result {
             size += CalculateRequiredSize(info.GetSize(), MaxClusterSize);
             *out_done = false;
-            return ResultSuccess();
+            R_SUCCEED();
         }));
 
         *out_size = size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

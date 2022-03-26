@@ -78,7 +78,7 @@ namespace ams::fssystem {
         m_hash_generator_factory->GenerateHash(calc_hash, sizeof(calc_hash), m_hash_buffer, static_cast<size_t>(hash_storage_size));
         R_UNLESS(crypto::IsSameBytes(master_hash, calc_hash, HashSize), fs::ResultHierarchicalSha256HashVerificationFailed());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename BaseStorageType>
@@ -126,7 +126,7 @@ namespace ams::fssystem {
             remaining_size -= cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename BaseStorageType>
@@ -169,7 +169,7 @@ namespace ams::fssystem {
             remaining_size -= cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename BaseStorageType>

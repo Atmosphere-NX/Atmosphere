@@ -105,7 +105,7 @@ namespace ams::mitm::socket::resolver {
         *out_errno      = 0;
         *out_size       = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ResolverImpl::GetAddrInfoRequest(u32 cancel_handle, const sf::ClientProcessId &client_pid, bool use_nsd_resolve, const sf::InBuffer &node, const sf::InBuffer &srv, const sf::InBuffer &serialized_hint, const sf::OutBuffer &out_addrinfo, sf::Out<u32> out_errno, sf::Out<s32> out_retval, sf::Out<u32> out_size) {
@@ -144,7 +144,7 @@ namespace ams::mitm::socket::resolver {
         *out_errno  = 0;
         *out_size   = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ResolverImpl::GetHostByNameRequestWithOptions(const sf::ClientProcessId &client_pid, const sf::InAutoSelectBuffer &name, const sf::OutAutoSelectBuffer &out_hostent, sf::Out<u32> out_size, u32 options_version, const sf::InAutoSelectBuffer &options, u32 num_options, sf::Out<s32> out_host_error, sf::Out<s32> out_errno) {
@@ -166,7 +166,7 @@ namespace ams::mitm::socket::resolver {
         *out_errno      = 0;
         *out_size       = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ResolverImpl::GetAddrInfoRequestWithOptions(const sf::ClientProcessId &client_pid, const sf::InBuffer &node, const sf::InBuffer &srv, const sf::InBuffer &serialized_hint, const sf::OutAutoSelectBuffer &out_addrinfo, sf::Out<u32> out_size, sf::Out<s32> out_retval, u32 options_version, const sf::InAutoSelectBuffer &options, u32 num_options, sf::Out<s32> out_host_error, sf::Out<s32> out_errno) {
@@ -206,13 +206,13 @@ namespace ams::mitm::socket::resolver {
         *out_errno       = 0;
         *out_size        = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ResolverImpl::AtmosphereReloadHostsFile() {
         /* Perform a hosts file reload. */
         InitializeResolverRedirections();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

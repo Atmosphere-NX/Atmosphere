@@ -62,7 +62,7 @@ namespace ams::ncm {
                 R_SUCCEED_IF(done);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -83,7 +83,7 @@ namespace ams::ncm {
         R_TRY(m_db->Set(package_meta_reader.GetKey(), meta_reader.GetData(), meta_reader.GetSize()));
 
         /* We're done. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseBuilder::BuildFromStorage(ContentStorage *storage) {
@@ -198,11 +198,11 @@ namespace ams::ncm {
                 out_ids[count++] = { key.id };
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }));
 
         *out_count = static_cast<s32>(count);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

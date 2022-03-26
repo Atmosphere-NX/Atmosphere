@@ -64,7 +64,7 @@ namespace ams::fs {
 
             /* Set output. */
             *out = priority_raw;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetPriorityImpl(fs::Priority *out, os::ThreadType *thread) {
@@ -77,7 +77,7 @@ namespace ams::fs {
 
             /* Set output. */
             *out = ConvertPriorityRawToPriority(priority_raw);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetPriorityRawImpl(os::ThreadType *thread, fs::PriorityRaw priority_raw) {
@@ -91,7 +91,7 @@ namespace ams::fs {
 
             /* Update the priority. */
             UpdateTlsIoPriority(thread, tls_io);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetPriorityImpl(os::ThreadType *thread, fs::Priority priority) {
@@ -105,7 +105,7 @@ namespace ams::fs {
 
             /* Update the priority. */
             UpdateTlsIoPriority(thread, tls_io);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

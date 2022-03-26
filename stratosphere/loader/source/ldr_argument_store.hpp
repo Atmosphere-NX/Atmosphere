@@ -43,7 +43,7 @@ namespace ams::ldr {
                 for (auto &entry : m_argument_map) {
                     entry.program_id = ncm::InvalidProgramId;
                 }
-                return ResultSuccess();
+                R_SUCCEED();
             }
         private:
             static int FindIndex(Entry *map, ncm::ProgramId program_id);

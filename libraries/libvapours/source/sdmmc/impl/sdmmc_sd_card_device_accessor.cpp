@@ -149,10 +149,10 @@ namespace ams::sdmmc::impl {
                     *out_sm = SpeedMode_SdCardDdr50;
                     break;
                 default:
-                    return sdmmc::ResultUnexpectedSdCardSwitchFunctionStatus();
+                    R_THROW(sdmmc::ResultUnexpectedSdCardSwitchFunctionStatus());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -193,7 +193,7 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(out_rca != nullptr);
         *out_rca = static_cast<u16>(resp >> 16);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSendIfCond() const {
@@ -214,7 +214,7 @@ namespace ams::sdmmc::impl {
         /* Verify that our argument was returned to us. */
         R_UNLESS((resp & SendIfCommandArgumentMask) == (SendIfCommandArgument & SendIfCommandArgumentMask), sdmmc::ResultSdCardValidationError());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandCheckSupportedFunction(void *dst, size_t dst_size) const {
@@ -237,7 +237,7 @@ namespace ams::sdmmc::impl {
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
         R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSwitchAccessMode(void *dst, size_t dst_size, bool set_function, SwitchFunctionAccessMode access_mode) const {
@@ -260,13 +260,13 @@ namespace ams::sdmmc::impl {
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
         R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandVoltageSwitch() const {
         /* Issue the command. */
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(CommandIndex_VoltageSwitch, 0, false, DeviceState_Ready));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandAppCmd(DeviceState expected_state, u32 ignore_mask) const {
@@ -299,14 +299,14 @@ namespace ams::sdmmc::impl {
             R_UNLESS(m_sd_card_device.GetDeviceState(resp) == expected_state, sdmmc::ResultUnexpectedDeviceState());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSetBusWidth4Bit() const {
         /* Issue the application command. */
         constexpr u32 Arg = 0x2;
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(SdApplicationCommandIndex_SetBusWidth, Arg, false, DeviceState_Tran));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSdStatus(void *dst, size_t dst_size) const {
@@ -326,7 +326,7 @@ namespace ams::sdmmc::impl {
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
         R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSendOpCond(u32 *out_ocr, bool spec_under_2, bool uhs_i_supported) const {
@@ -342,13 +342,13 @@ namespace ams::sdmmc::impl {
         /* Get the response. */
         hc->GetLastResponse(out_ocr, sizeof(u32), CommandResponseType);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandClearCardDetect() const {
         /* Issue the application command. */
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(SdApplicationCommandIndex_SetClearCardDetect, 0, false, DeviceState_Tran));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::IssueCommandSendScr(void *dst, size_t dst_size) const {
@@ -368,7 +368,7 @@ namespace ams::sdmmc::impl {
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
         R_TRY(m_sd_card_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::EnterUhsIMode() {
@@ -378,7 +378,7 @@ namespace ams::sdmmc::impl {
         /* Switch to sdr12. */
         R_TRY(BaseDeviceAccessor::GetHostController()->SwitchToSdr12());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::ChangeToReadyState(bool spec_under_2, bool uhs_i_supported) {
@@ -406,7 +406,7 @@ namespace ams::sdmmc::impl {
                     m_sd_card_device.SetUhsIMode(true);
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Check if we've timed out. */
@@ -426,7 +426,7 @@ namespace ams::sdmmc::impl {
             R_TRY(this->IssueCommandSendRelativeAddr(std::addressof(rca)));
             if (rca != 0) {
                 m_sd_card_device.SetRca(rca);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Check if we've timed out. */
@@ -442,7 +442,7 @@ namespace ams::sdmmc::impl {
             m_sd_card_device.SetMemoryCapacity(GetMemoryCapacityFromCsd(static_cast<const u16 *>(csd)));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetScr(void *dst, size_t dst_size) const {
@@ -450,7 +450,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandAppCmd(DeviceState_Tran));
         R_TRY(this->IssueCommandSendScr(dst, dst_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::ExtendBusWidth(BusWidth max_bw, u8 sd_bw) {
@@ -471,7 +471,7 @@ namespace ams::sdmmc::impl {
         /* Set the host controller's bus width. */
         hc->SetBusWidth(BusWidth_4Bit);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::SwitchAccessMode(SwitchFunctionAccessMode access_mode, void *wb, size_t wb_size) {
@@ -487,7 +487,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandSwitchAccessMode(wb, wb_size, true, access_mode));
         R_UNLESS(IsAccessModeInFunctionSelection(static_cast<const u8 *>(wb), access_mode), sdmmc::ResultSdCardFailedSwitchAccessMode());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::ExtendBusSpeedAtUhsIMode(SpeedMode max_sm, void *wb, size_t wb_size) {
@@ -506,7 +506,7 @@ namespace ams::sdmmc::impl {
             target_am = SwitchFunctionAccessMode_Sdr50;
             target_sm = SpeedMode_SdCardSdr50;
         } else {
-            return sdmmc::ResultSdCardNotSupportSdr104AndSdr50();
+            R_THROW(sdmmc::ResultSdCardNotSupportSdr104AndSdr50());
         }
 
         /* Switch the access mode. */
@@ -519,7 +519,7 @@ namespace ams::sdmmc::impl {
         /* Check status. */
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::ExtendBusSpeedAtNonUhsIMode(SpeedMode max_sm, bool spec_under_1_1, void *wb, size_t wb_size) {
@@ -542,7 +542,7 @@ namespace ams::sdmmc::impl {
         /* Set the host controller speed mode. */
         R_TRY(BaseDeviceAccessor::GetHostController()->SetSpeedMode(SpeedMode_SdCardHighSpeed));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetSdStatus(void *dst, size_t dst_size) const {
@@ -550,7 +550,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandAppCmd(DeviceState_Tran));
         R_TRY(this->IssueCommandSdStatus(dst, dst_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdCardDeviceAccessor::TryDisconnectDat3PullUpResistor() const {
@@ -637,7 +637,7 @@ namespace ams::sdmmc::impl {
         /* Enable power saving. */
         hc->SetPowerSaving(true);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::OnActivate() {
@@ -679,7 +679,7 @@ namespace ams::sdmmc::impl {
                     BaseDeviceAccessor::IncrementNumActivationErrorCorrections();
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Check if we were removed. */
@@ -740,7 +740,7 @@ namespace ams::sdmmc::impl {
             return result;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdCardDeviceAccessor::Initialize() {
@@ -842,14 +842,14 @@ namespace ams::sdmmc::impl {
         R_TRY(this->GetScr(m_work_buffer, m_work_buffer_size));
         if (IsLessThanSpecification1_1(static_cast<const u8 *>(m_work_buffer))) {
             *out_speed_mode = SpeedMode_SdCardDefaultSpeed;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Get the current speed mode. */
         R_TRY(this->IssueCommandCheckSupportedFunction(m_work_buffer, m_work_buffer_size));
         R_TRY(GetCurrentSpeedMode(out_speed_mode, static_cast<const u8 *>(m_work_buffer), m_sd_card_device.IsUhsIMode()));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdCardDeviceAccessor::PutSdCardToSleep() {
@@ -928,7 +928,7 @@ namespace ams::sdmmc::impl {
         /* Get the SCR. */
         R_TRY(this->GetScr(dst, dst_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetSdCardSwitchFunctionStatus(void *dst, size_t dst_size, SdCardSwitchFunction switch_function) const {
@@ -959,7 +959,7 @@ namespace ams::sdmmc::impl {
             R_TRY(this->IssueCommandSwitchAccessMode(dst, dst_size, false, am));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetSdCardCurrentConsumption(u16 *out_current_consumption, SpeedMode speed_mode) const {
@@ -1004,7 +1004,7 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(out_current_consumption != nullptr);
         *out_current_consumption = GetMaximumCurrentConsumption(static_cast<const u8 *>(m_work_buffer));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetSdCardSdStatus(void *dst, size_t dst_size) const {
@@ -1017,7 +1017,7 @@ namespace ams::sdmmc::impl {
         /* Get the status. */
         R_TRY(this->GetSdStatus(dst, dst_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdCardDeviceAccessor::GetSdCardProtectedAreaCapacity(u32 *out_num_sectors) const {
@@ -1047,7 +1047,7 @@ namespace ams::sdmmc::impl {
             *out_num_sectors = size_of_protected_area / SectorSize;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 

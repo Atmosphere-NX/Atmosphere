@@ -56,10 +56,10 @@ namespace ams::htcfs {
                     *out = static_cast<fs::OpenMode>(fs::OpenMode_ReadWrite | fs::OpenMode_AllowAppend);
                     break;
                 default:
-                    return htcfs::ResultInvalidArgument();
+                    R_THROW(htcfs::ResultInvalidArgument());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -78,7 +78,7 @@ namespace ams::htcfs {
 
         /* Set the output file. */
         *out = FileServiceObjectFactory::CreateSharedEmplaced<tma::IFileAccessor, FileServiceObject>(handle);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileSystemServiceObject::FileExists(sf::Out<bool> out, const tma::Path &path, bool case_sensitive) {
@@ -125,7 +125,7 @@ namespace ams::htcfs {
 
         /* Set the output directory. */
         *out = DirectoryServiceObjectFactory::CreateSharedEmplaced<tma::IDirectoryAccessor, DirectoryServiceObject>(handle);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileSystemServiceObject::DirectoryExists(sf::Out<bool> out, const tma::Path &path, bool case_sensitive) {

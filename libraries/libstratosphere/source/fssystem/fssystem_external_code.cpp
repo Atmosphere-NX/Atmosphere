@@ -62,7 +62,7 @@ namespace ams::fssystem {
         g_hnd_map.Emplace(program_id, client);
 
         *out = server;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DestroyExternalCode(ncm::ProgramId program_id) {

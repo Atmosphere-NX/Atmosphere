@@ -29,7 +29,7 @@ namespace ams::fs::fsa {
                 R_UNLESS(out_count != nullptr, fs::ResultNullptrArgument());
                 if (max_entries == 0) {
                     *out_count = 0;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
                 R_UNLESS(out_entries != nullptr, fs::ResultNullptrArgument());
                 R_UNLESS(max_entries > 0,        fs::ResultInvalidArgument());

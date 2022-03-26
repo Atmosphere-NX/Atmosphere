@@ -155,7 +155,7 @@ namespace ams::fssystem {
                         m_external_attr_info_buffer  = reinterpret_cast<char *>(aligned_attr_info_buf);
                         m_external_attr_info_count   = static_cast<s32>((work_end - aligned_attr_info_buf) / sizeof(AttrInfo));
 
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     void Finalize();
@@ -216,7 +216,7 @@ namespace ams::fssystem {
                 m_peak_free_size              = m_total_size;
                 m_peak_total_allocatable_size = m_total_size;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(s32 max_cache_count, uintptr_t address, size_t buffer_size, size_t block_size, s32 max_order) {
@@ -228,7 +228,7 @@ namespace ams::fssystem {
                 m_peak_free_size              = m_total_size;
                 m_peak_total_allocatable_size = m_total_size;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(s32 max_cache_count, uintptr_t address, size_t buffer_size, size_t block_size, void *work, size_t work_size) {
@@ -245,7 +245,7 @@ namespace ams::fssystem {
                 m_peak_free_size              = m_total_size;
                 m_peak_total_allocatable_size = m_total_size;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(s32 max_cache_count, uintptr_t address, size_t buffer_size, size_t block_size, s32 max_order, void *work, size_t work_size) {
@@ -262,7 +262,7 @@ namespace ams::fssystem {
                 m_peak_free_size              = m_total_size;
                 m_peak_total_allocatable_size = m_total_size;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void Finalize() {

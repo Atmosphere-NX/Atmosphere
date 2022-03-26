@@ -69,7 +69,7 @@ namespace ams::dmnt::cheat::impl {
 
                     /* Set the target core. */
                     *out = target_core;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 void SendHandle(size_t target_core, os::NativeHandle debug_handle) {

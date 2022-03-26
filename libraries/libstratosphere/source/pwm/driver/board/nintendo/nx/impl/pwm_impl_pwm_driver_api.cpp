@@ -60,7 +60,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
             R_ABORT_UNLESS(pwm::driver::RegisterDeviceCode(entry.device_code, device));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

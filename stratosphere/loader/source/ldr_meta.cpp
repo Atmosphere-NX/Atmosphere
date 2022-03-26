@@ -47,7 +47,7 @@ namespace ams::ldr {
             R_UNLESS(allowed_start <= start,      ldr::ResultInvalidMeta());
             R_UNLESS(start <= allowed_end,        ldr::ResultInvalidMeta());
             R_UNLESS(start + size <= allowed_end, ldr::ResultInvalidMeta());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateNpdm(const Npdm *npdm, size_t size) {
@@ -77,7 +77,7 @@ namespace ams::ldr {
             /* Validate Aci extends. */
             R_TRY(ValidateSubregion(sizeof(Npdm), size, npdm->aci_offset, npdm->aci_size, sizeof(Aci)));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateAcid(const Acid *acid, size_t size) {
@@ -94,7 +94,7 @@ namespace ams::ldr {
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->sac_offset, acid->sac_size));
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->kac_offset, acid->kac_size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateAci(const Aci *aci, size_t size) {
@@ -106,7 +106,7 @@ namespace ams::ldr {
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->sac_offset, aci->sac_size));
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->kac_offset, aci->kac_size));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         const u8 *GetAcidSignatureModulus(u32 key_generation) {
@@ -117,7 +117,7 @@ namespace ams::ldr {
             /* Loader did not check signatures prior to 10.0.0. */
             if (hos::GetVersion() < hos::Version_10_0_0) {
                 meta->check_verification_data = false;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Verify the signature. */
@@ -133,7 +133,7 @@ namespace ams::ldr {
             R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ldr::ResultInvalidAcidSignature());
 
             meta->check_verification_data = is_signature_valid;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LoadMetaFromFile(fs::FileHandle file, MetaCache *cache) {
@@ -182,7 +182,7 @@ namespace ams::ldr {
                 meta->modulus   = acid->modulus;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -270,7 +270,7 @@ namespace ams::ldr {
         g_cached_override_status = status;
         *out_meta = *meta;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
@@ -278,7 +278,7 @@ namespace ams::ldr {
             return LoadMeta(out_meta, loc, status);
         }
         *out_meta = g_meta_cache.meta;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InvalidateMetaCache() {

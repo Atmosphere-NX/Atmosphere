@@ -22,7 +22,7 @@ namespace ams::fssystem {
 
         Result DecompressLz4(void *dst, size_t dst_size, const void *src, size_t src_size) {
             R_UNLESS(util::DecompressLZ4(dst, dst_size, src, src_size) == static_cast<int>(dst_size), fs::ResultUnexpectedInCompressedStorageC());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr DecompressorFunction GetNcaDecompressorFunction(CompressionType type) {

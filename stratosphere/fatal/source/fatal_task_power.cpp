@@ -207,18 +207,18 @@ namespace ams::fatal::srv {
 
         Result PowerControlTask::Run() {
             this->MonitorBatteryState();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result PowerButtonObserveTask::Run() {
             this->WaitForPowerButton();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result StateTransitionStopTask::Run() {
             /* Nintendo ignores the output of this call... */
             spsmPutErrorState();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

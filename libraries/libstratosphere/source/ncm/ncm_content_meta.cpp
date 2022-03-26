@@ -53,12 +53,12 @@ namespace ams::ncm {
                 auto delta = reader.GetPatchDeltaHeader(i);
                 if ((src_version == 0 || delta->delta.source_version == src_version) && delta->delta.destination_version == dst_version) {
                     *out_index = i;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
 
             /* We didn't find the delta. */
-            return ncm::ResultDeltaNotFound();
+            R_THROW(ncm::ResultDeltaNotFound());
         }
 
         s32 CountContentExceptForMeta(const PatchMetaExtendedDataReader &reader, s32 delta_index) {
@@ -219,7 +219,7 @@ namespace ams::ncm {
         /* Assert that we copied the right number of infos. */
         AMS_ASSERT(count == fragment_count);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PackagedContentMetaReader::CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) const {
@@ -233,7 +233,7 @@ namespace ams::ncm {
 
         /* Recalculate. */
         *out_size = this->CalculateConvertFragmentOnlyInstallContentMetaSize(fragment_count);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PackagedContentMetaReader::ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta) {

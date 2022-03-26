@@ -48,7 +48,7 @@ namespace ams::sprofile::srv {
 
         /* Return the object. */
         *out = std::move(obj);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ProfileUpdateObserverManager::CloseObserver(ProfileUpdateObserverImpl *observer) {

@@ -34,7 +34,7 @@ namespace ams::i2c::driver {
 
             /* We succeeded. */
             session_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -50,7 +50,7 @@ namespace ams::i2c::driver {
         /* Open the session. */
         R_TRY(OpenSessionImpl(out, device));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(I2cSession &session) {

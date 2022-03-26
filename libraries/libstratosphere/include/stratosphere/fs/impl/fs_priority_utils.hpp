@@ -44,10 +44,10 @@ namespace ams::fs::impl {
             case PriorityRaw_Realtime:   *out = TlsIoPriority_Realtime;   break;
             case PriorityRaw_Low:        *out = TlsIoPriority_Low;        break;
             case PriorityRaw_Background: *out = TlsIoPriority_Background; break;
-            default: return fs::ResultInvalidArgument();
+            default: R_THROW(fs::ResultInvalidArgument());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     constexpr inline Result ConvertTlsIoPriorityToFsPriority(PriorityRaw *out, u8 tls_io) {
@@ -58,10 +58,10 @@ namespace ams::fs::impl {
             case TlsIoPriority_Realtime:   *out = PriorityRaw_Realtime;   break;
             case TlsIoPriority_Low:        *out = PriorityRaw_Low;        break;
             case TlsIoPriority_Background: *out = PriorityRaw_Background; break;
-            default: return fs::ResultInvalidArgument();
+            default: R_THROW(fs::ResultInvalidArgument());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     inline u8 GetTlsIoPriority(os::ThreadType *thread) {

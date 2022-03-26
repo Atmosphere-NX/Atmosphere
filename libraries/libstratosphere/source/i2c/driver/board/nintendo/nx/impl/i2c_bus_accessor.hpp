@@ -107,7 +107,7 @@ namespace ams::i2c::driver::board::nintendo::nx::impl {
                     return result;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             virtual void InitializeDriver() override;

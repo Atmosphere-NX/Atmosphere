@@ -39,7 +39,7 @@ namespace ams::htcs::impl::rpc {
         std::memcpy(m_handles + m_read_handle_count, write_handles.data(), write_handles.size_bytes());
         std::memcpy(m_handles + m_read_handle_count + m_write_handle_count, exception_handles.data(), exception_handles.size_bytes());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SelectTask::Complete(htcs::SocketError err, s32 read_handle_count, s32 write_handle_count, s32 exception_handle_count, const void *body, s64 body_size) {
@@ -102,7 +102,7 @@ namespace ams::htcs::impl::rpc {
             std::copy(exception_start, exception_end, exception_handles.begin());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SelectTask::ProcessResponse(const char *data, size_t size) {
@@ -114,7 +114,7 @@ namespace ams::htcs::impl::rpc {
         /* Complete the task. */
         this->Complete(static_cast<htcs::SocketError>(packet->params[0]), packet->params[1], packet->params[2], packet->params[3], packet->data, size - sizeof(*packet));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SelectTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -149,7 +149,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet) + body_size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

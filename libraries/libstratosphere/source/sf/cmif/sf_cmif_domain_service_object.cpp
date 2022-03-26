@@ -55,7 +55,7 @@ namespace ams::sf::cmif {
             case CmifDomainRequestType_Close:
                 /* TODO: N doesn't error check here. Should we? */
                 domain->UnregisterObject(target_object_id);
-                return ResultSuccess();
+                R_SUCCEED();
             default:
                 return sf::cmif::ResultInvalidInHeader();
         }
@@ -103,7 +103,7 @@ namespace ams::sf::cmif {
 
                 /* If the object is in the domain, close our copy of it. Mitm objects are required to close their associated domain id, so this shouldn't cause desynch. */
                 domain->UnregisterObject(target_object_id);
-                return ResultSuccess();
+                R_SUCCEED();
             }
             default:
                 return sf::cmif::ResultInvalidInHeader();
@@ -125,7 +125,7 @@ namespace ams::sf::cmif {
         for (size_t i = 0; i < this->GetInObjectCount(); i++) {
             in_objects[i] = m_domain->GetObject(m_in_object_ids[i]);
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     HipcRequest DomainServiceObjectProcessor::PrepareForReply(const cmif::ServiceDispatchContext &ctx, PointerAndSize &out_raw_data, const ServerMessageRuntimeMetadata runtime_metadata) {

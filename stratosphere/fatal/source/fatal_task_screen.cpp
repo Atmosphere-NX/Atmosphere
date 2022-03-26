@@ -125,7 +125,7 @@ namespace ams::fatal::srv {
             /* Set alpha to 1.0f. */
             R_TRY(viSetDisplayAlpha(std::addressof(temp_display), 1.0f));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ShowFatalTask::SetupDisplayExternal() {
@@ -141,7 +141,7 @@ namespace ams::fatal::srv {
             /* Set alpha to 1.0f. */
             R_TRY(viSetDisplayAlpha(std::addressof(temp_display), 1.0f));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ShowFatalTask::PrepareScreenForDrawing() {
@@ -196,7 +196,7 @@ namespace ams::fatal::srv {
                 R_TRY(this->InitializeNativeWindow());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void ShowFatalTask::PreRenderFrameBuffer() {
@@ -468,7 +468,7 @@ namespace ams::fatal::srv {
                 R_TRY(nwindowConfigureBuffer(std::addressof(m_win), 0, std::addressof(grbuf)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void ShowFatalTask::DisplayPreRenderedFrame() {
@@ -488,7 +488,7 @@ namespace ams::fatal::srv {
             /* Display the pre-rendered frame. */
             this->DisplayPreRenderedFrame();
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ShowFatalTask::Run() {
@@ -506,7 +506,7 @@ namespace ams::fatal::srv {
 
         Result BacklightControlTask::Run() {
             TurnOnBacklight();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

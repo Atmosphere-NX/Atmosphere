@@ -50,7 +50,7 @@ namespace ams::lr {
 
         /* Copy the output interface. */
         *out = *resolver;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LocationResolverManagerImpl::OpenRegisteredLocationResolver(sf::Out<sf::SharedPointer<IRegisteredLocationResolver>> out) {
@@ -63,7 +63,7 @@ namespace ams::lr {
 
         /* Copy the output interface. */
         *out = m_registered_location_resolver;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LocationResolverManagerImpl::RefreshLocationResolver(ncm::StorageId storage_id) {
@@ -78,7 +78,7 @@ namespace ams::lr {
             (*resolver)->Refresh();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LocationResolverManagerImpl::OpenAddOnContentLocationResolver(sf::Out<sf::SharedPointer<IAddOnContentLocationResolver>> out) {
@@ -91,7 +91,7 @@ namespace ams::lr {
 
         /* Copy the output interface. */
         *out = m_add_on_content_location_resolver;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -46,7 +46,7 @@ namespace ams::pwm::server {
 
         /* We succeeded. */
         *out = std::move(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

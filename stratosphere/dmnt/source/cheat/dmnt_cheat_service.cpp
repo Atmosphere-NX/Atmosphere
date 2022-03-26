@@ -37,7 +37,7 @@ namespace ams::dmnt::cheat {
 
     Result CheatService::ForceOpenCheatProcess() {
         R_UNLESS(R_SUCCEEDED(dmnt::cheat::impl::ForceOpenCheatProcess()), dmnt::cheat::ResultCheatNotAttached());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CheatService::PauseCheatProcess() {

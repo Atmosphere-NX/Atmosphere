@@ -49,14 +49,14 @@ namespace ams::fssystem {
         std::unique_ptr<IDecryptor> decryptor = std::make_unique<ExternalDecryptor>(func, key_index, key_generation);
         R_UNLESS(decryptor != nullptr, fs::ResultAllocationMemoryFailedInAesCtrCounterExtendedStorageA());
         *out = std::move(decryptor);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AesCtrCounterExtendedStorage::CreateSoftwareDecryptor(std::unique_ptr<IDecryptor> *out) {
         std::unique_ptr<IDecryptor> decryptor = std::make_unique<SoftwareDecryptor>();
         R_UNLESS(decryptor != nullptr, fs::ResultAllocationMemoryFailedInAesCtrCounterExtendedStorageA());
         *out = std::move(decryptor);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AesCtrCounterExtendedStorage::Initialize(IAllocator *allocator, const void *key, size_t key_size, u32 secure_value, fs::SubStorage data_storage, fs::SubStorage table_storage) {
@@ -96,7 +96,7 @@ namespace ams::fssystem {
         m_counter_offset = counter_offset;
         m_decryptor      = std::move(decryptor);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void AesCtrCounterExtendedStorage::Finalize() {
@@ -189,7 +189,7 @@ namespace ams::fssystem {
             cur_offset += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AesCtrCounterExtendedStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -205,7 +205,7 @@ namespace ams::fssystem {
                     /* Operate on our data storage. */
                     R_TRY(m_data_storage.OperateRange(fs::OperationId::Invalidate, 0, std::numeric_limits<s64>::max()));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             case fs::OperationId::QueryRange:
                 {
@@ -220,7 +220,7 @@ namespace ams::fssystem {
                     /* Succeed if there's nothing to operate on. */
                     if (size == 0) {
                         reinterpret_cast<fs::QueryRangeInfo *>(dst)->Clear();
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     /* Validate arguments. */
@@ -243,10 +243,10 @@ namespace ams::fssystem {
                     /*  Merge in the new info. */
                     reinterpret_cast<fs::QueryRangeInfo *>(dst)->Merge(new_info);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             default:
-                return fs::ResultUnsupportedOperateRangeForAesCtrCounterExtendedStorage();
+                R_THROW(fs::ResultUnsupportedOperateRangeForAesCtrCounterExtendedStorage());
         }
     }
 

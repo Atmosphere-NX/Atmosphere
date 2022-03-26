@@ -34,13 +34,13 @@ namespace ams::mitm::sysupdater {
                     return result;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T>
             Result GetAndSaveErrorContext(T &async) {
                 R_TRY(this->SaveErrorContextIfFailed(async, async.Get()));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T>
@@ -50,7 +50,7 @@ namespace ams::mitm::sysupdater {
                     return result;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             const err::ErrorContext &GetErrorContextImpl() {
@@ -66,12 +66,12 @@ namespace ams::mitm::sysupdater {
 
             Result Cancel() {
                 this->CancelImpl();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) {
                 *out = {};
-                return ResultSuccess();
+                R_SUCCEED();
             }
         private:
             virtual void CancelImpl() = 0;
@@ -105,7 +105,7 @@ namespace ams::mitm::sysupdater {
 
             virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) override {
                 *out = ErrorContextHolder::GetErrorContextImpl();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Run();

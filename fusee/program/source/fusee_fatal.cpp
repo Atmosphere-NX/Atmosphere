@@ -45,7 +45,7 @@ namespace ams::nxboot {
             /* Write the context to the file. */
             R_TRY(fs::WriteFile(file, 0, ctx, sizeof(*ctx), fs::WriteOption::Flush));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

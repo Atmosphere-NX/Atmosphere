@@ -85,11 +85,11 @@ namespace ams::fs {
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             }
 
             virtual Result SetSize(s64 size) override {
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             }
     };
 
@@ -127,11 +127,11 @@ namespace ams::fs {
 
             virtual Result GetSize(s64 *out) override {
                 *out = m_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result SetSize(s64 size) override {
-                return fs::ResultUnsupportedSetSizeForNotResizableSubStorage();
+                R_THROW(fs::ResultUnsupportedSetSizeForNotResizableSubStorage());
             }
     };
 

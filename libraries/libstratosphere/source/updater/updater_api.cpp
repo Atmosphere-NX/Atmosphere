@@ -54,7 +54,7 @@ namespace ams::updater {
             R_UNLESS(work_buffer_size >= BctSize + EksSize,            updater::ResultTooSmallWorkBuffer());
             R_UNLESS(util::IsAligned(work_buffer, os::MemoryPageSize), updater::ResultNotAlignedWorkBuffer());
             R_UNLESS(util::IsAligned(work_buffer_size, 0x200),         updater::ResultNotAlignedWorkBuffer());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool HasEks(BootImageUpdateType boot_image_update_type) {
@@ -106,7 +106,7 @@ namespace ams::updater {
             /* Read data from save. */
             out->needs_verify_normal = save.GetNeedsVerification(BootModeType::Normal);
             out->needs_verify_safe = save.GetNeedsVerification(BootModeType::Safe);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -192,7 +192,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result VerifyBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -254,7 +254,7 @@ namespace ams::updater {
                 R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UpdateBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -324,7 +324,7 @@ namespace ams::updater {
                 R_TRY(boot0_accessor.Write(GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result UpdateBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -397,7 +397,7 @@ namespace ams::updater {
                 R_TRY(boot1_accessor.Write(GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetVerificationNeeded(BootModeType mode, void *work_buffer, size_t work_buffer_size, bool needed) {
@@ -416,7 +416,7 @@ namespace ams::updater {
             save.SetNeedsVerification(mode, needed);
             R_TRY(save.Save());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateBctFileHash(Boot0Accessor &accessor, Boot0Partition which, const void *stored_hash, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -459,7 +459,7 @@ namespace ams::updater {
 
         Result CompareHash(const void *lhs, const void *rhs, size_t size) {
             R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), updater::ResultNeedsRepairBootImages());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -511,14 +511,14 @@ namespace ams::updater {
 
                 if (attr & ncm::ContentMetaAttribute_IncludesExFatDriver) {
                     out_data_id->value = keys[i].id;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
 
         /* If there's only one entry or no exfat entries, return that entry. */
         out_data_id->value = keys[0].id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MarkVerifyingRequired(BootModeType mode, void *work_buffer, size_t work_buffer_size) {
@@ -553,7 +553,7 @@ namespace ams::updater {
 
         /* If we don't need to verify anything, we're done. */
         if (!verification_state.needs_verify_normal && !verification_state.needs_verify_safe) {
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Get a session to ncm. */
@@ -573,7 +573,7 @@ namespace ams::updater {
             } R_END_TRY_CATCH;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

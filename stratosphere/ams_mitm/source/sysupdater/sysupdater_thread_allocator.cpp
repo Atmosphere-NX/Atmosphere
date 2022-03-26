@@ -31,11 +31,11 @@ namespace ams::mitm::sysupdater {
                     .stack_size = m_stack_size,
                 };
                 m_bitmap |= mask;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
-        return ns::ResultOutOfMaxRunningTask();
+        R_THROW(ns::ResultOutOfMaxRunningTask());
     }
 
     void ThreadAllocator::Free(const ThreadInfo &info) {

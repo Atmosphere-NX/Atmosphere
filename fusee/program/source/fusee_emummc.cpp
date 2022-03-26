@@ -37,7 +37,7 @@ namespace ams::nxboot {
                 }
 
                 virtual Result Flush() override {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result GetSize(s64 *out) override {
@@ -45,15 +45,15 @@ namespace ams::nxboot {
                     R_TRY(GetSdCardMemoryCapacity(std::addressof(num_sectors)));
 
                     *out = static_cast<s64>(num_sectors) * static_cast<s64>(sdmmc::SectorSize);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result SetSize(s64 size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
         };
 
@@ -71,7 +71,7 @@ namespace ams::nxboot {
                 }
 
                 virtual Result Flush() override {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result GetSize(s64 *out) override {
@@ -79,15 +79,15 @@ namespace ams::nxboot {
                     R_TRY(GetMmcMemoryCapacity(std::addressof(num_sectors), Partition));
 
                     *out = num_sectors * sdmmc::SectorSize;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result SetSize(s64 size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
         };
 
@@ -153,23 +153,23 @@ namespace ams::nxboot {
                         subofs = 0;
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 virtual Result Flush() override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result GetSize(s64 *out) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result Write(s64 offset, const void *buffer, size_t size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
 
                 virtual Result SetSize(s64 size) override {
-                    return fs::ResultUnsupportedOperation();
+                    R_THROW(fs::ResultUnsupportedOperation());
                 }
         };
 

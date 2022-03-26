@@ -89,26 +89,26 @@ namespace ams::ncm {
             if (cur_flags != BuiltInSystemSaveDataFlags) {
                 R_TRY(fs::SetSaveDataFlags(BuiltInSystemSaveDataId, fs::SaveDataSpaceId::System, BuiltInSystemSaveDataFlags));
             }
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE Result GetContentStorageNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
-                case StorageId::GameCard:       return ncm::ResultGameCardContentStorageNotActive();
-                case StorageId::BuiltInSystem:  return ncm::ResultBuiltInSystemContentStorageNotActive();
-                case StorageId::BuiltInUser:    return ncm::ResultBuiltInUserContentStorageNotActive();
-                case StorageId::SdCard:         return ncm::ResultSdCardContentStorageNotActive();
-                default:                        return ncm::ResultUnknownContentStorageNotActive();
+                case StorageId::GameCard:       R_THROW(ncm::ResultGameCardContentStorageNotActive());
+                case StorageId::BuiltInSystem:  R_THROW(ncm::ResultBuiltInSystemContentStorageNotActive());
+                case StorageId::BuiltInUser:    R_THROW(ncm::ResultBuiltInUserContentStorageNotActive());
+                case StorageId::SdCard:         R_THROW(ncm::ResultSdCardContentStorageNotActive());
+                default:                        R_THROW(ncm::ResultUnknownContentStorageNotActive());
             }
         }
 
         ALWAYS_INLINE Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
-                case StorageId::GameCard:       return ncm::ResultGameCardContentMetaDatabaseNotActive();
-                case StorageId::BuiltInSystem:  return ncm::ResultBuiltInSystemContentMetaDatabaseNotActive();
-                case StorageId::BuiltInUser:    return ncm::ResultBuiltInUserContentMetaDatabaseNotActive();
-                case StorageId::SdCard:         return ncm::ResultSdCardContentMetaDatabaseNotActive();
-                default:                        return ncm::ResultUnknownContentMetaDatabaseNotActive();
+                case StorageId::GameCard:       R_THROW(ncm::ResultGameCardContentMetaDatabaseNotActive());
+                case StorageId::BuiltInSystem:  R_THROW(ncm::ResultBuiltInSystemContentMetaDatabaseNotActive());
+                case StorageId::BuiltInUser:    R_THROW(ncm::ResultBuiltInUserContentMetaDatabaseNotActive());
+                case StorageId::SdCard:         R_THROW(ncm::ResultSdCardContentMetaDatabaseNotActive());
+                default:                        R_THROW(ncm::ResultUnknownContentMetaDatabaseNotActive());
             }
         }
 
@@ -163,7 +163,7 @@ namespace ams::ncm {
             }
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::GetContentStorageRoot(ContentStorageRoot **out, StorageId id) {
@@ -174,11 +174,11 @@ namespace ams::ncm {
         for (auto &root : m_content_storage_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
-        return ncm::ResultUnknownStorage();
+        R_THROW(ncm::ResultUnknownStorage());
     }
 
     Result ContentManagerImpl::GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id) {
@@ -189,11 +189,11 @@ namespace ams::ncm {
         for (auto &root : m_content_meta_database_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
-        return ncm::ResultUnknownStorage();
+        R_THROW(ncm::ResultUnknownStorage());
     }
 
 
@@ -206,7 +206,7 @@ namespace ams::ncm {
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         util::SNPrintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InitializeGameCardContentStorageRoot(ContentStorageRoot *out) {
@@ -217,7 +217,7 @@ namespace ams::ncm {
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         util::SNPrintf(out->path, sizeof(out->path), "%s:", out->mount_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas, ContentMetaMemoryResource *memory_resource) {
@@ -233,7 +233,7 @@ namespace ams::ncm {
         out->mount_name[0] = '#';
         util::SNPrintf(out->path, sizeof(out->path), "%s:/meta", out->mount_name);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas, ContentMetaMemoryResource *memory_resource) {
@@ -243,7 +243,7 @@ namespace ams::ncm {
         out->content_meta_database = nullptr;
         out->kvs                   = util::nullopt;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path) {
@@ -312,7 +312,7 @@ namespace ams::ncm {
             R_TRY(this->ImportContentMetaDatabaseImpl(StorageId::BuiltInSystem, bis_mount_name.str, "cnmtdb.arc"));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::Initialize(const ContentManagerConfig &config) {
@@ -380,7 +380,7 @@ namespace ams::ncm {
         R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(std::addressof(m_content_meta_database_roots[3]), GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
 
         m_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::CreateContentStorage(StorageId storage_id) {
@@ -463,7 +463,7 @@ namespace ams::ncm {
         R_TRY(fs::HasDirectory(std::addressof(has_dir), root->path));
         R_UNLESS(has_dir, ncm::ResultInvalidContentMetaDatabase());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id) {
@@ -484,7 +484,7 @@ namespace ams::ncm {
         }
 
         *out = root->content_storage;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
@@ -505,7 +505,7 @@ namespace ams::ncm {
         }
 
         *out = root->content_meta_database;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::CloseContentStorageForcibly(StorageId storage_id) {
@@ -583,7 +583,7 @@ namespace ams::ncm {
 
         /* Prevent unmounting. */
         mount_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InactivateContentStorage(StorageId storage_id) {
@@ -606,7 +606,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::ActivateContentMetaDatabase(StorageId storage_id) {
@@ -644,7 +644,7 @@ namespace ams::ncm {
             mount_guard.Cancel();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InactivateContentMetaDatabase(StorageId storage_id) {
@@ -667,12 +667,12 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::InvalidateRightsIdCache() {
         m_rights_id_cache.Invalidate();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentManagerImpl::GetMemoryReport(sf::Out<MemoryReport> out) {
@@ -704,7 +704,7 @@ namespace ams::ncm {
 
         /* Output the report. */
         out.SetValue(report);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

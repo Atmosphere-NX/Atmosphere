@@ -67,7 +67,7 @@ namespace ams::fssystem {
                         bool found = m_block_cache.FindValueAndUpdateMru(std::addressof(cached_buffer), offset / m_block_size);
                         if (found) {
                             std::memcpy(buffer, cached_buffer, size);
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
 
@@ -82,7 +82,7 @@ namespace ams::fssystem {
                         m_block_cache.PushMruNode(std::move(lru), offset / m_block_size);
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } else {
                     return m_base_storage->Read(offset, buffer, size);
                 }
@@ -98,7 +98,7 @@ namespace ams::fssystem {
                         m_block_cache.PushMruNode(std::move(lru), -1);
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } else {
                     /* Validate preconditions. */
                     AMS_ASSERT(util::IsAligned(offset, m_block_size));
@@ -114,17 +114,17 @@ namespace ams::fssystem {
             }
 
             virtual Result Flush() override {
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override {
                 AMS_UNUSED(offset, buffer, size);
-                return fs::ResultUnsupportedWriteForReadOnlyBlockCacheStorage();
+                R_THROW(fs::ResultUnsupportedWriteForReadOnlyBlockCacheStorage());
             }
 
             virtual Result SetSize(s64 size) override {
                 AMS_UNUSED(size);
-                return fs::ResultUnsupportedSetSizeForReadOnlyBlockCacheStorage();
+                R_THROW(fs::ResultUnsupportedSetSizeForReadOnlyBlockCacheStorage());
             }
     };
 

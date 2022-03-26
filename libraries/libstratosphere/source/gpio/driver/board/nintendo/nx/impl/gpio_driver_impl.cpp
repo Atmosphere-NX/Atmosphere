@@ -114,7 +114,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         /* Read the pad address to make sure our configuration takes. */
         reg::Read(pad_address);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DriverImpl::FinalizePad(Pad *pad) {
@@ -143,7 +143,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
             *out = Direction_Input;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
 
     }
 
@@ -162,7 +162,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         /* Read the pad address to make sure our configuration takes. */
         reg::Read(pad_address);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DriverImpl::GetValue(GpioValue *out, Pad *pad) const {
@@ -183,7 +183,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
             *out = GpioValue_Low;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DriverImpl::SetValue(Pad *pad, GpioValue value) {
@@ -201,7 +201,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         /* Read the pad address to make sure our configuration takes. */
         reg::Read(pad_address);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DriverImpl::GetInterruptMode(InterruptMode *out, Pad *pad) const {
@@ -225,7 +225,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DriverImpl::SetInterruptMode(Pad *pad, InterruptMode mode) {
@@ -251,7 +251,7 @@ namespace ams::gpio::driver::board::nintendo::nx::impl {
         /* Read the pad address to make sure our configuration takes. */
         reg::Read(pad_address);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DriverImpl::SetInterruptEnabled(Pad *pad, bool en) {

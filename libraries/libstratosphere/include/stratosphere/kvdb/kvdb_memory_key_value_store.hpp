@@ -125,7 +125,7 @@ namespace ams::kvdb {
                         R_UNLESS(m_entries != nullptr, kvdb::ResultAllocationFailed());
                         m_capacity = capacity;
                         m_memory_resource = mr;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     Result Set(const Key &key, const void *value, size_t value_size) {
@@ -148,14 +148,14 @@ namespace ams::kvdb {
 
                         /* Save the new Entry in the map. */
                         *it = Entry(key, new_value, value_size);
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     Result AddUnsafe(const Key &key, void *value, size_t value_size) {
                         R_UNLESS(m_count < m_capacity, kvdb::ResultOutOfKeyResource());
 
                         m_entries[m_count++] = Entry(key, value, value_size);
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     Result Remove(const Key &key) {
@@ -167,7 +167,7 @@ namespace ams::kvdb {
                         m_memory_resource->Deallocate(it->GetValuePointer(), it->GetValueSize());
                         std::memmove(it, it + 1, sizeof(*it) * (this->end() - (it + 1)));
                         m_count--;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     Entry *begin() {
@@ -276,7 +276,7 @@ namespace ams::kvdb {
                 R_TRY(m_index.Initialize(capacity, mr));
                 m_memory_resource = mr;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(size_t capacity, MemoryResource *mr) {
@@ -288,7 +288,7 @@ namespace ams::kvdb {
                 /* Initialize our index. */
                 R_TRY(m_index.Initialize(capacity, mr));
                 m_memory_resource = mr;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             size_t GetCount() const {
@@ -384,7 +384,7 @@ namespace ams::kvdb {
                 size_t size = std::min(max_out_size, it->GetValueSize());
                 std::memcpy(out_value, it->GetValuePointer(), size);
                 *out_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename Value = void>
@@ -394,7 +394,7 @@ namespace ams::kvdb {
                 R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValuePointer<Value>();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename Value = void>
@@ -404,7 +404,7 @@ namespace ams::kvdb {
                 R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValuePointer<Value>();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename Value>
@@ -414,7 +414,7 @@ namespace ams::kvdb {
                 R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_value = it->template GetValue<Value>();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetValueSize(size_t *out_size, const Key &key) const {
@@ -423,7 +423,7 @@ namespace ams::kvdb {
                 R_UNLESS(it != this->end(), kvdb::ResultKeyNotFound());
 
                 *out_size = it->GetValueSize();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Remove(const Key &key) {
@@ -485,7 +485,7 @@ namespace ams::kvdb {
                     R_TRY(fs::WriteFile(file, 0, buf, size, fs::WriteOption::Flush));
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Commit(const AutoBuffer &buffer, bool destructive) {
@@ -503,7 +503,7 @@ namespace ams::kvdb {
                     R_TRY(fs::RenameFile(m_temp_path.Get(), m_path.Get()));
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             size_t GetArchiveSize() const {
@@ -530,7 +530,7 @@ namespace ams::kvdb {
                 R_TRY(dst->Initialize(static_cast<size_t>(archive_size)));
                 R_TRY(fs::ReadFile(file, 0, dst->Get(), dst->GetSize()));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

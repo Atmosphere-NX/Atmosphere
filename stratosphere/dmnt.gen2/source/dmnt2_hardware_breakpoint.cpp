@@ -116,7 +116,7 @@ namespace ams::dmnt {
 
         /* Set as in-use. */
         m_in_use = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     HardwareBreakPointManager::HardwareBreakPointManager(DebugProcess *debug_process) : BreakPointManager(debug_process) {
@@ -147,7 +147,7 @@ namespace ams::dmnt {
         };
         R_UNLESS(SendMultiCoreRequest(request), dmnt::ResultUnknown());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HardwareBreakPointManager::SetContextBreakPoint(svc::HardwareBreakPointRegisterName ctx, DebugProcess *debug_process) {

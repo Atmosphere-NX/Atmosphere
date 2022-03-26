@@ -127,7 +127,7 @@ namespace ams::settings::fwdbg {
             R_UNLESS(len > 0,                          settings::ResultEmptySettingsName());
             R_UNLESS(len <= SettingsNameLengthMax,     settings::ResultTooLongSettingsName());
             R_UNLESS(IsValidSettingsFormat(name, len), settings::ResultInvalidFormatSettingsName());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateSettingsItemKey(const char *key) {
@@ -136,7 +136,7 @@ namespace ams::settings::fwdbg {
             R_UNLESS(len > 0,                         settings::ResultEmptySettingsItemKey());
             R_UNLESS(len <= SettingsNameLengthMax,    settings::ResultTooLongSettingsItemKey());
             R_UNLESS(IsValidSettingsFormat(key, len), settings::ResultInvalidFormatSettingsItemKey());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result AllocateValue(void **out, size_t size) {
@@ -144,35 +144,35 @@ namespace ams::settings::fwdbg {
 
             *out = g_value_storage + g_allocated_value_storage_size;
             g_allocated_value_storage_size += size;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result FindSettingsName(const char **out, const char *name) {
             for (auto &stored : g_names) {
                 if (std::strcmp(stored.value, name) == 0) {
                     *out = stored.value;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } else if (std::strcmp(stored.value, "") == 0) {
                     *out = stored.value;
                     std::strcpy(stored.value, name);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
-            return settings::ResultSettingsItemKeyAllocationFailed();
+            R_THROW(settings::ResultSettingsItemKeyAllocationFailed());
         }
 
         Result FindSettingsItemKey(const char **out, const char *key) {
             for (auto &stored : g_item_keys) {
                 if (std::strcmp(stored.value, key) == 0) {
                     *out = stored.value;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } else if (std::strcmp(stored.value, "") == 0) {
                     std::strcpy(stored.value, key);
                     *out = stored.value;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
-            return settings::ResultSettingsItemKeyAllocationFailed();
+            R_THROW(settings::ResultSettingsItemKeyAllocationFailed());
         }
 
         template<typename T>
@@ -182,7 +182,7 @@ namespace ams::settings::fwdbg {
 
             T value = static_cast<T>(strtoul(value_str, nullptr, 0));
             std::memcpy(out.value, std::addressof(value), sizeof(T));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetEntry(SdKeyValueStoreEntry **out, const char *name, const char *key) {
@@ -200,7 +200,7 @@ namespace ams::settings::fwdbg {
             R_UNLESS(*it == test_entry, settings::ResultSettingsItemNotFound());
 
             *out = std::addressof(*it);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ParseSettingsItemValueImpl(const char *name, const char *key, const char *val_tup) {
@@ -253,7 +253,7 @@ namespace ams::settings::fwdbg {
             } else if (strncasecmp(type, "u64", type_len) == 0) {
                 R_TRY((ParseSettingsItemIntegralValue<u64>(new_value, value_str)));
             } else {
-                return settings::ResultInvalidFormatSettingsItemValue();
+                R_THROW(settings::ResultInvalidFormatSettingsItemValue());
             }
 
             /* Insert the entry. */
@@ -267,7 +267,7 @@ namespace ams::settings::fwdbg {
             }
 
             R_UNLESS(inserted, settings::ResultSettingsItemValueAllocationFailed());
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ParseSettingsItemValue(const char *name, const char *key, const char *value) {
@@ -303,7 +303,7 @@ namespace ams::settings::fwdbg {
             util::ini::ParseFile(file.get(), std::addressof(parse_result), SystemSettingsIniHandler);
             R_TRY(parse_result);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void LoadDefaultCustomSettings() {
@@ -435,7 +435,7 @@ namespace ams::settings::fwdbg {
         R_TRY(GetEntry(std::addressof(entry), name, key));
 
         *out_size = entry->value_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetSdCardKeyValueStoreSettingsItemValue(size_t *out_size, void *dst, size_t dst_size, const char *name, const char *key) {
@@ -449,7 +449,7 @@ namespace ams::settings::fwdbg {
             std::memcpy(dst, entry->value, size);
         }
         *out_size = size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

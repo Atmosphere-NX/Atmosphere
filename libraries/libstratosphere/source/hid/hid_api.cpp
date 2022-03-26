@@ -59,7 +59,7 @@ namespace ams::hid {
                 g_initialized_hid = true;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         u64 ReadHidNpad(HidNpadIdType id) {
@@ -86,7 +86,7 @@ namespace ams::hid {
             *out |= ReadHidNpad(static_cast<HidNpadIdType>(controller));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 

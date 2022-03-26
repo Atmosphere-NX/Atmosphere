@@ -22,7 +22,7 @@ namespace ams::ncm {
         m_package_root.Assign(package_root_path);
         m_buffer = buffer;
         m_buffer_size = buffer_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PackageInstallTaskBase::OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) {
@@ -56,7 +56,7 @@ namespace ams::ncm {
             R_TRY(this->WritePlaceHolderBuffer(content_info, m_buffer, size_read));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PackageInstallTaskBase::InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) {
@@ -104,7 +104,7 @@ namespace ams::ncm {
         /* TODO: es::ImportTicket() */
         /* TODO: How should es be handled without undesired effects? */
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PackageInstallTaskBase::CreateContentPath(PackagePath *out_path, ContentId content_id) {

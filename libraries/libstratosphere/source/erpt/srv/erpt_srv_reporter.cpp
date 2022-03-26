@@ -96,7 +96,7 @@ namespace ams::erpt::srv {
 
             *out_total_size = total_size;
             *out_size       = size;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void SubmitErrorContext(ContextRecord *record, Result result) {
@@ -238,7 +238,7 @@ namespace ams::erpt::srv {
             });
             R_UNLESS(found_error_code, erpt::ResultRequiredFieldMissing());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SubmitReportDefaults(const ContextEntry *ctx) {
@@ -270,7 +270,7 @@ namespace ams::erpt::srv {
 
             R_TRY(Context::SubmitContextRecord(std::move(record)));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void SaveSyslogReportIfRequired(const ContextEntry *ctx, const ReportId &report_id) {
@@ -342,7 +342,7 @@ namespace ams::erpt::srv {
             for (u32 i = 0; i < num_attachments; i++) {
                 R_TRY(JournalForAttachments::SetOwner(attachments[i], report_id));
             }
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateReportFile(const ReportId &report_id, ReportType type, const ReportMetaData *meta, u32 num_attachments, const time::PosixTime &timestamp_user, const time::PosixTime &timestamp_network, bool redirect_new_reports) {
@@ -393,24 +393,24 @@ namespace ams::erpt::srv {
             R_TRY(Journal::Commit());
 
             report_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
 
     Result Reporter::RegisterRunningApplet(ncm::ProgramId program_id) {
         g_applet_active_time_info_list.Register(program_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Reporter::UnregisterRunningApplet(ncm::ProgramId program_id) {
         g_applet_active_time_info_list.Unregister(program_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Reporter::UpdateAppletSuspendedDuration(ncm::ProgramId program_id, TimeSpan duration) {
         g_applet_active_time_info_list.UpdateSuspendedDuration(program_id, duration);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Reporter::CreateReport(ReportType type, Result ctx_result, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments) {
@@ -465,7 +465,7 @@ namespace ams::erpt::srv {
         /* Create the report file. */
         R_TRY(CreateReportFile(report_id, type, meta, num_attachments, timestamp_user, timestamp_network, s_redirect_new_reports));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Reporter::SubmitReportContexts(const ReportId &report_id, ReportType type, Result ctx_result, std::unique_ptr<ContextRecord> record, const time::PosixTime &timestamp_user, const time::PosixTime &timestamp_network) {
@@ -530,7 +530,7 @@ namespace ams::erpt::srv {
         SubmitResourceLimitContexts();
         #endif
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

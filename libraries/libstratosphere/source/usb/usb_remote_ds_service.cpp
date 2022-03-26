@@ -38,7 +38,7 @@ namespace ams::usb {
             );
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsService::RegisterInterface(sf::Out<sf::SharedPointer<usb::ds::IDsInterface>> out, u8 bInterfaceNumber) {
@@ -52,7 +52,7 @@ namespace ams::usb {
 
         *out = ObjectFactory::CreateSharedEmplaced<ds::IDsInterface, RemoteDsInterface>(m_allocator, srv, m_allocator);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsService::GetStateChangeEvent(sf::OutCopyHandle out) {
@@ -65,7 +65,7 @@ namespace ams::usb {
         )));
 
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsService::GetState(sf::Out<usb::UsbState> out) {

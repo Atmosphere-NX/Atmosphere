@@ -32,7 +32,7 @@ namespace ams::gpio::driver::impl {
 
         /* We opened successfully. */
         pad_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PadSessionImpl::Close() {
@@ -82,7 +82,7 @@ namespace ams::gpio::driver::impl {
         /* We succeeded. */
         hl_guard.Cancel();
         ev_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PadSessionImpl::UnbindInterrupt() {
@@ -115,7 +115,7 @@ namespace ams::gpio::driver::impl {
 
     Result PadSessionImpl::GetInterruptEnabled(bool *out) const {
         *out = this->GetDevice().SafeCastTo<Pad>().IsInterruptEnabled();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PadSessionImpl::SetInterruptEnabled(bool en) {
@@ -133,7 +133,7 @@ namespace ams::gpio::driver::impl {
         R_TRY(this->UpdateDriverInterruptEnabled());
 
         pad_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PadSessionImpl::SignalInterruptBoundEvent() {

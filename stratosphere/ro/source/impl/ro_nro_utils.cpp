@@ -74,7 +74,7 @@ namespace ams::ro::impl {
         bss_mcm.Cancel();
 
         *out_base_address = base_address;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetNroPerms(os::NativeHandle process_handle, u64 base_address, u64 rx_size, u64 ro_size, u64 rw_size) {
@@ -86,7 +86,7 @@ namespace ams::ro::impl {
         R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + ro_offset, ro_size, svc::MemoryPermission_Read));
         R_TRY(svc::SetProcessMemoryPermission(process_handle, base_address + rw_offset, rw_size, svc::MemoryPermission_ReadWrite));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnmapNro(os::NativeHandle process_handle, u64 base_address, u64 nro_heap_address, u64 bss_heap_address, u64 bss_heap_size, u64 code_size, u64 rw_size) {
@@ -103,7 +103,7 @@ namespace ams::ro::impl {
         /* Finally, unmap .text + .rodata. */
         R_TRY(svc::UnmapProcessCodeMemory(process_handle, base_address, nro_heap_address, code_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

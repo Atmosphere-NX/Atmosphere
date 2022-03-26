@@ -147,7 +147,7 @@ namespace ams::htc::server::rpc {
 
                 /* We succeeded. */
                 task_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
@@ -165,7 +165,7 @@ namespace ams::htc::server::rpc {
                 /* Get the task's result. */
                 R_TRY(task->GetResult(std::forward<Args>(args)...));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
@@ -190,11 +190,11 @@ namespace ams::htc::server::rpc {
                     switch (task->GetTaskCancelReason()) {
                         case RpcTaskCancelReason::BySocket:
                             task_guard.Cancel();
-                            return htc::ResultTaskCancelled();
+                            R_THROW(htc::ResultTaskCancelled());
                         case RpcTaskCancelReason::ClientFinalized:
-                            return htc::ResultCancelled();
+                            R_THROW(htc::ResultCancelled());
                         case RpcTaskCancelReason::QueueNotAvailable:
-                            return htc::ResultTaskQueueNotAvailable();
+                            R_THROW(htc::ResultTaskQueueNotAvailable());
                         AMS_UNREACHABLE_DEFAULT_CASE();
                     }
                 }
@@ -202,7 +202,7 @@ namespace ams::htc::server::rpc {
                 /* Get the task's result. */
                 R_TRY(task->GetResult(std::forward<Args>(args)...));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T> requires IsRpcTask<T>
@@ -217,7 +217,7 @@ namespace ams::htc::server::rpc {
                 /* Check the task handle. */
                 R_UNLESS(task->GetHandle() == handle, htc::ResultInvalidTaskId());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T> requires IsRpcTask<T>
@@ -235,7 +235,7 @@ namespace ams::htc::server::rpc {
                 /* Add notification to our queue. */
                 m_task_queue.Add(task_id, PacketCategory::Notification);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T> requires IsRpcTask<T>
@@ -291,9 +291,9 @@ namespace ams::htc::server::rpc {
                 if (task->GetTaskState() == RpcTaskState::Cancelled) {
                     switch (task->GetTaskCancelReason()) {
                         case RpcTaskCancelReason::QueueNotAvailable:
-                            return htc::ResultTaskQueueNotAvailable();
+                            R_THROW(htc::ResultTaskQueueNotAvailable());
                         default:
-                            return htc::ResultTaskCancelled();
+                            R_THROW(htc::ResultTaskCancelled());
                     }
                 }
 
@@ -303,7 +303,7 @@ namespace ams::htc::server::rpc {
                     os::SignalEvent(std::addressof(m_send_buffer_available_events[task_id]));
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename T> requires IsRpcTask<T>
@@ -323,9 +323,9 @@ namespace ams::htc::server::rpc {
                     if (task->GetTaskState() == RpcTaskState::Cancelled) {
                         switch (task->GetTaskCancelReason()) {
                             case RpcTaskCancelReason::QueueNotAvailable:
-                                return htc::ResultTaskQueueNotAvailable();
+                                R_THROW(htc::ResultTaskQueueNotAvailable());
                             default:
-                                return htc::ResultTaskCancelled();
+                                R_THROW(htc::ResultTaskCancelled());
                         }
                     }
 
@@ -349,7 +349,7 @@ namespace ams::htc::server::rpc {
 
                 std::memcpy(buffer, result_buffer, result_size);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

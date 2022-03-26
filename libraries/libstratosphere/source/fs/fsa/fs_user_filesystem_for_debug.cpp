@@ -31,7 +31,7 @@ namespace ams::fs {
 
             R_TRY(accessor->GetFileTimeStampRaw(out, sub_path));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

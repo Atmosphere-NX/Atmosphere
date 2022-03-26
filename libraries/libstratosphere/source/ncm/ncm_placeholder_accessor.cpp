@@ -72,7 +72,7 @@ namespace ams::ncm {
         }
 
         *out = placeholder_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PlaceHolderAccessor::Open(fs::FileHandle *out_handle, PlaceHolderId placeholder_id) {
@@ -176,7 +176,7 @@ namespace ams::ncm {
             R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PlaceHolderAccessor::DeletePlaceHolderFile(PlaceHolderId placeholder_id) {
@@ -189,7 +189,7 @@ namespace ams::ncm {
             R_CONVERT(fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PlaceHolderAccessor::WritePlaceHolderFile(PlaceHolderId placeholder_id, s64 offset, const void *buffer, size_t size) {
@@ -234,7 +234,7 @@ namespace ams::ncm {
             *found_in_cache = false;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PlaceHolderAccessor::InvalidateAll() {

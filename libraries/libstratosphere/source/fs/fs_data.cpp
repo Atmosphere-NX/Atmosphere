@@ -39,7 +39,7 @@ namespace ams::fs::impl {
             R_UNLESS(storage != nullptr, fs::ResultAllocationMemoryFailedInDataA());
 
             *out = std::move(storage);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result MountDataImpl(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_cache, bool use_data_cache, bool use_path_cache) {
@@ -66,7 +66,7 @@ namespace ams::fs::impl {
 
         constexpr size_t MinimumCacheSize = 32;
         *out = std::max(size, MinimumCacheSize);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id) {

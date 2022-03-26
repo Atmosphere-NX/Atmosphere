@@ -74,7 +74,7 @@ namespace ams::pm::info {
 
     Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
         *out = ldr::HasLaunchedBootProgram(program_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

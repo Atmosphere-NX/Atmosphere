@@ -46,14 +46,14 @@ namespace ams::fssystem::buffers {
                 }
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
     template<typename F>
     Result DoContinuouslyUntilBufferIsAllocated(F f, const char *function_name) {
-        R_TRY(DoContinuouslyUntilBufferIsAllocated(f, []() ALWAYS_INLINE_LAMBDA { return ResultSuccess(); }, function_name));
-        return ResultSuccess();
+        R_TRY(DoContinuouslyUntilBufferIsAllocated(f, []() ALWAYS_INLINE_LAMBDA { R_SUCCEED(); }, function_name));
+        R_SUCCEED();
     }
 
     /* ACCURATE_TO_VERSION: Unknown */
@@ -110,10 +110,10 @@ namespace ams::fssystem::buffers {
                 if (buffer.first != 0) {
                     buffer_manager->DeallocateBuffer(buffer.first, buffer.second);
                 }
-                return fs::ResultBufferAllocationFailed();
+                R_THROW(fs::ResultBufferAllocationFailed());
             }
             *out = buffer;
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         if (context == nullptr || !context->IsNeedBlocking()) {
@@ -125,7 +125,7 @@ namespace ams::fssystem::buffers {
         }
 
         AMS_ASSERT(out->first != 0);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

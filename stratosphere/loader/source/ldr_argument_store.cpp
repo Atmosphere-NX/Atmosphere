@@ -56,7 +56,7 @@ namespace ams::ldr {
         entry.argument_size = size;
         std::memcpy(entry.argument, argument, entry.argument_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -106,7 +106,7 @@ namespace ams::fssystem {
                 }
 
                 *out = m_base_storage_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -208,7 +208,7 @@ namespace ams::fssystem {
                 }
 
                 *out = m_base_storage_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -295,7 +295,7 @@ namespace ams::fssystem {
                 }
 
                 *out = m_base_storage_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {

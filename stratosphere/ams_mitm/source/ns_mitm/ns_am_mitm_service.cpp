@@ -29,7 +29,7 @@ namespace ams::mitm::ns {
         bool is_hbl;
         if (R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, application_id)) && is_hbl) {
             nsamResolveApplicationContentPathFwd(m_forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
-            return ResultSuccess();
+            R_SUCCEED();
         }
         return nsamResolveApplicationContentPathFwd(m_forward_service.get(), static_cast<u64>(application_id), static_cast<NcmContentType>(content_type));
     }

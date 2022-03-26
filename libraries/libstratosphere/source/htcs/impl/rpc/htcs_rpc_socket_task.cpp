@@ -29,7 +29,7 @@ namespace ams::htcs::impl::rpc {
     }
 
     Result SocketTask::SetArguments() {
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SocketTask::Complete(htcs::SocketError err, s32 desc) {
@@ -49,7 +49,7 @@ namespace ams::htcs::impl::rpc {
         *out_err  = m_err;
         *out_desc = m_desc;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketTask::ProcessResponse(const char *data, size_t size) {
@@ -64,7 +64,7 @@ namespace ams::htcs::impl::rpc {
         /* Complete the task. */
         this->Complete(static_cast<htcs::SocketError>(packet->params[0]), packet->params[1]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -87,7 +87,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

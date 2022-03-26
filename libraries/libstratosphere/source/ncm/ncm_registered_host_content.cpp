@@ -52,7 +52,7 @@ namespace ams::ncm {
         for (auto &registered_path : m_path_list) {
             if (registered_path.GetContentId() == content_id) {
                 registered_path.SetPath(path);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
@@ -62,7 +62,7 @@ namespace ams::ncm {
 
         /* Insert the path into the list. */
         m_path_list.push_back(*registered_path);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RegisteredHostContent::GetPath(Path *out, const ncm::ContentId &content_id) {
@@ -72,10 +72,10 @@ namespace ams::ncm {
         for (const auto &registered_path : m_path_list) {
             if (registered_path.GetContentId() == content_id) {
                 registered_path.GetPath(out);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
-        return ncm::ResultContentNotFound();
+        R_THROW(ncm::ResultContentNotFound());
     }
 
     void RegisteredHostContent::ClearPaths() {

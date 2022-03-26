@@ -181,7 +181,7 @@ namespace ams::fs {
                 R_UNLESS(file != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 *out_file = std::move(file);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const fs::Path &path, OpenDirectoryMode mode) override final {
@@ -195,7 +195,7 @@ namespace ams::fs {
                 R_UNLESS(dir != nullptr, fs::ResultAllocationMemoryFailedNew());
 
                 *out_dir = std::move(dir);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual Result DoCommit() override final {

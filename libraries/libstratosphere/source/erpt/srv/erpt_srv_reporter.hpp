@@ -47,7 +47,7 @@ namespace ams::erpt::srv {
                 std::memcpy(s_serial_number, sn, sn_len);
                 std::memcpy(s_os_version, os, os_len);
                 std::memcpy(s_private_os_version, os_priv, os_priv_len);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static Result RegisterRunningApplet(ncm::ProgramId program_id);

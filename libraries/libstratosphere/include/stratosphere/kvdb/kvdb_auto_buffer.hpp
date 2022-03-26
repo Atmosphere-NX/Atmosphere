@@ -72,7 +72,7 @@ namespace ams::kvdb {
                 R_UNLESS(m_buffer != nullptr, kvdb::ResultAllocationFailed());
 
                 m_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Initialize(const void *buf, size_t size) {
@@ -82,7 +82,7 @@ namespace ams::kvdb {
                 /* Copy the input data in. */
                 std::memcpy(m_buffer, buf, size);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 }

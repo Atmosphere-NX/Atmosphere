@@ -39,7 +39,7 @@ namespace ams::capsrv::server {
 
         /* We're initialized. */
         g_initialized = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FinalizeForDecoderServer() {

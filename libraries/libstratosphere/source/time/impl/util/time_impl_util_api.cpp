@@ -158,7 +158,7 @@ namespace ams::time::impl::util {
         R_UNLESS(from.source_id == to.source_id, time::ResultNotComparable());
 
         R_UNLESS(ams::util::TrySubtractWithoutOverflow(out, to.value, from.value), time::ResultOverflowed());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool IsValidDate(int year, int month, int day) {

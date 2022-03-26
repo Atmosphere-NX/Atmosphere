@@ -20,7 +20,7 @@ namespace ams::i2c {
 
     Result CommandListFormatter::IsEnqueueAble(size_t sz) const {
         R_UNLESS(m_command_list_length - m_current_index >= sz, i2c::ResultCommandListFull());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CommandListFormatter::EnqueueReceiveCommand(i2c::TransactionOption option, size_t size) {
@@ -44,7 +44,7 @@ namespace ams::i2c {
         header1 = {};
         header1.Set<impl::ReceiveCommandFormat::Size>(size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CommandListFormatter::EnqueueSendCommand(i2c::TransactionOption option, const void *src, size_t size) {
@@ -72,7 +72,7 @@ namespace ams::i2c {
         std::memcpy(cmd_list + m_current_index, src, size);
         m_current_index += size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CommandListFormatter::EnqueueSleepCommand(int us) {
@@ -95,7 +95,7 @@ namespace ams::i2c {
         header1 = {};
         header1.Set<impl::SleepCommandFormat::MicroSeconds>(us);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

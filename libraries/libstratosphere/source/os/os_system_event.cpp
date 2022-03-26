@@ -28,7 +28,7 @@ namespace ams::os {
             InitializeEvent(std::addressof(event->event), false, clear_mode);
             event->state = SystemEventType::State_InitializedAsEvent;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DestroySystemEvent(SystemEventType *event) {

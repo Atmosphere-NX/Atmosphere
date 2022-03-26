@@ -41,7 +41,7 @@ namespace ams::fs::impl {
         R_UNLESS(this->CanAcceptMountName(fs->GetName()), fs::ResultMountNameAlreadyExists());
 
         m_fs_list.push_back(*fs.release());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result MountTable::Find(FileSystemAccessor **out, const char *name) {
@@ -50,11 +50,11 @@ namespace ams::fs::impl {
         for (auto &fs : m_fs_list) {
             if (MatchesName(fs, name)) {
                 *out = std::addressof(fs);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
-        return fs::ResultNotMounted();
+        R_THROW(fs::ResultNotMounted());
     }
 
     void MountTable::Unmount(const char *name) {

@@ -43,7 +43,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         *out_err  = err;
         *out_desc = desc;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::DestroySocket(s32 desc) {
@@ -61,7 +61,7 @@ namespace ams::htcs::impl {
         htcs::SocketError err;
         R_TRY(m_rpc_client->End<rpc::CloseTask>(task_id, std::addressof(err)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address) {
@@ -83,7 +83,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Bind(s32 *out_err, s32 desc, const SockAddrHtcs &address) {
@@ -105,7 +105,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Listen(s32 *out_err, s32 desc, s32 backlog_count) {
@@ -122,7 +122,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Receive(s32 *out_err, s64 *out_size, char *buffer, s64 size, s32 desc, s32 flags) {
@@ -136,7 +136,7 @@ namespace ams::htcs::impl {
         /* Finish the task. */
         R_TRY(this->ReceiveResults(out_err, out_size, buffer, size, task_id, desc));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Send(s32 *out_err, s64 *out_size, const char *buffer, s64 size, s32 desc, s32 flags) {
@@ -157,7 +157,7 @@ namespace ams::htcs::impl {
         /* Finish the task. */
         R_TRY(this->SendResults(out_err, out_size, task_id, desc));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Shutdown(s32 *out_err, s32 desc, s32 how) {
@@ -174,7 +174,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::Fcntl(s32 *out_err, s32 *out_res, s32 desc, s32 command, s32 value) {
@@ -193,7 +193,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         *out_err = err;
         *out_res = res;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::AcceptStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc) {
@@ -205,7 +205,7 @@ namespace ams::htcs::impl {
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc) {
@@ -219,7 +219,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         *out_err  = err;
         *out_desc = ret_desc;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::ReceiveSmallStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
@@ -231,7 +231,7 @@ namespace ams::htcs::impl {
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::ReceiveSmallResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -246,7 +246,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendSmallStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
@@ -258,7 +258,7 @@ namespace ams::htcs::impl {
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendSmallContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -270,7 +270,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_size = buffer_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendSmallResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
@@ -282,7 +282,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendStart(u32 *out_task_id, os::NativeHandle *out_handle, s32 desc, s64 size, s32 flags) {
@@ -294,7 +294,7 @@ namespace ams::htcs::impl {
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -315,7 +315,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_size = buffer_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
@@ -328,7 +328,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::ReceiveStart(u32 *out_task_id, os::NativeHandle *out_handle, s64 size, s32 desc, s32 flags) {
@@ -340,7 +340,7 @@ namespace ams::htcs::impl {
         *out_task_id = task_id;
         *out_handle  = m_rpc_client->DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::ReceiveResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
@@ -357,7 +357,7 @@ namespace ams::htcs::impl {
 
             /* Set output. */
             *out_err = err;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Check the size. */
@@ -380,7 +380,7 @@ namespace ams::htcs::impl {
 
         /* Set output. */
         *out_err = err;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SelectStart(u32 *out_task_id, os::NativeHandle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
@@ -395,7 +395,7 @@ namespace ams::htcs::impl {
         /* Check that the task isn't cancelled. */
         R_UNLESS(!m_rpc_client->IsCancelled<rpc::SelectTask>(task_id), htcs::ResultCancelled());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcsService::SelectEnd(s32 *out_err, bool *out_empty, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
@@ -407,7 +407,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         *out_err   = err;
         *out_empty = empty;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

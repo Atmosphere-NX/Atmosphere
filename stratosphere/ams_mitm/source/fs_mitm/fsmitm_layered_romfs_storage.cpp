@@ -368,7 +368,7 @@ namespace ams::mitm::fs {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LayeredRomfsStorageImpl::GetSize(s64 *out_size) {
@@ -378,11 +378,11 @@ namespace ams::mitm::fs {
         }
 
         *out_size = this->GetSize();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LayeredRomfsStorageImpl::Flush() {
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LayeredRomfsStorageImpl::OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
@@ -397,12 +397,12 @@ namespace ams::mitm::fs {
                         R_UNLESS(dst_size == sizeof(QueryRangeInfo), fs::ResultInvalidSize());
                         reinterpret_cast<QueryRangeInfo *>(dst)->Clear();
                     }
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
                 /* TODO: How to deal with this? */
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             default:
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
         }
     }
 

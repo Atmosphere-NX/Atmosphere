@@ -96,7 +96,7 @@ namespace ams::htc::server::rpc {
                 /* Return the task info. */
                 *out_id       = m_task_ids[index];
                 *out_category = m_task_categories[index];
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

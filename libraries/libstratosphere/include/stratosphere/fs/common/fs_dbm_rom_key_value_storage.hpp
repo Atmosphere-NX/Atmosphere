@@ -67,7 +67,7 @@ namespace ams::fs {
                 for (s64 i = 0; i < count; i++) {
                     R_TRY(bucket.Write(i * sizeof(pos), std::addressof(pos), sizeof(pos)));
                 }
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             KeyValueRomStorageTemplate() : m_bucket_count(), m_bucket_storage(), m_kv_storage(), m_total_entry_size(), m_entry_count() { /* ... */ }
@@ -77,7 +77,7 @@ namespace ams::fs {
                 m_bucket_storage = bucket;
                 m_bucket_count   = count;
                 m_kv_storage     = kv;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void Finalize() {
@@ -95,7 +95,7 @@ namespace ams::fs {
                 s64 kv_size = 0;
                 R_TRY(m_kv_storage.GetSize(std::addressof(kv_size)));
                 *out = kv_size - m_total_entry_size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             constexpr u32 GetEntryCount() const {
@@ -128,7 +128,7 @@ namespace ams::fs {
                 *out = pos;
                 m_entry_count++;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetInternal(Position *out_pos, Value *out_val, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
@@ -142,7 +142,7 @@ namespace ams::fs {
 
                 *out_pos = pos;
                 *out_val = elem.value;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetByPosition(Key *out_key, Value *out_val, Position pos) {
@@ -154,7 +154,7 @@ namespace ams::fs {
 
                 *out_key = elem.key;
                 *out_val = elem.value;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetByPosition(Key *out_key, Value *out_val, void *out_aux, size_t *out_aux_size, Position pos) {
@@ -168,7 +168,7 @@ namespace ams::fs {
 
                 *out_key = elem.key;
                 *out_val = elem.value;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result SetByPosition(Position pos, const Value &value) {
@@ -213,7 +213,7 @@ namespace ams::fs {
 
                     if (key.IsEqual(out_elem->key, aux, aux_size, buf, cur_aux_size)) {
                         *out_pos = cur;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     *out_prev = cur;
@@ -233,7 +233,7 @@ namespace ams::fs {
                 *out = static_cast<Position>(m_total_entry_size);
 
                 m_total_entry_size = util::AlignUp(static_cast<s64>(end_pos), alignof(Position));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result LinkEntry(Position *out, Position pos, u32 hash_key) {
@@ -251,7 +251,7 @@ namespace ams::fs {
                 R_TRY(this->WriteBucket(pos, ind));
 
                 *out = next;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result ReadBucket(Position *out, BucketIndex ind) {
@@ -291,7 +291,7 @@ namespace ams::fs {
                     R_TRY(m_kv_storage.Read(pos + sizeof(*out), out_aux, out->size));
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result WriteKeyValue(const Element *elem, Position pos, const void *aux, size_t aux_size) {
@@ -308,7 +308,7 @@ namespace ams::fs {
                     R_TRY(m_kv_storage.Write(pos + sizeof(*elem), aux, aux_size));
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

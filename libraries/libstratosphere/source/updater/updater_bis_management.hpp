@@ -143,7 +143,7 @@ namespace ams::updater {
                 R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
 
                 *out_size = entry->size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Write(const void *src, size_t size, EnumType which) {

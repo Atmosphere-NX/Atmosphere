@@ -145,7 +145,7 @@ namespace ams::pgl::srv {
             /* Set the globals. */
             g_crashed_process_id = process_id;
             g_ssd_process_id     = ssd_process_id;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool ShouldSnapShotAutoDump() {
@@ -395,7 +395,7 @@ namespace ams::pgl::srv {
 
         /* We succeeded. */
         *out = process_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
@@ -410,7 +410,7 @@ namespace ams::pgl::srv {
 
         /* Return the id. */
         *out = *application_process_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BoostSystemMemoryResourceLimit(u64 size) {

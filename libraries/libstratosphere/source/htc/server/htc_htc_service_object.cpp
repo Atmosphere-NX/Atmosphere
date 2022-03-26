@@ -39,7 +39,7 @@ namespace ams::htc::server {
 
         /* Set the output size. */
         *out_size = static_cast<s32>(var_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcServiceObject::GetEnvironmentVariableLength(sf::Out<s32> out_size, const sf::InBuffer &name) {
@@ -52,19 +52,19 @@ namespace ams::htc::server {
 
         /* Set the output size. */
         *out_size = static_cast<s32>(var_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcServiceObject::GetHostConnectionEvent(sf::OutCopyHandle out) {
         /* Set the output handle. */
         out.SetValue(m_observer.GetConnectEvent()->GetReadableHandle(), false);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcServiceObject::GetHostDisconnectionEvent(sf::OutCopyHandle out) {
         /* Set the output handle. */
         out.SetValue(m_observer.GetDisconnectEvent()->GetReadableHandle(), false);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcServiceObject::GetHostConnectionEventForSystem(sf::OutCopyHandle out) {
@@ -100,7 +100,7 @@ namespace ams::htc::server {
 
         /* Set the output event. */
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcServiceObject::RunOnHostResults(sf::Out<s32> out_result, u32 id) {

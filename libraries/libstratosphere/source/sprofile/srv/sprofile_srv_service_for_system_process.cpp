@@ -28,7 +28,7 @@ namespace ams::sprofile::srv {
 
         /* Return the object. */
         *out = std::move(obj);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ServiceForSystemProcess::OpenProfileUpdateObserver(sf::Out<sf::SharedPointer<::ams::sprofile::srv::IProfileUpdateObserver>> out) {
@@ -45,7 +45,7 @@ namespace ams::sprofile::srv {
 
         /* Return the object. */
         *out = std::move(obj);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

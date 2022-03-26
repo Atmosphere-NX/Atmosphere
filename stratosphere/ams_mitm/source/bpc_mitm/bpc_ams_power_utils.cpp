@@ -148,7 +148,7 @@ namespace ams::mitm::bpc {
         /* NOTE: Preferred reboot type will be parsed from settings later on. */
         g_reboot_type = RebootType::ToPayload;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DetectPreferredRebootFunctionality() {
@@ -163,7 +163,7 @@ namespace ams::mitm::bpc {
             g_reboot_type = RebootType::ToPayload;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

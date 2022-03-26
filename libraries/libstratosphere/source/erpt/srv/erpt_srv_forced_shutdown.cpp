@@ -70,7 +70,7 @@ namespace ams::erpt::srv {
             /* Commit the context. */
             R_TRY(Stream::CommitStream());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result CreateReportForForcedShutdown() {
@@ -88,7 +88,7 @@ namespace ams::erpt::srv {
             /* Create report. */
             R_TRY(Reporter::CreateReport(ReportType_Invisible, ResultSuccess(), std::move(record), nullptr, nullptr, 0));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result LoadForcedShutdownContext() {
@@ -162,7 +162,7 @@ namespace ams::erpt::srv {
                 R_TRY(Context::SubmitContextRecord(std::move(record)));
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         u32 GetForcedShutdownContextCount() {
@@ -215,7 +215,7 @@ namespace ams::erpt::srv {
             /* Commit the context. */
             R_TRY(Stream::CommitStream());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -324,7 +324,7 @@ namespace ams::erpt::srv {
         /* Commit the deletion. */
         R_TRY(Stream::CommitStream());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 

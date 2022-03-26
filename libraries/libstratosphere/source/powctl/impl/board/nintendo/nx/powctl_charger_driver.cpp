@@ -99,7 +99,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(this->IsEventHandlerEnabled(), powctl::ResultNotAvailable());
 
         *out = device->SafeCastTo<ChargerDevice>().GetSystemEvent();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetDeviceInterruptEnabled(IDevice *device, bool enable) {
@@ -109,7 +109,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Set the interrupt enable. */
         device->SafeCastTo<ChargerDevice>().SetInterruptEnabled(enable);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetDeviceErrorStatus(u32 *out, IDevice *device) {
@@ -148,7 +148,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerChargeCurrentState(IDevice *device, ChargeCurrentState state) {
@@ -167,10 +167,10 @@ namespace ams::powctl::impl::board::nintendo::nx {
                 AMS_POWCTL_DRIVER_R_TRY_WITH_RETRY(GetBq24193Driver().SetForce20PercentChargeCurrent(state == ChargeCurrentState_ChargingForce20Percent));
                 break;
             case ChargeCurrentState_Unknown:
-                return powctl::ResultInvalidArgument();
+                R_THROW(powctl::ResultInvalidArgument());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerFastChargeCurrentLimit(int *out_ma, IDevice *device) {
@@ -179,7 +179,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetFastChargeCurrentLimit(out_ma));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerFastChargeCurrentLimit(IDevice *device, int ma) {
@@ -187,7 +187,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetFastChargeCurrentLimit(ma));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerChargeVoltageLimit(int *out_mv, IDevice *device) {
@@ -196,7 +196,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetChargeVoltageLimit(out_mv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerChargeVoltageLimit(IDevice *device, int mv) {
@@ -204,7 +204,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetChargeVoltageLimit(mv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerChargerConfiguration(IDevice *device, ChargerConfiguration cfg) {
@@ -220,7 +220,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         }
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetChargerConfiguration(bq_cfg));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::IsChargerHiZEnabled(bool *out, IDevice *device) {
@@ -229,7 +229,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().IsHiZEnabled(out));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerHiZEnabled(IDevice *device, bool en) {
@@ -237,7 +237,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetHiZEnabled(en));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerInputCurrentLimit(int *out_ma, IDevice *device) {
@@ -246,7 +246,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetInputCurrentLimit(out_ma));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerInputCurrentLimit(IDevice *device, int ma) {
@@ -254,7 +254,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetInputCurrentLimit(ma));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerInputVoltageLimit(IDevice *device, int mv) {
@@ -262,7 +262,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetInputVoltageLimit(mv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerBoostModeCurrentLimit(IDevice *device, int ma) {
@@ -270,7 +270,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetBoostModeCurrentLimit(ma));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerChargerStatus(ChargerStatus *out, IDevice *device) {
@@ -294,7 +294,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::IsChargerWatchdogTimerEnabled(bool *out, IDevice *device) {
@@ -303,7 +303,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         *out = device->SafeCastTo<ChargerDevice>().IsWatchdogTimerEnabled();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerWatchdogTimerEnabled(IDevice *device, bool en) {
@@ -321,7 +321,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         }
 
         charger_device.SetWatchdogTimerEnabled(en);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerWatchdogTimerTimeout(IDevice *device, TimeSpan timeout) {
@@ -329,7 +329,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         device->SafeCastTo<ChargerDevice>().SetWatchdogTimerTimeout(timeout);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::ResetChargerWatchdogTimer(IDevice *device) {
@@ -337,7 +337,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().ResetWatchdogTimer());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerBatteryCompensation(int *out_mo, IDevice *device) {
@@ -346,7 +346,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetBatteryCompensation(out_mo));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerBatteryCompensation(IDevice *device, int mo) {
@@ -354,7 +354,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetBatteryCompensation(mo));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::GetChargerVoltageClamp(int *out_mv, IDevice *device) {
@@ -363,7 +363,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().GetVoltageClamp(out_mv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChargerDriver::SetChargerVoltageClamp(IDevice *device, int mv) {
@@ -371,7 +371,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetBq24193Driver().SetVoltageClamp(mv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

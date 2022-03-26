@@ -29,7 +29,7 @@ namespace ams::os::impl {
 
         *out_write = wh;
         *out_read  = rh;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InterProcessEventHorizonImpl::Close(NativeHandle handle) {

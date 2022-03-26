@@ -51,7 +51,7 @@ namespace ams::os {
         /* Setup the object. */
         SetupTransferMemoryType(tmem, size, handle, true);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void AttachTransferMemory(TransferMemoryType *tmem, size_t size, NativeHandle handle, bool managed) {
@@ -125,7 +125,7 @@ namespace ams::os {
         /* Set output address. */
         *out = mapped_address;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UnmapTransferMemory(TransferMemoryType *tmem) {

@@ -110,10 +110,10 @@ namespace ams::htclow::ctrl {
                 R_UNLESS(header.body_size <= sizeof(HtcctrlPacketBody), htclow::ResultProtocolError());
                 break;
             default:
-                return htclow::ResultProtocolError();
+                R_THROW(htclow::ResultProtocolError());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceivePacket(const HtcctrlPacketHeader &header, const void *body, size_t body_size) {
@@ -151,7 +151,7 @@ namespace ams::htclow::ctrl {
         /* Signal our event. */
         m_event.Signal();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveReadyPacket(const void *body, size_t body_size) {
@@ -174,7 +174,7 @@ namespace ams::htclow::ctrl {
 
         /* Ready ourselves. */
         this->TryReadyInternal();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveSuspendPacket() {
@@ -184,7 +184,7 @@ namespace ams::htclow::ctrl {
             return this->ProcessReceiveUnexpectedPacket();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveResumePacket() {
@@ -194,14 +194,14 @@ namespace ams::htclow::ctrl {
             return this->ProcessReceiveUnexpectedPacket();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveDisconnectPacket() {
         /* Set our state. */
         R_TRY(this->SetState(HtcctrlState_Disconnected));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveBeaconQueryPacket() {
@@ -211,7 +211,7 @@ namespace ams::htclow::ctrl {
         /* Signal our event. */
         m_event.Signal();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::ProcessReceiveUnexpectedPacket() {
@@ -225,7 +225,7 @@ namespace ams::htclow::ctrl {
         m_event.Signal();
 
         /* Return unexpected packet error. */
-        return htclow::ResultHtcctrlReceiveUnexpectedPacket();
+        R_THROW(htclow::ResultHtcctrlReceiveUnexpectedPacket());
     }
 
     void HtcctrlService::ProcessSendConnectPacket() {
@@ -446,7 +446,7 @@ namespace ams::htclow::ctrl {
             R_TRY(this->SetState(HtcctrlState_DriverConnected));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::NotifyDriverDisconnected() {
@@ -459,7 +459,7 @@ namespace ams::htclow::ctrl {
             R_TRY(this->SetState(HtcctrlState_DriverDisconnected));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcctrlService::SetState(HtcctrlState state) {
@@ -472,7 +472,7 @@ namespace ams::htclow::ctrl {
             this->ReflectState();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HtcctrlService::ReflectState() {

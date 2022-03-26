@@ -49,7 +49,7 @@ namespace ams::os {
         /* Setup the object. */
         SetupSharedMemoryType(shared_memory, size, handle, true);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void AttachSharedMemory(SharedMemoryType *shared_memory, size_t size, NativeHandle handle, bool managed) {

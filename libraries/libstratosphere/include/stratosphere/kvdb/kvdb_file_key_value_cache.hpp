@@ -51,7 +51,7 @@ namespace ams::kvdb {
                     LruHeader new_header = { .entry_count = 0, };
                     R_TRY(fs::WriteFile(file, 0, std::addressof(new_header), sizeof(new_header), fs::WriteOption::Flush));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             private:
                 void RemoveIndex(size_t i) {
@@ -91,7 +91,7 @@ namespace ams::kvdb {
                     /* Read entries. */
                     R_TRY(fs::ReadFile(file, sizeof(m_header), m_keys, BufferSize));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result Save() {
@@ -109,7 +109,7 @@ namespace ams::kvdb {
                     /* Flush. */
                     R_TRY(fs::FlushFile(file));
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 size_t GetCount() const {
@@ -223,7 +223,7 @@ namespace ams::kvdb {
 
                 /* The entry exists and is the correct type. */
                 *out = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static Result DirectoryExists(bool *out, const char *path) {
@@ -239,7 +239,7 @@ namespace ams::kvdb {
                 R_TRY(LeastRecentlyUsedList::CreateNewList(GetLeastRecentlyUsedListPath(dir)));
                 R_TRY(fs::CreateDirectory(dir));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static Result ValidateExistingCache(const char *dir) {
@@ -254,7 +254,7 @@ namespace ams::kvdb {
                 /* If one exists but not the other, we have an invalid state. */
                 R_UNLESS(has_lru && has_kvs, kvdb::ResultInvalidFilesystemState());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         private:
             void RemoveOldestKey() {
@@ -276,7 +276,7 @@ namespace ams::kvdb {
                 /* layout it can't really be fixed without breaking existing devices... */
                 R_TRY(m_kvs.Initialize(dir));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             size_t GetCount() const {
@@ -335,7 +335,7 @@ namespace ams::kvdb {
                             if (m_lru_list.GetCount() == 1) {
                                 m_lru_list.Pop();
                                 R_TRY(m_lru_list.Save());
-                                return fs::ResultNotEnoughFreeSpace();
+                                R_THROW(fs::ResultNotEnoughFreeSpace());
                             }
 
                             /* Otherwise, remove the oldest element from the cache and try again. */
@@ -351,7 +351,7 @@ namespace ams::kvdb {
                 /* Save the list. */
                 R_TRY(m_lru_list.Save());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             template<typename Value>
@@ -365,7 +365,7 @@ namespace ams::kvdb {
                 R_TRY(m_kvs.Remove(key));
                 R_TRY(m_lru_list.Save());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result RemoveAll() {
@@ -375,7 +375,7 @@ namespace ams::kvdb {
                 }
                 R_TRY(m_lru_list.Save());
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

@@ -81,7 +81,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         this->SetEnabled(device, false);
         this->SetDuty(device, 0);
         this->SetPeriod(device, DefaultChannelPeriod);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PwmDriverImpl::FinalizeDevice(IPwmDevice *device) {
@@ -113,7 +113,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         /* Update the period. */
         reg::ReadWrite(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_VALUE(PWM_CSR_PFM, pfm));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::GetPeriod(TimeSpan *out, IPwmDevice *device) {
@@ -133,7 +133,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
         /* Set the output. */
         *out = TimeSpan::FromNanoSeconds(ns);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::SetDuty(IPwmDevice *device, int duty) {
@@ -149,7 +149,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         /* Update the duty. */
         reg::ReadWrite(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_VALUE(PWM_CSR_PWM, static_cast<u32>(duty)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::GetDuty(int *out, IPwmDevice *device) {
@@ -159,7 +159,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
         /* Get the duty. */
         *out = static_cast<int>(reg::GetValue(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_MASK(PWM_CSR_PWM)));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::SetScale(IPwmDevice *device, double scale) {
@@ -183,7 +183,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
         /* Convert to scale. */
         *out = (static_cast<double>(duty) * 100.0) / 256.0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::SetEnabled(IPwmDevice *device, bool en) {
@@ -196,7 +196,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
         /* Update the enable. */
         reg::ReadWrite(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_ENUM_SEL(PWM_CSR_ENB, en, ENABLE, DISABLE));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::GetEnabled(bool *out, IPwmDevice *device) {
@@ -206,7 +206,7 @@ namespace ams::pwm::driver::board::nintendo::nx::impl {
 
         /* Get the enable. */
         *out = reg::HasValue(this->GetRegistersFor(device) + PWM_CONTROLLER_PWM_CSR, PWM_REG_BITS_ENUM(PWM_CSR_ENB, ENABLE));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PwmDriverImpl::Suspend() {

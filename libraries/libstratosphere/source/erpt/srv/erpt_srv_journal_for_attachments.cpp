@@ -50,7 +50,7 @@ namespace ams::erpt::srv {
         for (auto it = s_attachment_list.crbegin(); it != s_attachment_list.crend(); it++) {
             R_TRY(stream->WriteStream(reinterpret_cast<const u8 *>(std::addressof(it->m_info)), sizeof(it->m_info)));
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result JournalForAttachments::DeleteAttachments(ReportId report_id) {
@@ -74,7 +74,7 @@ namespace ams::erpt::srv {
                 it++;
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result JournalForAttachments::GetAttachmentList(AttachmentList *out, ReportId report_id) {
@@ -85,7 +85,7 @@ namespace ams::erpt::srv {
             }
         }
         out->attachment_count = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     u32 JournalForAttachments::GetUsedStorage() {
@@ -133,7 +133,7 @@ namespace ams::erpt::srv {
         }
 
         cleanup_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     JournalRecord<AttachmentInfo> *JournalForAttachments::RetrieveRecord(AttachmentId attachment_id) {
@@ -153,10 +153,10 @@ namespace ams::erpt::srv {
 
                 record->m_info.owner_report_id = report_id;
                 record->m_info.flags.Set<AttachmentFlag::HasOwner>();
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
-        return erpt::ResultInvalidArgument();
+        R_THROW(erpt::ResultInvalidArgument());
     }
 
     Result JournalForAttachments::StoreRecord(JournalRecord<AttachmentInfo> *record) {
@@ -173,7 +173,7 @@ namespace ams::erpt::srv {
         s_attachment_count++;
         s_used_storage += static_cast<u32>(record->m_info.attachment_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result JournalForAttachments::SubmitAttachment(AttachmentId *out, char *name, const u8 *data, u32 data_size) {
@@ -217,7 +217,7 @@ namespace ams::erpt::srv {
 
         *out = info.attachment_id;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

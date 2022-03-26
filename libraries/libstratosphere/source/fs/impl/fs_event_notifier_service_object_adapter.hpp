@@ -34,7 +34,7 @@ namespace ams::fs::impl {
                 os::AttachReadableHandleToSystemEvent(out, handle.GetOsHandle(), handle.IsManaged(), clear_mode);
                 handle.Detach();
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 

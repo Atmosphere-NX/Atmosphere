@@ -64,7 +64,7 @@ namespace ams::capsrv::server {
 
             /* We succeeded, so we shouldn't clear the output memory. */
             clear_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

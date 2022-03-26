@@ -75,7 +75,7 @@ namespace ams::ncm {
         R_TRY(g_content_manager->OpenContentStorage(std::addressof(content_storage), storage_id));
 
         *out = ContentStorage(std::move(content_storage));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result OpenContentMetaDatabase(ContentMetaDatabase *out, StorageId storage_id) {
@@ -83,7 +83,7 @@ namespace ams::ncm {
         R_TRY(g_content_manager->OpenContentMetaDatabase(std::addressof(content_db), storage_id));
 
         *out = ContentMetaDatabase(std::move(content_db));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CleanupContentMetaDatabase(StorageId storage_id) {

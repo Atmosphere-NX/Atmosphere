@@ -236,7 +236,7 @@ namespace ams::dmnt::cheat::impl {
 
                 Result EnsureCheatProcess() {
                     R_UNLESS(this->HasActiveCheatProcess(), dmnt::cheat::ResultCheatNotAttached());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 os::NativeHandle GetCheatProcessHandle() const {
@@ -297,7 +297,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     std::memcpy(out, std::addressof(m_cheat_process_metadata), sizeof(*out));
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ForceOpenCheatProcess() {
@@ -306,7 +306,7 @@ namespace ams::dmnt::cheat::impl {
 
                 Result ForceCloseCheatProcess() {
                     this->CloseActiveCheatProcess();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ReadCheatProcessMemoryUnsafe(u64 proc_addr, void *out_data, size_t size) {
@@ -334,7 +334,7 @@ namespace ams::dmnt::cheat::impl {
                         }
                     }
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result PauseCheatProcessUnsafe() {
@@ -347,7 +347,7 @@ namespace ams::dmnt::cheat::impl {
                     m_broken_unsafe = false;
                     m_unsafe_break_event.Signal();
                     dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetCheatProcessMappingCount(u64 *out_count) {
@@ -371,7 +371,7 @@ namespace ams::dmnt::cheat::impl {
                     } while (address != 0);
 
                     *out_count = count;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetCheatProcessMappings(svc::MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset) {
@@ -398,7 +398,7 @@ namespace ams::dmnt::cheat::impl {
                     } while (address != 0 && written_count < max_count);
 
                     *out_count = written_count;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size) {
@@ -455,7 +455,7 @@ namespace ams::dmnt::cheat::impl {
                     }
 
                     *out_count = count;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetCheats(CheatEntry *out_cheats, size_t max_count, u64 *out_count, u64 offset) {
@@ -474,7 +474,7 @@ namespace ams::dmnt::cheat::impl {
                     }
 
                     *out_count = count;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetCheatById(CheatEntry *out_cheat, u32 cheat_id) {
@@ -487,7 +487,7 @@ namespace ams::dmnt::cheat::impl {
                     R_UNLESS(entry->definition.num_opcodes != 0, dmnt::cheat::ResultCheatUnknownId());
 
                     *out_cheat = *entry;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ToggleCheat(u32 cheat_id) {
@@ -506,7 +506,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled) {
@@ -529,7 +529,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Set output id. */
                     *out_id = new_entry->cheat_id;
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result RemoveCheat(u32 cheat_id) {
@@ -543,7 +543,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result SetMasterCheat(const CheatDefinition &def) {
@@ -562,7 +562,7 @@ namespace ams::dmnt::cheat::impl {
                     /* Trigger a VM reload. */
                     this->SetNeedsReloadVm(true);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ReadStaticRegister(u64 *out, size_t which) {
@@ -572,7 +572,7 @@ namespace ams::dmnt::cheat::impl {
                     R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
                     *out = m_cheat_vm.GetStaticRegister(which);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result WriteStaticRegister(size_t which, u64 value) {
@@ -582,7 +582,7 @@ namespace ams::dmnt::cheat::impl {
                     R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, dmnt::cheat::ResultCheatInvalid());
 
                     m_cheat_vm.SetStaticRegister(which, value);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ResetStaticRegisters() {
@@ -591,7 +591,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     m_cheat_vm.ResetStaticRegisters();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetFrozenAddressCount(u64 *out_count) {
@@ -600,7 +600,7 @@ namespace ams::dmnt::cheat::impl {
                     R_TRY(this->EnsureCheatProcess());
 
                     *out_count = std::distance(m_frozen_addresses_map.begin(), m_frozen_addresses_map.end());
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset) {
@@ -623,7 +623,7 @@ namespace ams::dmnt::cheat::impl {
                     }
 
                     *out_count = written_count;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetFrozenAddress(FrozenAddressEntry *frz_addr, u64 address) {
@@ -636,7 +636,7 @@ namespace ams::dmnt::cheat::impl {
 
                     frz_addr->address = it->GetAddress();
                     frz_addr->value   = it->GetValue();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result EnableFrozenAddress(u64 *out_value, u64 address, u64 width) {
@@ -656,7 +656,7 @@ namespace ams::dmnt::cheat::impl {
 
                     m_frozen_addresses_map.insert(*entry);
                     *out_value = value.value;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result DisableFrozenAddress(u64 address) {
@@ -671,7 +671,7 @@ namespace ams::dmnt::cheat::impl {
                     m_frozen_addresses_map.erase(it);
                     DeallocateFrozenAddress(entry);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
         };
@@ -884,7 +884,7 @@ namespace ams::dmnt::cheat::impl {
             /* Signal to our fans. */
             m_cheat_process_event.Signal();
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         #undef R_ABORT_UNLESS_IF_NEW_PROCESS

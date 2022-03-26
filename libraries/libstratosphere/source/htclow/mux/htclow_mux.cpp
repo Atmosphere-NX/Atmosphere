@@ -59,7 +59,7 @@ namespace ams::htclow::mux {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Mux::ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size) {
@@ -73,7 +73,7 @@ namespace ams::htclow::mux {
             if (header.packet_type == PacketType_Data || header.packet_type == PacketType_MaxData) {
                 this->SendErrorPacket(header.channel);
             }
-            return htclow::ResultChannelNotExist();
+            R_THROW(htclow::ResultChannelNotExist());
         }
     }
 
@@ -143,7 +143,7 @@ namespace ams::htclow::mux {
 
     Result Mux::CheckChannelExist(impl::ChannelInternalType channel) {
         R_UNLESS(m_channel_impl_map.Exists(channel), htclow::ResultChannelNotExist());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Mux::SendErrorPacket(impl::ChannelInternalType channel) {
@@ -153,7 +153,7 @@ namespace ams::htclow::mux {
         /* Signal our event. */
         m_event.Signal();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool Mux::IsSendable(PacketType packet_type) const {
@@ -181,7 +181,7 @@ namespace ams::htclow::mux {
         /* Set the channel version. */
         m_channel_impl_map.GetChannelImpl(channel).SetVersion(m_version);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Mux::Close(impl::ChannelInternalType channel) {
@@ -197,7 +197,7 @@ namespace ams::htclow::mux {
             R_ABORT_UNLESS(m_channel_impl_map.RemoveChannel(channel));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Mux::ConnectBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
@@ -272,7 +272,7 @@ namespace ams::htclow::mux {
         /* Check that we didn't hit a disconnect. */
         R_UNLESS(trigger != EventTrigger_Disconnect, htclow::ResultInvalidChannelStateDisconnected());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     os::EventType *Mux::GetTaskEvent(u32 task_id) {
@@ -311,7 +311,7 @@ namespace ams::htclow::mux {
             return m_channel_impl_map[it->second].DoReceiveEnd(out, dst, dst_size);
         } else {
             *out = 0;
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -340,7 +340,7 @@ namespace ams::htclow::mux {
         /* Check that we didn't hit a disconnect. */
         R_UNLESS(trigger != EventTrigger_Disconnect, htclow::ResultInvalidChannelStateDisconnected());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Mux::WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
@@ -360,7 +360,7 @@ namespace ams::htclow::mux {
         /* Check that we didn't hit a disconnect. */
         R_UNLESS(trigger != EventTrigger_Disconnect, htclow::ResultInvalidChannelStateDisconnected());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Mux::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {

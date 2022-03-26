@@ -53,26 +53,26 @@ namespace ams::sf::hipc {
         R_TRY_CATCH(ReceiveImpl(session_handle, message_buffer.GetPointer(), message_buffer.GetSize())) {
             R_CATCH(svc::ResultSessionClosed) {
                 *out_recv_result = ReceiveResult::Closed;
-                return ResultSuccess();
+                R_SUCCEED();
             }
             R_CATCH(svc::ResultReceiveListBroken) {
                 *out_recv_result = ReceiveResult::NeedsRetry;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         } R_END_TRY_CATCH;
         *out_recv_result = ReceiveResult::Success;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Receive(bool *out_closed, os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer) {
         R_TRY_CATCH(ReceiveImpl(session_handle, message_buffer.GetPointer(), message_buffer.GetSize())) {
             R_CATCH(svc::ResultSessionClosed) {
                 *out_closed = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         } R_END_TRY_CATCH;
         *out_closed = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Reply(os::NativeHandle session_handle, const cmif::PointerAndSize &message_buffer) {
@@ -88,7 +88,7 @@ namespace ams::sf::hipc {
         R_TRY_CATCH(svc::CreateSession(out_server_handle, out_client_handle, 0, 0)) {
             R_CONVERT(svc::ResultOutOfResource, sf::hipc::ResultOutOfSessions());
         } R_END_TRY_CATCH;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -79,7 +79,7 @@ namespace ams::i2c::driver::impl {
     Result RegisterDeviceCode(DeviceCode device_code, I2cDeviceProperty *device) {
         AMS_ASSERT(device != nullptr);
         R_TRY(GetDeviceCodeEntryManager().Add(device_code, device));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool UnregisterDeviceCode(DeviceCode device_code) {
@@ -96,7 +96,7 @@ namespace ams::i2c::driver::impl {
 
         /* Set output. */
         *out = device->SafeCastToPointer<I2cDeviceProperty>();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FindDeviceByBusIndexAndAddress(I2cDeviceProperty **out, i2c::I2cBus bus_index, u16 slave_address) {
@@ -125,7 +125,7 @@ namespace ams::i2c::driver::impl {
         /* Check that we found the pad. */
         R_UNLESS(found, ddsf::ResultDeviceCodeNotFound());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

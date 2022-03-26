@@ -65,7 +65,7 @@ namespace ams::pwm {
         out->_session = session.Detach();
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(ChannelSession &session) {

@@ -208,7 +208,7 @@ namespace ams::socket::impl {
 
             g_initialized = true;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         ALWAYS_INLINE struct sockaddr *ConvertForLibnx(SockAddr *addr) {
@@ -275,7 +275,7 @@ namespace ams::socket::impl {
         }
         lmem::DestroyExpHeap(heap_handle);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InitializeAllocatorForInternal(void *buffer, size_t size) {
@@ -284,7 +284,7 @@ namespace ams::socket::impl {
         AMS_ABORT_UNLESS(size >= 4_KB);
 
         InitializeHeapImpl(buffer, size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     ssize_t RecvFrom(s32 desc, void *buffer, size_t buffer_size, MsgFlag flags, SockAddr *out_address, SockLenT *out_addr_len) {

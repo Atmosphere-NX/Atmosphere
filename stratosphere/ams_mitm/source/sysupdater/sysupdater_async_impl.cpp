@@ -25,7 +25,7 @@ namespace ams::mitm::sysupdater {
             R_CONVERT(ncm::ResultInstallTaskCancelled,   ns::ResultCanceled());
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     AsyncPrepareSdCardUpdateImpl::~AsyncPrepareSdCardUpdateImpl() {
@@ -66,7 +66,7 @@ namespace ams::mitm::sysupdater {
 
         /* Set our thread info. */
         m_thread_info = info;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AsyncPrepareSdCardUpdateImpl::Execute() {

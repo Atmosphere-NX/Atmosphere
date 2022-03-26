@@ -54,7 +54,7 @@ namespace ams::fs {
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                 /* TODO: How to deal with this? */
                 AMS_UNUSED(dst, dst_size, op_id, offset, size, src, src_size);
-                return fs::ResultUnsupportedOperation();
+                R_THROW(fs::ResultUnsupportedOperation());
             };
     };
     #endif

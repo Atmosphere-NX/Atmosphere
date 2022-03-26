@@ -62,7 +62,7 @@ namespace ams::fs {
     Result FileStorage::GetSize(s64 *out_size) {
         R_TRY(this->UpdateSize());
         *out_size = m_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileStorage::SetSize(s64 size) {
@@ -100,7 +100,7 @@ namespace ams::fs {
         this->SetFile(std::move(base_file));
         m_base_file_system = std::move(base_file_system);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileHandleStorage::UpdateSize() {
@@ -153,7 +153,7 @@ namespace ams::fs {
     Result FileHandleStorage::GetSize(s64 *out_size) {
         R_TRY(this->UpdateSize());
         *out_size = m_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FileHandleStorage::SetSize(s64 size) {
@@ -172,7 +172,7 @@ namespace ams::fs {
 
                 return QueryRange(static_cast<QueryRangeInfo *>(dst), m_handle, offset, size);
             default:
-                return fs::ResultUnsupportedOperateRangeForFileHandleStorage();
+                R_THROW(fs::ResultUnsupportedOperateRangeForFileHandleStorage());
         }
     }
 

@@ -135,7 +135,7 @@ namespace ams::tipc::impl {
                         if constexpr (HasDefaultServiceCommandProcessor<ImplType>) {                                                                   \
                             return impl->ProcessDefaultServiceCommand(message_buffer);                                                                 \
                         } else {                                                                                                                       \
-                            return tipc::ResultInvalidMethod();                                                                                        \
+                            R_THROW(tipc::ResultInvalidMethod());                                                                                        \
                         }                                                                                                                              \
                     }                                                                                                                                  \
                                                                                                                                                        \

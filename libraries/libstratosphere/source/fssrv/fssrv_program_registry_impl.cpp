@@ -71,7 +71,7 @@ namespace ams::fssrv {
         /* Set our process id. */
         m_process_id = client_pid.GetValue().value;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProgramRegistryImpl::SetEnabledProgramVerification(bool en) {

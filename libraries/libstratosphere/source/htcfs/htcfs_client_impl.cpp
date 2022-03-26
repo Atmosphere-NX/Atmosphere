@@ -172,7 +172,7 @@ namespace ams::htcfs {
 
         /* Set the version in our header factory. */
         m_header_factory.SetVersion(use_version);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ClientImpl::TearDownProtocol() {
@@ -190,7 +190,7 @@ namespace ams::htcfs {
         /* Check the type. */
         R_UNLESS(response.packet_type == packet_type, htcfs::ResultUnexpectedResponsePacketType());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CheckResponseHeader(const Header &response, PacketType packet_type) {
@@ -200,7 +200,7 @@ namespace ams::htcfs {
         /* Check the version. */
         R_UNLESS(response.version == m_header_factory.GetVersion(), htcfs::ResultUnexpectedResponseProtocolVersion());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CheckResponseHeader(const Header &response, PacketType packet_type, s64 body_size) {
@@ -210,7 +210,7 @@ namespace ams::htcfs {
         /* Check the body size. */
         R_UNLESS(response.body_size == body_size, htcfs::ResultUnexpectedResponseBodySize());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetMaxProtocolVersion(s16 *out) {
@@ -235,7 +235,7 @@ namespace ams::htcfs {
         /* Set the maximum protocol version. */
         *out = response.params[1];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::SetProtocolVersion(s16 version) {
@@ -257,7 +257,7 @@ namespace ams::htcfs {
         /* Check that we succeeded. */
         R_TRY(ConvertHtcfsResult(response.params[0]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::SendToRpcChannel(const void *src, s64 size) {
@@ -293,7 +293,7 @@ namespace ams::htcfs {
         /* Flush. */
         R_TRY(channel->Flush());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::ReceiveFromHtclow(void *dst, s64 size, htclow::Channel *channel) {
@@ -313,7 +313,7 @@ namespace ams::htcfs {
         /* Flush. */
         R_TRY(channel->Flush());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::InitializeRpcChannel() {
@@ -323,7 +323,7 @@ namespace ams::htcfs {
         /* Check that we're connected. */
         R_UNLESS(m_connected, htcfs::ResultConnectionFailure());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ClientImpl::InitializeDataChannelForReceive(void *dst, size_t size) {
@@ -399,7 +399,7 @@ namespace ams::htcfs {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::OpenFile(s32 *out_handle, const char *path, fs::OpenMode mode, bool case_sensitive) {
@@ -451,7 +451,7 @@ namespace ams::htcfs {
             m_cache_manager.Record(response.params[4], m_packet_buffer, response.params[2], response.body_size);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::FileExists(bool *out, const char *path, bool case_sensitive) {
@@ -486,7 +486,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = response.params[2] != 0;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::DeleteFile(const char *path, bool case_sensitive) {
@@ -518,7 +518,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::RenameFile(const char *old_path, const char *new_path, bool case_sensitive) {
@@ -551,7 +551,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetEntryType(fs::DirectoryEntryType *out, const char *path, bool case_sensitive) {
@@ -586,7 +586,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = static_cast<fs::DirectoryEntryType>(response.params[2]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive) {
@@ -621,7 +621,7 @@ namespace ams::htcfs {
         /* Set the output handle. */
         *out_handle = static_cast<s32>(response.params[2]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::DirectoryExists(bool *out, const char *path, bool case_sensitive) {
@@ -656,7 +656,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = response.params[2] != 0;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CreateDirectory(const char *path, bool case_sensitive) {
@@ -688,7 +688,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::DeleteDirectory(const char *path, bool recursively, bool case_sensitive) {
@@ -720,7 +720,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::RenameDirectory(const char *old_path, const char *new_path, bool case_sensitive) {
@@ -753,7 +753,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CreateFile(const char *path, s64 size, bool case_sensitive) {
@@ -785,7 +785,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetFileTimeStamp(u64 *out_create, u64 *out_access, u64 *out_modify, const char *path, bool case_sensitive) {
@@ -822,7 +822,7 @@ namespace ams::htcfs {
         *out_access = static_cast<u64>(response.params[3]);
         *out_modify = static_cast<u64>(response.params[4]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetCaseSensitivePath(char *dst, size_t dst_size, const char *path) {
@@ -875,7 +875,7 @@ namespace ams::htcfs {
         /* Null-terminate the output path. */
         dst[response.body_size] = '\x00';
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetDiskFreeSpace(s64 *out_free, s64 *out_total, s64 *out_total_free, const char *path) {
@@ -912,7 +912,7 @@ namespace ams::htcfs {
         *out_total      = response.params[3];
         *out_total_free = response.params[4];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CloseDirectory(s32 handle) {
@@ -943,7 +943,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetEntryCount(s64 *out, s32 handle) {
@@ -977,7 +977,7 @@ namespace ams::htcfs {
         /* Set the output count. */
         *out = response.params[2];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::ReadDirectory(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle) {
@@ -1073,7 +1073,7 @@ namespace ams::htcfs {
         /* Set the number of output entries. */
         *out = response.params[2];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetPriorityForDirectory(s32 *out, s32 handle) {
@@ -1104,7 +1104,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = static_cast<s32>(response.params[1]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::SetPriorityForDirectory(s32 priority, s32 handle) {
@@ -1132,7 +1132,7 @@ namespace ams::htcfs {
         /* Check that we succeeded. */
         R_TRY(ConvertHtcfsResult(response.params[0]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::CloseFile(s32 handle) {
@@ -1166,7 +1166,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::ReadFile(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
@@ -1185,7 +1185,7 @@ namespace ams::htcfs {
                 AMS_ASSERT(util::IsIntValueRepresentable<s64>(read_size));
 
                 *out = static_cast<s64>(read_size);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
@@ -1227,7 +1227,7 @@ namespace ams::htcfs {
         /* Set the output size. */
         *out = response.body_size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::ReadFileLarge(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
@@ -1284,7 +1284,7 @@ namespace ams::htcfs {
         /* Set the number of output entries. */
         *out = response.params[2];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::WriteFile(const void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::WriteOption option) {
@@ -1318,7 +1318,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::WriteFileLarge(const void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::WriteOption option) {
@@ -1379,7 +1379,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(write_resp.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetFileSize(s64 *out, s32 handle) {
@@ -1416,7 +1416,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = response.params[2];
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::SetFileSize(s64 size, s32 handle) {
@@ -1450,7 +1450,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::FlushFile(s32 handle) {
@@ -1481,7 +1481,7 @@ namespace ams::htcfs {
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetPriorityForFile(s32 *out, s32 handle) {
@@ -1512,7 +1512,7 @@ namespace ams::htcfs {
         /* Set the output. */
         *out = static_cast<s32>(response.params[1]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::SetPriorityForFile(s32 priority, s32 handle) {
@@ -1540,7 +1540,7 @@ namespace ams::htcfs {
         /* Check that we succeeded. */
         R_TRY(ConvertHtcfsResult(response.params[0]));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetWorkingDirectory(char *dst, size_t dst_size) {
@@ -1581,7 +1581,7 @@ namespace ams::htcfs {
         /* Null-terminate the response body. */
         dst[response.body_size] = '\x00';
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ClientImpl::GetWorkingDirectorySize(s32 *out) {
@@ -1619,7 +1619,7 @@ namespace ams::htcfs {
         /* Set the output size. */
         *out = static_cast<s32>(response.params[1]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

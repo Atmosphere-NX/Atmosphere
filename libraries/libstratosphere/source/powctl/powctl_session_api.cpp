@@ -77,7 +77,7 @@ namespace ams::powctl {
 
         /* We opened the session! */
         guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(Session &session) {

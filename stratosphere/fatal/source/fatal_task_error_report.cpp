@@ -165,7 +165,7 @@ namespace ams::fatal::srv {
             /* Signal we're done with our job. */
             m_context->erpt_event->Signal();
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

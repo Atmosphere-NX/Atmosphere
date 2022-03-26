@@ -44,10 +44,10 @@ namespace ams::mitm::fs {
                     *out_str = "safe";
                     break;
                 default:
-                    return fs::ResultInvalidSaveDataSpaceId();
+                    R_THROW(fs::ResultInvalidSaveDataSpaceId());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetSaveDataTypeString(const char **out_str, SaveDataType save_data_type) {
@@ -75,10 +75,10 @@ namespace ams::mitm::fs {
                     break;
                 default:
                     /* TODO: Better result? */
-                    return fs::ResultInvalidArgument();
+                    R_THROW(fs::ResultInvalidArgument());
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         constexpr inline bool IsEmptyAccountId(const UserId &uid) {
@@ -108,7 +108,7 @@ namespace ams::mitm::fs {
 
         R_UNLESS(out_path_len < dst_size, fs::ResultTooLongPath());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

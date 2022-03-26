@@ -44,7 +44,7 @@ namespace ams::usb {
         )));
 
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsEndpoint::GetUrbReport(sf::Out<usb::UrbReport> out) {

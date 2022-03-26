@@ -43,15 +43,15 @@ namespace ams::htclow::driver {
                 //m_plain_channel_driver.Open();
                 //m_open_driver = std::addressof(m_plain_channel_driver);
                 //break;
-                return htclow::ResultUnknownDriverType();
+                R_THROW(htclow::ResultUnknownDriverType());
             default:
-                return htclow::ResultUnknownDriverType();
+                R_THROW(htclow::ResultUnknownDriverType());
         }
 
         /* Set the driver type. */
         m_driver_type = driver_type;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DriverManager::CloseDriver() {

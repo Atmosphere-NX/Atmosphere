@@ -31,7 +31,7 @@ namespace ams::ncm {
             /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!m_disabled, ncm::ResultInvalidContentStorage());
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
@@ -41,7 +41,7 @@ namespace ams::ncm {
                     R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
                     out_rights_id->key_generation = 0;
                 }
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             /* Actual commands. */

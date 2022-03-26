@@ -107,7 +107,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         R_UNLESS(this->IsEventHandlerEnabled(), powctl::ResultNotAvailable());
 
         *out = device->SafeCastTo<BatteryDevice>().GetSystemEvent();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetDeviceInterruptEnabled(IDevice *device, bool enable) {
@@ -117,7 +117,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Set the interrupt enable. */
         device->SafeCastTo<BatteryDevice>().SetInterruptEnabled(enable);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetDeviceErrorStatus(u32 *out, IDevice *device) {
@@ -143,7 +143,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_percent = percent;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryVoltageFuelGaugePercentage(float *out_percent, IDevice *device) {
@@ -157,7 +157,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_percent = percent;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryFullCapacity(int *out_mah, IDevice *device) {
@@ -171,7 +171,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_mah = mah;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryRemainingCapacity(int *out_mah, IDevice *device) {
@@ -185,7 +185,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_mah = mah;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryChargePercentageMinimumAlertThreshold(IDevice *device, float percentage) {
@@ -194,7 +194,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetChargePercentageMinimumAlertThreshold(percentage));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryChargePercentageMaximumAlertThreshold(IDevice *device, float percentage) {
@@ -203,7 +203,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetChargePercentageMaximumAlertThreshold(percentage));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(IDevice *device, float percentage) {
@@ -212,7 +212,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetVoltageFuelGaugePercentageMinimumAlertThreshold(percentage));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(IDevice *device, float percentage) {
@@ -221,7 +221,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetVoltageFuelGaugePercentageMaximumAlertThreshold(percentage));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryFullChargeThreshold(IDevice *device, float percentage) {
@@ -230,7 +230,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetFullChargeThreshold(percentage));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryAverageCurrent(int *out_ma, IDevice *device) {
@@ -244,7 +244,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_ma = ma;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryCurrent(int *out_ma, IDevice *device) {
@@ -258,7 +258,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_ma = ma;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryInternalState(void *dst, size_t *out_size, IDevice *device, size_t dst_size) {
@@ -272,7 +272,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().ReadInternalState());
         GetMax17050Driver().GetInternalState(static_cast<max17050::InternalState *>(dst));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryInternalState(IDevice *device, const void *src, size_t src_size) {
@@ -285,7 +285,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         GetMax17050Driver().SetInternalState(*static_cast<const max17050::InternalState *>(src));
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().WriteInternalState());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryNeedToRestoreParameters(bool *out, IDevice *device) {
@@ -296,7 +296,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Get the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetNeedToRestoreParameters(out));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryNeedToRestoreParameters(IDevice *device, bool en) {
@@ -306,7 +306,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Set the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetNeedToRestoreParameters(en));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::IsBatteryI2cShutdownEnabled(bool *out, IDevice *device) {
@@ -317,7 +317,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Get the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().IsI2cShutdownEnabled(out));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryI2cShutdownEnabled(IDevice *device, bool en) {
@@ -327,7 +327,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Set the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetI2cShutdownEnabled(en));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::IsBatteryPresent(bool *out, IDevice *device) {
@@ -341,7 +341,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = (status & 0x0008) == 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryCycles(int *out, IDevice *device) {
@@ -355,7 +355,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = cycles;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryCycles(IDevice *device, int cycles) {
@@ -364,7 +364,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().ResetCycles());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryAge(float *out_percent, IDevice *device) {
@@ -378,7 +378,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_percent = percent;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryTemperature(float *out_c, IDevice *device) {
@@ -392,7 +392,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_c = temp;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryMaximumTemperature(float *out_c, IDevice *device) {
@@ -406,7 +406,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out_c = static_cast<float>(max_temp);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryTemperatureMinimumAlertThreshold(IDevice *device, float c) {
@@ -415,7 +415,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetTemperatureMinimumAlertThreshold(c));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryTemperatureMaximumAlertThreshold(IDevice *device, float c) {
@@ -424,7 +424,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetTemperatureMaximumAlertThreshold(c));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryVCell(int *out_mv, IDevice *device) {
@@ -435,7 +435,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Get the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetVCell(out_mv));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryAverageVCell(int *out_mv, IDevice *device) {
@@ -446,7 +446,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Get the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetAverageVCell(out_mv));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryAverageVCellTime(TimeSpan *out, IDevice *device) {
@@ -460,7 +460,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         /* Set output. */
         *out = TimeSpan::FromMicroSeconds(static_cast<s64>(ms * 1000.0));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryVoltageMinimumAlertThreshold(IDevice *device, int mv) {
@@ -469,7 +469,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetVoltageMinimumAlertThreshold(mv));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::GetBatteryOpenCircuitVoltage(int *out_mv, IDevice *device) {
@@ -480,7 +480,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
         /* Get the value. */
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().GetOpenCircuitVoltage(out_mv));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BatteryDriver::SetBatteryVoltageMaximumAlertThreshold(IDevice *device, int mv) {
@@ -489,7 +489,7 @@ namespace ams::powctl::impl::board::nintendo::nx {
 
         AMS_POWCTL_DRIVER_LOCKED_R_TRY_WITH_RETRY(GetMax17050Driver().SetVoltageMaximumAlertThreshold(mv));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

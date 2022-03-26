@@ -34,7 +34,7 @@ namespace ams::nxboot {
                 g_mmc_partition = partition;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

@@ -47,7 +47,7 @@ namespace ams::cal::impl {
         const u16 crc = *reinterpret_cast<const u16 *>(reinterpret_cast<uintptr_t>(data) + size - sizeof(u16));
         R_UNLESS(CalculateCrc16(data, size - sizeof(u16)) == crc, cal::ResultCalibrationDataCrcError());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

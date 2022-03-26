@@ -444,7 +444,7 @@ namespace ams::sdmmc::impl {
             virtual Result PowerOn(BusPower bus_power) override {
                 /* Power for SDMMC2/4 is assumed on, so we don't need to do anything. */
                 AMS_UNUSED(bus_power);
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             virtual void PowerOff() override {

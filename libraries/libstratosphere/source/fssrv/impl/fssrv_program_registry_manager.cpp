@@ -44,7 +44,7 @@ namespace ams::fssrv::impl {
         /* Add the node to the registry. */
         m_program_info_list.push_back(*new_node.release());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ProgramRegistryManager::UnregisterProgram(u64 process_id) {
@@ -56,12 +56,12 @@ namespace ams::fssrv::impl {
             if (node.program_info->Contains(process_id)) {
                 m_program_info_list.erase(m_program_info_list.iterator_to(node));
                 delete std::addressof(node);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* We couldn't find/unregister the process's node. */
-        return fs::ResultInvalidArgument();
+        R_THROW(fs::ResultInvalidArgument());
     }
 
     Result ProgramRegistryManager::GetProgramInfo(std::shared_ptr<ProgramInfo> *out, u64 process_id) {
@@ -71,19 +71,19 @@ namespace ams::fssrv::impl {
         /* Check if we're getting permissions for an initial program. */
         if (IsInitialProgram(process_id)) {
             *out = ProgramInfo::GetProgramInfoForInitialProcess();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Find a matching node. */
         for (const auto &node : m_program_info_list) {
             if (node.program_info->Contains(process_id)) {
                 *out = node.program_info;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* We didn't find the program info. */
-        return fs::ResultProgramInfoNotFound();
+        R_THROW(fs::ResultProgramInfoNotFound());
     }
 
     Result ProgramRegistryManager::GetProgramInfoByProgramId(std::shared_ptr<ProgramInfo> *out, u64 program_id) {
@@ -94,12 +94,12 @@ namespace ams::fssrv::impl {
         for (const auto &node : m_program_info_list) {
             if (node.program_info->GetProgramIdValue() == program_id) {
                 *out = node.program_info;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* We didn't find the program info. */
-        return fs::ResultProgramInfoNotFound();
+        R_THROW(fs::ResultProgramInfoNotFound());
     }
 
 }

@@ -22,12 +22,12 @@ namespace ams::mitm::bpc {
     Result BpcMitmService::RebootSystem() {
         R_UNLESS(bpc::IsRebootManaged(), sm::mitm::ResultShouldForwardToSession());
         bpc::RebootSystem();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BpcMitmService::ShutdownSystem() {
         bpc::ShutdownSystem();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

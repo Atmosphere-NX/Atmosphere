@@ -51,7 +51,7 @@ namespace ams::capsrv::server::jpeg {
             /* Return the output to the caller. */
             *out_size   = rgb_size;
             *out_stride = rgb_stride;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -172,14 +172,14 @@ namespace ams::capsrv::server::jpeg {
             R_UNLESS(jpeg_finish_decompress(std::addressof(cinfo)) == TRUE, capsrv::ResultAlbumInvalidFileData());
         } else {
             /* Some unknown error was caught by our handler. */
-            return capsrv::ResultAlbumInvalidFileData();
+            R_THROW(capsrv::ResultAlbumInvalidFileData());
         }
 
         /* Write the size we decoded to output. */
         *output.out_width = static_cast<s32>(cinfo.output_width);
         *output.out_width = static_cast<s32>(cinfo.output_height);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -31,7 +31,7 @@ namespace ams::usb {
 
         *out = ObjectFactory::CreateSharedEmplaced<ds::IDsEndpoint, RemoteDsEndpoint>(m_allocator, srv);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsInterface::GetSetupEvent(sf::OutCopyHandle out) {
@@ -44,7 +44,7 @@ namespace ams::usb {
         )));
 
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsInterface::GetSetupPacket(const sf::OutBuffer &out) {
@@ -85,7 +85,7 @@ namespace ams::usb {
         )));
 
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsInterface::GetCtrlInUrbReport(sf::Out<usb::UrbReport> out) {
@@ -103,7 +103,7 @@ namespace ams::usb {
         )));
 
         out.SetValue(event_handle, true);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteDsInterface::GetCtrlOutUrbReport(sf::Out<usb::UrbReport> out) {

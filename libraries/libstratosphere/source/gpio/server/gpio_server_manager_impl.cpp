@@ -76,7 +76,7 @@ namespace ams::gpio::server {
 
         /* We succeeded. */
         *out = std::move(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ManagerImpl::IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code) {

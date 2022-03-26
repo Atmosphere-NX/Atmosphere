@@ -39,7 +39,7 @@ namespace ams::i2c::server {
 
                 R_TRY(i2c::driver::OpenSession(std::addressof(m_internal_session), device_code));
                 m_has_session = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             /* Actual commands. */

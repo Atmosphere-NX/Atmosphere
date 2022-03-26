@@ -46,7 +46,7 @@ namespace ams::os::impl {
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         *out = handle;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SharedMemoryImpl::Close(NativeHandle handle) {
@@ -65,7 +65,7 @@ namespace ams::os::impl {
                     R_CONVERT(svc::ResultInvalidCurrentMemory, os::ResultInvalidCurrentMemoryState())
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-                return ResultSuccess();
+                R_SUCCEED();
             },
             [handle](uintptr_t map_address, size_t map_size) -> void {
                 return SharedMemoryImpl::Unmap(handle, reinterpret_cast<void *>(map_address), map_size);
@@ -74,7 +74,7 @@ namespace ams::os::impl {
 
         /* Return the address we mapped at. */
         *out = reinterpret_cast<void *>(mapped_address);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SharedMemoryImpl::Unmap(NativeHandle handle, void *address, size_t size) {

@@ -37,12 +37,12 @@ namespace ams::sm {
             g_ref_count = 1;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Finalize() {
         /* NOTE: Nintendo does nothing here. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     /* Ordinary SM API. */

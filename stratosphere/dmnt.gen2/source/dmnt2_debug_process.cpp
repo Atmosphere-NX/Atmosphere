@@ -51,7 +51,7 @@ namespace ams::dmnt {
         /* Get process info. */
         this->CollectProcessInfo();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DebugProcess::Detach() {
@@ -127,7 +127,7 @@ namespace ams::dmnt {
         m_is_valid = true;
         this->SetDebugBreaked();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     s32 DebugProcess::ThreadCreate(u64 thread_id) {
@@ -230,7 +230,7 @@ namespace ams::dmnt {
             address = next_address;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DebugProcess::CollectProcessInfo() {
@@ -254,7 +254,7 @@ namespace ams::dmnt {
             R_TRY(svc::GetInfo(std::addressof(value), svc::InfoType_IsApplication, handle, 0));
             m_is_application = value != 0;
 
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         /* Get process info/status. */
@@ -313,7 +313,7 @@ namespace ams::dmnt {
         this->SetLastThreadId(0);
         this->SetLastSignal(GdbSignal_Signal0);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::Continue(u64 thread_id) {
@@ -328,7 +328,7 @@ namespace ams::dmnt {
         this->SetLastThreadId(0);
         this->SetLastSignal(GdbSignal_Signal0);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::Step() {
@@ -371,7 +371,7 @@ namespace ams::dmnt {
             bp_guard.Cancel();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DebugProcess::ClearStep() {
@@ -388,7 +388,7 @@ namespace ams::dmnt {
             return svc::BreakDebugProcess(m_debug_handle);
         } else {
             AMS_DMNT2_GDB_LOG_ERROR("DebugProcess::Break called on non-running process!\n");
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 
@@ -398,7 +398,7 @@ namespace ams::dmnt {
             this->Detach();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DebugProcess::GetBranchTarget(svc::ThreadContext &ctx, u64 thread_id, u64 &current_pc, u64 &target) {
@@ -472,7 +472,7 @@ namespace ams::dmnt {
 
     Result DebugProcess::ClearBreakPoint(uintptr_t address, size_t size) {
         m_software_breakpoints.ClearBreakPoint(address, size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::SetHardwareBreakPoint(uintptr_t address, size_t size, bool is_step) {
@@ -481,7 +481,7 @@ namespace ams::dmnt {
 
     Result DebugProcess::ClearHardwareBreakPoint(uintptr_t address, size_t size) {
         m_hardware_breakpoints.ClearBreakPoint(address, size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::SetWatchPoint(u64 address, u64 size, bool read, bool write) {
@@ -507,7 +507,7 @@ namespace ams::dmnt {
         R_TRY(svc::GetDebugThreadParam(std::addressof(dummy_value), std::addressof(val32), m_debug_handle, thread_id, svc::DebugThreadParam_CurrentCore));
 
         *out = val32;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::GetProcessDebugEvent(svc::DebugEventInfo *out) {
@@ -550,7 +550,7 @@ namespace ams::dmnt {
             this->SetDebugBreaked();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     u64 DebugProcess::GetLastThreadId() {
@@ -578,7 +578,7 @@ namespace ams::dmnt {
         }
 
         *out_count = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DebugProcess::GetThreadInfoList(s32 *out_count, osdbg::ThreadInfo **out_infos, size_t max_count) {
@@ -592,7 +592,7 @@ namespace ams::dmnt {
         }
 
         *out_count = count;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DebugProcess::GetThreadName(char *dst, u64 thread_id) const {

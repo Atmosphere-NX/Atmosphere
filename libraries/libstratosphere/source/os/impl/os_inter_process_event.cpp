@@ -46,7 +46,7 @@ namespace ams::os::impl {
         R_TRY(impl::InterProcessEventImpl::Create(std::addressof(wh), std::addressof(rh)));
 
         SetupInterProcessEventType(event, rh, true, wh, true, clear_mode);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DestroyInterProcessEvent(InterProcessEventType *event) {

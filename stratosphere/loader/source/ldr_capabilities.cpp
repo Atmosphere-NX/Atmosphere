@@ -353,7 +353,7 @@ namespace ams::ldr {
 #undef VALIDATE_CASE
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     u16 MakeProgramInfoFlag(const util::BitPack32 *kac, size_t count) {

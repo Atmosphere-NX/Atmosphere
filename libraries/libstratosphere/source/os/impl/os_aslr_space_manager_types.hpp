@@ -87,11 +87,11 @@ namespace ams::os::impl {
 
                     /* We mapped successfully. */
                     *out = map_address;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* We failed to map. */
-                return os::ResultOutOfAddressSpace();
+                R_THROW(os::ResultOutOfAddressSpace());
             }
     };
 

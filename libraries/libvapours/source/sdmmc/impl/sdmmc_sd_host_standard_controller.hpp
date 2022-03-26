@@ -112,7 +112,7 @@ namespace ams::sdmmc::impl {
                 R_UNLESS(!this->IsRemoved(), sdmmc::ResultDeviceRemoved());
                 #endif
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             SdHostStandardController(dd::PhysicalAddress registers_phys_addr, size_t registers_size);

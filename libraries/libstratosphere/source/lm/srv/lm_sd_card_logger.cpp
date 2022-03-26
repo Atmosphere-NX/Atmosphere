@@ -199,7 +199,7 @@ namespace ams::lm::srv {
 
             R_TRY(fs::WriteFile(file, 0, std::addressof(header), sizeof(header), fs::WriteOption::Flush));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool WriteLogFileHeader(const char *path) {
@@ -215,7 +215,7 @@ namespace ams::lm::srv {
             /* Write the data. */
             R_TRY(fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush));
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         bool WriteLogFileBody(const char *path, s64 offset, const u8 *data, size_t size) {

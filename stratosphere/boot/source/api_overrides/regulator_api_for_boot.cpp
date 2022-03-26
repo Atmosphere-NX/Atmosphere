@@ -27,7 +27,7 @@ namespace ams::regulator {
 
     Result OpenSession(RegulatorSession *out, DeviceCode device_code) {
         AMS_UNUSED(out, device_code);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(RegulatorSession *session) {
@@ -41,12 +41,12 @@ namespace ams::regulator {
 
     Result SetVoltageEnabled(RegulatorSession *session, bool enabled) {
         AMS_UNUSED(session, enabled);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetVoltageValue(RegulatorSession *session, u32 micro_volts) {
         AMS_UNUSED(session, micro_volts);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

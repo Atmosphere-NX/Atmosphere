@@ -119,7 +119,7 @@ namespace ams::ro::impl {
             }
 
             *out = IsDevelopmentHardware() ? DevModuli[key_generation] : ProdModuli[key_generation];
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateNrrCertification(const NrrHeader *header, const u8 *mod) {
@@ -138,7 +138,7 @@ namespace ams::ro::impl {
             /* Check ProgramId pattern is valid. */
             R_UNLESS(header->IsProgramIdValid(), ro::ResultNotAuthorized());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateNrrSignature(const NrrHeader *header) {
@@ -155,7 +155,7 @@ namespace ams::ro::impl {
             const size_t msg_size = header->GetSignedAreaSize();
             R_UNLESS(crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size), ro::ResultNotAuthorized());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateNrr(const NrrHeader *header, u64 size, ncm::ProgramId program_id, NrrKind nrr_kind, bool enforce_nrr_kind) {
@@ -189,7 +189,7 @@ namespace ams::ro::impl {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -246,13 +246,13 @@ namespace ams::ro::impl {
 
         *out_header              = nrr_header;
         *out_mapped_code_address = code_address;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UnmapNrr(os::NativeHandle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address) {
         R_TRY(svc::UnmapProcessMemory(reinterpret_cast<uintptr_t>(header), process_handle, mapped_code_address, nrr_heap_size));
         R_TRY(svc::UnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool ValidateNrrHashTableEntry(const void *signed_area, size_t signed_area_size, size_t hashes_offset, size_t num_hashes, const void *nrr_hash, const u8 *hash_table, const void *desired_hash) {

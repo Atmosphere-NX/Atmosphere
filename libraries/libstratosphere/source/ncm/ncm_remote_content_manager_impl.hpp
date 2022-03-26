@@ -51,7 +51,7 @@ namespace ams::ncm {
                 R_TRY(::ncmOpenContentStorage(std::addressof(cs), static_cast<NcmStorageId>(storage_id)));
 
                 out.SetValue(ObjectFactory::CreateSharedEmplaced<IContentStorage, RemoteContentStorageImpl>(cs));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
@@ -59,7 +59,7 @@ namespace ams::ncm {
                 R_TRY(::ncmOpenContentMetaDatabase(std::addressof(db), static_cast<NcmStorageId>(storage_id)));
 
                 out.SetValue(ObjectFactory::CreateSharedEmplaced<IContentMetaDatabase, RemoteContentMetaDatabaseImpl>(db));
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result CloseContentStorageForcibly(StorageId storage_id) {

@@ -174,7 +174,7 @@ namespace ams::sf::hipc {
 
                 this->RegisterServerImpl(server, port_handle, false);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             #if AMS_SF_MITM_SUPPORTED
@@ -220,7 +220,7 @@ namespace ams::sf::hipc {
 
                 this->RegisterServerImpl(server, port_handle, true);
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
             #endif
         public:

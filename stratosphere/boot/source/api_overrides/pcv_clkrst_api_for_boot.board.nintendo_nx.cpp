@@ -144,7 +144,7 @@ namespace ams {
         Result OpenSession(ClkRstSession *out, DeviceCode device_code) {
             /* Get the relevant definition. */
             out->_session = const_cast<ClkRstDefinition *>(GetDefinition(device_code));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void CloseSession(ClkRstSession *session) {
@@ -188,21 +188,21 @@ namespace ams {
             /* Set clock. */
             SetClockEnabled(GetDefinition(module), en);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetClockRate(Module module, ClockHz hz) {
             /* Set the clock rate. */
             SetClockRate(GetDefinition(module), hz);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result SetReset(Module module, bool en) {
             /* Set reset. */
             SetResetEnabled(GetDefinition(module), en);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }

@@ -210,7 +210,7 @@ namespace ams::fssystem {
         g_heap_size           = size;
         g_heap_free_size_peak = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InitializeBufferPool(char *buffer, size_t size, char *work, size_t work_size) {
@@ -227,7 +227,7 @@ namespace ams::fssystem {
         g_heap_size           = size;
         g_heap_free_size_peak = size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool IsPooledBuffer(const void *buffer) {

@@ -128,7 +128,7 @@ namespace ams::settings::impl {
             AMS_ASSERT(succeeded);
             AMS_UNUSED(succeeded);
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         LazyFileAccessor &GetLazyFileAccessor() {

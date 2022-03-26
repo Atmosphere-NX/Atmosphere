@@ -69,7 +69,7 @@ namespace ams::htclow::driver {
 
         /* We're connected. */
         m_connected = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UsbDriver::Shutdown() {
@@ -92,7 +92,7 @@ namespace ams::htclow::driver {
             transferred += cur;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result UsbDriver::Receive(void *dst, int dst_size) {
@@ -107,7 +107,7 @@ namespace ams::htclow::driver {
             transferred += cur;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void UsbDriver::CancelSendReceive() {

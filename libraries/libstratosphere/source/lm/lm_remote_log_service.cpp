@@ -54,7 +54,7 @@ namespace ams::lm {
 
         /* Open logger. */
         out.SetValue(RemoteObjectFactory::CreateSharedEmplaced<::ams::lm::ILogger, RemoteLogger>(logger_srv));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     sf::SharedPointer<ILogService> CreateLogService() {

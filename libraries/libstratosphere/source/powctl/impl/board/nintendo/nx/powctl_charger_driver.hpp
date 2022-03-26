@@ -105,56 +105,56 @@ namespace ams::powctl::impl::board::nintendo::nx {
             virtual Result SetChargerVoltageClamp(IDevice *device, int mv) override;
 
             /* Unsupported Battery API. */
-            virtual Result GetBatteryChargePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryChargePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryVoltageFuelGaugePercentage(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryFullCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); return powctl::ResultNotSupported(); }
-            virtual Result GetBatteryRemainingCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryFullCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result GetBatteryRemainingCapacity(int *out_mah, IDevice *device) override { AMS_UNUSED(out_mah, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryChargePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryChargePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryChargePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryChargePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryVoltageFuelGaugePercentageMinimumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryVoltageFuelGaugePercentageMaximumAlertThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryFullChargeThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryFullChargeThreshold(IDevice *device, float percentage) override { AMS_UNUSED(device, percentage); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryAverageCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); return powctl::ResultNotSupported(); }
-            virtual Result GetBatteryCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryAverageCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result GetBatteryCurrent(int *out_ma, IDevice *device) override { AMS_UNUSED(out_ma, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryInternalState(void *dst, size_t *out_size, IDevice *device, size_t dst_size) override { AMS_UNUSED(dst, out_size, device, dst_size); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryInternalState(IDevice *device, const void *src, size_t src_size) override { AMS_UNUSED(device, src, src_size); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryInternalState(void *dst, size_t *out_size, IDevice *device, size_t dst_size) override { AMS_UNUSED(dst, out_size, device, dst_size); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryInternalState(IDevice *device, const void *src, size_t src_size) override { AMS_UNUSED(device, src, src_size); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryNeedToRestoreParameters(bool *out, IDevice *device) override { AMS_UNUSED(out, device); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryNeedToRestoreParameters(IDevice *device, bool en) override { AMS_UNUSED(device, en); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryNeedToRestoreParameters(bool *out, IDevice *device) override { AMS_UNUSED(out, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryNeedToRestoreParameters(IDevice *device, bool en) override { AMS_UNUSED(device, en); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result IsBatteryI2cShutdownEnabled(bool *out, IDevice *device) override { AMS_UNUSED(out, device); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryI2cShutdownEnabled(IDevice *device, bool en) override { AMS_UNUSED(device, en); return powctl::ResultNotSupported(); }
+            virtual Result IsBatteryI2cShutdownEnabled(bool *out, IDevice *device) override { AMS_UNUSED(out, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryI2cShutdownEnabled(IDevice *device, bool en) override { AMS_UNUSED(device, en); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result IsBatteryPresent(bool *out, IDevice *device) override { AMS_UNUSED(out, device); return powctl::ResultNotSupported(); }
+            virtual Result IsBatteryPresent(bool *out, IDevice *device) override { AMS_UNUSED(out, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryCycles(int *out, IDevice *device) override { AMS_UNUSED(out, device); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryCycles(IDevice *device, int cycles) override { AMS_UNUSED(device, cycles); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryCycles(int *out, IDevice *device) override { AMS_UNUSED(out, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryCycles(IDevice *device, int cycles) override { AMS_UNUSED(device, cycles); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryAge(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryAge(float *out_percent, IDevice *device) override { AMS_UNUSED(out_percent, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryTemperature(float *out_c, IDevice *device) override { AMS_UNUSED(out_c, device); return powctl::ResultNotSupported(); }
-            virtual Result GetBatteryMaximumTemperature(float *out_c, IDevice *device) override { AMS_UNUSED(out_c, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryTemperature(float *out_c, IDevice *device) override { AMS_UNUSED(out_c, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result GetBatteryMaximumTemperature(float *out_c, IDevice *device) override { AMS_UNUSED(out_c, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryTemperatureMinimumAlertThreshold(IDevice *device, float c) override { AMS_UNUSED(device, c); return powctl::ResultNotSupported(); }
-            virtual Result SetBatteryTemperatureMaximumAlertThreshold(IDevice *device, float c) override { AMS_UNUSED(device, c); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryTemperatureMinimumAlertThreshold(IDevice *device, float c) override { AMS_UNUSED(device, c); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result SetBatteryTemperatureMaximumAlertThreshold(IDevice *device, float c) override { AMS_UNUSED(device, c); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryVCell(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); return powctl::ResultNotSupported(); }
-            virtual Result GetBatteryAverageVCell(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryVCell(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); R_THROW(powctl::ResultNotSupported()); }
+            virtual Result GetBatteryAverageVCell(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryAverageVCellTime(TimeSpan *out, IDevice *device) override { AMS_UNUSED(out, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryAverageVCellTime(TimeSpan *out, IDevice *device) override { AMS_UNUSED(out, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryVoltageMinimumAlertThreshold(IDevice *device, int mv) override { AMS_UNUSED(device, mv); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryVoltageMinimumAlertThreshold(IDevice *device, int mv) override { AMS_UNUSED(device, mv); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result GetBatteryOpenCircuitVoltage(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); return powctl::ResultNotSupported(); }
+            virtual Result GetBatteryOpenCircuitVoltage(int *out_mv, IDevice *device) override { AMS_UNUSED(out_mv, device); R_THROW(powctl::ResultNotSupported()); }
 
-            virtual Result SetBatteryVoltageMaximumAlertThreshold(IDevice *device, int mv) override { AMS_UNUSED(device, mv); return powctl::ResultNotSupported(); }
+            virtual Result SetBatteryVoltageMaximumAlertThreshold(IDevice *device, int mv) override { AMS_UNUSED(device, mv); R_THROW(powctl::ResultNotSupported()); }
     };
 
 }

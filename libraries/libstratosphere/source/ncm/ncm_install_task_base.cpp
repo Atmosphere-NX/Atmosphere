@@ -79,7 +79,7 @@ namespace ams::ncm {
 
     Result InstallTaskBase::Prepare() {
         R_TRY(this->SetLastResultOnFailure(this->PrepareImpl()));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::GetPreparedPlaceHolderPath(Path *out_path, u64 id, ContentMetaType meta_type, ContentType type) {
@@ -124,7 +124,7 @@ namespace ams::ncm {
         /* Get the path. */
         storage.GetPlaceHolderPath(out_path, *placeholder_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::CalculateRequiredSize(s64 *out_size) {
@@ -151,7 +151,7 @@ namespace ams::ncm {
         }
 
         *out_size = required_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::PrepareImpl() {
@@ -196,7 +196,7 @@ namespace ams::ncm {
         R_TRY(m_data->Cleanup());
         this->CleanupProgress();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::CleanupOne(const InstallContentMeta &content_meta) {
@@ -219,7 +219,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter) {
@@ -230,7 +230,7 @@ namespace ams::ncm {
         /* Offset exceeds keys that can be written. */
         if (count <= offset) {
             *out_keys_written = 0;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         if (filter == ListContentMetaKeyFilter::All) {
@@ -284,7 +284,7 @@ namespace ams::ncm {
             *out_keys_written = keys_written;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset) {
@@ -295,7 +295,7 @@ namespace ams::ncm {
         /* Offset exceeds keys that can be written. */
         if (count <= offset) {
             *out_keys_written = 0;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Iterate over content meta. */
@@ -320,12 +320,12 @@ namespace ams::ncm {
         }
 
         *out_keys_written = keys_written;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::Execute() {
         R_TRY(this->SetLastResultOnFailure(this->ExecuteImpl()));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ExecuteImpl() {
@@ -376,7 +376,7 @@ namespace ams::ncm {
     Result InstallTaskBase::PrepareAndExecute() {
         R_TRY(this->SetLastResultOnFailure(this->PrepareImpl()));
         R_TRY(this->SetLastResultOnFailure(this->ExecuteImpl()));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys) {
@@ -407,7 +407,7 @@ namespace ams::ncm {
 
         /* Ensure number of uncommitted keys equals the number of input keys. */
         R_UNLESS(num_not_committed == num_keys, ncm::ResultListPartiallyNotCommitted());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::CommitImpl(const StorageContentMetaKey *keys, s32 num_keys) {
@@ -503,7 +503,7 @@ namespace ams::ncm {
             this->SetProgressState(InstallProgressState::Committed);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::Commit(const StorageContentMetaKey *keys, s32 num_keys) {
@@ -526,12 +526,12 @@ namespace ams::ncm {
             /* Check if the attributes are set for including the exfat driver. */
             if (content_meta.GetReader().GetHeader()->attributes & ContentMetaAttribute_IncludesExFatDriver) {
                 *out = true;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         *out = false;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size) {
@@ -553,7 +553,7 @@ namespace ams::ncm {
 
         /* Update the hash for the new data. */
         m_sha256_generator.Update(data, data_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::WritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) {
@@ -603,7 +603,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool InstallTaskBase::IsNecessaryInstallTicket(const fs::RightsId &rights_id) {
@@ -794,7 +794,7 @@ namespace ams::ncm {
 
         /* Push the content meta. */
         m_data->Push(tmp_buffer.Get(), tmp_buffer.GetSize());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InstallTaskBase::PrepareAgain() {
@@ -802,7 +802,7 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::PrepareDependency() {
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::PrepareSystemUpdateDependency() {
@@ -902,13 +902,13 @@ namespace ams::ncm {
                 /* If not rebootless, a reboot is required. */
                 if (!(content_meta_info.attributes & ContentMetaAttribute_Rebootless)) {
                     *out = SystemUpdateTaskApplyInfo::RequireReboot;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
 
         *out = SystemUpdateTaskApplyInfo::RequireNoReboot;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::PrepareContentMetaIfLatest(const ContentMetaKey &key) {
@@ -923,7 +923,7 @@ namespace ams::ncm {
             R_TRY(this->PrepareContentMeta(install_content_meta_info, key, util::nullopt));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::IsNewerThanInstalled(bool *out, const ContentMetaKey &key) {
@@ -950,13 +950,13 @@ namespace ams::ncm {
             /* Check if installed key is newer. */
             if (latest_key.version >= key.version) {
                 *out = false;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* Input key is newer. */
         *out = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::CountInstallContentMetaData(s32 *out_count) {
@@ -1022,7 +1022,7 @@ namespace ams::ncm {
         /* Set output. */
         *out = std::move(install_meta_data);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     InstallContentInfo InstallTaskBase::MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, util::optional<bool> is_tmp) {
@@ -1146,11 +1146,11 @@ namespace ams::ncm {
             }
 
             /* No need to look for any further keys. */
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         *out_size = 0;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key) {
@@ -1177,7 +1177,7 @@ namespace ams::ncm {
 
         /* Delete the placeholder. */
         content_storage.DeletePlaceHolder(placeholder_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::FindMaxRequiredApplicationVersion(u32 *out) {
@@ -1206,7 +1206,7 @@ namespace ams::ncm {
         }
 
         *out = max_version;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ListOccupiedSize(s32 *out_written, InstallTaskOccupiedSize *out_list, s32 out_list_size, s32 offset) {
@@ -1263,7 +1263,7 @@ namespace ams::ncm {
         /* Write the out count. */
         *out_written = count;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void InstallTaskBase::SetProgressState(InstallProgressState state) {
@@ -1306,7 +1306,7 @@ namespace ams::ncm {
         }
 
         *out = max_version;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::CanContinue() {
@@ -1322,7 +1322,7 @@ namespace ams::ncm {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result InstallTaskBase::ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset) {
@@ -1348,7 +1348,7 @@ namespace ams::ncm {
             }
         }
 
-        return ncm::ResultContentMetaNotFound();
+        R_THROW(ncm::ResultContentMetaNotFound());
     }
 
     Result InstallTaskBase::ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset) {
@@ -1356,7 +1356,7 @@ namespace ams::ncm {
         /* Thus, we have nothing to list. */
         if (offset > 0) {
             *out_count = 0;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Create a reader. */
@@ -1391,6 +1391,6 @@ namespace ams::ncm {
         /* Sort and remove duplicate ids from the output span. */
         std::sort(out_span.begin(), out_span.end());
         *out_count = std::distance(out_span.begin(), std::unique(out_span.begin(), out_span.end()));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 }

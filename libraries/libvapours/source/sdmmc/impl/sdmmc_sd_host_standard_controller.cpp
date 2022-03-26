@@ -106,7 +106,7 @@ namespace ams::sdmmc::impl {
         /* Configure timeout control to use the maximum timeout value (TMCLK * 2^27) */
         reg::ReadWrite(m_registers->timeout_control, SD_REG_BITS_VALUE(TIMEOUT_CONTROL_DATA_TIMEOUT_COUNTER, 0b1110));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdHostStandardController::SetBusPower(BusPower bus_power) {
@@ -176,13 +176,13 @@ namespace ams::sdmmc::impl {
         os::MultiWaitHolderType *signaled_holder = os::TimedWaitAny(std::addressof(m_multi_wait), TimeSpan::FromMilliSeconds(timeout_ms));
         if (signaled_holder == std::addressof(m_interrupt_event_holder)) {
             /* We received the interrupt. */
-            return ResultSuccess();
+            R_SUCCEED();
         } else if (signaled_holder == std::addressof(m_removed_event_holder)) {
             /* The device was removed. */
-            return sdmmc::ResultDeviceRemoved();
+            R_THROW(sdmmc::ResultDeviceRemoved());
         } else {
             /* Timeout occurred. */
-            return sdmmc::ResultWaitInterruptSoftwareTimeout();
+            R_THROW(sdmmc::ResultWaitInterruptSoftwareTimeout());
         }
     }
 
@@ -338,17 +338,17 @@ namespace ams::sdmmc::impl {
 
                 /* Otherwise, check if we've timed out. */
                 if (!timer.Update()) {
-                    return sdmmc::ResultAbortTransactionSoftwareTimeout();
+                    R_THROW(sdmmc::ResultAbortTransactionSoftwareTimeout());
                 }
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdHostStandardController::AbortTransaction() {
         R_TRY(this->ResetCmdDatLine());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdHostStandardController::WaitWhileCommandInhibit(bool has_dat) {
@@ -370,7 +370,7 @@ namespace ams::sdmmc::impl {
                 /* Otherwise, check if we've timed out. */
                 if (!timer.Update()) {
                     this->AbortTransaction();
-                    return sdmmc::ResultCommandInhibitCmdSoftwareTimeout();
+                    R_THROW(sdmmc::ResultCommandInhibitCmdSoftwareTimeout());
                 }
             }
         }
@@ -390,12 +390,12 @@ namespace ams::sdmmc::impl {
                 /* Otherwise, check if we've timed out. */
                 if (!timer.Update()) {
                     this->AbortTransaction();
-                    return sdmmc::ResultCommandInhibitDatSoftwareTimeout();
+                    R_THROW(sdmmc::ResultCommandInhibitDatSoftwareTimeout());
                 }
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdHostStandardController::CheckAndClearInterruptStatus(volatile u16 *out_normal_int_status, u16 wait_mask) {
@@ -417,7 +417,7 @@ namespace ams::sdmmc::impl {
 
             /* Write the masked value to the status register to ensure consistent state. */
             reg::Write(m_registers->normal_int_status, masked_status);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* We have an error interrupt. Write the status to the register to ensure consistent state. */
@@ -440,10 +440,10 @@ namespace ams::sdmmc::impl {
             R_UNLESS(reg::HasValue(auto_cmd_err_status, SD_REG_BITS_ENUM(AUTO_CMD_ERROR_AUTO_CMD_TIMEOUT, NO_ERROR)), sdmmc::ResultAutoCommandResponseTimeoutError());
 
             /* An known auto cmd error occurred. */
-            return sdmmc::ResultSdHostStandardUnknownAutoCmdError();
+            R_THROW(sdmmc::ResultSdHostStandardUnknownAutoCmdError());
         } else {
             /* Unknown error occurred. */
-            return sdmmc::ResultSdHostStandardUnknownError();
+            R_THROW(sdmmc::ResultSdHostStandardUnknownError());
         }
     }
 
@@ -468,7 +468,7 @@ namespace ams::sdmmc::impl {
             } else {
                 /* If the device wasn't removed, cancel our transaction. */
                 this->AbortTransaction();
-                return sdmmc::ResultCommandCompleteSoftwareTimeout();
+                R_THROW(sdmmc::ResultCommandCompleteSoftwareTimeout());
             }
         }
         #else
@@ -485,12 +485,12 @@ namespace ams::sdmmc::impl {
 
                     /* If we succeeded, we're done. */
                     if (R_SUCCEEDED(result)) {
-                        return ResultSuccess();
+                        R_SUCCEED();
                     } else if (sdmmc::ResultNoWaitedInterrupt::Includes(result)) {
                         /* Otherwise, if the wait for the interrupt isn't done, update the timer and check for timeout. */
                         if (!timer.Update()) {
                             this->AbortTransaction();
-                            return sdmmc::ResultCommandCompleteSoftwareTimeout();
+                            R_THROW(sdmmc::ResultCommandCompleteSoftwareTimeout());
                         }
                     } else {
                         /* Otherwise, we have a generic failure. */
@@ -525,7 +525,7 @@ namespace ams::sdmmc::impl {
                     if (R_SUCCEEDED(result)) {
                         /* If the transfer is complete, we're done. */
                         if (reg::HasValue(normal_int_status, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_STATUS_TRANSFER_COMPLETE, COMPLETE))) {
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
 
                         /* Otherwise, if a DMA interrupt was generated, advance to the next address. */
@@ -549,7 +549,7 @@ namespace ams::sdmmc::impl {
                     /* Otherwise, timeout if the transfer hasn't advanced. */
                     if (last_block_count != reg::Read(m_registers->block_count)) {
                         this->AbortTransaction();
-                        return sdmmc::ResultTransferCompleteSoftwareTimeout();
+                        R_THROW(sdmmc::ResultTransferCompleteSoftwareTimeout());
                     }
                 }
             }
@@ -574,7 +574,7 @@ namespace ams::sdmmc::impl {
                         if (R_SUCCEEDED(result)) {
                             /* If the transfer is complete, we're done. */
                             if (reg::HasValue(normal_int_status, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_STATUS_TRANSFER_COMPLETE, COMPLETE))) {
-                                return ResultSuccess();
+                                R_SUCCEED();
                             }
 
                             /* Otherwise, if a DMA interrupt was generated, advance to the next address. */
@@ -590,7 +590,7 @@ namespace ams::sdmmc::impl {
                                 /* Only timeout if the transfer hasn't advanced. */
                                 if (last_block_count != reg::Read(m_registers->block_count)) {
                                     this->AbortTransaction();
-                                    return sdmmc::ResultTransferCompleteSoftwareTimeout();
+                                    R_THROW(sdmmc::ResultTransferCompleteSoftwareTimeout());
                                 }
                                 break;
                             }
@@ -619,13 +619,13 @@ namespace ams::sdmmc::impl {
 
                 /* If the DAT0 line signal is level high, we're done. */
                 if (reg::HasValue(m_registers->present_state, SD_REG_BITS_ENUM(PRESENT_STATE_DAT0_LINE_SIGNAL_LEVEL, HIGH))) {
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Otherwise, check if we're timed out. */
                 if (!timer.Update()) {
                     this->AbortTransaction();
-                    return sdmmc::ResultBusySoftwareTimeout();
+                    R_THROW(sdmmc::ResultBusySoftwareTimeout());
                 }
             }
         }
@@ -715,7 +715,7 @@ namespace ams::sdmmc::impl {
             R_TRY(this->WaitWhileBusy());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdHostStandardController::IssueStopTransmissionCommandWithDeviceClock(u32 *out_response) {
@@ -742,7 +742,7 @@ namespace ams::sdmmc::impl {
         /* Wait until we're done. */
         R_TRY(this->WaitWhileBusy());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     SdHostStandardController::SdHostStandardController(dd::PhysicalAddress registers_phys_addr, size_t registers_size) {

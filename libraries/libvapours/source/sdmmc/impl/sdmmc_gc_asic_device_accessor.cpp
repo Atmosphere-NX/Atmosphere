@@ -96,25 +96,25 @@ namespace ams::sdmmc::impl {
         hc->GetLastResponse(std::addressof(resp), sizeof(resp), CommandResponseType);
         R_TRY(m_gc_asic_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::IssueCommandFinishOperation() const {
         /* Issue the command. */
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(CommandIndex_GcAsicFinishOperation, 0, true, DeviceState_Tran));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::IssueCommandSleep() {
         /* Issue the command. */
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(CommandIndex_GcAsicSleep, 0, true, DeviceState_Tran));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::IssueCommandUpdateKey() const {
         /* Issue the command. */
         R_TRY(BaseDeviceAccessor::IssueCommandAndCheckR1(CommandIndex_GcAsicUpdateKey, 0, true, DeviceState_Tran));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::StartupGcAsicDevice() {
@@ -136,7 +136,7 @@ namespace ams::sdmmc::impl {
         /* Enable power saving. */
         hc->SetPowerSaving(true);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::OnActivate() {
@@ -148,7 +148,7 @@ namespace ams::sdmmc::impl {
 
         /* We started up, so we don't need to power down. */
         power_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::OnReadWrite(u32 sector_index, u32 num_sectors, void *buf, size_t buf_size, bool is_read) {
@@ -165,7 +165,7 @@ namespace ams::sdmmc::impl {
         /* Require that we read/wrote as many sectors as we expected. */
         AMS_ABORT_UNLESS(num_transferred_blocks == num_sectors);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GcAsicDeviceAccessor::Initialize() {
@@ -229,7 +229,7 @@ namespace ams::sdmmc::impl {
         R_TRY(m_gc_asic_device.CheckAccessible());
 
         *out_speed_mode = SpeedMode_GcAsicSpeed;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void GcAsicDeviceAccessor::PutGcAsicToSleep() {
@@ -275,7 +275,7 @@ namespace ams::sdmmc::impl {
             R_TRY(BaseDeviceAccessor::GetHostController()->Awaken());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::WriteGcAsicOperation(const void *op_buf, size_t op_buf_size) {
@@ -289,7 +289,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandWriteOperation(op_buf, op_buf_size));
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::FinishGcAsicOperation() {
@@ -303,7 +303,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandFinishOperation());
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::AbortGcAsicOperation() {
@@ -318,7 +318,7 @@ namespace ams::sdmmc::impl {
         R_TRY(BaseDeviceAccessor::GetHostController()->IssueStopTransmissionCommand(std::addressof(resp)));
         R_TRY(m_gc_asic_device.CheckDeviceStatus(resp));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::SleepGcAsic() {
@@ -332,7 +332,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandSleep());
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GcAsicDeviceAccessor::UpdateGcAsicKey() {
@@ -346,7 +346,7 @@ namespace ams::sdmmc::impl {
         R_TRY(this->IssueCommandUpdateKey());
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -58,7 +58,7 @@ namespace ams::boot {
                 /* Set configuration to charge battery. */
                 R_TRY(powctl::SetChargerChargerConfiguration(m_charger_session, powctl::ChargerConfiguration_ChargeBattery));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetChargeCurrentState(powctl::ChargeCurrentState *out) {
@@ -107,7 +107,7 @@ namespace ams::boot {
                     case powctl::ChargerStatus_ChargeTerminationDone: *out = boot::ChargerStatus_ChargeTerminationDone; break;
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetBatteryCompensation(int *out) {

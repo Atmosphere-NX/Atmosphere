@@ -118,7 +118,7 @@ namespace ams::i2c {
         out->_session = session.Detach();
 
         /* We succeeded. */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(I2cSession &session) {

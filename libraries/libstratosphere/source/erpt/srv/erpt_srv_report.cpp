@@ -54,7 +54,7 @@ namespace ams::erpt::srv {
         switch (type) {
             case ReportOpenType_Create: return this->OpenStream(this->FileName().name, StreamMode_Write, ReportStreamBufferSize);
             case ReportOpenType_Read:   return this->OpenStream(this->FileName().name, StreamMode_Read,  ReportStreamBufferSize);
-            default:                    return erpt::ResultInvalidArgument();
+            default:                    R_THROW(erpt::ResultInvalidArgument());
         }
     }
 
@@ -72,7 +72,7 @@ namespace ams::erpt::srv {
 
     Result Report::GetFlags(ReportFlagSet *out) const {
         *out = m_record->m_info.flags;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Report::SetFlags(ReportFlagSet flags) {
@@ -80,7 +80,7 @@ namespace ams::erpt::srv {
             m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Report::GetSize(s64 *out) const {

@@ -73,7 +73,7 @@ namespace ams::spl {
                     }
                 } R_END_TRY_CATCH;
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
@@ -259,7 +259,7 @@ namespace ams::spl {
         R_TRY(splGetBootReason(std::addressof(v)));
 
         std::memcpy(out, std::addressof(v), sizeof(*out));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     SocType GetSocType() {

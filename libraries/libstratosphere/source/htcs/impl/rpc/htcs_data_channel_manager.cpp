@@ -56,7 +56,7 @@ namespace ams::htcs::impl::rpc {
         /* Wait to receive the data. */
         R_TRY(channel.WaitReceive(buffer_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result DataChannelManager::Send(const void *buffer, s64 buffer_size, u32 task_id) {
@@ -92,7 +92,7 @@ namespace ams::htcs::impl::rpc {
         /* Wait to send the data. */
         R_TRY(channel.Flush());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

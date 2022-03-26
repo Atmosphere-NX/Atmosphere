@@ -119,7 +119,7 @@ namespace ams::dmnt {
 
         /* Set as in-use. */
         m_in_use = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     HardwareWatchPointManager::HardwareWatchPointManager(DebugProcess *debug_process) : BreakPointManagerBase(debug_process) {
@@ -153,7 +153,7 @@ namespace ams::dmnt {
                 if (bp.m_address <= address && address < bp.m_address + bp.m_size) {
                     read  = bp.m_read;
                     write = bp.m_write;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace ams::dmnt {
         read  = false;
         write = false;
 
-        return svc::ResultInvalidArgument();
+        R_THROW(svc::ResultInvalidArgument());
     }
 
 }

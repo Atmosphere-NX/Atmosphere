@@ -32,7 +32,7 @@ namespace ams::fs::RomPathTool {
             /* ... */
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void PathParser::Finalize() {
@@ -97,7 +97,7 @@ namespace ams::fs::RomPathTool {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PathParser::GetAsDirectoryName(RomEntryName *out) const {
@@ -111,7 +111,7 @@ namespace ams::fs::RomPathTool {
 
         out->length = len;
         out->path   = m_prev_path_start;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PathParser::GetAsFileName(RomEntryName *out) const {
@@ -125,7 +125,7 @@ namespace ams::fs::RomPathTool {
 
         out->length = len;
         out->path   = m_prev_path_start;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetParentDirectoryName(RomEntryName *out, const RomEntryName &cur, const RomPathChar *p) {
@@ -186,7 +186,7 @@ namespace ams::fs::RomPathTool {
             out->length = end - start + 1;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

@@ -51,7 +51,7 @@ namespace ams::mitm::sysupdater {
                 R_SUCCEED_IF(done);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *package_root_path, const char *entry_path) {
@@ -118,13 +118,13 @@ namespace ams::mitm::sysupdater {
                     *out = ncm::ContentInfo::Make(*content_id, entry.file_size, ncm::ContentType::Meta);
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }));
 
             /* If we didn't find anything, error. */
             R_UNLESS(found_system_update, ncm::ResultSystemUpdateNotFoundInPackage());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ValidateSystemUpdate(Result *out_result, Result *out_exfat_result, UpdateValidationInfo *out_info, const ncm::PackagedContentMetaReader &update_reader, const char *package_root) {
@@ -212,7 +212,7 @@ namespace ams::mitm::sysupdater {
                         util::SNPrintf(path, sizeof(path), "%s%s%s", package_root, content_id_str.data, content_info->GetType() == ncm::ContentType::Meta ? ".cnmt.nca" : ".nca");
                         if (R_FAILED(ValidateResult(fs::OpenFile(std::addressof(file), path, ams::fs::OpenMode_Read)))) {
                             *done = true;
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
                     ON_SCOPE_EXIT { fs::CloseFile(file); };
@@ -221,12 +221,12 @@ namespace ams::mitm::sysupdater {
                     s64 file_size;
                     if (R_FAILED(ValidateResult(fs::GetFileSize(std::addressof(file_size), file)))) {
                         *done = true;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                     if (file_size != content_size) {
                         *out_result = ncm::ResultInvalidContentHash();
                         *done = true;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     /* Read and hash the file in chunks. */
@@ -238,7 +238,7 @@ namespace ams::mitm::sysupdater {
                         const size_t cur_size = std::min(static_cast<size_t>(content_size - ofs), data_buffer_size);
                         if (R_FAILED(ValidateResult(fs::ReadFile(file, ofs, data_buffer, cur_size)))) {
                             *done = true;
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
 
                         sha.Update(data_buffer, cur_size);
@@ -254,7 +254,7 @@ namespace ams::mitm::sysupdater {
                     if (std::memcmp(std::addressof(calc_digest), std::addressof(content_info->digest), sizeof(ncm::Digest)) != 0) {
                         *out_result = ncm::ResultInvalidContentHash();
                         *done = true;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                 }
 
@@ -262,7 +262,7 @@ namespace ams::mitm::sysupdater {
                 content_meta_valid[validation_index] = true;
                 *out_info = {};
 
-                return ResultSuccess();
+                R_SUCCEED();
             }));
 
             /* If we're otherwise going to succeed, ensure that every content was found. */
@@ -284,7 +284,7 @@ namespace ams::mitm::sysupdater {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result FormatUserPackagePath(ncm::Path *out, const ncm::Path &user_path) {
@@ -300,7 +300,7 @@ namespace ams::mitm::sysupdater {
                 out->str[len - 1] = '\x00';
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         const char *GetFirmwareVariationSettingName(settings::system::PlatformRegion region) {
@@ -382,7 +382,7 @@ namespace ams::mitm::sysupdater {
 
         /* Set the parsed update info. */
         out.SetValue(update_info);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<Result> out_validate_exfat_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path) {
@@ -407,7 +407,7 @@ namespace ams::mitm::sysupdater {
             R_TRY(ValidateSystemUpdate(out_validate_result.GetPointer(), out_validate_exfat_result.GetPointer(), out_validate_info.GetPointer(), reader, package_root.str));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     };
 
     Result SystemUpdateService::SetupUpdate(sf::CopyHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
@@ -435,7 +435,7 @@ namespace ams::mitm::sysupdater {
         out_event_handle.SetValue(async_result.GetImpl().GetEvent().GetReadableHandle(), false);
         *out_async = std::move(async_result);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::GetPrepareUpdateProgress(sf::Out<SystemUpdateProgress> out) {
@@ -445,7 +445,7 @@ namespace ams::mitm::sysupdater {
         /* Get the progress. */
         auto install_progress = m_update_task->GetProgress();
         out.SetValue({ .current_size = install_progress.installed_size, .total_size = install_progress.total_size });
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::HasPreparedUpdate(sf::Out<bool> out) {
@@ -453,7 +453,7 @@ namespace ams::mitm::sysupdater {
         R_UNLESS(m_setup_update, ns::ResultCardUpdateNotSetup());
 
         out.SetValue(m_update_task->GetProgress().state == ncm::InstallProgressState::Downloaded);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::ApplyPreparedUpdate() {
@@ -466,7 +466,7 @@ namespace ams::mitm::sysupdater {
         /* Apply the task. */
         R_TRY(m_apply_manager.ApplyPackageTask(std::addressof(*m_update_task)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::SetupUpdateImpl(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
@@ -485,7 +485,7 @@ namespace ams::mitm::sysupdater {
 
         /* The update is now set up. */
         m_setup_update = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SystemUpdateService::InitializeUpdateTask(sf::NativeHandle &&transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
@@ -516,7 +516,7 @@ namespace ams::mitm::sysupdater {
         /* We successfully setup the update. */
         tmem_guard.Cancel();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

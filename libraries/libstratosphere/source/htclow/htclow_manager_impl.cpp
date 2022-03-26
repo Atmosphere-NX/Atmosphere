@@ -50,7 +50,7 @@ namespace ams::htclow {
         m_is_driver_open = true;
 
         drv_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HtclowManagerImpl::CloseDriver() {
@@ -114,7 +114,7 @@ namespace ams::htclow {
 
         /* Try to ready ourselves. */
         m_ctrl_service.TryReady();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtclowManagerImpl::ConnectEnd(impl::ChannelInternalType channel, u32 task_id) {

@@ -48,7 +48,7 @@ namespace ams::secmon::fatal {
         //sdmmc::Deactivate(Port);
         R_TRY(sdmmc::Activate(Port));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
@@ -78,7 +78,7 @@ namespace ams::secmon::fatal {
             sector_count -= cur_sectors;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size) {
@@ -104,7 +104,7 @@ namespace ams::secmon::fatal {
             sector_count -= cur_sectors;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

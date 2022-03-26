@@ -48,7 +48,7 @@ namespace ams::sprofile::srv {
 
                 /* Add the profile. */
                 m_profiles[m_profile_count++] = profile;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result Unlisten(Identifier profile) {
@@ -57,16 +57,16 @@ namespace ams::sprofile::srv {
                     if (m_profiles[i] == profile) {
                         m_profiles[i] = m_profiles[--m_profile_count];
                         AMS_ABORT_UNLESS(m_profile_count >= 0);
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
                 }
 
-                return sprofile::ResultNotListening();
+                R_THROW(sprofile::ResultNotListening());
             }
 
             Result GetEventHandle(sf::OutCopyHandle out) {
                 out.SetValue(m_event.GetReadableHandle(), false);
-                return ResultSuccess();
+                R_SUCCEED();
             }
         public:
             void OnUpdate(Identifier profile) {

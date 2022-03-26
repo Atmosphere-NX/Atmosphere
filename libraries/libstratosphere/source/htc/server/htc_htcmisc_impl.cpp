@@ -91,7 +91,7 @@ namespace ams::htc::server {
         /* Finish the task. */
         R_TRY(m_rpc_client.End<rpc::GetEnvironmentVariableTask>(task_id, out_size, dst, dst_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcmiscImpl::GetEnvironmentVariableLength(size_t *out_size, const char *name, size_t name_size) {
@@ -105,7 +105,7 @@ namespace ams::htc::server {
         /* Finish the task. */
         R_TRY(m_rpc_client.End<rpc::GetEnvironmentVariableLengthTask>(task_id, out_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcmiscImpl::RunOnHostBegin(u32 *out_task_id, os::NativeHandle *out_event, const char *args, size_t args_size) {
@@ -117,7 +117,7 @@ namespace ams::htc::server {
         *out_task_id = task_id;
         *out_event   = m_rpc_client.DetachReadableHandle(task_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result HtcmiscImpl::RunOnHostEnd(s32 *out_result, u32 task_id) {
@@ -128,7 +128,7 @@ namespace ams::htc::server {
         /* Set output. */
         *out_result = res;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void HtcmiscImpl::ClientThread() {

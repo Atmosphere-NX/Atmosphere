@@ -176,7 +176,7 @@ namespace ams::fssystem {
             } while (m_block_size <= remaining);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FileSystemBuddyHeap::Finalize() {

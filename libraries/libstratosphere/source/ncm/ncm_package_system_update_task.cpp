@@ -67,7 +67,7 @@ namespace ams::ncm {
 
         /* Set the context path. */
         m_context_path.Assign(context_path);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     util::optional<ContentMetaKey> PackageSystemUpdateTask::GetSystemUpdateMetaKey() {
@@ -103,7 +103,7 @@ namespace ams::ncm {
 
         /* Create a new install content meta info. */
         *out = InstallContentMetaInfo::MakeUnverifiable(info.GetId(), info.GetSize(), key);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result PackageSystemUpdateTask::PrepareInstallContentMetaData() {
@@ -140,12 +140,12 @@ namespace ams::ncm {
             /* Check if the info is for meta content. */
             if (info.GetType() == ContentType::Meta) {
                 *out = info;
-                return ResultSuccess();
+                R_SUCCEED();
             }
         }
 
         /* Not found. */
-        return ncm::ResultContentInfoNotFound();
+        R_THROW(ncm::ResultContentInfoNotFound());
     }
 
 }

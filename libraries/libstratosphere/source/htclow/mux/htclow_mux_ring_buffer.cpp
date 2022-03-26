@@ -54,7 +54,7 @@ namespace ams::htclow::mux {
         /* Discard. */
         R_TRY(this->Discard(size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RingBuffer::Write(const void *data, size_t size) {
@@ -81,7 +81,7 @@ namespace ams::htclow::mux {
         /* Update our data size. */
         m_data_size += size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RingBuffer::Copy(void *dst, size_t size) {
@@ -108,7 +108,7 @@ namespace ams::htclow::mux {
         /* Mark that we can discard. */
         m_can_discard = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RingBuffer::Discard(size_t size) {
@@ -127,7 +127,7 @@ namespace ams::htclow::mux {
         m_data_size   -= size;
         m_can_discard  = false;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

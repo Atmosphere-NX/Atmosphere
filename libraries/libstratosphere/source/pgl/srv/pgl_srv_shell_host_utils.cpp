@@ -114,7 +114,7 @@ namespace ams::pgl::srv {
                     /* Ensure we have a content meta buffer. */
                     R_UNLESS(m_content_meta_buffer.Get() != nullptr, pgl::ResultContentMetaNotFound());
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result ReadProgramInfo() {
@@ -128,7 +128,7 @@ namespace ams::pgl::srv {
                     m_program_id        = {key.id};
                     m_program_version   = key.version;
                     m_content_meta_type = key.type;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetContentPath(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
@@ -182,7 +182,7 @@ namespace ams::pgl::srv {
                     R_TRY(this->SearchContent(std::addressof(has_content), out, file_name, fs::OpenDirectoryMode_File));
                     R_UNLESS(has_content, pgl::ResultApplicationContentNotFound());
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetContentPathInNspd(lr::Path *out, ncm::ContentType type, util::optional<u8> index) const {
@@ -209,14 +209,14 @@ namespace ams::pgl::srv {
                     R_TRY(this->SearchContent(std::addressof(has_content), out, file_name, fs::OpenDirectoryMode_Directory));
                     R_UNLESS(has_content, pgl::ResultApplicationContentNotFound());
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result GetProgramIndex(u8 *out) {
                     /* Nspd programs do not have indices. */
                     if (m_extension_type == ExtensionType::Nspd) {
                         *out = 0;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     /* Create a reader. */
@@ -228,7 +228,7 @@ namespace ams::pgl::srv {
 
                     /* Return the index. */
                     *out = program_content_info->GetIdOffset();
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 Result SetExtensionType() {
@@ -239,12 +239,12 @@ namespace ams::pgl::srv {
 
                     if (HasSuffix(m_content_path, ".nsp")) {
                         m_extension_type = ExtensionType::Nsp;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     } else if (HasSuffix(m_content_path, ".nspd") || HasSuffix(m_content_path, ".nspd/")) {
                         m_extension_type = ExtensionType::Nspd;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     } else {
-                        return fs::ResultPathNotFound();
+                        R_THROW(fs::ResultPathNotFound());
                     }
                 }
 
@@ -297,13 +297,13 @@ namespace ams::pgl::srv {
                                 }
                             }
 
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
 
                     /* We didn't find a match. */
                     *out = false;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -351,7 +351,7 @@ namespace ams::pgl::srv {
             .id_offset    = reader.GetProgramIndex(),
         };
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

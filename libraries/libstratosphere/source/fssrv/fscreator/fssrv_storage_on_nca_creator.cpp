@@ -29,7 +29,7 @@ namespace ams::fssrv::fscreator {
         /* Set the out storage. */
         *out = std::move(storage);
         *out_splitter = std::move(splitter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result StorageOnNcaCreator::CreateWithPatch(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index) {
@@ -44,7 +44,7 @@ namespace ams::fssrv::fscreator {
         /* Set the out storage. */
         *out = std::move(storage);
         *out_splitter = std::move(splitter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result StorageOnNcaCreator::CreateNcaReader(std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<fs::IStorage> storage) {
@@ -57,7 +57,7 @@ namespace ams::fssrv::fscreator {
 
         /* Set the output. */
         *out = std::move(reader);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     #if !defined(ATMOSPHERE_BOARD_NINTENDO_NX)
@@ -73,7 +73,7 @@ namespace ams::fssrv::fscreator {
         /* Set the out storage. */
         *out = std::move(storage);
         *out_splitter = std::move(splitter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result StorageOnNcaCreator::CreateWithPatchWithContext(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, fssystem::NcaFsHeaderReader *out_header_reader, void *ctx, std::shared_ptr<fssystem::NcaReader> original_nca_reader, std::shared_ptr<fssystem::NcaReader> current_nca_reader, s32 index) {
@@ -88,7 +88,7 @@ namespace ams::fssrv::fscreator {
         /* Set the out storage. */
         *out = std::move(storage);
         *out_splitter = std::move(splitter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result StorageOnNcaCreator::CreateByRawStorage(std::shared_ptr<fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, const fssystem::NcaFsHeaderReader *header_reader, std::shared_ptr<fs::IStorage> raw_storage, void *ctx, std::shared_ptr<fssystem::NcaReader> nca_reader) {

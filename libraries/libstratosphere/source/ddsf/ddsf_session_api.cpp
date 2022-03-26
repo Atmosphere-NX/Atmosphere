@@ -32,7 +32,7 @@ namespace ams::ddsf {
 
         /* We succeeded. */
         session_guard.Cancel();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(ISession *session) {

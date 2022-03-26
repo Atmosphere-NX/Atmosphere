@@ -70,7 +70,7 @@ namespace ams::fssystem {
         auto dec_size = crypto::DecryptAes128Ctr(buffer, size, m_key, KeySize, ctr, IvSize, buffer, size);
         R_UNLESS(size == dec_size, fs::ResultUnexpectedInAesCtrStorageA());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename BasePointer>
@@ -124,7 +124,7 @@ namespace ams::fssystem {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template<typename BasePointer>
@@ -135,7 +135,7 @@ namespace ams::fssystem {
     template<typename BasePointer>
     Result AesCtrStorage<BasePointer>::SetSize(s64 size) {
         AMS_UNUSED(size);
-        return fs::ResultUnsupportedSetSizeForAesCtrStorage();
+        R_THROW(fs::ResultUnsupportedSetSizeForAesCtrStorage());
     }
 
     template<typename BasePointer>
@@ -154,7 +154,7 @@ namespace ams::fssystem {
                 reinterpret_cast<fs::QueryRangeInfo *>(dst)->Clear();
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Ensure alignment. */
@@ -183,7 +183,7 @@ namespace ams::fssystem {
                 break;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     template class AesCtrStorage<fs::IStorage *>;

@@ -46,7 +46,7 @@ namespace ams::ncm {
 
         /* Save output. */
         *out = content_info->content_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::Set(const ContentMetaKey &key, const sf::InBuffer &value) {
@@ -64,7 +64,7 @@ namespace ams::ncm {
         } R_END_TRY_CATCH;
 
         out_size.SetValue(size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::Remove(const ContentMetaKey &key) {
@@ -74,7 +74,7 @@ namespace ams::ncm {
             R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
@@ -100,7 +100,7 @@ namespace ams::ncm {
         }
 
         out_count.SetValue(count);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) {
@@ -143,7 +143,7 @@ namespace ams::ncm {
 
         out_entries_total.SetValue(entries_total);
         out_entries_written.SetValue(entries_written);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
@@ -168,7 +168,7 @@ namespace ams::ncm {
         R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
 
         out_key.SetValue(*found_key);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType type) {
@@ -200,7 +200,7 @@ namespace ams::ncm {
 
         out_entries_total.SetValue(entries_total);
         out_entries_written.SetValue(entries_written);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::Has(sf::Out<bool> out, const ContentMetaKey &key) {
@@ -215,7 +215,7 @@ namespace ams::ncm {
         } R_END_TRY_CATCH;
 
         *out = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) {
@@ -233,7 +233,7 @@ namespace ams::ncm {
         }
 
         *out = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) {
@@ -244,7 +244,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaSize(&size, key));
 
         out_size.SetValue(size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
@@ -272,7 +272,7 @@ namespace ams::ncm {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
@@ -291,12 +291,12 @@ namespace ams::ncm {
 
         /* Obtain the patch id. */
         out_patch_id.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->patch_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::DisableForcibly() {
         m_disabled = true;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
@@ -332,7 +332,7 @@ namespace ams::ncm {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::Commit() {
@@ -362,7 +362,7 @@ namespace ams::ncm {
 
         /* We didn't find a content info. */
         out.SetValue(false);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::ListContentMetaInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, s32 offset) {
@@ -385,7 +385,7 @@ namespace ams::ncm {
 
         /* Set the ouput value. */
         out_entries_written.SetValue(count);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) {
@@ -401,7 +401,7 @@ namespace ams::ncm {
 
         /* Set the ouput value. */
         out_attributes.SetValue(reader.GetHeader()->attributes);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
@@ -431,7 +431,7 @@ namespace ams::ncm {
 
         /* Set the ouput value. */
         out_version.SetValue(required_version);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
@@ -441,7 +441,7 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::GetCount(sf::Out<u32> out_count) {
         R_TRY(this->EnsureEnabled());
         out_count.SetValue(m_kvs->GetCount());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentMetaDatabaseImpl::GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) {
@@ -453,7 +453,7 @@ namespace ams::ncm {
         /* Applications are their own owner. */
         if (key.type == ContentMetaType::Application) {
             out_id.SetValue({key.id});
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Obtain the content meta for the key. */
@@ -478,7 +478,7 @@ namespace ams::ncm {
 
         /* Set the output value. */
         out_id.SetValue(owner_application_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

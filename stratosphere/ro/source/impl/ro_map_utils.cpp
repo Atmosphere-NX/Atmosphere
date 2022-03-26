@@ -68,7 +68,7 @@ namespace ams::ro::impl {
             /* If the memory range is free and big enough, use it. */
             if (mem_info.state == svc::MemoryState_Free && mapping_size <= ((mem_info.base_address + mem_info.size) - address)) {
                 *out = address;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Check that we can advance. */

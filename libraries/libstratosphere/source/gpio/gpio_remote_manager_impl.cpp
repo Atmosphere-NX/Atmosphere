@@ -39,7 +39,7 @@ namespace ams::gpio {
         R_TRY(::gpioOpenSession(std::addressof(p), static_cast<::GpioPadName>(static_cast<u32>(pad_name))));
 
         out.SetValue(RemoteObjectFactory::CreateSharedEmplaced<gpio::sf::IPadSession, RemotePadSessionImpl>(p));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RemoteManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
@@ -47,7 +47,7 @@ namespace ams::gpio {
         R_TRY(::gpioOpenSession2(std::addressof(p), device_code.GetInternalValue(), access_mode));
 
         out.SetValue(RemoteObjectFactory::CreateSharedEmplaced<gpio::sf::IPadSession, RemotePadSessionImpl>(p));
-        return ResultSuccess();
+        R_SUCCEED();
     }
     #endif
 

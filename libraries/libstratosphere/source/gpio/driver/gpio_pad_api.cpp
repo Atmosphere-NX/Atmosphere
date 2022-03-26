@@ -30,7 +30,7 @@ namespace ams::gpio::driver {
             R_TRY(session->Open(pad, access_mode));
 
             session_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -54,7 +54,7 @@ namespace ams::gpio::driver {
             }
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(GpioPadSession *session) {
@@ -77,7 +77,7 @@ namespace ams::gpio::driver {
         /* Perform the call. */
         R_TRY(pad.GetDriver().SafeCastTo<IGpioDriver>().SetDirection(std::addressof(pad), direction));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetDirection(gpio::Direction *out, GpioPadSession *session) {
@@ -95,7 +95,7 @@ namespace ams::gpio::driver {
         /* Perform the call. */
         R_TRY(pad.GetDriver().SafeCastTo<IGpioDriver>().GetDirection(out, std::addressof(pad)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetValue(GpioPadSession *session, gpio::GpioValue value) {
@@ -113,7 +113,7 @@ namespace ams::gpio::driver {
         /* Perform the call. */
         R_TRY(pad.GetDriver().SafeCastTo<IGpioDriver>().SetValue(std::addressof(pad), value));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetValue(gpio::GpioValue *out, GpioPadSession *session) {
@@ -131,7 +131,7 @@ namespace ams::gpio::driver {
         /* Perform the call. */
         R_TRY(pad.GetDriver().SafeCastTo<IGpioDriver>().GetValue(out, std::addressof(pad)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

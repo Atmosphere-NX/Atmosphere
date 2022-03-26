@@ -68,7 +68,7 @@ namespace ams::ldr {
             m_mounted_code = true;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ScopedCodeMount::EnsureOverrideStatus(const ncm::ProgramLocation &loc) {
@@ -85,7 +85,7 @@ namespace ams::ldr {
         if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::None) {
             std::memset(out_path, 0, out_size);
             std::memcpy(out_path, "/", std::min<size_t>(out_size, 2));
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         lr::Path path;
@@ -118,13 +118,13 @@ namespace ams::ldr {
         std::memset(out_path, 0, out_size);
         std::memcpy(out_path, path.str, std::min(out_size, sizeof(path)));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RedirectProgramPath(const char *path, size_t size, const ncm::ProgramLocation &loc) {
         /* Check for storage id none. */
         if (static_cast<ncm::StorageId>(loc.storage_id) == ncm::StorageId::None) {
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Open location resolver. */
@@ -139,7 +139,7 @@ namespace ams::ldr {
         /* Redirect the path. */
         lr.RedirectProgramPath(lr_path, loc.program_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc) {
@@ -156,7 +156,7 @@ namespace ams::ldr {
         R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
         lr.RedirectApplicationHtmlDocumentPath(path, loc.program_id, loc.program_id);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

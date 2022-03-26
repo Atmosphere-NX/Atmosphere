@@ -40,7 +40,7 @@ namespace ams::erpt::srv {
         R_TRY(m_attachment->Open(AttachmentOpenType_Read));
         attachment_guard.Cancel();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AttachmentImpl::Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)  {
@@ -67,7 +67,7 @@ namespace ams::erpt::srv {
             delete m_attachment;
             m_attachment = nullptr;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result AttachmentImpl::GetSize(ams::sf::Out<s64> out)  {

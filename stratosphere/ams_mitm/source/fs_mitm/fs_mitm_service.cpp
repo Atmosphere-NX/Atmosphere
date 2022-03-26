@@ -91,7 +91,7 @@ namespace ams::mitm::fs {
             R_TRY(subdir_fs->Initialize(AtmosphereHblWebContentDirPath));
 
             out.SetValue(MakeSharedFileSystem(std::make_shared<fs::ReadOnlyFileSystem>(std::move(subdir_fs)), false), target_object_id);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenProgramSpecificWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
@@ -142,7 +142,7 @@ namespace ams::mitm::fs {
                 out.SetValue(MakeSharedFileSystem(std::move(new_fs), false), target_object_id);
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenWebContentFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
@@ -185,7 +185,7 @@ namespace ams::mitm::fs {
         R_TRY(redir_fs->InitializeWithFixedPath("/Nintendo", emummc::GetNintendoDirPath()));
 
         out.SetValue(MakeSharedFileSystem(std::move(redir_fs), false), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::OpenSaveDataFileSystem(sf::Out<sf::SharedPointer<ams::fssrv::sf::IFileSystem>> out, u8 _space_id, const fs::SaveDataAttribute &attribute) {
@@ -260,7 +260,7 @@ namespace ams::mitm::fs {
 
         /* Set output. */
         out.SetValue(MakeSharedFileSystem(std::move(dirsave_ifs), false), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::OpenBisStorage(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u32 _bis_partition_id) {
@@ -302,7 +302,7 @@ namespace ams::mitm::fs {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::OpenDataStorageByCurrentProcess(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out) {
@@ -319,7 +319,7 @@ namespace ams::mitm::fs {
 
         /* Get a layered storage for the process romfs. */
         out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(m_client_info.program_id, data_storage, true)), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::OpenDataStorageByDataId(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, ncm::DataId _data_id, u8 storage_id) {
@@ -339,7 +339,7 @@ namespace ams::mitm::fs {
 
         /* Get a layered storage for the data id. */
         out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(data_id, data_storage, false)), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::OpenDataStorageWithProgramIndex(sf::Out<sf::SharedPointer<ams::fssrv::sf::IStorage>> out, u8 program_index) {
@@ -360,7 +360,7 @@ namespace ams::mitm::fs {
 
         /* Get a layered storage for the process romfs. */
         out.SetValue(MakeSharedStorage(GetLayeredRomfsStorage(program_id, data_storage, true)), target_object_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result FsMitmService::RegisterProgramIndexMapInfo(const sf::InBuffer &info_buffer, s32 info_count) {
@@ -370,7 +370,7 @@ namespace ams::mitm::fs {
         /* Register with ourselves. */
         R_ABORT_UNLESS(g_program_index_map_info_manager.Reset(reinterpret_cast<const fs::ProgramIndexMapInfo *>(info_buffer.GetPointer()), info_count));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

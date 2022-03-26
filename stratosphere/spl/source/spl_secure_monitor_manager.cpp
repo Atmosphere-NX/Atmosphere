@@ -145,7 +145,7 @@ namespace ams::spl {
 
         m_aes_keyslot_owners[index] = owner;
         *out_keyslot                = keyslot;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SecureMonitorManager::DeallocateAesKeySlot(s32 keyslot, const void *owner) {
@@ -190,7 +190,7 @@ namespace ams::spl {
         if (out_index != nullptr) {
             *out_index = index;
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 

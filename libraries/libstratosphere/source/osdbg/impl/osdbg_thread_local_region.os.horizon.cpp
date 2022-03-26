@@ -42,7 +42,7 @@ namespace ams::osdbg::impl {
                 *out = is_lp64 ? tlr.lp64.p_thread_type : tlr.ilp32.p_thread_type;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result GetThreadArgumentAndStackPointer(u64 *out_arg, u64 *out_sp, ThreadInfo *info) {
@@ -60,7 +60,7 @@ namespace ams::osdbg::impl {
                 *out_sp = thread_context.r[13];
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         void DetectStratosphereThread(ThreadInfo *info) {

@@ -32,7 +32,7 @@ namespace ams::fatal::srv {
         R_UNLESS(m_num_events_gotten < FatalEventManager::NumFatalEvents, fatal::ResultTooManyEvents());
 
         *out = std::addressof(m_events[m_num_events_gotten++]);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void FatalEventManager::SignalEvents() {

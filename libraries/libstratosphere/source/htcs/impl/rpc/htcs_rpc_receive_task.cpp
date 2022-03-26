@@ -27,7 +27,7 @@ namespace ams::htcs::impl::rpc {
         m_size   = size;
         m_flags  = flags;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ReceiveTask::Complete(htcs::SocketError err, s64 size) {
@@ -47,7 +47,7 @@ namespace ams::htcs::impl::rpc {
         *out_err  = m_err;
         *out_size = m_result_size;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReceiveTask::ProcessResponse(const char *data, size_t size) {
@@ -59,7 +59,7 @@ namespace ams::htcs::impl::rpc {
         /* Complete the task. */
         this->Complete(static_cast<htcs::SocketError>(packet->params[0]), packet->params[1]);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReceiveTask::CreateRequest(size_t *out, char *data, size_t size, u32 task_id) {
@@ -85,7 +85,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ReceiveTask::CreateNotification(size_t *out, char *data, size_t size, u32 task_id) {
@@ -108,7 +108,7 @@ namespace ams::htcs::impl::rpc {
         /* Set the output size. */
         *out = sizeof(*packet);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

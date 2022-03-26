@@ -238,7 +238,7 @@ namespace ams::fssystem {
                     buffers::EnableBlockingBufferManagerAllocation();
                 }
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             const std::pair<Result, bool> PrepareFetch() {
@@ -295,7 +295,7 @@ namespace ams::fssystem {
                 m_offset = fetch_param.offset;
                 AMS_ASSERT(this->Hits(offset, 1));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result FetchFromBuffer(s64 offset, const void *buffer, size_t buffer_size) {
@@ -321,7 +321,7 @@ namespace ams::fssystem {
                 m_offset = fetch_param.offset;
                 AMS_ASSERT(this->Hits(offset, 1));
 
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             bool TryAcquireCache() {
@@ -369,7 +369,7 @@ namespace ams::fssystem {
                 }, AMS_CURRENT_FUNCTION_NAME));
 
                 range_guard.Cancel();
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             void CalcFetchParameter(FetchParameter *out, s64 offset) const {
@@ -579,7 +579,7 @@ namespace ams::fssystem {
             Result FetchFromBuffer(s64 offset, const void *buffer, size_t buffer_size) {
                 AMS_ASSERT(m_cache != nullptr);
                 R_TRY(m_cache->FetchFromBuffer(offset, buffer, buffer_size));
-                return ResultSuccess();
+                R_SUCCEED();
             }
     };
 
@@ -616,7 +616,7 @@ namespace ams::fssystem {
         }
 
         m_next_acquire_cache = std::addressof(m_caches[0]);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void BufferedStorage::Finalize() {
@@ -638,7 +638,7 @@ namespace ams::fssystem {
 
         /* Do the read. */
         R_TRY(this->ReadCore(offset, buffer, size));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::Write(s64 offset, const void *buffer, size_t size) {
@@ -652,7 +652,7 @@ namespace ams::fssystem {
 
         /* Do the write. */
         R_TRY(this->WriteCore(offset, buffer, size));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::GetSize(s64 *out) {
@@ -660,7 +660,7 @@ namespace ams::fssystem {
         AMS_ASSERT(this->IsInitialized());
 
         *out = m_base_storage_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::SetSize(s64 size) {
@@ -700,7 +700,7 @@ namespace ams::fssystem {
         R_TRY(m_base_storage.GetSize(std::addressof(new_size)));
 
         m_base_storage_size = new_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::Flush()  {
@@ -714,7 +714,7 @@ namespace ams::fssystem {
 
         /* Flush the base storage. */
         R_TRY(m_base_storage.Flush());
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::OperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size)  {
@@ -745,7 +745,7 @@ namespace ams::fssystem {
         if (m_buffer_manager->GetTotalAllocatableSize() < flush_threshold) {
             R_TRY(this->Flush());
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::ControlDirtiness() {
@@ -760,7 +760,7 @@ namespace ams::fssystem {
                 }
             }
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::ReadCore(s64 offset, void *buffer, size_t size) {
@@ -800,7 +800,7 @@ namespace ams::fssystem {
                         }
                     } R_END_TRY_CATCH;
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 } while(0);
             }
         }
@@ -854,7 +854,7 @@ namespace ams::fssystem {
             buf_offset     += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool BufferedStorage::ReadHeadCache(s64 *offset, void *buffer, size_t *size, s64 *buffer_offset) {
@@ -1007,7 +1007,7 @@ namespace ams::fssystem {
             R_TRY(this->ControlDirtiness());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result BufferedStorage::WriteCore(s64 offset, const void *buffer, size_t size) {
@@ -1079,7 +1079,7 @@ namespace ams::fssystem {
             buf_offset     += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

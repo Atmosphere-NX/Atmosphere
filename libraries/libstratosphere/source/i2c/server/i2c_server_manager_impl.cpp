@@ -58,7 +58,7 @@ namespace ams::i2c::server {
 
         /* We succeeded. */
         *out = std::move(session);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

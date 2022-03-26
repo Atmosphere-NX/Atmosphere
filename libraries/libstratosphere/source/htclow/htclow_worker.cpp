@@ -116,7 +116,7 @@ namespace ams::htclow {
         /* Process the received packet. */
         m_service->ProcessReceivePacket(header, m_receive_packet_body, header.body_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Worker::ProcessReceive(const PacketHeader &header) {
@@ -131,7 +131,7 @@ namespace ams::htclow {
         /* Process the received packet. */
         m_mux->ProcessReceivePacket(header, m_receive_packet_body, header.body_size);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Worker::ProcessSend() {
@@ -171,7 +171,7 @@ namespace ams::htclow {
 
                 /* Check if we're cancelled. */
                 if (m_cancelled) {
-                    return htclow::ResultCancelled();
+                    R_THROW(htclow::ResultCancelled());
                 }
             }
         }

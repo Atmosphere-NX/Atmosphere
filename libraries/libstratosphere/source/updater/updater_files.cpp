@@ -57,7 +57,7 @@ namespace ams::updater {
 
         generator.GetHash(dst_hash, crypto::Sha256Generator::HashSize);
         *out_size = total_size;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

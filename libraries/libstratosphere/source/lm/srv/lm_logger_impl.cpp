@@ -139,13 +139,13 @@ namespace ams::lm::srv {
             PutLogToCustomSink(message);
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result LoggerImpl::SetDestination(u32 destination) {
         /* Set the log destination. */
         g_log_destination = destination;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

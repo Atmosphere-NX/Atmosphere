@@ -49,7 +49,7 @@ namespace ams::ncm {
                 R_CONVERT(fs::ResultPathNotFound, ncm::ResultContentNotFound())
             } R_END_TRY_CATCH;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         template<typename F>
@@ -93,7 +93,7 @@ namespace ams::ncm {
                     /* If the provided function wishes to terminate immediately, we should respect it. */
                     if (!should_continue) {
                         *out_should_continue = false;
-                        return ResultSuccess();
+                        R_SUCCEED();
                     }
 
                     /* Mark for retry. */
@@ -108,13 +108,13 @@ namespace ams::ncm {
 
                         if (!should_continue) {
                             *out_should_continue = false;
-                            return ResultSuccess();
+                            R_SUCCEED();
                         }
                     }
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
 
@@ -161,7 +161,7 @@ namespace ams::ncm {
                 R_TRY(fs::DeleteDirectoryRecursively(path));
                 R_TRY(fs::CreateDirectory(path));
             }
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -184,7 +184,7 @@ namespace ams::ncm {
         /* Open the base directory. */
         R_TRY(this->OpenCurrentDirectory());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::ContentIterator::OpenCurrentDirectory() {
@@ -197,7 +197,7 @@ namespace ams::ncm {
         /* Increase our depth. */
         ++m_depth;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::ContentIterator::OpenDirectory(const char *dir) {
@@ -217,7 +217,7 @@ namespace ams::ncm {
             /* If we failed to load any entries, there's nothing to get. */
             if (m_entry_count <= 0) {
                 *out = util::nullopt;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             /* Get the next entry. */
@@ -240,12 +240,12 @@ namespace ams::ncm {
                 case fs::DirectoryEntryType_File:
                     /* Otherwise, if the entry is a file, return it. */
                     *out = entry;
-                    return ResultSuccess();
+                    R_SUCCEED();
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::ContentIterator::LoadEntries() {
@@ -255,7 +255,7 @@ namespace ams::ncm {
         /* If we have no directories open, there's nothing for us to load. */
         if (m_depth == 0) {
             m_entry_count = 0;
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Determine the maximum entries that we can load. */
@@ -275,7 +275,7 @@ namespace ams::ncm {
             /* Set our entry count. */
             m_entry_count = num_entries;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* We didn't read any entries, so we need to advance to the next directory. */
@@ -345,7 +345,7 @@ namespace ams::ncm {
         R_UNLESS(has_registered,                    ncm::ResultInvalidContentStorageBase());
         R_UNLESS(has_placeholder,                   ncm::ResultInvalidContentStorageBase());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void ContentStorageImpl::InvalidateFileCache() {
@@ -373,7 +373,7 @@ namespace ams::ncm {
         } R_END_TRY_CATCH;
 
         m_cached_content_id = content_id;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::Initialize(const char *path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache) {
@@ -387,13 +387,13 @@ namespace ams::ncm {
         m_make_content_path_func = content_path_func;
         m_placeholder_accessor.Initialize(std::addressof(m_root_path), placeholder_path_func, delay_flush);
         m_rights_id_cache = rights_id_cache;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         R_TRY(this->EnsureEnabled());
         out.SetValue({util::GenerateUuid()});
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
@@ -418,7 +418,7 @@ namespace ams::ncm {
         bool has = false;
         R_TRY(fs::HasFile(std::addressof(has), placeholder_path));
         out.SetValue(has);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) {
@@ -446,7 +446,7 @@ namespace ams::ncm {
             R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::Delete(ContentId content_id) {
@@ -466,7 +466,7 @@ namespace ams::ncm {
         bool has = false;
         R_TRY(fs::HasFile(std::addressof(has), content_path));
         out.SetValue(has);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
@@ -481,7 +481,7 @@ namespace ams::ncm {
         R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), content_path));
 
         out.SetValue(common_path);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
@@ -496,7 +496,7 @@ namespace ams::ncm {
         R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), placeholder_path));
 
         out.SetValue(common_path);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::CleanupAllPlaceHolder() {
@@ -511,7 +511,7 @@ namespace ams::ncm {
 
         /* Cleanup the placeholder base directory. */
         CleanDirectoryRecursively(placeholder_dir);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
@@ -542,11 +542,11 @@ namespace ams::ncm {
                 out_buf[entry_count++] = placeholder_id;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }));
 
         out_count.SetValue(static_cast<s32>(entry_count));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetContentCount(sf::Out<s32> out_count) {
@@ -571,11 +571,11 @@ namespace ams::ncm {
                 count++;
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         }));
 
         out_count.SetValue(static_cast<s32>(count));
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out, s32 offset) {
@@ -596,7 +596,7 @@ namespace ams::ncm {
                 /* If we run out of entries before reaching the desired offset, we're done. */
                 if (!dir_entry) {
                     out_count.SetValue(0);
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* If the current entry is a valid content id, advance. */
@@ -631,7 +631,7 @@ namespace ams::ncm {
         /* Set the output count. */
         *out_count = count;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
@@ -651,14 +651,14 @@ namespace ams::ncm {
         R_TRY(fs::GetFileSize(std::addressof(file_size), file));
 
         out_size.SetValue(file_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::DisableForcibly() {
         m_disabled = true;
         this->InvalidateFileCache();
         m_placeholder_accessor.InvalidateAll();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
@@ -687,7 +687,7 @@ namespace ams::ncm {
             R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
         } R_END_TRY_CATCH;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
@@ -718,7 +718,7 @@ namespace ams::ncm {
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
@@ -739,7 +739,7 @@ namespace ams::ncm {
 
         /* Output the fs rights id. */
         out_rights_id.SetValue(rights_id.id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
@@ -747,7 +747,7 @@ namespace ams::ncm {
 
         /* Attempt to obtain the rights id from the cache. */
         if (m_rights_id_cache->Find(out_rights_id.GetPointer(), content_id)) {
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Get the path of the content. */
@@ -762,7 +762,7 @@ namespace ams::ncm {
         m_rights_id_cache->Store(content_id, rights_id);
 
         out_rights_id.SetValue(rights_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {
@@ -799,7 +799,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::FlushPlaceHolder() {
         m_placeholder_accessor.InvalidateAll();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<s64> out_size, PlaceHolderId placeholder_id) {
@@ -813,7 +813,7 @@ namespace ams::ncm {
         /* Set the output if placeholder file is found. */
         if (found) {
             out_size.SetValue(file_size);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Get the path of the placeholder. */
@@ -829,7 +829,7 @@ namespace ams::ncm {
         R_TRY(fs::GetFileSize(std::addressof(file_size), file));
 
         out_size.SetValue(file_size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::RepairInvalidFileAttribute() {
@@ -850,7 +850,7 @@ namespace ams::ncm {
                 }
             }
 
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         /* Fix content. */
@@ -872,7 +872,7 @@ namespace ams::ncm {
             R_TRY(TraverseDirectory(path, GetHierarchicalContentDirectoryDepth(m_make_content_path_func), fix_file_attributes));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
@@ -880,7 +880,7 @@ namespace ams::ncm {
 
         /* Attempt to find the rights id in the cache. */
         if (m_rights_id_cache->Find(out_rights_id.GetPointer(), cache_content_id)) {
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         /* Get the placeholder path. */
@@ -898,16 +898,16 @@ namespace ams::ncm {
 
         /* Set output. */
         out_rights_id.SetValue(rights_id);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContentStorageImpl::RegisterPath(const ContentId &content_id, const Path &path) {
         AMS_UNUSED(content_id, path);
-        return ncm::ResultInvalidOperation();
+        R_THROW(ncm::ResultInvalidOperation());
     }
 
     Result ContentStorageImpl::ClearRegisteredPath() {
-        return ncm::ResultInvalidOperation();
+        R_THROW(ncm::ResultInvalidOperation());
     }
 
 }

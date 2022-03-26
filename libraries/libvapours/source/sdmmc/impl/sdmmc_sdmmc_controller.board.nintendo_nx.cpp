@@ -271,7 +271,7 @@ namespace ams::sdmmc::impl {
         /* Enable internal clock. */
         R_TRY(SdHostStandardController::EnableInternalClock());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdmmcController::SetClockTrimmer(SpeedMode speed_mode, u8 tap_value) {
@@ -289,7 +289,7 @@ namespace ams::sdmmc::impl {
         /* Reset the cmd/dat line. */
         R_TRY(SdHostStandardController::ResetCmdDatLine());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     u8 SdmmcController::GetCurrentTapValue() {
@@ -338,7 +338,7 @@ namespace ams::sdmmc::impl {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdmmcController::SetSpeedModeWithTapValue(SpeedMode speed_mode, u8 tap_value) {
@@ -434,7 +434,7 @@ namespace ams::sdmmc::impl {
         /* Set the current speed mode. */
         m_current_speed_mode = speed_mode;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdmmcController::IssueTuningCommand(u32 command_index) {
@@ -494,10 +494,10 @@ namespace ams::sdmmc::impl {
                 /* If we succeeded, clear the interrupt. */
                 reg::Write(m_sdmmc_registers->sd_host_standard_registers.normal_int_status, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_BUFFER_READ_READY, ENABLED));
                 this->ClearInterrupt();
-                return ResultSuccess();
+                R_SUCCEED();
             } else if (sdmmc::ResultWaitInterruptSoftwareTimeout::Includes(result)) {
                 SdHostStandardController::AbortTransaction();
-                return sdmmc::ResultIssueTuningCommandSoftwareTimeout();
+                R_THROW(sdmmc::ResultIssueTuningCommandSoftwareTimeout());
             } else {
                 return result;
             }
@@ -511,13 +511,13 @@ namespace ams::sdmmc::impl {
                 if (reg::HasValue(m_sdmmc_registers->sd_host_standard_registers.normal_int_status, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_BUFFER_READ_READY, ENABLED))) {
                     /* If we did, acknowledge it. */
                     reg::Write(m_sdmmc_registers->sd_host_standard_registers.normal_int_status, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_BUFFER_READ_READY, ENABLED));
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
 
                 /* Otherwise, check if we timed out. */
                 if (!timer.Update()) {
                     SdHostStandardController::AbortTransaction();
-                    return sdmmc::ResultIssueTuningCommandSoftwareTimeout();
+                    R_THROW(sdmmc::ResultIssueTuningCommandSoftwareTimeout());
                 }
             }
         }
@@ -641,7 +641,7 @@ namespace ams::sdmmc::impl {
         /* Ensure that we can control the device. */
         SdHostStandardController::EnsureControl();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdmmcController::Shutdown() {
@@ -721,7 +721,7 @@ namespace ams::sdmmc::impl {
         SdHostStandardController::EnableDeviceClock();
         SdHostStandardController::EnsureControl();
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdmmcController::SwitchToSdr12() {
@@ -761,7 +761,7 @@ namespace ams::sdmmc::impl {
         /* Check that the dat lines are all high. */
         R_UNLESS(reg::HasValue(m_sdmmc_registers->sd_host_standard_registers.present_state, SD_REG_BITS_VALUE(PRESENT_STATE_DAT0_3_LINE_SIGNAL_LEVEL, 0b1111)), sdmmc::ResultSdCardNotCompleteVoltageSwitch());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SdmmcController::SetSpeedMode(SpeedMode speed_mode) {
@@ -777,7 +777,7 @@ namespace ams::sdmmc::impl {
         /* Set the speed mode. */
         R_TRY(this->SetSpeedModeWithTapValue(speed_mode, tap_value));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdmmcController::SetPowerSaving(bool en) {
@@ -868,7 +868,7 @@ namespace ams::sdmmc::impl {
         /* Check if we're using the tuned clock. */
         R_UNLESS(reg::HasValue(m_sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_SAMPLING_CLOCK, USING_TUNED_CLOCK)), sdmmc::ResultTuningFailed());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SdmmcController::SaveTuningStatusForHs400() {
@@ -886,7 +886,7 @@ namespace ams::sdmmc::impl {
         /* pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
         R_TRY(m_power_controller->PowerOn(BusPower_3_3V));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Sdmmc1Controller::PowerOffForRegisterControl() {
@@ -925,7 +925,7 @@ namespace ams::sdmmc::impl {
         /* pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
         R_TRY(m_power_controller->LowerBusPower());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Sdmmc1Controller::SetSchmittTriggerForRegisterControl(BusPower bus_power) {
@@ -958,7 +958,7 @@ namespace ams::sdmmc::impl {
         ON_SCOPE_EXIT { m_current_bus_power = BusPower_3_3V; };
 
         /* TODO: return pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Sdmmc1Controller::PowerOffForPcvControl() {
@@ -987,7 +987,7 @@ namespace ams::sdmmc::impl {
         ON_SCOPE_EXIT { m_current_bus_power = BusPower_1_8V; };
 
         /* TODO: return pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Sdmmc1Controller::SetSchmittTriggerForPcvControl(BusPower bus_power) {
@@ -1163,7 +1163,7 @@ namespace ams::sdmmc::impl {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void Sdmmc1Controller::PowerController::SetSdmmcIoMode(bool is_3_3V) {
@@ -1258,7 +1258,7 @@ namespace ams::sdmmc::impl {
         /* Update our current bus power. */
         m_current_bus_power = bus_power;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Sdmmc1Controller::PowerController::PowerOff() {
@@ -1289,7 +1289,7 @@ namespace ams::sdmmc::impl {
         /* Update our current bus power. */
         m_current_bus_power = BusPower_Off;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Sdmmc1Controller::PowerController::LowerBusPower() {
@@ -1305,7 +1305,7 @@ namespace ams::sdmmc::impl {
         /* Update our current bus power. */
         m_current_bus_power = BusPower_1_8V;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

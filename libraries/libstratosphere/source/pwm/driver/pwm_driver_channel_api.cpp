@@ -32,7 +32,7 @@ namespace ams::pwm::driver {
 
             /* We succeeded. */
             session_guard.Cancel();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -48,7 +48,7 @@ namespace ams::pwm::driver {
         /* Open the session. */
         R_TRY(OpenSessionImpl(out, device));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void CloseSession(ChannelSession &session) {

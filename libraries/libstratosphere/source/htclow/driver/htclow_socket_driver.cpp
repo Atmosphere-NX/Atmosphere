@@ -44,7 +44,7 @@ namespace ams::htclow::driver {
         /* Setup client socket. */
         R_TRY(this->SetupClientSocket(client_desc));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketDriver::CreateServerSocket() {
@@ -86,7 +86,7 @@ namespace ams::htclow::driver {
         m_server_socket       = desc;
         m_server_socket_valid = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SocketDriver::DestroyServerSocket() {
@@ -116,7 +116,7 @@ namespace ams::htclow::driver {
         m_client_socket       = desc;
         m_client_socket_valid = true;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool SocketDriver::IsAutoConnectReserved() {
@@ -180,7 +180,7 @@ namespace ams::htclow::driver {
 
     Result SocketDriver::Open() {
         m_discovery_manager.OnDriverOpen();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SocketDriver::Close() {
@@ -251,7 +251,7 @@ namespace ams::htclow::driver {
             R_UNLESS(cur_sent > 0, htclow::ResultSocketSendError());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SocketDriver::Receive(void *dst, int dst_size) {
@@ -265,7 +265,7 @@ namespace ams::htclow::driver {
             R_UNLESS(cur_recv > 0, htclow::ResultSocketReceiveError());
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SocketDriver::CancelSendReceive() {

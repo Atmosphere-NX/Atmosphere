@@ -64,7 +64,7 @@ namespace ams::htclow::mux {
         /* Insert into our map. */
         m_map.insert(std::pair<const impl::ChannelInternalType, int>{channel, idx});
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ChannelImplMap::RemoveChannel(impl::ChannelInternalType channel) {
@@ -88,7 +88,7 @@ namespace ams::htclow::mux {
         /* Destroy the channel. */
         std::destroy_at(channel_impl);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

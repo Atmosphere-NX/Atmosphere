@@ -41,7 +41,7 @@ namespace ams::fs {
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
                     AMS_UNUSED(size);
 
-                    return ResultSuccess();
+                    R_SUCCEED();
                 }
         };
 
@@ -107,7 +107,7 @@ namespace ams::fs {
         AMS_FS_R_UNLESS(adapter != nullptr, fs::ResultAllocationMemoryFailedInSdCardB());
 
         *out = std::move(adapter);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     bool IsSdCardInserted() {

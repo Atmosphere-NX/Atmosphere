@@ -48,7 +48,7 @@ namespace ams::mitm::settings {
     Result SetMitmService::EnsureLocale() {
         /* Optimization: if locale has already been gotten, we can stop. */
         if (AMS_LIKELY(m_got_locale)) {
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         std::scoped_lock lk(m_lock);
@@ -77,7 +77,7 @@ namespace ams::mitm::settings {
             }
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SetMitmService::InvalidateLocale() {
@@ -105,7 +105,7 @@ namespace ams::mitm::settings {
         }
 
         out.SetValue(m_locale.language_code);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result SetMitmService::GetRegionCode(sf::Out<settings::RegionCode> out) {
@@ -124,7 +124,7 @@ namespace ams::mitm::settings {
         }
 
         out.SetValue(m_locale.region_code);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

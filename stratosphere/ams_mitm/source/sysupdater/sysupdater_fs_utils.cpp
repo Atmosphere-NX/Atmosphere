@@ -54,7 +54,7 @@ namespace ams::mitm::sysupdater {
             const bool is_nsp = util::Strnicmp(extension, NspExtension, NcaNspExtensionSize) == 0;
             R_UNLESS(is_nca || is_nsp, fs::ResultPathNotFound());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ParseMountName(const char **path, std::shared_ptr<ams::fs::fsa::IFileSystem> *out) {
@@ -88,13 +88,13 @@ namespace ams::mitm::sysupdater {
                 /* Set the output fs. */
                 *out = std::move(fsa);
             } else {
-                return fs::ResultPathNotFound();
+                R_THROW(fs::ResultPathNotFound());
             }
 
             /* Ensure that there's something that could be a mount name delimiter. */
             R_UNLESS(util::Strnlen(*path, fs::EntryNameLengthMax) != 0, fs::ResultPathNotFound());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ParseNsp(const char **path, std::shared_ptr<ams::fs::fsa::IFileSystem> *out, std::shared_ptr<ams::fs::fsa::IFileSystem> base_fs) {
@@ -132,7 +132,7 @@ namespace ams::mitm::sysupdater {
             /* Update the path. */
             *path = work_path;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result ParseNca(const char **path, std::shared_ptr<fssystem::NcaReader> *out, std::shared_ptr<ams::fs::fsa::IFileSystem> base_fs) {
@@ -154,7 +154,7 @@ namespace ams::mitm::sysupdater {
 
             /* Set output reader. */
             *out = std::move(nca_reader);
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenMetaStorage(std::shared_ptr<ams::fs::IStorage> *out, std::shared_ptr<fssystem::IAsynchronousAccessSplitter> *out_splitter, std::shared_ptr<fssystem::NcaReader> nca_reader, fssystem::NcaFsHeader::FsType *out_fs_type) {
@@ -173,7 +173,7 @@ namespace ams::mitm::sysupdater {
 
             /* Set the output fs type. */
             *out_fs_type = fs_header_reader.GetFsType();
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         Result OpenContentMetaFileSystem(std::shared_ptr<ams::fs::fsa::IFileSystem> *out, const char *path) {
@@ -211,7 +211,7 @@ namespace ams::mitm::sysupdater {
                 case fssystem::NcaFsHeader::FsType::PartitionFs: return creator_intfs->partition_fs_creator->Create(out, std::move(storage));
                 case fssystem::NcaFsHeader::FsType::RomFs:       return creator_intfs->rom_fs_creator->Create(out, std::move(storage));
                 default:
-                    return fs::ResultInvalidNcaFileSystemType();
+                    R_THROW(fs::ResultInvalidNcaFileSystemType());
             }
         }
 

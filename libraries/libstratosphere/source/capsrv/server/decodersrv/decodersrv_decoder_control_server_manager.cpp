@@ -29,7 +29,7 @@ namespace ams::capsrv::server {
         /* Initialize the idle event, we're idle initially. */
         os::InitializeEvent(std::addressof(m_idle_event), true, os::EventClearMode_ManualClear);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void DecoderControlServerManager::Finalize() {

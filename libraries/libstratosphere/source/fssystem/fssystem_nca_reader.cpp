@@ -30,7 +30,7 @@ namespace ams::fssystem {
             /* Verify the magic is the current one. */
             R_UNLESS(magic == NcaHeader::Magic3, fs::ResultInvalidNcaSignature());
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
     }
@@ -176,7 +176,7 @@ namespace ams::fssystem {
         m_header_storage = std::move(work_header_storage);
         m_body_storage   = std::move(base_storage);
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     std::shared_ptr<fs::IStorage> NcaReader::GetSharedBodyStorage() {
@@ -435,7 +435,7 @@ namespace ams::fssystem {
 
         /* Set our index. */
         m_fs_index = index;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void NcaFsHeaderReader::GetRawData(void *dst, size_t dst_size) const {

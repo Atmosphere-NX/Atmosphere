@@ -30,7 +30,7 @@ namespace ams::cal::impl {
         /* Validate the crc. */
         R_TRY(ValidateCalibrationCrc(dst, block_size));
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

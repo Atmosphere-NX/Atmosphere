@@ -55,7 +55,7 @@ namespace ams::ncm {
                 R_TRY(m_interface->Get(std::addressof(size), key, sf::OutBuffer(dst, dst_size)));
 
                 *out_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             #define AMS_NCM_DEFINE_GETTERS(Kind, IdType)                                                                                \
@@ -152,7 +152,7 @@ namespace ams::ncm {
                 R_TRY(m_interface->GetSize(std::addressof(size), key));
 
                 *out_size = size;
-                return ResultSuccess();
+                R_SUCCEED();
             }
 
             Result GetRequiredSystemVersion(u32 *out_version, const ContentMetaKey &key) {

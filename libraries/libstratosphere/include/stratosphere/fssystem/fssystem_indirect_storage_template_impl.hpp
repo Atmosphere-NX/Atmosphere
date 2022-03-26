@@ -144,7 +144,7 @@ namespace ams::fssystem {
             cur_offset += cur_size;
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
 }

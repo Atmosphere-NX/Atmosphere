@@ -30,7 +30,7 @@ namespace ams::hos {
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             *out = { exosphere_cfg };
-            return ResultSuccess();
+            R_SUCCEED();
         }
 
         #if defined(ATMOSPHERE_OS_HORIZON)
@@ -42,7 +42,7 @@ namespace ams::hos {
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             *out = { exosphere_cfg };
-            return ResultSuccess();
+            R_SUCCEED();
         }
         #endif
 

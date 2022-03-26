@@ -185,7 +185,7 @@ namespace ams::ncm {
 
             /* Write out the buffer we've populated. */
             *out_meta_infos = std::move(buffer);
-            return ResultSuccess();
+            R_SUCCEED();
         };
 
         /* If there are no firmware variations to list, read meta infos from base. */
@@ -251,7 +251,7 @@ namespace ams::ncm {
 
         /* Output the content meta info buffer. */
         *out_meta_infos = std::move(buffer);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void SetMountContentMetaFunction(MountContentMetaFunction func) {

@@ -58,7 +58,7 @@ namespace ams::pm::info {
         R_TRY(GetProcessInfo(std::addressof(loc), std::addressof(override_status), process_id));
 
         *out = override_status.IsHbl();
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result IsHblProgramId(bool *out, ncm::ProgramId program_id) {

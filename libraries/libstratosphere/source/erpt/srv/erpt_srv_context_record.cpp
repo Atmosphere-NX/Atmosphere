@@ -106,7 +106,7 @@ namespace ams::erpt::srv {
         guard.Cancel();
         s_record_count += m_ctx.field_count;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, bool value_bool) {
@@ -120,7 +120,7 @@ namespace ams::erpt::srv {
 
         field.value_bool = value_bool;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, u32 value_u32) {
@@ -134,7 +134,7 @@ namespace ams::erpt::srv {
 
         field.value_u32 = value_u32;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, u64 value_u64) {
@@ -148,7 +148,7 @@ namespace ams::erpt::srv {
 
         field.value_u64 = value_u64;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, s32 value_i32) {
@@ -162,7 +162,7 @@ namespace ams::erpt::srv {
 
         field.value_i32 = value_i32;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, s64 value_i64) {
@@ -176,7 +176,7 @@ namespace ams::erpt::srv {
 
         field.value_i64 = value_i64;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, const void *arr, u32 size, FieldType type) {
@@ -198,7 +198,7 @@ namespace ams::erpt::srv {
         };
 
         std::memcpy(m_ctx.array_buffer + start_idx, arr, size);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ContextRecord::Add(FieldId field_id, const char *str, u32 str_size) {

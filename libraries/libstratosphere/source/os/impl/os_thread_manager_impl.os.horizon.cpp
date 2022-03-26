@@ -101,11 +101,11 @@ namespace ams::os::impl {
                         os::SleepThread(TimeSpan::FromMilliSeconds(10));
                         continue;
                     }
-                    return os::ResultOutOfResource();
+                    R_THROW(os::ResultOutOfResource());
                 }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-            return ResultSuccess();
+            R_SUCCEED();
         }
     }
 

@@ -139,7 +139,7 @@ namespace ams::htc::server::rpc {
             os::ClearEvent(std::addressof(m_send_buffer_available_events[i]));
         }
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void RpcClient::Cancel() {
@@ -251,7 +251,7 @@ namespace ams::htc::server::rpc {
                     R_TRY(task->ProcessNotification(m_receive_buffer, received));
                     break;
                 default:
-                    return htc::ResultInvalidCategory();
+                    R_THROW(htc::ResultInvalidCategory());
             }
 
             /* If we used the receive buffer, signal that we're done with it. */
@@ -269,7 +269,7 @@ namespace ams::htc::server::rpc {
         /* Check size. */
         R_UNLESS(static_cast<size_t>(received) == sizeof(*header), htc::ResultInvalidSize());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RpcClient::ReceiveBody(char *dst, size_t size) {
@@ -280,7 +280,7 @@ namespace ams::htc::server::rpc {
         /* Check size. */
         R_UNLESS(static_cast<size_t>(received) == size, htc::ResultInvalidSize());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result RpcClient::SendThread() {
@@ -325,7 +325,7 @@ namespace ams::htc::server::rpc {
             R_TRY(this->SendRequest(m_send_buffer, packet_size));
         }
 
-        return htc::ResultCancelled();
+        R_THROW(htc::ResultCancelled());
     }
 
     Result RpcClient::SendRequest(const char *src, size_t size) {
@@ -339,7 +339,7 @@ namespace ams::htc::server::rpc {
         /* Check that we sent the right amount. */
         R_UNLESS(sent == static_cast<s64>(size), htc::ResultInvalidSize());
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     void RpcClient::CancelBySocket(s32 handle) {

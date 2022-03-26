@@ -48,7 +48,7 @@ namespace ams::erpt::srv {
         switch (type) {
             case AttachmentOpenType_Create: return this->OpenStream(this->FileName().name, StreamMode_Write, AttachmentStreamBufferSize);
             case AttachmentOpenType_Read:   return this->OpenStream(this->FileName().name, StreamMode_Read,  AttachmentStreamBufferSize);
-            default:                        return erpt::ResultInvalidArgument();
+            default:                        R_THROW(erpt::ResultInvalidArgument());
         }
     }
 
@@ -66,7 +66,7 @@ namespace ams::erpt::srv {
 
     Result Attachment::GetFlags(AttachmentFlagSet *out) const {
         *out = m_record->m_info.flags;
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Attachment::SetFlags(AttachmentFlagSet flags) {
@@ -74,7 +74,7 @@ namespace ams::erpt::srv {
             m_record->m_info.flags |= flags;
             return Journal::Commit();
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result Attachment::GetSize(s64 *out) const {

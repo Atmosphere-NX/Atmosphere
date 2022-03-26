@@ -43,7 +43,7 @@ namespace ams::erpt::srv {
         for (auto &manager : g_manager_list) {
             manager.NotifyOne();
         }
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ManagerImpl::GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter) {
@@ -54,7 +54,7 @@ namespace ams::erpt::srv {
 
     Result ManagerImpl::GetEvent(ams::sf::OutCopyHandle out) {
         out.SetValue(m_system_event.GetReadableHandle(), false);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ManagerImpl::CleanupReports() {
@@ -83,7 +83,7 @@ namespace ams::erpt::srv {
         }
 
         out.SetValue(stats);
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result ManagerImpl::GetAttachmentList(const ams::sf::OutBuffer &out_list, const ReportId &report_id) {
